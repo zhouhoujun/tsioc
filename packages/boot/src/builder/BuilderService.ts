@@ -8,7 +8,7 @@ import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resove
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
 import { IRunnable } from '../runnable';
-import { IBuilderService, BuilderServiceToken, SubAppBootOption } from './IBuilderService';
+import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
 
 
 
@@ -133,13 +133,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      *
      * @template T
      * @param {(Type<any> | BootOption | T)} target
-     * @param {(SubAppBootOption<T> | string)} [options]
+     * @param {(BootSubAppOption<T> | string)} [options]
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: SubAppBootOption<T> | string, ...args: string[]): Promise<T> {
-        let opt: SubAppBootOption<T>;
+    async boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
+        let opt: BootSubAppOption<T>;
         if (isString(options)) {
             args.unshift(options);
             opt = {};

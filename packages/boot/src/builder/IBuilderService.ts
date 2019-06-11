@@ -5,7 +5,7 @@ import { IBootApplication } from '../IBootApplication';
 import { IModuleResolveOption } from './resovers';
 import { IRunnable } from '../runnable';
 
-export interface SubAppBootOption<T extends BootContext> {
+export interface BootSubAppOption<T extends BootContext> {
     /**
      * sub context init.
      *
@@ -88,12 +88,12 @@ export interface IBuilderService extends IocCoreService {
      *
      * @template T
      * @param {(Type<any> | BootOption | T)} target
-     * @param {(SubAppBootOption<T> | string)} [options]
+     * @param {(BootSubAppOption<T> | string)} [options]
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof IBuilderService
      */
-    boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: SubAppBootOption<T> | string, ...args: string[]): Promise<T>;
+    boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *
