@@ -2,7 +2,7 @@ import { lang } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from '@tsdi/core';
 
 declare let System: any;
-declare let require: any;
+declare let window: any;
 export class BrowserModuleLoader extends ModuleLoader implements IModuleLoader {
 
     constructor() {
@@ -15,10 +15,10 @@ export class BrowserModuleLoader extends ModuleLoader implements IModuleLoader {
                 return System.import(modulepath);
             }
         } else {
-            lang.assert(require, 'has not module loader');
+            lang.assert(window.require, 'has not module loader');
             return (modulepath: string) => {
                 return new Promise((resolve, reject) => {
-                    require([modulepath], (mud) => {
+                    window.require([modulepath], (mud) => {
                         resolve(mud);
                     }, err => {
                         reject(err);
