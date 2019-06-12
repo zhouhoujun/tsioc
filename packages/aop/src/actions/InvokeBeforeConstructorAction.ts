@@ -47,6 +47,10 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
             advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
 
+        advices.Pointcut.forEach(advicer => {
+            advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
+        });
+
         advices.Around.forEach(advicer => {
             advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
