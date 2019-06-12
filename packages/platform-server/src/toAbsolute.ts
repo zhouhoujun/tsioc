@@ -1,9 +1,7 @@
 import { isString } from '@tsdi/ioc';
 import * as path from 'path';
-import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 
-declare let require: any;
 
 /**
  * sync require.

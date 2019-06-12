@@ -2,9 +2,6 @@ import { IModuleLoader, ModuleLoader } from '@tsdi/core';
 import { toAbsoluteSrc, runMainPath } from './toAbsolute';
 import { Modules } from '@tsdi/ioc';
 
-declare let require: any;
-
-
 
 /**
  * server nodule loader.
