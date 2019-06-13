@@ -12,15 +12,15 @@ export class BindingArgsHandle extends ResolveComponentHandle {
             let container = ctx.getRaiseContainer();
             let providers = [];
             let register = this.container.getActionRegisterer();
-            let ref = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
+            let { methodParams, paramsBindings } = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
             // init if not init constructor params action.
-            if (!ref.methodParams.has('constructor')) {
+            if (!methodParams.has('constructor')) {
                 register.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
             }
 
-            if (ref.paramsBindings) {
+            if (paramsBindings) {
                 let hregisterer = this.container.get(BuildHandleRegisterer);
-                let bparams = ref.paramsBindings.get('constructor');
+                let bparams = paramsBindings.get('constructor');
                 if (bparams && bparams.length) {
                     await Promise.all(bparams.map(async bp => {
                         let paramVal;

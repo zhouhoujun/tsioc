@@ -14,10 +14,10 @@ export class RegModuleProvidersAction extends AnnoationAction {
 
         let exptypes: Type<any>[] = [].concat(...container.getLoader().getTypes(config.exports || []));
         exptypes.forEach(ty => {
-            let classPd = tRef.get(ty);
+            let { provides } = tRef.get(ty);
             map.add(ty, (...pds: ProviderTypes[]) => container.resolve(ty, ...pds));
-            if (classPd && isArray(classPd.provides) && classPd.provides.length) {
-                classPd.provides.forEach(p => {
+            if (isArray(provides) && provides.length) {
+                provides.forEach(p => {
                     if (!map.has(p)) {
                         map.add(p, (...pds: ProviderTypes[]) => container.resolve(p, ...pds));
                     }
