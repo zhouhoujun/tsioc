@@ -64,8 +64,8 @@ export class Workflow extends BootApplication implements ContextInit {
      * @memberof Workflow
      */
     static async run<T extends ActivityContext>(target: T | Type<any> | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
-        let mdargs = checkBootArgs(deps, ...args);
-        return await new Workflow(target, mdargs.deps).run(...mdargs.args) as T;
+        let { deps: depmds, args: envs } = checkBootArgs(deps, ...args);
+        return await new Workflow(target, depmds).run(...envs) as T;
     }
 
     onContextInit(ctx: ActivityContext) {

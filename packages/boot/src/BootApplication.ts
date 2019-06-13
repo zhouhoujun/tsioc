@@ -110,8 +110,8 @@ export class BootApplication implements IBootApplication, ContextInit {
      * @memberof BootApplication
      */
     static run<T>(target: Type<T> | BootOption | BootContext, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
-        let mdargs = checkBootArgs(deps, ...args);
-        return new BootApplication(target, mdargs.deps).run(...mdargs.args);
+        let { deps: dep, args: arg } = checkBootArgs(deps, ...args);
+        return new BootApplication(target, dep).run(...arg);
     }
 
     /**
