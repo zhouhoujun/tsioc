@@ -10,11 +10,11 @@ export class RegForInjectorAction extends InjectorAction {
         if (isClass(ctx.currType)
             && ctx.currDecoractor
             && hasOwnClassMetadata(ctx.currDecoractor, ctx.currType)) {
-            let ann = lang.first(getOwnTypeMetadata<RegisterForMetadata>(ctx.currDecoractor, ctx.currType));
-            if (ann && ann.regFor) {
+            let { regFor } = lang.first(getOwnTypeMetadata<RegisterForMetadata>(ctx.currDecoractor, ctx.currType));
+            if (regFor) {
                 let pools = this.container.get(ContainerPoolToken);
                 this.container.register(ctx.currType)
-                switch (ann.regFor) {
+                switch (regFor) {
 
                     case RegFor.root:
                         pools.getRoot().register(ctx.currType);

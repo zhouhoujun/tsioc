@@ -19,13 +19,13 @@ export class BootConfigureLoadHandle extends BootHandle {
             mgr.useConfiguration();
         }
 
-        let config = await mgr.getConfig();
-        if (config.deps && config.deps.length) {
+        let { deps, baseURL } = await mgr.getConfig();
+        if (deps && deps.length) {
             let container = ctx.getRaiseContainer();
-            await container.load(...config.deps);
+            await container.load(...deps);
         }
-        if (config.baseURL) {
-            ctx.baseURL = config.baseURL;
+        if (baseURL) {
+            ctx.baseURL = baseURL;
         }
 
         await next();

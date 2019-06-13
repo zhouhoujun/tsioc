@@ -8,24 +8,23 @@ export class MessageRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let msgQueue = this.container.get(RootContainerToken).get(RootMessageQueueToken);
         let metas = getOwnTypeMetadata<MessageMetadata>(ctx.currDecoractor, ctx.targetType);
-        let meta = metas.find(meta => !!meta.before || !!meta.after);
-        if (meta) {
-            if (meta.regIn) {
-                let comp = meta.regIn;
-                if (!this.container.has(comp)) {
-                    this.container.register(comp);
-                }
-                msgQueue = this.container.get(comp);
+        let { regIn, before, after } = metas.find(meta => !!meta.before || !!meta.after) || <MessageMetadata>{};
+        if (regIn) {
+            if (!this.container.has(regIn)) {
+                this.container.register(regIn);
             }
-            if (meta.before) {
-                msgQueue.useBefore(ctx.targetType, meta.before);
-            } else if (meta.after) {
-                msgQueue.useAfter(ctx.targetType, meta.after);
-            }
+            msgQueue = this.container.get(regIn);
+        }
+        if (before) {
+            msgQueue.useBefore(ctx.targetType, before);
+        } else if (after) {
+            msgQueue.useAfter(ctx.targetType, after);
         } else {
+
             msgQueue.use(ctx.targetType);
         }
 
         next();
     }
+
 }
