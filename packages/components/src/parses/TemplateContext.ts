@@ -6,6 +6,9 @@ export interface ITemplateOption extends IModuleResolveOption {
     selector?: Type<any>;
 }
 
+/**
+ * Template option token.
+ */
 export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
 
 @Injectable
