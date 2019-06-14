@@ -31,6 +31,14 @@ export interface IModuleResolveOption {
     * @memberof BootOptions
     */
     providers?: ProviderTypes[];
+
+    /**
+     * raise contianer.
+     *
+     * @type {ContainerFactory}
+     * @memberof IModuleResolveOption
+     */
+    raiseContainer?: ContainerFactory;
 }
 
 @Injectable
@@ -106,10 +114,10 @@ export class BuildContext extends IocActionContext implements IComponentContext 
 
 
     getRaiseContainer(): IContainer {
-        return this.raiseContainerGetter() as IContainer;
+        return this.raiseContainer() as IContainer;
     }
 
-    static parse(type: Type<any>, options: IModuleResolveOption, raiseContainer: IContainer | ContainerFactory): BuildContext {
+    static parse(type: Type<any>, options: IModuleResolveOption, raiseContainer?: IContainer | ContainerFactory): BuildContext {
         let ctx = new BuildContext(type);
         ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);

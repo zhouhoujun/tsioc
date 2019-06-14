@@ -56,7 +56,7 @@
     "gulp-replace": "^0.5.4",
     "gulp-rollup": "^2.16.2",
     "gulp-sourcemaps": "^2.6.4",
-    "gulp-typescript": "^5.0.0",
+    "gulp-typescript": "^5.0.1",
     "gulp-uglify": "^3.0.0",
     "interpret": "^1.2.0",
     "json-in-place": "^1.0.1",

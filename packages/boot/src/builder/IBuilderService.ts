@@ -35,12 +35,11 @@ export interface IBuilderService extends IocCoreService {
      * @template T
      * @param {Type<any>} target
      * @param {IModuleResolveOption} options
-     * @param {(IContainer | ProviderTypes)} [container]
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    resolve<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T>;
+    resolve<T>(target: Type<any>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T>;
     /**
      * create module.
      *

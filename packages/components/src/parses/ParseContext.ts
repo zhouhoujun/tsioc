@@ -22,10 +22,10 @@ export class ParseContext extends BuildContext implements IComponentContext {
     value?: any;
 
     getRaiseContainer(): IContainer {
-        return this.raiseContainerGetter() as IContainer;
+        return this.raiseContainer() as IContainer;
     }
 
-    static parse(type: Type<any>, options: IBindingParseOption, raiseContainer: IContainer | ContainerFactory): ParseContext {
+    static parse(type: Type<any>, options: IBindingParseOption, raiseContainer?: IContainer | ContainerFactory): ParseContext {
         let ctx = new ParseContext(type);
         ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);

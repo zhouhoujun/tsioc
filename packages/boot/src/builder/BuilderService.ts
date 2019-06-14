@@ -1,4 +1,4 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, isBoolean } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, isBoolean, ContainerFactoryToken } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
 import { BuildHandles, BuildHandleRegisterer, RegFor, ContainerPoolToken, DIModuleExports } from '../core';
@@ -40,25 +40,20 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @template T
      * @param {Type<any>} target
      * @param {IModuleResolveOption} options
-     * @param {(IContainer | ProviderTypes)} [container]
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async resolve<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<T> {
-        let rctx = await this.resolveModule(target, options, container, ...providers);
+    async resolve<T>(target: Type<any>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
+        let rctx = await this.resolveModule(target, options, ...providers);
         return rctx.target;
     }
 
-    protected async resolveModule<T>(target: Type<any>, options: IModuleResolveOption, container?: IContainer | ProviderTypes, ...providers: ProviderTypes[]): Promise<BuildContext> {
-        let raiseContainer: IContainer;
-        if (isContainer(container)) {
-            raiseContainer = container;
-        } else {
-            providers.unshift(container as ProviderTypes);
-            raiseContainer = this.container;
+    protected async resolveModule<T>(target: Type<any>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
+        if (!options.raiseContainer) {
+            options.raiseContainer = this.container.get(ContainerFactoryToken);
         }
-        let rctx = BuildContext.parse(target, options, raiseContainer);
+        let rctx = BuildContext.parse(target, options);
         if (providers.length) {
             rctx.providers = (rctx.providers || []).concat(providers);
         }

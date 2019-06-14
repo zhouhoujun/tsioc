@@ -5,13 +5,13 @@ import { isNullOrUndefined } from '@tsdi/ioc';
 export class ResolveTemplateScope extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.target && ctx.annoation.template) {
-            let raiseContainer = ctx.getRaiseContainer();
-            let pCtx = TemplateContext.parse(ctx.type, {
+            let pCtx = TemplateContext.parse({
                 scope: ctx.target,
                 template: ctx.annoation.template,
                 annoation: ctx.annoation,
-                decorator: ctx.decorator
-            }, raiseContainer);
+                decorator: ctx.decorator,
+                raiseContainer: ctx.getContainerFactory()
+            });
             await this.container
                 .get(BuildHandleRegisterer)
                 .get(TemplateParseScope)

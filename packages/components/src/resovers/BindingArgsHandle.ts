@@ -35,8 +35,9 @@ export class BindingArgsHandle extends ResolveComponentHandle {
                                     binding: bp,
                                     template: ctx.template,
                                     annoation: ctx.annoation,
-                                    decorator: ctx.decorator
-                                }, ctx.getRaiseContainer());
+                                    decorator: ctx.decorator,
+                                    raiseContainer: ctx.getContainerFactory()
+                                });
                                 await hregisterer.get(BindingScope).execute(pctx);
                                 paramVal = pctx.value;
                             }

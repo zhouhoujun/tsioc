@@ -1,4 +1,4 @@
-import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass, Inject, ContainerFactory } from '@tsdi/ioc';
+import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass, ContainerFactory } from '@tsdi/ioc';
 import { ModuleConfigure, RegFor, IModuleResolver } from './modules';
 import { IContainer } from '@tsdi/core';
 
@@ -69,9 +69,6 @@ export class AnnoationContext extends IocActionContext {
         return createAnnoationContext(AnnoationContext, target, raiseContainer);
     }
 
-    hasRaiseContainer(): boolean {
-        return isFunction(this.raiseContainerGetter);
-    }
 
     getRaiseContainer(): IContainer {
         return super.getRaiseContainer() as IContainer;

@@ -15,7 +15,7 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext>
             ctx.regFor = ctx.annoation.regFor || RegFor.child;
         }
 
-        let container = ctx.getRaiseContainer() as IContainer;
+        let container = ctx.getRaiseContainer();
         if (ctx.regFor === RegFor.boot) {
             return super.execute(ctx, next);
         }

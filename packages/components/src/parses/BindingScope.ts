@@ -36,8 +36,9 @@ export class BindingArrayHandle extends ParseHandle {
                     bindExpression: tp,
                     template: ctx.template,
                     decorator: ctx.decorator,
-                    annoation: ctx.annoation
-                }, ctx.getRaiseContainer());
+                    annoation: ctx.annoation,
+                    raiseContainer: ctx.getContainerFactory()
+                });
                 await registerer.get(BindingScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
             }));

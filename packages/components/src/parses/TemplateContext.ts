@@ -1,14 +1,15 @@
 import { IContainer } from '@tsdi/core';
-import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
-import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
+import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes } from '@tsdi/ioc';
+import { IModuleResolveOption, IComponentContext, ModuleConfigure } from '@tsdi/boot';
 
 export interface ITemplateOption extends IModuleResolveOption  {
-    scope?: any;
     selector?: Type<any>;
 }
 
 @Injectable
-export class TemplateContext extends BuildContext implements IComponentContext {
+export class TemplateContext extends IocActionContext implements IComponentContext {
+
+    type?: Type<any>;
 
     selector?: Type<any>;
 
@@ -16,12 +17,31 @@ export class TemplateContext extends BuildContext implements IComponentContext {
 
     value?: any;
 
+    template?: any;
+
+    decorator?: string;
+
+    /**
+     * annoation metadata config.
+     *
+     * @type {IAnnotationMetadata}
+     * @memberof BuildContext
+     */
+    annoation?: ModuleConfigure;
+    /**
+    * providers.
+    *
+    * @type {ProviderTypes[]}
+    * @memberof BootOptions
+    */
+    providers?: ProviderTypes[];
+
     getRaiseContainer(): IContainer {
-        return this.raiseContainerGetter() as IContainer;
+        return this.raiseContainer() as IContainer;
     }
 
-    static parse(type: Type<any>, options: ITemplateOption, raiseContainer: IContainer | ContainerFactory): TemplateContext {
-        let ctx = new TemplateContext(type);
+    static parse(options: ITemplateOption, raiseContainer?: IContainer | ContainerFactory): TemplateContext {
+        let ctx = new TemplateContext();
         ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);
         return ctx;

@@ -32,31 +32,38 @@ export class IocActionContext extends IocCoreService {
     actionScope?: any;
 
     @Inject(ContainerFactoryToken)
-    protected raiseContainerGetter: ContainerFactory;
+    protected raiseContainer: ContainerFactory;
 
 
     constructor() {
         super()
     }
 
+    getContainerFactory(): ContainerFactory {
+        return this.raiseContainer;
+    }
     /**
      * get raise container.
      *
      * @memberof ResovleContext
      */
     getRaiseContainer() {
-        if (this.raiseContainerGetter) {
-            return this.raiseContainerGetter();
+        if (this.raiseContainer) {
+            return this.raiseContainer();
         } else {
             throw new Error('has not setting raise container');
         }
     }
 
+    hasRaiseContainer(): boolean {
+        return isFunction(this.raiseContainer);
+    }
+
     setRaiseContainer(raiseContainer: IIocContainer | ContainerFactory) {
         if (isFunction(raiseContainer)) {
-            this.raiseContainerGetter = raiseContainer;
+            this.raiseContainer = raiseContainer;
         } else if (raiseContainer) {
-            this.raiseContainerGetter = raiseContainer.get(ContainerFactoryToken);
+            this.raiseContainer = raiseContainer.get(ContainerFactoryToken);
         }
     }
 

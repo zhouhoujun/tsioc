@@ -16,6 +16,7 @@ import {
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
 import { ComponentContextScope } from './ComponentContextScope';
+import { ComponentBuilder } from './ComponentBuilder';
 
 
 /**
@@ -64,6 +65,8 @@ export class ComponentsModule {
         container.get(RuntimeDecoratorRegisterer)
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Input, DecoratorScopes.Parameter, BindingParamTypeAction);
+
+        container.register(ComponentBuilder);
     }
 
 }

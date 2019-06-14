@@ -51,13 +51,14 @@ export class BindingScopeHandle extends ParseHandle {
 export class TranslateExpressionHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
         if (!isNullOrUndefined(ctx.bindExpression)) {
-            let tpCtx = TemplateContext.parse(ctx.type, {
+            let tpCtx = TemplateContext.parse({
                 scope: ctx.scope,
                 template: ctx.bindExpression,
                 decorator: ctx.decorator,
                 annoation: ctx.annoation,
-                providers: ctx.providers
-            }, ctx.getRaiseContainer());
+                providers: ctx.providers,
+                raiseContainer: ctx.getContainerFactory()
+            });
             await this.container.get(BuildHandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(tpCtx);

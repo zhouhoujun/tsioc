@@ -27,12 +27,13 @@ export class ElementsTemplateHandle extends TemplateHandle {
         let registerer = this.container.get(BuildHandleRegisterer);
         if (isArray(ctx.template)) {
             ctx.value = await Promise.all(ctx.template.map(async tp => {
-                let subCtx = TemplateContext.parse(ctx.type, {
+                let subCtx = TemplateContext.parse({
                     scope: ctx.scope,
                     template: tp,
                     decorator: ctx.decorator,
-                    annoation: ctx.annoation
-                }, ctx.getRaiseContainer());
+                    annoation: ctx.annoation,
+                    raiseContainer: ctx.getContainerFactory()
+                });
                 await registerer.get(TemplateParseScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
             }));
