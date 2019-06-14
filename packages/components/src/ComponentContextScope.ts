@@ -7,11 +7,11 @@ import { Singleton } from '@tsdi/ioc';
 export class ComponentContextScope extends ContextScope {
 
     getScopes(container: IContainer, scope: any) {
-        return container.get(ComponentManager).getScopes(scope);
+        return container.resolve(ComponentManager).getScopes(scope);
     }
 
     getBoot(ctx: BootContext) {
-        let mgr = ctx.getRaiseContainer().get(ComponentManager);
+        let mgr = ctx.getRaiseContainer().resolve(ComponentManager);
         if (ctx.bootstrap && mgr.hasContent(ctx.bootstrap)) {
             return mgr.getLeaf(ctx.bootstrap);
         }

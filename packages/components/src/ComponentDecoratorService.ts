@@ -5,7 +5,6 @@ import { ComponentRegisterAction } from './registers';
 @Singleton(ModuleDecoratorServiceToken)
 export class ComponentDecoratorService extends ModuleDecoratorService {
 
-
     protected getMatchDecorator(decorators: string[]) {
         let decorator = '';
         let designReg = this.container.get(DesignDecoratorRegisterer).getRegisterer(DecoratorScopes.Class);
