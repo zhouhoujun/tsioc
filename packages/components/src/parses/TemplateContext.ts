@@ -1,10 +1,12 @@
 import { IContainer } from '@tsdi/core';
-import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes, InjectToken } from '@tsdi/ioc';
 import { IModuleResolveOption, IComponentContext, ModuleConfigure } from '@tsdi/boot';
 
-export interface ITemplateOption extends IModuleResolveOption  {
+export interface ITemplateOption extends IModuleResolveOption {
     selector?: Type<any>;
 }
+
+export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
 
 @Injectable
 export class TemplateContext extends IocActionContext implements IComponentContext {
@@ -41,6 +43,8 @@ export class TemplateContext extends IocActionContext implements IComponentConte
     static parse(options: ITemplateOption, raiseContainer?: IContainer | ContainerFactory): TemplateContext {
         let ctx = new TemplateContext();
         ctx.setOptions(options);
+        ctx.providers = ctx.providers || [];
+        ctx.providers.push({ provide: TemplateOptionToken, useValue: options });
         raiseContainer && ctx.setRaiseContainer(raiseContainer);
         return ctx;
     }
