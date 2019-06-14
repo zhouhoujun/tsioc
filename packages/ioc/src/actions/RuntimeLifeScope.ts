@@ -23,9 +23,9 @@ import { InitReflectAction } from './InitReflectAction';
 export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     getParamProviders(container: IIocContainer, type: Type<any>, propertyKey: string, target?: any): ParamProviders[] {
-        let { methodParamProviders } = container.getTypeReflects().get(type);
-        if (methodParamProviders && methodParamProviders.has(propertyKey)) {
-            return methodParamProviders.get(propertyKey) || [];
+        let tref = container.getTypeReflects().get(type);
+        if (tref.methodParamProviders && tref.methodParamProviders.has(propertyKey)) {
+            return tref.methodParamProviders.get(propertyKey) || [];
         }
         return [];
     }

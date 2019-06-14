@@ -61,7 +61,7 @@ export class ConfigureManager<T extends RunnableConfigure> implements IConfigure
         if (!this.config) {
             this.config = await this.initConfig();
         }
-        return this.config;
+        return this.config || {} as T;
     }
 
     /**

@@ -20,9 +20,9 @@ export class ElseActivity<T extends ActivityContext> extends ControlerActivity<T
     body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        let { subs } = ctx.runnable.status.currentScope;
-        if (subs && subs.length) {
-            let activity = subs.find(a => a instanceof IfActivity) as IfActivity<any>;
+        let scope = ctx.runnable.status.currentScope;
+        if (scope && scope.subs && scope.subs.length) {
+            let activity = scope.subs.find(a => a instanceof IfActivity) as IfActivity<any>;
             if (activity && !activity.condition.result.value) {
                 await this.body.run(ctx);
             }

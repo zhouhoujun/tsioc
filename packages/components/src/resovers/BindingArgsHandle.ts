@@ -12,7 +12,7 @@ export class BindingArgsHandle extends ResolveComponentHandle {
             let container = ctx.getRaiseContainer();
             let providers = [];
             let register = this.container.getActionRegisterer();
-            let { methodParams, paramsBindings } = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
+            let { methodParams, paramsBindings } = (container.getTypeReflects().get(ctx.type) || {}) as IBindingTypeReflect;
             // init if not init constructor params action.
             if (!methodParams.has('constructor')) {
                 register.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
