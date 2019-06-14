@@ -9,8 +9,6 @@ export interface ITemplateOption extends IModuleResolveOption  {
 @Injectable
 export class TemplateContext extends IocActionContext implements IComponentContext {
 
-    type?: Type<any>;
-
     selector?: Type<any>;
 
     scope?: any;
