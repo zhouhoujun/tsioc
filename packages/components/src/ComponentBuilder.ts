@@ -1,5 +1,5 @@
 import { BuilderService, BuildHandleRegisterer } from '@tsdi/boot';
-import { Singleton, ProviderTypes, ContainerFactoryToken, Autorun } from '@tsdi/ioc';
+import { Singleton, ProviderTypes, ContainerFactoryToken } from '@tsdi/ioc';
 import { TemplateContext, ITemplateOption, TemplateParseScope } from './parses';
 import { Component } from './decorators';
 
@@ -11,16 +11,7 @@ import { Component } from './decorators';
  * @extends {BuilderService}
  */
 @Singleton()
-@Autorun('setup')
 export class ComponentBuilder extends BuilderService {
-
-    // setup maker sure TemplateParseScope registered.
-    setup() {
-        // super.setup();
-        this.container
-            .get(BuildHandleRegisterer)
-            .register(this.container, TemplateParseScope, true)
-    }
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
         if (!options.raiseContainer) {

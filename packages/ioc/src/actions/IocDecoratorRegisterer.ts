@@ -10,7 +10,7 @@ import { IocCoreService } from '../services';
  * @class IocDecoratorRegisterer
  * @extends {IocCoreService}
  */
-export abstract class DecoratorRegisterer<T>  extends IocCoreService {
+export abstract class DecoratorRegisterer<T> extends IocCoreService {
     protected actionMap: Map<string, T[]>;
     protected funcs: Map<string, Function[]>;
     constructor() {
@@ -74,7 +74,7 @@ export abstract class DecoratorRegisterer<T>  extends IocCoreService {
     getFuncs(container: IIocContainer, decorator: string | Function) {
         let dec = this.getKey(decorator);
         if (!this.funcs.has(dec)) {
-            this.funcs.set(dec, this.get(dec).map(a => this.toFunc(container, a)).filter(c => c));
+            this.funcs.set(dec, this.get(dec).map(a => a && this.toFunc(container, a)).filter(c => c));
         }
         return this.funcs.get(dec) || [];
     }

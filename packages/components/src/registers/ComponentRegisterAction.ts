@@ -1,12 +1,12 @@
 import { IocDesignAction, DesignActionContext, ProviderTypes, getOwnTypeMetadata } from '@tsdi/ioc';
 import { SelectorManager } from '../SelectorManager';
-import { ModuleConfigure, RootContainerToken } from '@tsdi/boot';
+import { ModuleConfigure } from '@tsdi/boot';
 
 
 
 export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
-        let mgr = this.container.get(RootContainerToken).get(SelectorManager);
+        let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
         let metas = getOwnTypeMetadata<ModuleConfigure>(ctx.currDecoractor, ctx.targetType);
         metas.forEach(meta => {
             if (!meta.selector) {

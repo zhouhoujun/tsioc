@@ -47,7 +47,7 @@ export class ComponentsModule {
             container.register(BindingComponentRegisterer);
         }
 
-        container.get(BuildHandleRegisterer)
+        container.resolve(BuildHandleRegisterer)
             .register(container, BindingScope, true)
             .register(container, TemplateParseScope, true)
             .get(ResolveMoudleScope)
@@ -58,11 +58,11 @@ export class ComponentsModule {
             .use(BindingTemplateHandle)
             .use(ModuleAfterContentInitHandle);
 
-        container.get(DesignDecoratorRegisterer)
+        container.resolve(DesignDecoratorRegisterer)
             .register(Component, DecoratorScopes.Class, BindProviderAction, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction);
 
-        container.get(RuntimeDecoratorRegisterer)
+        container.resolve(RuntimeDecoratorRegisterer)
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Input, DecoratorScopes.Parameter, BindingParamTypeAction);
 

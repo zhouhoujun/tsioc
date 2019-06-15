@@ -13,7 +13,6 @@ export class TranslateSelectorScope extends TemplatesHandle {
     }
     setup() {
         this.container.register(ElementDecoratorRegisterer);
-
         this.use(TranslateElementHandle);
     }
 }
@@ -25,7 +24,7 @@ export class ElementDecoratorRegisterer extends IocBuildDecoratorRegisterer<Type
 }
 export class TranslateElementHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let reg = this.container.get(ElementDecoratorRegisterer);
+        let reg = ctx.getRaiseContainer().resolve(ElementDecoratorRegisterer);
         if (reg.has(ctx.decorator)) {
             await this.execFuncs(ctx, reg.getFuncs(this.container, ctx.decorator));
         }

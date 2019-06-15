@@ -38,18 +38,18 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * resolve binding module.
      *
      * @template T
-     * @param {Type<any>} target
+     * @param {Type<T>} target
      * @param {IModuleResolveOption} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async resolve<T>(target: Type<any>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
+    async resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
         let rctx = await this.resolveModule(target, options, ...providers);
         return rctx.target;
     }
 
-    protected async resolveModule<T>(target: Type<any>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
+    protected async resolveModule<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
         if (!options.raiseContainer) {
             options.raiseContainer = this.container.get(ContainerFactoryToken);
         }
@@ -69,17 +69,17 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @template T
      * @param {(Type<any> | BootOption | T)} target
      * @param {...string[]} args
-     * @returns {Promise<any>}
+     * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async buildTarget<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any> {
+    async buildTarget<T>(target: Type<T> | BootOption | BootContext, ...args: string[]): Promise<T> {
         let ctx = await this.build(target, ...args);
         return ctx.target;
     }
 
-    async buildBootTarget<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<T> {
+    async buildBootTarget(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<any> {
         let ctx = await this.build(target, ...args);
-        return ctx.getBootTarget() as T;
+        return ctx.getBootTarget();
     }
 
     /**

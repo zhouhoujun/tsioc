@@ -1,4 +1,4 @@
-import { createClassDecorator, IClassDecorator, InjectableMetadata } from '@tsdi/ioc';
+import { createClassDecorator, IClassDecorator, InjectableMetadata, isString } from '@tsdi/ioc';
 
 /**
  * component metadata.
@@ -7,7 +7,7 @@ import { createClassDecorator, IClassDecorator, InjectableMetadata } from '@tsdi
  * @interface IComponentMetadata
  * @extends {InjectableMetadata}
  */
-export interface IComponentMetadata  extends InjectableMetadata {
+export interface IComponentMetadata extends InjectableMetadata {
     /**
      * component selector.
      *
@@ -54,5 +54,12 @@ export interface IComponentDecorator extends IClassDecorator<IComponentMetadata>
  *
  * @Component
  */
-export const Component: IComponentDecorator = createClassDecorator<IComponentMetadata>('Component');
+export const Component: IComponentDecorator = createClassDecorator<IComponentMetadata>('Component', adapter => {
+    adapter.next<IComponentMetadata>({
+        match: (arg, args) => isString(arg),
+        setMetadata: (metadata, arg) => {
+            metadata.selector = arg;
+        }
+    });
+});
 

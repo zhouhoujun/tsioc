@@ -39,27 +39,26 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    resolve<T>(target: Type<any>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T>;
+    resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T>;
     /**
      * create module.
      *
      * @template T
-     * @param {(Type<any> | BootOption | T)} target
+     * @param {(target: Type<T> | BootOption | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<any>}
      * @memberof BuilderService
      */
-    buildTarget<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<any>;
+    buildTarget<T>(target: Type<T> | BootOption | BootContext, ...args: string[]): Promise<T>;
     /**
      * build bootstrap target instance.
      *
-     * @template T
      * @param {(Type<any> | BootOption | BootContext)} target
      * @param {...string[]} args
-     * @returns {Promise<T>}
+     * @returns {Promise<any>}
      * @memberof IBuilderService
      */
-    buildBootTarget<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<T>;
+    buildBootTarget(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<any>;
     /**
      * build module.
      *

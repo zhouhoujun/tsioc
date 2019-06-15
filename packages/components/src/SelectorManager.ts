@@ -1,6 +1,6 @@
 import { Singleton, InstanceFactory, Type, ProviderTypes, isString } from '@tsdi/ioc';
 
-@Singleton
+@Singleton()
 export class SelectorManager {
     protected factories: Map<string, InstanceFactory<any>>;
     protected selectors: Map<string, Type<any>>;

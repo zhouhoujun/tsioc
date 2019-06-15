@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/ioc",
-  "version": "5.0.7",
+  "version": "5.0.8",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "reinstall": "npm cache clean && npm install",

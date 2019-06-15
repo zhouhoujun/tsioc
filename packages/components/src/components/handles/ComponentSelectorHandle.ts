@@ -14,7 +14,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
             ctx.selector = ctx.template;
             ctx.template = null;
         } else if (isMetadataObject(ctx.template) && ctx.template.element) {
-            let mgr = this.container.get(SelectorManager);
+            let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
             let element = ctx.template.element;
             if (isString(element) && mgr.has(element)) {
                 ctx.selector = mgr.get(element);
