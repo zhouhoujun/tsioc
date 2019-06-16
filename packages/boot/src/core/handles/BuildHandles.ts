@@ -4,8 +4,6 @@ import { IContainer } from '@tsdi/core';
 import { Handles } from './Handles';
 
 
-
-
 @Singleton()
 export class BuildHandleRegisterer {
 
@@ -43,11 +41,10 @@ export class BuildHandleRegisterer {
 
 export abstract class BuildHandle<T extends IHandleContext> extends Handle<T> {
     protected registerHandle(handle: HandleType<T>, setup?: boolean): this {
-        this.container.get(BuildHandleRegisterer)
+        this.container.resolve(BuildHandleRegisterer)
             .register(this.container, handle, setup);
         return this;
     }
-
 }
 
 /**
@@ -61,13 +58,13 @@ export abstract class BuildHandle<T extends IHandleContext> extends Handle<T> {
 export class BuildHandles<T extends IHandleContext> extends Handles<T> {
 
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
-        this.container.get(BuildHandleRegisterer)
+        this.container.resolve(BuildHandleRegisterer)
             .register(this.container, HandleType, setup);
         return this;
     }
 
     protected resolveHanlde(ac: Type<BuildHandle<T>>): BuildHandle<T> {
-        return this.container.get(BuildHandleRegisterer).get(ac)
+        return this.container.resolve(BuildHandleRegisterer).get(ac)
     }
 
     setup() {

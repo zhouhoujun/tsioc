@@ -19,11 +19,9 @@ export class ComponentBuilder extends BuilderService {
         }
         let ctx = TemplateContext.parse({ ...options, providers: [...(options.providers || []), ...providers] });
         ctx.decorator = ctx.decorator || Component.toString();
-        await this.container
-            .get(BuildHandleRegisterer)
+        await this.container.get(BuildHandleRegisterer)
             .get(TemplateParseScope)
             .execute(ctx);
         return ctx.value;
     }
-
 }

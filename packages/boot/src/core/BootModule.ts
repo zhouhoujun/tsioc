@@ -19,7 +19,6 @@ import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesActi
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction } from './registers';
 import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
 import { RegisterFor, Message } from './decorators';
-import { BuildHandleRegisterer } from './handles';
 import { ModuleDecoratorService } from './ModuleDecoratorService';
 
 
@@ -43,20 +42,6 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.register(BuildHandleRegisterer);
-        container.register(ModuleDecoratorService);
-        container.get(DesignDecoratorRegisterer)
-            .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
-            .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
-            .register(Message,  DecoratorScopes.Class, BindProviderAction, MessageRegisterAction);
-
-        container.get(RuntimeDecoratorRegisterer)
-            .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
-            .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
-
-        container.use(modules, messages);
-        container.register(DIModuleExports);
-
         let registerer = container.getActionRegisterer();
 
         registerer
@@ -69,6 +54,19 @@ export class BootModule {
             .register(DIModule, DIModuleInjectorScope)
             .register(RegisterFor, RegForInjectorAction);
 
+        container.use(ModuleDecoratorService);
+
+        container.get(DesignDecoratorRegisterer)
+            .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
+            .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
+            .register(Message, DecoratorScopes.Class, BindProviderAction, MessageRegisterAction);
+
+        container.get(RuntimeDecoratorRegisterer)
+            .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
+            .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+
+        container.use(modules, messages);
+        container.register(DIModuleExports);
 
         // route service
         registerer.get(ResolveServiceInClassChain)

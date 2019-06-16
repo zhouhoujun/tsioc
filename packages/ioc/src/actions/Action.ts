@@ -94,7 +94,7 @@ export abstract class IocAction<T extends IocActionContext> {
     @Inject(IocContainerToken)
     protected container: IIocContainer;
 
-    constructor(container?: IIocContainer) {
+    constructor(container: IIocContainer) {
         if (container) {
             this.container = container;
         }

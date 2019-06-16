@@ -13,14 +13,9 @@ export class RegForInjectorAction extends InjectorAction {
             let meta = lang.first(getOwnTypeMetadata<RegisterForMetadata>(ctx.currDecoractor, ctx.currType));
             if (meta && meta.regFor) {
                 let pools = this.container.get(ContainerPoolToken);
-                this.container.register(ctx.currType)
                 switch (meta.regFor) {
-
                     case RegFor.root:
                         pools.getRoot().register(ctx.currType);
-                        break;
-                    case RegFor.boot:
-                        this.container.register(ctx.currType);
                         break;
                     case RegFor.all:
                         pools.iterator(c => {
@@ -29,6 +24,10 @@ export class RegForInjectorAction extends InjectorAction {
                         break;
                     case RegFor.child:
                         ctx.getRaiseContainer().register(ctx.currType);
+                        break;
+                    case RegFor.boot:
+                    default:
+                        this.container.register(ctx.currType);
                         break;
                 }
 

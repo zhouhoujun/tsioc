@@ -1,9 +1,10 @@
 import {
     Singleton, Type, Inject, MetadataService, DesignDecoratorRegisterer, DecoratorScopes,
-    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, InjectToken
+    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, InjectToken, hasOwnClassMetadata
 } from '@tsdi/ioc';
 import { ContainerToken, IContainer, InjectorDecoratorRegisterer } from '@tsdi/core';
 import { ModuleConfigure } from './modules';
+import { RegisterFor } from './decorators';
 
 /**
  * module decorator metadata service
@@ -51,6 +52,11 @@ export class ModuleDecoratorService implements IModuleDecoratorService {
         if (!decorator) {
             decorator = this.getDecorator(type);
         }
-        return { ...lang.first(getOwnTypeMetadata<ModuleConfigure>(decorator, type)) };
+        let anno = { ...lang.first(getOwnTypeMetadata<ModuleConfigure>(decorator, type)) };
+        if (!anno.regFor && hasOwnClassMetadata(RegisterFor, type)) {
+            let meta = lang.first(getOwnTypeMetadata<ModuleConfigure>(RegisterFor, type));
+            anno.regFor = meta.regFor;
+        }
+        return anno;
     }
 }

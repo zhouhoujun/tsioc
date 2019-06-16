@@ -1,4 +1,3 @@
-
 import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
 import { Inject } from '@tsdi/ioc';
 import { Component } from '../decorators';
@@ -7,7 +6,7 @@ import { ElementDecoratorRegisterer } from '../parses';
 import { ValidComponentRegisterer, BindingComponentRegisterer } from '../resovers';
 import { Element } from './Element';
 import { ContentElement } from './ContentElement';
-import { BuildHandleRegisterer } from '@tsdi/boot';
+import { BuildHandleRegisterer, RegisterFor, RegFor } from '@tsdi/boot';
 
 /**
  * component element module.
@@ -16,6 +15,7 @@ import { BuildHandleRegisterer } from '@tsdi/boot';
  * @class ElementModule
  */
 @IocExt('setup')
+@RegisterFor(RegFor.root)
 export class ElementModule {
 
     constructor() {

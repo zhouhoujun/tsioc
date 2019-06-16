@@ -2,6 +2,7 @@ import { Token, SymbolType, Registration, IIocContainer } from '@tsdi/ioc';
 import { IContainer, IContainerBuilder } from '@tsdi/core';
 import { BootModule } from './BootModule';
 import { ParentContainerToken, ContainerPoolToken, RootContainerToken, IContainerPool } from './ContainerPoolToken';
+import { BuildHandleRegisterer } from './handles';
 
 
 /**
@@ -23,8 +24,10 @@ export class ContainerPool implements IContainerPool {
         this.pools.push(container);
         if (!this.root) {
             this.root = container;
+            container.register(BuildHandleRegisterer);
         } else {
             this.setParent(container, parent || this.root);
+            container.bindProvider(BuildHandleRegisterer, () => this.root.get(BuildHandleRegisterer));
         }
 
         container.bindProvider(RootContainerToken, this.root);
