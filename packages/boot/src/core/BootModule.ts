@@ -8,7 +8,7 @@ import {
 import {
     IContainer, ContainerToken, IocExt,
     ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    InjectorDecoratorRegisterer, ServicesResolveLifeScope
+    InjectorDecoratorRegisterer, ServicesResolveLifeScope, TypesRegisterScope, IocExtRegisterScope
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
@@ -50,9 +50,14 @@ export class BootModule {
             .register(container, RegForInjectorAction)
             .register(container, MessageRegisterAction);
 
+        // inject module
+        registerer.get(TypesRegisterScope)
+            .useBefore(RegForInjectorAction);
+        registerer.get(IocExtRegisterScope)
+            .useBefore(RegForInjectorAction);
+
         container.get(InjectorDecoratorRegisterer)
-            .register(DIModule, DIModuleInjectorScope)
-            .register(RegisterFor, RegForInjectorAction);
+            .register(DIModule, DIModuleInjectorScope);
 
         container.use(ModuleDecoratorService);
 
@@ -67,6 +72,7 @@ export class BootModule {
 
         container.use(modules, messages);
         container.register(DIModuleExports);
+
 
         // route service
         registerer.get(ResolveServiceInClassChain)

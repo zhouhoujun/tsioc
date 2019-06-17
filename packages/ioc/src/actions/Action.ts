@@ -12,7 +12,7 @@ import { IocCoreService } from '../services';
  * @interface ActionContextOption
  */
 export interface ActionContextOption {
-
+    raiseContainer?: ContainerFactory;
 }
 
 /**

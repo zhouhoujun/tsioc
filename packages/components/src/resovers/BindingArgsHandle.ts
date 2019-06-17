@@ -1,6 +1,6 @@
 import { BuildContext, BuildHandleRegisterer } from '@tsdi/boot';
 import { IBindingTypeReflect, BindingTypes } from '../bindings';
-import { RuntimeLifeScope, isNullOrUndefined, isArray, InjectReference } from '@tsdi/ioc';
+import { RuntimeLifeScope, isNullOrUndefined, isArray, InjectReference, lang } from '@tsdi/ioc';
 import { ParseContext, BindingScope } from '../parses';
 import { ResolveComponentHandle } from './ResolveComponentHandle';
 
@@ -14,8 +14,7 @@ export class BindingArgsHandle extends ResolveComponentHandle {
             let register = this.container.getActionRegisterer();
             let refs = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
             if (!refs) {
-                console.log(ctx.type, 'has not registered.');
-                return;
+                throw new Error(`${lang.getClassName(ctx.type) } has not registered.`);
             }
             // init if not init constructor params action.
             if (!refs.methodDecors || !refs.methodParams.has('constructor')) {

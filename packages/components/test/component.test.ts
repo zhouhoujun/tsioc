@@ -1,4 +1,4 @@
-import { DIModule, BootApplication, BootContext, BuilderService, BuildHandleRegisterer, ParentContainerToken } from '@tsdi/boot';
+import { DIModule, BootApplication, BootContext, BuilderService, BuildHandleRegisterer, ParentContainerToken, ContainerPoolToken } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
 import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ElementDecoratorRegisterer, ComponentSelectorHandle } from '../src';
 import expect = require('expect');
@@ -153,6 +153,7 @@ export class CTest {
         console.log('comp1:', comp1);
         console.log('comp11:', comp11);
         expect(comp1 instanceof Component1).toBeTruthy();
+        expect(comp11 instanceof Component1).toBeTruthy();
     }
 
 
@@ -193,6 +194,10 @@ export class CTest {
     @Test('can boot sub module component')
     async test6() {
         let ctx = await BootApplication.run({ module: ComponentTestMd3, template: { name: 'test', address: 'cd', phone: '17000000000' } });
+        let container = ctx.getRaiseContainer();
+        console.log(container.get(ContainerPoolToken).isRoot(container));
+        console.log(container);
+        console.log(container.resolve(Component1));
         console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component1).toBeTruthy();
         expect(ctx.getBootTarget().name).toEqual('test');
