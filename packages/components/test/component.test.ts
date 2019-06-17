@@ -196,7 +196,7 @@ export class CTest {
         let ctx = await BootApplication.run({ module: ComponentTestMd3, template: { name: 'test', address: 'cd', phone: '17000000000' } });
         let container = ctx.getRaiseContainer();
         console.log(container.get(ContainerPoolToken).isRoot(container));
-        console.log(container);
+        // console.log(container);
         console.log(container.resolve(Component1));
         console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component1).toBeTruthy();
