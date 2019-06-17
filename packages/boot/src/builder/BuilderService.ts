@@ -1,7 +1,7 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, isBoolean, ContainerFactoryToken } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, ContainerFactoryToken } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
-import { IContainer, ContainerToken, isContainer } from '@tsdi/core';
-import { BuildHandles, BuildHandleRegisterer, RegFor, ContainerPoolToken, DIModuleExports } from '../core';
+import { IContainer, ContainerToken } from '@tsdi/core';
+import { BuildHandles, BuildHandleRegisterer, RegFor, ContainerPoolToken } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
