@@ -1,15 +1,16 @@
 import { Handle, HandleType, IHandleContext, IHandle } from './Handle';
-import { isClass, Singleton, Type } from '@tsdi/ioc';
+import { isClass, Singleton, Type, IocCoreService } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { Handles } from './Handles';
 
 
 @Singleton()
-export class BuildHandleRegisterer {
+export class BuildHandleRegisterer extends IocCoreService {
 
     private maps: Map<Type<IHandle<any>>, IHandle<any>>;
 
     constructor() {
+        super()
         this.maps = new Map();
     }
 

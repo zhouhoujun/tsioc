@@ -43,6 +43,8 @@ export class IocContainer implements IIocContainer {
     protected factories: Map<Token<any>, InstanceFactory<any>>;
 
     constructor() {
+        this.factories = new Map();
+        this.provideTypes = new Map();
         this.init();
     }
 
@@ -382,8 +384,6 @@ export class IocContainer implements IIocContainer {
     }
 
     protected init() {
-        this.factories = new Map();
-        this.provideTypes = new Map();
         this.bindProvider(IocContainerToken, () => this);
         registerCores(this);
     }

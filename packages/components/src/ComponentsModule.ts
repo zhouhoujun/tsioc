@@ -7,7 +7,7 @@ import { Component, Input } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
-import { BuildHandleRegisterer, ResolveMoudleScope, ResolveModuleHandle, RegisterFor, RegFor } from '@tsdi/boot';
+import { BuildHandleRegisterer, ResolveMoudleScope, ResolveModuleHandle } from '@tsdi/boot';
 import { BindingArgsHandle } from './resovers/BindingArgsHandle';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope,

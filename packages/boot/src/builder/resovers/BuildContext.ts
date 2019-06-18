@@ -1,6 +1,6 @@
 import { ModuleConfigure } from '../../core';
 import { IContainer } from '@tsdi/core';
-import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext, ITypeReflect } from '@tsdi/ioc';
 import { IComponentContext } from '../ComponentContext';
 
 export interface IModuleResolveOption {
@@ -39,6 +39,14 @@ export interface IModuleResolveOption {
      * @memberof IModuleResolveOption
      */
     raiseContainer?: ContainerFactory;
+
+    /**
+     * target type reflect.
+     *
+     * @type {ITypeReflect}
+     * @memberof IocActionContext
+     */
+    targetReflect?: ITypeReflect;
 }
 
 @Injectable

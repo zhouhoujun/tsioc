@@ -86,7 +86,10 @@ class ComponentTestMd {
         ElementModule,
         Component1,
         Component2,
-        Component3,
+        // Component3,
+        SubModule
+    ],
+    exports: [
         SubModule
     ],
     bootstrap: Component3
@@ -182,8 +185,11 @@ export class CTest {
     @Test('can resolve component template in sub module by sub module')
     async test5() {
         let ctx = await BootApplication.run({ module: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let container = ctx.getRaiseContainer();
+        // console.log(container);
+        console.log(ctx.getBootTarget());
+        expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
+        expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let service = container.resolve(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let comp3 = await service.createComponent3() as Component3;
@@ -199,7 +205,7 @@ export class CTest {
         console.log(container.get(ContainerPoolToken).isRoot(container));
         // console.log(container);
         console.log(container.resolve(Component1));
-        console.log(ctx.getBootTarget());
+        // console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component1).toBeTruthy();
         expect(ctx.getBootTarget().name).toEqual('test');
     }

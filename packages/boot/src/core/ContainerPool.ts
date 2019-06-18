@@ -1,9 +1,32 @@
 import { Token, SymbolType, Registration, IIocContainer } from '@tsdi/ioc';
-import { IContainer, IContainerBuilder } from '@tsdi/core';
+import { IContainer, IContainerBuilder, Container } from '@tsdi/core';
 import { BootModule } from './BootModule';
 import { ParentContainerToken, ContainerPoolToken, RootContainerToken, IContainerPool } from './ContainerPoolToken';
 import { BuildHandleRegisterer } from './handles';
 
+/**
+ * module container.
+ *
+ * @export
+ * @class ModuleContainer
+ * @extends {Container}
+ */
+export class ModuleContainer extends Container {
+    constructor(root: IContainer) {
+        super();
+        this.bindRoot(root);
+    }
+
+    protected bindRoot(root: IContainer) {
+        root.iterator((fac, tk) => {
+            this.bindProvider(tk, fac);
+        });
+    }
+
+    init() {
+        // no init.
+    }
+}
 
 /**
  * container pool
@@ -20,7 +43,7 @@ export class ContainerPool implements IContainerPool {
     }
 
     protected createContainer(parent?: IContainer): IContainer {
-        let container = parent ? parent.getBuilder().create() : this.containerBuilder.create();
+        let container = parent ? new ModuleContainer(this.root) : this.containerBuilder.create();
         this.pools.push(container);
         if (!this.root) {
             this.root = container;
@@ -37,10 +60,8 @@ export class ContainerPool implements IContainerPool {
         container.bindProvider(ContainerPool, () => this);
         if (this.isRoot(container)) {
             container.register(BuildHandleRegisterer);
-        } else {
-            container.bindProvider(BuildHandleRegisterer, () => this.root.get(BuildHandleRegisterer));
+            container.register(BootModule);
         }
-        container.register(BootModule);
     }
 
     getTokenKey(token: Token<any>): SymbolType<any> {

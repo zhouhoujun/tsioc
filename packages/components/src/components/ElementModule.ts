@@ -6,7 +6,7 @@ import { ElementDecoratorRegisterer } from '../parses';
 import { ValidComponentRegisterer, BindingComponentRegisterer } from '../resovers';
 import { Element } from './Element';
 import { ContentElement } from './ContentElement';
-import { BuildHandleRegisterer, RegisterFor, RegFor } from '@tsdi/boot';
+import { BuildHandleRegisterer } from '@tsdi/boot';
 
 /**
  * component element module.
