@@ -14,7 +14,7 @@ import { isNumber, isClass } from '../utils';
  */
 export class InitReflectAction extends IocRegisterAction<RegisterActionContext> {
 
-    execute(ctx: RegisterActionContext, next: () => void): void {
+    execute(ctx: RegisterActionContext, next?: () => void): void {
         if (!isClass(ctx.targetType)) {
             return;
         }
@@ -64,6 +64,8 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
                 ctx.targetReflect = typeRefs.get(ctx.targetType);
             }
         }
-        return next();
+        if (next) {
+            return next();
+        }
     }
 }

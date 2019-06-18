@@ -1,4 +1,4 @@
-import { IocActionContext, Type, ProviderMap, ActionContextOption, isFunction, isClass, ContainerFactory } from '@tsdi/ioc';
+import { Type, ProviderMap, ActionContextOption, isClass, ContainerFactory, IocRaiseContext } from '@tsdi/ioc';
 import { ModuleConfigure, RegFor, IModuleResolver } from './modules';
 import { IContainer } from '@tsdi/core';
 
@@ -58,7 +58,7 @@ export function createAnnoationContext<T extends AnnoationContext>(CtxType: Type
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext extends IocActionContext {
+export class AnnoationContext extends IocRaiseContext {
 
     constructor(type: Type<any>) {
         super();

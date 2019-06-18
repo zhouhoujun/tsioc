@@ -39,6 +39,35 @@ export class IocActionContext extends IocCoreService {
         super()
     }
 
+    /**
+     * set options.
+     *
+     * @param {ActionContextOption} options
+     * @memberof IocActionContext
+     */
+    setOptions(options: ActionContextOption) {
+        if (options) {
+            Object.assign(this, options);
+        }
+    }
+}
+
+
+/**
+ * context with raise container.
+ *
+ * @export
+ * @class IocRasieContext
+ * @extends {IocActionContext}
+ */
+export class IocRaiseContext extends IocActionContext {
+
+    /**
+     * get raise container factory.
+     *
+     * @returns {ContainerFactory}
+     * @memberof IocRasieContext
+     */
     getContainerFactory(): ContainerFactory {
         return this.raiseContainer;
     }
@@ -67,17 +96,6 @@ export class IocActionContext extends IocCoreService {
         }
     }
 
-    /**
-     * set options.
-     *
-     * @param {ActionContextOption} options
-     * @memberof IocActionContext
-     */
-    setOptions(options: ActionContextOption) {
-        if (options) {
-            Object.assign(this, options);
-        }
-    }
 }
 
 

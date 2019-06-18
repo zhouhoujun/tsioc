@@ -1,6 +1,6 @@
 import { ModuleConfigure } from '../../core';
 import { IContainer } from '@tsdi/core';
-import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext } from '@tsdi/ioc';
 import { IComponentContext } from '../ComponentContext';
 
 export interface IModuleResolveOption {
@@ -42,7 +42,7 @@ export interface IModuleResolveOption {
 }
 
 @Injectable
-export class BuildContext extends IocActionContext implements IComponentContext {
+export class BuildContext extends IocRaiseContext implements IComponentContext {
 
     /**
      * component scope.

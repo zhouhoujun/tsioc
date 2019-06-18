@@ -28,7 +28,7 @@ export interface ResolveActionOption<T> extends ActionContextOption {
     providers?: ProviderTypes[];
 }
 
-export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(CtxType: Type<Ctx>, target: Token<T> | ResolveActionOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): Ctx {
+export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(CtxType: Type<Ctx>, target: Token<T> | ResolveActionOption<T>): Ctx {
     let token: Token<any>;
     let options: ResolveActionOption<T>;
     if (isToken(target)) {
@@ -38,7 +38,6 @@ export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(Ctx
         token = target.token;
     }
     let ctx = new CtxType(token);
-    raiseContainer && ctx.setRaiseContainer(raiseContainer);
     options && ctx.setOptions(options);
     return ctx;
 }
@@ -101,7 +100,7 @@ export class ResolveActionContext<T> extends IocActionContext {
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(target?: Token<T> | ResolveActionOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveActionContext<T> {
-        return createResolveContext(ResolveActionContext, target, raiseContainer);
+    static parse<T>(target?: Token<T> | ResolveActionOption<T>): ResolveActionContext<T> {
+        return createResolveContext(ResolveActionContext, target);
     }
 }

@@ -44,7 +44,7 @@ export interface IIocContainer extends IResolverContainer {
     getProviderParser(): IProviderParser;
 
     /**
-     * get type reflects.
+     * get type reflects manager in current container.
      *
      * @returns {TypeReflects}
      * @memberof IIocContainer

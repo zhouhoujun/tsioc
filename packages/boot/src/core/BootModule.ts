@@ -18,7 +18,7 @@ import * as messages from './messages';
 import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction } from './registers';
 import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
-import { RegisterFor, Message } from './decorators';
+import { Message } from './decorators';
 import { ModuleDecoratorService } from './ModuleDecoratorService';
 
 

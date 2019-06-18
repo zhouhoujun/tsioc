@@ -1,12 +1,12 @@
 import { IBindingTypeReflect, BindingTypes } from '../bindings';
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { BindingScope, ParseContext } from '../parses';
-import { BuildContext, ResolveHandle, BuildHandleRegisterer } from '@tsdi/boot';
+import { BuildContext, ResolveHandle, BuildHandleRegisterer, ModuleDecoratorServiceToken } from '@tsdi/boot';
 
 export class BindingPropertyHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.target) {
-            let ref = this.container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
+            let { reflect: ref } = this.container.get(ModuleDecoratorServiceToken).getReflect<IBindingTypeReflect>(ctx.type, ctx.getRaiseContainer());
             if (ref && ref.propBindings) {
                 let registerer = this.container.get(BuildHandleRegisterer);
                 await Promise.all(Array.from(ref.propBindings.keys()).map(async n => {

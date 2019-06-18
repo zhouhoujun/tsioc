@@ -1,4 +1,4 @@
-import { BuildContext, BuildHandleRegisterer } from '@tsdi/boot';
+import { BuildContext, BuildHandleRegisterer, ModuleDecoratorServiceToken } from '@tsdi/boot';
 import { IBindingTypeReflect, BindingTypes } from '../bindings';
 import { RuntimeLifeScope, isNullOrUndefined, isArray, InjectReference, lang } from '@tsdi/ioc';
 import { ParseContext, BindingScope } from '../parses';
@@ -11,14 +11,18 @@ export class BindingArgsHandle extends ResolveComponentHandle {
         if (this.isComponent(ctx)) {
             let container = ctx.getRaiseContainer();
             let providers = [];
-            let register = this.container.getActionRegisterer();
-            let refs = container.getTypeReflects().get(ctx.type) as IBindingTypeReflect;
+
+            // let rgContianer: IContainer;
+            let { reflect: refs, container: rgContianer } = this.container.get(ModuleDecoratorServiceToken).getReflect<IBindingTypeReflect>(ctx.type, container);
             if (!refs) {
-                throw new Error(`${lang.getClassName(ctx.type) } has not registered.`);
+                throw new Error(`${lang.getClassName(ctx.type)} has not registered.`);
             }
+
+            rgContianer = rgContianer || container;
+            let register = rgContianer.getActionRegisterer();
             // init if not init constructor params action.
             if (!refs.methodDecors || !refs.methodParams.has('constructor')) {
-                register.get(RuntimeLifeScope).getConstructorParameters(container, ctx.type);
+                register.get(RuntimeLifeScope).getConstructorParameters(rgContianer, ctx.type);
             }
 
             if (refs.paramsBindings) {

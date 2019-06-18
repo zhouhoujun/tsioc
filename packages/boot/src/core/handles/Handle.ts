@@ -77,8 +77,8 @@ export abstract class Handle<T extends IHandleContext> extends IocCoreService im
 
     protected resolve<TK>(ctx: T, token: Token<TK>, ...providers: ProviderTypes[]) {
         let container = ctx.getRaiseContainer();
-        if (container && container.hasRegister(token)) {
-            return container.get(token, ...providers);
+        if (container) {
+            return container.resolve(token, ...providers);
         }
         return this.container.resolve(token, ...providers);
     }

@@ -1,5 +1,5 @@
 import { IContainer } from '@tsdi/core';
-import { ContainerFactory, Injectable, Type, IocActionContext, ProviderTypes, InjectToken } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, ProviderTypes, InjectToken, IocRaiseContext } from '@tsdi/ioc';
 import { IModuleResolveOption, IComponentContext, ModuleConfigure } from '@tsdi/boot';
 
 export interface ITemplateOption extends IModuleResolveOption {
@@ -12,7 +12,7 @@ export interface ITemplateOption extends IModuleResolveOption {
 export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
 
 @Injectable
-export class TemplateContext extends IocActionContext implements IComponentContext {
+export class TemplateContext extends IocRaiseContext implements IComponentContext {
 
     selector?: Type<any>;
 

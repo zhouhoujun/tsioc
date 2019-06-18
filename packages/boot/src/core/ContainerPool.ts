@@ -1,4 +1,4 @@
-import { Token, SymbolType, Registration, IIocContainer, IocContainer } from '@tsdi/ioc';
+import { Token, SymbolType, Registration, IIocContainer } from '@tsdi/ioc';
 import { IContainer, IContainerBuilder } from '@tsdi/core';
 import { BootModule } from './BootModule';
 import { ParentContainerToken, ContainerPoolToken, RootContainerToken, IContainerPool } from './ContainerPoolToken';

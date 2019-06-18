@@ -15,7 +15,6 @@ import { BuildHandleRegisterer, RegisterFor, RegFor } from '@tsdi/boot';
  * @class ElementModule
  */
 @IocExt('setup')
-// @RegisterFor(RegFor.root)
 export class ElementModule {
 
     constructor() {

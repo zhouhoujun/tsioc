@@ -1,4 +1,4 @@
-import { ActionContextOption, IocActionContext, Type, IIocContainer, ObjectMap, Modules } from '@tsdi/ioc';
+import { ActionContextOption, IocActionContext, Type, IIocContainer, ObjectMap, Modules, IocRaiseContext } from '@tsdi/ioc';
 
 
 /**
@@ -18,7 +18,7 @@ export interface InjectorActionOption extends ActionContextOption {
  * @class InjectorActionContext
  * @extends {IocActionContext}
  */
-export class InjectorActionContext extends IocActionContext {
+export class InjectorActionContext extends IocRaiseContext {
 
     /**
      * the module to injector to container.

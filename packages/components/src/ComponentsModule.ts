@@ -26,7 +26,6 @@ import { ComponentBuilder } from './ComponentBuilder';
  * @class ComponentsModule
  */
 @IocExt('setup')
-// @RegisterFor(RegFor.root)
 export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
