@@ -71,7 +71,7 @@ export class BootModule {
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.use(modules, messages);
-        container.register(DIModuleExports);
+        // container.register(DIModuleExports);
 
 
         // route service

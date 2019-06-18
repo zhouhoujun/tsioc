@@ -1,8 +1,9 @@
-import { Token, SymbolType, Registration, IIocContainer } from '@tsdi/ioc';
+import { Token, SymbolType, Registration, IIocContainer, ProviderTypes } from '@tsdi/ioc';
 import { IContainer, IContainerBuilder, Container } from '@tsdi/core';
 import { BootModule } from './BootModule';
 import { ParentContainerToken, ContainerPoolToken, RootContainerToken, IContainerPool } from './ContainerPoolToken';
 import { BuildHandleRegisterer } from './handles';
+import { DIModuleExports } from './injectors';
 
 /**
  * module container.
@@ -19,7 +20,7 @@ export class ModuleContainer extends Container {
 
     protected bindRoot(root: IContainer) {
         root.iterator((fac, tk) => {
-            this.bindProvider(tk, fac);
+            this.bindProvider(tk, (...providers: ProviderTypes[]) => root.get(tk, ...providers));
         });
     }
 
@@ -62,6 +63,7 @@ export class ContainerPool implements IContainerPool {
             container.register(BuildHandleRegisterer);
             container.register(BootModule);
         }
+        container.register(DIModuleExports);
     }
 
     getTokenKey(token: Token<any>): SymbolType<any> {

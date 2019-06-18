@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser-activities",
-  "version": "5.0.8",
+  "version": "5.0.10",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "reinstall": "npm cache clean && npm install",
@@ -32,13 +32,13 @@
   "dependencies": {
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.3",
-    "@tsdi/ioc": "^5.0.8",
-    "@tsdi/core": "^5.0.8",
-    "@tsdi/aop": "^5.0.8",
-    "@tsdi/logs": "^5.0.8",
-    "@tsdi/boot": "^5.0.8",
-    "@tsdi/activities": "^5.0.8",
-    "@tsdi/platform-browser": "^5.0.8"
+    "@tsdi/ioc": "^5.0.10",
+    "@tsdi/core": "^5.0.10",
+    "@tsdi/aop": "^5.0.10",
+    "@tsdi/logs": "^5.0.10",
+    "@tsdi/boot": "^5.0.10",
+    "@tsdi/activities": "^5.0.10",
+    "@tsdi/platform-browser": "^5.0.10"
   },
   "directories": {
     "lib": "lib",
