@@ -10,12 +10,9 @@ export class InitResolveModuleHandle extends ResolveHandle {
         }
         if (!ctx.targetReflect) {
             let raiseContainer = ctx.getRaiseContainer();
-            let { reflect, container } = raiseContainer.get(ModuleDecoratorServiceToken).getReflect(ctx.type, raiseContainer);
+            let reflect = raiseContainer.getTypeReflects().get(ctx.type);
             if (reflect) {
                 ctx.targetReflect = reflect;
-                if (container !== raiseContainer) {
-                    ctx.setRaiseContainer(container);
-                }
             }
         }
 
