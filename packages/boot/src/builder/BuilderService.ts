@@ -56,6 +56,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             return this.buildBootTarget({
                 module: target,
                 providers: providers,
+                regFor: RegFor.boot,
                 ...options
             })
         }

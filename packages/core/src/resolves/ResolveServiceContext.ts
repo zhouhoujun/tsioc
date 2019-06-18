@@ -73,12 +73,11 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
      *
      * @static
      * @param {ResolveActionOption} [options]
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(target?: Token<T> | ServiceOption<T>, raiseContainer?: IIocContainer | (() => IIocContainer)): ResolveServiceContext<T> {
-        return createResolveContext<T, ResolveServiceContext<T>>(ResolveServiceContext, target, raiseContainer);
+    static parse<T>(target?: Token<T> | ServiceOption<T>): ResolveServiceContext<T> {
+        return createResolveContext<T, ResolveServiceContext<T>>(ResolveServiceContext, target);
     }
 
     /**

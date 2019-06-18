@@ -8,6 +8,16 @@ export class InitResolveModuleHandle extends ResolveHandle {
         if (!ctx.decorator) {
             ctx.decorator = service.getDecorator(ctx.type);
         }
+        if (!ctx.targetReflect) {
+            let raiseContainer = ctx.getRaiseContainer();
+            let { reflect, container } = raiseContainer.get(ModuleDecoratorServiceToken).getReflect(ctx.type, raiseContainer);
+            if (reflect) {
+                ctx.targetReflect = reflect;
+                if (container !== raiseContainer) {
+                    ctx.setRaiseContainer(container);
+                }
+            }
+        }
 
         if (ctx.decorator) {
             if (!ctx.annoation) {

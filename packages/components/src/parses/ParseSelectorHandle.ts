@@ -14,7 +14,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     scope: ctx.scope,
                     template: ctx.template,
                     raiseContainer: container.getFactory()
-                }, ...ctx.providers)
+                }, ...ctx.providers);
             // let { reflect, container: rgContainer } = container.get(ModuleDecoratorServiceToken).getReflect(selector, container);
             // if (rgContainer.has(selector)) {
             //     ctx.value = await rgContainer.get(BuilderServiceToken).resolve(selector, {

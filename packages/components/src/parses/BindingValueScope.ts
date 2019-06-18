@@ -2,7 +2,7 @@ import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Singleton, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
 import { BindingExpression } from '../bindings';
-import { IocBuildDecoratorRegisterer, RegFor, BuildHandleRegisterer, BuilderServiceToken, BaseTypeParserToken } from '@tsdi/boot';
+import { IocBuildDecoratorRegisterer, BuildHandleRegisterer, BuilderServiceToken, BaseTypeParserToken } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
@@ -91,20 +91,25 @@ export class TranslateAtrrHandle extends ParseHandle {
 
             if (selector) {
                 let container = ctx.getRaiseContainer();
-                if (container.has(selector)) {
-                    ctx.value = await this.container.get(BuilderServiceToken).resolve(selector, {
-                        scope: ctx.scope,
-                        template: template
-                    }, ...ctx.providers);
-                } else {
-                    ctx.value = await this.container.get(BuilderServiceToken).buildTarget({
-                        module: selector,
-                        scope: ctx.scope,
-                        template: template,
-                        regFor: RegFor.boot,
-                        providers: ctx.providers
-                    });
-                }
+                ctx.value = await container.get(BuilderServiceToken).resolve(selector, {
+                    scope: ctx.scope,
+                    template: template,
+                    raiseContainer: ctx.getContainerFactory()
+                }, ...ctx.providers);
+                // if (container.has(selector)) {
+                //     ctx.value = await this.container.get(BuilderServiceToken).resolve(selector, {
+                //         scope: ctx.scope,
+                //         template: template
+                //     }, ...ctx.providers);
+                // } else {
+                //     ctx.value = await this.container.get(BuilderServiceToken).buildTarget({
+                //         module: selector,
+                //         scope: ctx.scope,
+                //         template: template,
+                //         regFor: RegFor.boot,
+                //         providers: ctx.providers
+                //     });
+                // }
             }
 
         }

@@ -14,11 +14,11 @@ import { Component } from './decorators';
 export class ComponentBuilder extends BuilderService {
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
-        if (!options.raiseContainer) {
-            options.raiseContainer = this.container.getFactory();
-        }
         let ctx = TemplateContext.parse({ ...options, providers: [...(options.providers || []), ...providers] });
         ctx.decorator = ctx.decorator || Component.toString();
+        if (!ctx.hasRaiseContainer()) {
+            ctx.setRaiseContainer(this.container);
+        }
         await this.container.get(BuildHandleRegisterer)
             .get(TemplateParseScope)
             .execute(ctx);
