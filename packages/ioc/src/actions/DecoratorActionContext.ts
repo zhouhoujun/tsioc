@@ -16,4 +16,6 @@ export class DecoratorActionContext extends IocRaiseContext {
      * @memberof InjectorActionContext
      */
     currDecorScope?: DecoratorScopes;
+
+
 }

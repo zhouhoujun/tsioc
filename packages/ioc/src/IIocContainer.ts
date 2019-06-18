@@ -28,6 +28,8 @@ export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_Conta
  */
 export interface IIocContainer extends IResolverContainer {
 
+    getFactory(): ContainerFactory;
+
     /**
      * get action registerer.
      *

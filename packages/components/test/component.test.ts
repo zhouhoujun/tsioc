@@ -58,6 +58,7 @@ class CustomeService {
         CustomeService
     ],
     exports: [
+        Component3,
         CustomeService
     ]
 })

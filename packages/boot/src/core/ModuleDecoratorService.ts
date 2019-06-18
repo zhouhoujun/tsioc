@@ -1,6 +1,6 @@
 import {
     Singleton, Type, Inject, MetadataService, DesignDecoratorRegisterer, DecoratorScopes,
-    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, InjectToken, ITypeReflect, ClassType, TypeReflects
+    RuntimeDecoratorRegisterer, lang, getOwnTypeMetadata, ITypeReflect, ClassType, TypeReflects
 } from '@tsdi/ioc';
 import { ContainerToken, IContainer, InjectorDecoratorRegisterer } from '@tsdi/core';
 import { ModuleConfigure } from './modules';

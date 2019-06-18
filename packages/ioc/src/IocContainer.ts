@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { IIocContainer, IocContainerToken } from './IIocContainer';
+import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang } from './utils';
 import { Registration } from './Registration';
@@ -67,6 +67,10 @@ export class IocContainer implements IIocContainer {
             this.bindProvider(IocSingletonManager, new IocSingletonManager(this));
         }
         return this.get(IocSingletonManager);
+    }
+
+    getFactory(): ContainerFactory {
+        return this.get(ContainerFactoryToken);
     }
 
     /**

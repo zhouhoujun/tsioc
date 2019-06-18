@@ -2,7 +2,7 @@ import { ObjectMap, Type, Token } from '../../types';
 import { IParameter } from '../../IParameter';
 import { ITypeReflect } from '../../services';
 import { ParamProviders, ProviderMap } from '../../providers';
-import { ContainerFactory } from '../../IIocContainer';
+import { ContainerFactory, IIocContainer } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 
 
@@ -120,14 +120,6 @@ export class RuntimeActionContext extends RegisterActionContext {
     targetType?: Type<any>;
 
     /**
-     * target type reflect.
-     *
-     * @type {ITypeReflect}
-     * @memberof IocActionContext
-     */
-    targetReflect?: ITypeReflect;
-
-    /**
      * resolve token.
      *
      * @type {Token<any>}
@@ -188,7 +180,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static parse(options: RuntimeActionOption, raiseContainer?: ContainerFactory): RuntimeActionContext {
+    static parse(options: RuntimeActionOption, raiseContainer?: IIocContainer | ContainerFactory): RuntimeActionContext {
         let ctx = new RuntimeActionContext(options.targetType)
         raiseContainer && ctx.setRaiseContainer(raiseContainer);
         ctx.setOptions(options);

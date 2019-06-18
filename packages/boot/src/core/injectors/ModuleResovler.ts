@@ -1,8 +1,8 @@
 import {
     Token, Type, ParamProviders, isToken,
-    IResolver, IResolverContainer, InstanceFactory, SymbolType, ContainerFactoryToken, ContainerFactory
+    IResolver, IResolverContainer, InstanceFactory, SymbolType, ContainerFactory
 } from '@tsdi/ioc';
-import { IModuleMetadata, IModuleResolver} from '../modules';
+import { IModuleMetadata, IModuleResolver } from '../modules';
 import { IContainer, isContainer } from '@tsdi/core';
 import { DIModuleExports } from './DIModuleExports';
 
@@ -24,7 +24,7 @@ export class ModuleResovler<T> implements IModuleResolver {
         providers?: IResolverContainer
     ) {
         if (isContainer(container)) {
-            this.containerFac = container.get(ContainerFactoryToken);
+            this.containerFac = container.getFactory();
         }
         if (providers) {
             this.providersGetter = () => providers;
@@ -57,9 +57,8 @@ export class ModuleResovler<T> implements IModuleResolver {
         if (pdr && pdr.has(token)) {
             return pdr.resolve(token, ...providers);
         } else {
-            this.getContainer().get(DIModuleExports).resolve(token, ...providers);
+            return this.getContainer().get(DIModuleExports).resolve(token, ...providers);
         }
-        return null;
     }
 
     has<T>(token: Token<T>, alias?: string): boolean {

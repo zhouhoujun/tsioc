@@ -2,7 +2,7 @@ import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryTok
 import { Type } from '../types';
 import { lang, isFunction, isClass } from '../utils';
 import { Inject } from '../decorators';
-import { IocCoreService } from '../services';
+import { IocCoreService, ITypeReflect } from '../services';
 
 
 /**
@@ -31,9 +31,6 @@ export class IocActionContext extends IocCoreService {
      */
     actionScope?: any;
 
-    @Inject(ContainerFactoryToken)
-    protected raiseContainer: ContainerFactory;
-
 
     constructor() {
         super()
@@ -61,6 +58,17 @@ export class IocActionContext extends IocCoreService {
  * @extends {IocActionContext}
  */
 export class IocRaiseContext extends IocActionContext {
+
+    /**
+     * target type reflect.
+     *
+     * @type {ITypeReflect}
+     * @memberof IocActionContext
+     */
+    targetReflect?: ITypeReflect;
+
+    @Inject(ContainerFactoryToken)
+    protected raiseContainer: ContainerFactory;
 
     /**
      * get raise container factory.
@@ -92,7 +100,7 @@ export class IocRaiseContext extends IocActionContext {
         if (isFunction(raiseContainer)) {
             this.raiseContainer = raiseContainer;
         } else if (raiseContainer) {
-            this.raiseContainer = raiseContainer.get(ContainerFactoryToken);
+            this.raiseContainer = raiseContainer.getFactory();
         }
     }
 

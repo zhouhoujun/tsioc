@@ -1,6 +1,6 @@
 import { isToken, isFunction, isUndefined, isObject, isNumber } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
-import { IIocContainer, ContainerFactoryToken, ContainerFactory } from '../IIocContainer';
+import { IIocContainer, ContainerFactory } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ProviderTypes } from './types';
 import { IocCoreService } from '../services';
@@ -29,7 +29,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
     map: Map<Token<any>, InstanceFactory<any>>;
     constructor(container: IIocContainer) {
         super()
-        this.containerFac = container.get(ContainerFactoryToken);
+        this.containerFac = container.getFactory();
         this.map = new Map();
     }
 

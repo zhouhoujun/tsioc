@@ -23,6 +23,10 @@ export class DIModuleExports extends IocCoreService implements IResolver {
     }
 
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T {
+        if (this.resolvers.length < 1) {
+            return null;
+        }
+
         let inst: T;
         this.resolvers.some(r => {
             inst = r.resolve(token, ...providers);

@@ -36,7 +36,7 @@ export interface AnnoationOption extends ActionContextOption {
  * @param {(IContainer | (() => IContainer))} [raiseContainer]
  * @returns {T}
  */
-export function createAnnoationContext<T extends AnnoationContext>(CtxType: Type<T>, target: Type<any> | AnnoationOption, raiseContainer?: ContainerFactory): T {
+export function createAnnoationContext<T extends AnnoationContext>(CtxType: Type<T>, target: Type<any> | AnnoationOption, raiseContainer?: IContainer|ContainerFactory): T {
     let type: Type<any>;
     let options: AnnoationOption;
     if (isClass(target)) {
@@ -65,7 +65,7 @@ export class AnnoationContext extends IocRaiseContext {
         this.module = type;
     }
 
-    static parse(target: Type<any> | AnnoationOption, raiseContainer?: ContainerFactory): AnnoationContext {
+    static parse(target: Type<any> | AnnoationOption, raiseContainer?: IContainer|ContainerFactory): AnnoationContext {
         return createAnnoationContext(AnnoationContext, target, raiseContainer);
     }
 

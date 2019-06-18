@@ -1,4 +1,4 @@
-import { isClass, LifeScope, Type, Inject, ContainerFactoryToken, hasOwnClassMetadata } from '@tsdi/ioc';
+import { isClass, LifeScope, Type, Inject, hasOwnClassMetadata } from '@tsdi/ioc';
 import { ModuleResovler } from './ModuleResovler';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
@@ -28,7 +28,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
         let ctx = AnnoationContext.parse({
             module: type,
             decorator: decorator
-        }, this.container.get(ContainerFactoryToken));
+        }, this.container);
         this.execute(ctx);
         return ctx.moduleResolver as ModuleResovler<T>;
     }
