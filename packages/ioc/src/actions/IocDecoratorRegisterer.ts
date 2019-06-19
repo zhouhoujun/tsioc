@@ -39,14 +39,51 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
      * @memberof DecoratorRegister
      */
     register(decorator: string | Function, ...actions: T[]): this {
+        this.registing(decorator, actions, (regs, dec) => {
+            regs.unshift(...actions);
+            this.actionMap.set(dec, regs);
+        });
+        return this;
+    }
+
+    /**
+     * register decorator actions before the action.
+     *
+     * @param {(string | Function)} decorator
+     * @param {...T[]} actions
+     * @memberof DecoratorRegister
+     */
+    registerBefore(decorator: string | Function, before: T, ...actions: T[]): this {
+        this.registing(decorator, actions, (regs, dec) => {
+            regs.splice(regs.indexOf(before) - 1, 0, ...actions);
+            this.actionMap.set(dec, regs);
+        });
+        return this;
+    }
+
+    /**
+     * register decorator actions after the action.
+     *
+     * @param {(string | Function)} decorator
+     * @param {...T[]} actions
+     * @memberof DecoratorRegister
+     */
+    registerAfter(decorator: string | Function, after: T, ...actions: T[]): this {
+        this.registing(decorator, actions, (regs, dec) => {
+            regs.splice(regs.indexOf(after) + 1, 0, ...actions);
+            this.actionMap.set(dec, regs);
+        });
+        return this;
+    }
+
+    protected registing(decorator: string | Function, actions: T[], reg: (regs: T[], dec: string) => void) {
         let dec = this.getKey(decorator);
         this.funcs.delete(dec);
         if (this.actionMap.has(dec)) {
-            this.actionMap.get(dec).concat(actions);
+            reg(this.actionMap.get(dec), dec);
         } else {
             this.actionMap.set(dec, actions);
         }
-        return this;
     }
 
     has(decorator: string | Function, action?: T): boolean {
