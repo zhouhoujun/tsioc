@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-boot",
-  "version": "5.0.12",
+  "version": "5.0.13",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "reinstall": "npm cache clean && npm install",
@@ -35,10 +35,10 @@
     "reflect-metadata": "^0.1.12",
     "tslib": "^1.9.2",
     "globby": "^7.1.1",
-    "@tsdi/ioc": "^5.0.12",
-    "@tsdi/core": "^5.0.12",
-    "@tsdi/boot": "^5.0.12",
-    "@tsdi/platform-server": "^5.0.12"
+    "@tsdi/ioc": "^5.0.13",
+    "@tsdi/core": "^5.0.13",
+    "@tsdi/boot": "^5.0.13",
+    "@tsdi/platform-server": "^5.0.13"
   },
   "peerDependencies": {},
   "directories": {
