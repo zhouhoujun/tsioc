@@ -61,15 +61,13 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
         if (this.has(action)) {
             return this;
         }
-        if (before) {
-            if (isBoolean(before)) {
-                this.actions.unshift(action);
-                setup = before;
-            } else {
-                this.actions.splice(this.actions.indexOf(before) - 1, 0, action);
-            }
+        if (before && !isBoolean(before)) {
+            this.actions.splice(this.actions.indexOf(before), 0, action);
         } else {
             this.actions.unshift(action);
+            if (isBoolean(before)) {
+                setup = before;
+            }
         }
         this.registerAction(action, setup);
         this.resetFuncs();
@@ -80,24 +78,22 @@ export class IocCompositeAction<T extends IocActionContext> extends IocAction<T>
      * use action after.
      *
      * @param {IocActionType} action
-     * @param {(IocActionType | boolean)} after
+     * @param {(IocActionType | boolean)} [after]
      * @param {boolean} [setup]
      * @returns {this}
      * @memberof IocCompositeAction
      */
-    useAfter(action: IocActionType, after: IocActionType | boolean, setup?: boolean): this {
+    useAfter(action: IocActionType, after?: IocActionType | boolean, setup?: boolean): this {
         if (this.has(action)) {
             return this;
         }
-        if (after) {
-            if (isBoolean(after)) {
-                this.actions.unshift(action);
-                setup = after;
-            } else {
-                this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
-            }
+        if (after && !isBoolean(after)) {
+            this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
         } else {
-            this.actions.unshift(action)
+            this.actions.push(action);
+            if (isBoolean(after)) {
+                setup = after;
+            }
         }
         this.registerAction(action, setup);
         this.resetFuncs();

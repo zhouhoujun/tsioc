@@ -9,18 +9,12 @@ import { SelectorManager } from '../../SelectorManager';
 export class ComponentSelectorHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
         if (isArray(ctx.template) && ctx.annoation.template === ctx.template) {
-            ctx.selector = ContentElement;
+            ctx.selector = this.getDefaultCompose();
         } else if (this.isElement(ctx.decorator, ctx.template)) {
             ctx.selector = ctx.template;
             ctx.template = null;
-        } else if (isMetadataObject(ctx.template) && ctx.template.element) {
-            let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
-            let element = ctx.template.element;
-            if (isString(element) && mgr.has(element)) {
-                ctx.selector = mgr.get(element);
-            } else if (this.isElement(ctx.decorator, element)) {
-                ctx.selector = element;
-            }
+        } else if (ctx.template) {
+            ctx.selector = this.getComponent(ctx, ctx.template);
         }
 
         if (!ctx.selector) {
@@ -28,7 +22,28 @@ export class ComponentSelectorHandle extends TemplateHandle {
         }
     }
 
-    isElement(decorator: string, element: any): element is Type<Element> {
+    protected getComponent(ctx: TemplateContext, template: any): Type<any> {
+        let selector = this.getSelector(template);
+        if (selector) {
+            let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
+            if (isString(selector) && mgr.has(selector)) {
+                return mgr.get(selector);
+            } else if (this.isElement(ctx.decorator, selector)) {
+                return selector;
+            }
+        }
+        return null;
+    }
+
+    protected getSelector(template: any) {
+        return isMetadataObject(template) ? template.element : null;
+    }
+
+    protected getDefaultCompose(): Type<any> {
+        return ContentElement;
+    }
+
+    protected isElement(decorator: string, element: any): boolean {
         return isClass(element) && (hasOwnClassMetadata(decorator, element) || lang.isExtendsClass(element, Element));
     }
 }

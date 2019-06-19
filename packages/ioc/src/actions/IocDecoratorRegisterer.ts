@@ -40,7 +40,7 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
      */
     register(decorator: string | Function, ...actions: T[]): this {
         this.registing(decorator, actions, (regs, dec) => {
-            regs.unshift(...actions);
+            regs.push(...actions);
             this.actionMap.set(dec, regs);
         });
         return this;
@@ -50,12 +50,18 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
      * register decorator actions before the action.
      *
      * @param {(string | Function)} decorator
+     * @param {(T | boolean)} before
      * @param {...T[]} actions
-     * @memberof DecoratorRegister
+     * @returns {this}
+     * @memberof DecoratorRegisterer
      */
     registerBefore(decorator: string | Function, before: T, ...actions: T[]): this {
         this.registing(decorator, actions, (regs, dec) => {
-            regs.splice(regs.indexOf(before) - 1, 0, ...actions);
+            if (before && regs.indexOf(before) > 0) {
+                regs.splice(regs.indexOf(before), 0, ...actions);
+            } else {
+                regs.unshift(...actions);
+            }
             this.actionMap.set(dec, regs);
         });
         return this;
@@ -65,12 +71,18 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
      * register decorator actions after the action.
      *
      * @param {(string | Function)} decorator
+     * @param {(T | boolean)} after
      * @param {...T[]} actions
-     * @memberof DecoratorRegister
+     * @returns {this}
+     * @memberof DecoratorRegisterer
      */
     registerAfter(decorator: string | Function, after: T, ...actions: T[]): this {
         this.registing(decorator, actions, (regs, dec) => {
-            regs.splice(regs.indexOf(after) + 1, 0, ...actions);
+            if (after && regs.indexOf(after) >= 0) {
+                regs.splice(regs.indexOf(after) + 1, 0, ...actions);
+            } else {
+                regs.push(...actions);
+            }
             this.actionMap.set(dec, regs);
         });
         return this;

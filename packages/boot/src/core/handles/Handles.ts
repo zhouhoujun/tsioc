@@ -54,15 +54,13 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
         if (this.has(handle)) {
             return this;
         }
-        if (before) {
-            if (isBoolean(before)) {
-                this.handles.unshift(handle);
-                setup = before;
-            } else {
-                this.handles.splice(this.handles.indexOf(before), 0, handle);
-            }
+        if (before && !isBoolean(before)) {
+            this.handles.splice(this.handles.indexOf(before), 0, handle);
         } else {
             this.handles.unshift(handle);
+            if (isBoolean(before)) {
+                setup = before;
+            }
         }
         this.registerHandle(handle, setup);
         this.resetFuncs();
@@ -76,20 +74,17 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    useAfter(handle: HandleType<T>, after?: HandleType<T>, setup?: boolean): this {
+    useAfter(handle: HandleType<T>, after?: HandleType<T> | boolean, setup?: boolean): this {
         if (this.has(handle)) {
             return this;
         }
-        if (after) {
-            if (isBoolean(after)) {
-                this.handles.push(handle);
-                setup = after;
-            } else {
-                this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
-            }
-
+        if (after && !isBoolean(after)) {
+            this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
         } else {
             this.handles.push(handle);
+            if (isBoolean(after)) {
+                setup = after;
+            }
         }
         this.registerHandle(handle, setup);
         this.resetFuncs();
