@@ -14,6 +14,10 @@ export class BuildHandleRegisterer extends IocCoreService {
         this.maps = new Map();
     }
 
+    has<T extends Handle<any>>(type: Type<T>): boolean {
+        return this.maps.has(type);
+    }
+
     get<T extends Handle<any>>(type: Type<T>): T {
         if (this.maps.has(type)) {
             return this.maps.get(type) as T;
