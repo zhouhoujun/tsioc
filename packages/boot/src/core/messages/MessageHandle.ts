@@ -1,6 +1,6 @@
 import { Handle, Handles, HandleType } from '../handles';
-import { Abstract, isClass, Injectable } from '@tsdi/ioc';
-import { MessageContext } from './MessageContext';
+import { Abstract, isClass, Injectable, isUndefined, isString, ProviderTypes } from '@tsdi/ioc';
+import { MessageContext, MsgEventToken, MsgDataToken } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 
 
@@ -38,8 +38,14 @@ export abstract class MessageHandle<T extends MessageContext> extends Handle<T> 
 @Injectable
 export class MessageQueue<T extends MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
-    send(ctx: T, next?: () => Promise<void>): Promise<void> {
-        return this.execute(ctx, next);
+    send(event: string | T, data?: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void> {
+        if (isString(event)) {
+            let providers = [{ provide: MsgEventToken, useValue: event }, { provide: MsgDataToken, useValue: data }];
+            let ctx = fac ? fac(...providers) : this.container.resolve(MessageContext, ...providers) as T;
+            return this.execute(ctx);
+        } else {
+            return this.execute(event);
+        }
     }
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
         if (isClass(HandleType)) {

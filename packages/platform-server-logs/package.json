@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-logs",
-  "version": "5.0.13",
+  "version": "5.0.15",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "reinstall": "npm cache clean && npm install",
@@ -30,12 +30,12 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-logs#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.0.13",
-    "@tsdi/core": "^5.0.13",
-    "@tsdi/aop": "^5.0.13",
-    "@tsdi/logs": "^5.0.13",
-    "@tsdi/boot": "^5.0.13",
-    "@tsdi/platform-server": "^5.0.13",
+    "@tsdi/ioc": "^5.0.15",
+    "@tsdi/core": "^5.0.15",
+    "@tsdi/aop": "^5.0.15",
+    "@tsdi/logs": "^5.0.15",
+    "@tsdi/boot": "^5.0.15",
+    "@tsdi/platform-server": "^5.0.15",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",
     "globby": "^9.0.0",
