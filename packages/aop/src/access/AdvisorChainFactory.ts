@@ -158,8 +158,8 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
                 useFactory: () => {
                     let curj = joinPoint;
                     let annotations = curj.annotations;
-                    while (!annotations && joinPoint.provJoinpoint) {
-                        curj = joinPoint.provJoinpoint;
+                    while (!annotations && curj && curj.provJoinpoint) {
+                        curj = curj.provJoinpoint;
                         if (curj && curj.annotations) {
                             annotations = curj.annotations;
                             break;
