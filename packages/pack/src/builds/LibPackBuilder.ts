@@ -177,6 +177,14 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @memberof LibPackBuilderOption
      */
     postcssOption?: Binding<NodeExpression<any>>;
+
+    /**
+     * external Libs for auto create rollup options.
+     *
+     * @type {string[]}
+     * @memberof LibBundleOption
+     */
+    externalLibs?: Binding<string[]>;
 }
 
 @Task({
@@ -320,6 +328,8 @@ export class LibPackBuilder implements AfterInit {
     @Input()
     external?: NodeExpression<ExternalOption>;
 
+    @Input()
+    externalLibs: string[];
     /**
      * rollup plugins setting.
      *
@@ -393,10 +403,13 @@ export class LibPackBuilder implements AfterInit {
     async onAfterInit(): Promise<void> {
         if (!this.external) {
             let func = (ctx: NodeActivityContext) => {
+                let packagejson = ctx.platform.getPackage();
                 let external = [
                     'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
-                    'https', 'http',
-                    ...Object.keys(ctx.platform.getPackage().dependencies || {})];
+                    'https', 'http', 'url', 'crypto',
+                    ...(this.externalLibs || []),
+                    ...Object.keys(packagejson.dependencies || {}),
+                    ...Object.keys(packagejson.peerDependencies || {})];
                 if (external.indexOf('rxjs')) {
                     external.push('rxjs/operators')
                 }

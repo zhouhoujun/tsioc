@@ -94,7 +94,7 @@ describe('method exec test', () => {
         container.register(MethodTest);
         let mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).toBeTruthy();
-        expect(await container.invoke(MethodTest, 'sayHello', mtt)).toEqual('I love you.');
+        expect(await container.invoke(mtt, 'sayHello')).toEqual('I love you.');
 
     });
 

@@ -32,7 +32,9 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "reflect-metadata": "^0.1.12",
+  },
+  "peerDependencies": {
+    "reflect-metadata": "^0.1.13",
     "tslib": "^1.9.2",
     "globby": "^7.1.1",
     "@tsdi/ioc": "^5.0.15",
@@ -40,7 +42,6 @@
     "@tsdi/boot": "^5.0.15",
     "@tsdi/platform-server": "^5.0.15"
   },
-  "peerDependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"

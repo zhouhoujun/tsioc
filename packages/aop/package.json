@@ -32,12 +32,11 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {
-    "@tsdi/ioc": "^5.0.15",
-    "reflect-metadata": "^0.1.12",
-    "tslib": "^1.9.2"
-  },
+  "dependencies": {},
   "peerDependencies": {
+    "@tsdi/ioc": "^5.0.15",
+    "reflect-metadata": "^0.1.13",
+    "tslib": "^1.9.2"
   },
   "directories": {
     "lib": "lib",

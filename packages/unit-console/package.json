@@ -32,6 +32,9 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "chalk": "^2.3.1"
+  },
+  "peerDependencies": {
     "@tsdi/ioc": "^5.0.15",
     "@tsdi/core": "^5.0.15",
     "@tsdi/aop": "^5.0.15",
@@ -41,12 +44,10 @@
     "@tsdi/platform-server-logs": "^5.0.15",
     "@tsdi/platform-server-boot": "^5.0.15",
     "@tsdi/unit": "^5.0.15",
-    "reflect-metadata": "^0.1.12",
-    "chalk": "^2.3.1",
+    "reflect-metadata": "^0.1.13",
     "tslib": "^1.9.2",
     "globby": "^7.1.1"
   },
-  "peerDependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"

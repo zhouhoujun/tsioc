@@ -1,5 +1,5 @@
 import 'core-js';
-import { IocExt, ContainerToken, IContainer, ContainerBuilderToken, ModuleLoader } from '@tsdi/core';
+import { IocExt, ContainerToken, IContainer, ModuleLoader } from '@tsdi/core';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
 import { Inject } from '@tsdi/ioc';
 
