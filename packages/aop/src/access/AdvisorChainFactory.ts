@@ -1,4 +1,4 @@
-import { Provider, Injectable, Inject, isUndefined, isArray, IocContainerToken, IIocContainer } from '@tsdi/ioc';
+import { Provider, Injectable, Inject, isUndefined, isArray, IocContainerToken, IIocContainer, ProviderTypes } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState } from '../joinpoints';
 import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
@@ -140,7 +140,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
-        let providers = [];
+        let providers: ProviderTypes[] = [];
 
         providers.push(Provider.createExtends(Joinpoint, joinPoint, (inst, provider) => {
             inst._cache_JoinPoint = provider.resolve(this.container);
@@ -149,13 +149,13 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
         let metadata: any = advicer.advice;
 
         if (!isUndefined(joinPoint.args) && metadata.args) {
-            providers.push(Provider.create(metadata.args, joinPoint.args))
+            providers.push({ provide: metadata.args, useValue: joinPoint.args })
         }
 
         if (metadata.annotationArgName) {
-            providers.push(Provider.create(
-                metadata.annotationArgName,
-                () => {
+            providers.push({
+                provide: metadata.annotationArgName,
+                useFactory: () => {
                     let curj = joinPoint;
                     let annotations = curj.annotations;
                     while (!annotations && joinPoint.provJoinpoint) {
@@ -177,15 +177,15 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
                         return [];
                     }
                 }
-            ));
+            });
         }
 
         if (!isUndefined(joinPoint.returning) && metadata.returning) {
-            providers.push(Provider.create(metadata.returning, joinPoint.returning))
+            providers.push({ provide: metadata.returning, useValue: joinPoint.returning })
         }
 
         if (!isUndefined(joinPoint.throwing) && metadata.throwing) {
-            providers.push(Provider.create(metadata.throwing, joinPoint.throwing));
+            providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
 
         return this.advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
