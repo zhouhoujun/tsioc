@@ -1,10 +1,9 @@
 import {
-    Provider, Singleton, Inject, Type, isFunction, RuntimeLifeScope,
+    Singleton, Inject, Type, isFunction, RuntimeLifeScope,
     ObjectMapProvider, IocContainerToken, IIocContainer, MetadataService
 } from '@tsdi/ioc';
 import { Advices } from '../advices';
-import { JoinpointState, IPointcut } from '../joinpoints';
-import { Joinpoint } from '../joinpoints';
+import { JoinpointState, IPointcut, JoinpointOptionToken, Joinpoint } from '../joinpoints';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { NonePointcut } from '../decorators/NonePointcut';
@@ -81,16 +80,19 @@ export class ProxyMethod implements IProxyMethod {
         let container = this.container;
         let lifeScope = this.lifeScope;
         return (...args: any[]) => {
-            let joinPoint = this.container.get(Joinpoint, Provider.create('options', {
-                name: methodName,
-                fullName: fullName,
-                provJoinpoint: provJoinpoint,
-                annotations: provJoinpoint ? null : this.container.get(MetadataService).getMethodMetadatas(targetType, methodName),
-                params: lifeScope.getMethodParameters(this.container, targetType, target, methodName),
-                args: args,
-                target: target,
-                targetType: targetType
-            }));
+            let joinPoint = this.container.get(Joinpoint, {
+                provide: JoinpointOptionToken,
+                useValue: {
+                    name: methodName,
+                    fullName: fullName,
+                    provJoinpoint: provJoinpoint,
+                    annotations: provJoinpoint ? null : this.container.get(MetadataService).getMethodMetadatas(targetType, methodName),
+                    params: lifeScope.getMethodParameters(this.container, targetType, target, methodName),
+                    args: args,
+                    target: target,
+                    targetType: targetType
+                }
+            });
 
             let adChain = container.get(AdvisorChainFactory, { provide: IocContainerToken, useValue: container }, { provide: AdvisorToken, useValue: this.advisor }, ObjectMapProvider.parse({ container: container, advisor: this.advisor, advices: advices }));
 

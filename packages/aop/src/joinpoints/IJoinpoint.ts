@@ -1,13 +1,7 @@
 import { IPointcut } from './IPointcut';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices';
-import { IParameter, MethodMetadata, Type, InjectToken } from '@tsdi/ioc';
-
- /**
- * Aop IJoinpoint interface token.
- * it is a token id, you can register yourself IJoinpoint for this.
- */
-export const JoinpointToken = new InjectToken<IJoinpoint>('DI_IJoinpoint');
+import { IParameter, MethodMetadata, Type } from '@tsdi/ioc';
 
 /**
  * Joinpoint interface

@@ -1,8 +1,25 @@
-import { IJoinpoint, JoinpointToken } from './IJoinpoint';
-import { Type, Injectable, MethodMetadata, IParameter } from '@tsdi/ioc';
+import { IJoinpoint } from './IJoinpoint';
+import { Type, Injectable, MethodMetadata, IParameter, InjectToken, Inject, ClassMetadata } from '@tsdi/ioc';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices';
 import { NonePointcut } from '../decorators/NonePointcut';
+
+
+export interface JoinpointOption {
+    provJoinpoint?: Joinpoint;
+    name: string;
+    fullName: string;
+    params?: IParameter[];
+    args?: any[];
+    returning?: any;
+    throwing?: any;
+    state?: JoinpointState;
+    advicer?: Advicer;
+    annotations?: (ClassMetadata | MethodMetadata)[];
+    target;
+    targetType
+}
+export const JoinpointOptionToken = new InjectToken<IJoinpoint>('Joinpoint-Option');
 
 /**
  * Join point data.
@@ -11,7 +28,7 @@ import { NonePointcut } from '../decorators/NonePointcut';
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-@Injectable(JoinpointToken)
+@Injectable()
 @NonePointcut()
 export class Joinpoint implements IJoinpoint {
     /**
@@ -92,10 +109,10 @@ export class Joinpoint implements IJoinpoint {
     /**
      * orgin pointcut method metadatas.
      *
-     * @type {MethodMetadata[]}
+     * @type {(ClassMetadata | MethodMetadata)[]}
      * @memberof Joinpoint
      */
-    annotations: MethodMetadata[];
+    annotations: (ClassMetadata | MethodMetadata)[];
 
     /**
      * pointcut target instance
@@ -113,7 +130,8 @@ export class Joinpoint implements IJoinpoint {
     targetType: Type<any>;
 
 
-    constructor(options: IJoinpoint) {
+    constructor(@Inject(JoinpointOptionToken) options: JoinpointOption) {
+        options = options || {} as JoinpointOption;
         this.provJoinpoint = options.provJoinpoint;
         this.name = options.name;
         this.fullName = options.fullName;

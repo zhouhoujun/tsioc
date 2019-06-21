@@ -1,7 +1,7 @@
 import { AdvisorToken } from '../IAdvisor';
-import { Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
+import { Joinpoint, JoinpointState, JoinpointOptionToken } from '../joinpoints';
 import { isValideAspectTarget } from '../isValideAspectTarget';
-import { Provider, ParamProviders, lang, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
+import { ParamProviders, lang, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
 
 /**
  * actions invoke before constructor.
@@ -28,16 +28,19 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
         let targetType = ctx.targetType;
         let target = ctx.target;
 
-        let joinPoint = this.container.get(Joinpoint, Provider.create('options', <IJoinpoint>{
-            name: 'constructor',
-            state: JoinpointState.Before,
-            fullName: className + '.constructor',
-            target: target,
-            args: ctx.args,
-            params: ctx.params,
-            targetType: targetType
-        }));
-        let providers: ParamProviders[] = [Provider.create(Joinpoint, joinPoint)];
+        let joinPoint = this.container.get(Joinpoint, {
+            provide: JoinpointOptionToken,
+            useValue: {
+                name: 'constructor',
+                state: JoinpointState.Before,
+                fullName: className + '.constructor',
+                target: target,
+                args: ctx.args,
+                params: ctx.params,
+                targetType: targetType
+            }
+        });
+        let providers: ParamProviders[] = [{ provide: Joinpoint, useValue: joinPoint }];
 
         if (ctx.providerMap) {
             providers.push(ctx.providerMap);
