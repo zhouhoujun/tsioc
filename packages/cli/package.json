@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/cli",
-  "version": "5.0.15",
+  "version": "5.0.18",
   "description": "tsioc cli.",
   "typings": "./lib/cli.d.ts",
   "main": "./lib/cli.js",
@@ -8,7 +8,6 @@
     "tsdi": "./lib/cli.js"
   },
   "scripts": {
-    "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [

@@ -1,9 +1,8 @@
 {
   "name": "@tsdi/logs",
-  "version": "5.0.15",
+  "version": "5.0.18",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
-    "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
@@ -33,9 +32,9 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "^5.0.15",
-    "@tsdi/core": "^5.0.15",
-    "@tsdi/aop": "^5.0.15",
+    "@tsdi/ioc": "^5.0.18",
+    "@tsdi/core": "^5.0.18",
+    "@tsdi/aop": "^5.0.18",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0"
   },

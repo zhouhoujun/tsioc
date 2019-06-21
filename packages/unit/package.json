@@ -1,9 +1,9 @@
 {
   "name": "@tsdi/unit",
-  "version": "5.0.15",
+  "version": "5.0.18",
   "description": "unit testing framework, base on AOP, Ioc container",
   "scripts": {
-    "reinstall": "npm cache clean && npm install",
+    "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
@@ -33,19 +33,19 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/unit#readme",
   "dependencies": {
+    "@tsdi/ioc": "^5.0.18",
+    "@tsdi/core": "^5.0.18",
+    "@tsdi/aop": "^5.0.18",
+    "@tsdi/boot": "^5.0.18",
+    "@tsdi/logs": "^5.0.18",
+    "@types/mocha": "^5.2.5",
     "@types/expect": "^1.20.3",
     "assert": "^1.4.1",
-    "expect": "^23.6.0"
-  },
-  "peerDependencies": {
-    "@tsdi/ioc": "^5.0.15",
-    "@tsdi/core": "^5.0.15",
-    "@tsdi/aop": "^5.0.15",
-    "@tsdi/boot": "^5.0.15",
-    "@tsdi/logs": "^5.0.15",
-    "@types/mocha": "^5.2.5",
+    "expect": "^23.6.0",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.9.2"
+  },
+  "peerDependencies": {
   },
   "directories": {
     "lib": "lib",
