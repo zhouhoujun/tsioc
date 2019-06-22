@@ -1,4 +1,3 @@
-
 import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray } from '@tsdi/ioc';
 import { ContentElement } from '../ContentElement';
 import { Element } from '../Element';
