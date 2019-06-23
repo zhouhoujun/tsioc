@@ -13,7 +13,7 @@ import { Singleton, Inject } from '@tsdi/ioc';
  */
 @Singleton()
 @Aspect()
-export class AnnotationLogerAspect extends LoggerAspect {
+export class AnnotationLoggerAspect extends LoggerAspect {
 
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container)

@@ -7,7 +7,7 @@ export * from './ConsoleLogManager';
 export * from './LogConfigure';
 export * from './LogFormater';
 export * from './LoggerAspect';
-export * from './AnnotationLogerAspect';
+export * from './AnnotationLoggerAspect';
 export * from './decorators/Logger';
 export * from './LogModule';
 export * from './debugs';

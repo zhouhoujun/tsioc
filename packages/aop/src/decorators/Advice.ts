@@ -1,5 +1,5 @@
 
-import { createMethodDecorator, IMethodDecorator, MetadataAdapter, MetadataExtends, isString, isRegExp  } from '@tsdi/ioc';
+import { createMethodDecorator, IMethodDecorator, MetadataAdapter, MetadataExtends, isString, isRegExp } from '@tsdi/ioc';
 import { AdviceMetadata } from '../metadatas';
 
 /**
@@ -72,7 +72,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             }
 
             args.next<AdviceMetadata>({
-                match: (arg) => isString(arg),
+                match: (arg, args) => isString(arg) && args.indexOf(arg) === 1,
                 setMetadata: (metadata, arg) => {
                     metadata.annotationArgName = arg;
                 }

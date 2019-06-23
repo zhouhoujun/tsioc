@@ -2,7 +2,7 @@ import { Inject, DecoratorScopes, DesignDecoratorRegisterer, BindMethodProviderA
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { AopModule } from '@tsdi/aop';
 import { Logger } from './decorators/Logger';
-import { AnnotationLogerAspect } from './AnnotationLogerAspect';
+import { AnnotationLoggerAspect } from './AnnotationLoggerAspect';
 import { ConsoleLogManager } from './ConsoleLogManager';
 import { ConfigureLoggerManger } from './ConfigureLoggerManger';
 import { LogFormater } from './LogFormater';
@@ -34,7 +34,7 @@ export class LogModule {
         decReg.register(Logger, DecoratorScopes.Method, BindMethodProviderAction);
 
         container.register(ConfigureLoggerManger);
-        container.register(AnnotationLogerAspect);
+        container.register(AnnotationLoggerAspect);
         container.register(LogFormater);
         container.register(ConsoleLogManager);
     }

@@ -89,6 +89,7 @@ describe('logging test', () => {
 
     it('Aop anntotation log test', () => {
         container.register(AnntotationLogAspect);
+        console.log(container.has(AnntotationLogAspect));
         container.register(MethodTest2);
         expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama');
 

@@ -56,26 +56,34 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     before(joinPoint: Joinpoint) {
+        let arAdvices = this.getAdvicers('Around');
+        let bfrAdvices = this.getAdvicers('Before');
+        if (!arAdvices.length && !bfrAdvices.length) {
+            return;
+        }
+
         let cloneJp = Object.assign({}, joinPoint);
-        this.getAdvicers('Around')
-            .forEach(advicer => {
-                this.invokeAdvice(cloneJp, advicer);
-            });
+        arAdvices.forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
+        });
 
         if (!isUndefined(cloneJp.args)) {
             joinPoint.args = cloneJp.args;
         }
 
-        this.getAdvicers('Before')
-            .forEach(advicer => {
-                this.invokeAdvice(cloneJp, advicer);
-            });
+        bfrAdvices.forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
+        });
 
     }
 
     pointcut(joinPoint: Joinpoint) {
+        let advices = this.getAdvicers('Pointcut');
+        if (!advices.length) {
+            return;
+        }
         let cloneJp = Object.assign({}, joinPoint);
-        this.getAdvicers('Pointcut')
+        advices
             .forEach(advicer => {
                 this.invokeAdvice(cloneJp, advicer);
             });
@@ -86,43 +94,54 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     }
 
     after(joinPoint: Joinpoint) {
+        let arAdvices = this.getAdvicers('Around');
+        let afrAdvices = this.getAdvicers('After');
+        if (!arAdvices.length && !afrAdvices.length) {
+            return;
+        }
         let cloneJp = Object.assign({}, joinPoint);
-        this.getAdvicers('Around')
-            .forEach(async advicer => {
-                this.invokeAdvice(cloneJp, advicer);
-            });
+        arAdvices.forEach(async advicer => {
+            this.invokeAdvice(cloneJp, advicer);
+        });
 
-        this.getAdvicers('After')
-            .forEach(async advicer => {
-                this.invokeAdvice(cloneJp, advicer);
-            });
+        afrAdvices.forEach(async advicer => {
+            this.invokeAdvice(cloneJp, advicer);
+        });
     }
 
     afterThrowing(joinPoint: Joinpoint) {
+        let arAdvices = this.getAdvicers('Around');
+        let afthrAdvices = this.getAdvicers('AfterThrowing');
+        if (!arAdvices.length && !afthrAdvices.length) {
+            return;
+        }
+
         let cloneJp = Object.assign({}, joinPoint);
-        this.getAdvicers('Around')
-            .forEach(advicer => {
-                this.invokeAdvice(cloneJp, advicer);
-            });
+        arAdvices.forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
+        });
 
-        this.getAdvicers('AfterThrowing')
-            .forEach(advicer => {
-                this.invokeAdvice(cloneJp, advicer);
-            });
-
+        afthrAdvices.forEach(advicer => {
+            this.invokeAdvice(cloneJp, advicer);
+        });
     }
 
     afterReturning(joinPoint: Joinpoint) {
+        let arAdvices = this.getAdvicers('Around');
+        let afrAdvices = this.getAdvicers('AfterReturning');
+        if (!arAdvices.length && !afrAdvices.length) {
+            return;
+        }
+
         let cloneJp = Object.assign({}, joinPoint);
         let advChain = this.container.get<IAdvisorChain>(AdvisorChainToken, { provide: Joinpoint, useValue: cloneJp });
-        this.getAdvicers('Around')
-            .forEach(advicer => {
-                advChain.next((jp) => {
-                    return this.invokeAdvice(jp, advicer);
-                });
+        arAdvices.forEach(advicer => {
+            advChain.next((jp) => {
+                return this.invokeAdvice(jp, advicer);
             });
+        });
 
-        this.getAdvicers('AfterReturning')
+        afrAdvices
             .forEach(advicer => {
                 advChain.next(jp => {
                     return this.invokeAdvice(jp, advicer);

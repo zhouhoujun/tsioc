@@ -45,45 +45,32 @@ export class MatchPointcutAction extends IocRuntimeAction {
                 }) as Advicer;
 
                 if (advice.adviceName === 'Before') {
-                    if (!advices.Before.some(a => this.isAdviceEquals(a.advice, advice))) {
+                    if (!advices.Before.some(a => a.aspectType === advicer.aspectType)) {
                         advices.Before.push(advicer);
                     }
                 } else if (advice.adviceName === 'Pointcut') {
-                    if (!advices.Pointcut.some(a => this.isAdviceEquals(a.advice, advice))) {
+                    if (!advices.Pointcut.some(a => a.aspectType === advicer.aspectType)) {
                         advices.Pointcut.push(advicer);
                     }
                 } else if (advice.adviceName === 'Around') {
-                    if (!advices.Around.some(a => this.isAdviceEquals(a.advice, advice))) {
+                    if (!advices.Around.some(a => a.aspectType === advicer.aspectType)) {
                         advices.Around.push(advicer);
                     }
                 } else if (advice.adviceName === 'After') {
-                    if (!advices.After.some(a => this.isAdviceEquals(a.advice, advice))) {
+                    if (!advices.After.some(a => a.aspectType === advicer.aspectType)) {
                         advices.After.push(advicer);
                     }
                 } else if (advice.adviceName === 'AfterThrowing') {
-                    if (!advices.AfterThrowing.some(a => this.isAdviceEquals(a.advice, advice))) {
+                    if (!advices.AfterThrowing.some(a => a.aspectType === advicer.aspectType)) {
                         advices.AfterThrowing.push(advicer);
                     }
                 } else if (advice.adviceName === 'AfterReturning') {
-                    if (!advices.AfterReturning.some(a => this.isAdviceEquals(a.advice, advice))) {
+                    if (!advices.AfterReturning.some(a => a.aspectType === advicer.aspectType)) {
                         advices.AfterReturning.push(advicer);
                     }
                 }
             });
         });
         next();
-    }
-
-    isAdviceEquals(advice1: AdviceMetadata, advice2: AdviceMetadata) {
-        if (!advice1 || !advice2) {
-            return false;
-        }
-        if (advice1 === advice2) {
-            return true;
-        }
-
-        return advice1.adviceName === advice2.adviceName
-            && advice1.pointcut === advice2.pointcut
-            && advice1.propertyKey === advice2.propertyKey;
     }
 }

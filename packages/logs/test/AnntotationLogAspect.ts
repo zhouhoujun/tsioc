@@ -7,12 +7,9 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 @Aspect
 export class AnntotationLogAspect extends LoggerAspect {
 
-    constructor(@Inject(ContainerToken) container: IContainer) {
-        super(container);
-    }
-
     @Pointcut('@annotation(Logger)', 'logAnnotation')
     logging(logAnnotation: MethodMetadata[], joinPoint: Joinpoint) {
+        console.log('-----------------------------------\nAnntotationLogAspect:', logAnnotation);
         this.processLog(joinPoint, logAnnotation);
     }
 }

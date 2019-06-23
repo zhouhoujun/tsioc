@@ -216,9 +216,9 @@ export class AdviceMatcher implements IAdviceMatcher {
             let annotation = /^@/.test(exp) ? exp : ('@' + exp);
             return (name: string, fullName: string) => {
                 if (name === 'constructor') {
-                    return hasOwnClassMetadata(annotation, type) && !hasOwnClassMetadata(Aspect, type);
+                    return hasOwnClassMetadata(annotation, type);
                 }
-                return hasMethodMetadata(annotation, type, name) && !hasOwnClassMetadata(Aspect, type);
+                return hasMethodMetadata(annotation, type, name);
             }
 
         } else if (/^execution\(.*\)$/.test(strExp)) {
