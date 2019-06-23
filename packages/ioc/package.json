@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/ioc",
-  "version": "5.0.18",
+  "version": "5.0.19",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
