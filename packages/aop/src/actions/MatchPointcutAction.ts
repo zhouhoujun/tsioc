@@ -45,32 +45,36 @@ export class MatchPointcutAction extends IocRuntimeAction {
                 }) as Advicer;
 
                 if (advice.adviceName === 'Before') {
-                    if (!advices.Before.some(a => a.aspectType === advicer.aspectType)) {
+                    if (!advices.Before.some(a => this.equals(a, advicer))) {
                         advices.Before.push(advicer);
                     }
                 } else if (advice.adviceName === 'Pointcut') {
-                    if (!advices.Pointcut.some(a => a.aspectType === advicer.aspectType)) {
+                    if (!advices.Pointcut.some(a => this.equals(a, advicer))) {
                         advices.Pointcut.push(advicer);
                     }
                 } else if (advice.adviceName === 'Around') {
-                    if (!advices.Around.some(a => a.aspectType === advicer.aspectType)) {
+                    if (!advices.Around.some(a => this.equals(a, advicer))) {
                         advices.Around.push(advicer);
                     }
                 } else if (advice.adviceName === 'After') {
-                    if (!advices.After.some(a => a.aspectType === advicer.aspectType)) {
+                    if (!advices.After.some(a => this.equals(a, advicer))) {
                         advices.After.push(advicer);
                     }
                 } else if (advice.adviceName === 'AfterThrowing') {
-                    if (!advices.AfterThrowing.some(a => a.aspectType === advicer.aspectType)) {
+                    if (!advices.AfterThrowing.some(a => this.equals(a, advicer))) {
                         advices.AfterThrowing.push(advicer);
                     }
                 } else if (advice.adviceName === 'AfterReturning') {
-                    if (!advices.AfterReturning.some(a => a.aspectType === advicer.aspectType)) {
+                    if (!advices.AfterReturning.some(a => this.equals(a, advicer))) {
                         advices.AfterReturning.push(advicer);
                     }
                 }
             });
         });
         next();
+    }
+
+    protected equals(a: Advicer, b: Advicer) {
+        return a.aspectType === b.aspectType && a.advice.propertyKey === b.advice.propertyKey;
     }
 }
