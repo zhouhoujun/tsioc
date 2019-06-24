@@ -245,7 +245,7 @@ export interface TryTemplate extends TemplateOption {
     finally?: Binding<ActivityType[]>;
 }
 
-export type ControlTemplate = TemplateOption | ExecuteOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
+export type ControlTemplate =  Required<TemplateOption> | ExecuteOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
