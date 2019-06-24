@@ -57,9 +57,7 @@ export abstract class LoggerAspect {
                 }
             });
         } else {
-            (async () => {
-                this.writeLog(this.logger, joinPoint, message, level);
-            })();
+            this.writeLog(this.logger, joinPoint, message, level);
         }
     }
 
@@ -69,29 +67,27 @@ export abstract class LoggerAspect {
     }
 
     protected writeLog(logger: ILogger, joinPoint: Joinpoint, message?: string, level?: Level) {
+        (async () => {
+            let formatStr = this.formatMessage(joinPoint, message);
+            if (level) {
+                logger[level](formatStr);
+            } else {
+                switch (joinPoint.state) {
+                    case JoinpointState.Before:
+                    case JoinpointState.After:
+                    case JoinpointState.AfterReturning:
+                        logger.debug(formatStr);
+                        break;
+                    case JoinpointState.Pointcut:
+                        logger.info(formatStr);
+                        break;
 
-        let formatStr = this.formatMessage(joinPoint, message);
-
-        if (level) {
-            logger[level](formatStr);
-        } else {
-            switch (joinPoint.state) {
-                case JoinpointState.Before:
-                case JoinpointState.After:
-                case JoinpointState.AfterReturning:
-                    logger.debug(formatStr);
-                    break;
-                case JoinpointState.Pointcut:
-                    logger.info(formatStr);
-                    break;
-
-                case JoinpointState.AfterThrowing:
-                    logger.error(formatStr);
-                    break;
-
+                    case JoinpointState.AfterThrowing:
+                        logger.error(formatStr);
+                        break;
+                }
             }
-        }
-
+        })();
     }
 
     protected formatMessage(joinPoint: Joinpoint, message?: string) {
