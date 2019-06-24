@@ -1,6 +1,6 @@
 import { Workflow, Task, Activities, isAcitvityClass, Activity } from '@tsdi/activities';
 import * as path from 'path';
-import { PackModule, NodeActivityContext, ShellActivityOption, JsonReplaceActivityOption } from '@tsdi/pack';
+import { PackModule, NodeActivityContext, JsonReplaceActivityOption } from '@tsdi/pack';
 import { Type, isString } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 
@@ -17,7 +17,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                 let unp = ctx.platform.getEnvArgs().unp;
                 return isString(unp) && /\d+.\d+.\d+/.test(unp);
             },
-            body: <ShellActivityOption>{
+            body: {
                 activity: 'shell',
                 shell: (ctx: NodeActivityContext) => {
                     let packages = ctx.platform.getFolders('packages');
@@ -99,7 +99,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         {
             activity: Activities.if,
             condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().deploy,
-            body: <ShellActivityOption>{
+            body: {
                 activity: 'shell',
                 shell: (ctx: NodeActivityContext) => {
                     let packages = ctx.platform.getFolders('dist');

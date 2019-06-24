@@ -1,4 +1,4 @@
-import { InjectToken, Type, PromiseUtil, Token, ProviderTypes } from '@tsdi/ioc';
+import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from '@tsdi/ioc';
 import { RunnableConfigure } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
@@ -73,7 +73,7 @@ export interface ActivityConfigure extends RunnableConfigure {
  * @interface TemplateOption
  * @template T
  */
-export interface TemplateOption {
+export interface TemplateOption extends ObjectMap<any> {
     /**
      * activity selector math the template option tag.
      *
