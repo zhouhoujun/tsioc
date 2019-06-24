@@ -6,9 +6,6 @@ import {
     OutputOptionsFile, OutputOptionsDir, ExternalOption, GlobalsOption
 } from 'rollup';
 import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
-// import { basename } from 'path';
-// import { readFileSync } from 'fs';
-// const hypothetical = require('rollup-plugin-hypothetical');
 
 /**
  * rollup activity template option.

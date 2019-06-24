@@ -1,12 +1,12 @@
 import { Src, Task, TemplateOption, ActivityType, GActivityType } from '@tsdi/activities';
 import { NodeActivityContext, ITransform, NodeExpression } from '../core';
+import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
 import { Input, Binding } from '@tsdi/components';
 import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
-import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 
 /**
  * shell activity config.

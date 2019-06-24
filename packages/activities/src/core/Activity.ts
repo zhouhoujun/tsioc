@@ -2,13 +2,12 @@ import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
 import { Input } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
-import { ActivityMetadata } from '../metadatas';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
     Abstract, PromiseUtil, Inject, ProviderTypes, lang, isNullOrUndefined,
     ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
-import { ActivityType, Expression } from './ActivityConfigure';
+import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
 import { ActivityResult, NextToken } from './ActivityResult';
 import { ValuePipe } from './ValuePipe';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
@@ -229,13 +228,13 @@ export function isAcitvity(target: any): target is Activity<any> {
  * @param {*} target
  * @returns {target is Type<IActivity>}
  */
-export function isAcitvityClass(target: any, ext?: (meta: ActivityMetadata) => boolean): target is Type<Activity<any>> {
+export function isAcitvityClass(target: any, ext?: (meta: ActivityConfigure) => boolean): target is Type<Activity<any>> {
     if (!isClass(target)) {
         return false;
     }
     if (hasClassMetadata(Task, target)) {
         if (ext) {
-            return getOwnTypeMetadata<ActivityMetadata>(Task, target).some(meta => meta && ext(meta));
+            return getOwnTypeMetadata<ActivityConfigure>(Task, target).some(meta => meta && ext(meta));
         }
         return true;
     }

@@ -30,7 +30,7 @@ export interface CleanActivityOption extends TemplateOption {
 export class CleanActivity extends Activity<void> {
 
     @Input()
-    protected clean: Expression<Src>;
+    clean: Expression<Src>;
 
 
     constructor(@Input() clean: Expression<Src>) {

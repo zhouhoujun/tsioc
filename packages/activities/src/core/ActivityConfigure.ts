@@ -41,7 +41,7 @@ export enum Activities {
  * @extends {RunnableConfigure}
  * @template T
  */
-export interface ActivityConfigure extends RunnableConfigure {
+export interface ActivityConfigure<T extends TemplateOption = ControlTemplate>  extends RunnableConfigure {
     /**
     * action name.
     *
@@ -63,7 +63,23 @@ export interface ActivityConfigure extends RunnableConfigure {
      * @type {ActivityTemplate}
      * @memberof ActivityConfigure
      */
-    template?: ActivityTemplate;
+    template?: ActivityTemplate<T>;
+
+    /**
+     * decor Type
+     *
+     * @type {string}
+     * @memberof ActivityConfigure
+     */
+    decorType?: string;
+
+    /**
+     * context type.
+     *
+     * @type {Token<ActivityContext>}
+     * @memberof ActivityConfigure
+     */
+    contextType?: Token<ActivityContext>;
 }
 
 /**
@@ -233,22 +249,22 @@ export type ControlTemplate = TemplateOption | ExecuteOption | ExpressionTemplat
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
-export type TemplateType = Type<any> | ControlTemplate | PromiseUtil.ActionHandle<ActivityContext>;
+export type TemplateType<T extends TemplateOption = ControlTemplate> = Type<any> | T | PromiseUtil.ActionHandle<ActivityContext>;
 
 /**
 *  activity type.
 */
-export type GActivityType<T> = Activity<T> | Type<Activity<T>> | TemplateType;
+export type GActivityType<T, Temp extends TemplateOption = ControlTemplate> = Activity<T> | Type<Activity<T>> | TemplateType<Temp>;
 
 /**
  *  activity type.
  */
-export type ActivityType = GActivityType<any>;
+export type ActivityType<T extends TemplateOption = ControlTemplate> = GActivityType<any, T>;
 
 /**
  * activity template.
  */
-export type ActivityTemplate = TemplateType | TemplateType[];
+export type ActivityTemplate<T extends TemplateOption = ControlTemplate>  = TemplateType<T> | TemplateType<T>[];
 
 /**
  * context expression.

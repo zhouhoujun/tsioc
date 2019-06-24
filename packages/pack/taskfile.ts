@@ -1,5 +1,5 @@
 import { Workflow, Task } from '@tsdi/activities';
-import { PackModule, PackMetadata, LibPackBuilderOption } from '@tsdi/pack';
+import { PackModule, PackConfigure, LibPackBuilderOption } from '@tsdi/pack';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 import { AfterInit } from '@tsdi/components';
 

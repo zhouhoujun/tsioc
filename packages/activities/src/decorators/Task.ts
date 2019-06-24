@@ -2,7 +2,7 @@ import {
     isString, createClassDecorator, MetadataExtends, MetadataAdapter,
     isClass, ITypeDecorator, lang, ClassType, Type
 } from '@tsdi/ioc';
-import { ActivityMetadata } from '../metadatas/ActivityMetadata';
+import { ActivityConfigure } from '../core/ActivityConfigure';
 import { RegFor, BootContext } from '@tsdi/boot';
 
 
@@ -14,7 +14,7 @@ import { RegFor, BootContext } from '@tsdi/boot';
  * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorator<T> {
+export interface ITaskDecorator<T extends ActivityConfigure> extends ITypeDecorator<T> {
     /**
      * Activity decorator, use to define class as Activity element.
      *
@@ -52,18 +52,18 @@ export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorat
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {ITaskDecorator<T>}
  */
-export function createTaskDecorator<T extends ActivityMetadata>(
+export function createTaskDecorator<T extends ActivityConfigure>(
     taskType: string,
     adapter?: MetadataAdapter,
     defaultContext?: Type<BootContext>,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
-    return createClassDecorator<ActivityMetadata>(taskType,
+    return createClassDecorator<ActivityConfigure>(taskType,
         args => {
             if (adapter) {
                 adapter(args);
             }
-            args.next<ActivityMetadata>({
+            args.next<ActivityConfigure>({
                 match: (arg) => isString(arg),
                 setMetadata: (metadata, arg) => {
                     metadata.selector = arg;
@@ -97,5 +97,5 @@ export function createTaskDecorator<T extends ActivityMetadata>(
  *
  * @Task
  */
-export const Task: ITaskDecorator<ActivityMetadata> = createTaskDecorator('Task');
+export const Task: ITaskDecorator<ActivityConfigure> = createTaskDecorator('Task');
 

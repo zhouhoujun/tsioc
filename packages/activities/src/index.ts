@@ -1,7 +1,6 @@
 export * from './Workflow';
 
 export * from './decorators';
-export * from './metadatas';
 export * from './handles';
 
 export * from './utils';
