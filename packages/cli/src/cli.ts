@@ -181,6 +181,7 @@ program
     .command('test [files]')
     .description('run activity file.')
     .option('--config [string]', 'config file path.')
+    .option('-b, --browser [bool]', 'test browser project or not.')
     .option('--debug [bool]', 'enable debug log or not')
     .action((files, options) => {
         requireRegisters();
@@ -198,7 +199,12 @@ program
             files = path.join(processRoot, files)
         }
         let unit = requireCwd('@tsdi/unit');
-        let ConsoleReporter = requireCwd('@tsdi/unit-console').ConsoleReporter;
+        let reporter;
+        if (options.browser) {
+            reporter = requireCwd('@tsdi/unit-karma');
+        } else {
+            reporter = requireCwd('@tsdi/unit-console').ConsoleReporter;
+        }
         let config;
         if (isString(options.config)) {
             config = requireCwd(options.config);
@@ -207,7 +213,7 @@ program
         if (isBoolean(options.debug)) {
             config.debug = options.debug;
         }
-        unit.runTest(files, config, ConsoleReporter);
+        unit.runTest(files, config, reporter);
     });
 
 

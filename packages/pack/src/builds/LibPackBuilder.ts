@@ -185,6 +185,15 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @memberof LibBundleOption
      */
     externalLibs?: Binding<string[]>;
+
+    /**
+     * include libs for auto create rollup options.
+     *
+     * @type {Binding<string[]>}
+     * @memberof LibPackBuilderOption
+     */
+    includeLib?: Binding<string[]>;
+
 }
 
 @Task({
@@ -330,6 +339,9 @@ export class LibPackBuilder implements AfterInit {
 
     @Input()
     externalLibs: string[];
+
+    @Input()
+    includeLib: string[];
     /**
      * rollup plugins setting.
      *
@@ -412,6 +424,9 @@ export class LibPackBuilder implements AfterInit {
                     ...Object.keys(packagejson.peerDependencies || {})];
                 if (external.indexOf('rxjs')) {
                     external.push('rxjs/operators')
+                }
+                if (this.includeLib && this.includeLib.length) {
+                    external = external.filter(ex => this.includeLib.indexOf(ex) < 0);
                 }
                 return external;
             };
