@@ -2,7 +2,7 @@ import { Task, TemplateOption, Src, Activities, ActivityTemplate } from '@tsdi/a
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
-import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption } from 'rollup';
+import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption, Plugin } from 'rollup';
 import { RollupOption } from '../rollups';
 import { Input, AfterInit, Binding } from '@tsdi/components';
 import { NodeActivityContext, NodeExpression } from '../core';
