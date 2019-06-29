@@ -3,6 +3,7 @@
   "version": "5.0.20",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
+    "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
