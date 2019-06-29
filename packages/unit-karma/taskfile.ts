@@ -11,24 +11,24 @@ import { AfterInit } from '@tsdi/components';
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
-        outDir: '../../dist/unit-console',
+        outDir: '../../dist/unit-karma',
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
         annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.js', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'unit-console.js', format: 'cjs' },
-            { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'unit-console.js', format: 'cjs' },
-            { target: 'es2017', input: 'es2017/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'unit-console.js', format: 'cjs' }
+            { input: 'src/index.js', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'unit-karma.js', format: 'cjs' },
+            { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'unit-karma.js', format: 'cjs' },
+            { target: 'es2017', input: 'es2017/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'unit-karma.js', format: 'cjs' }
         ]
     }
 })
-export class UnitConsoleBuilder implements AfterInit {
+export class UnitKaramBuilder implements AfterInit {
     onAfterInit(): void | Promise<void> {
-        console.log('pack build has inited...')
+        console.log('UnitKaramBuilder build has inited...')
     }
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.run(UnitConsoleBuilder);
+    Workflow.run(UnitKaramBuilder);
 }
