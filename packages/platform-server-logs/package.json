@@ -3,6 +3,7 @@
   "version": "5.0.20",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
+    "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [

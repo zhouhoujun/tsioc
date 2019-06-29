@@ -3,6 +3,7 @@
   "version": "5.0.20",
   "description": "unit testing console reporter",
   "scripts": {
+    "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [

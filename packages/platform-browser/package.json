@@ -3,6 +3,7 @@
   "version": "5.0.20",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
+    "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
@@ -30,12 +31,13 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "core-js": "^3.1.4"
+  },
   "peerDependencies": {
     "@tsdi/ioc": "^5.0.20",
     "@tsdi/core": "^5.0.20",
     "reflect-metadata": "^0.1.13",
-    "core-js": "^2.6.2",
     "tslib": "^1.10.0"
   },
   "directories": {
