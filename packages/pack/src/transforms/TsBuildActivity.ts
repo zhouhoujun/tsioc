@@ -117,7 +117,8 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
             let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig));
             tsCompile = tsProject();
         } else {
-            tsCompile = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
+            let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
+            tsCompile = tsProject();
         }
         this.result.value = ctx.result = await this.executePipe(ctx, ctx.result, tsCompile);
     }

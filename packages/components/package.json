@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/components",
-  "version": "5.0.21",
+  "version": "5.0.22",
   "description": "DI Module manager, application components. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -34,9 +34,9 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "^5.0.21",
-    "@tsdi/core": "^5.0.21",
-    "@tsdi/boot": "^5.0.21",
+    "@tsdi/ioc": "^5.0.22",
+    "@tsdi/core": "^5.0.22",
+    "@tsdi/boot": "^5.0.22",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0"
   },

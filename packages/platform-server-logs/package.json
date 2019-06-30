@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-logs",
-  "version": "5.0.21",
+  "version": "5.0.22",
   "description": "type task framework, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
@@ -34,12 +34,12 @@
     "log4js": "^3.0.6"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "^5.0.21",
-    "@tsdi/core": "^5.0.21",
-    "@tsdi/aop": "^5.0.21",
-    "@tsdi/logs": "^5.0.21",
-    "@tsdi/boot": "^5.0.21",
-    "@tsdi/platform-server": "^5.0.21",
+    "@tsdi/ioc": "^5.0.22",
+    "@tsdi/core": "^5.0.22",
+    "@tsdi/aop": "^5.0.22",
+    "@tsdi/logs": "^5.0.22",
+    "@tsdi/boot": "^5.0.22",
+    "@tsdi/platform-server": "^5.0.22",
     "globby": "^9.0.0",
     "interpret": "^1.2.0",
     "time-stamp": "^2.2.0",

@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server",
-  "version": "5.0.21",
+  "version": "5.0.22",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
@@ -37,8 +37,8 @@
   "peerDependencies": {
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0",
-    "@tsdi/ioc": "^5.0.21",
-    "@tsdi/core": "^5.0.21"
+    "@tsdi/ioc": "^5.0.22",
+    "@tsdi/core": "^5.0.22"
   },
   "directories": {
     "lib": "lib",
