@@ -10,15 +10,15 @@ import { NodeActivityContext } from './NodeActivityContext';
  * @extends {Activity<T>}
  * @template T
  */
-export abstract class NodeActivity<T> extends Activity<T> {
+export abstract class NodeActivity<T, TCtx extends NodeActivityContext = NodeActivityContext> extends Activity<T, TCtx> {
     /**
      * pipe stream activity
      *
      * @protected
      * @abstract
-     * @param {NodeActivityContext} ctx
+     * @param {TCtx} ctx
      * @returns {Promise<void>}
      * @memberof PipeActivity
      */
-    protected abstract execute(ctx: NodeActivityContext): Promise<void>;
+    protected abstract execute(ctx: TCtx): Promise<void>;
 }
