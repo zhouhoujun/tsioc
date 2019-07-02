@@ -101,10 +101,10 @@ export interface BootOption extends AnnoationOption {
     /**
      * bootstrap reference runable service.
      *
-     * @type {Runnable<any>}
+     * @type {Runnable}
      * @memberof BootOptions
      */
-    runnable?: Runnable<any>;
+    runnable?: Runnable;
 
     /**
      * auto run runnable or not.

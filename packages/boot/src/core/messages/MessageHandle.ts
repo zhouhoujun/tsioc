@@ -36,7 +36,7 @@ export abstract class MessageHandle<T extends MessageContext> extends Handle<T> 
  * @template T
  */
 @Injectable
-export class MessageQueue<T extends MessageContext> extends Handles<T> implements IMessageQueue<T> {
+export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
     send(event: string | T, data?: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void> {
         if (isString(event)) {

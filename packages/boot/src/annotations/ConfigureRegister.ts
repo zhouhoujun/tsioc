@@ -10,16 +10,16 @@ import { BootContext } from '../BootContext';
  * @interface IConfigureRegister
  * @template T
  */
-export interface IConfigureRegister {
+export interface IConfigureRegister<T extends BootContext = BootContext> {
     /**
      * register config setting.
      *
      * @param {RunnableConfigure} config
-     * @param {BootContext} [ctx]
+     * @param {T} [ctx]
      * @returns {Promise<void>}
      * @memberof IConfigureRegister
      */
-    register(config: RunnableConfigure, ctx?: BootContext): Promise<void>;
+    register(config: RunnableConfigure, ctx?: T): Promise<void>;
 }
 
 /**
@@ -32,7 +32,7 @@ export interface IConfigureRegister {
  * @template T
  */
 @Abstract()
-export abstract class ConfigureRegister implements IConfigureRegister {
+export abstract class ConfigureRegister<T extends BootContext = BootContext> implements IConfigureRegister<T> {
 
     constructor() {
     }
@@ -45,9 +45,9 @@ export abstract class ConfigureRegister implements IConfigureRegister {
      *
      * @abstract
      * @param {RunnableConfigure} config
-     * @param {BootContext} [ctx]
+     * @param {T} [ctx]
      * @returns {Promise<void>}
      * @memberof ConfigureRegister
      */
-    abstract register(config: RunnableConfigure, ctx?: BootContext): Promise<void>;
+    abstract register(config: RunnableConfigure, ctx?: T): Promise<void>;
 }

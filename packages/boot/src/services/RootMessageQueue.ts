@@ -12,6 +12,6 @@ import { Singleton } from '@tsdi/ioc';
  */
 
 @Singleton(RootMessageQueueToken)
-export class RootMessageQueue<T extends MessageContext> extends MessageQueue<T> {
+export class RootMessageQueue<T extends MessageContext = MessageContext> extends MessageQueue<T> {
 
 }

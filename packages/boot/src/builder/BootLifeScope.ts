@@ -8,6 +8,7 @@ import { BootConfigureRegisterHandle } from './BootConfigureRegisterHandle';
 import { ResolveRunnableScope } from './ResolveRunnableScope';
 import { RunBootHandle } from './RunBootHandle';
 import { ModuleConfigureRegisterHandle } from './ModuleConfigureRegisterHandle';
+import { ConfigureServiceHandle } from './ConfigureServiceHandle';
 
 
 export class BootLifeScope extends BuildHandles<AnnoationContext> {
@@ -20,6 +21,7 @@ export class BootLifeScope extends BuildHandles<AnnoationContext> {
             .use(BootConfigureRegisterHandle)
             .use(ModuleBuildScope, true)
             .use(ModuleConfigureRegisterHandle)
+            .use(ConfigureServiceHandle)
             .use(ResolveRunnableScope, true)
             .use(RunBootHandle);
     }

@@ -44,7 +44,7 @@ export interface ServiceInit extends RunnableInit {
  * @implements {IService}
  */
 @Abstract()
-export abstract class Service<T> extends Runnable<T> implements IService<T> {
+export abstract class Service<T = any> extends Runnable<T> implements IService<T> {
 
     /**
      * run service.

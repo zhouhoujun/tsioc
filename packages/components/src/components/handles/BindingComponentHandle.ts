@@ -1,7 +1,6 @@
-
 import { Element } from '../Element';
-import { BuildHandle, BuildContext } from '@tsdi/boot';
 import { ComponentManager } from '../../ComponentManager';
+import { BuildHandle, BuildContext } from '@tsdi/boot';
 
 
 export class BindingComponentHandle extends BuildHandle<BuildContext> {

@@ -14,7 +14,7 @@ import { ProcessRunRootToken } from './RunnableConfigure';
  * @class ConfigureManager
  */
 @Singleton(ConfigureMgrToken)
-export class ConfigureManager<T extends RunnableConfigure> implements IConfigureManager<T> {
+export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> implements IConfigureManager<T> {
     /**
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]

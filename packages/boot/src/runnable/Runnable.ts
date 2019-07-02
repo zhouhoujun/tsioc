@@ -80,7 +80,7 @@ export interface RunnableInit {
  * @template T
  */
 @Abstract()
-export abstract class Runnable<T> implements IRunnable<any> {
+export abstract class Runnable<T = any> implements IRunnable<T> {
 
     protected _ctx: BootContext;
     get context(): BootContext {

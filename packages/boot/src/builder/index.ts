@@ -10,6 +10,7 @@ export * from './BootConfigureRegisterHandle';
 export * from './BootProvidersHandle';
 export * from './BootDepsHandle';
 export * from './ModuleConfigureRegisterHandle';
+export * from './ConfigureServiceHandle';
 
 export * from './ModuleBuildScope';
 

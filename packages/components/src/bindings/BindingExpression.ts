@@ -1,5 +1,4 @@
 
-
 export abstract class BindingExpression<T> {
     protected prefix: string;
     abstract resolve(scope: any): T;
