@@ -23,10 +23,10 @@ export interface ShellActivityOption extends TemplateOption {
     /**
      * shell args.
      *
-     * @type {Binding<NodeExpression<string[] | ObjectMap<any>>>}
+     * @type {Binding<NodeExpression<string[] | ObjectMap>>}
      * @memberof ShellActivityConfig
      */
-    args?: Binding<NodeExpression<string[] | ObjectMap<any>>>;
+    args?: Binding<NodeExpression<string[] | ObjectMap>>;
     /**
      * shell exec options.
      *
@@ -67,7 +67,7 @@ export class ShellActivity extends Activity<void> {
      * @memberof ShellActivity
      */
     @Input()
-    args: NodeExpression<string[] | ObjectMap<any>>;
+    args: NodeExpression<string[] | ObjectMap>;
     /**
      * shell exec options.
      *
@@ -104,7 +104,7 @@ export class ShellActivity extends Activity<void> {
         return shell;
     }
 
-    protected formatArgs(args: ObjectMap<any>): string[] {
+    protected formatArgs(args: ObjectMap): string[] {
         let strArgs = [];
         lang.forIn(args, (val, k: string) => {
             if (k === 'root' || !/^[a-zA-Z]/.test(k)) {
@@ -122,7 +122,7 @@ export class ShellActivity extends Activity<void> {
         return strArgs;
     }
 
-    protected formatArg(arg: any, key: string, args?: ObjectMap<any>): string {
+    protected formatArg(arg: any, key: string, args?: ObjectMap): string {
         if (isBoolean(arg) && arg) {
             return `--${key}`;
         }

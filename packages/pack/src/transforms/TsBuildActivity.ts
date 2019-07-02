@@ -26,7 +26,7 @@ export interface TsBuildOption extends AssetActivityOption {
     tsconfig: Binding<NodeExpression<string | CompilerOptions>>;
     dts?: Binding<NodeExpression<string>>;
     uglify?: Binding<NodeExpression<boolean>>;
-    uglifyOptions?: Binding<NodeExpression<any>>;
+    uglifyOptions?: Binding<NodeExpression>;
     jsValuePipe?: Binding<NodeExpression<ValuePipe | boolean>>;
     dtsValuePipe?: Binding<NodeExpression<ValuePipe | boolean>>;
 }
@@ -66,7 +66,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
 
 
     @Input('tsconfig', './tsconfig.json')
-    tsconfig: NodeExpression<string | ObjectMap<any>>;
+    tsconfig: NodeExpression<string | ObjectMap>;
 
 
     onAfterInit(): void | Promise<void> {

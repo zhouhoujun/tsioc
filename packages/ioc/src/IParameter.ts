@@ -17,16 +17,16 @@ export interface IParameter {
     /**
      * parameter type.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof IParameter
      */
-    type: Token<any>;
+    type: Token;
 
     /**
      * provider for the parameter.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof IParameter
      */
-    provider: Token<any>;
+    provider: Token;
 }

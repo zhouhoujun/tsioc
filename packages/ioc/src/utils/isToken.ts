@@ -7,9 +7,9 @@ import { isSymbol, isString, isClassType } from './lang';
  *
  * @export
  * @param {*} target
- * @returns {target is Token<any>}
+ * @returns {target is Token}
  */
-export function isToken(target: any): target is Token<any> {
+export function isToken(target: any): target is Token {
     if (!target) {
         return false;
     }
@@ -24,7 +24,7 @@ export function isToken(target: any): target is Token<any> {
  *
  * @export
  * @param {*} target
- * @returns {target is ProvideToken<any>}
+ * @returns {target is ProvideToken}
  */
 export function isProvideToken(target: any): target is ProvideToken<any> {
     if (!target) {

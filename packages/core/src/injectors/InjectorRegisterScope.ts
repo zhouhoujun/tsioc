@@ -11,9 +11,9 @@ export abstract class InjectorRegisterScope extends InjectorScope {
         next && next();
     }
 
-    protected abstract getTypes(ctx: InjectorActionContext): Type<any>[];
+    protected abstract getTypes(ctx: InjectorActionContext): Type[];
 
-    protected registerTypes(ctx: InjectorActionContext, types: Type<any>[]) {
+    protected registerTypes(ctx: InjectorActionContext, types: Type[]) {
         if (isArray(types) && types.length) {
             types.forEach(ty => {
                 if (!this.container.has(ty)) {
@@ -25,7 +25,7 @@ export abstract class InjectorRegisterScope extends InjectorScope {
         }
     }
 
-    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type<any>[]) {
+    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {
         ctx.types = ctx.types.filter(ty => registered.indexOf(ty) < 0);
     }
 

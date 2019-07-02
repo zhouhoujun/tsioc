@@ -11,9 +11,9 @@ import { ResolveServiceTokenAction } from './ResolveServiceTokenAction';
  * @class ResolveServiceAction
  * @extends {IocResolveScope<ResolveServiceContext>}
  */
-export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext<any>> {
+export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext> {
 
-    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (!ctx.instance) {
             super.execute(ctx, next);
         }

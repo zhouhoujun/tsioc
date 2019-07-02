@@ -2,14 +2,14 @@ import { Injectable, lang } from '@tsdi/ioc';
 import { Activity } from './Activity';
 
 export interface RunScopes {
-    scope: Activity<any>,
-    subs: Activity<any>[]
+    scope: Activity,
+    subs: Activity[]
 }
 
 @Injectable
 export class ActivityStatus {
 
-    tracks: Activity<any>[];
+    tracks: Activity[];
     scopes: RunScopes[];
 
     constructor() {
@@ -18,18 +18,18 @@ export class ActivityStatus {
     }
 
 
-    private _current: Activity<any>;
+    private _current: Activity;
     /**
      * current actiivty.
      *
-     * @type {Activity<any>}
+     * @type {Activity}
      * @memberof ActivityStateManager
      */
-    get current(): Activity<any> {
+    get current(): Activity {
         return this._current;
     }
 
-    set current(activity: Activity<any>) {
+    set current(activity: Activity) {
         this._current = activity;
         this.tracks.unshift(activity);
         if (activity.isScope) {

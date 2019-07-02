@@ -35,10 +35,10 @@ export interface AdviceMetadata extends MethodMetadata {
     /**
      * advice within.
      *
-     * @type {(ClassType<any> | ClassType<any>[])}
+     * @type {(ClassType | ClassType[])}
      * @memberof AdviceMetadata
      */
-    within?: ClassType<any> | ClassType<any>[];
+    within?: ClassType | ClassType[];
 
     /**
      * annotation name, special annotation metadata for annotation advices.

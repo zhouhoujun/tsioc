@@ -124,10 +124,10 @@ export class Joinpoint implements IJoinpoint {
     /**
      * pointcut target type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof Joinpoint
      */
-    targetType: Type<any>;
+    targetType: Type;
 
 
     constructor(@Inject(JoinpointOptionToken) options: JoinpointOption) {

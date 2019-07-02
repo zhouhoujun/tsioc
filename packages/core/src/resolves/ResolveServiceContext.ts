@@ -15,7 +15,7 @@ export interface ServiceOption<T> extends ResolveActionOption<T> {
     /**
      * token provider service type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof ServiceActionOption
      */
     tokens?: Token<T>[];
@@ -49,14 +49,14 @@ export interface ServiceOption<T> extends ResolveActionOption<T> {
     *
     * @memberof ResolveServiceContext
     */
-    refTargetFactory?: (targetToken: Token<any>, token?: Token<any>) => Token<any> | Token<any>[];
+    refTargetFactory?: (targetToken: Token, token?: Token) => Token | Token[];
 
     /**
      * service token factory.
      *
      * @memberof ResolveServiceContext
      */
-    serviceTokenFactory?: (token: Token<any>) => Token<any>[];
+    serviceTokenFactory?: (token: Token) => Token[];
 }
 
 /**
@@ -66,7 +66,7 @@ export interface ServiceOption<T> extends ResolveActionOption<T> {
  * @class ResolveServiceContext
  * @extends {ResovleActionContext}
  */
-export class ResolveServiceContext<T> extends ResolveActionContext<T> {
+export class ResolveServiceContext<T = any> extends ResolveActionContext<T> {
 
     /**
      * create resolve context via options.
@@ -83,10 +83,10 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
     /**
      * curr token.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof ServiceActionOption
      */
-    currToken?: Token<any>;
+    currToken?: Token;
 
     /**
      * get extend servie or not.
@@ -99,10 +99,10 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
     /**
      * service tokens.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof ResolveServiceContext
      */
-    tokens: Token<any>[];
+    tokens: Token[];
 
     /**
      * service reference target.
@@ -130,29 +130,29 @@ export class ResolveServiceContext<T> extends ResolveActionContext<T> {
 
     currDecorator?: string;
 
-    currTargetToken?: Token<any>;
+    currTargetToken?: Token;
 
-    currTargetType?: ClassType<any>;
+    currTargetType?: ClassType;
     /**
      * ref target factory.
      *
      * @memberof ResolveServiceContext
      */
-    refTargetFactory?: (targetToken: Token<any>, token?: Token<any>) => Token<any> | Token<any>[];
+    refTargetFactory?: (targetToken: Token, token?: Token) => Token | Token[];
 
     /**
      * service token factory.
      *
      * @memberof ResolveServiceContext
      */
-    serviceTokenFactory?: (token: Token<any>) => Token<any>[];
+    serviceTokenFactory?: (token: Token) => Token[];
 
     /**
      * reolve this defualt service, if not found any service.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof ResolveServiceContext
      */
-    defaultToken?: Token<any>;
+    defaultToken?: Token;
 
 }

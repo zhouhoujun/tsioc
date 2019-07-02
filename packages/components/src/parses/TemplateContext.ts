@@ -3,7 +3,7 @@ import { ContainerFactory, Injectable, Type, ProviderTypes, InjectToken, IocRais
 import { IModuleResolveOption, IComponentContext, ModuleConfigure } from '@tsdi/boot';
 
 export interface ITemplateOption extends IModuleResolveOption {
-    selector?: Type<any>;
+    selector?: Type;
 }
 
 /**
@@ -14,7 +14,7 @@ export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_T
 @Injectable
 export class TemplateContext extends IocRaiseContext implements IComponentContext {
 
-    selector?: Type<any>;
+    selector?: Type;
 
     scope?: any;
 

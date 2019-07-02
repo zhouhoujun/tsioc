@@ -37,11 +37,11 @@ export namespace lang {
      * create an new object from target object omit some field.
      *
      * @export
-     * @param {ObjectMap<any>} target
+     * @param {ObjectMap} target
      * @param {...string[]} fields
      * @returns {*}
      */
-    export function omit(target: ObjectMap<any>, ...fields: string[]): any {
+    export function omit(target: ObjectMap, ...fields: string[]): any {
         if (isObject(target)) {
             let result: any = {};
             Object.keys(target).forEach(key => {
@@ -59,10 +59,10 @@ export namespace lang {
      * object has field or not.
      *
      * @export
-     * @param {ObjectMap<any>} target
+     * @param {ObjectMap} target
      * @returns
      */
-    export function hasField(target: ObjectMap<any>) {
+    export function hasField(target: ObjectMap) {
         return Object.keys(target).length > 0;
     }
 
@@ -74,7 +74,7 @@ export namespace lang {
      * @param {(ObjectMap<T> | T[])} target
      * @param {(item: T, idx?: number|string) => void|boolean} iterator
      */
-    export function forIn<T>(target: ObjectMap<T> | T[], iterator: (item: T, idx?: number | string) => void | boolean) {
+    export function forIn<T = any>(target: ObjectMap<T> | T[], iterator: (item: T, idx?: number | string) => void | boolean) {
         if (isArray(target)) {
             target.some((it, idx) => iterator(it, idx) === false);
         } else if (isObject(target)) {
@@ -139,10 +139,10 @@ export namespace lang {
      * get class annations.
      *
      * @export
-     * @param {ClassType<any>} target
+     * @param {ClassType} target
      * @returns
      */
-    export function getClassAnnations(target: ClassType<any>) {
+    export function getClassAnnations(target: ClassType) {
         return isFunction(target.getClassAnnations) ? target.getClassAnnations() : target.classAnnations;
     }
 
@@ -150,10 +150,10 @@ export namespace lang {
      * target has class annations or not.
      *
      * @export
-     * @param {ClassType<any>} target
+     * @param {ClassType} target
      * @returns {boolean}
      */
-    export function hasClassAnnations(target: ClassType<any>): boolean {
+    export function hasClassAnnations(target: ClassType): boolean {
         if (isFunction(target.getClassAnnations)) {
             return true;
         }
@@ -166,9 +166,9 @@ export namespace lang {
      *
      * @export
      * @param {*} target
-     * @returns {Type<any>}
+     * @returns {Type}
      */
-    export function getClass(target: any): Type<any> {
+    export function getClass(target: any): Type {
         if (isNullOrUndefined(target)) {
             return null;
         }
@@ -182,7 +182,7 @@ export namespace lang {
      * get class name.
      *
      * @export
-     * @param {AbstractType<any>} target
+     * @param {AbstractType} target
      * @returns {string}
      */
     export function getClassName(target: any): string {
@@ -201,23 +201,23 @@ export namespace lang {
      * get target type parent class.
      *
      * @export
-     * @param {ClassType<any>} target
-     * @returns {ClassType<any>}
+     * @param {ClassType} target
+     * @returns {ClassType}
      */
-    export function getParentClass(target: ClassType<any>): ClassType<any> {
+    export function getParentClass(target: ClassType): ClassType {
         let p = Reflect.getPrototypeOf(target.prototype);
-        return isClass(p) ? p : p.constructor as ClassType<any>;
+        return isClass(p) ? p : p.constructor as ClassType;
     }
 
     /**
      * get all parent class in chain.
      *
      * @export
-     * @param {ClassType<any>} target
-     * @returns {ClassType<any>[]}
+     * @param {ClassType} target
+     * @returns {ClassType[]}
      */
-    export function getClassChain(target: ClassType<any>): ClassType<any>[] {
-        let types: ClassType<any>[] = [];
+    export function getClassChain(target: ClassType): ClassType[] {
+        let types: ClassType[] = [];
         forInClassChain(target, type => {
             types.push(type);
         });
@@ -228,10 +228,10 @@ export namespace lang {
      * iterate base classes of target in chain. return false will break iterate.
      *
      * @export
-     * @param {Type<any>} target
-     * @param {(token: Type<any>) => any} express
+     * @param {Type} target
+     * @param {(token: Type) => any} express
      */
-    export function forInClassChain(target: ClassType<any>, express: (token: ClassType<any>) => any): void {
+    export function forInClassChain(target: ClassType, express: (token: ClassType) => any): void {
         while (isClassType(target) && target !== Object) {
             if (express(target) === false) {
                 break;
@@ -244,11 +244,11 @@ export namespace lang {
      * target is extends class of baseClass or not.
      *
      * @export
-     * @param {Token<any>} target
-     * @param {(ClassType<any> | ((type: ClassType<any>) => boolean))} baseClass
+     * @param {Token} target
+     * @param {(ClassType | ((type: ClassType) => boolean))} baseClass
      * @returns {boolean}
      */
-    export function isExtendsClass(target: Token<any>, baseClass: ClassType<any> | ((type: ClassType<any>) => boolean)): boolean {
+    export function isExtendsClass(target: Token, baseClass: ClassType | ((type: ClassType) => boolean)): boolean {
         let isExtnds = false;
         if (isClassType(target)) {
             forInClassChain(target, t => {
@@ -268,7 +268,7 @@ export namespace lang {
     /**
     *  action handle.
     */
-    export type IAction<T> = (ctx: T, next?: () => void) => any;
+    export type IAction<T = any> = (ctx: T, next?: () => void) => any;
 
     /**
      * execute action in chain.
@@ -324,9 +324,9 @@ export function isFunction(target: any): target is Function {
  *
  * @export
  * @param {*} target
- * @returns {target is AbstractType<any>}
+ * @returns {target is AbstractType}
  */
-export function isAbstractClass(target: any): target is AbstractType<any> {
+export function isAbstractClass(target: any): target is AbstractType {
     return classCheck(target) && Reflect.hasOwnMetadata('@Abstract', target);
 }
 
@@ -336,13 +336,13 @@ export function isAbstractClass(target: any): target is AbstractType<any> {
  *
  * @export
  * @param {*} target
- * @returns {target is Type<any>}
+ * @returns {target is Type}
  */
-export function isClass(target: any): target is Type<any> {
+export function isClass(target: any): target is Type {
     return classCheck(target) && (!Reflect.hasOwnMetadata('@Abstract', target))
 }
 
-export function isClassType(target: any): target is ClassType<any> {
+export function isClassType(target: any): target is ClassType {
     return classCheck(target);
 }
 
@@ -356,7 +356,7 @@ function classCheck(target: any): boolean {
             return false;
         }
 
-        let type = target as Type<any>;
+        let type = target as Type;
 
         // for uglify
         if (/^[a-z]$/.test(type.name)) {
@@ -648,7 +648,7 @@ export function isRegExp(target: any): target is RegExp {
  * @param {*} target
  * @returns {boolean}
  */
-export function isBaseType(target: ClassType<any>): boolean {
+export function isBaseType(target: ClassType): boolean {
     if (!isFunction(target)) {
         return false;
     }

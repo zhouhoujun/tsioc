@@ -29,7 +29,7 @@ export interface ResolveActionOption<T> extends ActionContextOption {
 }
 
 export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(CtxType: Type<Ctx>, target: Token<T> | ResolveActionOption<T>): Ctx {
-    let token: Token<any>;
+    let token: Token;
     let options: ResolveActionOption<T>;
     if (isToken(target)) {
         token = target;
@@ -48,7 +48,7 @@ export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(Ctx
  * @export
  * @interface IResolverContext
  */
-export class ResolveActionContext<T> extends IocActionContext {
+export class ResolveActionContext<T = any> extends IocActionContext {
 
     constructor(token: Token<T>) {
         super();
@@ -58,7 +58,7 @@ export class ResolveActionContext<T> extends IocActionContext {
     /**
      * token.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof ResolveContext
      */
     token: Token<T>;
@@ -83,7 +83,7 @@ export class ResolveActionContext<T> extends IocActionContext {
     /**
      * set resolve target.
      *
-     * @param {Token<any>} token
+     * @param {Token} token
      * @param {ProviderTypes[]} [providers]
      * @memberof ResolveContext
      */

@@ -26,10 +26,10 @@ export interface LogConfigure {
     /**
      * logger config options.
      *
-     * @type {ObjectMap<any>}
+     * @type {ObjectMap}
      * @memberof LogConfigure
      */
-    config?: ObjectMap<any>;
+    config?: ObjectMap;
 
     /**
      * format

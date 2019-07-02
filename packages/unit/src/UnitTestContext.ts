@@ -9,7 +9,7 @@ export class UnitTestContext extends BootContext {
 
     configures?: (string | UnitTestConfigure)[];
 
-    static parse(target: Type<any> | UnitTestOptions, raiseContainer?: ContainerFactory): UnitTestContext {
+    static parse(target: Type | UnitTestOptions, raiseContainer?: ContainerFactory): UnitTestContext {
         return createAnnoationContext(UnitTestContext, target, raiseContainer);
     }
 }

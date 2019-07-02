@@ -32,7 +32,7 @@ export class SwitchActivity<T> extends ControlerActivity<T> {
     isScope = true;
 
     @Input()
-    switch: Expression<any>;
+    switch: Expression;
 
     @Input('cases', CaseActivity)
     cases: CaseActivity<T>[];

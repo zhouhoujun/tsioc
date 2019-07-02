@@ -30,7 +30,7 @@ export class ConsoleReporter extends RealtimeReporter {
         console.log('    ' + (desc.error ? chalk.red('x') : chalk.green('√')) + ' ' + chalk.gray(desc.title))
     }
 
-    async render(suites: Map<Token<any>, ISuiteDescribe>): Promise<void> {
+    async render(suites: Map<Token, ISuiteDescribe>): Promise<void> {
         let reportStr = '';
         let first: ISuiteDescribe, last: ISuiteDescribe;
         let sus = Array.from(suites.values());

@@ -1,7 +1,7 @@
 import { TypeMetadata, createClassDecorator, ArgsIterator, Type, isClass, isUndefined } from '@tsdi/ioc';
 import { MessageHandle, MessageContext, MessageQueue, IMessage } from '../messages';
 
-export type MessageDecorator = <TFunction extends Type<IMessage<any>>>(target: TFunction) => TFunction | void;
+export type MessageDecorator = <TFunction extends Type<IMessage>>(target: TFunction) => TFunction | void;
 
 
 /**

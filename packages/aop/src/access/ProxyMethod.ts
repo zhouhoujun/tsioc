@@ -44,12 +44,12 @@ export class ProxyMethod implements IProxyMethod {
      * proceed the proxy method.
      *
      * @param {*} target
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @param {IPointcut} pointcut
      * @param {Joinpoint} [provJoinpoint]
      * @memberof ProxyMethod
      */
-    proceed(target: any, targetType: Type<any>, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
+    proceed(target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
 
         let aspectMgr = this.advisor;
         let fullName = pointcut.fullName;
@@ -74,7 +74,7 @@ export class ProxyMethod implements IProxyMethod {
         }
     }
 
-    proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type<any>, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
+    proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
         let fullName = pointcut.fullName;
         let methodName = pointcut.name;
         let container = this.container;

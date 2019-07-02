@@ -27,7 +27,7 @@ export interface IMethodPropParamDecorator<T extends TypeMetadata> {
      *
      * @param {Token<T>} provider define provider to resolve value to the parameter or property.
      */
-    (provider: Token<any>): PropParamDecorator;
+    (provider: Token): PropParamDecorator;
 
     /**
      * define method decorator with providers.

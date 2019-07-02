@@ -15,7 +15,7 @@ export class ComponentDecoratorService extends ModuleDecoratorService {
         return super.getMatchDecorator(decorators);
     }
 
-    getAnnoation(type: Type<any>, decorator?: string): ModuleConfigure {
+    getAnnoation(type: Type, decorator?: string): ModuleConfigure {
         let ann = super.getAnnoation(type, decorator)
         if (ann.template) {
             ann.template = this.cloneTemplate(ann.template);

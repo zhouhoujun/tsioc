@@ -33,7 +33,7 @@ export interface IAssertionError extends Error {
 
 
 export const RunCaseToken = new InjectToken<Function>('runCase');
-export const RunSuiteToken = new InjectToken<any>('runSuite');
+export const RunSuiteToken = new InjectToken('runSuite');
 
 /**
  * abstract Assert class.

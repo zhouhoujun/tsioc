@@ -22,7 +22,7 @@ export interface WatchActivityOption extends BodyTemplate {
      * @type {NodeExpression<DestOptions>}
      * @memberof UnitTestActivityOption
      */
-    watchOptions?: Binding<NodeExpression<any>>;
+    watchOptions?: Binding<NodeExpression>;
 }
 
 
@@ -40,10 +40,10 @@ export class WatchActivity extends Activity<Src> {
     watch: NodeExpression<Src>;
 
     @Input('watchOptions')
-    options:  NodeExpression<any>;
+    options:  NodeExpression;
 
     @Input()
-    body: BodyActivity<any>;
+    body: BodyActivity;
 
 
     protected async execute(ctx: NodeActivityContext) {

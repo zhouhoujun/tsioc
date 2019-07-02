@@ -24,7 +24,7 @@ export enum BindingTypes {
  * @interface IBinding
  * @template T
  */
-export interface IBinding<T> {
+export interface IBinding<T = any> {
     /**
      * binding property name.
      *
@@ -87,15 +87,15 @@ export interface IBindingTypeReflect extends ITypeReflect {
     /**
      * property binding metadata.
      *
-     * @type {Map<string, IBinding<any>>}
+     * @type {Map<string, IBinding>}
      * @memberof IBindingTypeReflect
      */
-    propBindings: Map<string, IBinding<any>>;
+    propBindings: Map<string, IBinding>;
     /**
      * method params binding metadata.
      *
-     * @type {Map<string, IBinding<any>[]>}
+     * @type {Map<string, IBinding[]>}
      * @memberof IBindingTypeReflect
      */
-    paramsBindings: Map<string, IBinding<any>[]>;
+    paramsBindings: Map<string, IBinding[]>;
 }

@@ -18,7 +18,7 @@ export class ActionLogAspect extends LoggerAspect {
     doLogging(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
-            let target = joinPoint.target as Activity<any>;
+            let target = joinPoint.target as Activity;
             let name = target.name;
             if (!name && target.scopes && target.scopes.length) {
                 name = lang.getClassName(lang.last(target.scopes));

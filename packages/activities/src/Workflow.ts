@@ -19,7 +19,7 @@ import { ComponentsModule } from '@tsdi/components';
  */
 export class Workflow<T extends ActivityContext = ActivityContext> extends BootApplication<T> implements ContextInit {
 
-    protected onInit(target: Type<any> | ActivityOption<T> | T) {
+    protected onInit(target: Type | ActivityOption<T> | T) {
         if (!isClass(target)) {
             if (!target.module && isArray(target.template)) {
                 target.module = SequenceActivity;
@@ -53,13 +53,13 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
      *
      * @static
      * @template T
-     * @param {(T | Type<any> | ActivityOption<T>)} target
+     * @param {(T | Type | ActivityOption<T>)} target
      * @param {(LoadType[] | LoadType | string)} [deps]  workflow run depdences.
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async run<T extends ActivityContext = ActivityContext>(target: T | Type<any> | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
+    static async run<T extends ActivityContext = ActivityContext>(target: T | Type | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
         let { deps: depmds, args: envs } = checkBootArgs(deps, ...args);
         return await new Workflow(target, depmds).run(...envs) as T;
     }

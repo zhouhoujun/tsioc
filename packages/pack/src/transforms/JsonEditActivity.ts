@@ -8,7 +8,7 @@ const jeditor = require('gulp-json-editor');
 const inplace = require('json-in-place');
 
 
-export type JsonEdit = (json: any, ctx?: NodeActivityContext) => ObjectMap<any>;
+export type JsonEdit = (json: any, ctx?: NodeActivityContext) => ObjectMap;
 
 
 export interface JsonEditActivityOption extends TemplateOption {
@@ -18,7 +18,7 @@ export interface JsonEditActivityOption extends TemplateOption {
      * @type {Binding<JsonEdit>}
      * @memberof SourceActivityOption
      */
-    json: Binding<JsonEdit | ObjectMap<any>>;
+    json: Binding<JsonEdit | ObjectMap>;
 }
 
 /**
@@ -32,7 +32,7 @@ export interface JsonEditActivityOption extends TemplateOption {
 export class JsonEditActivity extends TransformActivity {
 
     @Input()
-    json: JsonEdit | ObjectMap<any>;
+    json: JsonEdit | ObjectMap;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         if (!this.json) {
@@ -48,7 +48,7 @@ export class JsonEditActivity extends TransformActivity {
 
 }
 
-export type JsonReplace = (json: any, ctx?: NodeActivityContext) => ObjectMap<any> | Map<string, any>;
+export type JsonReplace = (json: any, ctx?: NodeActivityContext) => ObjectMap | Map<string, any>;
 
 export interface JsonReplaceActivityOption extends TemplateOption {
     /**

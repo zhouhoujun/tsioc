@@ -91,9 +91,9 @@ export interface IJoinpoint extends IPointcut {
     /**
      * pointcut target type.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof IJoinpoint
      */
-    targetType: Type<any>;
+    targetType: Type;
 
 }

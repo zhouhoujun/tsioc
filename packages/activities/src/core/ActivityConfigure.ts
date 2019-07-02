@@ -89,14 +89,14 @@ export interface ActivityConfigure<T extends TemplateOption = ControlTemplate>  
  * @interface TemplateOption
  * @template T
  */
-export interface TemplateOption extends ObjectMap<any> {
+export interface TemplateOption extends ObjectMap {
     /**
      * activity selector math the template option tag.
      *
      * @type {string}
      * @memberof ConditionOption
      */
-    activity: string | Activities | Type<any>;
+    activity: string | Activities | Type;
 
     /**
      * action name.
@@ -117,13 +117,13 @@ export interface TemplateOption extends ObjectMap<any> {
 
 
 export interface InvokeTemplate extends TemplateOption {
-    target: Binding<Token<any>>,
+    target: Binding<Token>,
     method: Binding<string>,
     args: Binding<ProviderTypes[]>
 }
 
 export interface ExecuteOption extends TemplateOption {
-    action: Binding<(ctx: ActivityContext, activity?: Activity<any>) => void | Promise<void>>;
+    action: Binding<(ctx: ActivityContext, activity?: Activity) => void | Promise<void>>;
 }
 
 
@@ -249,7 +249,7 @@ export type ControlTemplate =  Required<TemplateOption> | ExecuteOption | Expres
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
-export type TemplateType<T extends TemplateOption = ControlTemplate> = Type<any> | T | PromiseUtil.ActionHandle<ActivityContext>;
+export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T | PromiseUtil.ActionHandle<ActivityContext>;
 
 /**
 *  activity type.
@@ -269,10 +269,10 @@ export type ActivityTemplate<T extends TemplateOption = ControlTemplate>  = Temp
 /**
  * context expression.
  */
-export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | Activity<T> | ((ctx: TC) => T | Promise<T>) | Type<any>;
+export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | Activity<T> | ((ctx: TC) => T | Promise<T>) | Type;
 
 /**
  * expression.
  */
-export type Expression<T> = CtxExpression<T, ActivityContext>;
+export type Expression<T = any> = CtxExpression<T, ActivityContext>;
 

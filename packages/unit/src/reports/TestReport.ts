@@ -18,7 +18,7 @@ export class TestReport implements ITestReport {
     @Inject(ContainerToken)
     container: IContainer;
 
-    suites: Map<Token<any>, ISuiteDescribe>;
+    suites: Map<Token, ISuiteDescribe>;
 
     resports: Reporter[];
     getReports() {
@@ -32,7 +32,7 @@ export class TestReport implements ITestReport {
         this.suites = new Map();
     }
 
-    addSuite(suit: Token<any>, describe: ISuiteDescribe) {
+    addSuite(suit: Token, describe: ISuiteDescribe) {
         if (!this.suites.has(suit)) {
             describe.start = new Date().getTime();
             // init suite must has no completed cases.
@@ -52,25 +52,25 @@ export class TestReport implements ITestReport {
         }
     }
 
-    getSuite(suit: Token<any>): ISuiteDescribe {
+    getSuite(suit: Token): ISuiteDescribe {
         return this.suites.has(suit) ? this.suites.get(suit) : null;
     }
 
-    setSuiteCompleted(suit: Token<any>) {
+    setSuiteCompleted(suit: Token) {
         let suite = this.getSuite(suit);
         if (suite) {
             suite.end = new Date().getTime();
         }
     }
 
-    addCase(suit: Token<any>, testCase: ICaseDescribe) {
+    addCase(suit: Token, testCase: ICaseDescribe) {
         if (this.suites.has(suit)) {
             testCase.start = new Date().getTime();
             this.suites.get(suit).cases.push(testCase);
         }
     }
 
-    getCase(suit: Token<any>, test: string): ICaseDescribe {
+    getCase(suit: Token, test: string): ICaseDescribe {
         let suite = this.getSuite(suit);
         if (suite) {
             let tCase = suite.cases.find(c => c.key === test);

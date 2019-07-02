@@ -6,7 +6,7 @@ import { ModuleConfigure } from '../modules/ModuleConfigure';
  *
  * @export
  * @interface DIModuleMetadata
- * @extends {ModuleConfig<any>}
+ * @extends {ModuleConfigure}
  * @extends {ClassMetadata}
  */
 export interface DIModuleMetadata extends ModuleConfigure {
@@ -45,9 +45,6 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  * @export
  * @template T
  * @param {string} name decorator name.
- * @param {Token<IModuleBuilder>} [defaultBuilder]
- * @param {Token<IAnnotationBuilder<any>>} [defaultAnnoBuilder]
- * @param {defaultBoot?: Token<any> | ((metadata: T) => Token<any>)} [defaultBoot]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}

@@ -47,10 +47,10 @@ export interface RunnableConfigure extends ModuleConfigure {
     /**
      * custom config key value setting.
      *
-     * @type {IMap<any>}
+     * @type {ObjectMap}
      * @memberOf AppConfigure
      */
-    setting?: ObjectMap<any>;
+    setting?: ObjectMap;
 
     /**
      * custom config connections.

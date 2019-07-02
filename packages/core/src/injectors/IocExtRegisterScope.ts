@@ -3,11 +3,11 @@ import { InjectorActionContext } from './InjectorActionContext';
 import { InjectorRegisterScope } from './InjectorRegisterScope';
 
 export class IocExtRegisterScope extends InjectorRegisterScope {
-    protected getTypes(ctx: InjectorActionContext): Type<any>[] {
+    protected getTypes(ctx: InjectorActionContext): Type[] {
         return ctx.types.filter(ty => hasOwnClassMetadata(ctx.currDecoractor, ty));
     }
 
-    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type<any>[]) {
+    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {
         ctx.types = [];
     }
 }

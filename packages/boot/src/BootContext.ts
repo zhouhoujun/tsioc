@@ -38,7 +38,7 @@ export interface BootOption extends AnnoationOption {
     /**
      * annoation metadata config.
      *
-     * @type {AnnotationConfigure<any>}
+     * @type {RunnableConfigure}
      * @memberof AnnoationContext
      */
     annoation?: RunnableConfigure;
@@ -150,7 +150,7 @@ export const BootTargetToken = new InjectToken('module_type');
 @Injectable
 export class BootContext extends AnnoationContext implements IComponentContext {
 
-    constructor(@Inject(BootTargetToken) type: Type<any>) {
+    constructor(@Inject(BootTargetToken) type: Type) {
         super(type);
     }
 
@@ -171,7 +171,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     /**
      * annoation metadata config.
      *
-     * @type {AnnotationConfigure<any>}
+     * @type {RunnableConfigure}
      * @memberof AnnoationContext
      */
     annoation?: RunnableConfigure;
@@ -252,10 +252,10 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     /**
      * bootstrap runnable service.
      *
-     * @type {Runnable<any>}
+     * @type {Runnable}
      * @memberof BootContext
      */
-    runnable?: Runnable<any>;
+    runnable?: Runnable;
 
     /**
      * boot dependencies.
@@ -294,7 +294,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
         return this.getRaiseContainer().resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
-    static parse(target: Type<any> | BootOption, raiseContainer?: ContainerFactory): BootContext {
+    static parse(target: Type | BootOption, raiseContainer?: ContainerFactory): BootContext {
         return createAnnoationContext(BootContext, target, raiseContainer);
     }
 }

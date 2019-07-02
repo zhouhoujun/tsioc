@@ -31,15 +31,15 @@ export class PlatformService {
 
     packageFile = 'package.json';
 
-    private envArgs: ObjectMap<any>;
+    private envArgs: ObjectMap;
 
     /**
      * get evn args.
      *
-     * @returns {ObjectMap<any>}
+     * @returns {ObjectMap}
      * @memberof NodeContext
      */
-    getEnvArgs(): ObjectMap<any> {
+    getEnvArgs(): ObjectMap {
         if (!this.envArgs) {
             this.envArgs = minimist([...this.ctx.args, ...process.argv.slice(2)]);
         }

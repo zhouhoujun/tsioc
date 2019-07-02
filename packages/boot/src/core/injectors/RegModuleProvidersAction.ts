@@ -12,7 +12,7 @@ export class RegModuleProvidersAction extends AnnoationAction {
         // bind module providers
         container.bindProviders(map);
 
-        let exptypes: Type<any>[] = [].concat(...container.getLoader().getTypes(config.exports || []));
+        let exptypes: Type[] = [].concat(...container.getLoader().getTypes(config.exports || []));
         exptypes.forEach(ty => {
             let reflect = tRef.get(ty);
             map.add(ty, (...pds: ProviderTypes[]) => container.resolve(ty, ...pds));

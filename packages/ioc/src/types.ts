@@ -5,7 +5,7 @@ import { ProviderTypes } from './providers';
 /**
  * module types.
  */
-export type Modules = Type<any> | ObjectMap<any>;
+export type Modules = Type | ObjectMap;
 
 /**
  * load modules in base on an path.
@@ -50,16 +50,16 @@ export type LoadType = Modules | string | PathModules;
 /**
  * class type.
  */
-export type ClassType<T> = Type<T> | AbstractType<T>;
+export type ClassType<T = any> = Type<T> | AbstractType<T>;
 /**
  * symbol type
  */
-export type SymbolType<T> = ClassType<T> | string | symbol;
+export type SymbolType<T = any> = ClassType<T> | string | symbol;
 
 /**
  * factory tocken.
  */
-export type Token<T> = Registration<T> | SymbolType<T>;
+export type Token<T = any> = Registration<T> | SymbolType<T>;
 
 /**
  * provide token
@@ -69,12 +69,12 @@ export type ProvideToken<T> = Registration<T> | string | symbol;
 /**
  * instance factory.
  */
-export type InstanceFactory<T> = (...providers: ProviderTypes[]) => T;
+export type InstanceFactory<T = any> = (...providers: ProviderTypes[]) => T;
 
 /**
  * to instance via container.
  */
-export type ToInstance<T> = (container?: IIocContainer, ...providers: ProviderTypes[]) => T;
+export type ToInstance<T = any> = (container?: IIocContainer, ...providers: ProviderTypes[]) => T;
 
 /**
  * Factory of Token
@@ -88,7 +88,7 @@ export type Factory<T> = T | Type<T> | ToInstance<T>;
  * @interface ObjectMap
  * @template T
  */
-export interface ObjectMap<T> {
+export interface ObjectMap<T = any> {
     [index: string]: T;
 }
 
@@ -121,7 +121,7 @@ export interface ClassAnnations {
  * @extends {Function}
  * @template T
  */
-export interface Type<T> extends Function {
+export interface Type<T = any> extends Function {
     new(...args: any[]): T;
     classAnnations?: ClassAnnations;
     getClassAnnations?(): ClassAnnations;
@@ -135,7 +135,7 @@ export interface Type<T> extends Function {
  * @extends {Function}
  * @template T
  */
-export interface AbstractType<T> extends Function {
+export interface AbstractType<T = any> extends Function {
     new?(...args: any[]): T;
     classAnnations?: ClassAnnations;
     getClassAnnations?(): ClassAnnations;

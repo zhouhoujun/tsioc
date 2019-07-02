@@ -3,7 +3,7 @@ import { InjectorRegisterScope } from './InjectorRegisterScope';
 import { InjectorActionContext } from './InjectorActionContext';
 
 export class TypesRegisterScope extends InjectorRegisterScope {
-    protected getTypes(ctx: InjectorActionContext): Type<any>[] {
+    protected getTypes(ctx: InjectorActionContext): Type[] {
         return ctx.types;
     }
 }

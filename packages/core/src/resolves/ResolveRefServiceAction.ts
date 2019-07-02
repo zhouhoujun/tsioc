@@ -4,7 +4,7 @@ import { TargetRefService } from '../TargetService';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
 export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
-    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (ctx.currToken && !(ctx.currToken instanceof InjectReference) && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetRefService)) {
             let currtk = ctx.currToken;
             let targetTk = ctx.currTargetToken;

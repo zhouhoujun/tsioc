@@ -31,18 +31,18 @@ export class InjectorActionContext extends IocRaiseContext {
     /**
      * types in  module.
      *
-     * @type {Type<any>[]}
+     * @type {Type[]}
      * @memberof InjectorActionContext
      */
-    types: Type<any>[];
+    types: Type[];
 
     /**
      * registered types.
      *
-     * @type {Type<any>[]}
+     * @type {Type[]}
      * @memberof InjectorActionContext
      */
-    registered: Type<any>[];
+    registered: Type[];
 
     /**
      * decorator action state.
@@ -54,10 +54,10 @@ export class InjectorActionContext extends IocRaiseContext {
     /**
      * curr register type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof InjectorActionContext
      */
-    currType?: Type<any>;
+    currType?: Type;
     /**
      * curr decorator.
      *

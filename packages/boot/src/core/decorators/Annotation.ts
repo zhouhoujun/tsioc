@@ -7,9 +7,9 @@ import { IAnnotationMetadata } from '../modules';
  *
  * @export
  * @interface AnnotationMetadata
- * @extends {AnnotationConfigure<any>}
+ * @extends {AnnotationConfigure}
  */
-export interface AnnotationMetadata extends IAnnotationMetadata<any> {
+export interface AnnotationMetadata extends IAnnotationMetadata {
 
 }
 
@@ -38,9 +38,6 @@ export interface IAnnotationDecorator<T extends AnnotationMetadata> extends ITyp
  * @export
  * @template T
  * @param {string} name
- * @param {string} [decorType]
- * @param {(Token<IAnnotationBuilder<any>> | IAnnotationBuilder<any>)} [defaultBuilder]
- * @param {defaultBoot?: Token<any> | ((metadata: T) => Token<any>)} [defaultBoot]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IAnnotationDecorator<T>}

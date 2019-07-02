@@ -6,7 +6,7 @@ import { ResovleServicesRefsAction } from './ResovleServicesRefsAction';
 
 
 
-export class ResolveServicesScope extends IocResolveScope<ResolveServicesContext<any>> {
+export class ResolveServicesScope extends IocResolveScope<ResolveServicesContext> {
 
     setup() {
         this.use(ResovleServicesInTargetAction)

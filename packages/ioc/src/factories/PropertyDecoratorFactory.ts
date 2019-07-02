@@ -17,7 +17,7 @@ export interface IPropertyDecorator<T extends PropertyMetadata> {
      *
      * @param {Token<T>} provider define provider to resolve value to the property.
      */
-    (provider: Token<any>): PropertyDecorator;
+    (provider: Token): PropertyDecorator;
     /**
      * define property decorator with metadata map.
      * @param {T} [metadata] define matadata map to resolve value to the property.

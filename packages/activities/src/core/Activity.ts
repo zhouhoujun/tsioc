@@ -24,7 +24,7 @@ import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
  * @implements {OnActivityInit}
  */
 @Abstract()
-export abstract class Activity<T> {
+export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> {
 
     /**
      * is scope or not.
@@ -95,12 +95,12 @@ export abstract class Activity<T> {
      * run activity.
      *
      * @abstract
-     * @param {T} ctx
+     * @param {TCtx} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      * @memberof Activity
      */
-    async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
         ctx.runnable.status.current = this;
         if (this.scope) {
             ctx.scope = this.scope;
@@ -116,9 +116,9 @@ export abstract class Activity<T> {
     }
 
 
-    protected abstract execute(ctx: ActivityContext): Promise<void>;
+    protected abstract execute(ctx: TCtx): Promise<void>;
 
-    protected async initResult(ctx: ActivityContext, next?: () => Promise<void>, ...providers: ProviderTypes[]): Promise<ActivityResult<any>> {
+    protected async initResult(ctx: TCtx, next?: () => Promise<void>, ...providers: ProviderTypes[]): Promise<ActivityResult> {
         providers.unshift({ provide: NextToken, useValue: next });
         let result = this.getContainer().getService({ token: ActivityResult, target: lang.getClass(this) }, ...providers);
         if (!isNullOrUndefined(ctx.result)) {
@@ -131,7 +131,7 @@ export abstract class Activity<T> {
         return result;
     }
 
-    protected async refreshResult(ctx: ActivityContext): Promise<any> {
+    protected async refreshResult(ctx: TCtx): Promise<any> {
         if (!isNullOrUndefined(ctx.result)) {
             if (this.pipe) {
                 this.result.value = await this.pipe.transform(ctx.result);
@@ -141,11 +141,11 @@ export abstract class Activity<T> {
         }
     }
 
-    protected setActivityResult(ctx: ActivityContext) {
+    protected setActivityResult(ctx: TCtx) {
         this.result.value = ctx.result;
     }
 
-    protected async refreshContext(ctx: ActivityContext) {
+    protected async refreshContext(ctx: TCtx) {
         if (!isNullOrUndefined(this.result.value)) {
             if (this.pipe) {
                 if (isFunction(this.pipe.refresh)) {
@@ -157,7 +157,7 @@ export abstract class Activity<T> {
         }
     }
 
-    protected setContextResult(ctx: ActivityContext) {
+    protected setContextResult(ctx: TCtx) {
         ctx.result = this.result.value;
     }
 
@@ -170,17 +170,17 @@ export abstract class Activity<T> {
     }
 
 
-    protected async runActivity(ctx: ActivityContext, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
+    protected async runActivity(ctx: TCtx, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
         await this.getExector().runActivity(ctx, activities, next);
         if (refresh !== false) {
             await this.refreshResult(ctx);
         }
     }
 
-    private _actionFunc: PromiseUtil.ActionHandle<any>;
-    toAction<T extends ActivityContext>(): PromiseUtil.ActionHandle<T> {
+    private _actionFunc: PromiseUtil.ActionHandle;
+    toAction(): PromiseUtil.ActionHandle<T> {
         if (!this._actionFunc) {
-            this._actionFunc = (ctx: T, next?: () => Promise<void>) => this.run(ctx, next);
+            this._actionFunc = (ctx: TCtx, next?: () => Promise<void>) => this.run(ctx, next);
         }
         return this._actionFunc;
     }
@@ -195,11 +195,11 @@ export abstract class Activity<T> {
      * @returns {Promise<TVal>}
      * @memberof Activity
      */
-    protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: ActivityContext): Promise<TVal> {
+    protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: TCtx): Promise<TVal> {
         return await this.getExector().resolveExpression(ctx, express, this.getContainer());
     }
 
-    protected promiseLikeToAction<T extends ActivityContext>(action: (ctx?: T) => Promise<any>): PromiseUtil.ActionHandle<T> {
+    protected promiseLikeToAction<T extends ActivityContext = ActivityContext>(action: (ctx?: T) => Promise<any>): PromiseUtil.ActionHandle<T> {
         return async (ctx: T, next?: () => Promise<void>) => {
             await action(ctx);
             if (next) {
@@ -217,7 +217,7 @@ export abstract class Activity<T> {
  * @param {*} target
  * @returns {target is Activity}
  */
-export function isAcitvity(target: any): target is Activity<any> {
+export function isAcitvity(target: any): target is Activity {
     return target instanceof Activity;
 }
 
@@ -228,7 +228,7 @@ export function isAcitvity(target: any): target is Activity<any> {
  * @param {*} target
  * @returns {target is Type<IActivity>}
  */
-export function isAcitvityClass(target: any, ext?: (meta: ActivityConfigure) => boolean): target is Type<Activity<any>> {
+export function isAcitvityClass(target: any, ext?: (meta: ActivityConfigure) => boolean): target is Type<Activity> {
     if (!isClass(target)) {
         return false;
     }

@@ -4,7 +4,7 @@ import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetPrivateService } from '../TargetService';
 
 export class ResolvePrivateServiceAction extends IocResolveServiceAction {
-    execute(ctx: ResolveServiceContext<any>, next: () => void): void {
+    execute(ctx: ResolveServiceContext, next: () => void): void {
         // resolve private service.
         this.resolvePrivate(ctx, ctx.currToken || ctx.token);
         if (!ctx.instance) {
@@ -12,7 +12,7 @@ export class ResolvePrivateServiceAction extends IocResolveServiceAction {
         }
     }
 
-    protected resolvePrivate(ctx: ResolveServiceContext<any>, token: Token<any>) {
+    protected resolvePrivate(ctx: ResolveServiceContext, token: Token) {
         if (ctx.currTargetRef && (isToken(ctx.currTargetRef) || ctx.currTargetRef instanceof TargetPrivateService)) {
             if (!isClassType(ctx.currTargetType)) {
                 return;

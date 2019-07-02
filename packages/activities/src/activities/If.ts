@@ -13,7 +13,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ControlActivity}
  */
 @Task('if')
-export class IfActivity<T> extends ControlerActivity<T> {
+export class IfActivity<T = any> extends ControlerActivity<T> {
 
     @Input()
     condition: ConditionActivity;

@@ -166,50 +166,50 @@ export interface ITestReport {
     /**
      * suites.
      *
-     * @type {Map<Token<any>, ISuiteDescribe>}
+     * @type {Map<Token, ISuiteDescribe>}
      * @memberof ITestReport
      */
-    suites: Map<Token<any>, ISuiteDescribe>;
+    suites: Map<Token, ISuiteDescribe>;
     /**
      * add suite.
      *
-     * @param {Token<any>} suit
+     * @param {Token} suit
      * @param {ISuiteDescribe} describe
      * @memberof ITestReport
      */
-    addSuite(suit: Token<any>, describe: ISuiteDescribe);
+    addSuite(suit: Token, describe: ISuiteDescribe);
     /**
      * get suite.
      *
-     * @param {Token<any>} suit
+     * @param {Token} suit
      * @returns {ISuiteDescribe}
      * @memberof ITestReport
      */
-    getSuite(suit: Token<any>): ISuiteDescribe;
+    getSuite(suit: Token): ISuiteDescribe;
     /**
      * set suite completed.
      *
-     * @param {Token<any>} suit
+     * @param {Token} suit
      * @memberof ITestReport
      */
-    setSuiteCompleted(suit: Token<any>);
+    setSuiteCompleted(suit: Token);
     /**
      * add case.
      *
-     * @param {Token<any>} suit
+     * @param {Token} suit
      * @param {ICaseDescribe} testCase
      * @memberof ITestReport
      */
-    addCase(suit: Token<any>, testCase: ICaseDescribe);
+    addCase(suit: Token, testCase: ICaseDescribe);
     /**
      * get case.
      *
-     * @param {Token<any>} suit
+     * @param {Token} suit
      * @param {string} test
      * @returns {ICaseDescribe}
      * @memberof ITestReport
      */
-    getCase(suit: Token<any>, test: string): ICaseDescribe;
+    getCase(suit: Token, test: string): ICaseDescribe;
     /**
      * set case completed.
      *

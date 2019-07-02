@@ -18,7 +18,7 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
         if (!ref.paramsBindings) {
             ref.paramsBindings = new Map();
         }
-        let bindParams: IBinding<any>[]
+        let bindParams: IBinding[]
         if (ref.paramsBindings.has(propertyKey)) {
             bindParams = ref.paramsBindings.get(propertyKey) || [];
         } else {
@@ -50,7 +50,7 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
                             name: desp.name,
                             bindingName: parm.bindingName,
                             bindingType: parm.bindingType,
-                            type: desp.type as ClassType<any>,
+                            type: desp.type as ClassType,
                             provider: parm.provider,
                             defaultValue: parm.defaultValue
                         });
@@ -89,7 +89,7 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
                                         bp.provider = parm.type;
                                     }
                                     if (parm.type) {
-                                        bp.type = parm.type as ClassType<any>;
+                                        bp.type = parm.type as ClassType;
                                     }
                                     if (parm.bindingType) {
                                         bp.bindingType = parm.bindingType;

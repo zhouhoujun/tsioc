@@ -4,7 +4,7 @@ import { IocCoreService } from '../services';
 
 export class IocSingletonManager  extends IocCoreService {
 
-    protected singletons: Map<Token<any>, any>;
+    protected singletons: Map<Token, any>;
     constructor(protected container: IIocContainer) {
         super()
         this.singletons = new Map();

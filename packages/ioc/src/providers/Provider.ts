@@ -13,10 +13,10 @@ export interface IProvider {
     /**
      * this type provider to.
      *
-     * @type {SymbolType<any>}
+     * @type {SymbolType}
      * @memberof Provider
      */
-    provide: Token<any>;
+    provide: Token;
 }
 
 
@@ -37,10 +37,10 @@ export interface ClassProvider extends IProvider {
     /**
      * use class for provide.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof ClassProvider
      */
-    useClass: Type<any>;
+    useClass: Type;
     /**
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
@@ -114,10 +114,10 @@ export interface ExistingProvider extends IProvider {
     /**
      * use existing registered token for provide.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof ExistingProvider
      */
-    useExisting: Token<any>
+    useExisting: Token
 }
 
 /**
@@ -135,16 +135,16 @@ export type ProviderType = ObjectMapProvider | Provider |
  * @class ObjectMapProvider
  */
 export class ObjectMapProvider {
-    protected maps: ObjectMap<any>;
+    protected maps: ObjectMap;
     constructor() {
         this.maps = {};
     }
 
-    get(): ObjectMap<any> {
+    get(): ObjectMap {
         return this.maps;
     }
 
-    set(options: ObjectMap<any>) {
+    set(options: ObjectMap) {
         if (options) {
             this.maps = Object.assign(this.maps, options);
         }
@@ -153,11 +153,11 @@ export class ObjectMapProvider {
      * parse Object map to provider.
      *
      * @static
-     * @param {ObjectMap<any>} options
+     * @param {ObjectMap} options
      * @returns
      * @memberof ObjectMapProvider
      */
-    static parse(options: ObjectMap<any>) {
+    static parse(options: ObjectMap) {
         let pdr = new ObjectMapProvider();
         pdr.set(options);
         return pdr;
@@ -180,12 +180,12 @@ export class Provider {
     /**
      * service is instance of type.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof Provider
      */
-    type?: Token<any>;
+    type?: Token;
 
-    constructor(type?: Token<any>, value?: any) {
+    constructor(type?: Token, value?: any) {
         this.type = type;
         this.value = value;
     }
@@ -211,12 +211,12 @@ export class Provider {
      * create provider.
      *
      * @static
-     * @param {Token<any>} type
+     * @param {Token} type
      * @param {(any)} value
      * @returns Provider
      * @memberof Provider
      */
-    static create(type: Token<any>, value: any): Provider {
+    static create(type: Token, value: any): Provider {
         return new Provider(type, value);
     }
 
@@ -224,13 +224,13 @@ export class Provider {
      * create extends provider.
      *
      * @static
-     * @param {Token<any>} token
+     * @param {Token} token
      * @param {(any)} value
      * @param {Express2<any, ExtendsProvider, void>} [extendsTarget]
      * @returns {ExtendsProvider}
      * @memberof Provider
      */
-    static createExtends(token: Token<any>, value: any, extendsTarget?: Express2<any, ExtendsProvider, void>): ExtendsProvider {
+    static createExtends(token: Token, value: any, extendsTarget?: Express2<any, ExtendsProvider, void>): ExtendsProvider {
         return new ExtendsProvider(token, value, extendsTarget);
     }
 
@@ -238,13 +238,13 @@ export class Provider {
      * create invoked provider.
      *
      * @static
-     * @param {Token<any>} token
+     * @param {Token} token
      * @param {string} method
      * @param {(any)} [value]
      * @returns {InvokeProvider}
      * @memberof Provider
      */
-    static createInvoke(token: Token<any>, method: string, value?: any): InvokeProvider {
+    static createInvoke(token: Token, method: string, value?: any): InvokeProvider {
         return new InvokeProvider(token, method, value);
     }
 
@@ -252,14 +252,14 @@ export class Provider {
      * create param provider.
      *
      * @static
-     * @param {Token<any>} token
+     * @param {Token} token
      * @param {(any)} value
      * @param {number} [index]
      * @param {string} [method]
      * @returns {ParamProvider}
      * @memberof Provider
      */
-    static createParam(token: Token<any>, value: any, index?: number, method?: string): ParamProvider {
+    static createParam(token: Token, value: any, index?: number, method?: string): ParamProvider {
         return new ParamProvider(token, value, index, method);
     }
 
@@ -281,7 +281,7 @@ export class InvokeProvider extends Provider {
      */
     protected method?: string;
 
-    constructor(type?: Token<any>, method?: string, value?: any) {
+    constructor(type?: Token, method?: string, value?: any) {
         super(type, value);
         this.method = method;
     }
@@ -310,7 +310,7 @@ export class ParamProvider extends InvokeProvider {
      */
     index?: number;
 
-    constructor(token?: Token<any>, value?: any, index?: number, method?: string) {
+    constructor(token?: Token, value?: any, index?: number, method?: string) {
         super(token, method, value);
         this.index = index;
     }
@@ -339,7 +339,7 @@ export class ParamProvider extends InvokeProvider {
 export class ExtendsProvider extends Provider {
 
 
-    constructor(token: Token<any>, value?: any, private extendsTarget?: Express2<any, ExtendsProvider, void>) {
+    constructor(token: Token, value?: any, private extendsTarget?: Express2<any, ExtendsProvider, void>) {
         super(token, value);
     }
 

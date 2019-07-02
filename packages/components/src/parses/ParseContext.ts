@@ -7,13 +7,13 @@ import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boo
 export interface IBindingParseOption extends IModuleResolveOption  {
     scope?: any;
     bindExpression?: any;
-    binding: IBinding<any>;
+    binding: IBinding;
 }
 
 @Injectable
 export class ParseContext extends BuildContext implements IComponentContext {
 
-    binding: IBinding<any>;
+    binding: IBinding;
 
     bindExpression?: any;
 
@@ -25,7 +25,7 @@ export class ParseContext extends BuildContext implements IComponentContext {
         return this.raiseContainer() as IContainer;
     }
 
-    static parse(type: Type<any>, options: IBindingParseOption, raiseContainer?: IContainer | ContainerFactory): ParseContext {
+    static parse(type: Type, options: IBindingParseOption, raiseContainer?: IContainer | ContainerFactory): ParseContext {
         let ctx = new ParseContext(type);
         ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);

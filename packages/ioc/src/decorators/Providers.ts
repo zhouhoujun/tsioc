@@ -18,7 +18,7 @@ export interface IProvidersDecorator {
      *
      * @Providers
      *
-     * @param {(Registration<any> | symbol | string)} providers provider reference service to target.
+     * @param {(Registration | symbol | string)} providers provider reference service to target.
      */
     (providers: ProviderTypes[]): ClassMethodDecorator;
 

@@ -92,10 +92,10 @@ export interface IResolverContainer extends IResolver {
     /**
      * iterator current resolver.
      *
-     * @param {((fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void|boolean)} callbackfn
+     * @param {((fac: InstanceFactory, tk: Token, resolvor?: IResolver) => void|boolean)} callbackfn
      * @returns {(void|boolean)}
      * @memberof IResolverContainer
      */
-    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean;
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IResolver) => void | boolean): void | boolean;
 
 }

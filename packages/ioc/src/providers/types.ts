@@ -4,7 +4,7 @@ import { ProviderType, ParamProvider } from './Provider';
 
 /**
  * providers.
- * note: ObjectMap<any> provider can not resolve token.
+ * note: ObjectMap provider can not resolve token.
  */
 export type ProviderTypes = ProviderMap | ProviderType;
 

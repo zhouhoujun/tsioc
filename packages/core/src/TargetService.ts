@@ -8,7 +8,7 @@ import { lang, Token, isToken } from '@tsdi/ioc';
  * @class TargetRef
  */
 export class TargetService {
-    private targetType: Token<any>;
+    private targetType: Token;
     constructor(protected target: any) {
 
     }
@@ -16,10 +16,10 @@ export class TargetService {
     /**
      * get type.
      *
-     * @returns {ClassType<any>}
+     * @returns {ClassType}
      * @memberof TargetRef
      */
-    getToken(): Token<any> {
+    getToken(): Token {
         if (!this.targetType) {
             this.targetType = isToken(this.target) ? this.target : lang.getClass(this.target);
         }
@@ -35,7 +35,7 @@ export class TargetService {
 /**
  * target ref.
  */
-export type TargetRef = Token<any> | TargetService;
+export type TargetRef = Token | TargetService;
 
 /**
  * target reference service.

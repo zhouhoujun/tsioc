@@ -25,7 +25,7 @@ export interface IHandleContext {
  * @interface IHandle
  * @template T
  */
-export interface IHandle<T> {
+export interface IHandle<T = any> {
     /**
      * execute handle.
      *
@@ -61,7 +61,7 @@ export type HandleType<T extends IHandleContext> = Type<IHandle<T>> | Handle<T> 
  * @extends {IocCoreService}
  * @template T
  */
-export abstract class Handle<T extends IHandleContext> extends IocCoreService implements IHandle<T> {
+export abstract class Handle<T extends IHandleContext = any> extends IocCoreService implements IHandle<T> {
 
     @Inject(ContainerToken)
     protected container: IContainer;

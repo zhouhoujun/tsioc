@@ -43,11 +43,11 @@ export class DIModuleInjectorScope extends InjectorRegisterScope {
         next && next();
     }
 
-    protected getTypes(ctx: InjectorActionContext): Type<any>[] {
+    protected getTypes(ctx: InjectorActionContext): Type[] {
         return ctx.types.filter(ty => hasOwnClassMetadata(ctx.currDecoractor, ty));
     }
 
-    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type<any>[]) {
+    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {
         ctx.types = [];
     }
 

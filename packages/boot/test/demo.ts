@@ -39,7 +39,7 @@ export class ModuleA {
 }
 
 @Injectable
-export class ClassSevice extends Runnable<any> {
+export class ClassSevice extends Runnable {
     async onInit(): Promise<void> {
     }
     @Inject('mark')

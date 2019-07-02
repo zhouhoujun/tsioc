@@ -12,29 +12,29 @@ export interface IIocCacheManager {
     /**
      * has cache
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @returns {boolean}
      * @memberof ICacheManager
      */
-    hasCache(targetType: Type<any>): boolean;
+    hasCache(targetType: Type): boolean;
     /**
      * cache target.
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @param {*} target
      * @param {number} expires
      * @memberof ICacheManager
      */
-    cache(targetType: Type<any>, target: any, expires: number);
+    cache(targetType: Type, target: any, expires: number);
     /**
      * get cache target, if set expires will refresh cache timeout.
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @param {number} [expires] if set number will reset cache timeout.
      * @returns {*}
      * @memberof ICacheManager
      */
-    get(targetType: Type<any>, expires?: number): any;
+    get(targetType: Type, expires?: number): any;
     /**
      * is check expires or not.
      *
@@ -51,11 +51,11 @@ export interface IIocCacheManager {
     /**
      * destory cache
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @param {*} [target]
      * @memberof ICacheManager
      */
-    destroy(targetType: Type<any>, target?: any);
+    destroy(targetType: Type, target?: any);
 }
 
 /**
@@ -94,7 +94,7 @@ export interface CacheTarget {
  */
 export class IocCacheManager implements IIocCacheManager {
 
-    cacheTokens: Map<Type<any>, CacheTarget>;
+    cacheTokens: Map<Type, CacheTarget>;
     constructor(protected container: IIocContainer) {
         this.cacheTokens = new Map();
     }
@@ -103,11 +103,11 @@ export class IocCacheManager implements IIocCacheManager {
         return !!this.timeout;
     }
 
-    hasCache(targetType: Type<any>) {
+    hasCache(targetType: Type) {
         return this.cacheTokens.has(targetType);
     }
 
-    cache(targetType: Type<any>, target: any, expires: number) {
+    cache(targetType: Type, target: any, expires: number) {
         let cache: CacheTarget;
         if (this.hasCache(targetType)) {
             cache = this.cacheTokens.get(targetType)
@@ -124,7 +124,7 @@ export class IocCacheManager implements IIocCacheManager {
         }
     }
 
-    get(targetType: Type<any>, expires?: number) {
+    get(targetType: Type, expires?: number) {
         let result = null;
         if (!this.cacheTokens.has(targetType)) {
             return null;
@@ -169,7 +169,7 @@ export class IocCacheManager implements IIocCacheManager {
         }
     }
 
-    destroy(targetType: Type<any>, target?: any) {
+    destroy(targetType: Type, target?: any) {
 
         if (!this.hasCache(targetType)) {
             return;

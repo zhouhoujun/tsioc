@@ -338,7 +338,7 @@ container.register(Geet);
 container.invoke(Geet, gt=> gt.print,
  {hi: 'How are you.', name:'zhou' },
 { hi: (container: IContainer)=> 'How are you.' }, ... },
-{ hi:{type: Token<any>, value: any |(container: IContainer)=>any }},
+{ hi:{type: Token, value: any |(container: IContainer)=>any }},
 Provider.createParam('name', 'zhou'),
 Provider.create('hi', value:'Hello'),
 // or use ProviderMap.
@@ -348,7 +348,7 @@ Provider.create('hi', value:'Hello'),
 let instance = container.resolve(Geet,
 {name: 'zhou' },
 { name: (container: IContainer)=>any } },
-{name:{type: Token<any>, value: any|(container: IContainer)=>any }})
+{name:{type: Token, value: any|(container: IContainer)=>any }})
 
 container.invoke(instance, gt=> gt.print, ...);
 container.invoke(instance, 'print', ...);
@@ -733,7 +733,7 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
 //eg.
 // 1. create decorator
 export interface IControllerDecorator<T extends ControllerMetadata> extends IClassDecorator<T> {
-    (routePrefix: string, provide?: Registration<any> | string, alias?: string): ClassDecorator;
+    (routePrefix: string, provide?: Registration | string, alias?: string): ClassDecorator;
     (target: Function): void;
 }
 export const Controller: IControllerDecorator<ControllerMetadata> =

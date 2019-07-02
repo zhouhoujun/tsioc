@@ -143,7 +143,7 @@ export interface IIocContainer extends IResolverContainer {
     /**
      * bind providers for only target class.
      *
-     * @param {Token<any>} target
+     * @param {Token} target
      * @param {...ProviderTypes[]} providers
      * @returns {this}
      * @memberof IContainer
@@ -153,19 +153,19 @@ export interface IIocContainer extends IResolverContainer {
     /**
      * bind providers for only target class.
      *
-     * @param {Token<any>} target
-     * @param {(mapTokenKey: Token<any>) => void} onceBinded
+     * @param {Token} target
+     * @param {(mapTokenKey: Token) => void} onceBinded
      * @param {...ProviderTypes[]} providers
      * @returns {this}
      * @memberof IContainer
      */
-    bindProviders<T>(target: Token<T>, onceBinded: (mapTokenKey: Token<any>) => void, ...providers: ProviderTypes[]): this;
+    bindProviders<T>(target: Token<T>, onceBinded: (mapTokenKey: Token) => void, ...providers: ProviderTypes[]): this;
 
     /**
      * bind provider ref to target.
      *
      * @template T
-     * @param {Token<any>} target
+     * @param {Token} target
      * @param {Token<T>} provide
      * @param {(Token<T> | Factory<T>)} provider
      * @param {string} [alias]
@@ -173,15 +173,15 @@ export interface IIocContainer extends IResolverContainer {
      * @returns {this}
      * @memberof IContainer
      */
-    bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this;
+    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this;
 
     /**
      * clear cache.
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @memberof IContainer
      */
-    clearCache(targetType: Type<any>);
+    clearCache(targetType: Type);
 
     /**
      * get token.

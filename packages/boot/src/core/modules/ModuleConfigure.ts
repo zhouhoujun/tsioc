@@ -10,7 +10,7 @@ import { RegFor } from './RegScope';
  * @extends {ClassMetadata}
  * @template T
  */
-export interface IAnnotationMetadata<T> extends ComponentMetadata {
+export interface IAnnotationMetadata<T = any> extends ComponentMetadata {
     /**
      * selector for binding property.
      *
@@ -46,9 +46,9 @@ export interface IAnnotationMetadata<T> extends ComponentMetadata {
  *
  * @export
  * @interface ModuleConfig
- * @extends {ObjectMap<any>}
+ * @extends {IAnnotationMetadata<T>}
  */
-export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
+export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
 
     /**
      * module base url.
@@ -112,8 +112,8 @@ export interface IModuleMetadata<T> extends IAnnotationMetadata<T> {
  *
  * @export
  * @interface ModuleConfigure
- * @extends {IModuleMetadata<any>}
+ * @extends {IModuleMetadata}
  */
-export interface ModuleConfigure extends IModuleMetadata<any> {
+export interface ModuleConfigure extends IModuleMetadata {
 
 }

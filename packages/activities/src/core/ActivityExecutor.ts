@@ -60,7 +60,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity.toAction();
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type<any> | ControlTemplate, ctx.scope);
+                let act = await this.buildActivity(activity as Type | ControlTemplate, ctx.scope);
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
@@ -90,13 +90,13 @@ export class ActivityExecutor implements IActivityExecutor {
 
     }
 
-    protected async buildActivity(activity: Type<any> | ControlTemplate, scope?: any): Promise<Activity<any>> {
+    protected async buildActivity(activity: Type | ControlTemplate, scope?: any): Promise<Activity> {
         let ctx: ActivityContext;
         let container = this.getContainer();
         if (isClass(activity)) {
             ctx = await container.get(BuilderService).build<ActivityContext>({ module: activity, scope: scope });
         } else {
-            let md: Type<any>;
+            let md: Type;
             let mgr = container.get(SelectorManager);
             if (isClass(activity.activity)) {
                 md = activity.activity;

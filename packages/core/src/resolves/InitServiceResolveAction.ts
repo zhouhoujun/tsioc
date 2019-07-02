@@ -5,7 +5,7 @@ import { TargetService } from '../TargetService';
 import { ResolveServicesContext } from './ResolveServicesContext';
 
 export class InitServiceResolveAction extends IocResolveServiceAction {
-    execute(ctx: ResolveServiceContext<any>, next: () => void): void {
+    execute(ctx: ResolveServiceContext, next: () => void): void {
         if (ctx.target) {
             ctx.targetRefs = (isArray(ctx.target) ? ctx.target : [ctx.target])
                 .map(t => {

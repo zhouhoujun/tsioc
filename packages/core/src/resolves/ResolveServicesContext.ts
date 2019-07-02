@@ -19,10 +19,10 @@ export interface ServicesOption<T> extends ServiceOption<T> {
     /**
      * class type.
      *
-     * @type {ClassType<any>[]}
+     * @type {ClassType[]}
      * @memberof ServicesActionOption
      */
-    types?: ClassType<any>[];
+    types?: ClassType[];
 }
 
 /**
@@ -32,7 +32,7 @@ export interface ServicesOption<T> extends ServiceOption<T> {
  * @class ResolveServicesContext
  * @extends {ResolveServiceContext}
  */
-export class ResolveServicesContext<T> extends ResolveServiceContext<T> {
+export class ResolveServicesContext<T = any> extends ResolveServiceContext<T> {
 
     /**
      * parse service resolve context.
@@ -54,7 +54,7 @@ export class ResolveServicesContext<T> extends ResolveServiceContext<T> {
      */
     both?: boolean;
 
-    types?: ClassType<any>[];
+    types?: ClassType[];
 
     /**
      * all matched services map.

@@ -93,10 +93,10 @@ export class Container extends IocContainer implements IContainer {
      * async use modules.
      *
      * @param {...LoadType[]} modules load modules.
-     * @returns {Promise<Type<any>[]>}  types loaded.
+     * @returns {Promise<Type[]>}  types loaded.
      * @memberof IContainer
      */
-    async load(...modules: LoadType[]): Promise<Type<any>[]> {
+    async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
         return this.getActionRegisterer().get(InjectorLifeScope).register(...mdls);
     }

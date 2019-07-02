@@ -5,10 +5,10 @@ import { NonePointcut } from './decorators/NonePointcut';
  * is target can aspect or not.
  *
  * @export
- * @param {Type<any>} targetType
+ * @param {Type} targetType
  * @returns {boolean}
  */
-export function isValideAspectTarget(targetType: Type<any>): boolean {
+export function isValideAspectTarget(targetType: Type): boolean {
 
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;

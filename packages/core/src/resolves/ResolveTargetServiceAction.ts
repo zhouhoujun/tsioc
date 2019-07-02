@@ -3,8 +3,8 @@ import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
 import { ResolveDecoratorServiceAction } from './ResolveDecoratorServiceAction';
 
-export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceContext<any>> {
-    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
+export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceContext> {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (!ctx.instance && ctx.targetRefs) {
             let has = ctx.targetRefs.some(t => {
                 ctx.currTargetRef = t;
@@ -25,7 +25,7 @@ export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceCo
         }
     }
 
-    protected clear(ctx: ResolveServiceContext<any>) {
+    protected clear(ctx: ResolveServiceContext) {
         ctx.currToken = null;
         ctx.currTargetRef = null;
         ctx.currTargetType = null;

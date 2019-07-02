@@ -15,7 +15,7 @@ import { ActionScope } from './ActionScope';
  * @extends {ActionScope<T>}
  * @template T
  */
-export class IocResolveScope<T extends ResolveActionContext<any>> extends ActionScope<T> {
+export class IocResolveScope<T extends ResolveActionContext> extends ActionScope<T> {
 
     execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {

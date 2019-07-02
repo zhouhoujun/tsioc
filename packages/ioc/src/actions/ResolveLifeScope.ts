@@ -5,7 +5,7 @@ import { IocResolveScope } from './IocResolveScope';
 
 export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>> {
 
-    execute(ctx: ResolveActionContext<any>, next?: () => void): void {
+    execute(ctx: ResolveActionContext, next?: () => void): void {
         if (!ctx.instance) {
             super.execute(ctx, next);
         }

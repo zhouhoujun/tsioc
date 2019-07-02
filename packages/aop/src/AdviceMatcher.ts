@@ -14,7 +14,7 @@ import { NonePointcut } from './decorators/NonePointcut';
 /**
  * match express.
  */
-export type MatchExpress = (method: string, fullName: string, targetType?: Type<any>, target?: any, pointcut?: IPointcut) => boolean
+export type MatchExpress = (method: string, fullName: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean
 
 /**
  * advice matcher, use to match advice when a registered create instance.
@@ -31,7 +31,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
     }
 
-    match(aspectType: Type<any>, targetType: Type<any>, adviceMetas?: ObjectMap<AdviceMetadata[]>, target?: any): MatchPointcut[] {
+    match(aspectType: Type, targetType: Type, adviceMetas?: ObjectMap<AdviceMetadata[]>, target?: any): MatchPointcut[] {
 
         let aspectMeta = lang.first(getOwnTypeMetadata<AspectMetadata>(Aspect, aspectType));
         if (aspectMeta) {
@@ -136,7 +136,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         return false;
     }
 
-    filterPointcut(type: Type<any>, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
+    filterPointcut(type: Type, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
         if (!metadata.pointcut) {
             return [];
         }
@@ -152,11 +152,11 @@ export class AdviceMatcher implements IAdviceMatcher {
         });
     }
 
-    protected matchTypeFactory(type: Type<any>, metadata: AdviceMetadata): MatchExpress {
+    protected matchTypeFactory(type: Type, metadata: AdviceMetadata): MatchExpress {
         let pointcut = metadata.pointcut;
         let expresses: (MatchExpress | string)[] = [];
         if (metadata.within) {
-            expresses.push((method: string, fullName: string, targetType?: Type<any>) => {
+            expresses.push((method: string, fullName: string, targetType?: Type) => {
                 if (isArray(metadata.within)) {
                     return metadata.within.some(t => lang.isExtendsClass(targetType, t));
                 } else {
@@ -166,14 +166,14 @@ export class AdviceMatcher implements IAdviceMatcher {
             expresses.push('&&')
         }
         if (metadata.target) {
-            expresses.push((method: string, fullName: string, targetType?: Type<any>, target?: any) => {
+            expresses.push((method: string, fullName: string, targetType?: Type, target?: any) => {
                 return metadata.target = target;
             });
             expresses.push('&&')
         }
 
         if (metadata.annotation) {
-            expresses.push((method: string, fullName: string, targetType?: Type<any>, target?: any) => {
+            expresses.push((method: string, fullName: string, targetType?: Type, target?: any) => {
                 return hasOwnMethodMetadata(metadata.annotation, targetType, method);
             });
             expresses.push('&&')
@@ -184,7 +184,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         } else if (isRegExp(pointcut)) {
             let pointcutReg = pointcut;
             if (/^\^?@\w+/.test(pointcutReg.source)) {
-                expresses.push((name: string, fullName: string, targetType?: Type<any>) => {
+                expresses.push((name: string, fullName: string, targetType?: Type) => {
                     let decName = Reflect.getMetadataKeys(type, name);
                     return decName.some(n => isString(n) && pointcutReg.test(n));
                 });
@@ -210,7 +210,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
     }
 
-    protected expressToFunc(type: Type<any>, strExp: string): MatchExpress {
+    protected expressToFunc(type: Type, strExp: string): MatchExpress {
         if (/^@annotation\(.*\)$/.test(strExp)) {
             let exp = strExp.substring(12, strExp.length - 1);
             let annotation = /^@/.test(exp) ? exp : ('@' + exp);
@@ -241,16 +241,16 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
         } else if (/^@within\(\s*\w+/.test(strExp)) {
             let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
-            return (name: string, fullName: string, targetType?: Type<any>) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
+            return (name: string, fullName: string, targetType?: Type) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
         } else if (/^@target\(\s*\w+/.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            return (name: string, fullName: string, targetType?: Type<any>) => this.container.getTokenProvider(torken) === targetType;
+            return (name: string, fullName: string, targetType?: Type) => this.container.getTokenProvider(torken) === targetType;
         } else {
             return () => false;
         }
     }
 
-    protected tranlateExpress(type: Type<any>, strExp: string): MatchExpress {
+    protected tranlateExpress(type: Type, strExp: string): MatchExpress {
         let expresses: ((MatchExpress) | string)[] = [];
 
         let idxOr = strExp.indexOf('||');
@@ -286,7 +286,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
 
     protected mergeExpress(...expresses: (MatchExpress | string)[]): MatchExpress {
-        return (method: string, fullName: string, targetType?: Type<any>, pointcut?: IPointcut) => {
+        return (method: string, fullName: string, targetType?: Type, pointcut?: IPointcut) => {
             let flag;
             expresses.forEach((express, idx) => {
                 if (!isUndefined(flag)) {

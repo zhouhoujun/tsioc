@@ -61,7 +61,7 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
         if (!this._logManger) {
             let cfg: LogConfigure = this.config || <LogConfigure>{};
             let adapter = cfg.adapter || 'console';
-            let token: Token<any>;
+            let token: Token;
             if (isString(adapter)) {
                 token = new Registration(LoggerManagerToken, adapter);
             } else {

@@ -11,8 +11,8 @@ export interface TypeMetadata extends Metadate {
     /**
      * property type
      *
-     * @type {SymbolType<any>}
+     * @type {SymbolType}
      * @memberof TypeMetadata
      */
-    type?: SymbolType<any>;
+    type?: SymbolType;
 }

@@ -18,20 +18,20 @@ export interface IRefsDecorator {
      *
      * @Refs
      *
-     * @param {Token<any>} target reference to target token.
+     * @param {Token} target reference to target token.
      */
-    (target: Token<any>): ClassDecorator;
+    (target: Token): ClassDecorator;
 
     /**
      * Refs decorator, for class. use to define the class as service of target.
      *
      * @Refs
      *
-     * @param {Token<any>} target reference to target token.
-     * @param {Token<any>} provide define this class ref provider for provide.
+     * @param {Token} target reference to target token.
+     * @param {Token} provide define this class ref provider for provide.
      * @param {string} [alias] define this class ref provider with alias for provide.
     */
-    (target: Token<any>, provide: Token<any>, alias?: string): ClassDecorator;
+    (target: Token, provide: Token, alias?: string): ClassDecorator;
 
     /**
      * Refs decorator, for class. use to define the class as service of target.

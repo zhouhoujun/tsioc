@@ -33,7 +33,7 @@ export interface IBuilderService extends IocCoreService {
      * resolve binding module.
      *
      * @template T
-     * @param {Type<any>} target
+     * @param {Type} target
      * @param {IModuleResolveOption} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
@@ -53,59 +53,59 @@ export interface IBuilderService extends IocCoreService {
     /**
      * build bootstrap target instance.
      *
-     * @param {(Type<any> | BootOption | BootContext)} target
+     * @param {(Type | BootOption | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<any>}
      * @memberof IBuilderService
      */
-    buildBootTarget(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<any>;
+    buildBootTarget(target: Type | BootOption | BootContext, ...args: string[]): Promise<any>;
     /**
      * build module.
      *
      * @template T
-     * @param {(Type<any> | T)} target
+     * @param {(Type | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T>;
+    build<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T>;
 
     /**
      * create runnable.
      *
      * @template T
-     * @param {(Type<any> | BootOption | BootContext)} target
+     * @param {(Type | BootOption | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<IRunnable<T>>}
      * @memberof BuilderService
      */
-    buildRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>>;
+    buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>>;
     /**
      * run module.
      *
      * @template T
-     * @param {(Type<any> | T)} target
+     * @param {(Type | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof RunnerService
      */
-    run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T>;
+    run<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *
      * @template T
-     * @param {(Type<any> | BootOption | T)} target
+     * @param {(Type | BootOption | T)} target
      * @param {((ctx: T) => void |BootSubAppOption<T> | string)} [options]
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof IBuilderService
      */
-    boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
+    boot<T extends BootContext>(target: Type | BootOption | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *
      * @template T
-     * @param {(Type<any> | BootOption | T)} target
+     * @param {(Type | BootOption | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService

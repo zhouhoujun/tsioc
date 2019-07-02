@@ -6,10 +6,10 @@ import { Stream } from 'stream';
  *
  * @export
  * @interface ITransform
- * @extends {ObjectMap<any>}
+ * @extends {ObjectMap}
  * @extends {NodeJS.ReadWriteStream}
  */
-export interface ITransform extends ObjectMap<any>, NodeJS.ReadWriteStream {
+export interface ITransform extends ObjectMap, NodeJS.ReadWriteStream {
     /**
      * set the stream source as origin.
      *

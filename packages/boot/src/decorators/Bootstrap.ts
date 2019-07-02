@@ -18,7 +18,7 @@ export interface BootstrapMetadata extends RunnableConfigure {
      * @type {Token<T>}
      * @memberof AnnotationConfigure
      */
-    bootstrap?: Token<any>;
+    bootstrap?: Token;
 
     /**
      * configuration.
@@ -56,9 +56,6 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @export
  * @template T
  * @param {string} name
- * @param {Token<IRunnableBuilder<any>>>} [builder] default builder
- * @param {Token<IAnnotationBuilder<any>>} [defaultAnnoBuilder] default type builder.
- * @param {defaultBoot?: Token<any> | ((metadata: T) => Token<any>)} [defaultBoot]
  * @param {MetadataAdapter} [adapter]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}

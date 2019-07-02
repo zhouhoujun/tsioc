@@ -64,7 +64,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @memberof IMethodAccessor
      */
     invoke<T, TR = any>(container: IIocContainer, target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
-        let targetClass: Type<any>;
+        let targetClass: Type;
         let instance: T;
         if (isToken(target)) {
             targetClass = container.getTokenProvider(target);

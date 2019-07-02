@@ -14,6 +14,5 @@ import { Task } from '../decorators';
 @Task('assign')
 export class AssignActivity<T extends ActivityContext> extends Activity<T> {
     protected async execute(ctx: T): Promise<void> {
-        // ctx.assign = await this.resolveSelector<any>(ctx);
     }
 }

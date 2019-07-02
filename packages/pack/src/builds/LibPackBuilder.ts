@@ -173,10 +173,10 @@ export interface LibPackBuilderOption extends TemplateOption {
     /**
      * postcss option.
      *
-     * @type {Binding<NodeExpression<any>>}
+     * @type {Binding<NodeExpression>}
      * @memberof LibPackBuilderOption
      */
-    postcssOption?: Binding<NodeExpression<any>>;
+    postcssOption?: Binding<NodeExpression>;
 
     /**
      * external Libs for auto create rollup options.
@@ -372,7 +372,7 @@ export class LibPackBuilder implements AfterInit {
     sourcemap?: NodeExpression<boolean | string>;
 
     @Input()
-    postcssOption: NodeExpression<any>;
+    postcssOption: NodeExpression;
 
     get zipMapsource() {
         if (this.sourcemap && isBoolean(this.sourcemap)) {

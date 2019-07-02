@@ -53,7 +53,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
                 map.add(p, p);
             } else if (p instanceof ObjectMapProvider) {
                 let pr = p.get();
-                lang.forIn<any>(pr, (val, name) => {
+                lang.forIn(pr, (val, name) => {
                     if (name && isString(name)) {
                         // object map can not resolve token. set all fileld as value factory.
                         map.add(name, () => val);

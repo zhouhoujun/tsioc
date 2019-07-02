@@ -8,7 +8,7 @@ const uglify = require('gulp-uglify');
 export class UglifyActivity extends PipeActivity {
 
     @Input('uglifyOptions')
-    options: NodeExpression<any>;
+    options: NodeExpression;
 
     @Input()
     uglify: NodeExpression<boolean>;

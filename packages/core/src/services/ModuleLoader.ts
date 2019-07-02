@@ -33,19 +33,19 @@ export interface IModuleLoader {
      * load all class types in modules
      *
      * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
+     * @returns {Promise<Type[]>}
      * @memberof IModuleLoader
      */
-    loadTypes(...modules: LoadType[]): Promise<Type<any>[][]>;
+    loadTypes(...modules: LoadType[]): Promise<Type[][]>;
 
     /**
      * get all class type in modules.
      *
      * @param {Modules} modules
-     * @returns {Type<any>[]}
+     * @returns {Type[]}
      * @memberof IModuleLoader
      */
-    getTypes(modules: Modules): Type<any>[];
+    getTypes(modules: Modules): Type[];
 
 }
 
@@ -104,10 +104,10 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      * load types from module.
      *
      * @param {...LoadType[]} modules
-     * @returns {Promise<Type<any>[]>}
+     * @returns {Promise<Type[]>}
      * @memberof IContainerBuilder
      */
-    async loadTypes(...modules: LoadType[]): Promise<Type<any>[][]> {
+    async loadTypes(...modules: LoadType[]): Promise<Type[][]> {
         let mdls = await this.load(...modules);
         return mdls.map(md => this.getTypes(md));
     }
@@ -116,11 +116,11 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      * get all class type in modules.
      *
      * @param {Modules[]} modules
-     * @param {...Express<Type<any>, boolean>[]} filters
-     * @returns {Type<any>[]}
+     * @param {...Express<Type, boolean>[]} filters
+     * @returns {Type[]}
      * @memberof DefaultModuleLoader
      */
-    getTypes(modules: Modules): Type<any>[] {
+    getTypes(modules: Modules): Type[] {
         return this.getContentTypes(modules);
     }
 
@@ -196,8 +196,8 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
         }
     }
 
-    protected getContentTypes(regModule: Modules): Type<any>[] {
-        let regModules: Type<any>[] = [];
+    protected getContentTypes(regModule: Modules): Type[] {
+        let regModules: Type[] = [];
 
         if (isClass(regModule)) {
             regModules.push(regModule);

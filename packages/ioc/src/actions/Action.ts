@@ -26,7 +26,7 @@ export class IocActionContext extends IocCoreService {
     /**
      * curr action scope
      *
-     * @type {IocAction<any>}
+     * @type {*}
      * @memberof IocActionContext
      */
     actionScope?: any;
@@ -115,7 +115,7 @@ export class IocRaiseContext extends IocActionContext {
  * @class Action
  * @extends {IocCoreService}
  */
-export abstract class IocAction<T extends IocActionContext> {
+export abstract class IocAction<T extends IocActionContext = IocActionContext> {
 
     @Inject(IocContainerToken)
     protected container: IIocContainer;
@@ -128,7 +128,7 @@ export abstract class IocAction<T extends IocActionContext> {
 
     abstract execute(ctx: T, next: () => void): void;
 
-    protected execFuncs(ctx: T, actions: lang.IAction<any>[], next?: () => void) {
+    protected execFuncs(ctx: T, actions: lang.IAction[], next?: () => void) {
         lang.execAction(actions, ctx, next);
     }
 
@@ -155,5 +155,5 @@ export abstract class IocAction<T extends IocActionContext> {
 /**
  * ioc action type.
  */
-export type IocActionType = Type<IocAction<any>> | IocAction<any> | lang.IAction<any>;
+export type IocActionType = Type<IocAction> | IocAction | lang.IAction;
 

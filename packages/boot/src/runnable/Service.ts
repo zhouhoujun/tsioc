@@ -1,5 +1,6 @@
 import { IRunnable, Runnable, RunnableInit } from './Runnable';
 import { Abstract } from '@tsdi/ioc';
+import { BootContext } from '../BootContext';
 
 /**
  * IService interface
@@ -7,7 +8,7 @@ import { Abstract } from '@tsdi/ioc';
  * @export
  * @interface IService
  */
-export interface IService<T> extends IRunnable<T> {
+export interface IService<T, TCtx extends BootContext = BootContext> extends IRunnable<T, TCtx> {
     /**
      * start application service.
      *
@@ -44,7 +45,7 @@ export interface ServiceInit extends RunnableInit {
  * @implements {IService}
  */
 @Abstract()
-export abstract class Service<T = any> extends Runnable<T> implements IService<T> {
+export abstract class Service<T = any, TCtx extends BootContext = BootContext> extends Runnable<T, TCtx> implements IService<T, TCtx> {
 
     /**
      * run service.

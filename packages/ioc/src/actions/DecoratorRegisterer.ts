@@ -52,7 +52,7 @@ export abstract class DecoratorScopeRegisterer  extends IocCoreService {
         return this.getRegisterer(scope).get(decorator) || [];
     }
 
-    getFuncs(container: IIocContainer, decorator: string | Function, scope: DecoratorScopes): lang.IAction<any>[] {
+    getFuncs(container: IIocContainer, decorator: string | Function, scope: DecoratorScopes): lang.IAction[] {
         return this.getRegisterer(scope).getFuncs(container, decorator);
     }
 

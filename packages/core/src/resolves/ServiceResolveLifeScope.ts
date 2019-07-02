@@ -8,7 +8,7 @@ import { ResolveDefaultServiceAction } from './ResolveServiceTokenAction';
 
 export class ServiceResolveLifeScope<T> extends LifeScope<ResolveServiceContext<T>> {
 
-    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (!ctx.instance) {
             super.execute(ctx, next);
         }

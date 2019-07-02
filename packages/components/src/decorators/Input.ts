@@ -32,9 +32,9 @@ export interface IPutPropertyDecorator {
      * define Input property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
-     * @param {(Registration<any> | ClassType<any>)} provider define provider to resolve value to the property.
+     * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
      */
-    (bindingName: string, provider: Registration<any> | ClassType<any>): PropParamDecorator;
+    (bindingName: string, provider: Registration | ClassType): PropParamDecorator;
 
     /**
      * define Input property decorator with binding property name and provider.
@@ -48,10 +48,10 @@ export interface IPutPropertyDecorator {
      * define Input property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
-     * @param {Token<any>} provider define provider to resolve value to the property.
+     * @param {Token} provider define provider to resolve value to the property.
      * @param {*} binding default value.
      */
-    (bindingName: string, provider: Token<any>, defaultVal: any): PropParamDecorator;
+    (bindingName: string, provider: Token, defaultVal: any): PropParamDecorator;
     /**
      * define property decorator.
      */

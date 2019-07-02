@@ -20,19 +20,19 @@ export class Advisor implements IAdvisor {
     /**
      * aspects.
      *
-     * @type {Map<Type<any>, ObjectMap<AdviceMetadata[]>>}
+     * @type {Map<Type, ObjectMap<AdviceMetadata[]>>}
      * @memberof AspectManager
      */
-    aspects: Map<Type<any>, ObjectMap<AdviceMetadata[]>>;
+    aspects: Map<Type, ObjectMap<AdviceMetadata[]>>;
 
     /**
      * aspect ioc containers.
      *
      * @protected
-     * @type {Map<Type<any>, IIocContainer>}
+     * @type {Map<Type, IIocContainer>}
      * @memberof Advisor
      */
-    protected aspectIocs: Map<Type<any>, IIocContainer>;
+    protected aspectIocs: Map<Type, IIocContainer>;
     /**
      * method advices.
      *
@@ -78,11 +78,11 @@ export class Advisor implements IAdvisor {
     /**
      * has register advices or not.
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @returns {boolean}
      * @memberof Advisor
      */
-    hasRegisterAdvices(targetType: Type<any>): boolean {
+    hasRegisterAdvices(targetType: Type): boolean {
         let methods = Object.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
         let className = lang.getClassName(targetType);
         return methods.some(m => this.advices.has(`${className}.${m}`));
@@ -91,11 +91,11 @@ export class Advisor implements IAdvisor {
     /**
      * add aspect.
      *
-     * @param {Type<any>} aspect
+     * @param {Type} aspect
      * @param {IIocContainer} raiseContainer
      * @memberof Advisor
      */
-    add(aspect: Type<any>, raiseContainer: IIocContainer) {
+    add(aspect: Type, raiseContainer: IIocContainer) {
         if (!this.aspects.has(aspect)) {
             let metas = getOwnMethodMetadata<AdviceMetadata>(Advice, aspect);
             this.aspects.set(aspect, metas);
@@ -103,7 +103,7 @@ export class Advisor implements IAdvisor {
         }
     }
 
-    getContainer(aspect: Type<any>, defaultContainer?: IIocContainer): IIocContainer {
+    getContainer(aspect: Type, defaultContainer?: IIocContainer): IIocContainer {
         if (this.aspectIocs.has(aspect)) {
             return this.aspectIocs.get(aspect) || defaultContainer;
         }

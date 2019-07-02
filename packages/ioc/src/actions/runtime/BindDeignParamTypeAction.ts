@@ -24,8 +24,8 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
     }
 
 
-    protected createDesignParams(type: Type<any>, target: any, propertyKey: string): IParameter[] {
-        let paramTokens: Token<any>[];
+    protected createDesignParams(type: Type, target: any, propertyKey: string): IParameter[] {
+        let paramTokens: Token[];
         if (target && propertyKey) {
             paramTokens = Reflect.getMetadata('design:paramtypes', target, propertyKey) || [];
         } else {
@@ -61,7 +61,7 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
         return params;
     }
 
-    checkParamType(type: any): Type<any> {
+    checkParamType(type: any): Type {
         if (type === Object) {
             return undefined;
         }

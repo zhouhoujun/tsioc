@@ -6,7 +6,7 @@ export const NextToken = new InjectToken<() => Promise<void>>('next_step');
 
 
 @Injectable
-export class ActivityResult<T> {
+export class ActivityResult<T = any> {
 
     protected nexts: PromiseUtil.ActionHandle<ActivityContext>[];
     constructor(@Inject(NextToken) next?: () => Promise<void>) {

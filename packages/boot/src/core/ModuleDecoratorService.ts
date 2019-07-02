@@ -13,7 +13,7 @@ export class ModuleDecoratorService implements IModuleDecoratorService {
     @Inject(ContainerToken)
     protected container: IContainer;
 
-    getDecorator(type: Type<any>): string {
+    getDecorator(type: Type): string {
         let decorators = this.container.get(MetadataService)
             .getClassDecorators(type);
 
@@ -36,7 +36,7 @@ export class ModuleDecoratorService implements IModuleDecoratorService {
         return decorator;
     }
 
-    getAnnoation(type: Type<any>, decorator?: string): ModuleConfigure {
+    getAnnoation(type: Type, decorator?: string): ModuleConfigure {
         if (!decorator) {
             decorator = this.getDecorator(type);
         }

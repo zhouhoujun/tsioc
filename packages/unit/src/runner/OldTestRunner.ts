@@ -42,7 +42,7 @@ export class OldTestRunner implements ISuiteRunner {
 
     suites: Map<string, ISuiteDescribe>;
 
-    getBootType(): Type<any> {
+    getBootType(): Type {
         return null;
     }
 

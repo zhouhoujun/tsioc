@@ -12,10 +12,10 @@ export interface ProvideMetadata extends TypeMetadata {
     /**
      * this type provide from.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof Provide
      */
-    provider?:  Token<any>;
+    provider?:  Token;
 
     /**
      * alias name. use to create Registration with provider.

@@ -44,7 +44,7 @@ export enum RunState {
 @Injectable
 @Refs(Activity, Runnable)
 @Refs('@Task', Runnable)
-export class WorkflowInstance extends Service<Activity<any>> {
+export class WorkflowInstance extends Service<Activity> {
 
     protected _ctx: ActivityContext;
     get context(): ActivityContext {

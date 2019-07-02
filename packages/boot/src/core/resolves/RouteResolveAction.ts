@@ -3,9 +3,9 @@ import { ContainerPoolToken } from '../ContainerPoolToken';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentAction } from './ResolveParentAction';
 
-export class RouteResolveAction extends IocCompositeAction<ResolveActionContext<any>> {
+export class RouteResolveAction extends IocCompositeAction<ResolveActionContext> {
 
-    execute(ctx: ResolveActionContext<any>, next?: () => void): void {
+    execute(ctx: ResolveActionContext, next?: () => void): void {
         if (this.container.has(ContainerPoolToken)) {
             super.execute(ctx);
         }

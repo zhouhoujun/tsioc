@@ -43,7 +43,7 @@ export interface ITypeReflect extends ClassMetadata {
      * @type {PropertyMetadata[]}
      * @memberof ITypeReflect
      */
-    propProviders: Map<string, Token<any>>;
+    propProviders: Map<string, Token>;
     /**
      * method params.
      *
@@ -62,10 +62,10 @@ export interface ITypeReflect extends ClassMetadata {
     /**
      * this class provides.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof ITypeReflect
      */
-    provides?: Token<any>[];
+    provides?: Token[];
 }
 
 /**
@@ -76,24 +76,24 @@ export interface ITypeReflect extends ClassMetadata {
  * @extends {IocCoreService}
  */
 export class TypeReflects extends IocCoreService {
-    map: Map<ClassType<any>, ITypeReflect>;
+    map: Map<ClassType, ITypeReflect>;
     constructor() {
         super();
         this.map = new Map();
     }
 
-    has(type: ClassType<any>): boolean {
+    has(type: ClassType): boolean {
         return this.map.has(type);
     }
 
-    set(type: ClassType<any>, typeInfo: ITypeReflect): this {
+    set(type: ClassType, typeInfo: ITypeReflect): this {
         if (!this.map.has(type)) {
             this.map.set(type, typeInfo);
         }
         return this;
     }
 
-    get<T extends ITypeReflect>(type: ClassType<any>): T {
+    get<T extends ITypeReflect>(type: ClassType): T {
         if (this.map.has(type)) {
             return this.map.get(type) as T;
         }

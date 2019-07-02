@@ -12,10 +12,10 @@ import { Token, ProviderTypes } from '@tsdi/ioc';
  * @extends {ControlActivity}
  */
 @Task('invoke')
-export class InvokeActivity<T> extends Activity<T> {
+export class InvokeActivity<T = any> extends Activity<T> {
 
     @Input()
-    target: Expression<Token<any>>;
+    target: Expression<Token>;
 
     @Input()
     method: Expression<string>;

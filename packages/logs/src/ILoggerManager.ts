@@ -6,9 +6,9 @@ import { ILogger } from './ILogger';
  *
  * @export
  * @interface LoggerConfig
- * @extends {ObjectMap<any>}
+ * @extends {ObjectMap}
  */
-export interface LoggerConfig extends ObjectMap<any> {
+export interface LoggerConfig extends ObjectMap {
 }
 
 /**

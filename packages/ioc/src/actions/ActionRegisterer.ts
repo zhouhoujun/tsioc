@@ -12,14 +12,14 @@ import { IocCoreService } from '../services';
  * @class ActionRegisterer
  */
 export class ActionRegisterer extends IocCoreService {
-    private maps: Map<Type<IocAction<any>>, IocAction<any>>;
+    private maps: Map<Type<IocAction>, IocAction>;
 
     constructor() {
         super()
         this.maps = new Map();
     }
 
-    get<T extends IocAction<any>>(type: Type<T>): T {
+    get<T extends IocAction>(type: Type<T>): T {
         if (this.maps.has(type)) {
             return this.maps.get(type) as T;
         }

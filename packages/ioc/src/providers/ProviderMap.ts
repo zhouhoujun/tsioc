@@ -26,44 +26,44 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         return this.containerFac();
     }
 
-    map: Map<Token<any>, InstanceFactory<any>>;
+    map: Map<Token, InstanceFactory>;
     constructor(container: IIocContainer) {
         super()
         this.containerFac = container.getFactory();
         this.map = new Map();
     }
 
-    keys(): (Token<any> | number)[] {
+    keys(): (Token | number)[] {
         return Array.from(this.map.keys());
     }
 
-    values(): InstanceFactory<any>[] {
+    values(): InstanceFactory[] {
         return Array.from(this.map.values());
     }
 
     /**
      * has provide or not.
      *
-     * @param {(Token<any> | number)} provide
+     * @param {(Token | number)} provide
      * @returns {boolean}
      * @memberof ProviderMap
      */
-    has(provide: Token<any> | number): boolean {
+    has(provide: Token | number): boolean {
         return this.map.has(this.getTokenKey(provide));
     }
 
-    provides(): Token<any>[] {
-        return this.keys().filter(k => isToken(k)) as Token<any>[];
+    provides(): Token[] {
+        return this.keys().filter(k => isToken(k)) as Token[];
     }
 
     /**
      * get token key.
      *
-     * @param {(Token<any> | number)} token
-     * @returns {(SymbolType<any> | number)}
+     * @param {(Token | number)} token
+     * @returns {(SymbolType | number)}
      * @memberof ProviderMap
      */
-    getTokenKey(token: Token<any> | number): SymbolType<any> {
+    getTokenKey(token: Token | number): SymbolType {
         if (!isNumber(token)) {
             return this.getContainer().getTokenKey(token);
         }
@@ -162,7 +162,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         return null;
     }
 
-    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean {
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IResolver) => void | boolean): void | boolean {
         return !this.keys().some(tk => {
             if (isToken(tk)) {
                 return callbackfn(this.get(tk), tk, this) === false;

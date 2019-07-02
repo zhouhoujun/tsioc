@@ -77,10 +77,10 @@ export class BuildContext extends IocRaiseContext implements IComponentContext {
     /**
      * current module type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof BuildContext
      */
-    type: Type<any>;
+    type: Type;
 
     /**
      * current target module
@@ -115,7 +115,7 @@ export class BuildContext extends IocRaiseContext implements IComponentContext {
      */
     argsProviders?: ProviderTypes[];
 
-    constructor(type: Type<any>) {
+    constructor(type: Type) {
         super();
         this.type = type;
     }
@@ -125,7 +125,7 @@ export class BuildContext extends IocRaiseContext implements IComponentContext {
         return this.raiseContainer() as IContainer;
     }
 
-    static parse(type: Type<any>, options: IModuleResolveOption, raiseContainer?: IContainer | ContainerFactory): BuildContext {
+    static parse(type: Type, options: IModuleResolveOption, raiseContainer?: IContainer | ContainerFactory): BuildContext {
         let ctx = new BuildContext(type);
         ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);

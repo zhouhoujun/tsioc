@@ -21,7 +21,6 @@ export abstract class ModuleRegister extends IocCoreService {
      *
      * @abstract
      * @param {T} config
-     * @param {IRunnableBuilder<any>} [runBuilder]
      * @returns {Promise<void>}
      * @memberof ConfigureRegister
      */

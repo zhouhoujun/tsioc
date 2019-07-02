@@ -9,7 +9,7 @@ export class TaskDecorSelectorHandle extends ComponentSelectorHandle {
         return isMetadataObject(template) ? template.activity : null;
     }
 
-    protected getDefaultCompose(): Type<any> {
+    protected getDefaultCompose(): Type {
         return SequenceActivity;
     }
 

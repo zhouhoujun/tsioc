@@ -134,8 +134,8 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
 
 export class IocSyncDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
 
-    getFuncs(container: IIocContainer, decorator: string | Function): lang.IAction<any>[] {
-        return super.getFuncs(container, decorator) as lang.IAction<any>[];
+    getFuncs(container: IIocContainer, decorator: string | Function): lang.IAction[] {
+        return super.getFuncs(container, decorator) as lang.IAction[];
     }
 
     toFunc(container: IIocContainer, ac: T): Function {

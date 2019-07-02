@@ -114,18 +114,18 @@ export class RuntimeActionContext extends RegisterActionContext {
     /**
      * target type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof RuntimeActionContext
      */
-    targetType?: Type<any>;
+    targetType?: Type;
 
     /**
      * resolve token.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof RuntimeActionContext
      */
-    tokenKey?: Token<any>;
+    tokenKey?: Token;
 
     /**
      * property or method name of type.
@@ -167,7 +167,7 @@ export class RuntimeActionContext extends RegisterActionContext {
      */
     injecteds?: ObjectMap<boolean>;
 
-    constructor(targetType: Type<any>) {
+    constructor(targetType: Type) {
         super(targetType);
     }
 

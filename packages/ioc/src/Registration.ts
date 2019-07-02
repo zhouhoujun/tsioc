@@ -8,21 +8,21 @@ import { isClass, isFunction, lang } from './utils/lang';
  * @class Registration
  * @template T
  */
-export class Registration<T> {
+export class Registration<T = any> {
     protected type = '';
-    protected classType: SymbolType<any>;
+    protected classType: SymbolType;
     protected desc: string;
     /**
      * Creates an instance of Registration.
-     * @param {(Token<T> | Token<any>)} provideType
+     * @param {(Token<T> | Token)} provideType
      * @param {string} desc
      * @memberof Registration
      */
-    constructor(provideType: Token<T> | Token<any>, desc: string) {
+    constructor(provideType: Token<T> | Token, desc: string) {
         this.init(provideType, desc);
     }
 
-    protected init(provideType: Token<T> | Token<any>, desc?: string) {
+    protected init(provideType: Token<T> | Token, desc?: string) {
         if (provideType instanceof Registration) {
             if (desc) {
                 this.classType = provideType.toString();
@@ -40,10 +40,10 @@ export class Registration<T> {
     /**
      * get provide.
      *
-     * @returns {SymbolType<any>}
+     * @returns {SymbolType}
      * @memberof Registration
      */
-    getProvide(): SymbolType<any> {
+    getProvide(): SymbolType {
         return this.classType;
     }
 

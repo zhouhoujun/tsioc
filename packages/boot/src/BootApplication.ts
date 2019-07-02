@@ -60,11 +60,11 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
 
     protected pools: ContainerPool;
 
-    constructor(public target: Type<any> | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(public target: Type | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 
-    protected onInit(target: Type<any> | BootOption | T) {
+    protected onInit(target: Type | BootOption | T) {
         this.deps = this.deps || [];
         if (target instanceof BootContext) {
             this.context = target;
@@ -133,7 +133,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         return this.pools;
     }
 
-    protected getTargetDeps(target: Type<any> | BootOption | T) {
+    protected getTargetDeps(target: Type | BootOption | T) {
         let dependences = [];
         if (isClass(target)) {
             this.container.get(MetadataService)

@@ -37,7 +37,7 @@ export interface ITaskDecorator<T extends ActivityConfigure> extends ITypeDecora
      *
      * @Task
      */
-    (target: ClassType<any>): void;
+    (target: ClassType): void;
 }
 
 /**

@@ -25,7 +25,7 @@ export interface IDIModuleReflect extends ITypeReflect {
     /**
      * module resolver of DIModule
      *
-     * @type {ModuleResovler<any>}
+     * @type {IModuleResolver}
      * @memberof IDIModuleReflect
      */
     moduleResolver?: IModuleResolver;

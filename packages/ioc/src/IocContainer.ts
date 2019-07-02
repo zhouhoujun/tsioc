@@ -29,18 +29,18 @@ export class IocContainer implements IIocContainer {
      * provide types.
      *
      * @protected
-     * @type {Map<Token<any>, Type<any>>}
+     * @type {Map<Token, Type>}
      * @memberof Container
      */
-    protected provideTypes: Map<Token<any>, Type<any>>;
+    protected provideTypes: Map<Token, Type>;
     /**
      * factories.
      *
      * @protected
-     * @type {Map<Token<any>, Function>}
+     * @type {Map<Token, Function>}
      * @memberof Container
      */
-    protected factories: Map<Token<any>, InstanceFactory<any>>;
+    protected factories: Map<Token, InstanceFactory>;
 
     constructor() {
         this.factories = new Map();
@@ -129,10 +129,10 @@ export class IocContainer implements IIocContainer {
     /**
      * iterator.
      *
-     * @param {(tk: Token<any>, fac: InstanceFactory<any>) => void | boolean} callbackfn
+     * @param {(tk: Token, fac: InstanceFactory) => void | boolean} callbackfn
      * @memberof IExports
      */
-    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => void | boolean): void | boolean {
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IResolver) => void | boolean): void | boolean {
         return !Array.from(this.factories.keys()).some(tk => {
             return callbackfn(this.factories.get(tk), tk, this) === false;
         });
@@ -223,7 +223,7 @@ export class IocContainer implements IIocContainer {
         } else {
             if (isFunction(provider)) {
                 factory = (...providers: ParamProviders[]) => {
-                    return (<ToInstance<any>>provider)(this, ...providers);
+                    return (<ToInstance>provider)(this, ...providers);
                 };
             } else {
                 factory = () => {
@@ -254,19 +254,19 @@ export class IocContainer implements IIocContainer {
     /**
      * bind providers for only target class.
      *
-     * @param {Token<any>} target
+     * @param {Token} target
      * @param {ParamProviders[]} providers
-     * @param {(mapTokenKey: Token<any>) => void} [onceBinded]
+     * @param {(mapTokenKey: Token) => void} [onceBinded]
      * @returns {this}
      * @memberof Container
      */
-    bindProviders(target?: Token<any> | ProviderTypes, onceBinded?: ProviderTypes | ((mapTokenKey: Token<any>) => void), ...providers: ProviderTypes[]): this {
-        let tgt: Token<any>;
-        let complete: (mapTokenKey: Token<any>) => void;
+    bindProviders(target?: Token | ProviderTypes, onceBinded?: ProviderTypes | ((mapTokenKey: Token) => void), ...providers: ProviderTypes[]): this {
+        let tgt: Token;
+        let complete: (mapTokenKey: Token) => void;
         let prods: ProviderTypes[] = providers;
 
         if (isFunction(onceBinded)) {
-            complete = onceBinded as (mapTokenKey: Token<any>) => void;
+            complete = onceBinded as (mapTokenKey: Token) => void;
         } else if (onceBinded) {
             prods.unshift(onceBinded);
         }
@@ -300,7 +300,7 @@ export class IocContainer implements IIocContainer {
      * bind provider ref to target.
      *
      * @template T
-     * @param {Token<any>} target
+     * @param {Token} target
      * @param {Token<T>} provide
      * @param {(Token<T> | Factory<T>)} provider
      * @param {string} [alias]
@@ -308,7 +308,7 @@ export class IocContainer implements IIocContainer {
      * @returns {this}
      * @memberof Container
      */
-    bindRefProvider<T>(target: Token<any>, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this {
+    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this {
         let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
         this.bindProvider(refToken, provider);
         onceBinded && onceBinded(refToken);
@@ -341,10 +341,10 @@ export class IocContainer implements IIocContainer {
     /**
      * clear cache.
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @memberof IContainer
      */
-    clearCache(targetType: Type<any>) {
+    clearCache(targetType: Type) {
         this.get(IocCacheManager).destroy(targetType);
     }
 

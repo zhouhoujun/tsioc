@@ -4,7 +4,7 @@ import { ResolveServiceContext } from './ResolveServiceContext';
 import { ServiceDecoratorRegisterer } from './ServiceDecoratorRegisterer';
 
 export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
-    execute(ctx: ResolveServiceContext<any>, next: () => void): void {
+    execute(ctx: ResolveServiceContext, next: () => void): void {
         if (isClassType(ctx.currTargetType)) {
             let decReg = this.container.get(ServiceDecoratorRegisterer);
             if (decReg.size > 0) {

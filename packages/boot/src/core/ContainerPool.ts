@@ -68,7 +68,7 @@ export class ContainerPool implements IContainerPool {
         container.register(DIModuleExports);
     }
 
-    getTokenKey(token: Token<any>): SymbolType<any> {
+    getTokenKey(token: Token): SymbolType {
         if (token instanceof Registration) {
             return token.toString();
         }

@@ -15,7 +15,7 @@ export abstract class Reporter {
 
     }
 
-    abstract render(suites: Map<Token<any>, ISuiteDescribe>): Promise<void>;
+    abstract render(suites: Map<Token, ISuiteDescribe>): Promise<void>;
 }
 
 /**

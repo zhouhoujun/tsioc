@@ -13,17 +13,17 @@ export interface RegisterActionOption extends ActionContextOption {
     /**
      * resolve token.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof RegisterActionOption
      */
-    tokenKey?: Token<any>;
+    tokenKey?: Token;
     /**
      * target type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof RegisterActionOption
      */
-    targetType: Type<any>;
+    targetType: Type;
 
     /**
      * target type reflect.
@@ -62,17 +62,17 @@ export abstract class RegisterActionContext extends DecoratorActionContext {
     /**
      * resolve token.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof RegisterActionContext
      */
-    tokenKey?: Token<any>;
+    tokenKey?: Token;
     /**
      * target type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof RegisterActionContext
      */
-    targetType?: Type<any>;
+    targetType?: Type;
     /**
      * target type reflect.
      *
@@ -82,7 +82,7 @@ export abstract class RegisterActionContext extends DecoratorActionContext {
     targetReflect?: ITypeReflect;
 
 
-    constructor(targetType: Type<any>) {
+    constructor(targetType: Type) {
         super();
         this.targetType = targetType;
     }

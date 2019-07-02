@@ -9,7 +9,7 @@ import { DIModuleExports } from '../injectors';
  * @extends {IocResolveAction}
  */
 export class ResolveModuleExportAction extends IocResolveAction {
-    execute(ctx: ResolveActionContext<any>, next: () => void): void {
+    execute(ctx: ResolveActionContext, next: () => void): void {
         ctx.instance = this.container.get(DIModuleExports).resolve(ctx.token, ...ctx.providers);
         if (!ctx.instance) {
             next();

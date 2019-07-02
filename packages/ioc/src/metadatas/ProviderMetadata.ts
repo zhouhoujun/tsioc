@@ -13,10 +13,10 @@ export interface ProviderMetadata extends TypeMetadata, RefMetadata  {
     /**
      * this type provider to.
      *
-     * @type {SymbolType<any>}
+     * @type {SymbolType}
      * @memberof Provider
      */
-    provide?:  Token<any>;
+    provide?:  Token;
     /**
      * provide alias.
      *

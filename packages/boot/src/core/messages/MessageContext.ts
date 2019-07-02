@@ -9,7 +9,7 @@ export const MsgEventToken = new InjectToken<string>('message_event_name');
 /**
  * token of message event data
  */
-export const MsgDataToken = new InjectToken<any>('message_event_data');
+export const MsgDataToken = new InjectToken('message_event_data');
 
 /**
  * message context.

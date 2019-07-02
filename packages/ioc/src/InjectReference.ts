@@ -12,7 +12,7 @@ import { Registration } from './Registration';
  * @template T
  */
 export class InjectReference<T> extends Registration<T> {
-    constructor(provideType: Token<T>, private target: Token<any>) {
+    constructor(provideType: Token<T>, private target: Token) {
         super(provideType, '');
     }
 

@@ -7,7 +7,7 @@ import { ITestReport } from './reports';
  *
  * @export
  * @interface UnitTestOptions
- * @extends {RunOptions<any>}
+ * @extends {BootOption}
  */
 export interface UnitTestOptions extends BootOption {
     configures?: (string | UnitTestConfigure)[];
@@ -24,10 +24,10 @@ export interface UnitTestConfigure extends RunnableConfigure {
     /**
      * test source
      *
-     * @type {(string | Type<any> | (string | Type<any>)[])}
+     * @type {(string | Type | (string | Type)[])}
      * @memberof UnitTestConfigure
      */
-    src?: string | Type<any> | (string | Type<any>)[];
+    src?: string | Type | (string | Type)[];
     /**
      * resports.
      *

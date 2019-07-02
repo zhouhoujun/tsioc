@@ -21,7 +21,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
         }
     }
 
-    protected getComponent(ctx: TemplateContext, template: any): Type<any> {
+    protected getComponent(ctx: TemplateContext, template: any): Type {
         let selector = this.getSelector(template);
         if (selector) {
             let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
@@ -38,7 +38,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
         return isMetadataObject(template) ? template.element : null;
     }
 
-    protected getDefaultCompose(): Type<any> {
+    protected getDefaultCompose(): Type {
         return ContentElement;
     }
 

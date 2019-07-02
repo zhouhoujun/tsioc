@@ -20,7 +20,7 @@ export class ModuleResovler<T> implements IModuleResolver {
         public token: Token<T>,
         public config: IModuleMetadata<T>,
         container: IContainer,
-        public type?: Type<any>,
+        public type?: Type,
         providers?: IResolverContainer
     ) {
         if (isContainer(container)) {
@@ -74,7 +74,7 @@ export class ModuleResovler<T> implements IModuleResolver {
         return this.getContainer().getTokenProvider(token);
     }
 
-    iterator(callbackfn: (fac: InstanceFactory<any>, tk: Token<any>, resolvor?: IResolver) => boolean | void): boolean | void {
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IResolver) => boolean | void): boolean | void {
         let pdr = this.getProviders();
 
         if (pdr.iterator((fac, tk) => {

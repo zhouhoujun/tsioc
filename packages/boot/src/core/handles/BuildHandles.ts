@@ -7,18 +7,18 @@ import { Handles } from './Handles';
 @Singleton()
 export class BuildHandleRegisterer extends IocCoreService {
 
-    private maps: Map<Type<IHandle<any>>, IHandle<any>>;
+    private maps: Map<Type<IHandle>, IHandle>;
 
     constructor() {
         super()
         this.maps = new Map();
     }
 
-    has<T extends Handle<any>>(type: Type<T>): boolean {
+    has<T extends Handle>(type: Type<T>): boolean {
         return this.maps.has(type);
     }
 
-    get<T extends Handle<any>>(type: Type<T>): T {
+    get<T extends Handle>(type: Type<T>): T {
         if (this.maps.has(type)) {
             return this.maps.get(type) as T;
         }

@@ -26,10 +26,10 @@ export interface ISingletonDecorator extends ITypeDecorator<ClassMetadata> {
      *
      * @Singleton
      *
-     * @param {Token<any>} provide define this class provider for provide.
+     * @param {Token} provide define this class provider for provide.
      * @param {string} alias define this class provider with alias for provide.
      */
-    (provide: Token<any>, alias: string): ClassDecorator;
+    (provide: Token, alias: string): ClassDecorator;
 
     /**
      * Singleton decorator, for class. use to define the class is singleton.

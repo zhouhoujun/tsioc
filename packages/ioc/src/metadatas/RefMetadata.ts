@@ -11,18 +11,18 @@ export interface RefProvider {
     /**
      * ref to tagert.
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof RefProvider
      */
-    target: Token<any>;
+    target: Token;
 
     /**
      * ref provide
      *
-     * @type {Token<any>}
+     * @type {Token}
      * @memberof RefProvider
      */
-    provide?: Token<any>;
+    provide?: Token;
 
     /**
      * provide alias.

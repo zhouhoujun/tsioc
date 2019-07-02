@@ -11,15 +11,15 @@ import { ResolveServiceContext } from './ResolveServiceContext';
  */
 export abstract class IocResolveServiceAction extends IocResolveAction {
 
-    abstract execute(ctx: ResolveServiceContext<any>, next: () => void): void;
+    abstract execute(ctx: ResolveServiceContext, next: () => void): void;
 
-    protected get(ctx: ResolveServiceContext<any>, token: Token<any>) {
+    protected get(ctx: ResolveServiceContext, token: Token) {
         if (!ctx.instance && this.container.has(token)) {
             ctx.instance = this.container.get(token, ...ctx.providers);
         }
     }
 
-    protected resolve(ctx: ResolveServiceContext<any>, token: Token<any>) {
+    protected resolve(ctx: ResolveServiceContext, token: Token) {
         if (!ctx.instance) {
             ctx.instance = this.container.resolve(token, ...ctx.providers);
             if (ctx.extend && isNullOrUndefined(ctx.instance) && isClassType(token)) {

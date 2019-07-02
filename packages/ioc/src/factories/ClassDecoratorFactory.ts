@@ -23,7 +23,7 @@ export interface ITypeDecorator<T extends ClassMetadata> {
     /**
      * not allow abstract to decorator with out metadata.
      */
-    (target: Type<any>): void;
+    (target: Type): void;
 }
 
 /**
@@ -37,7 +37,7 @@ export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator
     /**
      * define class decorator setting with params.
      *
-     * @param {ProvideToken<any>} provide define this class provider for provide.
+     * @param {ProvideToken} provide define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
      */
     (provide: ProvideToken<any>): ClassDecorator;
@@ -45,40 +45,40 @@ export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator
     /**
      * define class decorator setting with params.
      *
-     * @param {Token<any>} provide define this class provider for provide.
+     * @param {Token} provide define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
      */
-    (provide: Token<any>, alias: string): ClassDecorator;
+    (provide: Token, alias: string): ClassDecorator;
 
     /**
      * define class decorator setting with params.
      *
-     * @param {Token<any>} provide define this class provider for provide.
+     * @param {Token} provide define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
-     * @param {Token<any>} [refTarget]  define the class as service of target.
+     * @param {Token} [refTarget]  define the class as service of target.
      */
-    (provide: Token<any>, alias: string, refTarget: Token<any>): ClassDecorator;
+    (provide: Token, alias: string, refTarget: Token): ClassDecorator;
 
     /**
      * define class decorator setting with params.
      *
-     * @param {Token<any>} provide define this class provider for provide.
+     * @param {Token} provide define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
      * @param {boolean} [singlton] define this class as singlton.
-     * @param {Token<any>} [refTarget]  define the class as service of target.
+     * @param {Token} [refTarget]  define the class as service of target.
      */
-    (provide: Token<any>, alias: string, singlton: boolean, refTarget: Token<any>): ClassDecorator;
+    (provide: Token, alias: string, singlton: boolean, refTarget: Token): ClassDecorator;
 
     /**
      * define class decorator setting with params.
      *
-     * @param {Token<any>} provide define this class provider for provide.
+     * @param {Token} provide define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
      * @param {boolean} [singlton] define this class as singlton.
      * @param {number} [cache]  define class cahce expris when is not singlton.
-     * @param {Token<any>} [refTarget]  define the class as service of target.
+     * @param {Token} [refTarget]  define the class as service of target.
      */
-    (provide: Token<any>, alias: string, cache: number, refTarget: Token<any>): ClassDecorator;
+    (provide: Token, alias: string, cache: number, refTarget: Token): ClassDecorator;
 
 }
 

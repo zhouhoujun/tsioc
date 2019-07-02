@@ -78,7 +78,7 @@ export class TranslateAtrrHandle extends ParseHandle {
         if (!isNullOrUndefined(ctx.bindExpression)) {
             let mgr = this.container.get(SelectorManager);
             let pdr = ctx.binding.provider;
-            let selector: Type<any>;
+            let selector: Type;
             let template = isArray(ctx.template) ? {} : (ctx.template || {});
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             if (isString(pdr) && mgr.hasAttr(pdr)) {

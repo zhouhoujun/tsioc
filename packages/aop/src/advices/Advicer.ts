@@ -10,10 +10,10 @@ export interface Advicer extends MatchPointcut {
     /**
      * aspect type.
      *
-     * @type {Type<any>}
+     * @type {Type}
      * @memberof Advicer
      */
-    aspectType: Type<any>;
+    aspectType: Type;
 
 }
 

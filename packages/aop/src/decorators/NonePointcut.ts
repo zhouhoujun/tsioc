@@ -13,7 +13,7 @@ export interface INonePointcutDecorator extends ITypeDecorator<ClassMetadata> {
      *
      * @NonePointcut
      */
-    (target: Type<any>): void;
+    (target: Type): void;
 }
 
 /**

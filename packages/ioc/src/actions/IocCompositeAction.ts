@@ -11,13 +11,13 @@ import { IIocContainer } from '../IIocContainer';
  * @extends {IocAction<T>}
  * @template T
  */
-export class IocCompositeAction<T extends IocActionContext> extends IocAction<T> {
+export class IocCompositeAction<T extends IocActionContext = IocActionContext> extends IocAction<T> {
 
     protected actions: IocActionType[];
     protected befores: IocActionType[];
     protected afters: IocActionType[];
 
-    private actionFuncs: lang.IAction<any>[];
+    private actionFuncs: lang.IAction[];
     constructor(container?: IIocContainer) {
         super(container);
 

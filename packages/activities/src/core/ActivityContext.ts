@@ -14,7 +14,6 @@ import { ComponentManager } from '@tsdi/components';
  *
  * @export
  * @class ActivityContext
- * @implements {IActivityContext<any>}
  */
 @Injectable
 @Refs(Activity, BootContext)
@@ -120,7 +119,7 @@ export class ActivityContext extends BootContext {
 
 
 
-    static parse(target: Type<any> | ActivityOption<ActivityContext>, raiseContainer?: ContainerFactory): ActivityContext {
+    static parse(target: Type | ActivityOption, raiseContainer?: ContainerFactory): ActivityContext {
         return createAnnoationContext(ActivityContext, target, raiseContainer);
     }
 

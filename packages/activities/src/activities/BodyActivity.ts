@@ -13,7 +13,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @template T
  */
 @Task('[body]')
-export class BodyActivity<T> extends ControlerActivity<T> {
+export class BodyActivity<T = any> extends ControlerActivity<T> {
     private actions: PromiseUtil.ActionHandle<ActivityContext>[];
     protected activities: ActivityType[] = [];
 

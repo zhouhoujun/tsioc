@@ -4,7 +4,7 @@ import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFa
 import { DecoratorType } from './DecoratorType';
 
 
-export type ClassMethodDecorator = (target: Object | Type<any>, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
+export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
 
 /**
  * class method decorator
@@ -21,7 +21,7 @@ export interface IClassMethodDecorator<T extends TypeMetadata> {
      */
     (metadata?: T): ClassMethodDecorator;
 
-    (target: Type<any>): void;
+    (target: Type): void;
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
 }
 

@@ -6,8 +6,8 @@ import { ContainerPoolToken } from '../ContainerPoolToken';
 
 
 
-export class ResolveRouteServiceAction extends IocCompositeAction<ResolveServiceContext<any>>  {
-    execute(ctx: ResolveServiceContext<any>, next?: () => void): void {
+export class ResolveRouteServiceAction extends IocCompositeAction<ResolveServiceContext>  {
+    execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (this.container.has(ContainerPoolToken)) {
             let token = ctx.token;
             ctx.token = ctx.currToken || ctx.token;
@@ -21,7 +21,7 @@ export class ResolveRouteServiceAction extends IocCompositeAction<ResolveService
         }
     }
 
-    protected setScope(ctx: ResolveServiceContext<any>, parentScope?: any) {
+    protected setScope(ctx: ResolveServiceContext, parentScope?: any) {
         if (!ctx.actionScope) {
             ctx.actionScope = this;
         }

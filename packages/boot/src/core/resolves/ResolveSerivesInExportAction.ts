@@ -7,7 +7,7 @@ import { IModuleResolver } from '../modules';
 
 export class ResolveSerivesInExportAction extends IocResolveServicesAction {
 
-    execute(ctx: ResolveServicesContext<any>, next: () => void): void {
+    execute(ctx: ResolveServicesContext, next: () => void): void {
         this.container.get(DIModuleExports).getResolvers()
             .forEach(r => {
                 this.depIterator(ctx, r);
@@ -16,7 +16,7 @@ export class ResolveSerivesInExportAction extends IocResolveServicesAction {
         next();
     }
 
-    depIterator(ctx: ResolveServicesContext<any>, resolver: IModuleResolver) {
+    depIterator(ctx: ResolveServicesContext, resolver: IModuleResolver) {
         resolver.getContainer()
             .getActionRegisterer()
             .get(ResolveServicesScope).execute(ctx);

@@ -4,8 +4,8 @@ import { BuildHandle, BuildHandleRegisterer } from './BuildHandles';
 
 export class IocBuildDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
 
-    getFuncs(container: IIocContainer, decorator: string | Function): PromiseUtil.ActionHandle<any>[] {
-        return super.getFuncs(container, decorator) as PromiseUtil.ActionHandle<any>[];
+    getFuncs(container: IIocContainer, decorator: string | Function): PromiseUtil.ActionHandle[] {
+        return super.getFuncs(container, decorator) as PromiseUtil.ActionHandle[];
     }
 
     toFunc(container: IIocContainer, ac: T): Function {

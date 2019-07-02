@@ -18,10 +18,10 @@ export interface IAdvisor {
     /**
      * aspects
      *
-     * @type {Map<Type<any>, ObjectMap<AdviceMetadata[]>>}
+     * @type {Map<Type, ObjectMap<AdviceMetadata[]>>}
      * @memberof IAdvisor
      */
-    aspects: Map<Type<any>, ObjectMap<AdviceMetadata[]>>;
+    aspects: Map<Type, ObjectMap<AdviceMetadata[]>>;
     /**
      * advices
      *
@@ -33,11 +33,11 @@ export interface IAdvisor {
     /**
      * has register advices or not.
      *
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @returns {boolean}
      * @memberof IAdvisor
      */
-    hasRegisterAdvices(targetType: Type<any>): boolean;
+    hasRegisterAdvices(targetType: Type): boolean;
     /**
      * set advices.
      *
@@ -58,21 +58,21 @@ export interface IAdvisor {
     /**
      * add aspect.
      *
-     * @param {Type<any>} aspect
+     * @param {Type} aspect
      * @param {IIocContainer} raiseContainer
      * @memberof IAdvisor
      */
-    add(aspect: Type<any>, raiseContainer: IIocContainer);
+    add(aspect: Type, raiseContainer: IIocContainer);
 
     /**
      * get aspect registered container.
      *
-     * @param {Type<any>} aspect
+     * @param {Type} aspect
      * @param {IIocContainer} [defaultContainer]
      * @returns {IIocContainer}
      * @memberof IAdvisor
      */
-    getContainer(aspect: Type<any>, defaultContainer?: IIocContainer): IIocContainer;
+    getContainer(aspect: Type, defaultContainer?: IIocContainer): IIocContainer;
 
     /**
      * resolve aspect.

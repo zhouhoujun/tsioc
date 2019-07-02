@@ -24,7 +24,7 @@ export interface IParamPropDecorator<T extends ParamPropMetadata> {
      *
      * @param {Token<T>} provider define provider to resolve value to the parameter or property.
      */
-    (provider: Token<any>): PropParamDecorator;
+    (provider: Token): PropParamDecorator;
     /**
      * define parameter or property decorator with metadata map.
      * @param {T} [metadata] define matadata map to resolve value to the parameter or property.

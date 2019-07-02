@@ -15,13 +15,13 @@ export interface IAspectDecorator extends ITypeDecorator<AspectMetadata> {
      * @Aspect
      *
      * @param {string} annotation set pointcut in the class with the annotation decorator only.
-     * @param {(ClassType<any> | ClassType<any>[])>} [within]  set pointcut in the class with the annotation decorator only.
-     * @param {(Registration<any> | symbol | string)} [provide] define this class provider for provide.
+     * @param {(ClassType | ClassType[])>} [within]  set pointcut in the class with the annotation decorator only.
+     * @param {(Registration | symbol | string)} [provide] define this class provider for provide.
      * @param {string} [alias] define this class provider with alias for provide.
      * @param {boolean} [singlton] define this class as singlton.
      * @param {number} [cache]  define class cahce expris when is not singlton.
      */
-    (annotation: string, within?: ClassType<any> | ClassType<any>[], provide?: Registration<any> | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
+    (annotation: string, within?: ClassType | ClassType[], provide?: Registration | symbol | string, alias?: string, singlton?: boolean, cache?: number): ClassDecorator;
 
     /**
      * Aspect decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.

@@ -9,10 +9,10 @@ export interface IPlatformService {
     /**
      * get evn args.
      *
-     * @returns {ObjectMap<any>}
+     * @returns {ObjectMap}
      * @memberof NodeContext
      */
-    getEnvArgs(): ObjectMap<any>;
+    getEnvArgs(): ObjectMap;
     hasArg(arg: any): boolean;
     /**
      * get root folders.

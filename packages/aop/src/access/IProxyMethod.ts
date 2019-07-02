@@ -18,10 +18,10 @@ export interface IProxyMethod {
      * proceed the proxy method.
      *
      * @param {*} target
-     * @param {Type<any>} targetType
+     * @param {Type} targetType
      * @param {IPointcut} pointcut
      * @param {Joinpoint} [provJoinpoint]
      * @memberof IProxyMethod
      */
-    proceed(target: any, targetType: Type<any>, pointcut: IPointcut, provJoinpoint?: Joinpoint);
+    proceed(target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint);
 }

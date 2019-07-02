@@ -8,8 +8,8 @@ import { ModuleConfigure } from './modules';
  * @interface IModuleDecoratorService
  */
 export interface IModuleDecoratorService {
-    getDecorator(type: Type<any>): string;
-    getAnnoation(type: Type<any>, decorator?: string): ModuleConfigure;
+    getDecorator(type: Type): string;
+    getAnnoation(type: Type, decorator?: string): ModuleConfigure;
 }
 
 export const ModuleDecoratorServiceToken = new InjectToken<IModuleDecoratorService>('ModuleDecoratorService');

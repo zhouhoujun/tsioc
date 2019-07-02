@@ -4,7 +4,7 @@ import { RunnableConfigure } from './RunnableConfigure';
 /**
  * configure manager token.
  */
-export const ConfigureMgrToken = new InjectToken<IConfigureManager<RunnableConfigure>>('config-mgr');
+export const ConfigureMgrToken = new InjectToken<IConfigureManager>('config-mgr');
 
 /**
  * default configuration token.
@@ -18,7 +18,7 @@ export const DefaultConfigureToken = new InjectToken<RunnableConfigure>('DI_Defa
  * @export
  * @interface IConfigureLoader
  */
-export interface IConfigureLoader<T extends RunnableConfigure> {
+export interface IConfigureLoader<T extends RunnableConfigure = RunnableConfigure> {
     /**
      * load config.
      *
@@ -32,7 +32,7 @@ export interface IConfigureLoader<T extends RunnableConfigure> {
 /**
  * configure loader token.
  */
-export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<RunnableConfigure>>('DI_Configure_Loader');
+export const ConfigureLoaderToken = new InjectToken<IConfigureLoader>('DI_Configure_Loader');
 
 /**
  * configure manager.
@@ -41,7 +41,7 @@ export const ConfigureLoaderToken = new InjectToken<IConfigureLoader<RunnableCon
  * @interface IConfigureManager
  * @template T
  */
-export interface IConfigureManager<T extends RunnableConfigure> {
+export interface IConfigureManager<T extends RunnableConfigure = RunnableConfigure> {
     /**
      * use configuration.
      *

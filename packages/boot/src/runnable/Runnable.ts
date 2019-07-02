@@ -4,15 +4,15 @@ import { BootContext } from '../BootContext';
 
 
 
-
 /**
  * runable interface. define the type as runable.
  *
  * @export
- * @interface IBoot
+ * @interface IRunnable
  * @template T
+ * @template TCtx default BootContext
  */
-export interface IRunnable<T> {
+export interface IRunnable<T, TCtx extends BootContext = BootContext> {
     /**
      * container.
      *
@@ -24,10 +24,10 @@ export interface IRunnable<T> {
     /**
      * runable context.
      *
-     * @type {BootContext}
+     * @type {TCtx}
      * @memberof IRunnable
      */
-    readonly context?: BootContext;
+    readonly context?: TCtx;
 
     /**
      * get boot instance.
@@ -80,15 +80,15 @@ export interface RunnableInit {
  * @template T
  */
 @Abstract()
-export abstract class Runnable<T = any> implements IRunnable<T> {
+export abstract class Runnable<T = any, TCtx extends BootContext = BootContext> implements IRunnable<T, TCtx> {
 
-    protected _ctx: BootContext;
-    get context(): BootContext {
+    protected _ctx: TCtx;
+    get context(): TCtx {
         return this._ctx;
     }
 
     constructor(ctx: BootContext) {
-        this._ctx = ctx;
+        this._ctx = ctx as TCtx;
     }
 
     getContainer(): IContainer {
@@ -120,9 +120,9 @@ export abstract class Runnable<T = any> implements IRunnable<T> {
  *
  * @export
  * @param {*} target
- * @returns {target is Runnable<any>}
+ * @returns {target is Runnable}
  */
-export function isRunnable<T>(target: any): target is Runnable<T> {
+export function isRunnable(target: any): target is Runnable {
     if (target instanceof Runnable) {
         return true;
     }

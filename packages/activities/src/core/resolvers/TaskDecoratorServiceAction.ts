@@ -5,7 +5,7 @@ import { ActivityContext } from '../ActivityContext';
 import { ActivityConfigure } from '../ActivityConfigure';
 
 export class TaskDecoratorServiceAction extends IocResolveServiceAction {
-    execute(ctx: ResolveServiceContext<any>, next: () => void): void {
+    execute(ctx: ResolveServiceContext, next: () => void): void {
         if (!isClassType(ctx.currTargetType)) {
             return next();
         }

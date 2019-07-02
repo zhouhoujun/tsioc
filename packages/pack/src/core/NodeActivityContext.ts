@@ -5,7 +5,7 @@ import { IPlatformService, PlatformServiceToken } from './IPlatformService';
 
 
 
-export type NodeExpression<T> = CtxExpression<T, NodeActivityContext>;
+export type NodeExpression<T = any> = CtxExpression<T, NodeActivityContext>;
 
 /**
  * pipe activity context.

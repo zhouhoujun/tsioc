@@ -12,7 +12,7 @@ export interface ProvidersMetadata  extends TypeMetadata {
     /**
      * add ref service to the class.
      *
-     * @type {KeyValue<Token<any>, Token<any>>}
+     * @type {KeyValue<Token, Token>}
      * @memberof ProvidersMetadata
      */
     providers?: ProviderTypes[];

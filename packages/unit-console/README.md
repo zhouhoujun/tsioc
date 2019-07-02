@@ -133,12 +133,12 @@ describe('Array', function(){
  * unit test.
  *
  * @export
- * @param {(string | Type<any> | (string | Type<any>)[])} src test source.
+ * @param {(string | Type | (string | Type)[])} src test source.
  * @param {(string | AppConfigure)} [config] test configure.
  * @param {...LoadType[]} deps custom set unit test dependencies.
  * @returns {Promise<any>}
  */
-export function runTest(src: string | Type<any> | (string | Type<any>)[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any>;
+export function runTest(src: string | Type | (string | Type)[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any>;
 
 runTest(SuiteTest, {...}, ConsoleReporter);
 

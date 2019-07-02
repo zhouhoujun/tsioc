@@ -82,7 +82,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * build module instace.
      *
      * @template T
-     * @param {(Type<any> | BootOption | T)} target
+     * @param {(Type | BootOption | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
@@ -92,7 +92,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         return ctx.target;
     }
 
-    async buildBootTarget(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<any> {
+    async buildBootTarget(target: Type | BootOption | BootContext, ...args: string[]): Promise<any> {
         let ctx = await this.build(target, ...args);
         return ctx.getBootTarget();
     }
@@ -101,12 +101,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * build module.
      *
      * @template T
-     * @param {(Type<any> | T)} target
+     * @param {(Type | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    build<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    build<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T> {
         return this.execLifeScope(null, this.container.get(BuildHandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
     }
 
@@ -114,12 +114,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * create runnable.
      *
      * @template T
-     * @param {(Type<any> | BootOption | BootContext)} target
+     * @param {(Type | BootOption | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<IRunnable<T>>}
      * @memberof BuilderService
      */
-    async buildRunnable<T>(target: Type<any> | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>> {
+    async buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>> {
         let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }
@@ -128,12 +128,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * run module.
      *
      * @template T
-     * @param {(Type<any> | T)} target
+     * @param {(Type | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof RunnerService
      */
-    run<T extends BootContext>(target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    run<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T> {
         return this.execLifeScope(null, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
     }
 
@@ -142,13 +142,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * boot application.
      *
      * @template T
-     * @param {(Type<any> | BootOption | T)} target
+     * @param {(Type | BootOption | T)} target
      * @param {(BootSubAppOption<T> | string)} [options]
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async boot<T extends BootContext>(target: Type<any> | BootOption | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
+    async boot<T extends BootContext>(target: Type | BootOption | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
         let opt: BootSubAppOption<T>;
         if (isFunction(options)) {
             opt = { contextInit: options };
@@ -180,7 +180,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * boot application.
      *
      * @template T
-     * @param {(Type<any> | BootOption | T)} target
+     * @param {(Type | BootOption | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
@@ -199,7 +199,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ...args);
     }
 
-    protected async execLifeScope<T extends BootContext>(contextInit: (ctx: BootContext) => void, scope: BuildHandles<BootContext>, target: Type<any> | BootOption | T, ...args: string[]): Promise<T> {
+    protected async execLifeScope<T extends BootContext>(contextInit: (ctx: BootContext) => void, scope: BuildHandles<BootContext>, target: Type | BootOption | T, ...args: string[]): Promise<T> {
         let ctx: BootContext;
         if (target instanceof BootContext) {
             ctx = target;
