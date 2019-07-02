@@ -4,19 +4,19 @@ import { LoadType, Type } from '@tsdi/ioc';
 import { IContainerPool } from './core';
 
 
-export interface IBootApplication extends ContextInit {
+export interface IBootApplication<T extends BootContext = BootContext> extends ContextInit<T> {
 
     /**
      * boot target.
      *
-     * @type {(Type<any> | BootOption | BootContext)}
+     * @type {(Type<any> | BootOption | T)}
      * @memberof IBootApplication
      */
-    target: Type<any> | BootOption | BootContext;
+    target: Type<any> | BootOption | T;
 
-    getContext(): BootContext;
+    getContext(): T;
 
-    run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext>;
+    run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T>;
 
     getPools(): IContainerPool;
 

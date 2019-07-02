@@ -13,7 +13,7 @@ import { ActivityTemplate } from './ActivityConfigure';
  * @interface ActivityOption
  * @extends {BootOption}
  */
-export interface ActivityOption<T extends ActivityContext> extends BootOption {
+export interface ActivityOption<T extends ActivityContext = ActivityContext> extends BootOption {
     /**
      * workflow id.
      *

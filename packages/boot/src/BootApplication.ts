@@ -13,14 +13,14 @@ import { RunnableConfigure } from './annotations';
  * @export
  * @interface ContextInit
  */
-export interface ContextInit {
+export interface ContextInit<T extends BootContext = BootContext> {
     /**
      * on context init.
      *
-     * @param {BootContext} ctx
+     * @param {T} ctx
      * @memberof ContextInit
      */
-    onContextInit(ctx: BootContext);
+    onContextInit(ctx: T);
 }
 
 export function checkBootArgs(deps?: LoadType[] | LoadType | string, ...args: string[]): { args: string[], deps: LoadType[] } {
@@ -41,15 +41,15 @@ export function checkBootArgs(deps?: LoadType[] | LoadType | string, ...args: st
  * @export
  * @class BootApplication
  */
-export class BootApplication implements IBootApplication, ContextInit {
+export class BootApplication<T extends BootContext = BootContext> implements IBootApplication, ContextInit<T> {
 
     /**
      * application context.
      *
-     * @type {BootContext}
+     * @type {T}
      * @memberof BootApplication
      */
-    private context: BootContext;
+    private context: T;
     /**
      * application module root container.
      *
@@ -60,11 +60,11 @@ export class BootApplication implements IBootApplication, ContextInit {
 
     protected pools: ContainerPool;
 
-    constructor(public target: Type<any> | BootOption | BootContext, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(public target: Type<any> | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 
-    protected onInit(target: Type<any> | BootOption | BootContext) {
+    protected onInit(target: Type<any> | BootOption | T) {
         this.deps = this.deps || [];
         if (target instanceof BootContext) {
             this.context = target;
@@ -88,11 +88,11 @@ export class BootApplication implements IBootApplication, ContextInit {
 
     }
 
-    getContext(): BootContext {
+    getContext(): T {
         return this.context;
     }
 
-    onContextInit(ctx: BootContext) {
+    onContextInit(ctx: T) {
         this.context = ctx;
         this.container.bindProvider(BootContextToken, ctx);
         this.container.bindProvider(new InjectReference(BootApplication, ctx.module), this);
@@ -118,11 +118,12 @@ export class BootApplication implements IBootApplication, ContextInit {
      * run application of module.
      *
      * @param {...string[]} args
-     * @returns {Promise<BootContext>}
+     * @returns {Promise<T>}
      * @memberof BootApplication
      */
-    run(...args: string[]): Promise<BootContext> {
-        return this.container.resolve(BuilderServiceToken).bootApp(this, ...args);
+    async run(...args: string[]): Promise<T> {
+        let ctx = await this.container.resolve(BuilderServiceToken).bootApp(this, ...args);
+        return ctx as T;
     }
 
     getPools(): ContainerPool {
@@ -132,7 +133,7 @@ export class BootApplication implements IBootApplication, ContextInit {
         return this.pools;
     }
 
-    protected getTargetDeps(target: Type<any> | BootOption | BootContext) {
+    protected getTargetDeps(target: Type<any> | BootOption | T) {
         let dependences = [];
         if (isClass(target)) {
             this.container.get(MetadataService)

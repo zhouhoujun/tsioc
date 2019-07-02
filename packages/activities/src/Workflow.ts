@@ -17,9 +17,9 @@ import { ComponentsModule } from '@tsdi/components';
  * @class Workflow
  * @extends {BootApplication}
  */
-export class Workflow extends BootApplication implements ContextInit {
+export class Workflow<T extends ActivityContext = ActivityContext> extends BootApplication<T> implements ContextInit {
 
-    protected onInit(target: Type<any> | ActivityOption<ActivityContext> | ActivityContext) {
+    protected onInit(target: Type<any> | ActivityOption<T> | T) {
         if (!isClass(target)) {
             if (!target.module && isArray(target.template)) {
                 target.module = SequenceActivity;
@@ -31,10 +31,6 @@ export class Workflow extends BootApplication implements ContextInit {
 
     getWorkflow(workflowId: string): WorkflowInstance {
         return this.getPools().getRoot().get(workflowId);
-    }
-
-    getContext(): ActivityContext {
-        return super.getContext() as ActivityContext;
     }
 
     /**
@@ -63,12 +59,12 @@ export class Workflow extends BootApplication implements ContextInit {
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async run<T extends ActivityContext>(target: T | Type<any> | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
+    static async run<T extends ActivityContext = ActivityContext>(target: T | Type<any> | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
         let { deps: depmds, args: envs } = checkBootArgs(deps, ...args);
         return await new Workflow(target, depmds).run(...envs) as T;
     }
 
-    onContextInit(ctx: ActivityContext) {
+    onContextInit(ctx: T) {
         super.onContextInit(ctx);
         ctx.id = ctx.id || this.createUUID();
     }
