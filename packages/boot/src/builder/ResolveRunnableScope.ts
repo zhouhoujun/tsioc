@@ -2,7 +2,7 @@ import { BootContext } from '../BootContext';
 import { BuildHandles } from '../core';
 import { Startup } from '../runnable';
 import { RefRunnableHandle } from './RefRunnableHandle';
-import { RefDecoratorRunnableHandle } from './RefDecoratorRunnableHandle';
+// import { RefDecoratorRunnableHandle } from './RefDecoratorRunnableHandle';
 
 
 export class ResolveRunnableScope extends BuildHandles<BootContext> {
@@ -18,7 +18,7 @@ export class ResolveRunnableScope extends BuildHandles<BootContext> {
     }
 
     setup() {
-        this.use(RefRunnableHandle)
-            .use(RefDecoratorRunnableHandle);
+        this.use(RefRunnableHandle);
+            // .use(RefDecoratorRunnableHandle);
     }
 }
