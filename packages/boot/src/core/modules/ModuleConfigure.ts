@@ -1,5 +1,5 @@
 import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
-import { Runnable } from '../../runnable';
+import { Startup } from '../../runnable';
 import { RegFor } from './RegScope';
 
 /**
@@ -100,10 +100,10 @@ export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
     /**
      * default runnerable.
      *
-     * @type {Token<Runnable<T>>}
+     * @type {Token<Startup<T>>}
      * @memberof IModuleMetadata
      */
-    defaultRunnable?: Token<Runnable<T>>
+    defaultRunnable?: Token<Startup<T>>
 
 }
 

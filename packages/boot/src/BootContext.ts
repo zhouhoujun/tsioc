@@ -2,7 +2,7 @@ import { AnnoationContext, AnnoationOption, createAnnoationContext } from './cor
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
-import { Runnable } from './runnable';
+import { Startup, IStartup } from './runnable';
 import { IComponentContext } from './builder';
 import { ContextScopeToken } from './IContextScope';
 
@@ -101,10 +101,10 @@ export interface BootOption extends AnnoationOption {
     /**
      * bootstrap reference runable service.
      *
-     * @type {Runnable}
+     * @type {Startup}
      * @memberof BootOptions
      */
-    runnable?: Runnable;
+    runnable?: Startup;
 
     /**
      * auto run runnable or not.
@@ -252,10 +252,10 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     /**
      * bootstrap runnable service.
      *
-     * @type {Runnable}
+     * @type {IStartup}
      * @memberof BootContext
      */
-    runnable?: Runnable;
+    runnable?: Startup;
 
     /**
      * boot dependencies.

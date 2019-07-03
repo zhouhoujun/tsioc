@@ -3,6 +3,7 @@ import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
 import { ContainerToken, IContainer } from '@tsdi/core';
+import { BootContext } from '@tsdi/boot';
 
 declare let window: any;
 declare let global: any;
@@ -170,6 +171,10 @@ export class OldTestRunner implements ISuiteRunner {
             globals[k] = gls[k];
         })
 
+    }
+
+    async startup(ctx: BootContext) {
+        return this.run(ctx.data);
     }
 
     async run(data?: any): Promise<any> {

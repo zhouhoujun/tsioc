@@ -1,4 +1,4 @@
-import { DIModule, Runnable } from '../src';
+import { DIModule, Startup } from '../src';
 import { Injectable, Inject } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
@@ -39,14 +39,14 @@ export class ModuleA {
 }
 
 @Injectable
-export class ClassSevice extends Runnable {
+export class ClassSevice extends Startup {
     async onInit(): Promise<void> {
     }
     @Inject('mark')
     mark: string;
     state: string;
 
-    async run(data?: any): Promise<any> {
+    async startup(): Promise<any> {
         console.log('running.....');
         let refs = this.getContainer().getTypeReflects();
         console.log(refs.get(ClassSevice));

@@ -7,7 +7,7 @@ import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
-import { IRunnable } from '../runnable';
+import { IStartup } from '../runnable';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
 
 
@@ -116,10 +116,10 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @template T
      * @param {(Type | BootOption | BootContext)} target
      * @param {...string[]} args
-     * @returns {Promise<IRunnable<T>>}
+     * @returns {Promise<IStartup<T>>}
      * @memberof BuilderService
      */
-    async buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>> {
+    async buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>> {
         let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }

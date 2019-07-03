@@ -1,5 +1,5 @@
 import { Token, InjectReference } from '@tsdi/ioc';
-import { Runnable } from './Runnable';
+import { Startup } from './Startup';
 
 
 /**
@@ -7,12 +7,12 @@ import { Runnable } from './Runnable';
  *
  * @export
  * @class InjectRunnerToken
- * @extends {Registration<Runnable<T>>}
+ * @extends {Registration<Startup<T>>}
  * @template T
  */
-export class InjectRunnableToken<T> extends InjectReference<Runnable<T>> {
+export class InjectRunnableToken<T> extends InjectReference<Startup<T>> {
     constructor(type: Token<T>) {
-        super(Runnable, type);
+        super(Startup, type);
     }
 }
 

@@ -1,4 +1,4 @@
-import { IRunnable, Runnable, RunnableInit } from './Runnable';
+import { IStartup, Startup, StartupInit } from './Startup';
 import { Abstract } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 
@@ -8,14 +8,14 @@ import { BootContext } from '../BootContext';
  * @export
  * @interface IService
  */
-export interface IService<T, TCtx extends BootContext = BootContext> extends IRunnable<T, TCtx> {
+export interface IService<T = any, TCtx extends BootContext = BootContext> extends IStartup<T, TCtx> {
     /**
      * start application service.
      *
      * @returns {Promise<any>}
      * @memberof IService
      */
-    start(data?: any): Promise<any>;
+    start?(data?: any): Promise<any>;
     /**
      * stop server.
      *
@@ -30,9 +30,9 @@ export interface IService<T, TCtx extends BootContext = BootContext> extends IRu
  *
  * @export
  * @interface ServiceInit
- * @extends {RunnableInit}
+ * @extends {StartupInit}
  */
-export interface ServiceInit extends RunnableInit {
+export interface ServiceInit extends StartupInit {
 
 }
 
@@ -45,18 +45,10 @@ export interface ServiceInit extends RunnableInit {
  * @implements {IService}
  */
 @Abstract()
-export abstract class Service<T = any, TCtx extends BootContext = BootContext> extends Runnable<T, TCtx> implements IService<T, TCtx> {
+export abstract class Service<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IService<T, TCtx> {
 
-    /**
-     * run service.
-     * call start service.
-     *
-     * @param {*} [data]
-     * @returns {Promise<any>}
-     * @memberof Service
-     */
-    run(data?: any): Promise<any> {
-        return this.start(data);
+    async startup(ctx: TCtx) {
+        await this.start(ctx.data);
     }
 
     /**
@@ -67,7 +59,7 @@ export abstract class Service<T = any, TCtx extends BootContext = BootContext> e
      * @returns {Promise<any>}
      * @memberof Service
      */
-    abstract start(data?: any): Promise<any>;
+    abstract start?(data?: any): Promise<any>;
     /**
      * stop service.
      *
@@ -76,5 +68,19 @@ export abstract class Service<T = any, TCtx extends BootContext = BootContext> e
      * @memberof Service
      */
     abstract stop(): Promise<any>;
+}
+
+/**
+ * target is Service or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Service}
+ */
+export function isService(target: any): target is Service {
+    if (target instanceof Service) {
+        return true;
+    }
+    return false;
 }
 

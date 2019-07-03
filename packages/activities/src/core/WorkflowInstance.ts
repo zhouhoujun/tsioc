@@ -1,4 +1,4 @@
-import { Service, Runnable } from '@tsdi/boot';
+import { Service, Startup } from '@tsdi/boot';
 import { Injectable, Refs, Inject } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
@@ -42,14 +42,10 @@ export enum RunState {
  * @implements {ITaskRunner}
  */
 @Injectable
-@Refs(Activity, Runnable)
-@Refs('@Task', Runnable)
-export class WorkflowInstance extends Service<Activity> {
+@Refs(Activity, Startup)
+@Refs('@Task', Startup)
+export class WorkflowInstance<T extends Activity = Activity, TCtx extends ActivityContext = ActivityContext> extends Service<T, TCtx> {
 
-    protected _ctx: ActivityContext;
-    get context(): ActivityContext {
-        return this._ctx;
-    }
 
     private _result: any;
     get result(): any {
@@ -73,11 +69,8 @@ export class WorkflowInstance extends Service<Activity> {
         await mgr.getConfig();
     }
 
-    run<T extends ActivityContext>(data?: any): Promise<T> {
-        return this.start(data);
-    }
 
-    async start<T extends ActivityContext>(data?: any): Promise<T> {
+    async start(data?: any): Promise<TCtx> {
         let container = this.getContainer();
         this.context.data = data;
         if (this.context.id && !container.has(this.context.id)) {
@@ -89,7 +82,7 @@ export class WorkflowInstance extends Service<Activity> {
             this._result = this.context.result;
         })
 
-        return this.context as T;
+        return this.context;
 
     }
 

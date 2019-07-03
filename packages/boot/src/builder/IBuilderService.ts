@@ -3,7 +3,7 @@ import { BootContext, BootOption } from '../BootContext';
 import { IContainer } from '@tsdi/core';
 import { IBootApplication } from '../IBootApplication';
 import { IModuleResolveOption } from './resovers';
-import { IRunnable } from '../runnable';
+import { IStartup } from '../runnable';
 
 export interface BootSubAppOption<T extends BootContext> {
     /**
@@ -76,10 +76,10 @@ export interface IBuilderService extends IocCoreService {
      * @template T
      * @param {(Type | BootOption | BootContext)} target
      * @param {...string[]} args
-     * @returns {Promise<IRunnable<T>>}
+     * @returns {Promise<IStartup<T>>}
      * @memberof BuilderService
      */
-    buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IRunnable<T>>;
+    buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>>;
     /**
      * run module.
      *

@@ -1,6 +1,6 @@
-import { lang, Type, Abstract } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { Abstract, Inject } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
+import { IStartup, Startup } from './Startup';
 
 
 
@@ -12,38 +12,7 @@ import { BootContext } from '../BootContext';
  * @template T
  * @template TCtx default BootContext
  */
-export interface IRunnable<T, TCtx extends BootContext = BootContext> {
-    /**
-     * container.
-     *
-     * @type {IContainer}
-     * @memberof IBoot
-     */
-    getContainer(): IContainer;
-
-    /**
-     * runable context.
-     *
-     * @type {TCtx}
-     * @memberof IRunnable
-     */
-    readonly context?: TCtx;
-
-    /**
-     * get boot instance.
-     *
-     * @type {T}
-     * @memberof IBoot
-     */
-    getBoot(): T;
-
-    /**
-     * get boot type.
-     *
-     * @returns {Type<T>}
-     * @memberof IBoot
-     */
-    getBootType(): Type<T>;
+export interface IRunnable<T = any, TCtx extends BootContext = BootContext> extends IStartup<T, TCtx> {
 
     /**
      * run application via boot instance.
@@ -80,28 +49,15 @@ export interface RunnableInit {
  * @template T
  */
 @Abstract()
-export abstract class Runnable<T = any, TCtx extends BootContext = BootContext> implements IRunnable<T, TCtx> {
+export abstract class Runnable<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IRunnable<T, TCtx> {
 
-    protected _ctx: TCtx;
-    get context(): TCtx {
-        return this._ctx;
+
+    constructor(@Inject(BootContext) ctx: TCtx) {
+        super(ctx);
     }
 
-    constructor(ctx: BootContext) {
-        this._ctx = ctx as TCtx;
-    }
-
-    getContainer(): IContainer {
-        return this.context.getRaiseContainer();
-    }
-
-    getBoot(): T {
-        return this.context.getBootTarget();
-    }
-
-
-    getBootType(): Type<T> {
-        return lang.getClass(this.getBoot());
+    async startup(ctx: TCtx) {
+        await this.run(ctx.data);
     }
 
     /**

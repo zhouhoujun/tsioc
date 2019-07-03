@@ -1,4 +1,4 @@
-import { InjectRunnableToken, IRunnable } from '@tsdi/boot';
+import { InjectRunnableToken, IStartup, IRunnable } from '@tsdi/boot';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 
@@ -14,7 +14,7 @@ export const SuiteRunnerToken = new InjectRunnableToken<ISuiteRunner>('@Suite');
  * @interface ISuiteRunner
  * @extends {IRunner<any>}
  */
-export interface ISuiteRunner extends IRunnable<any> {
+export interface ISuiteRunner extends IRunnable {
 
     /**
      * run suite.
