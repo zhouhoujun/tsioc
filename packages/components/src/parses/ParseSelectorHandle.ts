@@ -15,22 +15,6 @@ export class ParseSelectorHandle extends ParsersHandle {
                     template: ctx.template,
                     raiseContainer: container.getFactory()
                 }, ...ctx.providers);
-            // let { reflect, container: rgContainer } = container.get(ModuleDecoratorServiceToken).getReflect(selector, container);
-            // if (rgContainer.has(selector)) {
-            //     ctx.value = await rgContainer.get(BuilderServiceToken).resolve(selector, {
-            //         scope: ctx.scope,
-            //         template: ctx.template,
-            //         raiseContainer: rgContainer.getFactory()
-            //     }, ...ctx.providers);
-            // } else {
-            //     ctx.value = await this.container.get(BuilderServiceToken).buildBootTarget({
-            //         module: selector,
-            //         scope: ctx.scope,
-            //         template: ctx.template,
-            //         regFor: RegFor.boot,
-            //         providers: ctx.providers
-            //     });
-            // }
         }
         if (isNullOrUndefined(ctx.value)) {
             await next();

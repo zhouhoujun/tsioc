@@ -7,9 +7,14 @@ import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
 
-
+/**
+ * binding value scope.
+ *
+ * @export
+ * @class BindingValueScope
+ * @extends {ParsersHandle}
+ */
 export class BindingValueScope extends ParsersHandle {
-
     setup() {
         this.container.register(BindExpressionDecoratorRegisterer);
         this.use(BindingScopeHandle)
@@ -18,7 +23,6 @@ export class BindingValueScope extends ParsersHandle {
             .use(AssignBindValueHandle)
             .use(AssignDefaultValueHandle)
     }
-
 }
 
 @Singleton
@@ -96,20 +100,6 @@ export class TranslateAtrrHandle extends ParseHandle {
                     template: template,
                     raiseContainer: ctx.getContainerFactory()
                 }, ...ctx.providers);
-                // if (container.has(selector)) {
-                //     ctx.value = await this.container.get(BuilderServiceToken).resolve(selector, {
-                //         scope: ctx.scope,
-                //         template: template
-                //     }, ...ctx.providers);
-                // } else {
-                //     ctx.value = await this.container.get(BuilderServiceToken).buildTarget({
-                //         module: selector,
-                //         scope: ctx.scope,
-                //         template: template,
-                //         regFor: RegFor.boot,
-                //         providers: ctx.providers
-                //     });
-                // }
             }
 
         }
