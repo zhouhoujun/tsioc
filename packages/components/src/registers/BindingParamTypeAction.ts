@@ -28,7 +28,10 @@ export class BindingParamTypeAction extends BindDeignParamTypeAction {
         let designParams: IParameter[] = this.createDesignParams(type, target, propertyKey);
 
 
-        let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<BindingPropertyMetadata>(ctx.currDecoractor, target, propertyKey) : getParamMetadata<BindingPropertyMetadata>(ctx.currDecoractor, type);
+        let parameters = (target || propertyKey !== 'constructor') ?
+            getParamMetadata<BindingPropertyMetadata>(ctx.currDecoractor, target, propertyKey)
+            : getParamMetadata<BindingPropertyMetadata>(ctx.currDecoractor, type);
+
         if (isArray(parameters) && parameters.length) {
             parameters.forEach(params => {
                 let parm = (isArray(params) && params.length > 0) ? params[0] : null;

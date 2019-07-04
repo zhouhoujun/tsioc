@@ -17,7 +17,7 @@ export class ResolveTemplateScope extends ResolveHandle {
                 .get(TemplateParseScope)
                 .execute(pCtx);
             if (!isNullOrUndefined(pCtx.value)) {
-                ctx.component = pCtx.value;
+                ctx.composite = pCtx.value;
             }
         }
         await next();

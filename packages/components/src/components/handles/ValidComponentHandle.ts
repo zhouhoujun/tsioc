@@ -4,15 +4,15 @@ import { BuildHandle, BuildContext } from '@tsdi/boot';
 
 export class ValidComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.component) {
-            if (isArray(ctx.component)) {
+        if (ctx.composite) {
+            if (isArray(ctx.composite)) {
                 if (ctx.target instanceof ContentElement) {
-                    ctx.target.add(...ctx.component);
-                    ctx.component = null;
+                    ctx.target.add(...ctx.composite);
+                    ctx.composite = null;
                 } else {
                     let sequence = this.container.get(ContentElement);
-                    sequence.add(...ctx.component);
-                    ctx.component = sequence;
+                    sequence.add(...ctx.composite);
+                    ctx.composite = sequence;
                 }
             }
         }

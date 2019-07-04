@@ -65,7 +65,7 @@ export class BuildContext extends IocRaiseContext implements IComponentContext {
      * @type {*}
      * @memberof BuildContext
      */
-    template: any;
+    template?: any;
 
     /**
      * instance of current type annoation template
@@ -73,7 +73,8 @@ export class BuildContext extends IocRaiseContext implements IComponentContext {
      * @type {*}
      * @memberof BuildContext
      */
-    component?: any;
+    composite?: any;
+
     /**
      * current module type.
      *

@@ -9,7 +9,8 @@ export class ParseSelectorHandle extends ParsersHandle {
         if (ctx.selector) {
             let selector = ctx.selector;
             let container = ctx.getRaiseContainer();
-            ctx.value = await this.container.resolve(BuilderServiceToken)
+            ctx.value = await this.container
+                .resolve(BuilderServiceToken)
                 .resolve(selector, {
                     scope: ctx.scope,
                     template: ctx.template,

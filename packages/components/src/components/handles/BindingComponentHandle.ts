@@ -6,11 +6,11 @@ import { BuildHandle, BuildContext } from '@tsdi/boot';
 export class BindingComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 
-        if (ctx.component instanceof Element) {
+        if (ctx.composite instanceof Element) {
             let target = ctx.target;
-            ctx.component.scope = target;
+            ctx.composite.scope = target;
             let scope = target;
-            ctx.component.scopes = this.container.get(ComponentManager).getScopes(scope);
+            ctx.composite.scopes = this.container.get(ComponentManager).getScopes(scope);
         }
 
         await next();

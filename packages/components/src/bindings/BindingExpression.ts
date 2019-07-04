@@ -1,24 +1,24 @@
-
+/**
+ * binding expression.
+ *
+ * @export
+ * @abstract
+ * @class BindingExpression
+ * @template T
+ */
 export abstract class BindingExpression<T> {
-    protected prefix: string;
+
+    prefix: string;
+
+    constructor(prefix: string) {
+        this.prefix = prefix;
+    }
+
     abstract resolve(scope: any): T;
-}
-
-
-export class AssignBinding<T> extends BindingExpression<T> {
-    constructor(protected fieldName: string, prefix = 'binding:') {
-        super();
-    }
-    resolve(scope: any): T {
-        if (scope) {
-            return scope[this.fieldName] as T;
-        }
-        return null;
-    }
 }
 
 /**
  * binding
  */
-export type Binding<T> =  string | BindingExpression<T> | T;
+export type Binding<T> = string | BindingExpression<T> | T;
 

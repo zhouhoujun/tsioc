@@ -9,14 +9,13 @@ import { ModuleConfigure } from '@tsdi/boot';
  */
 @Singleton
 export class ComponentManager {
-    protected componetns: WeakMap<any, any>;
 
+    protected composites: WeakMap<any, any>;
     protected parents: WeakMap<any, any>;
-
     protected annoations: WeakMap<any, ModuleConfigure>;
 
     constructor() {
-        this.componetns = new WeakMap();
+        this.composites = new WeakMap();
         this.parents = new WeakMap();
         this.annoations = new WeakMap();
     }
@@ -27,7 +26,7 @@ export class ComponentManager {
 
     setParent(component: any, parent: any) {
         this.parents.set(component, parent);
-        this.componetns.set(parent, component);
+        this.composites.set(parent, component);
     }
 
     getRoot(component: any) {
@@ -41,7 +40,6 @@ export class ComponentManager {
         return this.parents.has(component) ? this.parents.get(component) : null;
     }
 
-
     getScopes(component: any) {
         let scopes = [];
         if (component) {
@@ -52,28 +50,27 @@ export class ComponentManager {
         return scopes;
     }
 
-
     getLeaf(component: any): any {
-        if (this.componetns.has(component)) {
-            return this.forIn(component, this.componetns);
+        if (this.composites.has(component)) {
+            return this.forIn(component, this.composites);
         }
         return null;
     }
 
-    hasContent(component: any): boolean {
-        return this.componetns.has(component);
+    hasComposite(component: any): boolean {
+        return this.composites.has(component);
     }
 
-    setContent(component: any, content: any) {
-        if (component === content) {
+    setComposite(component: any, composite: any) {
+        if (component === composite) {
             return;
         }
-        this.parents.set(content, component);
-        this.componetns.set(component, content);
+        this.parents.set(composite, component);
+        this.composites.set(component, composite);
     }
 
-    getContent(component: any) {
-        return this.componetns.has(component) ? this.componetns.get(component) : null;
+    getComposite(component: any) {
+        return this.composites.has(component) ? this.composites.get(component) : null;
     }
 
     setAnnoation(component: any, annoation: ModuleConfigure) {
@@ -84,10 +81,8 @@ export class ComponentManager {
         return this.annoations.has(component) ? this.annoations.get(component) : null;
     }
 
-
-
     protected forIn(component: any, map: WeakMap<any, any>, action?: (component: any) => void) {
-        component = this.componetns.get(component);
+        component = this.composites.get(component);
         while (map.has(component)) {
             component = map.get(component);
             action && action(component);
