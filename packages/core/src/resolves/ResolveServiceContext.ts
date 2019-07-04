@@ -1,4 +1,4 @@
-import { Token, ResolveActionContext, ResolveActionOption, IIocContainer, createResolveContext, ClassType } from '@tsdi/ioc';
+import { Token, ResolveActionContext, ResolveActionOption, createResolveContext, ClassType } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
 
 

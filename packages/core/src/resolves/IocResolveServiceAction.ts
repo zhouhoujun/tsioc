@@ -9,9 +9,7 @@ import { ResolveServiceContext } from './ResolveServiceContext';
  * @class IocResolveServiceAction
  * @extends {IocResolveAction}
  */
-export abstract class IocResolveServiceAction extends IocResolveAction {
-
-    abstract execute(ctx: ResolveServiceContext, next: () => void): void;
+export abstract class IocResolveServiceAction extends IocResolveAction<ResolveServiceContext> {
 
     protected get(ctx: ResolveServiceContext, token: Token) {
         if (!ctx.instance && this.container.has(token)) {

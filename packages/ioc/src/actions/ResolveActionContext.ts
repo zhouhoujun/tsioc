@@ -1,5 +1,4 @@
 import { ActionContextOption, IocActionContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
 import { ProviderTypes } from '../providers';
 import { Token, Type } from '../types';
 import { isToken } from '../utils';

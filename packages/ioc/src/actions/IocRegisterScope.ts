@@ -13,6 +13,6 @@ import { ActionScope } from './ActionScope';
  * @extends {ActionScope<T>}
  * @template T
  */
-export abstract class IocRegisterScope<T extends RegisterActionContext> extends ActionScope<T> {
+export abstract class IocRegisterScope<T extends RegisterActionContext = RegisterActionContext> extends ActionScope<T> {
 
 }

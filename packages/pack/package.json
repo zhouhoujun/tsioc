@@ -74,7 +74,7 @@
     "rxjs": "^6.3.3",
     "shelljs": "^0.8.3",
     "through2": "^3.0.0",
-    "ts-node": "^8.3.0",
+    "ts-node": "~7.0.0",
     "tsconfig-paths": "^3.7.0"
   },
   "peerDependencies": {},

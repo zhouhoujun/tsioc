@@ -7,7 +7,7 @@ import {
     RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
     InstanceCheckAction, RuntimeDecoratorAction
 } from './runtime';
-import { IIocContainer, ContainerFactoryToken } from '../IIocContainer';
+import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
 import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RegisterLifeScope } from './RegisterLifeScope';

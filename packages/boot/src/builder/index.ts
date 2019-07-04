@@ -19,7 +19,6 @@ export * from './ResolveTypeHandle';
 
 export * from './ResolveRunnableScope';
 export * from './RefRunnableHandle';
-// export * from './RefDecoratorRunnableHandle';
 export * from './RunBootHandle';
 
 export * from './ModuleBuilderLifeScope';

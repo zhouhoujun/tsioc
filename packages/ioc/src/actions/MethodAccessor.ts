@@ -4,7 +4,6 @@ import { ParamProviders, ProviderParser } from '../providers';
 import { isToken, lang, isFunction } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { RuntimeLifeScope } from './RuntimeLifeScope';
-import { getParamerterNames } from '../factories';
 
 /**
  * execution, invoke some type method.

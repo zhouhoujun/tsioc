@@ -4,7 +4,7 @@ import { TargetService } from '../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 
-export class ResolveServiceInClassChain extends IocResolveScope<ResolveServiceContext> {
+export class ResolveServiceInClassChain extends IocResolveScope {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (ctx.currTargetRef) {
             let currTgRef = ctx.currTargetRef;
