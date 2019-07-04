@@ -120,6 +120,19 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
      * @memberof ProviderMap
      */
     add<T>(provide: Token<T> | number, provider: Token<T> | Factory<T>): this {
+        return this.register(provide, provider);
+    }
+
+    /**
+     * register provider.
+     *
+     * @template T
+     * @param {(Token<T> | number)} provide
+     * @param {(Token<T> | Factory<T>)} provider
+     * @returns {this}
+     * @memberof ProviderMap
+     */
+    register<T>(provide: Token<T> | number, provider: Token<T> | Factory<T>): this {
         let key = this.getTokenKey(provide);
         if (isUndefined(key)) {
             return this;

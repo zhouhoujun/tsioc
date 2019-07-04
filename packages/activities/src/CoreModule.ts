@@ -2,11 +2,11 @@ import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
-import { IContainer, ContainerToken, IocExt, InjectorDecoratorRegisterer, ServiceDecoratorRegisterer } from '@tsdi/core';
-import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
-import { BuildHandleRegisterer } from '@tsdi/boot';
+import { IContainer, ContainerToken, IocExt, InjectorDecoratorRegisterer } from '@tsdi/core';
+import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes, DecoratorProvider, InjectReference, ProviderTypes } from '@tsdi/ioc';
+import { BuildHandleRegisterer, BootContext } from '@tsdi/boot';
 import { ComponentRegisterAction, ElementDecoratorRegisterer, BindingComponentRegisterer, ValidComponentRegisterer } from '@tsdi/components'
-import { TaskDecoratorServiceAction, TaskInjectorRegisterAction } from './core';
+import { TaskInjectorRegisterAction, ActivityContext } from './core';
 import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 
 
@@ -24,7 +24,6 @@ export class ActivityCoreModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.getActionRegisterer()
-            .register(container, TaskDecoratorServiceAction)
             .register(container, TaskInjectorRegisterAction, true);
 
         container.get(BuildHandleRegisterer)
@@ -46,6 +45,18 @@ export class ActivityCoreModule {
             .use(RunAspect)
             .use(activites);
 
-        container.get(ServiceDecoratorRegisterer).register(Task, TaskDecoratorServiceAction);
+        container.get(DecoratorProvider)
+            .bindProviders(Task, {
+                provide: BootContext,
+                deps: [ContainerToken],
+                useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
+                    let ref = new InjectReference(BootContext, Task.toString());
+                    if (container.has(ref)) {
+                        return container.get(ref, ...providers);
+                    } else {
+                        return container.get(ActivityContext, ...providers);
+                    }
+                }
+            });
     }
 }

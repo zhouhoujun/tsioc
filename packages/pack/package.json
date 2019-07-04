@@ -51,7 +51,7 @@
     "uglify": "^0.1.5",
     "uglify-js": "^3.5.12",
     "reflect-metadata": "^0.1.13",
-    "tslib": "^1.10.0",
+    "tslib": "~1.9.3",
     "minimist": "^1.2.0",
     "globby": "^9.0.0",
     "del": "^3.0.0",

@@ -12,7 +12,7 @@ export class ResovleServicesInTargetAction extends IocResolveServicesAction {
                 if (maps && maps.size) {
                     maps.iterator((fac, tk) => {
                         if (isClassType(tk) && ctx.types.some(ty => lang.isExtendsClass(tk, ty))) {
-                            ctx.services.add(tk, (...providers: ProviderTypes[]) => fac(...providers));
+                            ctx.services.register(tk, (...providers: ProviderTypes[]) => fac(...providers));
                         }
                     })
                 }

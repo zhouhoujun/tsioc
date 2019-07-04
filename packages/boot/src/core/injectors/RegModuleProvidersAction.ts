@@ -15,11 +15,11 @@ export class RegModuleProvidersAction extends AnnoationAction {
         let exptypes: Type[] = [].concat(...container.getLoader().getTypes(config.exports || []));
         exptypes.forEach(ty => {
             let reflect = tRef.get(ty);
-            map.add(ty, (...pds: ProviderTypes[]) => container.resolve(ty, ...pds));
+            map.register(ty, (...pds: ProviderTypes[]) => container.resolve(ty, ...pds));
             if (reflect && isArray(reflect.provides) && reflect.provides.length) {
                 reflect.provides.forEach(p => {
                     if (!map.has(p)) {
-                        map.add(p, (...pds: ProviderTypes[]) => container.resolve(p, ...pds));
+                        map.register(p, (...pds: ProviderTypes[]) => container.resolve(p, ...pds));
                     }
                 });
             }

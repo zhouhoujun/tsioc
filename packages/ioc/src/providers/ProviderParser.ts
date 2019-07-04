@@ -24,11 +24,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
         super()
     }
 
-    parse(...providers: ParamProviders[]): ProviderMap {
-        if (providers.length === 1 && isProviderMap(providers[0])) {
-            return providers[0] as ProviderMap;
-        }
-        let map = this.container.get(ProviderMap);
+    parseTo(map: ProviderMap, ...providers: ParamProviders[]): ProviderMap {
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
@@ -38,25 +34,25 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
             } else if (p instanceof Provider) {
                 if (p instanceof ParamProvider) {
                     if (!p.type && isNumber(p.index)) {
-                        map.add(p.index, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
+                        map.register(p.index, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
                     } else {
-                        map.add(p.type, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
+                        map.register(p.type, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
                     }
 
                 } else {
-                    map.add(p.type, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
+                    map.register(p.type, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
                 }
             } else if (isClass(p)) {
                 if (!this.container.has(p)) {
                     this.container.register(p);
                 }
-                map.add(p, p);
+                map.register(p, p);
             } else if (p instanceof ObjectMapProvider) {
                 let pr = p.get();
                 lang.forIn(pr, (val, name) => {
                     if (name && isString(name)) {
                         // object map can not resolve token. set all fileld as value factory.
-                        map.add(name, () => val);
+                        map.register(name, () => val);
                     }
                 });
 
@@ -71,14 +67,14 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
                         });
                     }
                     if (!isUndefined(pr.useValue)) {
-                        map.add(pr.provide, () => pr.useValue);
+                        map.register(pr.provide, () => pr.useValue);
                     } else if (isClass(pr.useClass)) {
                         if (!this.container.has(pr.useClass)) {
                             this.container.register(pr.useClass);
                         }
-                        map.add(pr.provide, pr.useClass);
+                        map.register(pr.provide, pr.useClass);
                     } else if (isFunction(pr.useFactory)) {
-                        map.add(pr.provide, (...providers: ProviderTypes[]) => {
+                        map.register(pr.provide, (...providers: ProviderTypes[]) => {
                             let args = [];
                             if (isArray(pr.deps) && pr.deps.length) {
                                 args = pr.deps.map(d => {
@@ -89,10 +85,10 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
                                     }
                                 });
                             }
-                            return pr.useFactory.apply(pr, args);
+                            return pr.useFactory.apply(pr, args.concat(providers));
                         });
                     } else if (isToken(pr.useExisting)) {
-                        map.add(pr.provide, (...providers: ProviderTypes[]) => this.container.resolve(pr.useExisting, ...providers));
+                        map.register(pr.provide, (...providers: ProviderTypes[]) => this.container.resolve(pr.useExisting, ...providers));
                     }
                 }
             }
@@ -102,6 +98,14 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
         });
 
         return map;
+    }
+
+    parse(...providers: ParamProviders[]): ProviderMap {
+        if (providers.length === 1 && isProviderMap(providers[0])) {
+            return providers[0] as ProviderMap;
+        }
+        let map = this.container.get(ProviderMap);
+        return this.parseTo(map, ...providers);
     }
 }
 

@@ -11,7 +11,7 @@ export class ResovleServicesRefsAction extends IocResolveServicesAction {
                 ctx.types.forEach(ty => {
                     let reftk = new InjectReference(ty, tk);
                     if (this.container.has(reftk)) {
-                        ctx.services.add(reftk, (...providers: ProviderTypes[]) => this.container.get(reftk, ...providers))
+                        ctx.services.register(reftk, (...providers: ProviderTypes[]) => this.container.get(reftk, ...providers))
                     }
                 });
             })

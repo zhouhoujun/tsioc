@@ -1,7 +1,8 @@
-import { IContainer, ContainerToken, IocExt, ServiceDecoratorRegisterer } from '@tsdi/core';
+import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
-import { Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer } from '@tsdi/ioc';
-import { SuiteDecoratorRegisterer } from './registers';
+import { Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer, DecoratorProvider, ProviderTypes, InjectReference } from '@tsdi/ioc';
+import { BootContext } from '@tsdi/boot';
+import { UnitTestContext } from './UnitTestContext';
 
 
 /**
@@ -26,9 +27,17 @@ export class UnitSetup {
         container.get(RuntimeDecoratorRegisterer)
             .register(Suite, DecoratorScopes.Class, RegisterSingletionAction);
 
-        container.getActionRegisterer()
-            .register(container, SuiteDecoratorRegisterer);
-
-        container.get(ServiceDecoratorRegisterer).register(Suite, SuiteDecoratorRegisterer);
+        container.get(DecoratorProvider)
+            .bindProviders(Suite, {
+                provide: BootContext,
+                deps: [ContainerToken],
+                useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
+                    let ref = new InjectReference(BootContext, Suite.toString());
+                    if (container.has(ref)) {
+                        return container.get(ref, ...providers);
+                    }
+                    return null;
+                }
+            });
     }
 }

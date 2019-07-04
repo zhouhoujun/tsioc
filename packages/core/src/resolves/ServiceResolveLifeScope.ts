@@ -1,6 +1,6 @@
 import { LifeScope } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { ServiceDecoratorRegisterer } from './ServiceDecoratorRegisterer';
+// import { ServiceDecoratorRegisterer } from './ServiceDecoratorRegisterer';
 import { InitServiceResolveAction } from './InitServiceResolveAction';
 import { ResolveServiceScope } from './ResolveServiceScope';
 import { ResolveDefaultServiceAction } from './ResolveServiceTokenAction';
@@ -15,7 +15,7 @@ export class ServiceResolveLifeScope<T> extends LifeScope<ResolveServiceContext<
     }
 
     setup() {
-        this.container.register(ServiceDecoratorRegisterer);
+        // this.container.register(ServiceDecoratorRegisterer);
         this.use(InitServiceResolveAction)
             .use(ResolveServiceScope, true)
             .use(ResolveDefaultServiceAction);

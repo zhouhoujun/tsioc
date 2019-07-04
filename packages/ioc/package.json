@@ -33,7 +33,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "reflect-metadata": "^0.1.13",
-    "tslib": "^1.10.0"
+    "tslib": "~1.9.3"
   },
   "directories": {
     "lib": "lib",

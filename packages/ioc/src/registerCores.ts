@@ -1,6 +1,6 @@
 import { IIocContainer, IocContainerToken, ContainerFactoryToken } from './IIocContainer';
 import { TypeReflects, MetadataService } from './services';
-import { ProviderMap, ProviderParser } from './providers';
+import { ProviderMap, ProviderParser, DecoratorProvider } from './providers';
 import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
     IocSingletonManager, ResolveLifeScope, ActionRegisterer
@@ -22,6 +22,7 @@ export function registerCores(container: IIocContainer) {
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
     container.register(ProviderMap, () => new ProviderMap(container));
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));
+    container.registerSingleton(DecoratorProvider, () => new DecoratorProvider(container));
     container.registerSingleton(MetadataService, () => new MetadataService());
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());
 
