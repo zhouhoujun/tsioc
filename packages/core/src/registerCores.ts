@@ -3,7 +3,7 @@ import { ModuleLoader } from './services';
 import { IocExt } from './decorators';
 import {
     RuntimeDecoratorRegisterer, IocAutorunAction, DecoratorScopes,
-    RegisterSingletionAction, DesignDecoratorRegisterer, ActionRegisterer
+    RegisterSingletionAction, DesignDecoratorRegisterer
 } from '@tsdi/ioc';
 import { InjectorLifeScope } from './injectors';
 import { ServiceResolveLifeScope, ServicesResolveLifeScope } from './resolves';

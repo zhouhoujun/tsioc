@@ -2,10 +2,10 @@ import { Component, Input } from '../decorators';
 
 @Component()
 export class Element {
-    @Input()
-    name: string;
+    @Input() id: string;
+    @Input() name: string;
 
-    scope: any;
+    $scope: any;
 
-    scopes: any[];
+    $scopes: any[];
 }

@@ -1,4 +1,4 @@
-import { IContainer, InjectorDecoratorRegisterer } from '@tsdi/core';
+import { IContainer } from '@tsdi/core';
 import { Bootstrap } from './decorators/Bootstrap';
 import * as annotations from './annotations';
 import * as runnable from './runnable';
@@ -18,11 +18,10 @@ export function bootSetup(container: IContainer) {
     container.use(annotations, runnable, services);
 
     container.get(DesignDecoratorRegisterer)
-        .register(Bootstrap, DecoratorScopes.Class, BindProviderAction);
+        .register(Bootstrap, DecoratorScopes.Class, BindProviderAction)
+        .register(Bootstrap, DecoratorScopes.Injector, DIModuleInjectorScope);
 
     container.get(RuntimeDecoratorRegisterer)
         .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-    container.get(InjectorDecoratorRegisterer)
-        .register(Bootstrap, DIModuleInjectorScope);
 }

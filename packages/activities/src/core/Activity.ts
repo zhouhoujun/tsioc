@@ -40,7 +40,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @type {*}
      * @memberof Activity
      */
-    scope?: any;
+    $scope?: any;
 
     /**
      * components of this activity.
@@ -48,7 +48,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @type {any[]}
      * @memberof Activity
      */
-    scopes?: any[];
+    $scopes?: any[];
 
     /**
      * activity display name.
@@ -102,8 +102,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
         ctx.runnable.status.current = this;
-        if (this.scope) {
-            ctx.scope = this.scope;
+        if (this.$scope) {
+            ctx.scope = this.$scope;
         }
         this._result = await this.initResult(ctx, next);
         await this.refreshResult(ctx);

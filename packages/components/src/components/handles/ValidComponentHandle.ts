@@ -10,9 +10,9 @@ export class ValidComponentHandle extends BuildHandle<BuildContext> {
                     ctx.target.add(...ctx.composite);
                     ctx.composite = null;
                 } else {
-                    let sequence = this.container.get(ContentElement);
-                    sequence.add(...ctx.composite);
-                    ctx.composite = sequence;
+                    let content = this.container.get(ContentElement);
+                    content.add(...ctx.composite);
+                    ctx.composite = content;
                 }
             }
         }

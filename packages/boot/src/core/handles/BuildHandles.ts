@@ -43,7 +43,15 @@ export class BuildHandleRegisterer extends IocCoreService {
     }
 }
 
-
+/**
+ * build handle.
+ *
+ * @export
+ * @abstract
+ * @class BuildHandle
+ * @extends {Handle<T>}
+ * @template T
+ */
 export abstract class BuildHandle<T extends IHandleContext> extends Handle<T> {
     protected registerHandle(handle: HandleType<T>, setup?: boolean): this {
         this.container.resolve(BuildHandleRegisterer)

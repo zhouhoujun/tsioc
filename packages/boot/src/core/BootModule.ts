@@ -8,7 +8,7 @@ import {
 import {
     IContainer, ContainerToken, IocExt,
     ResolvePrivateServiceAction, ResolveServiceInClassChain,
-    InjectorDecoratorRegisterer, ServicesResolveLifeScope, TypesRegisterScope, IocExtRegisterScope
+    ServicesResolveLifeScope, TypesRegisterScope, IocExtRegisterScope
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
@@ -17,7 +17,7 @@ import * as messages from './messages';
 
 import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction } from './registers';
-import { DIModuleInjectorScope, DIModuleExports, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
+import { DIModuleInjectorScope, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
 import { Message } from './decorators';
 import { ModuleDecoratorService } from './ModuleDecoratorService';
 
@@ -56,12 +56,10 @@ export class BootModule {
         registerer.get(IocExtRegisterScope)
             .useBefore(RegForInjectorAction);
 
-        container.get(InjectorDecoratorRegisterer)
-            .register(DIModule, DIModuleInjectorScope);
-
         container.use(ModuleDecoratorService);
 
         container.get(DesignDecoratorRegisterer)
+            .register(DIModule, DecoratorScopes.Injector, DIModuleInjectorScope)
             .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
             .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
             .register(Message, DecoratorScopes.Class, BindProviderAction, MessageRegisterAction);

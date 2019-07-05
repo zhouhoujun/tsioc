@@ -8,9 +8,8 @@ export class BindingComponentHandle extends BuildHandle<BuildContext> {
 
         if (ctx.composite instanceof Element) {
             let target = ctx.target;
-            ctx.composite.scope = target;
-            let scope = target;
-            ctx.composite.scopes = this.container.get(ComponentManager).getScopes(scope);
+            ctx.composite.$scope = target;
+            ctx.composite.$scopes = this.container.get(ComponentManager).getScopes(target);
         }
 
         await next();

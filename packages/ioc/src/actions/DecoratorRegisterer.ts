@@ -1,9 +1,10 @@
 import { isString, lang } from '../utils';
-import { IocDecoratorRegisterer } from './IocDecoratorRegisterer';
+import { IocDecoratorRegisterer, DecoratorRegisterer } from './IocDecoratorRegisterer';
 import { Registration } from '../Registration';
 import { IIocContainer } from '../IIocContainer';
 import { IocActionType } from './Action';
 import { IocCoreService } from '../services';
+import { Token } from '../types';
 
 
 
@@ -13,7 +14,11 @@ export enum DecoratorScopes {
     Property = 'Property',
     Method = 'Method',
     BeforeConstructor = 'BeforeConstructor',
-    AfterConstructor = 'AfterConstructor'
+    AfterConstructor = 'AfterConstructor',
+    /**
+     *  for design injector.
+     */
+    Injector = 'Injector'
 }
 
 /**
@@ -22,25 +27,27 @@ export enum DecoratorScopes {
  * @export
  * @class DecoratorRegisterer
  */
-export abstract class DecoratorScopeRegisterer  extends IocCoreService {
+export abstract class DecoratorScopeRegisterer<T = IocActionType, TAction = lang.IAction> extends IocCoreService {
+    map: Map<Token, any>;
     constructor(protected container: IIocContainer) {
         super()
+        this.map = new Map();
     }
 
     /**
      * register decorator actions.
      *
      * @param {(string | Function)} decorator
-     * @param {...IocActionType[]} actions
+     * @param {...T[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, scope: DecoratorScopes, ...actions: IocActionType[]): this {
+    register(decorator: string | Function, scope: string | DecoratorScopes, ...actions: T[]): this {
         this.getRegisterer(scope)
             .register(decorator, ...actions);
         return this;
     }
 
-    has(decorator: string | Function, scope: DecoratorScopes, action?: IocActionType): boolean {
+    has(decorator: string | Function, scope: string | DecoratorScopes, action?: T): boolean {
         return this.getRegisterer(scope).has(decorator, action);
     }
 
@@ -48,27 +55,34 @@ export abstract class DecoratorScopeRegisterer  extends IocCoreService {
         return isString(decorator) ? decorator : decorator.toString();
     }
 
-    get(decorator: string | Function, scope: DecoratorScopes): IocActionType[] {
+    get(decorator: string | Function, scope: string | DecoratorScopes): T[] {
         return this.getRegisterer(scope).get(decorator) || [];
     }
 
-    getFuncs(container: IIocContainer, decorator: string | Function, scope: DecoratorScopes): lang.IAction[] {
+    getFuncs(container: IIocContainer, decorator: string | Function, scope: string | DecoratorScopes): TAction[] {
         return this.getRegisterer(scope).getFuncs(container, decorator);
     }
 
-    getRegisterer(scope: DecoratorScopes): IocDecoratorRegisterer {
+    setRegisterer(scope: string | DecoratorScopes, registerer: DecoratorRegisterer) {
         let rg = this.getRegistration(scope);
-        if (!this.container.has(rg)) {
-            this.container.registerSingleton(rg, () => new IocDecoratorRegisterer());
+        this.map.set(rg, registerer);
+    }
+
+    getRegisterer(scope: string | DecoratorScopes): DecoratorRegisterer<T, TAction> {
+        let rg = this.getRegistration(scope);
+        if (!this.map.has(rg)) {
+            this.map.set(rg, this.createRegister());
         }
-        return this.container.get(rg);
+        return this.map.get(rg);
     }
 
-    protected getRegistration(scope: DecoratorScopes): Registration<IocDecoratorRegisterer> {
-        return new Registration(IocDecoratorRegisterer, this.getScopeKey(scope));
+    protected abstract createRegister(): DecoratorRegisterer;
+
+    protected getRegistration(scope: string | DecoratorScopes): string {
+        return new Registration(DecoratorRegisterer, this.getScopeKey(scope)).toString();
     }
 
-    protected abstract getScopeKey(scope: DecoratorScopes): string;
+    protected abstract getScopeKey(scope: string | DecoratorScopes): string;
 
 }
 
@@ -80,7 +94,11 @@ export abstract class DecoratorScopeRegisterer  extends IocCoreService {
  * @extends {DecoratorScopeRegisterer}
  */
 export class DesignDecoratorRegisterer extends DecoratorScopeRegisterer {
-    protected getScopeKey(scope: DecoratorScopes): string {
+    protected createRegister(): DecoratorRegisterer {
+        return new IocDecoratorRegisterer();
+    }
+
+    protected getScopeKey(scope: string | DecoratorScopes): string {
         return 'design_' + scope;
     }
 }
@@ -93,7 +111,10 @@ export class DesignDecoratorRegisterer extends DecoratorScopeRegisterer {
  * @extends {DecoratorScopeRegisterer}
  */
 export class RuntimeDecoratorRegisterer extends DecoratorScopeRegisterer {
-    protected getScopeKey(scope: DecoratorScopes): string {
+    protected createRegister(): DecoratorRegisterer {
+        return new IocDecoratorRegisterer();
+    }
+    protected getScopeKey(scope: string | DecoratorScopes): string {
         return 'runtime_' + scope;
     }
 }

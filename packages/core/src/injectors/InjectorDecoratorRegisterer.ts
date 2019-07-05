@@ -1,6 +1,7 @@
-import { Singleton, IocDecoratorRegisterer } from '@tsdi/ioc';
+import { IocDecoratorRegisterer } from '@tsdi/ioc';
 
 
+export const InjectorDecoratorScope = 'injctor';
 /**
  * register decorator module inject action.
  *
@@ -8,7 +9,6 @@ import { Singleton, IocDecoratorRegisterer } from '@tsdi/ioc';
  * @class ModuleDecoratorRegisterer
  * @extends {IocDecoratorRegisterer}
  */
-@Singleton
 export class InjectorDecoratorRegisterer extends IocDecoratorRegisterer {
 
 }

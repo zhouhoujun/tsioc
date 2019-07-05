@@ -102,8 +102,8 @@ export class ActivityContext extends BootContext {
         if (this.runnable) {
             let mgr = this.getRaiseContainer().resolve(ComponentManager);
             this.runnable.status.scopes.some(s => {
-                if (s.scope.scopes && s.scope.scopes.length) {
-                    return s.scope.scopes.some(c => {
+                if (s.scope.$scopes && s.scope.$scopes.length) {
+                    return s.scope.$scopes.some(c => {
                         let ann = mgr.getAnnoation(c);
                         if (ann) {
                             baseURL = ann.baseURL;

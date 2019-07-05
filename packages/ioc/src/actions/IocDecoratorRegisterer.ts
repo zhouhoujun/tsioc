@@ -10,9 +10,9 @@ import { IocCoreService } from '../services';
  * @class IocDecoratorRegisterer
  * @extends {IocCoreService}
  */
-export abstract class DecoratorRegisterer<T> extends IocCoreService {
+export abstract class DecoratorRegisterer<T = IocActionType, TAction = lang.IAction> extends IocCoreService {
     protected actionMap: Map<string, T[]>;
-    protected funcs: Map<string, Function[]>;
+    protected funcs: Map<string, TAction[]>;
     constructor() {
         super();
         this.actionMap = new Map();
@@ -120,7 +120,7 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
     }
 
 
-    getFuncs(container: IIocContainer, decorator: string | Function) {
+    getFuncs(container: IIocContainer, decorator: string | Function): TAction[] {
         let dec = this.getKey(decorator);
         if (!this.funcs.has(dec)) {
             this.funcs.set(dec, this.get(dec).map(a => a && this.toFunc(container, a)).filter(c => c));
@@ -128,25 +128,8 @@ export abstract class DecoratorRegisterer<T> extends IocCoreService {
         return this.funcs.get(dec) || [];
     }
 
-    abstract toFunc(container: IIocContainer, action: T): Function;
+    abstract toFunc(container: IIocContainer, action: T): TAction;
 
-}
-
-export class IocSyncDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
-
-    getFuncs(container: IIocContainer, decorator: string | Function): lang.IAction[] {
-        return super.getFuncs(container, decorator) as lang.IAction[];
-    }
-
-    toFunc(container: IIocContainer, ac: T): Function {
-        if (isClass(ac)) {
-            let action = container.getActionRegisterer().get(ac);
-            return action instanceof IocAction ? action.toAction() : null;
-        } if (ac instanceof IocAction) {
-            return ac.toAction()
-        }
-        return isFunction(ac) ? ac : null;
-    }
 }
 
 /**
@@ -154,8 +137,18 @@ export class IocSyncDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
  *
  * @export
  * @class IocDecoratorRegisterer
- * @extends {DecoratorRegisterer<IocActionType>}
+ * @extends {DecoratorRegisterer<T>}
+ * @template T
  */
-export class IocDecoratorRegisterer extends IocSyncDecoratorRegisterer<IocActionType> {
+export class IocDecoratorRegisterer<T = IocActionType> extends DecoratorRegisterer<T> {
 
+    toFunc(container: IIocContainer, ac: T): lang.IAction {
+        if (isClass(ac)) {
+            let action = container.getActionRegisterer().get(ac);
+            return action instanceof IocAction ? action.toAction() : null;
+        } if (ac instanceof IocAction) {
+            return ac.toAction()
+        }
+        return isFunction(ac) ? <any>ac : null;
+    }
 }

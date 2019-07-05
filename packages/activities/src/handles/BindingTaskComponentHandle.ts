@@ -7,10 +7,9 @@ export class BindingTaskComponentHandle extends BuildHandle<BuildContext> {
 
         if (ctx.composite instanceof Activity) {
             let target = ctx.target;
-            ctx.composite.scope = target;
+            ctx.composite.$scope = target;
             ctx.composite.isScope = true;
-            let scope = target;
-            ctx.composite.scopes = this.container.get(ComponentManager).getScopes(scope);
+            ctx.composite.$scopes = this.container.get(ComponentManager).getScopes(target);
         }
 
         await next();

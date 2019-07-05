@@ -1,4 +1,4 @@
-import { LifeScope, Type, Modules } from '@tsdi/ioc';
+import { LifeScope, Type, Modules, DesignDecoratorRegisterer, DecoratorScopes } from '@tsdi/ioc';
 import { IocExt } from '../decorators';
 import { InjectorDecoratorRegisterer } from './InjectorDecoratorRegisterer';
 import { InjectorActionContext } from './InjectorActionContext';
@@ -8,12 +8,14 @@ import { ModuleInjectorScope } from './ModuleInjectorScope';
 
 export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
     setup() {
-        this.container.register(InjectorDecoratorRegisterer);
 
+        let ijdr = new InjectorDecoratorRegisterer();
         this.registerAction(IocExtRegisterScope, true);
+        this.container.get(DesignDecoratorRegisterer)
+            .setRegisterer(DecoratorScopes.Injector, ijdr);
+        this.container.bindProvider(InjectorDecoratorRegisterer, ijdr);
 
-        this.container.get(InjectorDecoratorRegisterer)
-            .register(IocExt, IocExtRegisterScope);
+        ijdr.register(IocExt, IocExtRegisterScope);
 
         this.use(ModuleToTypesAction)
             .use(ModuleInjectorScope, true);

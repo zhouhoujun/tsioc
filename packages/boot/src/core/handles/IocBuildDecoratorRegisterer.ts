@@ -2,13 +2,9 @@ import { DecoratorRegisterer, IIocContainer, isFunction, isClass, PromiseUtil } 
 import { BuildHandle, BuildHandleRegisterer } from './BuildHandles';
 
 
-export class IocBuildDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
+export class IocBuildDecoratorRegisterer<T> extends DecoratorRegisterer<T, PromiseUtil.ActionHandle> {
 
-    getFuncs(container: IIocContainer, decorator: string | Function): PromiseUtil.ActionHandle[] {
-        return super.getFuncs(container, decorator) as PromiseUtil.ActionHandle[];
-    }
-
-    toFunc(container: IIocContainer, ac: T): Function {
+    toFunc(container: IIocContainer, ac: T): PromiseUtil.ActionHandle {
         if (isClass(ac)) {
             let action = container.get(BuildHandleRegisterer).get(ac);
             return action instanceof BuildHandle ? action.toAction() : null;
@@ -16,6 +12,6 @@ export class IocBuildDecoratorRegisterer<T> extends DecoratorRegisterer<T> {
         } else if (ac instanceof BuildHandle) {
             return ac.toAction();
         }
-        return isFunction(ac) ? ac : null;
+        return isFunction(ac) ? <any>ac : null;
     }
 }
