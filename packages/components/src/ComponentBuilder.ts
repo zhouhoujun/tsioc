@@ -1,4 +1,4 @@
-import { BuilderService, BuildHandleRegisterer } from '@tsdi/boot';
+import { BuilderService, HandleRegisterer } from '@tsdi/boot';
 import { Singleton, ProviderTypes } from '@tsdi/ioc';
 import { TemplateContext, ITemplateOption, TemplateParseScope } from './parses';
 import { Component } from './decorators';
@@ -19,7 +19,7 @@ export class ComponentBuilder extends BuilderService {
         if (!ctx.hasRaiseContainer()) {
             ctx.setRaiseContainer(this.container);
         }
-        await this.container.get(BuildHandleRegisterer)
+        await this.container.get(HandleRegisterer)
             .get(TemplateParseScope)
             .execute(ctx);
         return ctx.value;

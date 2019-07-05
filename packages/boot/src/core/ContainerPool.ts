@@ -2,7 +2,7 @@ import { Token, SymbolType, Registration, IIocContainer, ProviderTypes, IocConta
 import { IContainer, IContainerBuilder, Container, ContainerToken } from '@tsdi/core';
 import { BootModule } from './BootModule';
 import { ParentContainerToken, ContainerPoolToken, RootContainerToken, IContainerPool } from './ContainerPoolToken';
-import { BuildHandleRegisterer } from './handles';
+import { HandleRegisterer, StartupDecoratorRegisterer } from './handles';
 import { DIModuleExports } from './injectors';
 
 /**
@@ -62,7 +62,8 @@ export class ContainerPool implements IContainerPool {
         container.bindProvider(ContainerPoolToken, () => this);
         container.bindProvider(ContainerPool, () => this);
         if (this.isRoot(container)) {
-            container.register(BuildHandleRegisterer);
+            container.registerSingleton(HandleRegisterer, () => new HandleRegisterer());
+            container.registerSingleton(StartupDecoratorRegisterer, () => new StartupDecoratorRegisterer(container));
             container.register(BootModule);
         }
         container.register(DIModuleExports);

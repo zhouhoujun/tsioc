@@ -3,7 +3,7 @@ import { TemplateContext } from './TemplateContext';
 import { isNullOrUndefined, isArray } from '@tsdi/ioc';
 import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
-import { BuildHandleRegisterer } from '@tsdi/boot';
+import { HandleRegisterer } from '@tsdi/boot';
 
 
 export class TemplateParseScope extends TemplatesHandle {
@@ -24,7 +24,7 @@ export class TemplateParseScope extends TemplatesHandle {
 export class ElementsTemplateHandle extends TemplateHandle {
 
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let registerer = this.container.get(BuildHandleRegisterer);
+        let registerer = this.container.get(HandleRegisterer);
         if (isArray(ctx.template)) {
             ctx.value = await Promise.all(ctx.template.map(async tp => {
                 let subCtx = TemplateContext.parse({

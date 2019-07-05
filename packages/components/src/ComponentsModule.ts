@@ -7,11 +7,11 @@ import { Component, Input } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction } from './registers';
-import { BuildHandleRegisterer, ResolveMoudleScope, ResolveModuleHandle } from '@tsdi/boot';
+import { HandleRegisterer, ResolveMoudleScope, ResolveModuleHandle } from '@tsdi/boot';
 import { BindingArgsHandle } from './resovers/BindingArgsHandle';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope,
-    BindingTemplateHandle, ModuleAfterContentInitHandle, ValidComponentRegisterer, BindingComponentRegisterer
+    BindingTemplateHandle, ModuleAfterContentInitHandle
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
@@ -40,14 +40,7 @@ export class ComponentsModule {
             .register(container, BindingPropertyTypeAction)
             .register(container, BindingParamTypeAction);
 
-        if (!container.has(ValidComponentRegisterer)) {
-            container.register(ValidComponentRegisterer);
-        }
-        if (!container.has(BindingComponentRegisterer)) {
-            container.register(BindingComponentRegisterer);
-        }
-
-        container.resolve(BuildHandleRegisterer)
+        container.resolve(HandleRegisterer)
             .register(container, BindingScope, true)
             .register(container, TemplateParseScope, true)
             .get(ResolveMoudleScope)

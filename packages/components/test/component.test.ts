@@ -1,6 +1,6 @@
-import { DIModule, BootApplication, BootContext, BuilderService, BuildHandleRegisterer, ParentContainerToken, ContainerPoolToken } from '@tsdi/boot';
+import { DIModule, BootApplication, BootContext, BuilderService, HandleRegisterer, ParentContainerToken, ContainerPoolToken } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ElementDecoratorRegisterer, ComponentSelectorHandle } from '../src';
+import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ComponentSelectorHandle } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, Autorun } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';

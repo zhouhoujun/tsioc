@@ -1,5 +1,5 @@
 import { ContainerToken, IContainer } from '@tsdi/core';
-import { Type, PromiseUtil, Inject, ProviderTypes, Token, IocCoreService, isClass, isFunction } from '@tsdi/ioc';
+import { Type, PromiseUtil, Inject, ProviderTypes, Token, IocCoreService, isClass, isFunction, IocActionType } from '@tsdi/ioc';
 
 
 /**
@@ -49,7 +49,7 @@ export interface IHandle<T = any> {
 /**
  *  handle type.
  */
-export type HandleType<T extends IHandleContext> = Type<IHandle<T>> | Handle<T> | PromiseUtil.ActionHandle<T>;
+export type HandleType<T> = IocActionType<IHandle<T>, PromiseUtil.ActionHandle<T>>;
 
 
 /**

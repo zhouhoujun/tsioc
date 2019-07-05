@@ -13,7 +13,7 @@ import { IParameter } from './IParameter';
 import {
     RuntimeActionContext, DesignActionContext, IocRegisterAction,
     IocRegisterScope, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
-    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, IocAction
 } from './actions';
 
 
@@ -53,7 +53,7 @@ export class IocContainer implements IIocContainer {
     }
 
     getActionRegisterer(): ActionRegisterer {
-        return this.get(ActionRegisterer);
+        return this.get(ActionRegisterer) as ActionRegisterer;
     }
 
     getProviderParser(): IProviderParser {

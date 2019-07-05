@@ -1,7 +1,5 @@
 import { IocDecoratorRegisterer } from '@tsdi/ioc';
 
-
-export const InjectorDecoratorScope = 'injctor';
 /**
  * register decorator module inject action.
  *

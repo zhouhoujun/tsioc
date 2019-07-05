@@ -1,6 +1,5 @@
 export * from './BuildContext';
 export * from './ResolveHandle';
-export * from './BuildDecoratorRegisterer';
 export * from './BuildModuleHandle';
 export * from './DecoratorBuildHandle';
 

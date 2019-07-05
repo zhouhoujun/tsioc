@@ -1,7 +1,6 @@
 import { Type } from '../types';
-import { IocAction, IocActionType } from './Action';
+import { IocAction } from './Action';
 import { IIocContainer } from '../IIocContainer';
-import { isClass } from '../utils';
 import { IocCompositeAction } from './IocCompositeAction';
 import { IocCoreService } from '../services';
 
@@ -11,35 +10,43 @@ import { IocCoreService } from '../services';
  * @export
  * @class ActionRegisterer
  */
-export class ActionRegisterer extends IocCoreService {
-    private maps: Map<Type<IocAction>, IocAction>;
+export class ActionRegisterer<T = IocAction> extends IocCoreService {
+    private maps: Map<Type<T>, T>;
 
     constructor() {
         super()
         this.maps = new Map();
     }
 
-    get<T extends IocAction>(type: Type<T>): T {
+    has(type: Type<T>): boolean {
+        return this.maps.has(type);
+    }
+
+    get<TAction extends T>(type: Type<TAction>): TAction {
         if (this.maps.has(type)) {
-            return this.maps.get(type) as T;
+            return this.maps.get(type) as TAction;
         }
         return null;
     }
 
-    register(container: IIocContainer, action: IocActionType, setup?: boolean): this {
-        if (!isClass(action)) {
-            return this;
-        }
+    register(container: IIocContainer, action: Type<T>, setup?: boolean): this {
+        // if (!isClass(action)) {
+        //     return this;
+        // }
         if (this.maps.has(action)) {
             return this;
         }
-        let actionInstance = new action(container);
-        this.maps.set(action, actionInstance);
+        let instance = new action(container);
+        this.maps.set(action, instance);
         if (setup) {
-            if (actionInstance instanceof IocCompositeAction) {
-                actionInstance.setup();
-            }
+            this.setup(instance);
         }
         return this;
+    }
+
+    protected setup(action: T) {
+        if (action instanceof IocCompositeAction) {
+            action.setup();
+        }
     }
 }

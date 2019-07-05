@@ -1,8 +1,6 @@
 import { TemplatesHandle, TemplateHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
-import { Singleton, Type } from '@tsdi/ioc';
-import { IocBuildDecoratorRegisterer } from '@tsdi/boot';
-
+import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 
 export class TranslateSelectorScope extends TemplatesHandle {
     async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
@@ -12,19 +10,14 @@ export class TranslateSelectorScope extends TemplatesHandle {
         }
     }
     setup() {
-        this.container.register(ElementDecoratorRegisterer);
         this.use(TranslateElementHandle);
     }
 }
 
 
-@Singleton
-export class ElementDecoratorRegisterer extends IocBuildDecoratorRegisterer<Type<TemplateHandle>> {
-
-}
 export class TranslateElementHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let reg = ctx.getRaiseContainer().resolve(ElementDecoratorRegisterer);
+        let reg = ctx.getRaiseContainer().resolve(StartupDecoratorRegisterer).getRegisterer(StartupScopes.Element);
         if (reg.has(ctx.decorator)) {
             await this.execFuncs(ctx, reg.getFuncs(this.container, ctx.decorator));
         }

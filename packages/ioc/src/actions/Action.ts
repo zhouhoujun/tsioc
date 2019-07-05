@@ -155,5 +155,5 @@ export abstract class IocAction<T extends IocActionContext = IocActionContext> {
 /**
  * ioc action type.
  */
-export type IocActionType = Type<IocAction> | IocAction | lang.IAction;
+export type IocActionType<T = IocAction, TAction = lang.IAction> = Type<T> | T | TAction;
 

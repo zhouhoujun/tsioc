@@ -1,7 +1,7 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { BuildHandles, BuildHandleRegisterer, RegFor, ContainerPoolToken } from '../core';
+import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
@@ -27,7 +27,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     protected container: IContainer;
 
     setup() {
-        this.container.get(BuildHandleRegisterer)
+        this.container.get(HandleRegisterer)
             .register(this.container, ResolveMoudleScope, true)
             .register(this.container, ModuleBuilderLifeScope, true)
             .register(this.container, RunnableBuildLifeScope, true)
@@ -72,7 +72,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         if (!rctx.hasRaiseContainer()) {
             rctx.setRaiseContainer(this.container)
         }
-        await this.container.get(BuildHandleRegisterer)
+        await this.container.get(HandleRegisterer)
             .get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
@@ -107,7 +107,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     build<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(null, this.container.get(BuildHandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(HandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
     }
 
     /**
@@ -120,7 +120,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     async buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>> {
-        let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }
 
@@ -134,7 +134,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof RunnerService
      */
     run<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope(null, this.container.get(BuildHandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        return this.execLifeScope(null, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
     }
 
 
@@ -165,7 +165,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                     opt.contextInit(ctx as T);
                 }
             },
-            this.container.get(BuildHandleRegisterer).get(BootLifeScope),
+            this.container.get(HandleRegisterer).get(BootLifeScope),
             target,
             ...args);
 
@@ -194,7 +194,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                     application.onContextInit(ctx);
                 }
             },
-            this.container.get(BuildHandleRegisterer).get(BootLifeScope),
+            this.container.get(HandleRegisterer).get(BootLifeScope),
             application.target,
             ...args);
     }

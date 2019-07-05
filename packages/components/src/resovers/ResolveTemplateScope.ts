@@ -1,5 +1,5 @@
 import { TemplateParseScope, TemplateContext } from '../parses';
-import { BuildHandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
+import { HandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
 import { isNullOrUndefined } from '@tsdi/ioc';
 
 export class ResolveTemplateScope extends ResolveHandle {
@@ -13,7 +13,7 @@ export class ResolveTemplateScope extends ResolveHandle {
                 raiseContainer: ctx.getContainerFactory()
             });
             await this.container
-                .get(BuildHandleRegisterer)
+                .get(HandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(pCtx);
             if (!isNullOrUndefined(pCtx.value)) {

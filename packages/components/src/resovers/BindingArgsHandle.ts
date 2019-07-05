@@ -1,4 +1,4 @@
-import { BuildContext, BuildHandleRegisterer } from '@tsdi/boot';
+import { BuildContext, HandleRegisterer } from '@tsdi/boot';
 import { IBindingTypeReflect, BindingTypes } from '../bindings';
 import { RuntimeLifeScope, isNullOrUndefined, isArray, InjectReference, lang } from '@tsdi/ioc';
 import { ParseContext, BindingScope } from '../parses';
@@ -25,7 +25,7 @@ export class BindingArgsHandle extends ResolveComponentHandle {
             }
 
             if (refs.paramsBindings) {
-                let hregisterer = this.container.get(BuildHandleRegisterer);
+                let hregisterer = this.container.get(HandleRegisterer);
                 let bparams = refs.paramsBindings.get('constructor');
                 if (bparams && bparams.length) {
                     await Promise.all(bparams.map(async bp => {

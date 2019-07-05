@@ -1,7 +1,6 @@
-import { ResolveHandle, BuildContext } from '@tsdi/boot';
+import { ResolveHandle, BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { ComponentManager } from '../ComponentManager';
-import { BindingComponentRegisterer } from './BindingComponentRegisterer';
-import { ValidComponentRegisterer } from './ValidComponentRegisterer';
+
 
 export class BindingTemplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
@@ -13,7 +12,9 @@ export class BindingTemplateHandle extends ResolveHandle {
                 mgr.setComposite(ctx.scope, ctx.target);
             }
 
-            let validRegs = this.container.get(ValidComponentRegisterer);
+            let startupRegr = this.container.get(StartupDecoratorRegisterer);
+
+            let validRegs = startupRegr.getRegisterer(StartupScopes.ValidComponent);
             if (validRegs.has(ctx.decorator)) {
                 await this.execFuncs(ctx, validRegs.getFuncs(this.container, ctx.decorator));
             }
@@ -22,7 +23,7 @@ export class BindingTemplateHandle extends ResolveHandle {
                 mgr.setComposite(ctx.target, ctx.composite);
             }
 
-            let bindRegs = this.container.get(BindingComponentRegisterer);
+            let bindRegs = startupRegr.getRegisterer(StartupScopes.Binding);
             if (bindRegs.has(ctx.decorator)) {
                 await this.execFuncs(ctx, bindRegs.getFuncs(this.container, ctx.decorator));
             }

@@ -1,8 +1,8 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isString, Singleton, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
 import { BindingExpression } from '../bindings';
-import { IocBuildDecoratorRegisterer, BuildHandleRegisterer, BuilderServiceToken, BaseTypeParserToken } from '@tsdi/boot';
+import { HandleRegisterer, BuilderServiceToken, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
@@ -16,7 +16,6 @@ import { SelectorManager } from '../SelectorManager';
  */
 export class BindingValueScope extends ParsersHandle {
     setup() {
-        this.container.register(BindExpressionDecoratorRegisterer);
         this.use(BindingScopeHandle)
             .use(TranslateExpressionHandle)
             .use(TranslateAtrrHandle)
@@ -25,17 +24,12 @@ export class BindingValueScope extends ParsersHandle {
     }
 }
 
-@Singleton
-export class BindExpressionDecoratorRegisterer extends IocBuildDecoratorRegisterer<Type<ParseHandle>> {
-
-}
-
 
 export class BindingScopeHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
 
-        let regs = this.container.get(BindExpressionDecoratorRegisterer);
+        let regs = this.container.get(StartupDecoratorRegisterer).getRegisterer(StartupScopes.BindExpression);
         if (isString(ctx.bindExpression) && regs.has(ctx.decorator)) {
             await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
         }
@@ -63,7 +57,7 @@ export class TranslateExpressionHandle extends ParseHandle {
                 providers: ctx.providers,
                 raiseContainer: ctx.getContainerFactory()
             });
-            await this.container.get(BuildHandleRegisterer)
+            await this.container.get(HandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(tpCtx);
             if (!isNullOrUndefined(tpCtx.value)) {

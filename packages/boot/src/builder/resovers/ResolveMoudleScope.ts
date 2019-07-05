@@ -2,7 +2,6 @@ import { BuildHandles } from '../../core';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';
-import { BuildDecoratorRegisterer } from './BuildDecoratorRegisterer';
 import { InitResolveModuleHandle } from './InitResolveModuleHandle';
 
 
@@ -19,9 +18,6 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> {
     }
 
     setup() {
-        if (!this.container.has(BuildDecoratorRegisterer)) {
-            this.container.register(BuildDecoratorRegisterer);
-        }
 
         this.use(InitResolveModuleHandle)
             .use(ResolveModuleHandle)
