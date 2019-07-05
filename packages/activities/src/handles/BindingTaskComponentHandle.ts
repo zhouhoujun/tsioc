@@ -5,7 +5,7 @@ import { ComponentManager } from '@tsdi/components';
 export class BindingTaskComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 
-        if (ctx.composite instanceof Activity) {
+        if (ctx.composite) {
             let target = ctx.target;
             ctx.composite.$scope = target;
             ctx.composite.isScope = true;

@@ -2,6 +2,14 @@ import { Handle, HandleType, IHandleContext, IHandle } from './Handle';
 import { Type, ActionRegisterer, isClass } from '@tsdi/ioc';
 import { Handles } from './Handles';
 
+/**
+ * handle registerer.
+ *
+ * @export
+ * @class HandleRegisterer
+ * @extends {ActionRegisterer<IHandle>}
+ * @template T
+ */
 export class HandleRegisterer<T extends IHandle = IHandle> extends ActionRegisterer<IHandle> {
     protected setup(handle: T) {
         if (handle instanceof BuildHandles) {
