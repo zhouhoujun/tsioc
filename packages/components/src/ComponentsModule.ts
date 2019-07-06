@@ -15,7 +15,6 @@ import {
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
-import { ComponentContextScope } from './ComponentContextScope';
 import { ComponentBuilder } from './ComponentBuilder';
 
 
@@ -32,7 +31,6 @@ export class ComponentsModule {
 
         container.register(SelectorManager)
             .register(ComponentManager)
-            .register(ComponentContextScope)
             .register(ComponentDecoratorService);
 
         container.getActionRegisterer()

@@ -1,11 +1,8 @@
 import { Component, Input } from '../decorators';
+import { CompositeNode } from '../CompositeNode';
 
 @Component()
-export class Element {
+export class ElementNode extends CompositeNode  {
     @Input() id: string;
     @Input() name: string;
-
-    $scope: any;
-
-    $scopes: any[];
 }

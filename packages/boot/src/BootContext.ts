@@ -2,9 +2,8 @@ import { AnnoationContext, AnnoationOption, createAnnoationContext } from './cor
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
-import { Startup, IStartup } from './runnable';
+import { Startup } from './runnable';
 import { IComponentContext } from './builder';
-import { ContextScopeToken } from './IContextScope';
 
 
 
@@ -185,14 +184,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      */
     scope?: any;
 
-    get scopes() {
-        if (this.scope) {
-            let container = this.getRaiseContainer();
-            return container.resolve(ContextScopeToken).getScopes(container, this.scope);
-        }
-        return [];
-    }
-
     /**
      * the template data to binding property.
      *
@@ -280,8 +271,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     getBootTarget(): any {
-        // return this.bootstrap || this.target;
-        return this.getRaiseContainer().resolve(ContextScopeToken).getBootTarget(this);
+        return this.bootstrap || this.target;
     }
 
     /**

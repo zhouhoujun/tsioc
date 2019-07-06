@@ -64,7 +64,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
-                    let component = this.getContainer().get(ComponentManager).getLeaf(act);
+                    let component = this.getContainer().get(ComponentManager).getComposite(act);
                     if (component instanceof Activity) {
                         await component.run(ctx, next);
                     } else {
@@ -81,7 +81,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity;
         }
         if (activity) {
-            let component = this.getContainer().get(ComponentManager).getLeaf(activity);
+            let component = this.getContainer().get(ComponentManager).getComposite(activity);
             if (component instanceof Activity) {
                 return component.toAction();
             }

@@ -1,6 +1,5 @@
 import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray } from '@tsdi/ioc';
-import { ContentElement } from '../ContentElement';
-import { Element } from '../Element';
+import { ElementNode } from '../ElementNode';
 import { TemplateHandle, TemplateContext } from '../../parses';
 import { SelectorManager } from '../../SelectorManager';
 
@@ -39,10 +38,10 @@ export class ComponentSelectorHandle extends TemplateHandle {
     }
 
     protected getDefaultCompose(): Type {
-        return ContentElement;
+        return ElementNode;
     }
 
     protected isElement(decorator: string, element: any): boolean {
-        return isClass(element) && (hasOwnClassMetadata(decorator, element) || lang.isExtendsClass(element, Element));
+        return isClass(element) && (hasOwnClassMetadata(decorator, element) || lang.isExtendsClass(element, ElementNode));
     }
 }

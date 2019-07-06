@@ -2,8 +2,7 @@ import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
 import { Inject } from '@tsdi/ioc';
 import { Component } from '../decorators';
 import { ComponentSelectorHandle, ValidComponentHandle, BindingComponentHandle } from './handles';
-import { Element } from './Element';
-import { ContentElement } from './ContentElement';
+import { ElementNode } from './ElementNode';
 import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 
 /**
@@ -30,7 +29,6 @@ export class ElementModule {
             .register(container, ValidComponentHandle)
             .register(container, BindingComponentHandle);
 
-        container.register(Element);
-        container.register(ContentElement);
+        container.register(ElementNode);
     }
 }

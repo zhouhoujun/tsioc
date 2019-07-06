@@ -1,5 +1,6 @@
 import { Singleton } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
+import { CompositeNode } from './CompositeNode';
 
 /**
  * component manager.
@@ -10,66 +11,26 @@ import { ModuleConfigure } from '@tsdi/boot';
 @Singleton
 export class ComponentManager {
 
-    protected composites: WeakMap<any, any>;
-    protected parents: WeakMap<any, any>;
+    protected composites: WeakMap<any, CompositeNode>
     protected annoations: WeakMap<any, ModuleConfigure>;
 
     constructor() {
         this.composites = new WeakMap();
-        this.parents = new WeakMap();
         this.annoations = new WeakMap();
-    }
-
-    hasParent(component: any): boolean {
-        return this.parents.has(component);
-    }
-
-    setParent(component: any, parent: any) {
-        this.parents.set(component, parent);
-        this.composites.set(parent, component);
-    }
-
-    getRoot(component: any) {
-        if (this.parents.has(component)) {
-            return this.forIn(component, this.parents);
-        }
-        return null;
-    }
-
-    getParent(component: any) {
-        return this.parents.has(component) ? this.parents.get(component) : null;
-    }
-
-    getScopes(component: any) {
-        let scopes = [];
-        if (component) {
-            this.forIn(component, this.parents, com => {
-                scopes.push(com);
-            });
-        }
-        return scopes;
-    }
-
-    getLeaf(component: any): any {
-        if (this.composites.has(component)) {
-            return this.forIn(component, this.composites);
-        }
-        return null;
     }
 
     hasComposite(component: any): boolean {
         return this.composites.has(component);
     }
 
-    setComposite(component: any, composite: any) {
+    setComposite(component: any, composite: CompositeNode) {
         if (component === composite) {
             return;
         }
-        this.parents.set(composite, component);
         this.composites.set(component, composite);
     }
 
-    getComposite(component: any) {
+    getComposite(component: any): CompositeNode {
         return this.composites.has(component) ? this.composites.get(component) : null;
     }
 
