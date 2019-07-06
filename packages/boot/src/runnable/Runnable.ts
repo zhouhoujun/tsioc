@@ -1,11 +1,10 @@
-import { Abstract, Inject } from '@tsdi/ioc';
+import { Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 import { IStartup, Startup } from './Startup';
 
 
-
 /**
- * runable interface. define the type as runable.
+ * runnable interface. define the type as runnable.
  *
  * @export
  * @interface IRunnable
@@ -84,3 +83,19 @@ export function isRunnable(target: any): target is Runnable {
     }
     return false;
 }
+
+
+/**
+ * module instance runner token.
+ *
+ * @export
+ * @class InjectRunnerToken
+ * @extends {Registration<Startup<T>>}
+ * @template T
+ */
+export class InjectRunnableToken<T> extends InjectReference<Startup<T>> {
+    constructor(type: Token<T>) {
+        super(Startup, type);
+    }
+}
+

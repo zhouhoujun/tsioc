@@ -1,4 +1,4 @@
-import { lang, Type, Abstract, Inject } from '@tsdi/ioc';
+import { lang, Type, Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 
@@ -126,4 +126,19 @@ export function isStartup(target: any): target is Startup {
         return true;
     }
     return false;
+}
+
+
+/**
+ * module instance starup token.
+ *
+ * @export
+ * @class InjectRunnerToken
+ * @extends {Registration<Startup<T>>}
+ * @template T
+ */
+export class InjectStartupToken<T> extends InjectReference<Startup<T>> {
+    constructor(type: Token<T>) {
+        super(Startup, type);
+    }
 }

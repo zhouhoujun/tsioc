@@ -11,7 +11,8 @@ export class ContextScope implements IContextScope<BootContext> {
         return [];
     }
 
-    getBoot(ctx: BootContext) {
+    getBootTarget(ctx: BootContext) {
         return ctx.bootstrap || ctx.target;
     }
+
 }

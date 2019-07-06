@@ -1,5 +1,5 @@
 import { IStartup, Startup, StartupInit } from './Startup';
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, InjectReference, Token } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 
 /**
@@ -84,3 +84,16 @@ export function isService(target: any): target is Service {
     return false;
 }
 
+/**
+ * module instance service token.
+ *
+ * @export
+ * @class InjectServiceToken
+ * @extends {Registration<Startup<T>>}
+ * @template T
+ */
+export class InjectServiceToken<T> extends InjectReference<Startup<T>> {
+    constructor(type: Token<T>) {
+        super(Startup, type);
+    }
+}

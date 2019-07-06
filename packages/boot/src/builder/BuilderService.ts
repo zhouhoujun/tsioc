@@ -111,7 +111,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     /**
-     * create runnable.
+     * build startup instance.
      *
      * @template T
      * @param {(Type | BootOption | BootContext)} target
@@ -119,9 +119,22 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<IStartup<T>>}
      * @memberof BuilderService
      */
-    async buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>> {
+    async buildStartup<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>> {
         let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
+    }
+
+    /**
+     * build startup instance.
+     *
+     * @template T
+     * @param {(Type | BootOption | BootContext)} target
+     * @param {...string[]} args
+     * @returns {Promise<IStartup<T>>}
+     * @memberof BuilderService
+     */
+    buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>> {
+        return this.buildStartup(target, ...args);
     }
 
     /**

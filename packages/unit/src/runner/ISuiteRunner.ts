@@ -1,11 +1,11 @@
-import { InjectRunnableToken, IStartup, IRunnable } from '@tsdi/boot';
+import { InjectStartupToken, IStartup, IRunnable } from '@tsdi/boot';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 
 /**
  * suite runner token.
  */
-export const SuiteRunnerToken = new InjectRunnableToken<ISuiteRunner>('@Suite');
+export const SuiteRunnerToken = new InjectStartupToken<ISuiteRunner>('@Suite');
 
 /**
  * suite runner interface.

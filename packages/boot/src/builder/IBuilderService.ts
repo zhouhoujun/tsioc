@@ -71,6 +71,17 @@ export interface IBuilderService extends IocCoreService {
     build<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T>;
 
     /**
+     * build startup instance.
+     *
+     * @template T
+     * @param {(Type | BootOption | BootContext)} target
+     * @param {...string[]} args
+     * @returns {Promise<IStartup<T>>}
+     * @memberof BuilderService
+     */
+    buildStartup<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>>;
+
+    /**
      * create runnable.
      *
      * @template T

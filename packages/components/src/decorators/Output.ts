@@ -2,27 +2,27 @@ import { Token, isString, PropParamDecorator, createParamPropDecorator, isToken,
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**
- * Input decorator.
+ * Output decorator.
  *
  * @export
- * @interface InputPropertyDecorator
+ * @interface OutputPropertyDecorator
  */
-export interface InputPropertyDecorator {
+export interface OutputPropertyDecorator {
     /**
-     * define Input property decorator with binding property name.
+     * define Output property decorator with binding property name.
      *
      * @param {string} bindingName binding property name
      */
     (bindingName?: string): PropParamDecorator;
 
     /**
-     * define Input property decorator with binding metadata.
+     * define Output property decorator with binding metadata.
      *
      * @param {string} bindingName binding property name
      */
     (metadata: BindingPropertyMetadata): PropParamDecorator;
     /**
-     * define Input property decorator with binding property name and provider.
+     * define Output property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
      * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
@@ -30,7 +30,7 @@ export interface InputPropertyDecorator {
     (bindingName: string, provider: Registration | ClassType): PropParamDecorator;
 
     /**
-     * define Input property decorator with binding property name and provider.
+     * define Output property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
      * @param {*} binding default value.
@@ -38,7 +38,7 @@ export interface InputPropertyDecorator {
     (bindingName: string, defaultVal: any): PropParamDecorator;
 
     /**
-     * define Input property decorator with binding property name and provider.
+     * define Output property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
      * @param {Token} provider define provider to resolve value to the property.
@@ -51,7 +51,7 @@ export interface InputPropertyDecorator {
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
 
-export const Input: InputPropertyDecorator = createParamPropDecorator<BindingPropertyMetadata>('Input', args => {
+export const Output: OutputPropertyDecorator = createParamPropDecorator<BindingPropertyMetadata>('Output', args => {
     args.next<BindingPropertyMetadata>({
         match: (arg) => isString(arg),
         setMetadata: (metadata, arg) => {

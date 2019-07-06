@@ -10,7 +10,7 @@ export class ComponentContextScope extends ContextScope {
         return container.resolve(ComponentManager).getScopes(scope);
     }
 
-    getBoot(ctx: BootContext) {
+    getBootTarget(ctx: BootContext) {
         let mgr = ctx.getRaiseContainer().resolve(ComponentManager);
         if (ctx.bootstrap && mgr.hasComposite(ctx.bootstrap)) {
             return mgr.getLeaf(ctx.bootstrap);

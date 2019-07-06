@@ -11,7 +11,7 @@ import { HandleRegisterer, ResolveMoudleScope, ResolveModuleHandle } from '@tsdi
 import { BindingArgsHandle } from './resovers/BindingArgsHandle';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope,
-    BindingTemplateHandle, ModuleAfterContentInitHandle
+    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
@@ -45,6 +45,7 @@ export class ComponentsModule {
             .register(container, TemplateParseScope, true)
             .get(ResolveMoudleScope)
             .useBefore(BindingArgsHandle, ResolveModuleHandle)
+            .use(ModuleBeforeInitHandle)
             .use(BindingPropertyHandle)
             .use(ModuleAfterInitHandle)
             .use(ResolveTemplateScope)

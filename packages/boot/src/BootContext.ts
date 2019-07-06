@@ -226,7 +226,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     args?: string[];
 
     /**
-     * bootstrap instance.
+     * configure bootstrap instance.
      *
      * @type {T}
      * @memberof RunnableOptions
@@ -280,7 +280,8 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     getBootTarget(): any {
-        return this.getRaiseContainer().resolve(ContextScopeToken).getBoot(this);
+        // return this.bootstrap || this.target;
+        return this.getRaiseContainer().resolve(ContextScopeToken).getBootTarget(this);
     }
 
     /**
