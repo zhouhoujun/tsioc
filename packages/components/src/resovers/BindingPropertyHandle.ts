@@ -3,6 +3,13 @@ import { isNullOrUndefined } from '@tsdi/ioc';
 import { BindingScope, ParseContext } from '../parses';
 import { BuildContext, ResolveHandle, HandleRegisterer } from '@tsdi/boot';
 
+/**
+ * binding property handle.
+ *
+ * @export
+ * @class BindingPropertyHandle
+ * @extends {ResolveHandle}
+ */
 export class BindingPropertyHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.target) {

@@ -10,8 +10,7 @@ export class BindingTemplateHandle extends ResolveHandle {
 
             let mgr = this.container.get(ComponentManager);
             if (!(ctx.composite instanceof CompositeNode)) {
-                let node = new VirtualNode(ctx.template ? ctx.template.refSelector : undefined);
-                node.add(ctx.composite)
+                let node = new VirtualNode(ctx.composite, ctx.template ? ctx.template.refSelector : undefined);
                 ctx.composite = node;
             }
 
@@ -28,7 +27,7 @@ export class BindingTemplateHandle extends ResolveHandle {
                 ctx.composite.$scope = ctx.target;
                 mgr.setComposite(ctx.target, ctx.composite);
                 if (ctx.scope) {
-                    let parent = ctx.scope instanceof CompositeNode ? ctx.scope : mgr.getComposite(mgr);
+                    let parent = ctx.scope instanceof CompositeNode ? ctx.scope : mgr.getComposite(ctx.scope);
                     if (parent && parent instanceof CompositeNode) {
                         parent.add(ctx.composite);
                     }

@@ -3,6 +3,13 @@ import { AfterContentInit } from '../ComponentLifecycle';
 import { isFunction } from '@tsdi/ioc';
 
 
+/**
+ * module ater content init handle.
+ *
+ * @export
+ * @class ModuleAfterContentInitHandle
+ * @extends {ResolveHandle}
+ */
 export class ModuleAfterContentInitHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
 

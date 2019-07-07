@@ -4,6 +4,13 @@ import { isFunction } from '@tsdi/ioc';
 import { ResolveComponentHandle } from './ResolveComponentHandle';
 
 
+/**
+ * module before init handle
+ *
+ * @export
+ * @class ModuleBeforeInitHandle
+ * @extends {ResolveComponentHandle}
+ */
 export class ModuleBeforeInitHandle extends ResolveComponentHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (!this.isComponent(ctx)) {

@@ -9,7 +9,7 @@ import { CompositeNode, Mode } from './CompositeNode';
  */
 export class VirtualNode extends CompositeNode {
 
-    constructor(selector?: string) {
+    constructor(public component: any, selector?: string) {
         super(selector);
     }
 
