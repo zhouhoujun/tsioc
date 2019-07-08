@@ -10,40 +10,40 @@ import { ModuleConfigure } from '@tsdi/boot';
 @Singleton
 export class ComponentManager {
 
-    protected composites: WeakMap<any, any>;
-    protected parents: WeakMap<any, any>;
+    protected composites: WeakMap<any, any[]>;
+    protected scopes: WeakMap<any, any>;
     protected annoations: WeakMap<any, ModuleConfigure>;
 
     constructor() {
         this.composites = new WeakMap();
-        this.parents = new WeakMap();
+        this.scopes = new WeakMap();
         this.annoations = new WeakMap();
     }
 
-    hasParent(component: any): boolean {
-        return this.parents.has(component);
+    hasScope(component: any): boolean {
+        return this.scopes.has(component);
     }
 
-    setParent(component: any, parent: any) {
-        this.parents.set(component, parent);
+    setScope(component: any, parent: any) {
+        this.scopes.set(component, parent);
         this.composites.set(parent, component);
     }
 
     getRoot(component: any) {
-        if (this.parents.has(component)) {
-            return this.forIn(component, this.parents);
+        if (this.scopes.has(component)) {
+            return this.forIn(component, this.scopes);
         }
         return null;
     }
 
-    getParent(component: any) {
-        return this.parents.has(component) ? this.parents.get(component) : null;
+    getScope(component: any) {
+        return this.scopes.has(component) ? this.scopes.get(component) : null;
     }
 
     getScopes(component: any) {
         let scopes = [];
         if (component) {
-            this.forIn(component, this.parents, com => {
+            this.forIn(component, this.scopes, com => {
                 scopes.push(com);
             });
         }
@@ -61,15 +61,16 @@ export class ComponentManager {
         return this.composites.has(component);
     }
 
-    setComposite(component: any, composite: any) {
+    setComposite(component: any, composite: any): any[] {
         if (component === composite) {
             return;
         }
-        this.parents.set(composite, component);
+        this.scopes.set(composite, component);
+        this.composites.set(component, composite);
         // if (this.composites.has(component)) {
         //     this.getComposite(component).push(composite);
         // } else {
-            this.composites.set(component, composite);
+        //     this.composites.set(component, [composite]);
         // }
     }
 
@@ -221,7 +222,7 @@ export class ComponentSelector<T = any> {
         if (express(node) === false) {
             return false;
         }
-        let parentNode = this.mgr.getParent(node);
+        let parentNode = this.mgr.getScope(node);
         if (parentNode) {
             return this.routeUp(parentNode, express);
         }
