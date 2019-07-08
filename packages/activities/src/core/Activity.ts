@@ -1,6 +1,6 @@
 import { Task } from '../decorators/Task';
 import { IContainer } from '@tsdi/core';
-import { Input } from '@tsdi/components';
+import { Input, ComponentManager } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
 import {
     isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
@@ -42,13 +42,19 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     $scope?: any;
 
+    private _scopes: any[];
     /**
      * components of this activity.
      *
      * @type {any[]}
      * @memberof Activity
      */
-    $scopes?: any[];
+    get $scopes(): any[] {
+        if (!this._scopes) {
+            this._scopes = this.getContainer().get(ComponentManager).getScopes(this.$scope);
+        }
+        return this._scopes;
+    }
 
     /**
      * activity display name.
