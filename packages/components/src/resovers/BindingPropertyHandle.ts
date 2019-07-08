@@ -14,10 +14,10 @@ export class BindingPropertyHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.target) {
             let ref = ctx.targetReflect as IBindingTypeReflect;
-            if (ref && ref.propBindings) {
+            if (ref && ref.propInBindings) {
                 let registerer = this.container.get(HandleRegisterer);
-                await Promise.all(Array.from(ref.propBindings.keys()).map(async n => {
-                    let binding = ref.propBindings.get(n);
+                await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {
+                    let binding = ref.propInBindings.get(n);
                     let expression = ctx.template ? ctx.template[binding.bindingName || binding.name] : null;
                     if (!isNullOrUndefined(expression)) {
                         if (binding.bindingType === BindingTypes.dynamic) {

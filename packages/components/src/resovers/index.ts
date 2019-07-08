@@ -1,4 +1,5 @@
 export * from './BindingPropertyHandle';
+export * from './ValifyTeamplateHandle';
 export * from './BindingTemplateHandle';
 
 export * from './ModuleAfterInitHandle';

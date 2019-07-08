@@ -1,6 +1,5 @@
-import { Singleton } from '@tsdi/ioc';
+import { Singleton, Express, isFunction, isBoolean } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
-import { CompositeNode } from './CompositeNode';
 
 /**
  * component manager.
@@ -11,26 +10,70 @@ import { CompositeNode } from './CompositeNode';
 @Singleton
 export class ComponentManager {
 
-    protected composites: WeakMap<any, CompositeNode>
+    protected composites: WeakMap<any, any>;
+    protected parents: WeakMap<any, any>;
     protected annoations: WeakMap<any, ModuleConfigure>;
 
     constructor() {
         this.composites = new WeakMap();
+        this.parents = new WeakMap();
         this.annoations = new WeakMap();
+    }
+
+    hasParent(component: any): boolean {
+        return this.parents.has(component);
+    }
+
+    setParent(component: any, parent: any) {
+        this.parents.set(component, parent);
+        this.composites.set(parent, component);
+    }
+
+    getRoot(component: any) {
+        if (this.parents.has(component)) {
+            return this.forIn(component, this.parents);
+        }
+        return null;
+    }
+
+    getParent(component: any) {
+        return this.parents.has(component) ? this.parents.get(component) : null;
+    }
+
+    getScopes(component: any) {
+        let scopes = [];
+        if (component) {
+            this.forIn(component, this.parents, com => {
+                scopes.push(com);
+            });
+        }
+        return scopes;
+    }
+
+    getLeaf(component: any): any {
+        if (this.composites.has(component)) {
+            return this.forIn(component, this.composites);
+        }
+        return null;
     }
 
     hasComposite(component: any): boolean {
         return this.composites.has(component);
     }
 
-    setComposite(component: any, composite: CompositeNode) {
+    setComposite(component: any, composite: any) {
         if (component === composite) {
             return;
         }
-        this.composites.set(component, composite);
+        this.parents.set(composite, component);
+        // if (this.composites.has(component)) {
+        //     this.getComposite(component).push(composite);
+        // } else {
+            this.composites.set(component, composite);
+        // }
     }
 
-    getComposite(component: any): CompositeNode {
+    getComposite(component: any): any {
         return this.composites.has(component) ? this.composites.get(component) : null;
     }
 
@@ -51,4 +94,174 @@ export class ComponentManager {
         return component;
     }
 
+    getSelector(component: any): ComponentSelector {
+        if (this.hasComposite(component)) {
+            return new ComponentSelector(this, component);
+        }
+        return null;
+    }
+
 }
+
+
+/**
+ * iterate way.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum Mode {
+    /**
+     * route up. iterate in parents.
+     */
+    route = 1,
+    /**
+     * iterate in children.
+     */
+    children,
+    /**
+     * iterate as tree map. node first
+     */
+    traverse,
+
+    /**
+     * iterate as tree map. node last
+     */
+    traverseLast,
+
+}
+
+/**
+ * Component node selector.
+ *
+ * @export
+ * @class CompositeSelector
+ */
+export class ComponentSelector<T = any> {
+
+    constructor(private mgr: ComponentManager, private node: T) {
+
+    }
+
+    find<Tc extends T>(express: Tc | Express<Tc, boolean>, mode?: Mode): Tc {
+        let component: Tc;
+        this.each<Tc>(item => {
+            if (component) {
+                return false;
+            }
+            let isFinded = isFunction(express) ? express(item) : item === express;
+            if (isFinded) {
+                component = item;
+                return false;
+            }
+            return true;
+        }, mode);
+        return component as Tc;
+    }
+
+    filter<Tc extends T>(express: Express<Tc, boolean | void>, mode?: Mode): Tc[] {
+        let nodes: T[] = [];
+        this.each<Tc>(item => {
+            if (express(item)) {
+                nodes.push(item);
+            }
+        }, mode);
+        return nodes as Tc[];
+    }
+
+    map<Tc extends T, TR>(express: Express<Tc, TR | boolean>, mode?: Mode): TR[] {
+        let nodes: TR[] = [];
+        this.each<Tc>(item => {
+            let r = express(item)
+            if (isBoolean(r)) {
+                return r;
+            } else if (r) {
+                nodes.push(r);
+            }
+        }, mode);
+        return nodes;
+    }
+
+    each<Tc extends T>(express: Express<Tc, boolean | void>, mode?: Mode) {
+        mode = mode || Mode.traverse;
+        let r;
+        switch (mode) {
+            case Mode.route:
+                r = this.routeUp(this.node, express);
+                break;
+            case Mode.children:
+                r = this.eachChildren(this.node, express);
+                break;
+            case Mode.traverseLast:
+                r = this.transAfter(this.node, express);
+                break;
+
+            case Mode.traverse:
+            default:
+                r = this.trans(this.node, express);
+                break;
+        }
+        return r;
+    }
+
+    protected eachChildren<Tc extends T>(node: T, express: Express<Tc, void | boolean>) {
+        this.mgr.getComposite(node).some(item => {
+            return express(item as Tc) === false;
+        });
+    }
+
+    /**
+     *do express work in routing.
+     *
+     *@param {Express<T, void | boolean>} express
+     *
+     *@memberOf IComponent
+     */
+    routeUp(node: T, express: Express<T, void | boolean>) {
+        if (express(node) === false) {
+            return false;
+        }
+        let parentNode = this.mgr.getParent(node);
+        if (parentNode) {
+            return this.routeUp(parentNode, express);
+        }
+    }
+
+    /**
+     *translate all sub context to do express work.
+     *
+     *@param {Express<IComponent, void | boolean>} express
+     *
+     *@memberOf IComponent
+     */
+    trans(node: T, express: Express<T, void | boolean>) {
+        if (express(node) === false) {
+            return false;
+        }
+        let children = this.mgr.getComposite(node);
+        for (let i = 0; i < children.length; i++) {
+            let result = this.trans(children[i], express);
+            if (result === false) {
+                return result;
+            }
+        }
+        return true;
+    }
+
+    transAfter(node: T, express: Express<T, void | boolean>) {
+        let children = this.mgr.getComposite(node);
+        for (let i = 0; i < children.length; i++) {
+            let result = this.transAfter(children[i], express);
+            if (result === false) {
+                return false;
+            }
+        }
+
+        if (express(node) === false) {
+            return false;
+        }
+        return true;
+    }
+
+}
+

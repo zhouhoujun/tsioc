@@ -15,6 +15,13 @@ import { ClassMetadata } from '../metadatas';
 export interface ITypeReflect extends ClassMetadata {
 
     /**
+     * main module decorator.
+     *
+     * @type {string}
+     * @memberof ITypeReflect
+     */
+    decorator?: string;
+    /**
      * class decorators annoationed state.
      *
      * @type {ObjectMap<boolean>}

@@ -85,12 +85,29 @@ export interface IBinding<T = any> {
  */
 export interface IBindingTypeReflect extends ITypeReflect {
     /**
-     * property binding metadata.
+     * property input binding metadata.
      *
      * @type {Map<string, IBinding>}
      * @memberof IBindingTypeReflect
      */
-    propBindings: Map<string, IBinding>;
+    propInBindings: Map<string, IBinding>;
+
+    /**
+     * property output binding metadata.
+     *
+     * @type {Map<string, IBinding>}
+     * @memberof IBindingTypeReflect
+     */
+    propOutBindings: Map<string, IBinding>;
+
+    /**
+     * property output binding metadata.
+     *
+     * @type {Map<string, IBinding>}
+     * @memberof IBindingTypeReflect
+     */
+    propRefChildBindings: Map<string, IBinding>;
+
     /**
      * method params binding metadata.
      *

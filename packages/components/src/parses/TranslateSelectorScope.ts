@@ -17,7 +17,7 @@ export class TranslateSelectorScope extends TemplatesHandle {
 
 export class TranslateElementHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let reg = ctx.getRaiseContainer().resolve(StartupDecoratorRegisterer).getRegisterer(StartupScopes.Element);
+        let reg = ctx.getRaiseContainer().resolve(StartupDecoratorRegisterer).getRegisterer(StartupScopes.TranslateTemplate);
         if (reg.has(ctx.decorator)) {
             await this.execFuncs(ctx, reg.getFuncs(this.container, ctx.decorator));
         }

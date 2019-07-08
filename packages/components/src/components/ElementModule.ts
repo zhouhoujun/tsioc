@@ -20,8 +20,8 @@ export class ElementModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
         container.get(StartupDecoratorRegisterer)
-            .register(Component, StartupScopes.Element, ComponentSelectorHandle)
-            .register(Component, StartupScopes.ValidComponent, ValidComponentHandle)
+            .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle)
+            .register(Component, StartupScopes.ValifyComponent, ValidComponentHandle)
             .register(Component, StartupScopes.Binding, BindingComponentHandle);
 
         container.get(HandleRegisterer)

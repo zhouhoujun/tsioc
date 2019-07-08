@@ -5,9 +5,9 @@ import { IocBuildDecoratorRegisterer } from './IocBuildDecoratorRegisterer';
 export enum StartupScopes {
     Build = 'Build',
     BindExpression = 'BindExpression',
-    Element = 'Element',
+    TranslateTemplate = 'TranslateTemplate',
     Binding =  'Binding',
-    ValidComponent = 'ValidComponent'
+    ValifyComponent = 'ValifyComponent'
 }
 
 /**

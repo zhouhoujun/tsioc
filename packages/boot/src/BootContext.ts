@@ -1,9 +1,10 @@
 import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, DecoratorProvider } from '@tsdi/ioc';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
+import { BootTargetAccessor } from './BootTargetAccessor';
 
 
 
@@ -264,6 +265,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     */
     providers?: ProviderTypes[];
 
+    private _bootTarget: any;
     /**
      * get boot target.
      *
@@ -271,7 +273,18 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     getBootTarget(): any {
-        return this.bootstrap || this.target;
+        if (!this._bootTarget) {
+            let container = this.getRaiseContainer();
+            let pdr = container.get(DecoratorProvider);
+            let bootTarget = this.bootstrap || this.target;
+            let deckey = pdr.getKey(bootTarget);
+            if (deckey && pdr.has(deckey, BootTargetAccessor)) {
+                this._bootTarget = pdr.resolve(deckey, BootTargetAccessor).getBoot(bootTarget, this);
+            } else {
+                this._bootTarget = bootTarget;
+            }
+        }
+        return this._bootTarget;
     }
 
     /**

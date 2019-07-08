@@ -4,7 +4,7 @@ import { IIocContainer } from '../IIocContainer';
 import { Token, Factory } from '../types';
 import { ProviderTypes } from './types';
 import { ProviderParser } from './ProviderParser';
-import { isFunction } from '../utils';
+import { isFunction, lang, isString } from '../utils';
 
 /**
  * decorator default provider.
@@ -27,16 +27,26 @@ export class DecoratorProvider extends IocCoreService {
      * @returns {boolean}
      * @memberof ProviderMap
      */
-    has(decorator: string | Function, provide?: Token): boolean {
+    has(decorator: string | Function | object, provide?: Token): boolean {
         decorator = this.getKey(decorator);
-        if (this.map.has(decorator)) {
+        if (decorator && this.map.has(decorator)) {
             return provide ? this.map.get(decorator).has(provide) : true;
         }
         return false;
     }
 
-    getKey(decorator: string | Function): string {
-        return decorator = isFunction(decorator) ? decorator.toString() : decorator;
+    getKey(decorator: string | Function | object): string {
+        if (isString(decorator)) {
+            return decorator;
+        } else if (isFunction(decorator)) {
+            return decorator.toString();
+        } else if (decorator) {
+            let refmate = this.container.getTypeReflects().get(lang.getClass(decorator));
+            if (refmate && refmate.decorator) {
+                return refmate.decorator;
+            }
+        }
+        return '';
     }
 
     /**
@@ -49,9 +59,9 @@ export class DecoratorProvider extends IocCoreService {
      * @returns {T}
      * @memberof DecoratorProvider
      */
-    resolve<T>(decorator: string | Function, provide: Token<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(decorator: string | Function | object, provide: Token<T>, ...providers: ProviderTypes[]): T {
         decorator = this.getKey(decorator);
-        if (this.map.has(decorator)) {
+        if (decorator && this.map.has(decorator)) {
             return this.map.get(decorator).resolve(provide, ...providers);
         }
         return null;

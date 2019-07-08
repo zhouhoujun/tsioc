@@ -1,31 +1,6 @@
 import { isString, Express, isFunction, isBoolean } from '@tsdi/ioc';
+import { Mode } from '../ComponentManager';
 
-/**
- * iterate way.
- *
- * @export
- * @enum {number}
- */
-export enum Mode {
-    /**
-     * route up. iterate in parents.
-     */
-    route = 1,
-    /**
-     * iterate in children.
-     */
-    children,
-    /**
-     * iterate as tree map. node first
-     */
-    traverse,
-
-    /**
-     * iterate as tree map. node last
-     */
-    traverseLast,
-
-}
 
 
 /**
@@ -39,7 +14,6 @@ export class CompositeNode {
 
     parentNode: CompositeNode;
     children: CompositeNode[];
-    $scope: any;
 
     constructor(public selector?: string) {
         this.children = [];

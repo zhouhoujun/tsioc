@@ -6,6 +6,5 @@ export * from './core';
 export * from './builder';
 export * from './IBootApplication';
 export * from './BootApplication';
-export * from './IContextScope';
-export * from './ContextScope';
+export * from './BootTargetAccessor';
 export * from './BootContext';

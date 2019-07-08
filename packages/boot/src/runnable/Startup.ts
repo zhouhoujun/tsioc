@@ -1,4 +1,4 @@
-import { lang, Type, Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
+import { lang, Type, Abstract, Inject, InjectReference, Token, DecoratorProvider } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 

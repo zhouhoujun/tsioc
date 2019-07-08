@@ -15,7 +15,9 @@ export class InitResolveModuleHandle extends ResolveHandle {
                 ctx.targetReflect = reflect;
             }
         }
-
+        if (!ctx.targetReflect.decorator) {
+            ctx.targetReflect.decorator = ctx.decorator;
+        }
         if (ctx.decorator) {
             if (!ctx.annoation) {
                 ctx.annoation = service.getAnnoation(ctx.type, ctx.decorator);
