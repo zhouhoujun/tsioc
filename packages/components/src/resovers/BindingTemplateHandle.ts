@@ -30,9 +30,10 @@ export class BindingTemplateHandle extends ResolveHandle {
                                 }
                             });
                     });
-                } else {
-                    throw new Error(`has not register 'RefSelector' for decorator '${ctx.decorator}' in DecoratorProvider`)
                 }
+                // else {
+                //     throw new Error(`has not register 'RefSelector' for decorator '${ctx.decorator}' in DecoratorProvider`)
+                // }
             }
 
             let startupRegr = this.container.get(StartupDecoratorRegisterer);

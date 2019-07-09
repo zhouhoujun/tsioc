@@ -1,4 +1,3 @@
-
 import { BuildContext, ResolveHandle } from '@tsdi/boot';
 import { AfterInit } from '../ComponentLifecycle';
 import { isFunction } from '@tsdi/ioc';
