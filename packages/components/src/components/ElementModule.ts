@@ -1,9 +1,11 @@
 import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
-import { Inject } from '@tsdi/ioc';
+import { Inject, DecoratorProvider } from '@tsdi/ioc';
 import { Component } from '../decorators';
 import { ComponentSelectorHandle, ValidComponentHandle, BindingComponentHandle } from './handles';
 import { ElementNode } from './ElementNode';
 import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { RefSelector } from '../RefSelector';
+import { RefElementSelector } from './RefElementSelector';
 
 /**
  * component element module.
@@ -19,6 +21,7 @@ export class ElementModule {
     }
 
     setup(@Inject(ContainerToken) container: IContainer) {
+        container.register(RefElementSelector);
         container.get(StartupDecoratorRegisterer)
             .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle)
             .register(Component, StartupScopes.ValifyComponent, ValidComponentHandle)
@@ -28,6 +31,9 @@ export class ElementModule {
             .register(container, ComponentSelectorHandle)
             .register(container, ValidComponentHandle)
             .register(container, BindingComponentHandle);
+
+        container.get(DecoratorProvider)
+            .bindProviders(Component, { provide: RefSelector, useClass: RefElementSelector })
 
         container.register(ElementNode);
     }

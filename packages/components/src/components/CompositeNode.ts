@@ -165,7 +165,7 @@ export class CompositeSelector {
         if (express(node) === false) {
             return false;
         }
-        let children = node.children;
+        let children = node.children || [];
         for (let i = 0; i < children.length; i++) {
             let result = this.trans(children[i], express);
             if (result === false) {

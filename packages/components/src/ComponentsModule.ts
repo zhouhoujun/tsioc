@@ -17,7 +17,6 @@ import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
 import { ComponentBuilder } from './ComponentBuilder';
 import { BootComponentAccessor } from './BootComponentAccessor';
-import { RefSelector, RefComponentSelector } from './RefSelector';
 
 
 /**
@@ -33,7 +32,6 @@ export class ComponentsModule {
 
         container.register(SelectorManager)
             .register(ComponentManager)
-            .register(RefComponentSelector)
             .register(BootComponentAccessor)
             .register(ComponentDecoratorService);
 
@@ -70,9 +68,7 @@ export class ComponentsModule {
                     return ref.propRefChildBindings;
                 })
             })
-            .bindProviders(Component,
-                { provide: BootTargetAccessor, useClass: BootComponentAccessor },
-                { provide: RefSelector, useClass: RefComponentSelector });
+            .bindProviders(Component, { provide: BootTargetAccessor, useClass: BootComponentAccessor });
 
         container.resolve(HandleRegisterer)
             .register(container, BindingScope, true)

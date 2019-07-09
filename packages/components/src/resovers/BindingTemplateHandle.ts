@@ -14,26 +14,22 @@ import { RefSelector } from '../RefSelector';
 export class BindingTemplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.target && ctx.composite) {
-
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propRefChildBindings) {
                 let dpr = this.container.get(DecoratorProvider);
                 if (dpr.has(ctx.decorator, RefSelector)) {
-                    let refSelector = dpr.resolve(ctx.decorator, RefSelector);
                     // todo ref chile view
+                    let refSelector = dpr.resolve(ctx.decorator, RefSelector);
                     let mgr = this.container.get(ComponentManager);
-                    let refs = Array.from(ref.propRefChildBindings.values());
-                    mgr.getSelector(ctx.target)
-                        .each((it) => {
-                            console.log(it);
-                            let key = refSelector.getSelector(it);
-                            if (key) {
-                                let bind = refs.find(b => (b.bindingName || b.name) === key);
-                                if (bind) {
-                                    ctx.target[bind.name] = it;
+                    ref.propRefChildBindings.forEach(b => {
+                        mgr.getSelector(ctx.target)
+                            .each((it) => {
+                                let result = refSelector.select(it, b.bindingName || b.name);
+                                if (result) {
+                                    ctx.target[b.name] = result;
                                 }
-                            }
-                        });
+                            });
+                    });
                 } else {
                     throw new Error(`has not register 'RefSelector' for decorator '${ctx.decorator}' in DecoratorProvider`)
                 }

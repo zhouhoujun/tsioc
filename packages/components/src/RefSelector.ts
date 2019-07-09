@@ -1,5 +1,6 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
 
+
 /**
  * ref element identfy selector.
  *
@@ -10,20 +11,14 @@ import { Abstract, Injectable } from '@tsdi/ioc';
 @Abstract()
 export abstract class RefSelector {
     /**
-     * get ref selector id.
+     * select ref tag in element.
      *
      * @abstract
-     * @param {*} refElement
-     * @returns {string}
+     * @param {*} element
+     * @param {string} selector
+     * @returns {*}
      * @memberof RefSelector
      */
-    abstract getSelector(refElement: any): string;
+    abstract select(element: any, selector: string): any;
 }
 
-
-@Injectable()
-export class RefComponentSelector extends RefSelector {
-    getSelector(refElement: any): string {
-        return refElement ? refElement.selector : '';
-    }
-}

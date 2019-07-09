@@ -1,21 +1,6 @@
-import { isString, TypeMetadata, PropParamDecorator, createParamPropDecorator } from '@tsdi/ioc';
+import { isString, TypeMetadata, PropParamDecorator, createParamPropDecorator, isUndefined, isToken, isObject, Registration, ClassType, Token } from '@tsdi/ioc';
+import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
-/**
- * RefChild metadata.
- *
- * @export
- * @interface IRefChildMetadata
- * @extends {InjectableMetadata}
- */
-export interface IRefChildMetadata extends TypeMetadata {
-    /**
-     * RefChild selector.
-     *
-     * @type {string}
-     * @memberof IRefChildMetadata
-     */
-    selector?: string;
-}
 /**
  * RefChild decorator
  *
@@ -25,21 +10,46 @@ export interface IRefChildMetadata extends TypeMetadata {
  */
 export interface IRefChildDecorator {
     /**
-     * RefChild decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`RefChildLifecycle`]
+     * define RefChild property decorator with binding property name.
      *
-     * @RefChild
-     *
-     * @param {IRefChildMetadata} [metadata] metadata map.
+     * @param {string} bindingName binding property name
      */
-    (metadata?: IRefChildMetadata): PropParamDecorator;
+    (bindingName?: string): PropParamDecorator;
 
     /**
-     * RefChild decorator, use to define class as RefChild element.
+     * define RefChild property decorator with binding metadata.
      *
-     * @Task
-     * @param {string} selector metadata selector.
+     * @param {string} bindingName binding property name
      */
-    (selector: string): PropParamDecorator;
+    (metadata: BindingPropertyMetadata): PropParamDecorator;
+    /**
+     * define RefChild property decorator with binding property name and provider.
+     *
+     * @param {string} bindingName binding property name
+     * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
+     */
+    (bindingName: string, provider: Registration | ClassType): PropParamDecorator;
+
+    /**
+     * define RefChild property decorator with binding property name and provider.
+     *
+     * @param {string} bindingName binding property name
+     * @param {*} binding default value.
+     */
+    (bindingName: string, defaultVal: any): PropParamDecorator;
+
+    /**
+     * define RefChild property decorator with binding property name and provider.
+     *
+     * @param {string} bindingName binding property name
+     * @param {Token} provider define provider to resolve value to the property.
+     * @param {*} binding default value.
+     */
+    (bindingName: string, provider: Token, defaultVal: any): PropParamDecorator;
+    /**
+     * define property decorator.
+     */
+    (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
 
 /**
@@ -47,11 +57,27 @@ export interface IRefChildDecorator {
  *
  * @RefChild
  */
-export const RefChild: IRefChildDecorator = createParamPropDecorator<IRefChildMetadata>('RefChild', adapter => {
-    adapter.next<IRefChildMetadata>({
-        match: (arg, args) => args.length === 1 && isString(arg),
+export const RefChild: IRefChildDecorator = createParamPropDecorator<BindingPropertyMetadata>('RefChild', args => {
+    args.next<BindingPropertyMetadata>({
+        match: (arg) => isString(arg),
         setMetadata: (metadata, arg) => {
-            metadata.selector = arg;
+            metadata.bindingName = arg;
+        }
+    });
+    args.next<BindingPropertyMetadata>({
+        match: (arg) => !isUndefined(arg),
+        setMetadata: (metadata, arg) => {
+            if (isToken(arg) && !isString(arg)) {
+                metadata.provider = arg;
+            } else {
+                metadata.defaultValue = arg;
+            }
+        }
+    });
+    args.next<BindingPropertyMetadata>({
+        match: (arg) => isObject(arg),
+        setMetadata: (metadata, arg) => {
+            metadata.defaultValue = arg;
         }
     });
 });
