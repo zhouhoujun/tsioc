@@ -1,4 +1,4 @@
-import { Singleton, Express, isFunction, isBoolean } from '@tsdi/ioc';
+import { Singleton, Express, isFunction, isBoolean, isArray } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
 
 /**
@@ -205,8 +205,16 @@ export class ComponentSelector<T = any> {
         return r;
     }
 
+    protected getChildren(node: T): T[] {
+        let child = this.mgr.getComposite(node);
+        if (!child) {
+            return [];
+        }
+        return isArray(child) ? child : [child];
+    }
+
     protected eachChildren<Tc extends T>(node: T, express: Express<Tc, void | boolean>) {
-        this.mgr.getComposite(node).some(item => {
+        this.getChildren(node).some(item => {
             return express(item as Tc) === false;
         });
     }
@@ -239,7 +247,7 @@ export class ComponentSelector<T = any> {
         if (express(node) === false) {
             return false;
         }
-        let children = this.mgr.getComposite(node);
+        let children = this.getChildren(node);
         for (let i = 0; i < children.length; i++) {
             let result = this.trans(children[i], express);
             if (result === false) {
@@ -250,7 +258,7 @@ export class ComponentSelector<T = any> {
     }
 
     transAfter(node: T, express: Express<T, void | boolean>) {
-        let children = this.mgr.getComposite(node);
+        let children = this.getChildren(node);
         for (let i = 0; i < children.length; i++) {
             let result = this.transAfter(children[i], express);
             if (result === false) {

@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext, BuilderService, HandleRegisterer, ParentContainerToken, ContainerPoolToken } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ComponentSelectorHandle } from '../src';
+import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ComponentSelectorHandle, RefChild } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, Autorun } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
@@ -9,6 +9,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 @Component('selector1')
 class Component1 {
     @Input() name: string;
+    @Input() selector: string;
 
     constructor() {
 
@@ -22,12 +23,30 @@ class Component2 extends Component1 {
 }
 
 
-@Component('comp')
+@Component({
+    selector: 'comp',
+    template: [
+        {
+            element: 'selector1',
+            selector: 'comp1',
+            name: 'binding: name'
+        },
+        {
+            element: 'selector2',
+            selector: 'cmp2',
+            name: 'binding: name',
+            address: 'binding: address'
+        }
+    ]
+})
 class Components {
 
-    @Input() cmp1: Component1;
+    @Input() name: string;
+    @Input() address: string;
 
-    @Input() cmp2: Component2;
+    @RefChild('comp1') cmp1: Component1;
+
+    @RefChild() cmp2: Component2;
 
 }
 
@@ -208,5 +227,22 @@ export class CTest {
         // console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component1).toBeTruthy();
         expect(ctx.getBootTarget().name).toEqual('test');
+    }
+
+    @Test('can get refchild')
+    async test7() {
+        let ctx = await BootApplication.run({ module: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
+        let container = ctx.getRaiseContainer();
+        expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
+        expect(ctx.getBootTarget().phone).toEqual('17000000000');
+        let comp = await container.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' } }) as Components;
+        expect(comp instanceof Components).toBeTruthy();
+        expect(comp.name).toEqual('test111');
+        expect(comp.address).toEqual('cd111');
+        console.log('comp:', comp);
+        expect(comp.cmp1 instanceof Component1).toBeTruthy();
+        expect(comp.cmp2 instanceof Component2).toBeTruthy();
+        expect(comp.cmp2.address).toEqual('cd111');
     }
 }

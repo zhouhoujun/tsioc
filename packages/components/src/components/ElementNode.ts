@@ -5,5 +5,6 @@ import { CompositeNode } from './CompositeNode';
 export class ElementNode extends CompositeNode  {
     $scope: any;
     @Input() id: string;
+    @Input() selector: string;
     @Input() name: string;
 }

@@ -8,7 +8,13 @@ import {
 import { ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata } from '../metadatas';
 import { isArray } from '../utils';
 
-
+/**
+ * metadata services.
+ *
+ * @export
+ * @class MetadataService
+ * @extends {IocCoreService}
+ */
 export class MetadataService extends IocCoreService {
 
     /**
