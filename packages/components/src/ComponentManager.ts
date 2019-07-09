@@ -1,4 +1,4 @@
-import { Singleton, Express, isFunction, isBoolean, isArray } from '@tsdi/ioc';
+import { Singleton, Express, isFunction, isBoolean, isArray, Abstract } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
 
 /**
@@ -133,14 +133,16 @@ export enum Mode {
 }
 
 /**
- * Component node selector.
+ * node selector.
  *
  * @export
- * @class CompositeSelector
+ * @abstract
+ * @class NodeSelector
+ * @template T
  */
-export class ComponentSelector<T = any> {
-
-    constructor(private mgr: ComponentManager, private node: T) {
+@Abstract()
+export abstract class NodeSelector<T = any> {
+    constructor(protected node: T) {
 
     }
 
@@ -205,13 +207,6 @@ export class ComponentSelector<T = any> {
         return r;
     }
 
-    protected getChildren(node: T): T[] {
-        let child = this.mgr.getComposite(node);
-        if (!child) {
-            return [];
-        }
-        return isArray(child) ? child : [child];
-    }
 
     protected eachChildren<Tc extends T>(node: T, express: Express<Tc, void | boolean>) {
         this.getChildren(node).some(item => {
@@ -230,7 +225,7 @@ export class ComponentSelector<T = any> {
         if (express(node) === false) {
             return false;
         }
-        let parentNode = this.mgr.getScope(node);
+        let parentNode = this.getParent(node);
         if (parentNode) {
             return this.routeUp(parentNode, express);
         }
@@ -272,5 +267,33 @@ export class ComponentSelector<T = any> {
         return true;
     }
 
+    protected abstract getParent(node: T): T;
+
+    protected abstract getChildren(node: T): T[];
+}
+
+/**
+ * Component node selector.
+ *
+ * @export
+ * @class CompositeSelector
+ */
+export class ComponentSelector<T = any> extends NodeSelector<T> {
+
+    constructor(private mgr: ComponentManager, node: T) {
+        super(node)
+    }
+
+    protected getParent(node: T): T {
+        return this.mgr.getScope(node);
+    }
+
+    protected getChildren(node: T): T[] {
+        let child = this.mgr.getComposite(node);
+        if (!child) {
+            return [];
+        }
+        return isArray(child) ? child : [child];
+    }
 }
 

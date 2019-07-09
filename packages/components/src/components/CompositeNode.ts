@@ -1,5 +1,5 @@
-import { isString, Express, isFunction, isBoolean } from '@tsdi/ioc';
-import { Mode } from '../ComponentManager';
+import { isString } from '@tsdi/ioc';
+import { NodeSelector } from '../ComponentManager';
 
 
 
@@ -64,131 +64,13 @@ export class CompositeNode {
  * @export
  * @class CompositeSelector
  */
-export class CompositeSelector {
-
-    constructor(private node: CompositeNode) {
-
+export class CompositeSelector extends NodeSelector<CompositeNode> {
+    protected getParent(node: CompositeNode): CompositeNode {
+        return node.parentNode;
     }
 
-    find<Tc extends CompositeNode>(express: Tc | Express<Tc, boolean>, mode?: Mode): Tc {
-        let component: Tc;
-        this.each<Tc>(item => {
-            if (component) {
-                return false;
-            }
-            let isFinded = isFunction(express) ? express(item) : item.equals(express);
-            if (isFinded) {
-                component = item;
-                return false;
-            }
-            return true;
-        }, mode);
-        return component as Tc;
+    protected getChildren(node: CompositeNode): CompositeNode[] {
+        return node.children || [];
     }
-
-    filter<Tc extends CompositeNode>(express: Express<Tc, boolean | void>, mode?: Mode): Tc[] {
-        let nodes: CompositeNode[] = [];
-        this.each<Tc>(item => {
-            if (express(item)) {
-                nodes.push(item);
-            }
-        }, mode);
-        return nodes as Tc[];
-    }
-
-    map<Tc extends CompositeNode, TR>(express: Express<Tc, TR | boolean>, mode?: Mode): TR[] {
-        let nodes: TR[] = [];
-        this.each<Tc>(item => {
-            let r = express(item)
-            if (isBoolean(r)) {
-                return r;
-            } else if (r) {
-                nodes.push(r);
-            }
-        }, mode);
-        return nodes;
-    }
-
-    each<Tc extends CompositeNode>(express: Express<Tc, boolean | void>, mode?: Mode) {
-        mode = mode || Mode.traverse;
-        let r;
-        switch (mode) {
-            case Mode.route:
-                r = this.routeUp(this.node, express);
-                break;
-            case Mode.children:
-                r = this.eachChildren(this.node, express);
-                break;
-            case Mode.traverseLast:
-                r = this.transAfter(this.node, express);
-                break;
-
-            case Mode.traverse:
-            default:
-                r = this.trans(this.node, express);
-                break;
-        }
-        return r;
-    }
-
-    protected eachChildren<Tc extends CompositeNode>(node: CompositeNode, express: Express<Tc, void | boolean>) {
-        node.children.some(item => {
-            return express(item as Tc) === false;
-        });
-    }
-
-    /**
-     *do express work in routing.
-     *
-     *@param {Express<T, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    routeUp(node: CompositeNode, express: Express<CompositeNode, void | boolean>) {
-        if (express(node) === false) {
-            return false;
-        };
-        if (node.parentNode) {
-            node = node.parentNode;
-            return this.routeUp(node, express);
-        }
-    }
-
-    /**
-     *translate all sub context to do express work.
-     *
-     *@param {Express<IComponent, void | boolean>} express
-     *
-     *@memberOf IComponent
-     */
-    trans(node: CompositeNode, express: Express<CompositeNode, void | boolean>) {
-        if (express(node) === false) {
-            return false;
-        }
-        let children = node.children || [];
-        for (let i = 0; i < children.length; i++) {
-            let result = this.trans(children[i], express);
-            if (result === false) {
-                return result;
-            }
-        }
-        return true;
-    }
-
-    transAfter(node: CompositeNode, express: Express<CompositeNode, void | boolean>) {
-        let children = node.children;
-        for (let i = 0; i < children.length; i++) {
-            let result = this.transAfter(children[i], express);
-            if (result === false) {
-                return false;
-            }
-        }
-
-        if (express(node) === false) {
-            return false;
-        }
-        return true;
-    }
-
 }
 
