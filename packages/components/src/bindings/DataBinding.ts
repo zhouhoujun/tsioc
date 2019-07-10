@@ -1,3 +1,5 @@
+import { EventManager } from './EventManager';
+
 /**
  * data binding.
  *
@@ -8,7 +10,7 @@
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(public source: any, public propName: string) {
+    constructor(protected eventMgr: EventManager, public source: any, public propName: string) {
     }
 
 

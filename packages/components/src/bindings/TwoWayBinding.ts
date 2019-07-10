@@ -1,10 +1,8 @@
 import { DataBinding } from './DataBinding';
 import { isFunction } from '@tsdi/ioc';
+import { BindEventType } from './EventManager';
 
 export class TwoWayBinding<T> extends DataBinding<T> {
-    constructor(source: any, propName: string) {
-        super(source, propName);
-    }
 
     bind(target: any, prop: string): T {
         let value = this.getSourceValue();
@@ -13,18 +11,17 @@ export class TwoWayBinding<T> extends DataBinding<T> {
         }
         let scope = this.getScope();
         let scopeFiled = this.propName;
+        let eventMgr = this.eventMgr;
         Object.defineProperty(scope, scopeFiled, {
             get() {
                 return value
             },
             set(val: any) {
                 let isChanged = value !== val;
+                let old = value;
                 value = val;
                 if (isChanged) {
-                    target[prop] = val;
-                    if (isFunction(scope.onFiledChanges)) {
-                        scope.onFiledChanges({ filed: prop, val: val });
-                    }
+                    eventMgr.get(scope).emit(BindEventType.fieldChanged, prop, val, old);
                 }
             }
         });
@@ -36,14 +33,20 @@ export class TwoWayBinding<T> extends DataBinding<T> {
             },
             set(val: any) {
                 let isChanged = targetValue !== val;
+                let old = targetValue;
                 targetValue = val;
                 if (isChanged) {
-                    scope[scopeFiled] = val;
-                    if (isFunction(target.onFiledChanges)) {
-                        target.onFiledChanges({ filed: prop, val: val });
-                    }
+                    eventMgr.get(target).emit(BindEventType.fieldChanged, prop, val, old);
                 }
             }
+        });
+
+        eventMgr.get(target).on(BindEventType.fieldChanged, (field, val) => {
+            scope[scopeFiled] = val;
+        });
+
+        eventMgr.get(scope).on(BindEventType.fieldChanged, (field, val) => {
+            target[prop] = val;
         });
 
 

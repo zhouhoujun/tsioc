@@ -10,9 +10,6 @@ import { DataBinding } from './DataBinding';
  * @template T
  */
 export class AssignBinding<T> extends DataBinding<T> {
-    constructor(source: any, propName: string) {
-        super(source, propName);
-    }
 
     bind(target: any, prop: string): T {
         let val = this.getSourceValue();
