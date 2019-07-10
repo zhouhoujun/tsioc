@@ -28,28 +28,31 @@ export class BindingValueScope extends ParsersHandle {
 export class BindingScopeHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-        if (isString(ctx.bindExpression)) {
+        if (!ctx.dataBinding && ctx.bindExpression instanceof DataBinding) {
+            ctx.dataBinding = ctx.bindExpression;
+        }
+        if (!ctx.dataBinding && isString(ctx.bindExpression)) {
             let regs = this.container.get(StartupDecoratorRegisterer).getRegisterer(StartupScopes.BindExpression);
             // translate binding expression via current decorator.
             if (regs.has(ctx.decorator)) {
                 await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
-            }
-        }
-        if (ctx.bindExpression instanceof DataBinding) {
-            ctx.dataBinding = ctx.bindExpression;
-        } else if (isString(ctx.bindExpression)) {
-            let exp = ctx.bindExpression.trim();
-            if (exp.startsWith('binding:')) {
-                let bindingField = ctx.bindExpression.replace('binding:', '').trim();
-                ctx.dataBinding = new AssignBinding(bindingField);
-            } else if (exp.startsWith('binding=:')) {
-                let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
-                ctx.dataBinding = new TwoWayBinding(bindingField);
+            } else {
+                let exp = ctx.bindExpression.trim();
+                if (exp.startsWith('binding:')) {
+                    let bindingField = ctx.bindExpression.replace('binding:', '').trim();
+                    ctx.dataBinding = new AssignBinding(ctx.scope, bindingField);
+                } else if (exp.startsWith('binding=:')) {
+                    let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
+                    ctx.dataBinding = new TwoWayBinding(ctx.scope, bindingField);
+                }
             }
         }
 
         if (ctx.dataBinding instanceof DataBinding) {
-            ctx.bindExpression = ctx.dataBinding.resolve(ctx.scope);
+            if (!ctx.dataBinding.source) {
+                ctx.dataBinding.source = ctx.scope;
+            }
+            ctx.bindExpression = ctx.dataBinding.getSourceValue();
         }
 
         if (isNullOrUndefined(ctx.value)) {

@@ -10,13 +10,15 @@ import { DataBinding } from './DataBinding';
  * @template T
  */
 export class AssignBinding<T> extends DataBinding<T> {
-    constructor(protected fieldName: string, prefix = 'binding:') {
-        super(prefix);
+    constructor(source: any, propName: string) {
+        super(source, propName);
     }
-    resolve(scope: any): T {
-        if (scope) {
-            return scope[this.fieldName] as T;
+
+    bind(target: any, prop: string): T {
+        let val = this.getSourceValue();
+        if (target && prop) {
+            target[prop] = val;
         }
-        return undefined;
+        return val;
     }
 }

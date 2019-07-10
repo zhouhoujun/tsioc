@@ -29,7 +29,7 @@ class Component2 extends Component1 {
         {
             element: 'selector1',
             selector: 'comp1',
-            name: 'binding: name'
+            name: 'binding=: name'
         },
         {
             element: 'selector2',
@@ -246,5 +246,27 @@ export class CTest {
         expect(comp.cmp1.name).toEqual('test111');
         expect(comp.cmp2.name).toEqual('test111');
         expect(comp.cmp2.address).toEqual('cd111');
+    }
+
+    @Test('can get refchild, two way binding name')
+    async test8() {
+        let ctx = await BootApplication.run({ module: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
+        let container = ctx.getRaiseContainer();
+        expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
+        expect(ctx.getBootTarget().phone).toEqual('17000000000');
+        let comp = await container.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' } }) as Components;
+        expect(comp instanceof Components).toBeTruthy();
+        expect(comp.name).toEqual('test111');
+        expect(comp.address).toEqual('cd111');
+        // console.log('comp:', comp);
+        expect(comp.cmp1 instanceof Component1).toBeTruthy();
+        expect(comp.cmp2 instanceof Component2).toBeTruthy();
+        expect(comp.cmp1.name).toEqual('test111');
+        expect(comp.cmp2.name).toEqual('test111');
+        expect(comp.cmp2.address).toEqual('cd111');
+        comp.cmp1.name = 'twoway-bind';
+        expect(comp.name).toEqual('twoway-bind');
+        expect(comp.cmp2.name).toEqual('test111');
     }
 }

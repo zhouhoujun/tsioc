@@ -3,18 +3,28 @@
  *
  * @export
  * @abstract
- * @class BindingExpression
+ * @class DataBinding
  * @template T
  */
 export abstract class DataBinding<T = any> {
 
-    prefix: string;
-
-    constructor(prefix: string) {
-        this.prefix = prefix;
+    constructor(public source: any, public propName: string) {
     }
 
-    abstract resolve(scope: any): T;
+
+    getScope() {
+        return this.source;
+    }
+
+    getSourceValue(): T {
+        let source = this.getScope();
+        if (source) {
+            return source[this.propName] as T;
+        }
+        return undefined;
+    }
+
+    abstract bind(target: any, prop: string): T;
 }
 
 /**
