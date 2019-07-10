@@ -1,12 +1,12 @@
 /**
- * binding expression.
+ * data binding.
  *
  * @export
  * @abstract
  * @class BindingExpression
  * @template T
  */
-export abstract class BindingExpression<T> {
+export abstract class DataBinding<T = any> {
 
     prefix: string;
 
@@ -20,5 +20,5 @@ export abstract class BindingExpression<T> {
 /**
  * binding
  */
-export type Binding<T> = string | BindingExpression<T> | T;
+export type Binding<T> = string | DataBinding<T> | T;
 

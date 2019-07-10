@@ -4,6 +4,13 @@ import { ParseContext } from './ParseContext';
 import { HandleRegisterer } from '@tsdi/boot';
 import { isArray, isNullOrUndefined } from '@tsdi/ioc';
 
+/**
+ * binding scope.
+ *
+ * @export
+ * @class BindingScope
+ * @extends {ParsersHandle}
+ */
 export class BindingScope extends ParsersHandle {
 
     async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
@@ -16,7 +23,6 @@ export class BindingScope extends ParsersHandle {
     }
 
     setup() {
-
         this.use(BindingArrayHandle)
             .use(BindingValueScope, true)
     }

@@ -1,4 +1,4 @@
-import { BindingExpression } from './BindingExpression';
+import { DataBinding } from './DataBinding';
 
 
 /**
@@ -6,10 +6,10 @@ import { BindingExpression } from './BindingExpression';
  *
  * @export
  * @class AssignBinding
- * @extends {BindingExpression<T>}
+ * @extends {DataBinding<T>}
  * @template T
  */
-export class AssignBinding<T> extends BindingExpression<T> {
+export class AssignBinding<T> extends DataBinding<T> {
     constructor(protected fieldName: string, prefix = 'binding:') {
         super(prefix);
     }
@@ -17,6 +17,6 @@ export class AssignBinding<T> extends BindingExpression<T> {
         if (scope) {
             return scope[this.fieldName] as T;
         }
-        return null;
+        return undefined;
     }
 }

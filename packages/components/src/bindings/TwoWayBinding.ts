@@ -1,6 +1,6 @@
-import { BindingExpression } from './BindingExpression';
+import { DataBinding } from './DataBinding';
 
-export class TwoWayBinding<T> extends BindingExpression<T> {
+export class TwoWayBinding<T> extends DataBinding<T> {
     constructor(protected fieldName: string, prefix = 'binding=:') {
         super(prefix);
     }

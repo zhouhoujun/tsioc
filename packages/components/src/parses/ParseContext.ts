@@ -1,4 +1,4 @@
-import { IBinding } from '../bindings';
+import { IBinding, DataBinding } from '../bindings';
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
 import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
@@ -16,6 +16,8 @@ export class ParseContext extends BuildContext implements IComponentContext {
     binding: IBinding;
 
     bindExpression?: any;
+
+    dataBinding?: DataBinding;
 
     scope?: any;
 

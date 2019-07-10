@@ -1,7 +1,7 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
-import { BindingExpression } from '../bindings';
+import { DataBinding, AssignBinding, TwoWayBinding } from '../bindings';
 import { HandleRegisterer, BuilderServiceToken, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -28,16 +28,28 @@ export class BindingValueScope extends ParsersHandle {
 export class BindingScopeHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-
-        let regs = this.container.get(StartupDecoratorRegisterer).getRegisterer(StartupScopes.BindExpression);
-        if (isString(ctx.bindExpression) && regs.has(ctx.decorator)) {
-            await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
+        if (isString(ctx.bindExpression)) {
+            let regs = this.container.get(StartupDecoratorRegisterer).getRegisterer(StartupScopes.BindExpression);
+            // translate binding expression via current decorator.
+            if (regs.has(ctx.decorator)) {
+                await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
+            }
         }
-        if (ctx.bindExpression instanceof BindingExpression) {
-            ctx.bindExpression = ctx.bindExpression.resolve(ctx.scope);
-        } else if (isString(ctx.bindExpression) && ctx.bindExpression.trim().startsWith('binding:')) {
-            let bindingField = ctx.bindExpression.replace('binding:', '').trim();
-            ctx.bindExpression = ctx.scope ? ctx.scope[bindingField] : undefined;
+        if (ctx.bindExpression instanceof DataBinding) {
+            ctx.dataBinding = ctx.bindExpression;
+        } else if (isString(ctx.bindExpression)) {
+            let exp = ctx.bindExpression.trim();
+            if (exp.startsWith('binding:')) {
+                let bindingField = ctx.bindExpression.replace('binding:', '').trim();
+                ctx.dataBinding = new AssignBinding(bindingField);
+            } else if (exp.startsWith('binding=:')) {
+                let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
+                ctx.dataBinding = new TwoWayBinding(bindingField);
+            }
+        }
+
+        if (ctx.dataBinding instanceof DataBinding) {
+            ctx.bindExpression = ctx.dataBinding.resolve(ctx.scope);
         }
 
         if (isNullOrUndefined(ctx.value)) {
