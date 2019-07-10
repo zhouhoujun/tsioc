@@ -40,7 +40,7 @@ export class BindingScopeHandle extends ParseHandle {
                 let exp = ctx.bindExpression.trim();
                 if (exp.startsWith('binding:')) {
                     let bindingField = ctx.bindExpression.replace('binding:', '').trim();
-                    ctx.dataBinding = new AssignBinding(this.container.get(EventManager), ctx.scope, bindingField);
+                    ctx.dataBinding = new AssignBinding(ctx.scope, bindingField);
                 } else if (exp.startsWith('binding=:')) {
                     let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
                     ctx.dataBinding = new TwoWayBinding(this.container.get(EventManager), ctx.scope, bindingField);

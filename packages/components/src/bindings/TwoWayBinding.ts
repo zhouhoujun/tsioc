@@ -1,16 +1,20 @@
 import { DataBinding } from './DataBinding';
-import { isFunction } from '@tsdi/ioc';
-import { BindEventType } from './EventManager';
+import { BindEventType, EventManager } from './EventManager';
 
 export class TwoWayBinding<T> extends DataBinding<T> {
+
+    constructor(protected eventMgr: EventManager, source: any, propName: string) {
+        super(source, propName)
+    }
 
     bind(target: any, prop: string): T {
         let value = this.getSourceValue();
         if (!target) {
             return value;
         }
-        let scope = this.getScope();
-        let scopeFiled = this.propName;
+
+        let scopeFiled = this.getScopeField();
+        let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.') - 1) : '');
         let eventMgr = this.eventMgr;
         Object.defineProperty(scope, scopeFiled, {
             get() {
