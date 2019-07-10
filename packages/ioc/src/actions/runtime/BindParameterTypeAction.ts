@@ -69,9 +69,9 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                         return true;
                     }
 
-                    parameters.map((params) => {
+                    parameters.map((params, idx) => {
                         let parm = (isArray(params) && params.length > 0) ? params[0] : null;
-                        let n = names.length > parm.index ? names[parm.index] : '';
+                        let n = (parm && names.length > parm.index) ? names[parm.index] : names[idx] || '';
                         if (!parm) {
                             return { name: n };
                         }
