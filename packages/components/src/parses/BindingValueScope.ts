@@ -1,7 +1,7 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
-import { EventManager, DataBinding, AssignBinding, TwoWayBinding } from '../bindings';
+import { EventManager, DataBinding, OneWayBinding, TwoWayBinding } from '../bindings';
 import { HandleRegisterer, BuilderServiceToken, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -40,7 +40,7 @@ export class BindingScopeHandle extends ParseHandle {
                 let exp = ctx.bindExpression.trim();
                 if (exp.startsWith('binding:')) {
                     let bindingField = ctx.bindExpression.replace('binding:', '').trim();
-                    ctx.dataBinding = new AssignBinding(ctx.scope, bindingField);
+                    ctx.dataBinding = new OneWayBinding(this.container.get(EventManager), ctx.scope, bindingField);
                 } else if (exp.startsWith('binding=:')) {
                     let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
                     ctx.dataBinding = new TwoWayBinding(this.container.get(EventManager), ctx.scope, bindingField);

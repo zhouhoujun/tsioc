@@ -267,6 +267,9 @@ export class CTest {
         expect(comp.cmp2.address).toEqual('cd111');
         comp.cmp1.name = 'twoway-bind';
         expect(comp.name).toEqual('twoway-bind');
-        expect(comp.cmp2.name).toEqual('test111');
+        expect(comp.cmp2.name).toEqual('twoway-bind');
+        comp.cmp2.name = 'oneway-bind';
+        expect(comp.name).toEqual('twoway-bind');
+        expect(comp.cmp2.name).toEqual('oneway-bind');
     }
 }
