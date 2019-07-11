@@ -211,6 +211,11 @@ BootApplication.run(ModuleB);
 ## components
 *  `@Component`  Component decorator,  use to defaine class as component with template.
 *  `@Input` Input decorator, use to define property or param as component binding field or args.
+*  `@Output` Output decorator, use to define property or param as component output field or args.
+*  `@RefChild` RefChild decorator, use to select child element and inject to the property in component.
+
+see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
+
 
 see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
 
