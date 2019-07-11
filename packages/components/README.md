@@ -5,7 +5,7 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `@tsdi/boot`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@tsdi/core`.
 
-version 2+ of [`tsioc`](https://www.npmjs.com/zhouhoujun/package/tsioc)
+version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
 # Install
 
 ```shell
