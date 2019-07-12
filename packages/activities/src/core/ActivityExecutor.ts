@@ -8,7 +8,8 @@ import { Activity } from './Activity';
 import { IContainer } from '@tsdi/core';
 import { BuilderService } from '@tsdi/boot';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
-import { ComponentManager, SelectorManager } from '@tsdi/components';
+import { ComponentBuilderToken, ComponentManager, SelectorManager } from '@tsdi/components';
+
 
 @Injectable(ActivityExecutorToken)
 export class ActivityExecutor implements IActivityExecutor {
@@ -64,7 +65,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
-                    let component = this.getContainer().get(ComponentManager).getComposite(act);
+                    let component = this.getContainer().get(ComponentManager).getLeaf(act);
                     if (component instanceof Activity) {
                         await component.run(ctx, next);
                     } else {
@@ -81,7 +82,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity;
         }
         if (activity) {
-            let component = this.getContainer().get(ComponentManager).getComposite(activity);
+            let component = this.getContainer().get(ComponentManager).getLeaf(activity);
             if (component instanceof Activity) {
                 return component.toAction();
             }
@@ -91,10 +92,9 @@ export class ActivityExecutor implements IActivityExecutor {
     }
 
     protected async buildActivity(activity: Type | ControlTemplate, scope?: any): Promise<Activity> {
-        let ctx: ActivityContext;
         let container = this.getContainer();
         if (isClass(activity)) {
-            ctx = await container.get(BuilderService).build<ActivityContext>({ module: activity, scope: scope });
+            return await container.get(ComponentBuilderToken).resolveNode<ActivityContext>(activity, { scope: scope });
         } else {
             let md: Type;
             let mgr = container.get(SelectorManager);
@@ -109,8 +109,8 @@ export class ActivityExecutor implements IActivityExecutor {
                 template: activity,
                 scope: scope
             };
-            ctx = await container.get(BuilderService).build<ActivityContext>(option);
+            let ctx = await container.get(BuilderService).build<ActivityContext>(option);
+            return ctx.getBootTarget();
         }
-        return ctx.getBootTarget();
     }
 }

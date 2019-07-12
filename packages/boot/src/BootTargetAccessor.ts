@@ -1,7 +1,7 @@
-import { BootContext } from './BootContext';
 import { Abstract } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 
 @Abstract()
 export abstract class BootTargetAccessor {
-    abstract getBoot(target: any, ctx?: BootContext): any;
+    abstract getBoot(target: any, raiseContainer: IContainer): any;
 }

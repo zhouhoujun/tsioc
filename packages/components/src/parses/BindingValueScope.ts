@@ -2,10 +2,11 @@ import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
 import { EventManager, DataBinding, OneWayBinding, TwoWayBinding } from '../bindings';
-import { HandleRegisterer, BuilderServiceToken, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { HandleRegisterer, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
+import { ComponentBuilderToken } from '../IComponentBuilder';
 
 /**
  * binding value scope.
@@ -104,7 +105,7 @@ export class TranslateAtrrHandle extends ParseHandle {
 
             if (selector) {
                 let container = ctx.getRaiseContainer();
-                ctx.value = await container.get(BuilderServiceToken).resolve(selector, {
+                ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: ctx.scope,
                     template: template,
                     raiseContainer: ctx.getContainerFactory()

@@ -1,10 +1,8 @@
 import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type, ProviderTypes, InjectToken, IocRaiseContext } from '@tsdi/ioc';
-import { IModuleResolveOption, IComponentContext, ModuleConfigure } from '@tsdi/boot';
+import { IComponentContext, ModuleConfigure } from '@tsdi/boot';
+import { ITemplateOption } from '../IComponentBuilder';
 
-export interface ITemplateOption extends IModuleResolveOption {
-    selector?: Type;
-}
 
 /**
  * Template option token.

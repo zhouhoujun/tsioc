@@ -1,7 +1,7 @@
 import { ParsersHandle } from './ParseHandle';
 import { TemplateContext } from './TemplateContext';
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { BuilderServiceToken } from '@tsdi/boot';
+import { ComponentBuilderToken } from '../IComponentBuilder';
 
 
 export class ParseSelectorHandle extends ParsersHandle {
@@ -10,7 +10,7 @@ export class ParseSelectorHandle extends ParsersHandle {
             let selector = ctx.selector;
             let container = ctx.getRaiseContainer();
             ctx.value = await this.container
-                .resolve(BuilderServiceToken)
+                .resolve(ComponentBuilderToken)
                 .resolve(selector, {
                     scope: ctx.scope,
                     template: ctx.template,

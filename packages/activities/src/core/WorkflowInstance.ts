@@ -76,7 +76,7 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
         }
-        let target = this.getBoot();
+        let target = this.getBootNode();
         await target.run(this.context, async () => {
             this.state = RunState.complete;
             this._result = this.context.result;

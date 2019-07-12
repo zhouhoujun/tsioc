@@ -1,6 +1,7 @@
 import { lang, Type, Abstract, Inject, InjectReference, Token, DecoratorProvider } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext } from '../BootContext';
+import { BootTargetAccessor } from '../BootTargetAccessor';
 
 
 /**
@@ -100,6 +101,22 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
 
     getBootType(): Type<T> {
         return lang.getClass(this.getBoot());
+    }
+
+    private _bootNode: any;
+    getBootNode<T = any>(): T {
+                if (!this._bootNode) {
+            let container = this.getContainer();
+            let pdr = container.get(DecoratorProvider);
+            let bootTarget = this.getBoot() as any;
+            let deckey = pdr.getKey(bootTarget);
+            if (deckey && pdr.has(deckey, BootTargetAccessor)) {
+                this._bootNode = pdr.resolve(deckey, BootTargetAccessor).getBoot(bootTarget, container);
+            } else {
+                this._bootNode = bootTarget;
+            }
+        }
+        return this._bootNode;
     }
 
     /**

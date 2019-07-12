@@ -1,8 +1,8 @@
-import { BuilderService, HandleRegisterer, IModuleResolveOption } from '@tsdi/boot';
-import { Singleton, ProviderTypes, Type } from '@tsdi/ioc';
-import { TemplateContext, ITemplateOption, TemplateParseScope } from './parses';
+import { BuilderService, HandleRegisterer, IModuleResolveOption, BootTargetAccessor } from '@tsdi/boot';
+import { Singleton, ProviderTypes, Type, DecoratorProvider } from '@tsdi/ioc';
+import { TemplateContext, TemplateParseScope } from './parses';
 import { Component } from './decorators';
-import { ComponentManager } from './ComponentManager';
+import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 
 /**
  * component builder.
@@ -11,8 +11,8 @@ import { ComponentManager } from './ComponentManager';
  * @class ComponentBuilder
  * @extends {BuilderService}
  */
-@Singleton()
-export class ComponentBuilder extends BuilderService {
+@Singleton(ComponentBuilderToken)
+export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
         let ctx = TemplateContext.parse({ ...options, providers: [...(options.providers || []), ...providers] });
@@ -28,7 +28,15 @@ export class ComponentBuilder extends BuilderService {
 
 
     async resolveNode<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any> {
-        let boot = this.resolve(target, options, ...providers);
-        return this.container.get(ComponentManager).getLeaf(boot);
+        let bootTarget = this.resolve(target, options, ...providers);
+
+        let pdr = this.container.get(DecoratorProvider);
+        let deckey = pdr.getKey(bootTarget);
+        if (deckey && pdr.has(deckey, BootTargetAccessor)) {
+            return pdr.resolve(deckey, BootTargetAccessor).getBoot(bootTarget, this.container);
+        } else {
+            return bootTarget;
+        }
+
     }
 }
