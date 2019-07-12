@@ -30,6 +30,14 @@ export class ActivityExecutor implements IActivityExecutor {
         return this.containerFac() as IContainer;
     }
 
+    private componentMgr: ComponentManager;
+    getComponentManager() {
+        if (!this.componentMgr) {
+            this.componentMgr = this.getContainer().get(ComponentManager);
+        }
+        return this.componentMgr;
+    }
+
     async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {
         if (isClass(express)) {
             let bctx = await (container || this.getContainer()).get(BuilderService).run({ module: express, scope: ctx.scope });
@@ -65,7 +73,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
-                    let component = this.getContainer().get(ComponentManager).getLeaf(act);
+                    let component = this.getComponentManager().getSelector(act).find(e => e instanceof Activity);
                     if (component instanceof Activity) {
                         await component.run(ctx, next);
                     } else {
@@ -82,7 +90,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity;
         }
         if (activity) {
-            let component = this.getContainer().get(ComponentManager).getLeaf(activity);
+            let component = this.getComponentManager().getLeaf(activity);
             if (component instanceof Activity) {
                 return component.toAction();
             }
@@ -110,7 +118,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 scope: scope
             };
             let ctx = await container.get(BuilderService).build<ActivityContext>(option);
-            return ctx.getBootTarget();
+            return this.getComponentManager().getSelector(ctx.getBootTarget()).find(e => e instanceof Activity);
         }
     }
 }
