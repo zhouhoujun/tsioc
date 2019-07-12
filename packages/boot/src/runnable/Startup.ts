@@ -38,6 +38,14 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
     getBoot(): T;
 
     /**
+     * get boot component node.
+     *
+     * @returns {*}
+     * @memberof IStartup
+     */
+    getBootNode?(): any;
+
+    /**
      * get boot type.
      *
      * @returns {Type<T>}
@@ -104,8 +112,8 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
     }
 
     private _bootNode: any;
-    getBootNode<T = any>(): T {
-                if (!this._bootNode) {
+    getBootNode(): any {
+        if (!this._bootNode) {
             let container = this.getContainer();
             let pdr = container.get(DecoratorProvider);
             let bootTarget = this.getBoot() as any;
