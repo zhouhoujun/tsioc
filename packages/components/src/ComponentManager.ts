@@ -95,13 +95,12 @@ export class ComponentManager {
         return component;
     }
 
-    getSelector(component: any): ComponentSelector {
+    getSelector(component: any): NodeSelector {
         if (this.hasComposite(component)) {
             return new ComponentSelector(this, component);
         }
-        return null;
+        return new NullSelector(component);
     }
-
 }
 
 
@@ -294,6 +293,16 @@ export class ComponentSelector<T = any> extends NodeSelector<T> {
             return [];
         }
         return isArray(child) ? child : [child];
+    }
+}
+
+export class NullSelector<T = any> extends NodeSelector<T> {
+    protected getParent(node: T): T {
+        return null
+    }
+
+    protected getChildren(node: T): T[] {
+        return [];
     }
 }
 

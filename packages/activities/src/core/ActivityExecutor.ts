@@ -118,7 +118,13 @@ export class ActivityExecutor implements IActivityExecutor {
                 scope: scope
             };
             let ctx = await container.get(BuilderService).build<ActivityContext>(option);
-            return this.getComponentManager().getSelector(ctx.getBootTarget()).find(e => e instanceof Activity);
+            let boot = ctx.getBootTarget();
+            if (boot) {
+                return this.getComponentManager().getSelector(boot).find(e => e instanceof Activity);
+            } else {
+                console.log('activity config error');
+                return boot;
+            }
         }
     }
 }
