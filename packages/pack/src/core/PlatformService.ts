@@ -8,7 +8,7 @@ import {
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
 // import * as globby from 'globby';
-import { ProcessRunRootToken, BootContextToken } from '@tsdi/boot';
+import { ProcessRunRootToken, ApplicationBootContextToken } from '@tsdi/boot';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { NodeActivityContext } from './NodeActivityContext';
@@ -22,7 +22,7 @@ const del = require('del');
 @Injectable(PlatformServiceToken)
 export class PlatformService {
 
-    constructor(@Inject(BootContextToken) private ctx: NodeActivityContext) {
+    constructor(@Inject(ApplicationBootContextToken) private ctx: NodeActivityContext) {
 
     }
 

@@ -1,4 +1,4 @@
-import { BootContext, BootOption, BootContextToken } from './BootContext';
+import { BootContext, BootOption, ApplicationBootContextToken } from './BootContext';
 import { Type, LoadType, isArray, isString, InjectReference, isClass, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
@@ -94,7 +94,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
 
     onContextInit(ctx: T) {
         this.context = ctx;
-        this.container.bindProvider(BootContextToken, ctx);
+        this.container.bindProvider(ApplicationBootContextToken, ctx);
         this.container.bindProvider(new InjectReference(BootApplication, ctx.module), this);
     }
 

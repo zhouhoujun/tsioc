@@ -1,17 +1,16 @@
 import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader } from '@tsdi/core';
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, DecoratorProvider } from '@tsdi/ioc';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
-import { BootTargetAccessor } from './BootTargetAccessor';
 
 
 
 /**
- *  application boot context token.
+ *  current application boot context token.
  */
-export const BootContextToken = new InjectToken<BootContext>('__boot_context');
+export const ApplicationBootContextToken = new InjectToken<BootContext>('app__boot_context');
 /**
  * boot options
  *
