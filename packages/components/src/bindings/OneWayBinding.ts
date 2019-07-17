@@ -45,8 +45,8 @@ export class OneWayBinding<T> extends DataBinding<T> {
         });
 
         target[prop] = value;
-        eventMgr.get(scope).on(BindEventType.fieldChanged, (propName, field, val) => {
-            if (propName === this.propName && field === prop) {
+        eventMgr.get(scope).on(BindEventType.fieldChanged, (targetField, field, val) => {
+            if (targetField === propName && field === prop) {
                 target[prop] = val;
             }
         });

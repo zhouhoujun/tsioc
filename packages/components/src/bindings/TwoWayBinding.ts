@@ -56,19 +56,19 @@ export class TwoWayBinding<T> extends DataBinding<T> {
                     targetDescriptor.set(val);
                 }
                 if (isChanged) {
-                    eventMgr.get(target).emit(BindEventType.fieldChanged, propName, prop, val, old);
+                    eventMgr.get(target).emit(BindEventType.fieldChanged, prop, propName, val, old);
                 }
             }
         });
 
         target[prop] = value;
-        eventMgr.get(target).on(BindEventType.fieldChanged, (propName, field, val) => {
-            if (propName === this.propName && field === prop) {
+        eventMgr.get(target).on(BindEventType.fieldChanged, (targetField, field, val) => {
+            if (targetField === prop && field === this.propName) {
                 scope[scopeFiled] = val;
             }
         });
-        eventMgr.get(scope).on(BindEventType.fieldChanged, (propName, field, val) => {
-            if (propName === this.propName && field === prop) {
+        eventMgr.get(scope).on(BindEventType.fieldChanged, (targetField, field, val) => {
+            if (targetField === propName && field === prop) {
                 target[prop] = val;
             }
         });
