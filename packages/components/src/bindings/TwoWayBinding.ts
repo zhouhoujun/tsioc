@@ -14,7 +14,7 @@ export class TwoWayBinding<T> extends DataBinding<T> {
         }
 
         let scopeFiled = this.getScopeField();
-        let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.') - 1) : '');
+        let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.')) : '');
         let eventMgr = this.eventMgr;
         Object.defineProperty(scope, scopeFiled, {
             get() {

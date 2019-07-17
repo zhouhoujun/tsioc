@@ -86,10 +86,38 @@ class SubModule {
 }
 
 
+
+@Component({
+    selector: 'obj-comp',
+    template: [
+        {
+            element: 'selector1',
+            selector: 'comp1',
+            name: 'binding=: options.name'
+        },
+        {
+            element: 'selector2',
+            selector: 'cmp2',
+            name: 'binding: options.name',
+            address: 'binding: options.address'
+        }
+    ]
+})
+class ObjectComponent {
+
+    @Input() options: any;
+
+    @RefChild('comp1') cmp1: Component1;
+
+    @RefChild() cmp2: Component2;
+
+}
+
 @DIModule({
     imports: [
         Component1,
         Component2,
+        ObjectComponent,
         SubModule
     ],
     bootstrap: Component2
@@ -270,6 +298,32 @@ export class CTest {
         expect(comp.cmp2.name).toEqual('twoway-bind');
         comp.cmp2.name = 'oneway-bind';
         expect(comp.name).toEqual('twoway-bind');
+        expect(comp.cmp2.name).toEqual('oneway-bind');
+    }
+
+    @Test('can binding sub field')
+    async test9() {
+        let container = this.ctx.getRaiseContainer();
+        let comp = await container.get(ComponentBuilder).resolveTemplate({
+            template: {
+                element: 'obj-comp',
+                options: { name: 'testobject', address: 'chengdu' }
+            }
+        }) as ObjectComponent;
+
+        expect(comp.options.name).toEqual('testobject');
+        expect(comp.options.address).toEqual('chengdu');
+        // console.log('comp:', comp);
+        expect(comp.cmp1 instanceof Component1).toBeTruthy();
+        expect(comp.cmp2 instanceof Component2).toBeTruthy();
+        expect(comp.cmp1.name).toEqual('testobject');
+        expect(comp.cmp2.name).toEqual('testobject');
+        expect(comp.cmp2.address).toEqual('chengdu');
+        comp.cmp1.name = 'twoway-bind';
+        expect(comp.options.name).toEqual('twoway-bind');
+        expect(comp.cmp2.name).toEqual('twoway-bind');
+        comp.cmp2.name = 'oneway-bind';
+        expect(comp.options.name).toEqual('twoway-bind');
         expect(comp.cmp2.name).toEqual('oneway-bind');
     }
 }

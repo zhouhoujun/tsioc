@@ -35,12 +35,13 @@ export abstract class DataBinding<T = any> {
                 return null;
             }
             return this.getValue(pv, path.substring(idx + 1, path.length).toString());
+        } else {
+            return obj[path];
         }
-        return obj[path];
     }
 
     getScopeField(): string {
-        return /\./.test(this.propName) ? this.propName.substring(this.propName.lastIndexOf('.')) : this.propName;
+        return /\./.test(this.propName) ? this.propName.substring(this.propName.lastIndexOf('.') + 1) : this.propName;
     }
 
     getSourceValue(): T {

@@ -19,7 +19,7 @@ export class OneWayBinding<T> extends DataBinding<T> {
     bind(target: any, prop: string): T {
         let value = this.getSourceValue();
         let scopeFiled = this.getScopeField();
-        let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.') - 1) : '');
+        let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.')) : '');
         let eventMgr = this.eventMgr;
         Object.defineProperty(scope, scopeFiled, {
             get() {
