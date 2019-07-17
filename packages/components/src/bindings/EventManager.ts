@@ -26,7 +26,7 @@ export class Events {
     }
 
     emit(event: string, ...args: any[]) {
-        let hanldes = this.maps[event];
+        let hanldes = this.maps[event] || [];
         hanldes.forEach(h => {
             h(...args);
         });

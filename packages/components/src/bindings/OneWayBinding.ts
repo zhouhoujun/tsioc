@@ -19,24 +19,36 @@ export class OneWayBinding<T> extends DataBinding<T> {
     bind(target: any, prop: string): T {
         let value = this.getSourceValue();
         let scopeFiled = this.getScopeField();
+        let propName = this.propName;
         let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.')) : '');
         let eventMgr = this.eventMgr;
+
+        let descriptor = Object.getOwnPropertyDescriptor(scope, scopeFiled);
         Object.defineProperty(scope, scopeFiled, {
             get() {
+                if (descriptor.get) {
+                    return descriptor.get();
+                }
                 return value;
             },
             set(val: any) {
                 let isChanged = value !== val;
                 let old = value;
                 value = val;
+                if (descriptor.set) {
+                    descriptor.set(val);
+                }
                 if (isChanged) {
-                    eventMgr.get(scope).emit(BindEventType.fieldChanged, prop, val, old);
+                    eventMgr.get(scope).emit(BindEventType.fieldChanged, propName, prop, val, old);
                 }
             }
         });
+
         target[prop] = value;
-        eventMgr.get(scope).on(BindEventType.fieldChanged, (field, val) => {
-            target[prop] = val;
+        eventMgr.get(scope).on(BindEventType.fieldChanged, (propName, field, val) => {
+            if (propName === this.propName && field === prop) {
+                target[prop] = val;
+            }
         });
         return value;
     }

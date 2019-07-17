@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/boot",
-  "version": "5.1.4",
+  "version": "5.1.5",
   "description": "DI Module manager, application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -34,8 +34,8 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "^5.1.4",
-    "@tsdi/core": "^5.1.4",
+    "@tsdi/ioc": "^5.1.5",
+    "@tsdi/core": "^5.1.5",
     "reflect-metadata": "^0.1.13",
     "tslib": "~1.9.3"
   },
