@@ -1,5 +1,5 @@
 # packaged @tsdi/activities
-`@tsdi/pack` is project build pack tools, base on AOP, Ioc container, via @tsdi. file stream pipes activities.
+`@tsdi/activities` is an simple workflow frameworks in browser and nodejs, base on AOP, Ioc container, via @tsdi. file stream pipes activities.
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
@@ -11,18 +11,18 @@ Please file issues and pull requests against that repo.
 1. install modules:
 
 ```shell
-npm install @tsdi/pack
+npm install @tsdi/activities
 ```
 
-2. install cli | build pack:
+2. install cli | build activities:
 
 ### cli in global
 ```shell
 npm install -g '@tsdi/cli'
 ```
-### build pack
+### build activities
 ```
-npm install '@tsdi/pack'
+npm install '@tsdi/activities'
 ```
 
 use command: `tsdi run [taskfile.ts], tsdi run [taskfile.js]`
@@ -220,13 +220,13 @@ export class LibPackBuilder implements AfterInit {
     template: <LibPackBuilderOption>{
         activity: 'libs',
         tasks:[
-            { src: 'src/**/*.ts', clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: false, tsconfig: './tsconfig.json' }
+            { src: 'src/**/*.ts', clean: ['../../dist/activities/lib'], dist: '../../dist/activities/lib', uglify: false, tsconfig: './tsconfig.json' }
         ]
     }
 })
 export class PackBuilder implements AfterInit {
     onAfterInit(): void | Promise<void> {
-        console.log('pack build has inited...')
+        console.log('activities build has inited...')
     }
 }
 
