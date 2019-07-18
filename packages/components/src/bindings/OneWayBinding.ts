@@ -26,7 +26,7 @@ export class OneWayBinding<T> extends DataBinding<T> {
         let descriptor = Object.getOwnPropertyDescriptor(scope, scopeFiled);
         Object.defineProperty(scope, scopeFiled, {
             get() {
-                if (descriptor.get) {
+                if (descriptor && descriptor.get) {
                     return descriptor.get();
                 }
                 return value;
@@ -35,7 +35,7 @@ export class OneWayBinding<T> extends DataBinding<T> {
                 let isChanged = value !== val;
                 let old = value;
                 value = val;
-                if (descriptor.set) {
+                if (descriptor && descriptor.set) {
                     descriptor.set(val);
                 }
                 if (isChanged) {
