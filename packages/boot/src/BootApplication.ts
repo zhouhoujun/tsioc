@@ -1,5 +1,5 @@
 import { BootContext, BootOption, ApplicationBootContextToken } from './BootContext';
-import { Type, LoadType, isArray, isString, InjectReference, isClass, MetadataService, getOwnTypeMetadata, isMetadataObject } from '@tsdi/ioc';
+import { Type, LoadType, isArray, isString, InjectReference, isClass, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
 import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BuilderServiceToken } from './builder';
