@@ -119,7 +119,7 @@ export class ActivityContext extends BootContext {
 
 
 
-    static parse(target: Type | ActivityOption, raiseContainer?: ContainerFactory): ActivityContext {
+    static parse(target: Type | ActivityOption, raiseContainer?: ContainerFactory<IContainer>): ActivityContext {
         return createAnnoationContext(ActivityContext, target, raiseContainer);
     }
 

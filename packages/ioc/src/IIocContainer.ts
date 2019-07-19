@@ -14,7 +14,7 @@ export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer
 /**
  *  container factory.
  */
-export type ContainerFactory = () => IIocContainer;
+export type ContainerFactory<T extends IIocContainer = IIocContainer> = () => T;
 /**
  * container factory token.
  */
@@ -28,7 +28,7 @@ export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_Conta
  */
 export interface IIocContainer extends IResolverContainer {
 
-    getFactory(): ContainerFactory;
+    getFactory<T extends IIocContainer>(): ContainerFactory<T>;
 
     /**
      * get action registerer.

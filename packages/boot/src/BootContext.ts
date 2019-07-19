@@ -1,6 +1,6 @@
 import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
-import { IModuleLoader } from '@tsdi/core';
+import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
@@ -135,7 +135,7 @@ export interface BootOption extends AnnoationOption {
      * @type {ContainerFactory}
      * @memberof BootOption
      */
-    raiseContainer?: ContainerFactory;
+    raiseContainer?: ContainerFactory<IContainer>;
 }
 
 export const BootTargetToken = new InjectToken('module_type');
@@ -286,7 +286,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
         return this.getRaiseContainer().resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
-    static parse(target: Type | BootOption, raiseContainer?: ContainerFactory): BootContext {
+    static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {
         return createAnnoationContext(BootContext, target, raiseContainer);
     }
 }

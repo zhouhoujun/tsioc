@@ -1,5 +1,5 @@
 import { BootContext, BootOption, ApplicationBootContextToken } from './BootContext';
-import { Type, LoadType, isArray, isString, InjectReference, isClass, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
+import { Type, LoadType, isArray, isString, InjectReference, isClass, MetadataService, getOwnTypeMetadata, isMetadataObject } from '@tsdi/ioc';
 import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BuilderServiceToken } from './builder';
@@ -69,23 +69,26 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         if (target instanceof BootContext) {
             this.context = target;
             if (this.context.hasRaiseContainer()) {
-                this.container = this.context.getRaiseContainer();
-                if (!this.getPools().hasParent(this.container)) {
-                    this.getPools().setParent(this.container);
-                }
+                this.pools = this.context.getRaiseContainer().get(ContainerPool);
+                this.container = this.pools.create(this.context.getRaiseContainer());
             } else {
                 this.container = this.getPools().getRoot();
                 this.context.setRaiseContainer(this.container);
             }
-            this.container.register(BootContext);
         } else {
-            this.container = this.getPools().getRoot();
+            if (!isClass(target) && target.raiseContainer) {
+                this.pools = target.raiseContainer().get(ContainerPool);
+                this.container = this.pools.create(target.raiseContainer());
+            } else {
+                this.container = this.getPools().getRoot();
+            }
+        }
+        if (!this.container.hasRegister(BootContext)) {
             this.container.register(BootContext);
         }
 
         this.container.bindProvider(BootApplication, this);
         bootSetup(this.container);
-
     }
 
     getContext(): T {

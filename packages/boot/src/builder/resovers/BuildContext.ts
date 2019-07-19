@@ -38,7 +38,7 @@ export interface IModuleResolveOption {
      * @type {ContainerFactory}
      * @memberof IModuleResolveOption
      */
-    raiseContainer?: ContainerFactory;
+    raiseContainer?: ContainerFactory<IContainer>;
 
     /**
      * target type reflect.
@@ -50,7 +50,7 @@ export interface IModuleResolveOption {
 }
 
 @Injectable
-export class BuildContext extends IocRaiseContext implements IComponentContext {
+export class BuildContext extends IocRaiseContext<IContainer> implements IComponentContext {
 
     /**
      * component scope.
@@ -126,7 +126,7 @@ export class BuildContext extends IocRaiseContext implements IComponentContext {
         return this.raiseContainer() as IContainer;
     }
 
-    static parse(type: Type, options: IModuleResolveOption, raiseContainer?: IContainer | ContainerFactory): BuildContext {
+    static parse(type: Type, options: IModuleResolveOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): BuildContext {
         let ctx = new BuildContext(type);
         ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);

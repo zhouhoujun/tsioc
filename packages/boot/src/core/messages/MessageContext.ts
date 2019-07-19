@@ -32,6 +32,10 @@ export class MessageContext implements IHandleContext {
         }
     }
 
+    getContainerFactory() {
+        return this.raiseContainerGetter;
+    }
+
     getRaiseContainer(): IContainer {
         return this.raiseContainerGetter();
     }

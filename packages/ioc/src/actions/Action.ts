@@ -11,8 +11,8 @@ import { IocCoreService, ITypeReflect } from '../services';
  * @export
  * @interface ActionContextOption
  */
-export interface ActionContextOption {
-    raiseContainer?: ContainerFactory;
+export interface ActionContextOption<T extends IIocContainer = IIocContainer> {
+    raiseContainer?: ContainerFactory<T>;
 }
 
 /**
@@ -57,7 +57,7 @@ export class IocActionContext extends IocCoreService {
  * @class IocRasieContext
  * @extends {IocActionContext}
  */
-export class IocRaiseContext extends IocActionContext {
+export class IocRaiseContext<T extends IIocContainer = IIocContainer> extends IocActionContext {
 
     /**
      * target type reflect.
@@ -68,7 +68,7 @@ export class IocRaiseContext extends IocActionContext {
     targetReflect?: ITypeReflect;
 
     @Inject(ContainerFactoryToken)
-    protected raiseContainer: ContainerFactory;
+    protected raiseContainer: ContainerFactory<T>;
 
     /**
      * get raise container factory.
@@ -76,7 +76,7 @@ export class IocRaiseContext extends IocActionContext {
      * @returns {ContainerFactory}
      * @memberof IocRasieContext
      */
-    getContainerFactory(): ContainerFactory {
+    getContainerFactory(): ContainerFactory<T> {
         return this.raiseContainer;
     }
     /**
@@ -84,7 +84,7 @@ export class IocRaiseContext extends IocActionContext {
      *
      * @memberof ResovleContext
      */
-    getRaiseContainer() {
+    getRaiseContainer(): T {
         if (this.raiseContainer) {
             return this.raiseContainer();
         } else {
@@ -96,11 +96,11 @@ export class IocRaiseContext extends IocActionContext {
         return isFunction(this.raiseContainer);
     }
 
-    setRaiseContainer(raiseContainer: IIocContainer | ContainerFactory) {
+    setRaiseContainer(raiseContainer: T | ContainerFactory<T>) {
         if (isFunction(raiseContainer)) {
             this.raiseContainer = raiseContainer;
         } else if (raiseContainer) {
-            this.raiseContainer = raiseContainer.getFactory();
+            this.raiseContainer = raiseContainer.getFactory<T>();
         }
     }
 

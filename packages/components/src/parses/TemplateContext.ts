@@ -10,7 +10,7 @@ import { ITemplateOption } from '../IComponentBuilder';
 export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
 
 @Injectable
-export class TemplateContext extends IocRaiseContext implements IComponentContext {
+export class TemplateContext extends IocRaiseContext<IContainer> implements IComponentContext {
 
     selector?: Type;
 
@@ -41,7 +41,7 @@ export class TemplateContext extends IocRaiseContext implements IComponentContex
         return this.raiseContainer() as IContainer;
     }
 
-    static parse(options: ITemplateOption, raiseContainer?: IContainer | ContainerFactory): TemplateContext {
+    static parse(options: ITemplateOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): TemplateContext {
         let ctx = new TemplateContext();
         ctx.setOptions(options);
         ctx.providers = ctx.providers || [];

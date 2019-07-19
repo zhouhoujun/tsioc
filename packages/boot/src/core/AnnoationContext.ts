@@ -9,7 +9,7 @@ import { IContainer } from '@tsdi/core';
  * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationOption extends ActionContextOption {
+export interface AnnoationOption extends ActionContextOption<IContainer> {
     /**
      * target module type.
      *
@@ -36,7 +36,7 @@ export interface AnnoationOption extends ActionContextOption {
  * @param {(IContainer | (() => IContainer))} [raiseContainer]
  * @returns {T}
  */
-export function createAnnoationContext<T extends AnnoationContext = AnnoationContext>(CtxType: Type<T>, target: Type | AnnoationOption, raiseContainer?: IContainer|ContainerFactory): T {
+export function createAnnoationContext<T extends AnnoationContext = AnnoationContext>(CtxType: Type<T>, target: Type | AnnoationOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): T {
     let type: Type;
     let options: AnnoationOption;
     if (isClass(target)) {
@@ -58,14 +58,14 @@ export function createAnnoationContext<T extends AnnoationContext = AnnoationCon
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext extends IocRaiseContext {
+export class AnnoationContext extends IocRaiseContext<IContainer> {
 
     constructor(type: Type) {
         super();
         this.module = type;
     }
 
-    static parse(target: Type | AnnoationOption, raiseContainer?: IContainer|ContainerFactory): AnnoationContext {
+    static parse(target: Type | AnnoationOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): AnnoationContext {
         return createAnnoationContext(AnnoationContext, target, raiseContainer);
     }
 

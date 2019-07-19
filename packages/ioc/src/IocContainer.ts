@@ -71,8 +71,8 @@ export class IocContainer implements IIocContainer {
         return this.get(IocSingletonManager);
     }
 
-    getFactory(): ContainerFactory {
-        return this.get(ContainerFactoryToken);
+    getFactory<T extends IIocContainer>(): ContainerFactory<T> {
+        return this.get(ContainerFactoryToken) as ContainerFactory<T>;
     }
 
     /**

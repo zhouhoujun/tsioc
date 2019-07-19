@@ -27,7 +27,7 @@ export class ParseContext extends BuildContext implements IComponentContext {
         return this.raiseContainer() as IContainer;
     }
 
-    static parse(type: Type, options: IBindingParseOption, raiseContainer?: IContainer | ContainerFactory): ParseContext {
+    static parse(type: Type, options: IBindingParseOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): ParseContext {
         let ctx = new ParseContext(type);
         ctx.setOptions(options);
         raiseContainer && ctx.setRaiseContainer(raiseContainer);

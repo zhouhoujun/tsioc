@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, isArray } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, isArray, ContainerFactory, ContainerFactoryToken } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import {
@@ -28,7 +28,6 @@ export class Container extends IocContainer implements IContainer {
         super.init();
         registerCores(this);
     }
-
 
     /**
      * current container has register.

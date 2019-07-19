@@ -77,6 +77,9 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
                 deps.push(... this.getTargetDeps(t));
             });
         }
+        if (this.container.has(ActivityCoreModule)) {
+            return deps;
+        }
         return [AopModule, LogModule, ComponentsModule, ActivityCoreModule, ...deps];
     }
 
