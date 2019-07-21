@@ -1,5 +1,5 @@
 import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
-import { Type } from '../types';
+import { Type, Token } from '../types';
 import { lang, isFunction, isClass } from '../utils';
 import { Inject } from '../decorators';
 import { IocCoreService, ITypeReflect } from '../services';
@@ -155,5 +155,5 @@ export abstract class IocAction<T extends IocActionContext = IocActionContext> {
 /**
  * ioc action type.
  */
-export type IocActionType<T = IocAction, TAction = lang.IAction> = Type<T> | T | TAction;
+export type IocActionType<T = IocAction, TAction = lang.IAction> = Token<T> | T | TAction;
 

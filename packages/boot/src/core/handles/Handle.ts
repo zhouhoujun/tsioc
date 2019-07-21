@@ -1,5 +1,5 @@
 import { ContainerToken, IContainer } from '@tsdi/core';
-import { Type, PromiseUtil, Inject, ProviderTypes, Token, IocCoreService, isClass, isFunction, IocActionType } from '@tsdi/ioc';
+import { Type, PromiseUtil, Inject, ProviderTypes, Token, IocCoreService, isClass, isFunction, IocActionType, isToken } from '@tsdi/ioc';
 
 
 /**
@@ -96,7 +96,7 @@ export abstract class Handle<T extends IHandleContext = any> extends IocCoreServ
     }
 
     protected parseAction(ac: HandleType<T>): PromiseUtil.ActionHandle<T> {
-        if (isClass(ac)) {
+        if (isToken(ac)) {
             let action = this.resolveHanlde(ac);
             return action instanceof Handle ? action.toAction() : null;
 
@@ -106,7 +106,7 @@ export abstract class Handle<T extends IHandleContext = any> extends IocCoreServ
         return isFunction(ac) ? ac : null;
     }
 
-    protected resolveHanlde(ac: Type<IHandle<T>>): IHandle<T> {
+    protected resolveHanlde(ac: Token<IHandle<T>>): IHandle<T> {
         return this.container.resolve(ac);
     }
 
