@@ -1,5 +1,6 @@
 import { DataBinding } from './DataBinding';
 import { BindEventType, EventManager } from './EventManager';
+import { observe } from './onChange';
 
 export class TwoWayBinding<T> extends DataBinding<T> {
 
@@ -7,7 +8,7 @@ export class TwoWayBinding<T> extends DataBinding<T> {
         super(source, propName)
     }
 
-    bind(target: any, prop: string): T {
+    bind(target: any, property: string): T {
         let value = this.getSourceValue();
         if (!target) {
             return value;
@@ -16,60 +17,32 @@ export class TwoWayBinding<T> extends DataBinding<T> {
         let scopeFiled = this.getScopeField();
         let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.')) : '');
         let eventMgr = this.eventMgr;
-        let propName = this.propName;
+        // let propName = this.propName;
 
-        let scopeDescriptor = Object.getOwnPropertyDescriptor(scope, scopeFiled);
-        Object.defineProperty(scope, scopeFiled, {
-            get() {
-                if (scopeDescriptor && scopeDescriptor.get) {
-                    return scopeDescriptor.get();
-                }
-                return value;
-            },
-            set(val: any) {
-                let isChanged = value !== val;
-                let old = value;
-                value = val;
-                if (scopeDescriptor && scopeDescriptor.set) {
-                    scopeDescriptor.set(val);
-                }
-                if (isChanged) {
-                    eventMgr.get(scope).emit(BindEventType.fieldChanged, propName, prop, val, old);
-                }
+        observe.onChange(scope, (obj, prop, value, oldVal) => {
+            console.log('TwoWay scope changed:', prop, value, oldVal);
+            if (prop === scopeFiled) {
+                eventMgr.get(obj).emit(BindEventType.fieldChanged, obj, prop, value, oldVal);
             }
         });
 
-        let targetValue;
-        let targetDescriptor = Object.getOwnPropertyDescriptor(scope, scopeFiled);
-        Object.defineProperty(target, prop, {
-            get() {
-                if (targetDescriptor && targetDescriptor.get) {
-                    return targetDescriptor.get();
-                }
-                return targetValue;
-            },
-            set(val: any) {
-                let isChanged = targetValue !== val;
-                let old = targetValue;
-                targetValue = val;
-                if (targetDescriptor && targetDescriptor.set) {
-                    targetDescriptor.set(val);
-                }
-                if (isChanged) {
-                    eventMgr.get(target).emit(BindEventType.fieldChanged, prop, propName, val, old);
-                }
+        observe.onChange(target, (obj, prop, value, oldVal) => {
+            console.log('TwoWay target changed:', prop, value, oldVal);
+            if (prop === property) {
+                eventMgr.get(obj).emit(BindEventType.fieldChanged, obj, prop, value, oldVal);
             }
         });
 
-        target[prop] = value;
-        eventMgr.get(target).on(BindEventType.fieldChanged, (targetField, field, val) => {
-            if (targetField === prop && field === this.propName) {
-                scope[scopeFiled] = val;
+        target[property] = value;
+
+        eventMgr.get(target).on(BindEventType.fieldChanged, (obj, field, val) => {
+            if (obj === target && field === property) {
+                observe.getProxy(scope)[scopeFiled] = val;
             }
         });
-        eventMgr.get(scope).on(BindEventType.fieldChanged, (targetField, field, val) => {
-            if (targetField === propName && field === prop) {
-                target[prop] = val;
+        eventMgr.get(scope).on(BindEventType.fieldChanged, (obj, field, val) => {
+            if (obj === scope && field === scopeFiled) {
+                observe.getProxy(target)[property] = val;
             }
         });
         return value;
