@@ -1,4 +1,5 @@
 import { Events, BindEventType } from './Events';
+import { lang } from '@tsdi/ioc';
 
 export namespace observe {
 
@@ -16,7 +17,8 @@ export namespace observe {
         }
 
         if (!defines.has(target) || !defines.get(target)[property]) {
-            let descriptor = Reflect.getOwnPropertyDescriptor(target, property);
+            let descriptors = Object.getOwnPropertyDescriptors(lang.getClass(target).prototype);
+            let descriptor = descriptors[property];
             let value = Reflect.get(target, property);
             Reflect.defineProperty(target, property, {
                 get() {
