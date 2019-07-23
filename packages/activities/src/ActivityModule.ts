@@ -11,13 +11,13 @@ import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponent
 
 
 /**
- * register task decorators.
+ * setup wokflow activity module for boot application.
  *
  * @export
  * @param {IContainer} container
  */
 @IocExt('setup')
-export class ActivityCoreModule {
+export class ActivityModule {
     constructor() {
     }
 

@@ -1,7 +1,10 @@
 import expect = require('expect');
-import { Workflow, WorkflowInstance } from '../src';
+import { Workflow, WorkflowInstance, ActivityModule } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { ContainerBuilder } from '@tsdi/core';
+import { BootApplication, ContainerPool } from '@tsdi/boot';
+import { ComponentsModule } from '@tsdi/components';
 
 
 describe('activity test', () => {
@@ -58,6 +61,30 @@ describe('activity test', () => {
         it('should bootstrap with meta IConfigure.', async () => {
             let ctx = await Workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
+            expect(ctx.result).toEqual('component task');
+        });
+
+        it('should bootstrap with template configure.', async () => {
+            let app = new BootApplication();
+            await app.container.load(ComponentsModule, ActivityModule, SimpleTask, SimpleCTask)
+            let ctx = await Workflow.run({
+                // deps: [
+                //     ServerActivitiesModule
+                // ],
+                name: 'test1',
+                template: [
+                    {
+                        name: 'test---ccc---1',
+                        activity: 'stest'
+                    },
+                    {
+                        name: 'test------2',
+                        activity: 'comptest'
+                    }
+                ],
+                raiseContainer: app.container.getFactory()
+
+            });
             expect(ctx.result).toEqual('component task');
         });
 

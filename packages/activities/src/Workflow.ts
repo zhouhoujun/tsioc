@@ -6,7 +6,7 @@ import {
 import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
-import { ActivityCoreModule } from './CoreModule';
+import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';
 import { ComponentsModule } from '@tsdi/components';
 
@@ -77,10 +77,10 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
                 deps.push(... this.getTargetDeps(t));
             });
         }
-        if (this.container.has(ActivityCoreModule)) {
+        if (this.container.has(ActivityModule)) {
             return deps;
         }
-        return [AopModule, LogModule, ComponentsModule, ActivityCoreModule, ...deps];
+        return [AopModule, LogModule, ComponentsModule, ActivityModule, ...deps];
     }
 
     protected createUUID() {

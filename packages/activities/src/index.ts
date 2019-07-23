@@ -1,5 +1,5 @@
 export * from './Workflow';
-
+export * from './ActivityModule';
 export * from './decorators';
 export * from './handles';
 

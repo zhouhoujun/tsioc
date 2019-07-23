@@ -4,7 +4,7 @@ import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BuilderServiceToken } from './builder';
 import { IBootApplication } from './IBootApplication';
-import { bootSetup } from './setup';
+import { BootSetup } from './setup';
 import { RunnableConfigure } from './annotations';
 
 /**
@@ -60,27 +60,41 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
 
     protected pools: ContainerPool;
 
-    constructor(public target: Type | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(public target?: Type | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 
     protected onInit(target: Type | BootOption | T) {
         this.deps = this.deps || [];
+        let raiseContainer: IContainer;
         if (target instanceof BootContext) {
             this.context = target;
             if (this.context.hasRaiseContainer()) {
-                this.pools = this.context.getRaiseContainer().get(ContainerPool);
-                this.container = this.pools.create(this.context.getRaiseContainer());
+                raiseContainer = this.context.getRaiseContainer();
+            }
+        } else if (target && !isClass(target) && target.raiseContainer) {
+            raiseContainer = target.raiseContainer();
+        }
+
+        if (raiseContainer) {
+            this.pools = raiseContainer.get(ContainerPool);
+            if (this.pools) {
+                this.container = this.pools.create(raiseContainer);
             } else {
                 this.container = this.getPools().getRoot();
+                raiseContainer.iterator((fac, tk) => {
+                    if (!this.container.has(tk)) {
+                        this.container.bindProvider(tk, fac);
+                    }
+                });
+            }
+            if (this.context) {
                 this.context.setRaiseContainer(this.container);
             }
         } else {
-            if (!isClass(target) && target.raiseContainer) {
-                this.pools = target.raiseContainer().get(ContainerPool);
-                this.container = this.pools.create(target.raiseContainer());
-            } else {
-                this.container = this.getPools().getRoot();
+            this.container = this.getPools().getRoot();
+            if (this.context) {
+                this.context.setRaiseContainer(this.container);
             }
         }
         if (!this.container.hasRegister(BootContext)) {
@@ -88,7 +102,9 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         }
 
         this.container.bindProvider(BootApplication, this);
-        bootSetup(this.container);
+        if (!this.container.has(BootSetup)) {
+            this.container.register(BootSetup);
+        }
     }
 
     getContext(): T {

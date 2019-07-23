@@ -12,7 +12,7 @@ export interface IBootApplication<T extends BootContext = BootContext> extends C
      * @type {(Type | BootOption | T)}
      * @memberof IBootApplication
      */
-    target: Type | BootOption | T;
+    target?: Type | BootOption | T;
 
     getContext(): T;
 
