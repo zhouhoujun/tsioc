@@ -1,8 +1,6 @@
 import expect = require('expect');
 import { Workflow, WorkflowInstance, ActivityModule } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
-import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-import { ContainerBuilder } from '@tsdi/core';
 import { BootApplication, ContainerPool } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
 
