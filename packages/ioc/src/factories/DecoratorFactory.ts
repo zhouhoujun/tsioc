@@ -371,7 +371,7 @@ export function hasMethodMetadata(decorator: string | Function, target: Type, pr
 }
 
 function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, descriptor: TypedPropertyDescriptor<T>, metadata?: T, metadataExtends?: MetadataExtends) {
-    let meta = Object.assign({}, getOwnMethodMetadata(metaName, target));
+    let meta = { ...getOwnMethodMetadata(metaName, target) };
     meta[propertyKey] = meta[propertyKey] || [];
 
     let methodMeadata = (metadata || {}) as T;
@@ -443,7 +443,7 @@ export function hasPropertyMetadata(decorator: string | Function, target: Type, 
 }
 
 function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName: string, target: Type<T>, propertyKey: string, metadata?: T, metadataExtends?: MetadataExtends) {
-    let meta = Object.assign({}, getOwnPropertyMetadata(metaName, target));
+    let meta = { ...getOwnPropertyMetadata(metaName, target) };
     let propmetadata = (metadata || {}) as T;
 
     propmetadata.propertyKey = propertyKey;
@@ -584,7 +584,7 @@ export function getOwnParamerterNames(target: Type | AbstractType): ObjectMap<st
 }
 
 export function setParamerterNames(target: ClassType) {
-    let meta = Object.assign({}, getParamerterNames(target));
+    let meta = { ...getParamerterNames(target) };
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
     let isUglify = /^[a-z]/.test(target.name);
     let anName = '';

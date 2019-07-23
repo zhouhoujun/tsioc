@@ -1,5 +1,4 @@
 import { DataBinding } from './DataBinding';
-import { EventManager, BindEventType } from './EventManager';
 import { observe } from './onChange';
 
 
@@ -13,7 +12,7 @@ import { observe } from './onChange';
  */
 export class OneWayBinding<T> extends DataBinding<T> {
 
-    constructor(protected eventMgr: EventManager, source: any, propName: string) {
+    constructor(source: any, propName: string) {
         super(source, propName)
     }
 
@@ -24,22 +23,15 @@ export class OneWayBinding<T> extends DataBinding<T> {
         }
 
         let scopeFiled = this.getScopeField();
-        // let propName = this.propName;
         let scope = this.getValue(this.getScope(), /\./.test(this.propName) ? this.propName.substring(0, this.propName.lastIndexOf('.')) : '');
-        let eventMgr = this.eventMgr;
 
-        observe.onChange(scope, (obj, prop, value, oldVal) => {
-            if (prop === scopeFiled) {
-                eventMgr.get(obj).emit(BindEventType.fieldChanged, obj, prop, value, oldVal);
+        observe.onPropertyChange(scope, scopeFiled, (obj, prop, value, oldVal) => {
+            if (obj === scope && prop === scopeFiled) {
+                target[property] = value;
             }
         });
-
         target[property] = value;
-        eventMgr.get(scope).on(BindEventType.fieldChanged, (obj, field, val) => {
-            if (obj === scope && field === scopeFiled) {
-                observe.getProxy(target)[property] = val;
-            }
-        });
+
         return value;
     }
 }

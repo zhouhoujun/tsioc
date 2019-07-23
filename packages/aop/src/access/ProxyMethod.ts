@@ -66,7 +66,7 @@ export class ProxyMethod implements IProxyMethod {
                     let setMethod = pointcut.descriptor.set.bind(target);
                     pointcut.descriptor.set = this.proxy(setMethod, advices, target, targetType, pointcut, provJoinpoint);
                 }
-                Object.defineProperty(target, methodName, pointcut.descriptor);
+                Reflect.defineProperty(target, methodName, pointcut.descriptor);
             } else if (isFunction(target[methodName])) {
                 let propertyMethod = target[methodName].bind(target);
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint);

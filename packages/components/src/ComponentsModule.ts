@@ -17,7 +17,6 @@ import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
 import { ComponentBuilder } from './ComponentBuilder';
 import { BootComponentAccessor } from './BootComponentAccessor';
-import { EventManager } from './bindings';
 
 
 /**
@@ -34,7 +33,6 @@ export class ComponentsModule {
         container.register(SelectorManager)
             .register(ComponentManager)
             .register(BootComponentAccessor)
-            .register(EventManager)
             .register(ComponentDecoratorService);
 
         container.getActionRegisterer()
