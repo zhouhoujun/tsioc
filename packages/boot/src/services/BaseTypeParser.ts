@@ -1,5 +1,5 @@
 import { IBaseTypeParser, BaseTypeParserToken } from './IBaseTypeParser';
-import { Token, Singleton, isNumber, isBoolean, isString, isDate } from '@tsdi/ioc';
+import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNullOrUndefined } from '@tsdi/ioc';
 
 @Singleton(BaseTypeParserToken)
 export class BaseTypeParser implements IBaseTypeParser {
@@ -14,6 +14,9 @@ export class BaseTypeParser implements IBaseTypeParser {
      * @memberof BaseTypeParser
      */
     parse<T>(type: Token<T>, paramVal: any): T {
+        if (isNullOrUndefined(paramVal)) {
+            return paramVal;
+        }
         let val;
         if (type === String) {
             val = isString(paramVal) ? paramVal : String(paramVal);
