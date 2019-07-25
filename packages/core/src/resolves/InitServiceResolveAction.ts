@@ -37,8 +37,8 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
                     return this.container.getTokenProvider(t);
                 }
             }).concat(ctx.types).filter(ty => isClassType(ty));
-
             next();
+
         } else {
             if (!isClassType(ctx.token)) {
                 let pdType = this.container.getTokenProvider(ctx.token);
