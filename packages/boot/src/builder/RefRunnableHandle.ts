@@ -12,7 +12,7 @@ export class RefRunnableHandle extends BootHandle {
             { provide: lang.getClass(ctx), useValue: ctx });
 
         if (!ctx.runnable) {
-            next();
+            await next();
         }
     }
 }
