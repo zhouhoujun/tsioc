@@ -68,6 +68,9 @@ export interface ServiceOption<T> extends ResolveActionOption<T> {
  */
 export class ResolveServiceContext<T = any> extends ResolveActionContext<T> {
 
+    constructor(token?: Token<T>) {
+        super(token)
+    }
     /**
      * create resolve context via options.
      *

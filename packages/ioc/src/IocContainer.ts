@@ -13,7 +13,7 @@ import { IParameter } from './IParameter';
 import {
     RuntimeActionContext, DesignActionContext, IocRegisterAction,
     IocRegisterScope, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
-    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, IocAction
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, IocAction, ResolveActionOption
 } from './actions';
 
 
@@ -117,12 +117,12 @@ export class IocContainer implements IIocContainer {
      * resolve type instance with token and param provider via resolve scope.
      *
      * @template T
-     * @param {(Token<T> | ResolveActionContext<T>)} token
+     * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IocContainer
      */
-    resolve<T>(token: Token<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: Token<T> | ResolveActionOption<T>| ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
         return this.getActionRegisterer().get(ResolveLifeScope).resolve(token, ...providers);
     }
 

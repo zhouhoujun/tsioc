@@ -4,7 +4,7 @@ import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects } from './services';
-import { ResolveActionContext, ActionRegisterer } from './actions';
+import { ResolveActionContext, ActionRegisterer, ResolveActionOption } from './actions';
 
 /**
  * IContainer token.
@@ -80,12 +80,12 @@ export interface IIocContainer extends IResolverContainer {
      * resolve type instance with token and param provider via resolve scope.
      *
      * @template T
-     * @param {(Token<T> | ResolveActionContext<T>)} token
+     * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolve<T>(token: Token<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
+    resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
 
     /**
      * register type.

@@ -18,6 +18,14 @@ export interface ResolveActionOption<T> extends ActionContextOption {
      * @memberof ResolveActionOption
      */
     token?: Token<T>;
+
+    /**
+     * register token if has not register.
+     *
+     * @type {boolean}
+     * @memberof ResolveActionOption
+     */
+    regify?: boolean;
     /**
      * resolver providers.
      *
@@ -32,7 +40,7 @@ export function createResolveContext<T, Ctx extends ResolveActionContext<T>>(Ctx
     let options: ResolveActionOption<T>;
     if (isToken(target)) {
         token = target;
-    } else {
+    } else if (target) {
         options = target;
         token = target.token;
     }
@@ -61,6 +69,14 @@ export class ResolveActionContext<T = any> extends IocActionContext {
      * @memberof ResolveContext
      */
     token: Token<T>;
+
+    /**
+     * register token if has not register.
+     *
+     * @type {boolean}
+     * @memberof ResolveActionOption
+     */
+    regify?: boolean;
 
     /**
      * resolver providers.

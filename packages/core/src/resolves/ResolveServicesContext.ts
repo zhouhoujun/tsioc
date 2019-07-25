@@ -33,7 +33,9 @@ export interface ServicesOption<T> extends ServiceOption<T> {
  * @extends {ResolveServiceContext}
  */
 export class ResolveServicesContext<T = any> extends ResolveServiceContext<T> {
-
+    constructor(token?: Token<T>) {
+        super(token)
+    }
     /**
      * parse service resolve context.
      *

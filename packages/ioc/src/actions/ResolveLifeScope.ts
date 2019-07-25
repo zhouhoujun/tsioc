@@ -1,6 +1,6 @@
 import { Token } from '../types';
 import { ProviderTypes } from '../providers';
-import { ResolveActionContext } from './ResolveActionContext';
+import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
 
 export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>> {
@@ -19,19 +19,22 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
      * resolve token in resolve chain.
      *
      * @template T
-     * @param {(Token<T> | ResolveActionContext<T>)} token
+     * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof ResolveLifeScope
      */
-    resolve<T>(token: Token<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
         let ctx: ResolveActionContext<T>;
         if (token instanceof ResolveActionContext) {
             ctx = token;
-            ctx.providers = (ctx.providers || []).concat(providers);
         } else {
-            ctx = ResolveActionContext.parse({ token: token, providers: providers });
+            ctx = ResolveActionContext.parse(token);
         }
+        if (!ctx) {
+            return null;
+        }
+        ctx.providers = [...(ctx.providers || []), ...providers];
         this.container.getActionRegisterer().get(ResolveLifeScope).execute(ctx);
         return ctx.instance;
     }
