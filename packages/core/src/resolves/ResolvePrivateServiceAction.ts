@@ -19,7 +19,7 @@ export class ResolvePrivateServiceAction extends IocResolveServiceAction {
             }
             let tk = new InjectReference(ProviderMap, ctx.currTargetType);
             if (tk !== token) {
-                let map = this.container.has(tk) ? this.container.resolve(tk) : null;
+                let map = this.container.has(tk) ? this.container.get(tk) : null;
                 if (map && map.has(token)) {
                     ctx.instance = map.resolve(token, ...ctx.providers);
                 }

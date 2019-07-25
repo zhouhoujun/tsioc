@@ -7,7 +7,7 @@ import { ResolveServicesScope } from './ResolveServicesScope';
 export class ServicesResolveLifeScope<T> extends LifeScope<ResolveServicesContext<T>> {
 
     execute(ctx: ResolveServicesContext<T>, next?: () => void): void {
-        ctx.services = this.container.resolve(ProviderMap);
+        ctx.services = this.container.get(ProviderMap);
         super.execute(ctx, next);
     }
 
