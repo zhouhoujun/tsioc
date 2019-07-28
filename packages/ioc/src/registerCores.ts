@@ -32,10 +32,10 @@ export function registerCores(container: IIocContainer) {
         .register(container, RuntimeLifeScope, true)
         .register(container, ResolveLifeScope, true);
 
-    container.register(Date, () => new Date());
-    container.register(String, () => '');
-    container.register(Number, () => Number.NaN);
-    container.register(Boolean, () => undefined);
-    container.register(Array, () => []);
+    // container.register(Date, () => new Date());
+    // container.register(String, () => '');
+    // container.register(Number, () => Number.NaN);
+    // container.register(Boolean, () => undefined);
+    // container.register(Array, () => []);
 
 }
