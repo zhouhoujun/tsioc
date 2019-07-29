@@ -1,4 +1,4 @@
-import { Inject, Abstract } from '@tsdi/ioc';
+import { Inject, Abstract, Token } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 
@@ -25,8 +25,8 @@ export abstract class StartupService<T extends BootContext = BootContext> {
      * @abstract
      * @param {RunnableConfigure} config
      * @param {T} [ctx]
-     * @returns {Promise<void>}
+     * @returns {Promise<void | Token | Token[]>} startup service token
      * @memberof ConfigureRegister
      */
-    abstract configureService(ctx: T): Promise<void>;
+    abstract configureService(ctx: T): Promise<void | Token | Token[]>;
 }

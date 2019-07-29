@@ -18,20 +18,16 @@ export class BaseTypeParser implements IBaseTypeParser {
             return paramVal;
         }
         let val;
-        try {
-            if (type === String) {
-                val = isString(paramVal) ? paramVal : String(paramVal);
-            } else if (type === Boolean) {
-                val = isBoolean(paramVal) ? paramVal : new Boolean(paramVal);
-            } else if (type === Number) {
-                val = isNumber(paramVal) ? paramVal : parseFloat(paramVal);
-            } else if (type === Date) {
-                val = isDate(paramVal) ? paramVal : new Date(paramVal);
-            } else {
-                val = paramVal;
-            }
-        } catch (err) {
-            console.log(err);
+        if (type === String) {
+            val = isString(paramVal) ? paramVal : String(paramVal);
+        } else if (type === Boolean) {
+            val = isBoolean(paramVal) ? paramVal : new Boolean(paramVal);
+        } else if (type === Number) {
+            val = isNumber(paramVal) ? paramVal : parseFloat(paramVal);
+        } else if (type === Date) {
+            val = isDate(paramVal) ? paramVal : new Date(paramVal);
+        } else {
+            val = paramVal;
         }
         return val;
     }

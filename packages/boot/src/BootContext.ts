@@ -1,9 +1,11 @@
 import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 import { IModuleLoader, IContainer } from '@tsdi/core';
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, Token } from '@tsdi/ioc';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
+import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
+import { StartupServices } from './services';
 
 
 
@@ -153,13 +155,17 @@ export class BootContext extends AnnoationContext implements IComponentContext {
         super(type);
     }
 
+    getLogManager(): ILoggerManager {
+        return this.raiseContainer().resolve(ConfigureLoggerManger);
+    }
+
     /**
      * boot base url.
      *
      * @type {string}
      * @memberof BootContext
      */
-    baseURL?: string;
+    baseURL: string;
     /**
      * module loader
      *
@@ -168,14 +174,19 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      */
     loader?: IModuleLoader;
     /**
+     * configuration merge metadata config and all application config.
+     *
+     * @type {RunnableConfigure}
+     * @memberof BootContext
+     */
+    configuration: RunnableConfigure;
+    /**
      * annoation metadata config.
      *
      * @type {RunnableConfigure}
      * @memberof AnnoationContext
      */
-    annoation?: RunnableConfigure;
-
-
+    annoation: RunnableConfigure;
     /**
      * component scope.
      *
@@ -249,6 +260,16 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     runnable?: Startup;
 
     /**
+     * startup services
+     *
+     * @type {Token[]}
+     * @memberof BootContext
+     */
+    get starupServices(): StartupServices {
+        return this.getRaiseContainer().resolve(StartupServices);
+    }
+
+    /**
      * boot dependencies.
      *
      * @type {LoadType[]}
@@ -264,7 +285,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     */
     providers?: ProviderTypes[];
 
-    // private _bootTarget: any;
     /**
      * get boot target.
      *

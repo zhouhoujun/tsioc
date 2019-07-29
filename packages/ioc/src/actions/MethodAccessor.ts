@@ -1,7 +1,7 @@
 import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
 import { ParamProviders, ProviderParser } from '../providers';
-import { isToken, lang, isFunction } from '../utils';
+import { isToken, lang, isFunction, isBaseType } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { RuntimeLifeScope } from './RuntimeLifeScope';
 
@@ -108,6 +108,9 @@ export class MethodAccessor implements IMethodAccessor {
             } else if (isToken(param.type)) {
                 if (providerMap.has(param.type)) {
                     return providerMap.resolve(param.type);
+                }
+                if (isFunction(param.type) && isBaseType(param.type)) {
+                    return undefined;
                 }
                 return container.resolve(param.type, providerMap);
             } else {
