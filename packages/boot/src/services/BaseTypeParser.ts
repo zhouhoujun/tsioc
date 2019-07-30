@@ -19,9 +19,9 @@ export class BaseTypeParser implements IBaseTypeParser {
         }
         let val;
         if (type === String) {
-            val = isString(paramVal) ? paramVal : String(paramVal);
+            val = isString(paramVal) ? paramVal : String(paramVal).toString();
         } else if (type === Boolean) {
-            val = isBoolean(paramVal) ? paramVal : new Boolean(paramVal);
+            val = isBoolean(paramVal) ? paramVal : !!(new Boolean(paramVal));
         } else if (type === Number) {
             val = isNumber(paramVal) ? paramVal : parseFloat(paramVal);
         } else if (type === Date) {
