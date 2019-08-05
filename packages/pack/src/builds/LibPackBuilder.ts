@@ -150,7 +150,7 @@ export interface LibPackBuilderOption extends TemplateOption {
     external?: Binding<NodeExpression<ExternalOption>>;
 
     /**
-     * rollup plugins setting.
+     * custome config all rollup plugins.
      *
      * @type {NodeExpression<Plugin[]>}
      * @memberof RollupOption
@@ -193,6 +193,14 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @memberof LibPackBuilderOption
      */
     includeLib?: Binding<string[]>;
+
+    /**
+     * before resolve plugin.
+     *
+     * @type {Binding<Plugin[]>}
+     * @memberof LibPackBuilderOption
+     */
+    beforeResolve?: Binding<Plugin[]>;
 
 }
 

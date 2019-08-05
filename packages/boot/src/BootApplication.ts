@@ -107,6 +107,12 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         }
     }
 
+    /**
+     * get boot application context.
+     *
+     * @returns {T}
+     * @memberof BootApplication
+     */
     getContext(): T {
         return this.context;
     }
