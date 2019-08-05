@@ -1,7 +1,7 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
-import { DataBinding, OneWayBinding, TwoWayBinding } from '../bindings';
+import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, TwoWayParseBinding, OneWayParseBinding } from '../bindings';
 import { HandleRegisterer, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -41,10 +41,16 @@ export class BindingScopeHandle extends ParseHandle {
                 let exp = ctx.bindExpression.trim();
                 if (exp.startsWith('binding:')) {
                     let bindingField = ctx.bindExpression.replace('binding:', '').trim();
-                    ctx.dataBinding = new OneWayBinding(ctx.scope, bindingField);
+                    ctx.dataBinding = new OneWayBinding(ctx.scope, bindingField, ctx.binding.name);
                 } else if (exp.startsWith('binding=:')) {
                     let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
-                    ctx.dataBinding = new TwoWayBinding(ctx.scope, bindingField);
+                    ctx.dataBinding = new TwoWayBinding(ctx.scope, bindingField, ctx.binding.name);
+                } else if (exp.startsWith('parse-binding:')) {
+                    let bindingField = ctx.bindExpression.replace('parse-binding:', '').trim();
+                    ctx.dataBinding = new OneWayParseBinding(ctx.scope, bindingField, ctx.binding.name);
+                } else if (exp.startsWith('parse-binding=:')) {
+                    let bindingField = ctx.bindExpression.replace('parse-binding=:', '').trim();
+                    ctx.dataBinding = new TwoWayParseBinding(ctx.scope, bindingField, ctx.binding.name);
                 }
             }
         }
@@ -53,7 +59,11 @@ export class BindingScopeHandle extends ParseHandle {
             if (!ctx.dataBinding.source) {
                 ctx.dataBinding.source = ctx.scope;
             }
-            ctx.bindExpression = ctx.dataBinding.getSourceValue();
+            if (ctx.dataBinding instanceof ParseBinding) {
+                ctx.bindExpression = ctx.dataBinding.getSourceValue();
+            } else {
+                ctx.value = ctx.dataBinding.getSourceValue();
+            }
         }
 
         if (isNullOrUndefined(ctx.value)) {

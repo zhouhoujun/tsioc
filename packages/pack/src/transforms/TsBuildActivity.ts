@@ -86,7 +86,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
         }
         if (this.sourcemapWrite) {
             this.sourcemapWrite.pipe = this.sourcemapWrite.pipe || this.jsPipe;
-        };
+        }
     }
 
 

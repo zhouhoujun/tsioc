@@ -8,7 +8,7 @@
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(public source: any, public propName: string) {
+    constructor(public source: any, public prop: string, public targetProp: string) {
     }
 
     getScope() {
@@ -41,18 +41,18 @@ export abstract class DataBinding<T = any> {
     }
 
     getScopeField(): string {
-        return /\./.test(this.propName) ? this.propName.substring(this.propName.lastIndexOf('.') + 1) : this.propName;
+        return /\./.test(this.prop) ? this.prop.substring(this.prop.lastIndexOf('.') + 1) : this.prop;
     }
 
     getSourceValue(): T {
         let source = this.getScope();
         if (source) {
-            return this.getValue(this.source, this.propName);
+            return this.getValue(this.source, this.prop);
         }
         return undefined;
     }
 
-    abstract bind(target: any, prop: string): T;
+    abstract bind(target: any): void;
 }
 
 /**

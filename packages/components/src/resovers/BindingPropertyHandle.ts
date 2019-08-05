@@ -1,4 +1,4 @@
-import { IBindingTypeReflect, BindingTypes, DataBinding } from '../bindings';
+import { IBindingTypeReflect, BindingTypes, DataBinding, ParseBinding } from '../bindings';
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { BindingScope, ParseContext } from '../parses';
 import { BuildContext, ResolveHandle, HandleRegisterer } from '@tsdi/boot';
@@ -33,8 +33,12 @@ export class BindingPropertyHandle extends ResolveHandle {
                                 raiseContainer: ctx.getContainerFactory()
                             })
                             await registerer.get(BindingScope).execute(pctx);
-                            if (pctx.dataBinding instanceof DataBinding && pctx.dataBinding.getSourceValue() === pctx.value) {
-                                pctx.dataBinding.bind(ctx.target, binding.name);
+                            if (pctx.dataBinding instanceof DataBinding) {
+                                if (pctx.dataBinding instanceof ParseBinding) {
+                                    pctx.dataBinding.bind(pctx.value, ctx.target);
+                                } else {
+                                    pctx.dataBinding.bind(ctx.target);
+                                }
                             } else {
                                 ctx.target[binding.name] = pctx.value;
                             }

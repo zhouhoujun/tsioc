@@ -1,5 +1,6 @@
-import { OneWayBinding } from './OneWayBinding';
-import { TwoWayBinding } from './TwoWayBinding';
+import { DataBinding } from './DataBinding';
+import { observe } from './onChange';
+import { isNullOrUndefined } from '@tsdi/ioc';
 
 
 /**
@@ -10,11 +11,8 @@ import { TwoWayBinding } from './TwoWayBinding';
  * @extends {DataBinding<T>}
  * @template T
  */
-export class ParseBinding<T> extends OneWayBinding<T> {
+export abstract class ParseBinding<T> extends DataBinding<T> {
 
-    constructor(source: any, propName: string) {
-        super(source, propName)
-    }
     private scope: any;
     getScope() {
         this.scope || this.source;
@@ -24,8 +22,35 @@ export class ParseBinding<T> extends OneWayBinding<T> {
         this.scope = scope;
     }
 
-}
+    abstract bind(parseTarget: any, target?: any): void;
 
+}
+export class OneWayParseBinding<T> extends ParseBinding<T> {
+    bind(parseTarget: any, target?: any): void {
+        let property = this.targetProp;
+        let value = this.getSourceValue();
+        if (isNullOrUndefined(parseTarget)) {
+            return;
+        }
+
+        console.log('-------------------OneWayParseBinding----------------\n:', target, parseTarget, value)
+        if (target) {
+            target[property] = parseTarget;
+        }
+
+        let scopeFiled = this.getScopeField();
+        let scope = this.getValue(this.getScope(), /\./.test(this.prop) ? this.prop.substring(0, this.prop.lastIndexOf('.')) : '');
+
+        observe.onPropertyChange(scope, scopeFiled, (obj, prop, value, oldVal) => {
+            if (obj === scope && prop === scopeFiled) {
+                parseTarget[property] = value;
+            }
+        });
+
+        parseTarget[property] = value;
+
+    }
+}
 
 /**
  * assign binding
@@ -35,18 +60,35 @@ export class ParseBinding<T> extends OneWayBinding<T> {
  * @extends {DataBinding<T>}
  * @template T
  */
-export class TwoWayParseBinding<T> extends TwoWayBinding<T> {
+export class TwoWayParseBinding<T> extends ParseBinding<T> {
 
-    constructor(source: any, propName: string) {
-        super(source, propName)
-    }
-    private scope: any;
-    getScope() {
-        this.scope || this.source;
-    }
+    bind(parseTarget: any, target?: any): T {
+        let property = this.targetProp;
+        let value = this.getSourceValue();
+        if (isNullOrUndefined(parseTarget)) {
+            return value;
+        }
 
-    setScope(scope: any) {
-        this.scope = scope;
+        if (target) {
+            target[property] = parseTarget;
+        }
+
+        let scopeFiled = this.getScopeField();
+        let scope = this.getValue(this.getScope(), /\./.test(this.prop) ? this.prop.substring(0, this.prop.lastIndexOf('.')) : '');
+
+        observe.onPropertyChange(scope, scopeFiled, (obj, prop, value, oldVal) => {
+            if (obj === scope && prop === scopeFiled) {
+                parseTarget[property] = value;
+            }
+        });
+
+        observe.onPropertyChange(parseTarget, property, (obj, prop, value, oldVal) => {
+            if (obj === parseTarget && prop === property) {
+                scope[scopeFiled] = value;
+            }
+        });
+
+        parseTarget[property] = value;
     }
 
 }
