@@ -1,17 +1,17 @@
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
+import { isBaseValue, lang } from '@tsdi/ioc';
+import { BaseTypeParserToken } from '@tsdi/boot';
 
 export class TwoWayBinding<T> extends ParseBinding<T> {
 
     bind(target: any, obj?: any): T {
-        let targetProp = this.targetProp;
-        let value = this.getSourceValue();
         if (!target) {
             return;
         }
 
         if (obj) {
-            obj[targetProp] = target;
+            obj[this.binding.name] = target;
         }
 
         let scopeFiled = this.getScopeField();
@@ -19,17 +19,24 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
 
         observe.onPropertyChange(scope, scopeFiled, (obj, prop, value, oldVal) => {
             if (obj === scope && prop === scopeFiled) {
-                target[targetProp] = value;
+                if (isBaseValue(value)) {
+                    let type = this.container.getTokenProvider(this.binding.provider) || this.binding.type;
+                    if (type !== lang.getClass(value)) {
+                        value = this.container.get(BaseTypeParserToken).parse(type, value);
+                    }
+                }
+                target[this.binding.name] = value;
             }
         });
 
-        observe.onPropertyChange(target, targetProp, (obj, prop, value, oldVal) => {
-            if (obj === target && prop === targetProp) {
+        observe.onPropertyChange(target, this.binding.name, (obj, prop, value, oldVal) => {
+            if (obj === target && prop === this.binding.name) {
                 scope[scopeFiled] = value;
             }
         });
 
-        target[targetProp] = value;
+        let value = this.getSourceValue();
+        target[this.binding.name] = value;
 
     }
 }

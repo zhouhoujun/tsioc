@@ -41,10 +41,10 @@ export class BindingScopeHandle extends ParseHandle {
                 let exp = ctx.bindExpression.trim();
                 if (exp.startsWith('binding:')) {
                     let bindingField = ctx.bindExpression.replace('binding:', '').trim();
-                    ctx.dataBinding = new OneWayBinding(ctx.scope, bindingField, ctx.binding.name);
+                    ctx.dataBinding = new OneWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
                 } else if (exp.startsWith('binding=:')) {
                     let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
-                    ctx.dataBinding = new TwoWayBinding(ctx.scope, bindingField, ctx.binding.name);
+                    ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
                 }
             }
         }

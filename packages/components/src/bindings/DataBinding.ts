@@ -1,3 +1,6 @@
+import { IBinding } from './IPropertyBindingReflect';
+import { IContainer } from '@tsdi/core';
+
 /**
  * data binding.
  *
@@ -8,7 +11,7 @@
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(public source: any, public prop: string, public targetProp: string) {
+    constructor(protected container: IContainer, public source: any, public prop: string, public binding: IBinding) {
     }
 
     getScope() {
