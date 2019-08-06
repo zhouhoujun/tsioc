@@ -1,7 +1,7 @@
 {
   "name": "@tsdi/platform-server-boot",
   "version": "5.1.15",
-  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "description": "boot application on node server, AOP Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
