@@ -1,6 +1,6 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
 import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding } from '../bindings';
 import { HandleRegisterer, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
@@ -98,14 +98,14 @@ export class TranslateAtrrHandle extends ParseHandle {
         if (!isNullOrUndefined(ctx.bindExpression)) {
             let mgr = this.container.get(SelectorManager);
             let pdr = ctx.binding.provider;
-            let selector: Type;
+            let selector: ClassType;
             let template = isArray(ctx.template) ? {} : (ctx.template || {});
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
                 selector = mgr.getAttr(pdr);
-            } else if (isClass(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
+            } else if (isClassType(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
                 selector = ctx.binding.provider;
-            } else if (isClass(ctx.binding.type) && mgr.has(ctx.binding.type)) {
+            } else if (isClassType(ctx.binding.type) && mgr.has(ctx.binding.type)) {
                 selector = ctx.binding.type;
             }
 
@@ -135,7 +135,7 @@ export class AssignBindValueHandle extends ParseHandle {
             if (isBaseType(type)) {
                 ctx.value = this.container.get(BaseTypeParserToken)
                     .parse(type, ctx.bindExpression);
-            } else if (isClass(type)) {
+            } else if (isClassType(type)) {
                 let ttype = lang.getClass(ctx.bindExpression);
                 if (lang.isExtendsClass(ttype, type)) {
                     ctx.value = ctx.bindExpression;

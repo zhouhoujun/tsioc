@@ -1,4 +1,4 @@
-import { Singleton, InstanceFactory, Type, ProviderTypes, isString } from '@tsdi/ioc';
+import { Singleton, InstanceFactory, Type, ProviderTypes, isString, ClassType, isClass } from '@tsdi/ioc';
 
 /**
  * selector manager.
@@ -16,11 +16,11 @@ export class SelectorManager {
         this.selectors = new Map();
     }
 
-    has(selector: string | Type): boolean {
+    has(selector: string | ClassType): boolean {
         if (isString(selector)) {
             return this.selectors.has(selector);
         } else {
-            return Array.from(this.selectors.values()).indexOf(selector) >= 0;
+            return Array.from(this.selectors.values()).some(it => it === selector);
         }
     }
 

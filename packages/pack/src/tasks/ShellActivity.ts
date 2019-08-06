@@ -1,6 +1,6 @@
 import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
-import { Src, Task, TemplateOption, Activity } from '@tsdi/activities';
+import { Src, Task, TemplateOption, Activity, ParallelExecutor } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
 import { Input, Binding } from '@tsdi/components';
 
@@ -41,6 +41,14 @@ export interface ShellActivityOption extends TemplateOption {
      * @memberof ShellActivityConfig
      */
     allowError?: Binding<NodeExpression<boolean>>;
+
+    /**
+     * run shell in parallel.
+     *
+     * @type {Binding<NodeExpression<boolean>>}
+     * @memberof ShellActivityOption
+     */
+    parallel?: Binding<NodeExpression<boolean>>;
 }
 
 
@@ -58,31 +66,35 @@ export class ShellActivity extends Activity<void> {
      * @type {Src}
      * @memberof ShellActivity
      */
-    @Input()
-    shell: NodeExpression<Src>;
+    @Input() shell: NodeExpression<Src>;
     /**
      * shell args.
      *
      * @type {string[]}
      * @memberof ShellActivity
      */
-    @Input()
-    args: NodeExpression<string[] | ObjectMap>;
+    @Input() args: NodeExpression<string[] | ObjectMap>;
     /**
      * shell exec options.
      *
      * @type {CtxType<ExecOptions>}
      * @memberof ShellActivity
      */
-    @Input()
-    options: NodeExpression<ExecOptions>;
+    @Input() options: NodeExpression<ExecOptions>;
     /**
      * allow error or not.
      *
      * @memberof ShellActivity
      */
-    @Input()
-    allowError: NodeExpression<boolean>
+    @Input() allowError: NodeExpression<boolean>;
+
+    /**
+     * execute shells in parallel.
+     *
+     * @type {NodeExpression<boolean>}
+     * @memberof ShellActivity
+     */
+    @Input() parallel: NodeExpression<boolean>;
 
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
@@ -92,8 +104,16 @@ export class ShellActivity extends Activity<void> {
         let args = await this.resolveExpression(this.args, ctx);
         let argstrs = isArray(args) ? args : this.formatArgs(args);
         let allowError = await this.resolveExpression(this.allowError, ctx);
-
-        await PromiseUtil.step((isArray(shell) ? shell : [shell]).map(sh => () => this.execShell(sh, argstrs, options, allowError)));
+        let shells = isArray(shell) ? shell : [shell];
+        if (this.parallel) {
+            if (this.getContainer().has(ParallelExecutor)) {
+                this.getContainer().get(ParallelExecutor).run<string>(sh => this.execShell(sh, argstrs, options, allowError), shells);
+            } else {
+                await Promise.all(shells.map(sh => this.execShell(sh, argstrs, options, allowError)));
+            }
+        } else {
+            await PromiseUtil.step(shells.map(sh => () => this.execShell(sh, argstrs, options, allowError)));
+        }
 
     }
 

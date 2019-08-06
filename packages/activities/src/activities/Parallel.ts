@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, CompoiseActivity, ActivityType } from '../core';
+import { ActivityContext, CompoiseActivity, ActivityType, ParallelExecutor, Activity } from '../core';
 import { Input } from '@tsdi/components';
 
 
@@ -26,6 +26,10 @@ export class ParallelActivity<T> extends CompoiseActivity<T> {
      * @memberof ParallelActivity
      */
     protected async execute(ctx: ActivityContext): Promise<void> {
-        await Promise.all(this.activities.map(act => this.runActivity(ctx, act)));
+        if (this.getContainer().has(ParallelExecutor)) {
+            await this.getContainer().get(ParallelExecutor).run<ActivityType>(act => this.runActivity(ctx, act), this.activities)
+        } else {
+            await Promise.all(this.activities.map(act => this.runActivity(ctx, act)));
+        }
     }
 }

@@ -1,5 +1,5 @@
 import { IBuilderService, IModuleResolveOption } from '@tsdi/boot';
-import { ProviderTypes, Type, InjectToken } from '@tsdi/ioc';
+import { ProviderTypes, Type, InjectToken, ClassType } from '@tsdi/ioc';
 
 
 export interface ITemplateOption extends IModuleResolveOption {
@@ -33,11 +33,11 @@ export interface IComponentBuilder extends IBuilderService {
      * resolve node componsite of component.
      *
      * @template T
-     * @param {Type<T>} target
+     * @param {ClassType<T>} target
      * @param {IModuleResolveOption} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<any>}
      * @memberof IComponentBuilder
      */
-    resolveNode<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any>;
+    resolveNode<T>(target: ClassType<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any>;
 }

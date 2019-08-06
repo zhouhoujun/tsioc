@@ -4,6 +4,7 @@ import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { TaskLogAspect, RunnerLogAspect } from './aop';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 import { ServerLogsModule } from '@tsdi/platform-server-logs';
+import { ServerParallelExecutor } from './ServerParallelExecutor';
 
 
 @DIModule({
@@ -13,6 +14,7 @@ import { ServerLogsModule } from '@tsdi/platform-server-logs';
         ServerLogsModule,
         RunnerLogAspect,
         TaskLogAspect,
+        ServerParallelExecutor,
         ServerBootstrapModule,
         WorkflowConfigureRegister
     ]

@@ -9,7 +9,7 @@ import { Abstract } from '@tsdi/ioc';
  * @abstract
  * @class ValuePipe
  */
-Abstract()
+@Abstract()
 export abstract class ValuePipe {
 
     constructor() {

@@ -35,34 +35,26 @@ export interface TsBuildOption extends AssetActivityOption {
 @Task('ts')
 export class TsBuildActivity extends AssetActivity implements AfterInit {
 
-    @Input()
-    test: UnitTestActivity;
+    @Input() test: UnitTestActivity;
 
-    @Input('annotation')
-    annotation: AnnotationActivity;
+    @Input('annotation') annotation: AnnotationActivity;
 
-    @Input()
-    uglify: UglifyActivity;
+    @Input() uglify: UglifyActivity;
     /**
      * assert src.
      *
      * @type {NodeExpression<Src>}
      * @memberof AssetActivity
      */
-    @Input()
-    src: SourceActivity;
+    @Input() src: SourceActivity;
 
-    @Input('tsPipes')
-    tsPipes: StreamActivity;
+    @Input('tsPipes') tsPipes: StreamActivity;
 
-    @Input('dts')
-    dts: DestActivity;
+    @Input('dts') dts: DestActivity;
 
-    @Input('jsValuePipe')
-    jsPipe: ValuePipe;
+    @Input('jsValuePipe') jsPipe: ValuePipe;
 
-    @Input('dtsValuePipe')
-    tdsPipe: ValuePipe;
+    @Input('dtsValuePipe') tdsPipe: ValuePipe;
 
 
     @Input('tsconfig', './tsconfig.json')

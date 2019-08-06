@@ -252,14 +252,9 @@ export type ControlTemplate =  Required<TemplateOption> | ExecuteOption | Expres
 export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T | PromiseUtil.ActionHandle<ActivityContext>;
 
 /**
-*  activity type.
-*/
-export type GActivityType<T, Temp extends TemplateOption = ControlTemplate> = Activity<T> | Type<Activity<T>> | TemplateType<Temp>;
-
-/**
  *  activity type.
  */
-export type ActivityType<T extends TemplateOption = ControlTemplate> = GActivityType<any, T>;
+export type ActivityType<TVal= any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | Type<Activity<TVal>> | TemplateType<T>;
 
 /**
  * activity template.

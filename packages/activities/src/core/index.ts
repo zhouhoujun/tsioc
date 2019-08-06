@@ -1,5 +1,5 @@
 export * from './injectors'
-
+export * from './ParallelExecutor';
 export * from './ValuePipe';
 export * from './Activity';
 export * from './IActivityExecutor';

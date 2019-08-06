@@ -62,11 +62,9 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @type {string}
      * @memberof Activity
      */
-    @Input()
-    name: string;
+    @Input() name: string;
 
-    @Input('pipe')
-    pipe: ValuePipe;
+    @Input('pipe') pipe: ValuePipe;
 
     private _result: ActivityResult<T>;
     /**

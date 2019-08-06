@@ -67,11 +67,6 @@ export class ComponentManager {
         }
         this.scopes.set(composite, component);
         this.composites.set(component, composite);
-        // if (this.composites.has(component)) {
-        //     this.getComposite(component).push(composite);
-        // } else {
-        //     this.composites.set(component, [composite]);
-        // }
     }
 
     getComposite(component: any): any {
