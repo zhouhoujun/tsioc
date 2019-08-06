@@ -229,11 +229,11 @@ export interface LibPackBuilderOption extends TemplateOption {
                     condition: ctx => ctx.body.target,
                     body: <TsBuildOption>{
                         activity: 'ts',
-                        src: 'parse-binding: src',
+                        src: 'binding: src',
                         dist: ctx => ctx.scope.getTargetPath(ctx.body),
                         dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.body.dtsMain ? './' : null),
-                        annotation: 'parse-binding: annotation',
-                        sourcemap: 'parse-binding: sourcemap',
+                        annotation: 'binding: annotation',
+                        sourcemap: 'binding: sourcemap',
                         tsconfig: ctx => ctx.scope.getCompileOptions(ctx.body.target)
                     }
                 },
@@ -244,7 +244,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                         <RollupOption>{
                             activity: 'rollup',
                             input: ctx => ctx.scope.toOutputPath(ctx.body.input),
-                            sourcemap: 'parse-binding: sourcemap',
+                            sourcemap: 'binding: sourcemap',
                             plugins: 'binding: plugins',
                             external: 'binding: external',
                             options: 'binding: options',

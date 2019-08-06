@@ -1,4 +1,4 @@
-import { Singleton, DesignDecoratorRegisterer, DecoratorScopes, Type, isArray, isFunction, isMetadataObject, lang, isBaseType } from '@tsdi/ioc';
+import { Singleton, DesignDecoratorRegisterer, DecoratorScopes, Type, isArray, isFunction, isMetadataObject, lang, isBaseValue } from '@tsdi/ioc';
 import { ModuleDecoratorServiceToken, ModuleDecoratorService, ModuleConfigure } from '@tsdi/boot';
 import { ComponentRegisterAction } from './registers';
 
@@ -35,7 +35,7 @@ export class ComponentDecoratorService extends ModuleDecoratorService {
                 newM[name] = this.cloneTemplate(val)
             });
             return newM;
-        } else if (isBaseType(lang.getClass(target))) {
+        } else if (isBaseValue(target)) {
             return target;
         }
         return null;

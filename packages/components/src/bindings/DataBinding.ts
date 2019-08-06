@@ -15,7 +15,7 @@ export abstract class DataBinding<T = any> {
         return this.source;
     }
 
-    getValue(obj, path: string) {
+    protected getValue(obj, path: string) {
         if (!path) {
             return obj;
         }

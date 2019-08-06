@@ -1,7 +1,7 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType } from '@tsdi/ioc';
-import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, TwoWayParseBinding, OneWayParseBinding } from '../bindings';
+import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding } from '../bindings';
 import { HandleRegisterer, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -45,25 +45,21 @@ export class BindingScopeHandle extends ParseHandle {
                 } else if (exp.startsWith('binding=:')) {
                     let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
                     ctx.dataBinding = new TwoWayBinding(ctx.scope, bindingField, ctx.binding.name);
-                } else if (exp.startsWith('parse-binding:')) {
-                    let bindingField = ctx.bindExpression.replace('parse-binding:', '').trim();
-                    ctx.dataBinding = new OneWayParseBinding(ctx.scope, bindingField, ctx.binding.name);
-                } else if (exp.startsWith('parse-binding=:')) {
-                    let bindingField = ctx.bindExpression.replace('parse-binding=:', '').trim();
-                    ctx.dataBinding = new TwoWayParseBinding(ctx.scope, bindingField, ctx.binding.name);
                 }
             }
         }
 
-        if (ctx.dataBinding instanceof DataBinding) {
+
+        if (ctx.dataBinding instanceof ParseBinding) {
             if (!ctx.dataBinding.source) {
                 ctx.dataBinding.source = ctx.scope;
             }
-            if (ctx.dataBinding instanceof ParseBinding) {
-                ctx.bindExpression = ctx.dataBinding.getSourceValue();
-            } else {
-                ctx.value = ctx.dataBinding.getSourceValue();
+            ctx.bindExpression = ctx.dataBinding.getSourceValue();
+        } else if (ctx.dataBinding instanceof DataBinding) {
+            if (!ctx.dataBinding.source) {
+                ctx.dataBinding.source = ctx.scope;
             }
+            ctx.value = ctx.dataBinding.getSourceValue();
         }
 
         if (isNullOrUndefined(ctx.value)) {

@@ -1,13 +1,17 @@
-import { DataBinding } from './DataBinding';
 import { observe } from './onChange';
+import { ParseBinding } from './ParseBinding';
 
-export class TwoWayBinding<T> extends DataBinding<T> {
+export class TwoWayBinding<T> extends ParseBinding<T> {
 
-    bind(target: any): T {
-        let property = this.targetProp;
+    bind(target: any, obj?: any): T {
+        let targetProp = this.targetProp;
         let value = this.getSourceValue();
         if (!target) {
             return;
+        }
+
+        if (obj) {
+            obj[targetProp] = target;
         }
 
         let scopeFiled = this.getScopeField();
@@ -15,17 +19,17 @@ export class TwoWayBinding<T> extends DataBinding<T> {
 
         observe.onPropertyChange(scope, scopeFiled, (obj, prop, value, oldVal) => {
             if (obj === scope && prop === scopeFiled) {
-                target[property] = value;
+                target[targetProp] = value;
             }
         });
 
-        observe.onPropertyChange(target, property, (obj, prop, value, oldVal) => {
-            if (obj === target && prop === property) {
+        observe.onPropertyChange(target, targetProp, (obj, prop, value, oldVal) => {
+            if (obj === target && prop === targetProp) {
                 scope[scopeFiled] = value;
             }
         });
 
-        target[property] = value;
+        target[targetProp] = value;
 
     }
 }

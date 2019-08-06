@@ -660,3 +660,7 @@ export function isBaseType(target: ClassType): boolean {
         || target === Array;
 }
 
+export function isBaseValue(target: any): boolean {
+    return isBaseType(lang.getClass(target));
+}
+
