@@ -175,7 +175,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
 
 
     protected async runActivity(ctx: TCtx, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
-        await this.getExector().runActivity(ctx, activities, next);
+        await this.getExector().execActivity(ctx, activities, next);
         if (refresh !== false) {
             await this.refreshResult(ctx);
         }

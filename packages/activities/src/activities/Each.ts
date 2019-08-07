@@ -9,19 +9,19 @@ import { BodyActivity } from './BodyActivity';
 @Task('each')
 export class EachActicity<T> extends ControlerActivity<T> {
 
-    @Input()
-    each: Expression<any[]>;
+    @Input() each: Expression<any[]>;
 
-    @Input()
-    body: BodyActivity<T>;
+    @Input() body: BodyActivity<T>;
+
+    @Input() parallel: boolean;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let items = await this.resolveExpression(this.each, ctx);
         items = items.filter(i => !isNullOrUndefined(i));
         if (items && items.length) {
             await this.getExector().execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
-                await ctx.setBody(v, true);
-                await this.body.run(ctx);
+                await c.setBody(v, true);
+                await this.body.run(c);
                 await next();
             }));
         }

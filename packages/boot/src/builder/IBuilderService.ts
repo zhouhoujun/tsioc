@@ -41,15 +41,16 @@ export interface IBuilderService extends IocCoreService {
      */
     resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T>;
     /**
-     * create module.
+     * build target instance.
      *
      * @template T
-     * @param {(target: Type<T> | BootOption | BootContext)} target
+     * @template Topt
+     * @param {(Type<T> | Topt | BootContext)} target
      * @param {...string[]} args
-     * @returns {Promise<any>}
-     * @memberof BuilderService
+     * @returns {Promise<T>}
+     * @memberof IBuilderService
      */
-    buildTarget<T>(target: Type<T> | BootOption | BootContext, ...args: string[]): Promise<T>;
+    buildTarget<T, Topt extends BootOption = BootOption>(target: Type<T> | Topt | BootContext, ...args: string[]): Promise<T>;
     /**
      * build bootstrap target instance.
      *
@@ -68,58 +69,61 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    build<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T>;
+    build<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T>;
 
     /**
      * build startup instance.
      *
      * @template T
-     * @param {(Type | BootOption | BootContext)} target
+     * @template Topt
+     * @param {(Type | Topt | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<IStartup<T>>}
-     * @memberof BuilderService
+     * @memberof IBuilderService
      */
-    buildStartup<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>>;
+    buildStartup<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>>;
 
     /**
      * create runnable.
      *
      * @template T
-     * @param {(Type | BootOption | BootContext)} target
+     * @template Topt
+     * @param {(Type | Topt | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<IStartup<T>>}
-     * @memberof BuilderService
+     * @memberof IBuilderService
      */
-    buildRunnable<T>(target: Type | BootOption | BootContext, ...args: string[]): Promise<IStartup<T>>;
+    buildRunnable<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>>;
     /**
      * run module.
      *
      * @template T
-     * @param {(Type | T)} target
-     * @param {...string[]} args
-     * @returns {Promise<T>}
-     * @memberof RunnerService
-     */
-    run<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T>;
-    /**
-     * boot application.
-     *
-     * @template T
-     * @param {(Type | BootOption | T)} target
-     * @param {((ctx: T) => void |BootSubAppOption<T> | string)} [options]
+     * @template Topt
+     * @param {(Type | Topt | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof IBuilderService
      */
-    boot<T extends BootContext>(target: Type | BootOption | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
+    run<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *
      * @template T
-     * @param {(Type | BootOption | T)} target
+     * @template Topt
+     * @param {(Type | Topt | T)} target
+     * @param {((ctx: T) => void | BootSubAppOption<T> | string)} [options]
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof BuilderService
+     * @memberof IBuilderService
+     */
+    boot<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
+    /**
+     * boot application.
+     *
+     * @param {IBootApplication} application
+     * @param {...string[]} args
+     * @returns {Promise<BootContext>}
+     * @memberof IBuilderService
      */
     bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext>;
 }

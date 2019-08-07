@@ -6,7 +6,7 @@ import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 import { IContainer } from '@tsdi/core';
-import { BuilderService } from '@tsdi/boot';
+import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ComponentBuilderToken, ComponentManager, SelectorManager } from '@tsdi/components';
 
@@ -38,6 +38,42 @@ export class ActivityExecutor implements IActivityExecutor {
         return this.componentMgr;
     }
 
+    /**
+     * run activity in sub workflow.
+     *
+     * @template T
+     * @param {T} ctx
+     * @param ActivityType} activity
+     * @returns {Promise<void>}
+     * @memberof IActivityExecutor
+     */
+    runActivity<T extends ActivityContext>(ctx: T, activity: ActivityType): Promise<T> {
+        let container = this.getContainer();
+        if (activity instanceof Activity) {
+            return container.get(BuilderServiceToken).run<T>({ module: lang.getClass(activity), target: activity, body: ctx.body });
+        } else if (isClass(activity)) {
+            return container.get(BuilderServiceToken).run<T>({ module: activity, body: ctx.body });
+        } else if (isFunction(activity)) {
+            return activity(ctx).then(() => ctx);
+        } else {
+            let md: Type;
+            let mgr = container.get(SelectorManager);
+            if (isClass(activity.activity)) {
+                md = activity.activity;
+            } else {
+                md = mgr.get(activity.activity)
+            }
+
+            let option = {
+                module: md,
+                template: activity,
+                body: ctx.body
+            };
+
+            return container.get(BuilderServiceToken).run<T>(option)
+        }
+    }
+
     async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {
         if (isClass(express)) {
             let bctx = await (container || this.getContainer()).get(BuilderService).run({ module: express, scope: ctx.scope });
@@ -53,7 +89,7 @@ export class ActivityExecutor implements IActivityExecutor {
         return express;
     }
 
-    async runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
+    async execActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
         if (!activities || (isArray(activities) && activities.length < 1)) {
             return;
         }

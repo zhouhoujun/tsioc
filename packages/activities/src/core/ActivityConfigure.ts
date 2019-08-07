@@ -177,6 +177,7 @@ export interface ConditionTemplate extends BodyTemplate, IConditionTemplate {
 }
 
 export interface EachTeamplate extends BodyTemplate {
+    parallel?: Binding<boolean>;
     each: Binding<Expression<any[]>>;
 }
 

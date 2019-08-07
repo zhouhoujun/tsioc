@@ -3,7 +3,7 @@ import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { BootContext, createAnnoationContext } from '@tsdi/boot';
 import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfigure';
-import { Injectable, Type, Refs, ContainerFactory, isString } from '@tsdi/ioc';
+import { Injectable, Type, Refs, ContainerFactory, isString, isBoolean, isTypeObject, isBaseValue } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ComponentManager } from '@tsdi/components';
@@ -19,14 +19,6 @@ import { ComponentManager } from '@tsdi/components';
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
 export class ActivityContext extends BootContext {
-
-    /**
-     * input body data.
-     *
-     * @type {*}
-     * @memberof ActivityContext
-     */
-    body: any = {};
 
     /**
      * activty execute result data.
@@ -74,18 +66,45 @@ export class ActivityContext extends BootContext {
      */
     runnable?: WorkflowInstance;
 
+
     /**
-     * set body.
+     * context share body data.
      *
-     * @param {*} value the value set to body.
-     * @param {(string | boolean)} [name] name of filed to set value to, or a flag. if true will replace the body with value.
+     * @type {*}
      * @memberof ActivityContext
      */
-    async setBody(value: any, name?: string | boolean) {
-        if (isString(name)) {
+    body: any;
+    /**
+     * set context share body.
+     *
+     * @param {*} value the value set to body.
+     * @memberof ActivityContext
+     */
+    setBody(value: any);
+    /**
+     * set context share body.
+     *
+     * @param {*} value  the value set to body.
+     * @param {string} filed name of filed to set value to
+     * @memberof ActivityContext
+     */
+    setBody(value: any, filed: string);
+    /**
+     * set context share body.
+     *
+     * @param {*} value the value set to body.
+     * @param {boolean} merge merge to existe body or not.
+     * @memberof ActivityContext
+     */
+    setBody(value: any, merge: boolean);
+    setBody(value: any, way?: any) {
+        if (isString(way)) {
+            this.body = this.body || {};
             this.body[name] = value;
+        } else if (isBoolean(way)) {
+            this.body = isTypeObject(value) ? Object.assign(this.body || {}, value) : value;
         } else {
-            this.body = name ? value : Object.assign(this.body || {}, value);
+            this.body = value;
         }
     }
 
@@ -132,7 +151,7 @@ export class ActivityContext extends BootContext {
     }
 
     resolveExpression<TVal>(express: Expression<TVal>, container?: IContainer): Promise<TVal> {
-       return this.getExector().resolveExpression(this, express, container);
+        return this.getExector().resolveExpression(this, express, container);
     }
 
 }

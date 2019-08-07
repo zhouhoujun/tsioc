@@ -6,14 +6,20 @@ export interface RunScopes {
     subs: Activity[]
 }
 
+/**
+ * activity status.
+ *
+ * @export
+ * @class ActivityStatus
+ */
 @Injectable
 export class ActivityStatus {
 
-    tracks: Activity[];
+    // tracks: Activity[];
     scopes: RunScopes[];
 
     constructor() {
-        this.tracks = [];
+        // this.tracks = [];
         this.scopes = [];
     }
 
@@ -31,7 +37,7 @@ export class ActivityStatus {
 
     set current(activity: Activity) {
         this._current = activity;
-        this.tracks.unshift(activity);
+        // this.tracks.unshift(activity);
         if (activity.isScope) {
             this.scopes.unshift({ scope: activity, subs: [] });
         } else if (this.currentScope) {

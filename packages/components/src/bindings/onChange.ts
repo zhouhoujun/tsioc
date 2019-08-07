@@ -6,7 +6,37 @@ export namespace observe {
     const events = new WeakMap<any, Events>();
     const defines = new WeakMap();
 
+    /**
+     * get events of target object.
+     *
+     * @export
+     * @param {*} target
+     * @returns {Events}
+     */
+    export function getEvents(target: any): Events {
+        return events.get(target);
+    }
 
+    /**
+     * target has envents or not.
+     *
+     * @export
+     * @param {*} target
+     * @returns {boolean}
+     */
+    export function hasEvents(target: any): boolean {
+        return events.has(target);
+    }
+
+    /**
+     * on property change.
+     *
+     * @export
+     * @param {*} target
+     * @param {string} property
+     * @param {(target: any, prop: string, vaule?: any, old?: any) => void} onChange
+     * @returns
+     */
     export function onPropertyChange(target: any, property: string, onChange: (target: any, prop: string, vaule?: any, old?: any) => void) {
         let evt: Events;
         if (!events.has(target)) {

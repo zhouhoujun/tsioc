@@ -315,26 +315,17 @@ export class LibPackBuilder implements AfterInit {
 
     }
 
-    @Input()
-    src: Src;
-
-    @Input()
-    test: Src;
-
+    @Input() src: Src;
+    @Input() test: Src;
     /**
      * tasks
      *
      * @type {(LibBundleOption[])}
      * @memberof LibPackBuilderOption
      */
-    @Input()
-    bundles: NodeExpression<LibBundleOption[]>;
-
-    @Input()
-    outDir: string;
-
-    @Input()
-    annotation: NodeExpression<boolean>;
+    @Input() bundles: NodeExpression<LibBundleOption[]>;
+    @Input() outDir: string;
+    @Input() annotation: NodeExpression<boolean>;
 
     /**
      * rollup external setting.
@@ -342,45 +333,28 @@ export class LibPackBuilder implements AfterInit {
      * @type {NodeExpression<ExternalOption>}
      * @memberof RollupOption
      */
-    @Input()
-    external?: NodeExpression<ExternalOption>;
-
-    @Input()
-    externalLibs: string[];
-
-    @Input()
-    includeLib: string[];
+    @Input() external?: NodeExpression<ExternalOption>;
+    @Input() externalLibs: string[];
+    @Input() includeLib: string[];
     /**
      * rollup plugins setting.
      *
      * @type {NodeExpression<Plugin[]>}
      * @memberof RollupOption
      */
-    @Input()
-    plugins: NodeExpression<Plugin[]>;
-
-    @Input()
-    globals: NodeExpression<GlobalsOption>;
-
-    @Input()
-    cache?: NodeExpression<RollupCache>;
-
-    @Input()
-    watch?: NodeExpression<WatcherOptions>;
+    @Input() plugins: NodeExpression<Plugin[]>;
+    @Input() globals: NodeExpression<GlobalsOption>;
+    @Input() cache?: NodeExpression<RollupCache>;
+    @Input() watch?: NodeExpression<WatcherOptions>;
     /**
      * custom setup rollup options.
      *
      * @type {(NodeExpression<RollupFileOptions | RollupDirOptions>)}
      * @memberof RollupOption
      */
-    @Input()
-    options?: NodeExpression<RollupFileOptions | RollupDirOptions>;
-
-    @Input()
-    sourcemap?: NodeExpression<boolean | string>;
-
-    @Input()
-    postcssOption: NodeExpression;
+    @Input() options?: NodeExpression<RollupFileOptions | RollupDirOptions>;
+    @Input() sourcemap?: NodeExpression<boolean | string>;
+    @Input() postcssOption: NodeExpression;
 
     get zipMapsource() {
         if (this.sourcemap && isBoolean(this.sourcemap)) {

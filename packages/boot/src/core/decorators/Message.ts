@@ -79,7 +79,7 @@ export interface IMessageDecorator {
  */
 export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message', (args: ArgsIterator) => {
     args.next<MessageMetadata>({
-        match: (arg) => isClass(arg),
+        match: (arg, args) => isClass(arg) && args.length > 0,
         setMetadata: (metadata, arg) => {
             metadata.regIn = arg;
         }
