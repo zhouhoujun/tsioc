@@ -11,12 +11,12 @@ import { ModuleConfigure } from '@tsdi/boot';
 export class ComponentManager {
 
     protected composites: Map<any, any>;
-    protected scopes: Map<any, any>;
+    protected scopes: WeakMap<any, any>;
     protected annoations: WeakMap<any, ModuleConfigure>;
 
     constructor() {
         this.composites = new Map();
-        this.scopes = new Map();
+        this.scopes = new WeakMap();
         this.annoations = new WeakMap();
     }
 
@@ -100,7 +100,7 @@ export class ComponentManager {
 
     clear() {
         this.composites.clear();
-        this.scopes.clear();
+        this.scopes = new WeakMap();
         this.annoations = new WeakMap();
     }
 }

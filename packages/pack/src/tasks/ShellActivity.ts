@@ -48,7 +48,7 @@ export interface ShellActivityOption extends TemplateOption {
      * @type {Binding<NodeExpression<boolean>>}
      * @memberof ShellActivityOption
      */
-    parallel?: Binding<NodeExpression<boolean>>;
+    parallel?: Binding<boolean>;
 }
 
 
@@ -94,7 +94,7 @@ export class ShellActivity extends Activity<void> {
      * @type {NodeExpression<boolean>}
      * @memberof ShellActivity
      */
-    @Input() parallel: NodeExpression<boolean>;
+    @Input() parallel: boolean;
 
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {

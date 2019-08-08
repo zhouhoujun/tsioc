@@ -71,7 +71,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 body: ctx.body
             };
 
-            return container.get(BuilderServiceToken).run<T>(option)
+            return container.get(BuilderServiceToken).run<T>(option);
         }
     }
 

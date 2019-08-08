@@ -19,7 +19,12 @@ export class ServerParallelExecutor extends ParallelExecutor {
             let zone1 = napa.napa.zone.create('zone1', { workers: this.workers });
             return Promise.all(items.map(itm => zone1.execute(func, [itm])));
         } else {
-            return Promise.all(items.map(itm => func(itm)));
+            return Promise.all(items.map(itm => {
+                return Promise.resolve(func(itm))
+                    .catch(err => {
+                        process.exit(1);
+                    })
+            }));
         }
     }
 
