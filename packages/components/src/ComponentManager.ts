@@ -10,23 +10,18 @@ import { ModuleConfigure } from '@tsdi/boot';
 @Singleton
 export class ComponentManager {
 
-    protected composites: WeakMap<any, any[]>;
-    protected scopes: WeakMap<any, any>;
+    protected composites: Map<any, any>;
+    protected scopes: Map<any, any>;
     protected annoations: WeakMap<any, ModuleConfigure>;
 
     constructor() {
-        this.composites = new WeakMap();
-        this.scopes = new WeakMap();
+        this.composites = new Map();
+        this.scopes = new Map();
         this.annoations = new WeakMap();
     }
 
     hasScope(component: any): boolean {
         return this.scopes.has(component);
-    }
-
-    setScope(component: any, parent: any) {
-        this.scopes.set(component, parent);
-        this.composites.set(parent, component);
     }
 
     getRoot(component: any) {
@@ -90,11 +85,23 @@ export class ComponentManager {
         return component;
     }
 
-    getSelector(component: any): NodeSelector {
-        if (this.hasComposite(component)) {
-            return new ComponentSelector(this, component);
+    getSelector(component: any | ((component: any) => boolean)): NodeSelector {
+        let match;
+        if (isFunction(component)) {
+            match = Array.from(this.composites.values()).find(component);
+        } else if (this.hasComposite(component)) {
+            match = component;
         }
-        return new NullSelector(component);
+        if (match) {
+            return new ComponentSelector(this, match);
+        }
+        return new NullSelector(match || component);
+    }
+
+    clear() {
+        this.composites.clear();
+        this.scopes.clear();
+        this.annoations = new WeakMap();
     }
 }
 

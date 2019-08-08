@@ -97,8 +97,8 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         return ctx.getBootTarget();
     }
 
-    build<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope<T, Topt>(null, this.container.get(HandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
+    build<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
+        return this.execLifeScope<T>(null, this.container.get(HandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
     }
 
     /**
@@ -132,12 +132,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * run module.
      *
      * @template T
-     * @param {(Type | T)} target
+     * @template Topt
+     * @param {(Type | Topt | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof RunnerService
+     * @memberof BuilderService
      */
-    run<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
+    run<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
         return this.execLifeScope<T, Topt>(null, this.container.get(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
     }
 
@@ -203,13 +204,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ...args);
     }
 
-    protected async execLifeScope<T extends BootContext, Topt extends BootOption = BootOption>(contextInit: (ctx: BootContext) => void, scope: BuildHandles<BootContext>, target: Type | Topt | T, ...args: string[]): Promise<T> {
-        let ctx: BootContext;
+    protected async execLifeScope<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(contextInit: (ctx: T) => void, scope: BuildHandles<T>, target: Type | Topt | T, ...args: string[]): Promise<T> {
+        let ctx: T;
         if (target instanceof BootContext) {
-            ctx = target;
+            ctx = target as T;
         } else {
             let md = isClass(target) ? target : target.module;
-            ctx = this.container.getService({ token: BootContext, target: md }, { provide: BootTargetToken, useValue: md });
+            ctx = this.container.getService({ token: BootContext, target: md }, { provide: BootTargetToken, useValue: md }) as T;
             if (!isClass(target)) {
                 ctx.setOptions(target);
             }
@@ -223,6 +224,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ctx.setRaiseContainer(this.container);
         }
         await scope.execute(ctx);
-        return ctx as T;
+        return ctx;
     }
 }

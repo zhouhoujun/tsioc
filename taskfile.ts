@@ -85,6 +85,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                 {
                     activity: Activities.each,
                     each: (ctx: NodeActivityContext) => ctx.platform.getFolders('packages').filter(f => !f.endsWith('unit-karma')),
+                    // parallel: true,
                     body: {
                         activity: Activities.execute,
                         action: async (ctx) => {

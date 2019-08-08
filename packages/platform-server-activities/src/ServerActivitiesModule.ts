@@ -5,6 +5,7 @@ import { TaskLogAspect, RunnerLogAspect } from './aop';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 import { ServerLogsModule } from '@tsdi/platform-server-logs';
 import { ServerParallelExecutor } from './ServerParallelExecutor';
+import { ParallelExecutor } from '@tsdi/activities';
 
 
 @DIModule({
@@ -17,6 +18,9 @@ import { ServerParallelExecutor } from './ServerParallelExecutor';
         ServerParallelExecutor,
         ServerBootstrapModule,
         WorkflowConfigureRegister
+    ],
+    providers: [
+        { provide: ParallelExecutor, useExisting: ServerParallelExecutor }
     ]
 })
 export class ServerActivitiesModule {

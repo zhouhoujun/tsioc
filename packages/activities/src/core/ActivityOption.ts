@@ -27,7 +27,7 @@ export interface ActivityOption<T extends ActivityContext = ActivityContext> ext
      * @type {*}
      * @memberof IRunContext
      */
-    input?: any;
+    body?: any;
 
     /**
      * target module instace.

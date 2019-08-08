@@ -3,43 +3,19 @@ import { isFunction, Injectable, Inject, ContainerFactoryToken, InjectToken } fr
 import { IContainer } from '@tsdi/core';
 
 /**
- * token of message event name
- */
-export const MsgEventToken = new InjectToken<string>('message_event_name');
-/**
- * token of message event data
- */
-export const MsgDataToken = new InjectToken('message_event_data');
-
-/**
- * message context.
+ * message option
  *
  * @export
- * @class MessageContext
- * @extends {HandleContext}
+ * @interface MessageOption
  */
-@Injectable
-export class MessageContext implements IHandleContext {
-
-    @Inject(ContainerFactoryToken)
-    protected raiseContainerGetter: () => IContainer;
-
-    constructor(@Inject(MsgEventToken) event: string, @Inject(MsgDataToken) data: any, raseContainer?: IContainer | (() => IContainer)) {
-        this.event = event;
-        this.data = data;
-        if (raseContainer) {
-            this.raiseContainerGetter = isFunction(raseContainer) ? raseContainer : () => raseContainer;
-        }
-    }
-
-    getContainerFactory() {
-        return this.raiseContainerGetter;
-    }
-
-    getRaiseContainer(): IContainer {
-        return this.raiseContainerGetter();
-    }
-
+export interface MessageOption {
+    /**
+     * message type
+     *
+     * @type {string}
+     * @memberof MessageContext
+     */
+    type?: string;
     /**
      * message event
      *
@@ -55,6 +31,66 @@ export class MessageContext implements IHandleContext {
      * @memberof MessageContext
      */
     data?: any;
+}
+
+/**
+ * message context.
+ *
+ * @export
+ * @class MessageContext
+ * @extends {HandleContext}
+ */
+@Injectable
+export class MessageContext implements IHandleContext {
+
+    @Inject(ContainerFactoryToken)
+    protected raiseContainerGetter: () => IContainer;
+
+    constructor() {
+    }
+
+    getContainerFactory() {
+        return this.raiseContainerGetter;
+    }
+
+    getRaiseContainer(): IContainer {
+        return this.raiseContainerGetter();
+    }
+
+    /**
+     * message type
+     *
+     * @type {string}
+     * @memberof MessageContext
+     */
+    type?: string;
+    /**
+     * message event
+     *
+     * @type {string}
+     * @memberof MessageContext
+     */
+    event: string;
+
+    /**
+     * message data.
+     *
+     * @type {*}
+     * @memberof MessageContext
+     */
+    data?: any;
+
+    /**
+     * set options.
+     *
+     * @param {MessageOption} options
+     * @memberof IocActionContext
+     */
+    setOptions(options: MessageOption) {
+        if (options) {
+            Object.assign(this, options);
+        }
+    }
 }
 
 

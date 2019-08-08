@@ -174,11 +174,15 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     }
 
 
-    protected async runActivity(ctx: TCtx, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
+    protected async execActivity(ctx: TCtx, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
         await this.getExector().execActivity(ctx, activities, next);
         if (refresh !== false) {
             await this.refreshResult(ctx);
         }
+    }
+
+    protected runWorkflow(ctx: TCtx, activity: ActivityType): Promise<TCtx> {
+        return this.getExector().runWorkflow(ctx, activity);
     }
 
     private _actionFunc: PromiseUtil.ActionHandle;

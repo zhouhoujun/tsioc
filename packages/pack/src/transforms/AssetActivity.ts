@@ -93,7 +93,7 @@ export class AssetActivity extends PipeActivity {
     streamPipes: StreamActivity;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
-        await this.runActivity(ctx, this.getRunSequence());
+        await this.execActivity(ctx, this.getRunSequence());
     }
 
     protected getRunSequence(): ActivityType[] {

@@ -1,7 +1,7 @@
 import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
 import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
-    ActivityType, ActivityOption
+    ActivityType, ActivityOption, WorkflowContextToken
 } from './core';
 import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
@@ -65,8 +65,12 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
     }
 
     onContextInit(ctx: T) {
-        super.onContextInit(ctx);
         ctx.id = ctx.id || this.createUUID();
+        super.onContextInit(ctx);
+    }
+
+    protected bindContextToken(ctx: T) {
+        this.container.bindProvider(WorkflowContextToken, ctx);
     }
 
     getBootDeps() {

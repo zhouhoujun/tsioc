@@ -16,12 +16,11 @@ export interface IActivityExecutor {
      *
      * @template T
      * @param {T} ctx
-     * @param {(ActivityType | ActivityType[])} activities
-     * @param {() => Promise<void>} [next]
+     * @param {ActivityType} activities
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void>;
+    runWorkflow<T extends ActivityContext>(ctx: T, activities: ActivityType): Promise<T>;
     /**
      * resolve expression.
      *
@@ -33,6 +32,17 @@ export interface IActivityExecutor {
      * @memberof IActivityExecutor
      */
     resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal>;
+    /**
+     * run activities.
+     *
+     * @template T
+     * @param {T} ctx
+     * @param {(ActivityType | ActivityType[])} activities
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     * @memberof IActivityExecutor
+     */
+    runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void>;
     /**
      * execute activities.
      *

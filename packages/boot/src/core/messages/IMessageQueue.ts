@@ -1,5 +1,5 @@
 import { HandleType } from '../handles';
-import { MessageContext } from './MessageContext';
+import { MessageContext, MessageOption } from './MessageContext';
 import { InjectToken, ProviderTypes } from '@tsdi/ioc';
 
 
@@ -19,12 +19,22 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
     /**
      * send message
      *
-     * @param {T} ctx
+     * @param {T} ctx message context
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
     send(ctx: T): Promise<void>;
+    /**
+     * send message
+     *
+     * @template TOpt
+     * @param {TOpt} options
+     * @param {() => T} [fac]
+     * @returns {Promise<void>}
+     * @memberof IMessageQueue
+     */
+    send<TOpt extends MessageOption>(options: TOpt, fac?: () => T): Promise<void>;
     /**
      * send message
      *
@@ -34,6 +44,18 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      * @memberof IMessageQueue
      */
     send(event: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
+
+    /**
+     * send message
+     *
+     * @param {string} event
+     * @param {string} type
+     * @param {*} data
+     * @param {(...providers: ProviderTypes[]) => T} [fac]
+     * @returns {Promise<void>}
+     * @memberof IMessageQueue
+     */
+    send(event: string, type: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
 
     /**
      * use message handle

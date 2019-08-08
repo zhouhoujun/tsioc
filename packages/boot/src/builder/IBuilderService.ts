@@ -60,16 +60,21 @@ export interface IBuilderService extends IocCoreService {
      * @memberof IBuilderService
      */
     buildBootTarget(target: Type | BootOption | BootContext, ...args: string[]): Promise<any>;
+
+    build(target: Type | BootOption | BootContext, ...args: string[]): Promise<BootContext>
+    build<Topt extends BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<BootContext>;
+    build<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T>;
     /**
      * build module.
      *
      * @template T
-     * @param {(Type | T)} target
+     * @template Topt
+     * @param {(Type | Topt | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof BuilderService
+     * @memberof IBuilderService
      */
-    build<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T>;
+    build<T extends BootContext, Topt extends BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T>;
 
     /**
      * build startup instance.
@@ -94,6 +99,10 @@ export interface IBuilderService extends IocCoreService {
      * @memberof IBuilderService
      */
     buildRunnable<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>>;
+
+    run(target: Type | BootOption | BootContext, ...args: string[]): Promise<BootContext>
+    run<Topt extends BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<BootContext>;
+    run<T extends BootContext>(target: Type | BootOption | T, ...args: string[]): Promise<T>;
     /**
      * run module.
      *
@@ -104,7 +113,7 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof IBuilderService
      */
-    run<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T>;
+    run<T extends BootContext, Topt extends BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *

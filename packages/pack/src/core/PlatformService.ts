@@ -1,4 +1,4 @@
-import { Src } from '@tsdi/activities';
+import { Src, WorkflowContextToken } from '@tsdi/activities';
 import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject } from '@tsdi/ioc';
 import { toAbsolutePath, runMainPath, syncRequire } from '@tsdi/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
@@ -8,7 +8,7 @@ import {
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
 // import * as globby from 'globby';
-import { ProcessRunRootToken, ApplicationBootContextToken } from '@tsdi/boot';
+import { ProcessRunRootToken } from '@tsdi/boot';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { NodeActivityContext } from './NodeActivityContext';
@@ -22,7 +22,7 @@ const del = require('del');
 @Injectable(PlatformServiceToken)
 export class PlatformService {
 
-    constructor(@Inject(ApplicationBootContextToken) private ctx: NodeActivityContext) {
+    constructor(@Inject(WorkflowContextToken) private ctx: NodeActivityContext) {
 
     }
 

@@ -1,6 +1,6 @@
 import { Handle, Handles, HandleType } from '../handles';
-import { Abstract, isClass, Injectable, isUndefined, isString, ProviderTypes } from '@tsdi/ioc';
-import { MessageContext, MsgEventToken, MsgDataToken } from './MessageContext';
+import { Abstract, isClass, Injectable, isUndefined, isString, ProviderTypes, isBaseObject, isFunction } from '@tsdi/ioc';
+import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 
 
@@ -38,13 +38,36 @@ export abstract class MessageHandle<T extends MessageContext> extends Handle<T> 
 @Injectable
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
-    send(event: string | T, data?: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void> {
-        if (isString(event)) {
-            let providers = [{ provide: MsgEventToken, useValue: event }, { provide: MsgDataToken, useValue: data }];
-            let ctx = fac ? fac(...providers) : this.container.resolve(MessageContext, ...providers) as T;
-            return this.execute(ctx);
+    send(ctx: T): Promise<void>;
+    send<T extends MessageOption>(options: T, fac?: () => T): Promise<void>;
+    send(event: string, data: any, fac?: () => T): Promise<void>;
+    send(event: string, type: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
+    send(event: any, type?: any, data?: any, fac?: () => T): Promise<void> {
+        if (event instanceof MessageContext) {
+            return this.execute(event as T);
         } else {
-            return this.execute(event);
+            if (isFunction(type)) {
+                fac = type;
+                type = undefined;
+            } else if (isFunction(data)) {
+                fac = data;
+                data = undefined;
+            }
+            let ctx = fac ? fac() : this.container.resolve(MessageContext) as T;
+            if (isString(event)) {
+                if (!isString(type)) {
+                    data = type;
+                    type = undefined;
+                }
+                ctx.setOptions({
+                    event: event,
+                    type: type,
+                    data: data
+                });
+            } else {
+                ctx.setOptions(event);
+            }
+            return this.execute(ctx);
         }
     }
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {

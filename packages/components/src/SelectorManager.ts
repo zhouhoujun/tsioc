@@ -1,4 +1,4 @@
-import { Singleton, InstanceFactory, Type, ProviderTypes, isString, ClassType, isClass } from '@tsdi/ioc';
+import { Singleton, InstanceFactory, Type, ProviderTypes, isString, ClassType } from '@tsdi/ioc';
 
 /**
  * selector manager.

@@ -9,6 +9,7 @@ import { IContainer } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ComponentBuilderToken, ComponentManager, SelectorManager } from '@tsdi/components';
+import { ActivityOption } from './ActivityOption';
 
 
 @Injectable(ActivityExecutorToken)
@@ -47,12 +48,12 @@ export class ActivityExecutor implements IActivityExecutor {
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    runActivity<T extends ActivityContext>(ctx: T, activity: ActivityType): Promise<T> {
+    runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType): Promise<T> {
         let container = this.getContainer();
         if (activity instanceof Activity) {
-            return container.get(BuilderServiceToken).run<T>({ module: lang.getClass(activity), target: activity, body: ctx.body });
+            return container.get(BuilderServiceToken).run<T, ActivityOption>({ module: lang.getClass(activity), target: activity, body: ctx.body });
         } else if (isClass(activity)) {
-            return container.get(BuilderServiceToken).run<T>({ module: activity, body: ctx.body });
+            return container.get(BuilderServiceToken).run<T, ActivityOption>({ module: activity, body: ctx.body });
         } else if (isFunction(activity)) {
             return activity(ctx).then(() => ctx);
         } else {
@@ -87,6 +88,10 @@ export class ActivityExecutor implements IActivityExecutor {
             return await express;
         }
         return express;
+    }
+
+    runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
+        return this.execActivity(ctx, activities, next);
     }
 
     async execActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
