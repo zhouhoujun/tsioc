@@ -79,6 +79,28 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      */
     subscribe(handle: Token<IHandle>);
 
+    /**
+     * subescribe message.
+     *
+     * @param {(ctx: T, next: () => Promise<void>) => Promise<void>} subscriber
+     * @memberof IMessageQueue
+     */
+    unsubscribe(subscriber: (ctx: T, next: () => Promise<void>) => Promise<void>);
+    /**
+     * subscribe message by handle instance;
+     *
+     * @param {IHandle} handle
+     * @memberof IMessageQueue
+     */
+    unsubscribe(handle: IHandle);
+    /**
+     * subscribe message by handle type or token.
+     *
+     * @param {IHandle} handle
+     * @memberof IMessageQueue
+     */
+    unsubscribe(handle: Token<IHandle>);
+
 
     /**
      * use message handle

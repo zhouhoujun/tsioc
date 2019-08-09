@@ -38,6 +38,15 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
         return this;
     }
 
+    unuse(handle: HandleType<T>) {
+        let idx = this.handles.indexOf(handle);
+        if (idx >= 0) {
+            this.handles.splice(idx, 1);
+            this.resetFuncs();
+        }
+        return this;
+    }
+
     has(handle: HandleType<T>): boolean {
         return this.handles.indexOf(handle) >= 0;
     }
