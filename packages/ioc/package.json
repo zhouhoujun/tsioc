@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/ioc",
-  "version": "5.1.16",
+  "version": "5.1.17",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
