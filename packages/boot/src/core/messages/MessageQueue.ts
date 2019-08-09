@@ -103,9 +103,9 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param {IHandle} handle
      * @memberof IMessageQueue
      */
-    subscribe(handle: Token<IHandle>);
-    subscribe(haddle: HandleType<T>) {
-        this.use(haddle);
+    subscribe(handle: Token<IHandle>, setup?: boolean);
+    subscribe(haddle: HandleType<T>, setup?: boolean) {
+        this.use(haddle, setup);
     }
 
     /**
