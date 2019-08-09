@@ -58,6 +58,14 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
     send(event: string, type: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
 
     /**
+     * subescribe message.
+     *
+     * @param {(ctx: T, next: () => Promise<void>) => Promise<void>} subscriber
+     * @memberof IMessageQueue
+     */
+    subscribe(subscriber: (ctx: T, next: () => Promise<void>) => Promise<void>);
+
+    /**
      * use message handle
      *
      * @param {HandleType<T>} handle

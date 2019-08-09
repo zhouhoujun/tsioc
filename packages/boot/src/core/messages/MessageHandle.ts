@@ -70,6 +70,11 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
             return this.execute(ctx);
         }
     }
+
+    subscribe(subscriber: (ctx: T, next: () => Promise<void>) => Promise<void>) {
+        this.use(subscriber);
+    }
+
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
         if (isClass(HandleType)) {
             this.container.register(HandleType);
