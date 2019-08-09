@@ -2,7 +2,7 @@ import { ParamProviders } from '../providers';
 import { Type } from '../types';
 import {
     IocGetCacheAction, RuntimeMethodScope, RuntimeActionContext,
-    GetSingletionAction, ContainerCheckerAction, CreateInstanceAction, ConstructorArgsAction,
+    GetSingletionAction, CreateInstanceAction, ConstructorArgsAction,
     IocBeforeConstructorScope, IocAfterConstructorScope,
     RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
     InstanceCheckAction, RuntimeDecoratorAction
@@ -56,6 +56,13 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
         return this.getParameters(container, type, instance, propertyKey);
     }
 
+    execute(ctx: RuntimeActionContext, next?: () => void): void {
+        let raiseContainer = ctx.getRaiseContainer();
+        if (raiseContainer === this.container) {
+            super.execute(ctx, next);
+        }
+    }
+
     setup() {
         this.container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(this.container));
 
@@ -63,9 +70,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .registerAction(RuntimeDecoratorAction)
             .registerAction(RuntimeParamScope, true);
 
-
-        this.use(ContainerCheckerAction)
-            .use(InitReflectAction)
+        this.use(InitReflectAction)
             .use(GetSingletionAction)
             .use(IocGetCacheAction)
             .use(ConstructorArgsAction)

@@ -19,7 +19,6 @@ export * from './MethodAutorunAction';
 
 export * from './GetSingletionAction';
 export * from './RegisterSingletionAction';
-export * from './ContainerCheckerAction';
 export * from './IocGetCacheAction';
 export * from './IocSetCacheAction';
 export * from './ConstructorArgsAction';

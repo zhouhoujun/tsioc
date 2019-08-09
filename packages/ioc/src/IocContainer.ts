@@ -114,7 +114,7 @@ export class IocContainer implements IIocContainer {
     }
 
     /**
-     * resolve type instance with token and param provider via resolve scope.
+     * resolve instance with token and param provider via resolve scope.
      *
      * @template T
      * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token

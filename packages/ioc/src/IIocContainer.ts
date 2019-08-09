@@ -77,15 +77,37 @@ export interface IIocContainer extends IResolverContainer {
     get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
 
     /**
-     * resolve type instance with token and param provider via resolve scope.
+     * resolve instance with token and param provider.
      *
      * @template T
-     * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token
+     * @param {Token<T>} token the token to resolve.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * resolve instance with token and param provider.
+     *
+     * @template T
+     * @param {ResolveActionOption<T>} option  resolve option
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    resolve<T>(option: ResolveActionOption<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * resolve instance with context.
+     *
+     * @template T
+     * @param {ResolveActionContext<T>} context resolve context.
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    resolve<T>(context: ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
 
     /**
      * register type.

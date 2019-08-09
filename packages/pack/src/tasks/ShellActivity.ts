@@ -1,6 +1,6 @@
 import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
-import { Src, Task, TemplateOption, Activity, ParallelExecutor } from '@tsdi/activities';
+import { Src, Task, TemplateOption, Activity } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
 import { Input, Binding } from '@tsdi/components';
 
@@ -106,11 +106,7 @@ export class ShellActivity extends Activity<void> {
         let allowError = await this.resolveExpression(this.allowError, ctx);
         let shells = isArray(shell) ? shell : [shell];
         if (this.parallel) {
-            if (this.getContainer().has(ParallelExecutor)) {
-                this.getContainer().get(ParallelExecutor).run<string>(sh => this.execShell(sh, argstrs, options, allowError), shells);
-            } else {
-                await Promise.all(shells.map(sh => this.execShell(sh, argstrs, options, allowError)));
-            }
+            await Promise.all(shells.map(sh => this.execShell(sh, argstrs, options, allowError)));
         } else {
             await PromiseUtil.step(shells.map(sh => () => this.execShell(sh, argstrs, options, allowError)));
         }
