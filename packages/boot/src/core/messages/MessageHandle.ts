@@ -1,5 +1,5 @@
-import { Handle, Handles, HandleType } from '../handles';
-import { Abstract, isClass, Injectable, isUndefined, isString, ProviderTypes, isBaseObject, isFunction } from '@tsdi/ioc';
+import { Handle, Handles, HandleType, IHandle } from '../handles';
+import { Abstract, isClass, Injectable, isUndefined, isString, ProviderTypes, isBaseObject, isFunction, Token } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 
@@ -38,9 +38,44 @@ export abstract class MessageHandle<T extends MessageContext> extends Handle<T> 
 @Injectable
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
+    /**
+     * send message
+     *
+     * @param {T} ctx message context
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     * @memberof IMessageQueue
+     */
     send(ctx: T): Promise<void>;
-    send<T extends MessageOption>(options: T, fac?: () => T): Promise<void>;
-    send(event: string, data: any, fac?: () => T): Promise<void>;
+    /**
+     * send message
+     *
+     * @template TOpt
+     * @param {TOpt} options
+     * @param {() => T} [fac]
+     * @returns {Promise<void>}
+     * @memberof IMessageQueue
+     */
+    send<TOpt extends MessageOption>(options: TOpt, fac?: () => T): Promise<void>;
+    /**
+     * send message
+     *
+     * @param {string} event
+     * @param {*} data
+     * @returns {Promise<void>}
+     * @memberof IMessageQueue
+     */
+    send(event: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
+    /**
+     * send message
+     *
+     * @param {string} event
+     * @param {string} type
+     * @param {*} data
+     * @param {(...providers: ProviderTypes[]) => T} [fac]
+     * @returns {Promise<void>}
+     * @memberof IMessageQueue
+     */
     send(event: string, type: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
     send(event: any, type?: any, data?: any, fac?: () => T): Promise<void> {
         if (event instanceof MessageContext) {
@@ -71,8 +106,29 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         }
     }
 
-    subscribe(subscriber: (ctx: T, next: () => Promise<void>) => Promise<void>) {
-        this.use(subscriber);
+    /**
+     * subescribe message.
+     *
+     * @param {(ctx: T, next: () => Promise<void>) => Promise<void>} subscriber
+     * @memberof IMessageQueue
+     */
+    subscribe(subscriber: (ctx: T, next: () => Promise<void>) => Promise<void>);
+    /**
+     * subscribe message by handle instance;
+     *
+     * @param {IHandle} handle
+     * @memberof IMessageQueue
+     */
+    subscribe(handle: IHandle);
+    /**
+     * subscribe message by handle type or token.
+     *
+     * @param {IHandle} handle
+     * @memberof IMessageQueue
+     */
+    subscribe(handle: Token<IHandle>);
+    subscribe(haddle: HandleType<T>) {
+        this.registerHandle(haddle);
     }
 
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {

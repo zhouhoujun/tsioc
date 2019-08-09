@@ -1,6 +1,6 @@
-import { HandleType } from '../handles';
+import { HandleType, IHandle } from '../handles';
 import { MessageContext, MessageOption } from './MessageContext';
-import { InjectToken, ProviderTypes } from '@tsdi/ioc';
+import { InjectToken, ProviderTypes, Token } from '@tsdi/ioc';
 
 
 export interface IMessage<T extends MessageContext = MessageContext> {
@@ -64,6 +64,21 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      * @memberof IMessageQueue
      */
     subscribe(subscriber: (ctx: T, next: () => Promise<void>) => Promise<void>);
+    /**
+     * subscribe message by handle instance;
+     *
+     * @param {IHandle} handle
+     * @memberof IMessageQueue
+     */
+    subscribe(handle: IHandle);
+    /**
+     * subscribe message by handle type or token.
+     *
+     * @param {IHandle} handle
+     * @memberof IMessageQueue
+     */
+    subscribe(handle: Token<IHandle>);
+
 
     /**
      * use message handle
