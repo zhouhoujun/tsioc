@@ -1,5 +1,5 @@
 import { IHandleContext } from '../handles';
-import { isFunction, Injectable, Inject, ContainerFactoryToken, InjectToken } from '@tsdi/ioc';
+import { Injectable, Inject, ContainerFactoryToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 
 /**

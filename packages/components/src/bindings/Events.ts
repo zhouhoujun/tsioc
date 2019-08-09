@@ -1,4 +1,4 @@
-import { Singleton, ObjectMap } from '@tsdi/ioc';
+import { ObjectMap } from '@tsdi/ioc';
 
 export enum BindEventType {
     fieldChanged = 'fieldChanged'
