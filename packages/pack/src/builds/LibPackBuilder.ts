@@ -195,12 +195,15 @@ export interface LibPackBuilderOption extends TemplateOption {
     includeLib?: Binding<string[]>;
 
     /**
-     * before resolve plugin.
+     * use this plugins before auto generate plugins.
      *
-     * @type {Binding<Plugin[]>}
+     * resolveId
+     * ` (source: string, importer: string) => string | false | null | {id: string, external?: boolean, moduleSideEffects?: boolean | null}`
+     *
+     * @type { Binding<NodeExpression<Plugin[]>>;}
      * @memberof LibPackBuilderOption
      */
-    beforeResolve?: Binding<Plugin[]>;
+    beforeResolve?: Binding<NodeExpression<Plugin[]>>;
 
 }
 
@@ -356,6 +359,8 @@ export class LibPackBuilder implements AfterInit {
     @Input() sourcemap?: NodeExpression<boolean | string>;
     @Input() postcssOption: NodeExpression;
 
+    @Input() beforeResolve: NodeExpression<Plugin[]>
+
     get zipMapsource() {
         if (this.sourcemap && isBoolean(this.sourcemap)) {
             return './';
@@ -432,8 +437,10 @@ export class LibPackBuilder implements AfterInit {
         if (!this.plugins) {
             this.plugins = async (ctx: NodeActivityContext) => {
                 // let cssOptions = await ctx.resolveExpression(this.postcssOption);
+                let beforeResolve = await ctx.resolveExpression(this.beforeResolve);
                 let sourcemap = await ctx.resolveExpression(this.sourcemap);
                 return [
+                    ...(beforeResolve || []),
                     // cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
                     resolve({ browser: ctx.body.format === 'umd' }),
                     commonjs(),

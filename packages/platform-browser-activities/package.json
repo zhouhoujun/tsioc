@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser-activities",
-  "version": "5.1.17",
+  "version": "5.1.18",
   "description": "workflow framework on browser, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
@@ -32,13 +32,13 @@
   "dependencies": {
     "reflect-metadata": "^0.1.13",
     "tslib": "~1.9.3",
-    "@tsdi/ioc": "^5.1.17",
-    "@tsdi/core": "^5.1.17",
-    "@tsdi/aop": "^5.1.17",
-    "@tsdi/logs": "^5.1.17",
-    "@tsdi/boot": "^5.1.17",
-    "@tsdi/activities": "^5.1.17",
-    "@tsdi/platform-browser": "^5.1.17"
+    "@tsdi/ioc": "^5.1.18",
+    "@tsdi/core": "^5.1.18",
+    "@tsdi/aop": "^5.1.18",
+    "@tsdi/logs": "^5.1.18",
+    "@tsdi/boot": "^5.1.18",
+    "@tsdi/activities": "^5.1.18",
+    "@tsdi/platform-browser": "^5.1.18"
   },
   "peerDependencies": {},
   "directories": {

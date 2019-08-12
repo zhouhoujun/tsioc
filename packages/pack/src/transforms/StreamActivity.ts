@@ -49,7 +49,6 @@ export class StreamActivity extends PipeActivity {
         return await pstream;
     }
 
-    
     /**
      * execute stream pipe.
      *
