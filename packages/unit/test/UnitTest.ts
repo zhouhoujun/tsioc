@@ -33,7 +33,6 @@ export class SuiteTest {
             console.log('in time do...');
             def.resolve('in time do...')
         }, 100)
-        assert.equal('0', 0);
         return def.promise;
     }
 
