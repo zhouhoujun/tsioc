@@ -1,4 +1,4 @@
-import { Singleton, Express, isFunction, isBoolean, isArray, Abstract } from '@tsdi/ioc';
+import { Singleton, Express, isFunction, isBoolean, isArray, Abstract, OnDestroy } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
 
 /**
@@ -90,6 +90,20 @@ export class ComponentManager {
             return new ComponentSelector(this, component);
         }
         return new NullSelector(component);
+    }
+
+    destory(component: any) {
+        this.getSelector(component)
+            .each((node: OnDestroy) => {
+                try {
+                    if (node && isFunction(node.onDestroy)) {
+                        node.onDestroy();
+                    }
+                    this.composites.delete(node);
+                } catch (err) {
+                    console.log(err);
+                }
+            }, Mode.traverseLast);
     }
 
     clear() {

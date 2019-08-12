@@ -57,3 +57,18 @@ export interface AfterContentInit {
      */
     onAfterContentInit(): void | Promise<void>;
 }
+
+/**
+ * component destory hooks.
+ *
+ * @export
+ * @interface AfterContentInit
+ */
+export interface OnDestory {
+    /**
+     * component destory hooks. invoke on component destory.
+     *
+     * @memberof AfterInit
+     */
+    onDestory(): void | Promise<void>;
+}

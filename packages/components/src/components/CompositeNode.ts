@@ -25,7 +25,6 @@ export class CompositeNode {
             this.children.push(node);
         });
         return this;
-
     }
 
     remove(...nodes: (string | CompositeNode)[]): this {
