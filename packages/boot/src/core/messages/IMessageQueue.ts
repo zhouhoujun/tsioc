@@ -2,7 +2,13 @@ import { HandleType, IHandle } from '../handles';
 import { MessageContext, MessageOption } from './MessageContext';
 import { InjectToken, ProviderTypes, Token } from '@tsdi/ioc';
 
-
+/**
+ * application message handle.
+ *
+ * @export
+ * @interface IMessage
+ * @template T
+ */
 export interface IMessage<T extends MessageContext = MessageContext> {
     execute(ctx: T, next: () => Promise<void>): Promise<void>
 }
