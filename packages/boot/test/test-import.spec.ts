@@ -1,5 +1,5 @@
-import { ModuleA, ModuleB, ClassSevice } from './demo';
-import { BootApplication } from '../src';
+import { ModuleA, ModuleB, ClassSevice, SubMessageQueue } from './demo';
+import { BootApplication, RootMessageQueueToken } from '../src';
 import expect = require('expect');
 
 
@@ -16,6 +16,21 @@ describe('di module', () => {
         expect(ctx.bootstrap.mark).toEqual('marked');
         // expect(md.state).eq('started');
     });
+
+
+    it('message test.', async () => {
+        let ctx = await BootApplication.run(ModuleB);
+        ctx.getRaiseContainer().resolve(SubMessageQueue).subscribe((ctx, next) => {
+            if (ctx.event === 'test') {
+                console.log('message queue test: ' + ctx.data);
+            }
+            return next()
+        })
+        expect(ctx.getRaiseContainer().resolve(SubMessageQueue)['handles'].length).toEqual(1);
+        ctx.getRaiseContainer().get(RootMessageQueueToken)
+            .send('test', 'hello');
+    });
+
 
 });
 

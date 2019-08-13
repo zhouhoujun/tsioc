@@ -91,7 +91,5 @@ export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>(
         }
     });
 }, meta => {
-    if (isUndefined(meta.singleton)) {
-        meta.singleton = true;
-    }
+    meta.singleton = true;
 }) as IMessageDecorator;

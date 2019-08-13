@@ -1,4 +1,4 @@
-import { DIModule, Startup } from '../src';
+import { DIModule, Startup, Message, MessageQueue } from '../src';
 import { Injectable, Inject } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
@@ -70,6 +70,10 @@ export class Logger {
     }
 }
 
+@Message()
+export class SubMessageQueue extends MessageQueue {
+
+}
 
 @DIModule({
     imports: [
@@ -77,7 +81,8 @@ export class Logger {
         LogModule,
         Logger,
         ClassSevice,
-        ModuleA
+        ModuleA,
+        SubMessageQueue
     ],
     bootstrap: ClassSevice
 })

@@ -1,5 +1,5 @@
 import { Handles, HandleType, IHandle } from '../handles';
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token } from '@tsdi/ioc';
+import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 
@@ -70,6 +70,9 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 if (!isString(type)) {
                     data = type;
                     type = undefined;
+                } else if (isString(type) && isUndefined(data)) {
+                    data = type;
+                    type = undefined;
                 }
                 ctx.setOptions({
                     event: event,
@@ -137,7 +140,6 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         if (isClass(HandleType)) {
             this.container.register(HandleType);
         }
-        this.use(HandleType);
         return this;
     }
 }

@@ -45,10 +45,10 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
                 let singleton = hasOwnClassMetadata(Singleton, ctx.targetType);
                 if (!singleton) {
                     metaSer.eachClassMetadata(ctx.targetType, (meta, decor) => {
-                        if (meta) {
+                        if (!meta) {
                             return true;
                         }
-                        if (!singleton) {
+                        if (meta.singleton) {
                             singleton = meta.singleton;
                         }
                         if (isNumber(meta.expires) && meta.expires > 0) {

@@ -62,11 +62,12 @@ export class BootModule {
             .register(DIModule, DecoratorScopes.Injector, DIModuleInjectorScope)
             .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
             .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
-            .register(Message, DecoratorScopes.Class, BindProviderAction, MessageRegisterAction);
+            .register(Message, DecoratorScopes.Class, BindProviderAction, IocAutorunAction, MessageRegisterAction);
 
         container.get(RuntimeDecoratorRegisterer)
             .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
-            .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+            .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
+            .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.use(modules, messages);
         // container.register(DIModuleExports);
