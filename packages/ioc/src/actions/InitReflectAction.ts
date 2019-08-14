@@ -51,7 +51,7 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
                         if (meta.singleton) {
                             singleton = meta.singleton;
                         }
-                        if (isNumber(meta.expires) && meta.expires > 0) {
+                        if (!targetReflect.expires && meta.expires > 0) {
                             targetReflect.expires = meta.expires;
                         }
                         return !singleton;
