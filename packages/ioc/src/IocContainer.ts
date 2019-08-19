@@ -11,9 +11,8 @@ import { IResolver } from './IResolver';
 import { TypeReflects } from './services';
 import { IParameter } from './IParameter';
 import {
-    RuntimeActionContext, DesignActionContext, IocRegisterAction,
-    IocRegisterScope, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
-    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, IocAction, ResolveActionOption
+    RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption
 } from './actions';
 
 
