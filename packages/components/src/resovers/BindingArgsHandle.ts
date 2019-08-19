@@ -5,6 +5,13 @@ import { ParseContext, BindingScope } from '../parses';
 import { ResolveComponentHandle } from './ResolveComponentHandle';
 
 
+/**
+ * binding args handle.
+ *
+ * @export
+ * @class BindingArgsHandle
+ * @extends {ResolveComponentHandle}
+ */
 export class BindingArgsHandle extends ResolveComponentHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 

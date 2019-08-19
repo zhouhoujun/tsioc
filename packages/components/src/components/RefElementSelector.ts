@@ -2,7 +2,13 @@ import { RefSelector } from '../RefSelector';
 import { Injectable } from '@tsdi/ioc';
 import { CompositeNode } from './CompositeNode';
 
-
+/**
+ * ref element selector.
+ *
+ * @export
+ * @class RefElementSelector
+ * @extends {RefSelector}
+ */
 @Injectable()
 export class RefElementSelector extends RefSelector {
     select(element: any, selector: string): any {

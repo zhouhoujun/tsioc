@@ -4,6 +4,13 @@ import { isNullOrUndefined } from '@tsdi/ioc';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 
 
+/**
+ * parse selector handle.
+ *
+ * @export
+ * @class ParseSelectorHandle
+ * @extends {ParsersHandle}
+ */
 export class ParseSelectorHandle extends ParsersHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
         if (ctx.selector) {

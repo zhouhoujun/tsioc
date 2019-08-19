@@ -3,7 +3,13 @@ import { ElementNode } from '../ElementNode';
 import { TemplateHandle, TemplateContext } from '../../parses';
 import { SelectorManager } from '../../SelectorManager';
 
-
+/**
+ * component selector handle.
+ *
+ * @export
+ * @class ComponentSelectorHandle
+ * @extends {TemplateHandle}
+ */
 export class ComponentSelectorHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
         if (isArray(ctx.template) && ctx.annoation.template === ctx.template) {

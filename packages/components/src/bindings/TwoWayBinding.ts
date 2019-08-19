@@ -3,6 +3,14 @@ import { ParseBinding } from './ParseBinding';
 import { isBaseValue, lang } from '@tsdi/ioc';
 import { BaseTypeParserToken } from '@tsdi/boot';
 
+/**
+ * two way binding.
+ *
+ * @export
+ * @class TwoWayBinding
+ * @extends {ParseBinding<T>}
+ * @template T
+ */
 export class TwoWayBinding<T> extends ParseBinding<T> {
 
     bind(target: any, obj?: any): T {

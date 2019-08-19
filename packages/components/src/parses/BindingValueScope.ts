@@ -1,6 +1,6 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isString, Type, isClass, isArray, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isArray, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
 import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding } from '../bindings';
 import { HandleRegisterer, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
@@ -21,7 +21,7 @@ export class BindingValueScope extends ParsersHandle {
             .use(TranslateExpressionHandle)
             .use(TranslateAtrrHandle)
             .use(AssignBindValueHandle)
-            .use(AssignDefaultValueHandle)
+            .use(AssignDefaultValueHandle);
     }
 }
 

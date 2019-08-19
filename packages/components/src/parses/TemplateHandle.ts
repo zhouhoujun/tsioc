@@ -1,7 +1,14 @@
 import { BuildHandle, BuildHandles } from '@tsdi/boot';
 import { TemplateContext } from './TemplateContext';
 
-
+/**
+ * template handle.
+ *
+ * @export
+ * @abstract
+ * @class TemplateHandle
+ * @extends {BuildHandle<TemplateContext>}
+ */
 export abstract class TemplateHandle extends BuildHandle<TemplateContext> {
     /**
      * execute binding Handle.
@@ -15,6 +22,13 @@ export abstract class TemplateHandle extends BuildHandle<TemplateContext> {
     abstract execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void>;
 }
 
+/**
+ * templates handle.
+ *
+ * @export
+ * @class TemplatesHandle
+ * @extends {BuildHandles<TemplateContext>}
+ */
 export class TemplatesHandle extends BuildHandles<TemplateContext> {
 
 }

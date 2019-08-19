@@ -5,7 +5,7 @@ import { BaseTypeParserToken } from '@tsdi/boot';
 
 
 /**
- * assign binding
+ * one way binding
  *
  * @export
  * @class OneWayBinding

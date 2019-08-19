@@ -51,6 +51,9 @@ export interface OutputPropertyDecorator {
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
 
+/**
+ * output property decorator.
+ */
 export const Output: OutputPropertyDecorator = createParamPropDecorator<BindingPropertyMetadata>('Output', args => {
     args.next<BindingPropertyMetadata>({
         match: (arg) => isString(arg),

@@ -3,13 +3,27 @@ import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
 import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
 
-
+/**
+ * binding parse option.
+ *
+ * @export
+ * @interface IBindingParseOption
+ * @extends {IModuleResolveOption}
+ */
 export interface IBindingParseOption extends IModuleResolveOption  {
     scope?: any;
     bindExpression?: any;
     binding: IBinding;
 }
 
+/**
+ * parse context.
+ *
+ * @export
+ * @class ParseContext
+ * @extends {BuildContext}
+ * @implements {IComponentContext}
+ */
 @Injectable
 export class ParseContext extends BuildContext implements IComponentContext {
 

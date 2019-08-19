@@ -4,6 +4,13 @@ import { IBindingTypeReflect } from '../bindings';
 import { BindingCache } from './BindingCache';
 
 
+/**
+ * binding property type action.
+ *
+ * @export
+ * @class BindingPropertyTypeAction
+ * @extends {IocDesignAction}
+ */
 export class BindingPropertyTypeAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {

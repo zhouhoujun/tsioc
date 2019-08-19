@@ -1,7 +1,13 @@
 import { IBuilderService, IModuleResolveOption } from '@tsdi/boot';
 import { ProviderTypes, Type, InjectToken, ClassType } from '@tsdi/ioc';
 
-
+/**
+ * template option.
+ *
+ * @export
+ * @interface ITemplateOption
+ * @extends {IModuleResolveOption}
+ */
 export interface ITemplateOption extends IModuleResolveOption {
     selector?: Type;
 }

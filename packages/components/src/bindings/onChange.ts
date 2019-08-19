@@ -1,6 +1,9 @@
 import { Events, BindEventType } from './Events';
 import { lang } from '@tsdi/ioc';
 
+/**
+ * observe property change.
+ */
 export namespace observe {
 
     const events = new WeakMap<any, Events>();

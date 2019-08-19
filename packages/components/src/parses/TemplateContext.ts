@@ -9,6 +9,14 @@ import { ITemplateOption } from '../IComponentBuilder';
  */
 export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
 
+/**
+ * template context.
+ *
+ * @export
+ * @class TemplateContext
+ * @extends {IocRaiseContext<IContainer>}
+ * @implements {IComponentContext}
+ */
 @Injectable
 export class TemplateContext extends IocRaiseContext<IContainer> implements IComponentContext {
 

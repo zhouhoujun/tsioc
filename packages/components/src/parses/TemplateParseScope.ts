@@ -6,6 +6,13 @@ import { TranslateSelectorScope } from './TranslateSelectorScope';
 import { HandleRegisterer } from '@tsdi/boot';
 
 
+/**
+ * template parse scope.
+ *
+ * @export
+ * @class TemplateParseScope
+ * @extends {TemplatesHandle}
+ */
 export class TemplateParseScope extends TemplatesHandle {
     async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
@@ -21,6 +28,13 @@ export class TemplateParseScope extends TemplatesHandle {
 }
 
 
+/**
+ * elements template handle.
+ *
+ * @export
+ * @class ElementsTemplateHandle
+ * @extends {TemplateHandle}
+ */
 export class ElementsTemplateHandle extends TemplateHandle {
 
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {

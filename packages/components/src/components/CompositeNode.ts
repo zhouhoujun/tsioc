@@ -2,7 +2,6 @@ import { isString } from '@tsdi/ioc';
 import { NodeSelector } from '../ComponentManager';
 
 
-
 /**
  * composite for component layout.
  *

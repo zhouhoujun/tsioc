@@ -2,6 +2,13 @@ import { isArray } from '@tsdi/ioc';
 import { ElementNode } from '../ElementNode';
 import { BuildHandle, BuildContext } from '@tsdi/boot';
 
+/**
+ * valid component handle.
+ *
+ * @export
+ * @class ValidComponentHandle
+ * @extends {BuildHandle<BuildContext>}
+ */
 export class ValidComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 

@@ -28,7 +28,13 @@ export class BindingScope extends ParsersHandle {
     }
 }
 
-
+/**
+ * binding array handle.
+ *
+ * @export
+ * @class BindingArrayHandle
+ * @extends {ParseHandle}
+ */
 export class BindingArrayHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {

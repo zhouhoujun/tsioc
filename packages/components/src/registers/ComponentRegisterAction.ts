@@ -3,7 +3,13 @@ import { SelectorManager } from '../SelectorManager';
 import { ModuleConfigure } from '@tsdi/boot';
 
 
-
+/**
+ * component register action.
+ *
+ * @export
+ * @class ComponentRegisterAction
+ * @extends {IocDesignAction}
+ */
 export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let mgr = ctx.getRaiseContainer().resolve(SelectorManager);

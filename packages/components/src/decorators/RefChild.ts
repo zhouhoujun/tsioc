@@ -1,4 +1,4 @@
-import { isString, TypeMetadata, PropParamDecorator, createParamPropDecorator, isUndefined, isToken, isObject, Registration, ClassType, Token } from '@tsdi/ioc';
+import { isString, PropParamDecorator, createParamPropDecorator, isUndefined, isToken, isObject, Registration, ClassType, Token } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**

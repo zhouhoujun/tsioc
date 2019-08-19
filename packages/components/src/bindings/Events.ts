@@ -1,9 +1,21 @@
 import { ObjectMap } from '@tsdi/ioc';
 
+/**
+ * bind event type.
+ *
+ * @export
+ * @enum {number}
+ */
 export enum BindEventType {
     fieldChanged = 'fieldChanged'
 }
 
+/**
+ * events.
+ *
+ * @export
+ * @class Events
+ */
 export class Events {
     private maps: ObjectMap<Function[]>;
     constructor() {
@@ -35,28 +47,3 @@ export class Events {
     }
 
 }
-
-// @Singleton
-// export class EventManager {
-//     protected events: WeakMap<any, Events>;
-
-//     constructor() {
-//         this.events = new WeakMap();
-//     }
-
-//     get(component: any): Events {
-//         if (!this.events.has(component)) {
-//             this.events.set(component, new Events());
-//         }
-//         return this.events.get(component);
-//     }
-
-//     has(component: any): boolean {
-//         return this.events.has(component);
-//     }
-
-//     set(component: any, events: Events): this {
-//         this.events.set(component, events);
-//         return this;
-//     }
-// }

@@ -2,6 +2,13 @@ import { Singleton, DesignDecoratorRegisterer, DecoratorScopes, Type, isArray, i
 import { ModuleDecoratorServiceToken, ModuleDecoratorService, ModuleConfigure } from '@tsdi/boot';
 import { ComponentRegisterAction } from './registers';
 
+/**
+ * component decorator service.
+ *
+ * @export
+ * @class ComponentDecoratorService
+ * @extends {ModuleDecoratorService}
+ */
 @Singleton(ModuleDecoratorServiceToken)
 export class ComponentDecoratorService extends ModuleDecoratorService {
 

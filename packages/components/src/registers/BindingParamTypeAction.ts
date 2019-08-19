@@ -6,12 +6,19 @@ import { IBindingTypeReflect, IBinding } from '../bindings';
 import { BindingPropertyMetadata } from '../decorators';
 
 
+/**
+ * binding param type action.
+ *
+ * @export
+ * @class BindingParamTypeAction
+ * @extends {BindDeignParamTypeAction}
+ */
 export class BindingParamTypeAction extends BindDeignParamTypeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
 
-        let target = ctx.target
+        let target = ctx.target;
         let type = ctx.targetType;
 
         let ref = ctx.targetReflect as IBindingTypeReflect;
