@@ -3,6 +3,12 @@ import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext, ITypeReflect } from '@tsdi/ioc';
 import { IComponentContext } from '../ComponentContext';
 
+/**
+ * module resolve option.
+ *
+ * @export
+ * @interface IModuleResolveOption
+ */
 export interface IModuleResolveOption {
 
     /**
