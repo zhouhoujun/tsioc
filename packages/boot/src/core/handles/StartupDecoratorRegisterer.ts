@@ -1,5 +1,5 @@
-import { PromiseUtil, DecoratorScopeRegisterer } from '@tsdi/ioc';
 import { IHandle } from './Handle';
+import { PromiseUtil, DecoratorScopeRegisterer } from '@tsdi/ioc';
 import { IocBuildDecoratorRegisterer } from './IocBuildDecoratorRegisterer';
 
 /**
@@ -9,13 +9,25 @@ import { IocBuildDecoratorRegisterer } from './IocBuildDecoratorRegisterer';
  * @enum {number}
  */
 export enum StartupScopes {
+    /**
+     * build.
+     */
     Build = 'Build',
     /**
      * translate bind expression.
      */
     BindExpression = 'BindExpression',
+    /**
+     * translate template.
+     */
     TranslateTemplate = 'TranslateTemplate',
+    /**
+     * binding.
+     */
     Binding =  'Binding',
+    /**
+     * valify component.
+     */
     ValifyComponent = 'ValifyComponent'
 }
 
