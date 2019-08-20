@@ -18,6 +18,13 @@ export class CompositeNode {
         this.children = [];
     }
 
+    /**
+     * add composite.
+     *
+     * @param {...CompositeNode[]} nodes
+     * @returns {this}
+     * @memberof CompositeNode
+     */
     add(...nodes: CompositeNode[]): this {
         nodes.forEach(node => {
             node.parentNode = this;
@@ -26,6 +33,13 @@ export class CompositeNode {
         return this;
     }
 
+    /**
+     * remove composite.
+     *
+     * @param {(...(string | CompositeNode)[])} nodes
+     * @returns {this}
+     * @memberof CompositeNode
+     */
     remove(...nodes: (string | CompositeNode)[]): this {
         let components: CompositeNode[];
         if (nodes.length) {
@@ -50,6 +64,12 @@ export class CompositeNode {
         return node === (node2 || this);
     }
 
+    /**
+     * get selector of current element.
+     *
+     * @returns {CompositeSelector}
+     * @memberof CompositeNode
+     */
     getSelector(): CompositeSelector {
         return new CompositeSelector(this);
     }
