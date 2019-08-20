@@ -22,6 +22,13 @@ export class Events {
         this.maps = {};
     }
 
+    /**
+     * subscribe event.
+     *
+     * @param {string} event the evnet subscribe.
+     * @param {(...args: any[]) => void} handle
+     * @memberof Events
+     */
     on(event: string, handle: (...args: any[]) => void) {
         this.maps[event] = this.maps[event] || [];
         if (this.maps[event].indexOf(handle) < 0) {
@@ -29,6 +36,13 @@ export class Events {
         }
     }
 
+    /**
+     * unsubscribe event.
+     *
+     * @param {string} event the event to unsubscribe.
+     * @param {...Function[]} handles
+     * @memberof Events
+     */
     off(event: string, ...handles: Function[]) {
         if (handles.length) {
             if (this.maps[event]) {
@@ -39,6 +53,13 @@ export class Events {
         }
     }
 
+    /**
+     * emit event.
+     *
+     * @param {string} event event type.
+     * @param {...any[]} args
+     * @memberof Events
+     */
     emit(event: string, ...args: any[]) {
         let hanldes = this.maps[event] || [];
         hanldes.forEach(h => {

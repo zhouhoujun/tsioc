@@ -35,9 +35,9 @@ export namespace observe {
      * on property change.
      *
      * @export
-     * @param {*} target
-     * @param {string} property
-     * @param {(target: any, prop: string, vaule?: any, old?: any) => void} onChange
+     * @param {*} target subscribe change handle of target.
+     * @param {string} property subscribe change handle of target property.
+     * @param {(target: any, prop: string, vaule?: any, old?: any) => void} onChange change handle.
      * @returns
      */
     export function onPropertyChange(target: any, property: string, onChange: (target: any, prop: string, vaule?: any, old?: any) => void) {
