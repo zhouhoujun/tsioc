@@ -2,7 +2,7 @@ import { ParamProviders } from '../providers';
 import { Type } from '../types';
 import {
     IocGetCacheAction, RuntimeMethodScope, RuntimeActionContext,
-    GetSingletionAction, CreateInstanceAction, ConstructorArgsAction,
+    CreateInstanceAction, ConstructorArgsAction,
     IocBeforeConstructorScope, IocAfterConstructorScope,
     RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
     InstanceCheckAction, RuntimeDecoratorAction
@@ -71,7 +71,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .registerAction(RuntimeParamScope, true);
 
         this.use(InitReflectAction)
-            .use(GetSingletionAction)
+            // .use(GetSingletionAction)
             .use(IocGetCacheAction)
             .use(ConstructorArgsAction)
             .use(IocBeforeConstructorScope, true)

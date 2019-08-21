@@ -3,6 +3,14 @@ import { ProviderTypes } from '../providers';
 import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
 
+/**
+ * resolve life scope.
+ *
+ * @export
+ * @class ResolveLifeScope
+ * @extends {IocResolveScope<ResolveActionContext<T>>}
+ * @template T
+ */
 export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>> {
 
     execute(ctx: ResolveActionContext, next?: () => void): void {

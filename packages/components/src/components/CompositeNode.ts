@@ -10,8 +10,19 @@ import { NodeSelector } from '../ComponentManager';
  * @template T
  */
 export class CompositeNode {
-
+    /**
+     * parent node.
+     *
+     * @type {CompositeNode}
+     * @memberof CompositeNode
+     */
     parentNode: CompositeNode;
+    /**
+     * children nodes
+     *
+     * @type {CompositeNode[]}
+     * @memberof CompositeNode
+     */
     children: CompositeNode[];
 
     constructor(public selector?: string) {
@@ -60,6 +71,14 @@ export class CompositeNode {
         return this;
     }
 
+    /**
+     * is equals or not.
+     *
+     * @param {CompositeNode} node
+     * @param {CompositeNode} [node2]
+     * @returns {boolean}
+     * @memberof CompositeNode
+     */
     equals(node: CompositeNode, node2?: CompositeNode): boolean {
         return node === (node2 || this);
     }

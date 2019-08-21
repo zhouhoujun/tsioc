@@ -25,7 +25,13 @@ export class BindingValueScope extends ParsersHandle {
     }
 }
 
-
+/**
+ * binding scope handle.
+ *
+ * @export
+ * @class BindingScopeHandle
+ * @extends {ParseHandle}
+ */
 export class BindingScopeHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
@@ -92,6 +98,13 @@ export class TranslateExpressionHandle extends ParseHandle {
     }
 }
 
+/**
+ * translate attr hanlde.
+ *
+ * @export
+ * @class TranslateAtrrHandle
+ * @extends {ParseHandle}
+ */
 export class TranslateAtrrHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
 

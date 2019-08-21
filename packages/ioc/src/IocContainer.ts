@@ -105,7 +105,9 @@ export class IocContainer implements IIocContainer {
             key = this.getTokenKey(token, alias);
         } else {
             key = this.getTokenKey(token);
-            providers.unshift(alias);
+            if (alias) {
+                providers.unshift(alias);
+            }
         }
 
         let factory = this.factories.get(key);
@@ -121,7 +123,7 @@ export class IocContainer implements IIocContainer {
      * @returns {T}
      * @memberof IocContainer
      */
-    resolve<T>(token: Token<T> | ResolveActionOption<T>| ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
         return this.getActionRegisterer().get(ResolveLifeScope).resolve(token, ...providers);
     }
 
@@ -443,6 +445,10 @@ export class IocContainer implements IIocContainer {
         }
 
         let factory = (...providers: ParamProviders[]) => {
+            let mgr = this.getSingletonManager();
+            if (mgr.has(key)) {
+                return mgr.get(key);
+            }
             let providerMap = this.getProviderParser().parse(...providers);
             let ctx = RuntimeActionContext.parse({
                 tokenKey: key,
