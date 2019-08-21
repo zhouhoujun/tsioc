@@ -17,7 +17,7 @@ export * from './BindParameterTypeAction';
 export * from './InjectPropertyAction';
 export * from './MethodAutorunAction';
 
-// export * from './GetSingletionAction';
+export * from './GetSingletionAction';
 export * from './RegisterSingletionAction';
 export * from './IocGetCacheAction';
 export * from './IocSetCacheAction';

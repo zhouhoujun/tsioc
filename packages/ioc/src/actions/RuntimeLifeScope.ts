@@ -5,7 +5,7 @@ import {
     CreateInstanceAction, ConstructorArgsAction,
     IocBeforeConstructorScope, IocAfterConstructorScope,
     RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
-    InstanceCheckAction, RuntimeDecoratorAction
+    InstanceCheckAction, RuntimeDecoratorAction, GetSingletionAction
 } from './runtime';
 import { IIocContainer } from '../IIocContainer';
 import { IParameter } from '../IParameter';
@@ -71,7 +71,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .registerAction(RuntimeParamScope, true);
 
         this.use(InitReflectAction)
-            // .use(GetSingletionAction)
+            .use(GetSingletionAction)
             .use(IocGetCacheAction)
             .use(ConstructorArgsAction)
             .use(IocBeforeConstructorScope, true)
