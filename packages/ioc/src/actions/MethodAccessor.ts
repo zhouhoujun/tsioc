@@ -96,6 +96,15 @@ export class MethodAccessor implements IMethodAccessor {
 
     }
 
+    /**
+     *create params.
+     *
+     * @param {IIocContainer} container
+     * @param {IParameter[]} params
+     * @param {...ParamProviders[]} providers
+     * @returns {any[]}
+     * @memberof MethodAccessor
+     */
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
         let providerMap = container.get(ProviderParser).parse(...providers);
         return params.map((param, index) => {
