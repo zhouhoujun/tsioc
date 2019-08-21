@@ -342,6 +342,13 @@ export function isClass(target: any): target is Type {
     return classCheck(target) && (!Reflect.hasOwnMetadata('@Abstract', target))
 }
 
+/**
+ * is class or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is ClassType}
+ */
 export function isClassType(target: any): target is ClassType {
     return classCheck(target);
 }

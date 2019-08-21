@@ -38,25 +38,54 @@ export class MetadataService extends IocCoreService {
         return paramNames;
     }
 
+    /**
+     * get decorators of class type.
+     *
+     * @param {ClassType} target
+     * @returns {string[]}
+     * @memberof MetadataService
+     */
     getClassDecorators(target: ClassType): string[] {
         return getClassDecorators(target);
     }
 
+    /**
+     * get decorators of class method.
+     *
+     * @param {ClassType} target
+     * @returns {string[]}
+     * @memberof MetadataService
+     */
     getMethodDecorators(target: ClassType): string[] {
         return getMethodDecorators(target);
     }
 
+    /**
+     * get decorators of class property.
+     *
+     * @param {ClassType} target
+     * @returns {string[]}
+     * @memberof MetadataService
+     */
     getPropertyDecorators(target: ClassType): string[] {
         return getPropDecorators(target);
     }
 
+    /**
+     * get decorators of class parameter.
+     *
+     * @param {*} target
+     * @param {string} [propertyKey]
+     * @returns {string[]}
+     * @memberof MetadataService
+     */
     getParameterDecorators(target: any, propertyKey?: string): string[] {
         propertyKey = propertyKey || 'constructor';
         return getParamDecorators(target, propertyKey);
     }
 
     /**
-     * each class metadata.
+     * interate each class metadata.
      *
      * @param {ClassType} target
      * @param {((meta: ClassMetadata, decor: string) => void | boolean)} express
@@ -84,7 +113,7 @@ export class MetadataService extends IocCoreService {
 
 
     /**
-     * each property metadata.
+     * interate each property metadata.
      *
      * @param {ClassType} target
      * @param {((meta: PropertyMetadata, propertyKey?: string, decor?: string) => void | boolean)} express
@@ -117,7 +146,7 @@ export class MetadataService extends IocCoreService {
     }
 
     /**
-     * each method metadata.
+     * interate each method metadata.
      *
      * @param {Type} target
      * @param {string} propertyKey
@@ -163,6 +192,16 @@ export class MetadataService extends IocCoreService {
         return metadatas;
     }
 
+    /**
+     * interate each parameter metadata.
+     *
+     * @param {*} target
+     * @param {string} propertyKey
+     * @param {((meta: ParameterMetadata, method: string) => void | boolean)} express
+     * @param {Express<string, boolean>} [decorFilter]
+     * @returns {ParameterMetadata[]}
+     * @memberof MetadataService
+     */
     eachParamMetadata(target: any, propertyKey: string, express: (meta: ParameterMetadata, method: string) => void | boolean, decorFilter?: Express<string, boolean>): ParameterMetadata[] {
         let decors = this.getParameterDecorators(target);
         if (decorFilter) {
