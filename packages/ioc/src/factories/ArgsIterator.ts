@@ -1,5 +1,5 @@
 import { Metadate } from '../metadatas';
-import { lang, isMetadataObject } from '../utils';
+import { isMetadataObject } from '../utils';
 
 
 /**

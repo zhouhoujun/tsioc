@@ -1,10 +1,10 @@
 import 'reflect-metadata';
+import { ArgsIterator } from './ArgsIterator';
 import { ClassMetadata } from '../metadatas';
 import { Type, Token, ProvideToken } from '../types';
 import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { isString, isNumber, isBoolean, isToken, isProvideToken } from '../utils';
-import { ArgsIterator } from './ArgsIterator';
 
 /**
  * Type decorator.
