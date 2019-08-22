@@ -1,8 +1,8 @@
-import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
-import { Type, Token } from '../types';
+import { Token } from '../types';
 import { lang, isFunction, isClass } from '../utils';
 import { Inject } from '../decorators';
 import { IocCoreService, ITypeReflect } from '../services';
+import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 
 
 /**

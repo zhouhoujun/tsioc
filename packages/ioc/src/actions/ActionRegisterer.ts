@@ -54,9 +54,6 @@ export class ActionRegisterer<T = IocAction> extends IocCoreService {
      * @memberof ActionRegisterer
      */
     register(container: IIocContainer, action: Type<T>, setup?: boolean): this {
-        // if (!isClass(action)) {
-        //     return this;
-        // }
         if (this.maps.has(action)) {
             return this;
         }
