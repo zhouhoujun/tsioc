@@ -1,6 +1,7 @@
 import { MethodPropMetadata } from '../metadatas';
-import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
+import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
+import { ArgsIteratorAction } from './ArgsIterator';
 
 
 
@@ -26,15 +27,15 @@ export interface IMethodPropDecorator<T extends MethodPropMetadata> {
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata iterator action.
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns {IMethodPropDecorator<T>}
  */
 export function createMethodPropDecorator<T extends MethodPropMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IMethodPropDecorator<T> {
-    let decorator = createDecorator<T>(name, adapter, metadataExtends);
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
     decorator.decoratorType = DecoratorType.Method | DecoratorType.Property;
     return decorator;
 }

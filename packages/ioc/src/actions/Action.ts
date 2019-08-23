@@ -29,7 +29,7 @@ export class IocActionContext extends IocCoreService {
      * @type {*}
      * @memberof IocActionContext
      */
-    scope?: any;
+    actionScope?: any;
 
 
     constructor() {

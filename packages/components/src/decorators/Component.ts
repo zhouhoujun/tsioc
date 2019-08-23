@@ -54,12 +54,12 @@ export interface IComponentDecorator extends IClassDecorator<IComponentMetadata>
  *
  * @Component
  */
-export const Component: IComponentDecorator = createClassDecorator<IComponentMetadata>('Component', adapter => {
-    adapter.next<IComponentMetadata>({
-        match: (arg, args) => isString(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.selector = arg;
+export const Component: IComponentDecorator = createClassDecorator<IComponentMetadata>('Component', [
+    (ctx, next) => {
+        if (isString(ctx.currArg)) {
+            ctx.metadata.selector = ctx.currArg;
+            ctx.next(next);
         }
-    });
-});
+    }
+]);
 

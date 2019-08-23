@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { ParameterMetadata } from '../metadatas';
-import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
+import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken, isProvideMetadata } from '../utils';
-import { ArgsIterator } from './ArgsIterator';
+import { isToken } from '../utils';
+import { ArgsIteratorAction } from './ArgsIterator';
 import { Token } from '../types';
 
 
@@ -39,34 +39,23 @@ export interface IParameterDecorator<T extends ParameterMetadata> {
  * @export
  * @template T metadata type.
  * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata adapter
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns
  */
 export function createParamDecorator<T extends ParameterMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IParameterDecorator<T> {
-
-    let paramAdapter = ((args: ArgsIterator) => {
-        if (adapter) {
-            adapter(args);
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
         }
-        args.next<T>({
-            isMetadata: (arg) => isProvideMetadata(arg, 'index'),
-            match: (arg) => isToken(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.provider = arg;
-            }
-        });
-        // args.next<T>({
-        //     match: (arg) => isString(arg),
-        //     setMetadata: (metadata, arg) => {
-        //         metadata.alias = arg;
-        //     }
-        // });
     });
-    let decorator = createDecorator<T>(name, paramAdapter, metadataExtends);
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
     decorator.decoratorType = DecoratorType.Parameter;
     return decorator;
 }

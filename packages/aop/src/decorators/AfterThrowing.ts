@@ -30,12 +30,11 @@ export const AfterThrowing: IAfterThrowingDecorator<AfterThrowingMetadata> =
     createAdviceDecorator<AfterThrowingMetadata>(
         'AfterThrowing',
         null,
-        args => {
-            args.next<AfterThrowingMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.throwing = arg;
-                }
-            })
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.throwing = arg;
+                ctx.next(next);
+            }
         }
     ) as IAfterThrowingDecorator<AfterThrowingMetadata>;

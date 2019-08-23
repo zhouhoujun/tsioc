@@ -39,19 +39,21 @@ export interface IAspectDecorator extends ITypeDecorator<AspectMetadata> {
  *
  * @Aspect
  */
-export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect', args => {
-    args.next<AspectMetadata>({
-        match: (arg) => isString(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.annotation = arg;
+export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect',
+    [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.annotation = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isArray(arg) || isClass(arg)) {
+                ctx.metadata.within = arg;
+                ctx.next(next);
+            }
         }
-    });
-
-    args.next<AspectMetadata>({
-        match: (arg) => isArray(arg) || isClass(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.within = arg;
-        }
-    });
-}) as IAspectDecorator;
+    ]) as IAspectDecorator;
 

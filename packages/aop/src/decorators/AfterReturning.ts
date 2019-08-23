@@ -30,12 +30,11 @@ export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
     createAdviceDecorator<AfterReturningMetadata>(
         'AfterReturning',
         null,
-        args => {
-            args.next<AfterReturningMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.returning = arg;
-                }
-            })
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.returning = arg;
+                ctx.next(next);
+            }
         }
     ) as IAfterReturningDecorator<AfterReturningMetadata>;

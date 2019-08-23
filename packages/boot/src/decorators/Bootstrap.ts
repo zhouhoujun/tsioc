@@ -1,6 +1,6 @@
 import {
-    Token, MetadataAdapter, MetadataExtends, ITypeDecorator,
-    isFunction, isClass, createClassDecorator
+    Token, MetadataExtends, ITypeDecorator,
+    isFunction, isClass, createClassDecorator, ArgsIteratorAction
 } from '@tsdi/ioc';
 import { RunnableConfigure } from '../annotations';
 
@@ -56,16 +56,16 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [adapter]
+ * @param {MetadataAdapter} [actions]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IBootstrapDecorator<T>}
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createClassDecorator<BootstrapMetadata>(name, adapter, (metadata: T) => {
+    return createClassDecorator<BootstrapMetadata>(name, actions, (metadata: T) => {
         if (metadataExtends) {
             metadataExtends(metadata);
         }

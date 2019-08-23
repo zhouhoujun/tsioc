@@ -51,27 +51,30 @@ export interface InputPropertyDecorator {
     (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
 }
 
-export const Input: InputPropertyDecorator = createParamPropDecorator<BindingPropertyMetadata>('Input', args => {
-    args.next<BindingPropertyMetadata>({
-        match: (arg) => isString(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.bindingName = arg;
+export const Input: InputPropertyDecorator = createParamPropDecorator<BindingPropertyMetadata>('Input', [
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isString(arg)) {
+            ctx.metadata.bindingName = arg;
+            ctx.next(next);
         }
-    });
-    args.next<BindingPropertyMetadata>({
-        match: (arg) => !isUndefined(arg),
-        setMetadata: (metadata, arg) => {
-            if (isToken(arg) && !isString(arg)) {
-                metadata.provider = arg;
-            } else {
-                metadata.defaultValue = arg;
-            }
+    },
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg) && !isString(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
+        } else if (isObject(arg)) {
+            ctx.metadata.defaultValue = arg;
+            ctx.next(next);
         }
-    });
-    args.next<BindingPropertyMetadata>({
-        match: (arg) => isObject(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.defaultValue = arg;
+
+    },
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isObject(arg)) {
+            ctx.metadata.defaultValue = arg;
+            ctx.next(next);
         }
-    });
-});
+    }
+]);

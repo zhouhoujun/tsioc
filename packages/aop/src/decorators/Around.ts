@@ -31,25 +31,26 @@ export const Around: IAroundDecorator<AroundMetadata> =
     createAdviceDecorator<AroundMetadata>(
         'Around',
         null,
-        args => {
-            args.next<AroundMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.args = arg;
+        [
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isString(arg)) {
+                    ctx.metadata.args = arg;
+                    ctx.next(next);
                 }
-            });
-
-            args.next<AroundMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.returning = arg;
+            },
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isString(arg)) {
+                    ctx.metadata.returning = arg;
+                    ctx.next(next);
                 }
-            });
-
-            args.next<AroundMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.throwing = arg;
+            },
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isString(arg)) {
+                    ctx.metadata.throwing = arg;
+                    ctx.next(next);
                 }
-            });
-        }) as IAroundDecorator<AroundMetadata>;
+            }
+        ]) as IAroundDecorator<AroundMetadata>;

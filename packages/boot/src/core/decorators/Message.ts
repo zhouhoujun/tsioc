@@ -1,4 +1,4 @@
-import { TypeMetadata, createClassDecorator, ArgsIterator, Type, isClass, isUndefined } from '@tsdi/ioc';
+import { TypeMetadata, createClassDecorator, Type, isClass } from '@tsdi/ioc';
 import { MessageHandle, MessageContext, MessageQueue, IMessage } from '../messages';
 
 export type MessageDecorator = <TFunction extends Type<IMessage>>(target: TFunction) => TFunction | void;
@@ -77,19 +77,22 @@ export interface IMessageDecorator {
  *
  * @Message
  */
-export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message', (args: ArgsIterator) => {
-    args.next<MessageMetadata>({
-        match: (arg, args) => isClass(arg) && args.length > 0,
-        setMetadata: (metadata, arg) => {
-            metadata.regIn = arg;
+export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message',
+    [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isClass(arg) && ctx.args.length > 0) {
+                ctx.metadata.regIn = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isClass(arg)) {
+                ctx.metadata.before = arg;
+                ctx.next(next);
+            }
         }
-    });
-    args.next<MessageMetadata>({
-        match: (arg) => isClass(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.before = arg;
-        }
-    });
-}, meta => {
-    meta.singleton = true;
-}) as IMessageDecorator;
+    ], meta => {
+        meta.singleton = true;
+    }) as IMessageDecorator;

@@ -1,6 +1,6 @@
 import {
-    MetadataAdapter, MetadataExtends, createClassDecorator,
-    isString, ITypeDecorator, isNumber
+    MetadataExtends, createClassDecorator,
+    isString, ITypeDecorator, isNumber, ArgsIteratorAction
 } from '@tsdi/ioc';
 import { SuiteMetadata } from '../metadata/SuiteMetadata';
 import { SuiteRunnerToken } from '../runner/ISuiteRunner';
@@ -33,31 +33,31 @@ export interface ISuiteDecorator<T extends SuiteMetadata> extends ITypeDecorator
  * @export
  * @template T
  * @param {string} [SuiteType]
- * @param {MetadataAdapter} [adapter]
+ * @param {ArgsIteratorAction<T>[]} [actions]
  * @param {MetadataExtends<T>} [metaExtends]
  * @returns {IFiledDecorator<T>}
  */
 export function createSuiteDecorator<T extends SuiteMetadata>(
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metaExtends?: MetadataExtends<T>): ISuiteDecorator<T> {
     return createClassDecorator<SuiteMetadata>('Suite',
-        args => {
-            if (adapter) {
-                adapter(args);
+        [
+            ...(actions || []),
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isString(arg)) {
+                    ctx.metadata.describe = arg;
+                    ctx.next(next);
+                }
+            },
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isNumber(arg)) {
+                    ctx.metadata.timeout = arg;
+                    ctx.next(next);
+                }
             }
-            args.next<SuiteMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.describe = arg;
-                }
-            });
-            args.next<SuiteMetadata>({
-                match: (arg) => isNumber(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.timeout = arg;
-                }
-            });
-        },
+        ],
         (metadata: T) => {
             if (metaExtends) {
                 metaExtends(metadata);

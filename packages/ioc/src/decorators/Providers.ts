@@ -1,4 +1,4 @@
-import { createDecorator, ArgsIterator, ClassMethodDecorator } from '../factories';
+import { createDecorator, ClassMethodDecorator } from '../factories';
 import { ProvidersMetadata } from '../metadatas';
 import { isArray } from '../utils';
 import { ProviderTypes } from '../providers';
@@ -37,12 +37,13 @@ export interface IProvidersDecorator {
  *
  * @Providers
  */
-export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', ((args: ArgsIterator) => {
-    args.next<ProvidersMetadata>({
-        match: arg => isArray(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.providers = arg;
+export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', [
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isArray(arg)) {
+            ctx.metadata.providers = arg;
+            ctx.next(next);
         }
-    });
-})) as IProvidersDecorator;
+    }
+]) as IProvidersDecorator;
 

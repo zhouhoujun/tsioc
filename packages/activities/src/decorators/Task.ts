@@ -1,6 +1,6 @@
 import {
-    isString, createClassDecorator, MetadataExtends, MetadataAdapter,
-    isClass, ITypeDecorator, lang, ClassType, Type
+    isString, createClassDecorator, MetadataExtends,
+    isClass, ITypeDecorator, lang, ClassType, Type, ArgsIteratorAction
 } from '@tsdi/ioc';
 import { ActivityConfigure } from '../core/ActivityConfigure';
 import { RegFor, BootContext } from '@tsdi/boot';
@@ -48,29 +48,26 @@ export interface ITaskDecorator<T extends ActivityConfigure> extends ITypeDecora
  * @param {string} taskType
  * @param {(Token<IActivityBuilder> | IActivityBuilder)} builder
  * @param {InjectToken<IActivity>} provideType
- * @param {MetadataAdapter} [adapter]
+ * @param {MetadataAdapter} [actions]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {ITaskDecorator<T>}
  */
 export function createTaskDecorator<T extends ActivityConfigure>(
     taskType: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     defaultContext?: Type<BootContext>,
     metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
 
     return createClassDecorator<ActivityConfigure>(taskType,
-        args => {
-            if (adapter) {
-                adapter(args);
-            }
-            args.next<ActivityConfigure>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.selector = arg;
+        [
+            ...(actions || []),
+            (ctx, next) => {
+                if (isString(ctx.currArg)) {
+                    ctx.metadata.selector = ctx.currArg;
+                    ctx.next(next);
                 }
-            });
-
-        },
+            }
+        ],
         metadata => {
             if (metadataExtends) {
                 metadataExtends(metadata as T);

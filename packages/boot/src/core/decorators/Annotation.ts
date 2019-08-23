@@ -1,4 +1,4 @@
-import { ITypeDecorator, MetadataAdapter, MetadataExtends, createClassDecorator } from '@tsdi/ioc';
+import { ITypeDecorator, MetadataExtends, createClassDecorator, ArgsIteratorAction } from '@tsdi/ioc';
 import { IAnnotationMetadata } from '../modules';
 
 
@@ -38,21 +38,17 @@ export interface IAnnotationDecorator<T extends AnnotationMetadata> extends ITyp
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [adapter]
+ * @param {ArgsIteratorAction<T>[]} [actions]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IAnnotationDecorator<T>}
  */
 export function createAnnotationDecorator<T extends AnnotationMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IAnnotationDecorator<T> {
 
     return createClassDecorator<AnnotationMetadata>(name,
-        args => {
-            if (adapter) {
-                adapter(args);
-            }
-        },
+        actions,
         metadata => {
             if (metadataExtends) {
                 metadataExtends(metadata as T);

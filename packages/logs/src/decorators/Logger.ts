@@ -70,32 +70,34 @@ export interface ILoggerDecorator<T extends LoggerMetadata> extends IClassMethod
  *
  * @Logger
  */
-export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorator<TypeMetadata>('Logger',
-    adapter => {
-        adapter.next<LoggerMetadata>({
-            isMetadata: (arg) => isClassMetadata(arg, 'logname'),
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.logname = arg;
+export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorator<LoggerMetadata>('Logger',
+    [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.logname = arg;
+                ctx.next(next);
             }
-        });
-        adapter.next<LoggerMetadata>({
-            match: (arg) => isFunction(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.express = arg;
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isFunction(arg)) {
+                ctx.metadata.express = arg;
+                ctx.next(next);
             }
-        });
-        adapter.next<LoggerMetadata>({
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.message = arg;
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.message = arg;
+                ctx.next(next);
             }
-        });
-
-        adapter.next<LoggerMetadata>({
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg: string) => {
-                metadata.level = Level[arg];
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.level = Level[arg];
+                ctx.next(next);
             }
-        });
-    }) as ILoggerDecorator<LoggerMetadata>;
+        },
+    ]) as ILoggerDecorator<LoggerMetadata>;

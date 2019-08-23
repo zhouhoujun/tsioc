@@ -1,91 +1,133 @@
 import { Metadate } from '../metadatas';
-import { isMetadataObject } from '../utils';
-
-
-/**
- * arg checker.
- *
- * @export
- * @interface CheckExpress
- * @template T
- */
-export interface CheckExpress<T extends Metadate> {
-    /**
-     * arg matched or not.
-     *
-     * @param {*} arg
-     * @param {any[]} [args]
-     * @returns {boolean}
-     * @memberof CheckExpress
-     */
-    match(arg: any, args?: any[]): boolean;
-    /**
-     * arg is meatdata or not.
-     *
-     * @param {*} arg
-     * @returns {boolean}
-     * @memberof CheckExpress
-     */
-    isMetadata?(arg: any): boolean;
-    /**
-     * set arg to metadata.
-     *
-     * @param {T} metadata
-     * @param {*} arg
-     * @memberof CheckExpress
-     */
-    setMetadata(metadata: T, arg: any): void
-}
+import { lang } from '../utils';
 
 /**
- * args iterator.s
+ * args iterator context.
  *
  * @export
- * @class ArgsIterator
+ * @class ArgsIteratorContext
+ * @extends {IocActionContext}
  */
-export class ArgsIterator {
-    private idx: number;
-    private metadata: Metadate;
-    constructor(protected args: any[]) {
-        this.idx = -1;
-        this.metadata = null;
+export class ArgsIteratorContext<T extends Metadate = Metadate> {
+    constructor(public args: any[]) {
+        this.currIndex = 0;
+        this.metadata = {} as T;
+    }
+    metadata: T;
+    currIndex: number;
+
+    get currArg() {
+        if (this.args.length) {
+            return this.args[this.currIndex];
+        }
+        return null;
+    }
+
+    next(next: () => void, checkNextArg = true) {
+        if (checkNextArg) {
+            this.currIndex++;
+        }
+        if (!this.isCompeted()) {
+            next();
+        }
+    }
+
+    getMetadate() {
+        return this.currIndex > 0 ? this.metadata : null;
     }
 
     isCompeted(): boolean {
-        return this.idx >= this.args.length;
-    }
-
-    end() {
-        this.idx = this.args.length;
-    }
-
-    next<T>(express: CheckExpress<T>) {
-        this.idx++;
-        if (this.isCompeted()) {
-            return null;
-        }
-
-        let arg = this.args[this.idx];
-        if (express.isMetadata && express.isMetadata(arg)) {
-            this.metadata = Object.assign(this.metadata || {}, arg);
-            this.end();
-        } else if (express.match(arg, this.args)) {
-            this.metadata = this.metadata || {};
-            express.setMetadata(this.metadata as T, arg);
-        } else if (isMetadataObject(arg)) { // when match failed then check is base metadata.
-            this.metadata = Object.assign(this.metadata || {}, arg);
-            this.end();
-        } else {
-            this.end();
-        }
-    }
-
-    getArgs() {
-        return this.args;
-    }
-
-    getMetadata() {
-        return this.metadata;
+        return this.currIndex >= this.args.length;
     }
 }
+
+export type ArgsIteratorAction<T extends Metadate = Metadate> = lang.IAction<ArgsIteratorContext<T>>;
+
+
+// /**
+//  * arg checker.
+//  *
+//  * @export
+//  * @interface CheckExpress
+//  * @template T
+//  */
+// export interface CheckExpress<T extends Metadate> {
+//     /**
+//      * arg matched or not.
+//      *
+//      * @param {*} arg
+//      * @param {any[]} [args]
+//      * @returns {boolean}
+//      * @memberof CheckExpress
+//      */
+//     match(arg: any, args?: any[]): boolean;
+//     /**
+//      * arg is meatdata or not.
+//      *
+//      * @param {*} arg
+//      * @returns {boolean}
+//      * @memberof CheckExpress
+//      */
+//     isMetadata?(arg: any): boolean;
+//     /**
+//      * set arg to metadata.
+//      *
+//      * @param {T} metadata
+//      * @param {*} arg
+//      * @memberof CheckExpress
+//      */
+//     setMetadata(metadata: T, arg: any): void
+// }
+
+// /**
+//  * args iterator.s
+//  *
+//  * @export
+//  * @class ArgsIterator
+//  */
+// export class ArgsIterator {
+//     private idx: number;
+//     private metadata: Metadate;
+//     constructor(protected args: any[]) {
+//         this.idx = -1;
+//         this.metadata = null;
+//     }
+
+//     isCompeted(): boolean {
+//         return this.idx >= this.args.length;
+//     }
+
+//     end() {
+//         this.idx = this.args.length;
+//     }
+
+//     next<T>(express: CheckExpress<T>) {
+//         this.idx++;
+//         if (this.isCompeted()) {
+//             return null;
+//         }
+
+//         let arg = this.args[this.idx];
+//         if (express.isMetadata && express.isMetadata(arg)) {
+//             this.metadata = Object.assign(this.metadata || {}, arg);
+//             this.end();
+//         } else if (express.match(arg, this.args)) {
+//             this.metadata = this.metadata || {};
+//             express.setMetadata(this.metadata as T, arg);
+//         } else if (isMetadataObject(arg)) { // when match failed then check is base metadata.
+//             this.metadata = Object.assign(this.metadata || {}, arg);
+//             this.end();
+//         } else {
+//             this.end();
+//         }
+//     }
+
+//     getArgs() {
+//         return this.args;
+//     }
+
+//     getMetadata() {
+//         return this.metadata;
+//     }
+// }
 

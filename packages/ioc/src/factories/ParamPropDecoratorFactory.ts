@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { ParamPropMetadata } from '../metadatas';
-import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
+import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken, isProvideMetadata } from '../utils';
-import { ArgsIterator } from './ArgsIterator';
+import { isToken } from '../utils';
+import { ArgsIteratorAction } from './ArgsIterator';
 import { Token } from '../types';
 
 
@@ -42,27 +42,23 @@ export interface IParamPropDecorator<T extends ParamPropMetadata> {
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata adapter
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns {IParamPropDecorator<T>}
  */
 export function createParamPropDecorator<T extends ParamPropMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IParamPropDecorator<T> {
-    let paramPropAdapter = ((args: ArgsIterator) => {
-        if (adapter) {
-            adapter(args);
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
         }
-        args.next<T>({
-            isMetadata: (arg) => isProvideMetadata(arg, 'index'),
-            match: (arg) => isToken(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.provider = arg;
-            }
-        });
     });
-    let decorator = createDecorator<T>(name, paramPropAdapter, metadataExtends);
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
     decorator.decoratorType = DecoratorType.Property | DecoratorType.Parameter;
     return decorator;
 }

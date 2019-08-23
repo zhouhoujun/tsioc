@@ -1,8 +1,8 @@
 import { TypeMetadata, MethodParamPropMetadata } from '../metadatas';
-import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
+import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { ArgsIterator } from './ArgsIterator';
-import { isProvideMetadata, isToken, isArray } from '../utils';
+import { ArgsIteratorAction } from './ArgsIterator';
+import { isToken, isArray } from '../utils';
 import { Token } from '../types';
 import { PropParamDecorator } from './ParamPropDecoratorFactory';
 import { ProviderTypes } from '../providers';
@@ -47,31 +47,27 @@ export interface IMethodPropParamDecorator<T extends TypeMetadata> {
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {MetadataAdapter} [actions]  metadata adapter
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns {IMethodPropParamDecorator<T>}
  */
 export function createMethodPropParamDecorator<T extends MethodParamPropMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IMethodPropParamDecorator<T> {
 
-    let decorator = createDecorator<T>(name, (args: ArgsIterator) => {
-        if (adapter) {
-            adapter(args);
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isArray(arg)) {
+            ctx.metadata.providers = arg;
+            ctx.next(next);
+        } else if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
         }
-        args.next<T>({
-            isMetadata: (arg) => isProvideMetadata(arg, 'index'),
-            match: (arg) => isToken(arg) || isArray(arg),
-            setMetadata: (metadata, arg) => {
-                if (isArray(arg)) {
-                    metadata.providers = arg;
-                } else {
-                    metadata.provider = arg;
-                }
-            }
-        });
-    }, metadataExtends);
+    })
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
     decorator.decoratorType = DecoratorType.Method | DecoratorType.Property | DecoratorType.Parameter;
     return decorator;
 }

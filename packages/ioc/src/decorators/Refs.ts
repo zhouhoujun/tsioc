@@ -1,4 +1,4 @@
-import { createDecorator, ArgsIterator } from '../factories';
+import { createDecorator } from '../factories';
 import { RefMetadata } from '../metadatas';
 import { isToken, isString } from '../utils';
 import { Token } from '../types';
@@ -48,24 +48,27 @@ export interface IRefsDecorator {
  *
  * @Refs
  */
-export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', ((args: ArgsIterator) => {
-    args.next<RefMetadata>({
-        match: arg => isToken(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.refs = { target: arg };
+export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', [
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.refs = { target: arg };
+            ctx.next(next);
         }
-    });
-    args.next<RefMetadata>({
-        match: arg => isToken(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.refs.provide = arg;
+    },
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.refs.provide = arg;
+            ctx.next(next);
         }
-    });
-    args.next<RefMetadata>({
-        match: arg => isString(arg),
-        setMetadata: (metadata, arg) => {
-            metadata.refs.alias = arg;
+    },
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isString(arg)) {
+            ctx.metadata.refs.alias = arg;
+            ctx.next(next);
         }
-    });
-})) as IRefsDecorator;
+    }
+]) as IRefsDecorator;
 

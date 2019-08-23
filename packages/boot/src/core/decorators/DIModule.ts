@@ -1,4 +1,4 @@
-import { createClassDecorator, MetadataAdapter, MetadataExtends, ITypeDecorator, isClass, lang } from '@tsdi/ioc';
+import { createClassDecorator, MetadataExtends, ITypeDecorator, isClass, lang, ArgsIteratorAction } from '@tsdi/ioc';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**
@@ -45,21 +45,17 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  * @export
  * @template T
  * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]
+ * @param {MetadataAdapter} [actions]
  * @param {MetadataExtends<T>} [metadataExtends]
  * @returns {IDIModuleDecorator<T>}
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IDIModuleDecorator<T> {
 
     return createClassDecorator<DIModuleMetadata>(name,
-        args => {
-            if (adapter) {
-                adapter(args);
-            }
-        },
+        actions,
         metadata => {
             if (metadataExtends) {
                 metadataExtends(metadata as T);

@@ -1,19 +1,15 @@
 import 'reflect-metadata';
 import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
-import { ArgsIterator } from './ArgsIterator';
+import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
-    isNumber, isArray, lang, isString
+    isNumber, isArray, lang, isString, isBaseObject
 } from '../utils';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
 
 
 export const ParamerterName = 'paramerter_names';
-
-export interface MetadataAdapter {
-    (args: ArgsIterator);
-}
 
 /**
  * extend metadata.
@@ -63,11 +59,11 @@ export interface IDecorator<T extends Metadate> {
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {ArgsIteratorAction[]} [actions]  metadata iterator actions.
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns {*}
  */
-export function createDecorator<T>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): any {
+export function createDecorator<T>(name: string, actions?: ArgsIteratorAction<T>[], metadataExtends?: MetadataExtends<T>): any {
     let metaName = `@${name}`;
 
     let factory = (...args: any[]) => {
@@ -77,7 +73,7 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
                 return storeMetadata(name, metaName, args, metadata, metadataExtends);
             }
         }
-        metadata = argsToMetadata(args, adapter);
+        metadata = argsToMetadata<T>(args, actions);
         if (metadata) {
             return (...args: any[]) => {
                 return storeMetadata(name, metaName, args, metadata, metadataExtends);
@@ -100,15 +96,15 @@ export function createDecorator<T>(name: string, adapter?: MetadataAdapter, meta
     return factory;
 }
 
-function argsToMetadata<T>(args: any[], adapter?: MetadataAdapter): T {
+function argsToMetadata<T extends Metadate>(args: any[], actions?: ArgsIteratorAction<T>[]): T {
     let metadata: T = null;
     if (args.length) {
-        if (adapter) {
-            let iterator = new ArgsIterator(args);
-            adapter(iterator);
-            metadata = iterator.getMetadata() as T;
-        } else if (args.length === 1 && isMetadataObject(args[0])) {
+        if (args.length === 1 && isMetadataObject(args[0])) {
             metadata = args[0];
+        } else if (actions) {
+            let ctx = new ArgsIteratorContext<T>(args);
+            lang.execAction(actions, ctx);
+            metadata = ctx.getMetadate();
         }
     }
     return metadata;

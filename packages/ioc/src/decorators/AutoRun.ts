@@ -1,6 +1,6 @@
 import { IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../factories';
 import { AutorunMetadata } from '../metadatas';
-import { isClassMetadata, isString, isNumber } from '../utils';
+import { isString, isNumber } from '../utils';
 
 
 /**
@@ -41,19 +41,20 @@ export interface IAutorunDecorator extends IClassMethodDecorator<AutorunMetadata
  *
  * @Autorun
  */
-export const Autorun: IAutorunDecorator = createClassMethodDecorator<AutorunMetadata>('Autorun', args => {
-    args.next<AutorunMetadata>({
-        isMetadata: (arg) => isClassMetadata(arg, 'autorun'),
-        match: (arg) => isString(arg) || isNumber(arg),
-        setMetadata: (metadata, arg) => {
+export const Autorun: IAutorunDecorator = createClassMethodDecorator<AutorunMetadata>('Autorun', [
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isString(arg) || isNumber(arg)) {
             if (isString(arg)) {
-                metadata.autorun = arg;
+                ctx.metadata.autorun = arg;
+                ctx.next(next);
             } else {
-                metadata.order = arg;
+                ctx.metadata.order = arg;
+                ctx.next(next);
             }
         }
-    });
-}, (metadata) => {
+    }
+], (metadata) => {
     metadata.singleton = true;
     return metadata;
 }) as IAutorunDecorator;

@@ -1,8 +1,8 @@
 import { PropertyMetadata } from '../metadatas';
-import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
+import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken, isProvideMetadata } from '../utils';
-import { ArgsIterator } from './ArgsIterator';
+import { isToken } from '../utils';
+import { ArgsIteratorAction } from './ArgsIterator';
 import { Token } from '../types';
 
 /**
@@ -36,24 +36,20 @@ export interface IPropertyDecorator<T extends PropertyMetadata> {
  * @export
  * @template T metadata type.
  * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata adapter
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns
  */
-export function createPropDecorator<T extends PropertyMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IPropertyDecorator<T> {
-    let propPropAdapter = ((args: ArgsIterator) => {
-        if (adapter) {
-            adapter(args);
+export function createPropDecorator<T extends PropertyMetadata>(name: string, actions?: ArgsIteratorAction<T>[], metadataExtends?: MetadataExtends<T>): IPropertyDecorator<T> {
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
         }
-        args.next<T>({
-            isMetadata: (arg) => isProvideMetadata(arg),
-            match: (arg) => isToken(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.provider = arg;
-            }
-        });
     });
-    let decorator = createDecorator<T>(name, propPropAdapter, metadataExtends);
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
     decorator.decoratorType = DecoratorType.Property;
     return decorator;
 }

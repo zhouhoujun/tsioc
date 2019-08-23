@@ -1,5 +1,6 @@
-import { MetadataExtends, MetadataAdapter, isString, isNumber, createMethodDecorator } from '@tsdi/ioc';
+import { MetadataExtends, isString, isNumber, createMethodDecorator, ArgsIteratorAction } from '@tsdi/ioc';
 import { TestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
+import { isArray } from 'util';
 
 
 /**
@@ -21,32 +22,27 @@ export interface ITestDecorator<T extends TestMetadata> {
  * @export
  * @template T
  * @param {string} [TestType]
- * @param {MetadataAdapter} [adapter]
+ * @param {MetadataAdapter} [actions]
  * @param {MetadataExtends<T>} [metaExtends]
  * @returns {ITestDecorator<T>}
  */
 export function createTestDecorator<T extends TestMetadata>(
     name: string,
-    adapter?: MetadataAdapter,
-    finallyAdapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T> | ArgsIteratorAction<T>[],
+    finallyActions?: ArgsIteratorAction<T> | ArgsIteratorAction<T>[],
     metaExtends?: MetadataExtends<T>): ITestDecorator<T> {
     return createMethodDecorator<TestMetadata>(name,
-        args => {
-            if (adapter) {
-                adapter(args);
-            }
-
-            args.next<TestCaseMetadata>({
-                match: (arg) => isNumber(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.timeout = arg;
+        [
+            ...(actions ? (isArray(actions) ? actions : [actions]) : []),
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isNumber(arg)) {
+                    ctx.metadata.timeout = arg;
+                    ctx.next(next);
                 }
-            });
-
-            if (finallyAdapter) {
-                finallyAdapter(args);
-            }
-        }, metaExtends) as ITestDecorator<T>;
+            },
+            ...(finallyActions ? (isArray(finallyActions) ? finallyActions : [finallyActions]) : [])
+        ], metaExtends) as ITestDecorator<T>;
 }
 
 /**
@@ -77,21 +73,18 @@ export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
  * @template T
  */
 export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('TestCase',
-    args => {
-        args.next<TestCaseMetadata>({
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.title = arg;
-            }
-        });
-
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isString(arg)) {
+            ctx.metadata.title = arg;
+            ctx.next(next);
+        }
     },
-    args => {
-        args.next<TestCaseMetadata>({
-            match: (arg) => isNumber(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.setp = arg;
-            }
-        });
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isNumber(arg)) {
+            ctx.metadata.setp = arg;
+            ctx.next(next);
+        }
     }) as ITestCaseDecorator;
 

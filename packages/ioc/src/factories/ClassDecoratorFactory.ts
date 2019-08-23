@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { ArgsIterator } from './ArgsIterator';
+import { ArgsIteratorAction } from './ArgsIterator';
 import { ClassMetadata } from '../metadatas';
 import { Type, Token, ProvideToken } from '../types';
-import { createDecorator, MetadataAdapter, MetadataExtends } from './DecoratorFactory';
+import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { isString, isNumber, isBoolean, isToken, isProvideToken } from '../utils';
 
@@ -91,51 +91,52 @@ export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator
  * @export
  * @template T metadata type.
  * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata iterator action.
  * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
  * @returns {*}
  */
-export function createClassDecorator<T extends ClassMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassDecorator<T> {
+export function createClassDecorator<T extends ClassMetadata>(name: string, actions?: ArgsIteratorAction<T>[], metadataExtends?: MetadataExtends<T>): IClassDecorator<T> {
 
-    let classAdapter = ((args: ArgsIterator) => {
-        if (adapter) {
-            adapter(args);
+
+    actions = actions || [];
+    actions.push(
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if ((ctx.args.length > 1) ? isToken(arg) : isProvideToken(arg)) {
+                ctx.metadata.provide = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.alias = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isBoolean(arg)) {
+                ctx.metadata.singleton = arg;
+                ctx.next(next);
+            } else if (isNumber(arg)) {
+                ctx.metadata.expires = arg;
+                ctx.next(next);
+            } else if (isToken(arg)) {
+                ctx.metadata.refs = { target: arg, provide: ctx.metadata.provide || ctx.metadata.type, alias: ctx.metadata.alias };
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isNumber(arg)) {
+                ctx.metadata.expires = arg;
+                ctx.next(next);
+            }
         }
-        args.next<T>({
-            match: (arg, args) => (args.length > 1) ? isToken(arg) : isProvideToken(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.provide = arg;
-            }
-        });
+    );
 
-        args.next<T>({
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.alias = arg;
-            }
-        });
-
-        args.next<T>({
-            match: (arg) => isBoolean(arg) || isNumber(arg) || isToken(arg),
-            setMetadata: (metadata, arg) => {
-                if (isBoolean(arg)) {
-                    metadata.singleton = arg;
-                } else if (isNumber(arg)) {
-                    metadata.expires = arg;
-                } else if (isToken(arg)) {
-                    metadata.refs = { target: arg, provide: metadata.provide || metadata.type, alias: metadata.alias };
-                }
-            }
-        });
-
-        args.next<T>({
-            match: (arg) => isToken(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.expires = arg;
-            }
-        });
-    });
-    let decorator = createDecorator<T>(name, classAdapter, metadataExtends);
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
     decorator.decoratorType = DecoratorType.Class;
     return decorator;
 }

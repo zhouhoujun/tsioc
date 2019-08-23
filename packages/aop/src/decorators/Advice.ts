@@ -1,6 +1,7 @@
 
-import { createMethodDecorator, IMethodDecorator, MetadataAdapter, MetadataExtends, isString, isRegExp } from '@tsdi/ioc';
+import { createMethodDecorator, IMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction } from '@tsdi/ioc';
 import { AdviceMetadata } from '../metadatas';
+import { isArray } from 'util';
 
 /**
  * advice decorator for method.
@@ -52,39 +53,45 @@ export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecor
 }
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string,
-    adapter?: MetadataAdapter,
-    afterPointcutAdapter?: MetadataAdapter,
+    actions?: ArgsIteratorAction<T>[],
+    afterPointcutActions?: ArgsIteratorAction<T> | ArgsIteratorAction<T>[],
     metadataExtends?: MetadataExtends<T>): IAdviceDecorator<T> {
+    actions = actions || [];
+
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isString(arg) || isRegExp(arg)) {
+            ctx.metadata.pointcut = arg;
+            ctx.next(next);
+        }
+    });
+    if (afterPointcutActions) {
+        if (isArray(afterPointcutActions)) {
+            actions.push(...afterPointcutActions);
+        } else {
+            actions.push(afterPointcutActions);
+        }
+    }
+
+    actions.push(
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg) && ctx.args.indexOf(arg) === 1) {
+                ctx.metadata.annotationArgName = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.annotationName = arg;
+                ctx.next(next);
+            }
+        }
+    );
 
     return createMethodDecorator<AdviceMetadata>('Advice',
-        args => {
-            if (adapter) {
-                adapter(args);
-            }
-            args.next<AdviceMetadata>({
-                match: (arg) => isString(arg) || isRegExp(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.pointcut = arg;
-                }
-            });
-            if (afterPointcutAdapter) {
-                afterPointcutAdapter(args);
-            }
-
-            args.next<AdviceMetadata>({
-                match: (arg, args) => isString(arg) && args.indexOf(arg) === 1,
-                setMetadata: (metadata, arg) => {
-                    metadata.annotationArgName = arg;
-                }
-            });
-
-            args.next<AdviceMetadata>({
-                match: (arg) => isString(arg),
-                setMetadata: (metadata, arg) => {
-                    metadata.annotationName = arg;
-                }
-            });
-        },
+        actions,
         metadata => {
             if (metadataExtends) {
                 metadataExtends(metadata as T);
