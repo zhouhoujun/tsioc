@@ -3,6 +3,7 @@ import { isFunction } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
 import { getOwnTypeMetadata, hasOwnClassMetadata } from '../../factories';
 import { DesignActionContext } from './DesignActionContext';
+
 /**
  * method auto run action.
  *
