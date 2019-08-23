@@ -24,7 +24,7 @@ export interface ActionContextOption<T extends IIocContainer = IIocContainer> {
 export class IocActionContext extends IocCoreService {
 
     /**
-     * curr action scope
+     * current action scope
      *
      * @type {*}
      * @memberof IocActionContext
