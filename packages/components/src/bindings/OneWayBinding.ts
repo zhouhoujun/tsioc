@@ -42,5 +42,4 @@ export class OneWayBinding<T> extends ParseBinding<T> {
     }
 }
 
-export const AssignBinding = OneWayBinding;
 
