@@ -196,7 +196,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootOption
      */
     scope?: any;
-
     /**
      * the template data to binding property.
      *
@@ -204,7 +203,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootOption
      */
     template?: any;
-
     /**
      * custom configures
      *
@@ -212,7 +210,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     configures?: (string | RunnableConfigure)[] = [];
-
     /**
      * target module instace.
      *
@@ -220,7 +217,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     target?: any;
-
     /**
      * boot run args.
      *
@@ -228,7 +224,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     args?: string[];
-
     /**
      * configure bootstrap instance.
      *
@@ -236,7 +231,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof RunnableOptions
      */
     bootstrap?: any;
-
     /**
      *  custom boot input data
      *
@@ -244,7 +238,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof RunnableOptions
      */
     data?: any;
-
     /**
      * auto run runnable or not.
      *
@@ -252,7 +245,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     autorun?: boolean;
-
     /**
      * bootstrap runnable service.
      *
@@ -260,7 +252,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     runnable?: Startup;
-
     /**
      * startup services
      *
@@ -278,7 +269,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     deps?: LoadType[];
-
     /**
     * providers.
     *
@@ -286,7 +276,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     * @memberof BootOptions
     */
     providers?: ProviderTypes[];
-
     /**
      * get boot target.
      *
