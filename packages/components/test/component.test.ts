@@ -19,6 +19,7 @@ class Component1 {
 
 @Component('selector2')
 class Component2 extends Component1 {
+    @Input('test', 'default test') defaultTest: string;
     @Input() address: string;
 }
 
@@ -193,6 +194,7 @@ export class CTest {
     async test1() {
         expect(this.ctx.getBootTarget() instanceof Component2).toBeTruthy();
         expect(this.ctx.getBootTarget().name).toEqual('test');
+        expect(this.ctx.getBootTarget().defaultTest).toEqual('default test');
         expect(this.ctx.getBootTarget().address).toEqual('cd');
     }
 

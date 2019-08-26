@@ -14,7 +14,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
             src: 'src/**/*.ts',
             dist: '../../dist/cli/lib',
             clean: '../../dist/cli',
-            test: 'test/**/*.spec.ts',
+            test: 'test/**/*.spec.ts'
         },
         <AssetActivityOption>{
             activity: 'asset',

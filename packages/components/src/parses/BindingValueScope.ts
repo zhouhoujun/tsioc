@@ -167,7 +167,6 @@ export class AssignBindValueHandle extends ParseHandle {
 export class AssignDefaultValueHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
         ctx.value = ctx.binding.defaultValue;
-
         if (isNullOrUndefined(ctx.value)) {
             await next();
         }
