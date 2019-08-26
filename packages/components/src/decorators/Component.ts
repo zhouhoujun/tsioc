@@ -58,7 +58,8 @@ export const Component: IComponentDecorator = createClassDecorator<IComponentMet
     (ctx, next) => {
         if (isString(ctx.currArg)) {
             ctx.metadata.selector = ctx.currArg;
+            ctx.next(next);
         }
     }
-]);
+], true);
 

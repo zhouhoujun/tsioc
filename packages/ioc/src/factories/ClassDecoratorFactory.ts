@@ -121,11 +121,11 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, acti
 export function createClassDecorator<T extends ClassMetadata>(name: string, actions?: any, metadataExtends?: any, appendCheck = false): IClassDecorator<T> {
     if (isBoolean(actions)) {
         appendCheck = actions;
-        actions = [];
+        actions = undefined;
         metadataExtends = undefined;
     } else if (isBoolean(metadataExtends)) {
-        metadataExtends = undefined;
         appendCheck = metadataExtends;
+        metadataExtends = undefined;
     }
 
     if (appendCheck) {

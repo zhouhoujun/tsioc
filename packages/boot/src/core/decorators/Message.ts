@@ -90,7 +90,7 @@ export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>(
             let arg = ctx.currArg;
             if (isClass(arg)) {
                 ctx.metadata.before = arg;
-                ctx.next(next);
+                // ctx.next(next);
             }
         }
     ], meta => {

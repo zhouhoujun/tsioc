@@ -1,6 +1,6 @@
-import { MetadataExtends, isString, isNumber, createMethodDecorator, ArgsIteratorAction } from '@tsdi/ioc';
+import { MetadataExtends, isString, isNumber, createMethodDecorator, ArgsIteratorAction, isArray } from '@tsdi/ioc';
 import { TestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
-import { isArray } from 'util';
+
 
 
 /**

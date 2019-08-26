@@ -1,7 +1,7 @@
 
-import { createMethodDecorator, IMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction } from '@tsdi/ioc';
+import { createMethodDecorator, IMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction, isArray } from '@tsdi/ioc';
 import { AdviceMetadata } from '../metadatas';
-import { isArray } from 'util';
+
 
 /**
  * advice decorator for method.
