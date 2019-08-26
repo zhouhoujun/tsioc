@@ -35,19 +35,19 @@ export interface IIocCacheManager {
      * @memberof ICacheManager
      */
     get(targetType: Type, expires?: number): any;
-    /**
-     * is check expires or not.
-     *
-     * @returns {boolean}
-     * @memberof ICacheManager
-     */
-    isChecking(): boolean;
-    /**
-     * run check expires.
-     *
-     * @memberof ICacheManager
-     */
-    checkExpires();
+    // /**
+    //  * is check expires or not.
+    //  *
+    //  * @returns {boolean}
+    //  * @memberof ICacheManager
+    //  */
+    // isChecking(): boolean;
+    // /**
+    //  * run check expires.
+    //  *
+    //  * @memberof ICacheManager
+    //  */
+    // checkExpires();
     /**
      * destory cache
      *
@@ -94,13 +94,9 @@ export interface CacheTarget {
  */
 export class IocCacheManager implements IIocCacheManager {
 
-    cacheTokens: Map<Type, CacheTarget>;
+    cacheTokens: WeakMap<Type, CacheTarget>;
     constructor(protected container: IIocContainer) {
-        this.cacheTokens = new Map();
-    }
-
-    isChecking() {
-        return !!this.timeout;
+        this.cacheTokens = new WeakMap();
     }
 
     hasCache(targetType: Type) {
@@ -119,9 +115,6 @@ export class IocCacheManager implements IIocCacheManager {
             }
         }
         this.cacheTokens.set(targetType, cache);
-        if (!this.isChecking()) {
-            this.checkExpires();
-        }
     }
 
     get(targetType: Type, expires?: number) {
@@ -141,32 +134,6 @@ export class IocCacheManager implements IIocCacheManager {
         }
 
         return result;
-    }
-
-    private timeout;
-    checkExpires() {
-        if (this.timeout) {
-            clearTimeout(this.timeout);
-            this.timeout = 0;
-        }
-        if (this.cacheTokens.size > 0) {
-            let timeoutCaches = [];
-            this.cacheTokens.forEach((cache, targetType) => {
-                if (cache.expires >= Date.now()) {
-                    timeoutCaches.push(targetType);
-                }
-            });
-
-            if (timeoutCaches.length) {
-                timeoutCaches.forEach(targetType => {
-                    this.destroy(targetType, this.cacheTokens.get(targetType).target);
-                });
-            }
-
-            this.timeout = setTimeout(() => {
-                this.checkExpires();
-            }, 60000);
-        }
     }
 
     destroy(targetType: Type, target?: any) {

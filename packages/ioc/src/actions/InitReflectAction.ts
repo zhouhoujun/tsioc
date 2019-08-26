@@ -20,8 +20,8 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
         }
         if (!ctx.targetReflect && ctx.targetType) {
             let typeRefs = this.container.getTypeReflects();
-            let metaSer = this.container.get(MetadataService);
             if (!typeRefs.has(ctx.targetType)) {
+                let metaSer = this.container.get(MetadataService);
                 let targetReflect: ITypeReflect = {
                     type: ctx.targetType,
                     classDecors: metaSer.getClassDecorators(ctx.targetType).reduce((obj, dec) => {

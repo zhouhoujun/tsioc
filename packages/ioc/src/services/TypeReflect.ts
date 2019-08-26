@@ -83,10 +83,10 @@ export interface ITypeReflect extends ClassMetadata {
  * @extends {IocCoreService}
  */
 export class TypeReflects extends IocCoreService {
-    map: Map<ClassType, ITypeReflect>;
+    map: WeakMap<ClassType, ITypeReflect>;
     constructor() {
         super();
-        this.map = new Map();
+        this.map = new WeakMap();
     }
 
     has(type: ClassType): boolean {
