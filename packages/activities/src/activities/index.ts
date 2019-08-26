@@ -2,7 +2,6 @@ export * from './ControlerActivity';
 export * from './BodyActivity';
 export * from './ConditionActivity';
 export * from './TimerActivity';
-// export * from './AssignActivity';
 
 
 export * from './Parallel';
