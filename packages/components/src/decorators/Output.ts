@@ -65,20 +65,15 @@ export const Output: OutputPropertyDecorator = createParamPropDecorator<BindingP
     (ctx, next) => {
         let arg = ctx.currArg;
 
-        if (isToken(arg) && !isString(arg)) {
+        if (ctx.args.length > 2 && isToken(arg)) {
             ctx.metadata.provider = arg;
             ctx.next(next);
-        } else if (isObject(arg)) {
+        } else {
             ctx.metadata.defaultValue = arg;
-            ctx.next(next);
         }
 
     },
     (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isObject(arg)) {
-            ctx.metadata.defaultValue = arg;
-            ctx.next(next);
-        }
+        ctx.metadata.defaultValue = ctx.currArg;
     }
 ]);

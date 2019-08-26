@@ -55,5 +55,5 @@ export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('As
                 ctx.next(next);
             }
         }
-    ]) as IAspectDecorator;
+    ], true) as IAspectDecorator;
 

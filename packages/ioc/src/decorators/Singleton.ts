@@ -49,5 +49,5 @@ export interface ISingletonDecorator extends ITypeDecorator<ClassMetadata> {
 export const Singleton: ISingletonDecorator = createClassDecorator<ClassMetadata>('Singleton', null, (metadata) => {
     metadata.singleton = true;
     return metadata;
-}) as ISingletonDecorator;
+}, true) as ISingletonDecorator;
 

@@ -25,5 +25,5 @@ export interface IInjectableDecorator extends IClassDecorator<InjectableMetadata
  *
  * @Injectable
  */
-export const Injectable: IInjectableDecorator = createClassDecorator<InjectableMetadata>('Injectable');
+export const Injectable: IInjectableDecorator = createClassDecorator<InjectableMetadata>('Injectable', true);
 
