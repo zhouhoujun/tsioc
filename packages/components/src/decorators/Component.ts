@@ -1,4 +1,4 @@
-import { createClassDecorator, IClassDecorator, InjectableMetadata, isString } from '@tsdi/ioc';
+import { createClassDecorator, InjectableMetadata, isString, ITypeDecorator } from '@tsdi/ioc';
 
 /**
  * component metadata.
@@ -30,7 +30,7 @@ export interface IComponentMetadata extends InjectableMetadata {
  * @interface IInjectableDecorator
  * @extends {IClassDecorator<IComponentMetadata>}
  */
-export interface IComponentDecorator extends IClassDecorator<IComponentMetadata> {
+export interface IComponentDecorator extends ITypeDecorator<IComponentMetadata> {
     /**
      * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
      *
@@ -61,5 +61,5 @@ export const Component: IComponentDecorator = createClassDecorator<IComponentMet
             ctx.next(next);
         }
     }
-], true);
+]);
 
