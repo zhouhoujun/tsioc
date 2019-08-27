@@ -59,8 +59,8 @@ export abstract class Renderer<T = any, TCtx extends BootContext = BootContext> 
         if (!this._ctx) {
             this._ctx = ctx;
         }
-        if (ctx.renderHost) {
-            await this.render(ctx.renderHost);
+        if (this.context.renderHost) {
+            await this.render(this.context.renderHost);
         }
     }
 
