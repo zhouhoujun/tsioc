@@ -59,7 +59,9 @@ export abstract class Renderer<T = any, TCtx extends BootContext = BootContext> 
         if (!this._ctx) {
             this._ctx = ctx;
         }
-        await this.render();
+        if (ctx.renderHost) {
+            await this.render(ctx.renderHost);
+        }
     }
 
     /**
@@ -69,7 +71,7 @@ export abstract class Renderer<T = any, TCtx extends BootContext = BootContext> 
      * @returns {Promise<any>}
      * @memberof IRunner
      */
-    abstract render(data?: any): Promise<void>;
+    abstract render(host?: any): Promise<void>;
 
 }
 

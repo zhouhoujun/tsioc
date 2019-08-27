@@ -71,6 +71,13 @@ export interface BootOption extends AnnoationOption {
     bootstrap?: any;
 
     /**
+     * render host container.
+     *
+     * @type {*}
+     * @memberof BootOption
+     */
+    renderHost?: any;
+    /**
      * component scope.
      *
      * @type {*}
@@ -160,6 +167,8 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     getLogManager(): ILoggerManager {
         return this.raiseContainer().resolve(ConfigureLoggerManger);
     }
+
+    renderHost?: any;
 
     /**
      * boot base url.
