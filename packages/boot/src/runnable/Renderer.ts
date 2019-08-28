@@ -67,7 +67,7 @@ export abstract class Renderer<T = any, TCtx extends BootContext = BootContext> 
     /**
      * render component instance.
      *
-     * @param {*} [data]
+     * @param {*} [host]
      * @returns {Promise<any>}
      * @memberof IRunner
      */
