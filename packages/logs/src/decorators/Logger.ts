@@ -1,7 +1,7 @@
 import { Level } from '../Level';
 import {
     Express, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator,
-    ClassMethodDecorator, isClassMetadata, isString, isFunction
+    ClassMethodDecorator, isString, isFunction
 } from '@tsdi/ioc';
 
 
