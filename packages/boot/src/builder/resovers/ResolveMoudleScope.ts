@@ -18,7 +18,6 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> {
     }
 
     setup() {
-
         this.use(InitResolveModuleHandle)
             .use(ResolveModuleHandle)
             .use(DecoratorBuildHandle);
