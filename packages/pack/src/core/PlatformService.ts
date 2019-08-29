@@ -7,7 +7,6 @@ import {
     mkdir, cp, rm
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
-// import * as globby from 'globby';
 import { ProcessRunRootToken } from '@tsdi/boot';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
