@@ -59,5 +59,4 @@ export interface RunnableConfigure extends ModuleConfigure {
      * @memberof AppConfigure
      */
     connections?: any;
-
 }
