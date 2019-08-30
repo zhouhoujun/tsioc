@@ -14,7 +14,8 @@ import { isFunction, lang, isString } from '../utils';
  * @extends {IocCoreService}
  */
 export class DecoratorProvider extends IocCoreService {
-    map: Map<string, ProviderMap>;
+    protected map: Map<string, ProviderMap>;
+
     constructor(private container: IIocContainer) {
         super()
         this.map = new Map();
@@ -35,6 +36,13 @@ export class DecoratorProvider extends IocCoreService {
         return false;
     }
 
+    /**
+     * get decorator.
+     *
+     * @param {(string | Function | object)} decorator
+     * @returns {string}
+     * @memberof DecoratorProvider
+     */
     getKey(decorator: string | Function | object): string {
         if (isString(decorator)) {
             return decorator;

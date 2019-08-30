@@ -10,6 +10,15 @@ import { Express } from '../types';
  * @template T
  */
 export class Defer<T> {
+    /**
+     * create defer.
+     *
+     * @static
+     * @template T
+     * @param {((val: T) => T | PromiseLike<T>)} [then]
+     * @returns {Defer<T>}
+     * @memberof Defer
+     */
     static create<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
         let defer = new Defer<T>();
         if (then) {

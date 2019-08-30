@@ -28,6 +28,13 @@ export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_Conta
  */
 export interface IIocContainer extends IResolverContainer {
 
+    /**
+     * get container factory.
+     *
+     * @template T
+     * @returns {ContainerFactory<T>}
+     * @memberof IIocContainer
+     */
     getFactory<T extends IIocContainer>(): ContainerFactory<T>;
 
     /**
