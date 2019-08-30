@@ -3,7 +3,13 @@ import { BootContext } from '../BootContext';
 import { ConfigureRegister, ConfigureManager } from '../annotations';
 import { LogConfigureToken } from '@tsdi/logs';
 
-
+/**
+ * boot configure register handle.
+ *
+ * @export
+ * @class BootConfigureRegisterHandle
+ * @extends {BootHandle}
+ */
 export class BootConfigureRegisterHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         let regs = ctx.getRaiseContainer().getServices(ConfigureRegister);
