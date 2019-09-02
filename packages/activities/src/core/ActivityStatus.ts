@@ -1,6 +1,12 @@
 import { Injectable, lang } from '@tsdi/ioc';
 import { Activity } from './Activity';
 
+/**
+ * run scopes.
+ *
+ * @export
+ * @interface RunScopes
+ */
 export interface RunScopes {
     scope: Activity,
     subs: Activity[]

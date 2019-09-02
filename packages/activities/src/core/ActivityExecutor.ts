@@ -1,6 +1,6 @@
 import {
-    Injectable, isArray, PromiseUtil, Type, isClass, Inject,
-    ContainerFactoryToken, ContainerFactory, isMetadataObject, lang, isFunction, isPromise
+    Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerFactoryToken,
+    ContainerFactory, isMetadataObject, lang, isFunction, isPromise
 } from '@tsdi/ioc';
 import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';

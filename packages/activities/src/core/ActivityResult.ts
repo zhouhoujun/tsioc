@@ -5,6 +5,13 @@ import { ActivityContext } from './ActivityContext';
 export const NextToken = new InjectToken<() => Promise<void>>('next_step');
 
 
+/**
+ * activity result.
+ *
+ * @export
+ * @class ActivityResult
+ * @template T
+ */
 @Injectable
 export class ActivityResult<T = any> {
 
