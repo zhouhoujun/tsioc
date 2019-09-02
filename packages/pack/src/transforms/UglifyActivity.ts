@@ -7,16 +7,8 @@ const uglify = require('gulp-uglify');
 @Task('uglify, [uglify]')
 export class UglifyActivity extends PipeActivity {
 
-    @Input('uglifyOptions')
-    options: NodeExpression;
-
-    @Input()
-    uglify: NodeExpression<boolean>;
-
-    constructor(@Input() uglify: NodeExpression<boolean>) {
-        super();
-        this.uglify = uglify;
-    }
+    @Input('uglifyOptions') options: NodeExpression;
+    @Input() uglify: NodeExpression<boolean>;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let enable = await this.resolveExpression(this.uglify, ctx);

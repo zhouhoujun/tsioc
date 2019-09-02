@@ -13,7 +13,5 @@ import { Expression } from '../core';
  */
 @Task('[condition]')
 export class ConditionActivity extends ExpressionActivity<boolean> {
-    constructor(@Input() condition: Expression<boolean>) {
-        super(condition)
-    }
+    @Input('condition') expression: Expression<boolean>;
 }

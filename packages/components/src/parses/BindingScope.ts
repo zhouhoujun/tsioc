@@ -56,7 +56,6 @@ export class BindingArrayHandle extends ParseHandle {
             }));
         }
 
-
         if (isNullOrUndefined(ctx.value)) {
             await next();
         }

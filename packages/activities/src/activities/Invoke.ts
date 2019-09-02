@@ -14,14 +14,11 @@ import { Token, ProviderTypes } from '@tsdi/ioc';
 @Task('invoke')
 export class InvokeActivity<T = any> extends Activity<T> {
 
-    @Input()
-    target: Expression<Token>;
+    @Input() target: Expression<Token>;
 
-    @Input()
-    method: Expression<string>;
+    @Input() method: Expression<string>;
 
-    @Input()
-    args: Expression<ProviderTypes[]>;
+    @Input() args: Expression<ProviderTypes[]>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let target = await this.resolveExpression(this.target, ctx);

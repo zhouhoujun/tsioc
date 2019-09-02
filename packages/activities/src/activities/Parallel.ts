@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext, CompoiseActivity, ActivityType, ParallelExecutor, Activity } from '../core';
+import { ActivityContext, CompoiseActivity, ActivityType, ParallelExecutor } from '../core';
 import { Input } from '@tsdi/components';
 
 
@@ -14,10 +14,8 @@ import { Input } from '@tsdi/components';
 @Task('parallel')
 export class ParallelActivity<T> extends CompoiseActivity<T> {
 
-    constructor(@Input() activities: ActivityType[]) {
-        super()
-        this.activities = activities || [];
-    }
+    @Input() activities: ActivityType[];
+
     /**
      * execute parallel.
      *

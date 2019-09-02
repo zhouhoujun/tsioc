@@ -16,8 +16,7 @@ import { ControlerActivity } from './ControlerActivity';
 @Task('else')
 export class ElseActivity<T> extends ControlerActivity<T> {
 
-    @Input()
-    body: BodyActivity<T>;
+    @Input() body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let scope = ctx.runnable.status.currentScope;

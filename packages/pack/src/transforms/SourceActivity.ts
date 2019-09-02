@@ -41,16 +41,8 @@ export interface SourceActivityOption extends TemplateOption {
 @Task('src, [src]')
 export class SourceActivity extends TransformActivity {
 
-    @Input()
-    protected src: NodeExpression<Src>;
-
-    @Input('srcOptions')
-    protected options: NodeExpression<SrcOptions>;
-
-    constructor(@Input() src: NodeExpression<Src>) {
-        super()
-        this.src = src;
-    }
+    @Input() src: NodeExpression<Src>;
+    @Input('srcOptions') options: NodeExpression<SrcOptions>;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let strSrc = await this.resolveExpression(this.src, ctx);

@@ -14,9 +14,7 @@ import { ControlerActivity } from './ControlerActivity';
 @Task('[throw]')
 export class ThrowActivity extends ControlerActivity<Error> {
 
-    constructor(@Input('throw') protected error: Expression<Error>) {
-        super()
-    }
+    @Input('throw') error: Expression<Error>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let error = await this.resolveExpression(this.error, ctx);

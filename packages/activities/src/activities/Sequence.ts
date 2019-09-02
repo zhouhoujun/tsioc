@@ -12,9 +12,6 @@ import { Input } from '@tsdi/components';
 @Task('sequence')
 export class SequenceActivity<T> extends CompoiseActivity<T> {
 
-    constructor(@Input() activities: ActivityType[]) {
-        super()
-        this.activities = activities || [];
-    }
+    @Input() activities: ActivityType[];
 
 }

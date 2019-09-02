@@ -35,17 +35,8 @@ export interface UnitTestActivityOption extends TemplateOption {
 @Task('test, [test]')
 export class UnitTestActivity extends Activity<void> {
 
-    @Input()
-    test: NodeExpression<Src>;
-
-    @Input('testOptions')
-    options: NodeExpression<UnitTestConfigure>;
-
-
-    constructor(@Input() test: NodeExpression<Src>) {
-        super()
-        this.test = test;
-    }
+    @Input() test: NodeExpression<Src>;
+    @Input('testOptions') options: NodeExpression<UnitTestConfigure>;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let test = await this.resolveExpression(this.test, ctx);

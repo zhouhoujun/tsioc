@@ -8,11 +8,9 @@ import { ControlerActivity } from './ControlerActivity';
 @Task('catch')
 export class CatchActivity<T = any> extends ControlerActivity<T> {
 
-    @Input()
-    error: Type<Error>;
+    @Input() error: Type<Error>;
 
-    @Input()
-    body: BodyActivity;
+    @Input() body: BodyActivity;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let runScope = ctx.runnable.status.currentScope;

@@ -70,8 +70,7 @@ export interface JsonReplaceActivityOption extends TemplateOption {
 @Task('jsonReplace')
 export class JsonReplaceActivity extends TransformActivity {
 
-    @Input()
-    fields: JsonReplace;
+    @Input() fields: JsonReplace;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let fields = this.fields;

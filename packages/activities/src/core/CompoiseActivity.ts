@@ -14,8 +14,12 @@ import { ActivityType } from './ActivityConfigure';
 export class CompoiseActivity<T> extends Activity<T> {
 
     isScope = true;
-    protected activities: ActivityType[] = [];
+    protected activities: ActivityType[];
     private actions: PromiseUtil.ActionHandle<ActivityContext>[];
+    constructor() {
+        super();
+        this.activities = [];
+    }
 
     add(...activities: ActivityType[]): this {
         this.activities.push(...activities);

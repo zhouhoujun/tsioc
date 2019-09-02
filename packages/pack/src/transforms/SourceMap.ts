@@ -5,12 +5,9 @@ import { PipeActivity } from './PipeActivity';
 import { isString } from '@tsdi/ioc';
 
 export abstract class SourcemapActivity extends PipeActivity {
-    @Input('sourceMapFramework')
-    framework: any;
 
-    constructor(@Input() protected sourcemap: NodeExpression<string | boolean>) {
-        super()
-    }
+    @Input() protected sourcemap: NodeExpression<string | boolean>;
+    @Input('sourceMapFramework') framework: any;
 
     getFramework() {
         if (!this.framework) {

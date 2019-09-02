@@ -16,14 +16,7 @@ import { isFunction } from '@tsdi/ioc';
 @Task('execute')
 export class ExecuteActivity<T> extends ControlerActivity<T> {
 
-
-    constructor(@Input() action: (ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>) {
-        super()
-        this.action = action;
-    }
-
-    @Input('action')
-    action: (ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>;
+    @Input('action')  action: (ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         if (isFunction(this.action)) {

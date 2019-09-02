@@ -1,4 +1,4 @@
-import { Token, isString, PropParamDecorator, createParamPropDecorator, isToken, ClassType, Registration } from '@tsdi/ioc';
+import { Token, isString, isToken, ClassType, Registration, createPropDecorator } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**
@@ -13,21 +13,21 @@ export interface InputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (bindingName?: string): PropParamDecorator;
+    (bindingName?: string): PropertyDecorator;
 
     /**
      * define Input property decorator with binding metadata.
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingPropertyMetadata): PropParamDecorator;
+    (metadata: BindingPropertyMetadata): PropertyDecorator;
     /**
      * define Input property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
      * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
      */
-    (bindingName: string, provider: Registration | ClassType): PropParamDecorator;
+    (bindingName: string, provider: Registration | ClassType): PropertyDecorator;
 
     /**
      * define Input property decorator with binding property name and provider.
@@ -35,7 +35,7 @@ export interface InputPropertyDecorator {
      * @param {string} bindingName binding property name
      * @param {*} binding default value.
      */
-    (bindingName: string, defaultVal: any): PropParamDecorator;
+    (bindingName: string, defaultVal: any): PropertyDecorator;
 
     /**
      * define Input property decorator with binding property name and provider.
@@ -44,14 +44,14 @@ export interface InputPropertyDecorator {
      * @param {Token} provider define provider to resolve value to the property.
      * @param {*} binding default value.
      */
-    (bindingName: string, provider: Token, defaultVal: any): PropParamDecorator;
+    (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
     /**
      * define property decorator.
      */
-    (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
+    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
 }
 
-export const Input: InputPropertyDecorator = createParamPropDecorator<BindingPropertyMetadata>('Input', [
+export const Input: InputPropertyDecorator = createPropDecorator<BindingPropertyMetadata>('Input', [
     (ctx, next) => {
         let arg = ctx.currArg;
         if (isString(arg)) {

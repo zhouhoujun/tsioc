@@ -15,9 +15,7 @@ import { ControlerActivity } from './ControlerActivity';
 @Task('[expression]')
 export class ExpressionActivity<T> extends ControlerActivity<T> {
 
-    constructor(@Input() protected expression: Expression<T>) {
-        super()
-    }
+    @Input() expression: Expression<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         this.result.value = await this.resolveExpression(this.expression, ctx);

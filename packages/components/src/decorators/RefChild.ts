@@ -1,4 +1,4 @@
-import { isString, PropParamDecorator, createParamPropDecorator, isToken, Registration, ClassType, Token } from '@tsdi/ioc';
+import { isString, isToken, Registration, ClassType, Token, createPropDecorator } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**
@@ -14,21 +14,21 @@ export interface IRefChildDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (bindingName?: string): PropParamDecorator;
+    (bindingName?: string): PropertyDecorator;
 
     /**
      * define RefChild property decorator with binding metadata.
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingPropertyMetadata): PropParamDecorator;
+    (metadata: BindingPropertyMetadata): PropertyDecorator;
     /**
      * define RefChild property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
      * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
      */
-    (bindingName: string, provider: Registration | ClassType): PropParamDecorator;
+    (bindingName: string, provider: Registration | ClassType): PropertyDecorator;
 
     /**
      * define RefChild property decorator with binding property name and provider.
@@ -36,7 +36,7 @@ export interface IRefChildDecorator {
      * @param {string} bindingName binding property name
      * @param {*} binding default value.
      */
-    (bindingName: string, defaultVal: any): PropParamDecorator;
+    (bindingName: string, defaultVal: any): PropertyDecorator;
 
     /**
      * define RefChild property decorator with binding property name and provider.
@@ -45,11 +45,11 @@ export interface IRefChildDecorator {
      * @param {Token} provider define provider to resolve value to the property.
      * @param {*} binding default value.
      */
-    (bindingName: string, provider: Token, defaultVal: any): PropParamDecorator;
+    (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
     /**
      * define property decorator.
      */
-    (target: object, propertyKey: string | symbol, parameterIndex?: number): void;
+    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
 }
 
 /**
@@ -57,7 +57,7 @@ export interface IRefChildDecorator {
  *
  * @RefChild
  */
-export const RefChild: IRefChildDecorator = createParamPropDecorator<BindingPropertyMetadata>('RefChild', [
+export const RefChild: IRefChildDecorator = createPropDecorator<BindingPropertyMetadata>('RefChild', [
     (ctx, next) => {
         let arg = ctx.currArg;
         if (isString(arg)) {

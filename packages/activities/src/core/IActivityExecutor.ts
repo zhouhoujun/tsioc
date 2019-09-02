@@ -74,6 +74,16 @@ export interface IActivityExecutor {
      * @memberof IActivityExecutor
      */
     parseAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T>;
+
+    /**
+     * parse activites to actions.
+     *
+     * @template T
+     * @param {(ActivityType | ActivityType[])} activities
+     * @returns {PromiseUtil.ActionHandle<T>[]}
+     * @memberof IActivityExecutor
+     */
+    parseActions<T extends ActivityContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[];
 }
 
 export const ActivityExecutorToken = new InjectToken<IActivityExecutor>('ActivityExecutor');

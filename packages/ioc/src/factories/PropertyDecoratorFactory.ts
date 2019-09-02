@@ -26,7 +26,7 @@ export interface IPropertyDecorator<T extends PropertyMetadata> {
     /**
      * define property decorator.
      */
-    (target: object, propertyKey: string | symbol): void;
+    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
 }
 
 

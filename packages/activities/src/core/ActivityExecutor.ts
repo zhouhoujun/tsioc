@@ -95,14 +95,25 @@ export class ActivityExecutor implements IActivityExecutor {
     }
 
     async execActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
-        if (!activities || (isArray(activities) && activities.length < 1)) {
-            return;
-        }
-        await this.execActions(ctx, (isArray(activities) ? activities : [activities]).map(ac => this.parseAction(ac)), next);
+        await this.execActions(ctx, this.parseActions(activities), next);
     }
 
-    execActions<T extends ActivityContext>(ctx: T, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain<ActivityContext>(actions.filter(f => f), ctx, next);
+    async execActions<T extends ActivityContext>(ctx: T, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+        if (actions.length < 1) {
+            if (next) {
+                return await next();
+            }
+            return;
+        }
+        return await PromiseUtil.runInChain<ActivityContext>(actions.filter(f => f), ctx, next);
+    }
+
+    parseActions<T extends ActivityContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[] {
+        let acts = isArray(activities) ? activities : (activities ? [activities] : []);
+        if (acts.length < 1) {
+            return [];
+        }
+        return acts.map(ac => this.parseAction(ac));
     }
 
     parseAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
@@ -124,8 +135,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 } else {
                     await next();
                 }
-            };
-
+            }
         }
         if (isFunction(activity)) {
             return activity;
@@ -137,7 +147,6 @@ export class ActivityExecutor implements IActivityExecutor {
             }
         }
         return null;
-
     }
 
     protected async buildActivity(activity: Type | ControlTemplate, scope?: any): Promise<Activity> {

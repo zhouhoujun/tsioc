@@ -8,11 +8,9 @@ import { ControlerActivity } from './ControlerActivity';
 @Task('case')
 export class CaseActivity<T> extends ControlerActivity<T> {
 
-    @Input()
-    caseKey: any;
+    @Input() caseKey: any;
 
-    @Input()
-    body: BodyActivity<T>;
+    @Input() body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         this.body.run(ctx);

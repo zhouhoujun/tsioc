@@ -7,9 +7,7 @@ import { isUndefined } from '@tsdi/ioc';
 @Task('[pipes]')
 export class StreamActivity extends PipeActivity {
 
-    constructor(@Input('pipes') protected pipes: Expression<ITransform>[]) {
-        super()
-    }
+    @Input('pipes') protected pipes: Expression<ITransform>[];
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let pipes = await this.resolveExpression(this.pipes, ctx);

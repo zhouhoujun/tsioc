@@ -29,14 +29,7 @@ export interface CleanActivityOption extends TemplateOption {
 @Task('clean, [clean]')
 export class CleanActivity extends Activity<void> {
 
-    @Input()
-    clean: Expression<Src>;
-
-
-    constructor(@Input() clean: Expression<Src>) {
-        super()
-        this.clean = clean;
-    }
+    @Input() clean: Expression<Src>;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let clean = await this.resolveExpression(this.clean, ctx);

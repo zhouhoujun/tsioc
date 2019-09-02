@@ -18,11 +18,9 @@ import { ControlerActivity } from './ControlerActivity';
 @Task('delay')
 export class DelayActivity<T> extends ControlerActivity<T> {
 
-    @Input()
-    timer: TimerActivity;
+    @Input() timer: TimerActivity;
 
-    @Input()
-    body: BodyActivity<T>;
+    @Input() body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         await this.timer.run(ctx);

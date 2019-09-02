@@ -50,16 +50,10 @@ export interface DistActivityOption extends TemplateOption {
 @Task('dist, [dist]')
 export class DestActivity extends PipeActivity {
 
-    @Input()
-    dist: NodeExpression<string>;
+    @Input() dist: NodeExpression<string>;
 
     @Input('destOptions')
     options: NodeExpression<DestOptions>;
-
-    constructor(@Input() dist: NodeExpression<string>) {
-        super()
-        this.dist = dist;
-    }
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let dist = await this.resolveExpression(this.dist, ctx);

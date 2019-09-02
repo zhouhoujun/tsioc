@@ -17,11 +17,9 @@ import { ControlerActivity } from './ControlerActivity';
 @Task('confirm')
 export class ConfirmActivity<T> extends ControlerActivity<T> {
 
-    @Input()
-    condition: ConditionActivity;
+    @Input() condition: ConditionActivity;
 
-    @Input()
-    body: BodyActivity<T>;
+    @Input() body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         await this.condition.run(ctx);

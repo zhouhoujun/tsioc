@@ -23,6 +23,7 @@ export interface IComponentMetadata extends InjectableMetadata {
      */
     template?: any;
 }
+
 /**
  * Component decorator
  *

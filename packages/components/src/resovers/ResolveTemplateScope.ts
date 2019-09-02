@@ -4,6 +4,9 @@ import { isNullOrUndefined } from '@tsdi/ioc';
 
 export class ResolveTemplateScope extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
+        if (!ctx.scope && ctx.template && !ctx.annoation.template) {
+            ctx.annoation.template = ctx.template;
+        }
         if (ctx.target && ctx.annoation.template) {
             let pCtx = TemplateContext.parse({
                 scope: ctx.target,

@@ -6,9 +6,8 @@ import {
 import { Component, Input, Output, RefChild } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
-import { ComponentRegisterAction, BindingPropertyTypeAction, BindingParamTypeAction, BindingCache, BindingCacheFactory } from './registers';
-import { HandleRegisterer, ResolveMoudleScope, ResolveModuleHandle, BootTargetAccessor } from '@tsdi/boot';
-import { BindingArgsHandle } from './resovers/BindingArgsHandle';
+import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory } from './registers';
+import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor } from '@tsdi/boot';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope,
     BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, ValifyTeamplateHandle
@@ -37,8 +36,7 @@ export class ComponentsModule {
 
         container.getActionRegisterer()
             .register(container, ComponentRegisterAction)
-            .register(container, BindingPropertyTypeAction)
-            .register(container, BindingParamTypeAction);
+            .register(container, BindingPropertyTypeAction);
 
         container.get(DecoratorProvider)
             .bindProviders(Input, {
@@ -74,7 +72,6 @@ export class ComponentsModule {
             .register(container, BindingScope, true)
             .register(container, TemplateParseScope, true)
             .get(ResolveMoudleScope)
-            .useBefore(BindingArgsHandle, ResolveModuleHandle)
             .use(ModuleBeforeInitHandle)
             .use(BindingPropertyHandle)
             .use(ModuleAfterInitHandle)
@@ -90,8 +87,7 @@ export class ComponentsModule {
             .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction);
 
         container.resolve(RuntimeDecoratorRegisterer)
-            .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
-            .register(Input, DecoratorScopes.Parameter, BindingParamTypeAction);
+            .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.register(ComponentBuilder);
     }

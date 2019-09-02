@@ -1,8 +1,7 @@
-import { Task, TemplateOption, Src, Activities } from '@tsdi/activities';
+import { Task, TemplateOption, Src } from '@tsdi/activities';
 import { Binding, Input } from '@tsdi/components';
 import { NodeExpression, NodeActivity, NodeActivityContext } from '../core';
 import { CompilerOptions } from 'typescript';
-import { isString } from '@tsdi/ioc';
 
 
 export interface TscBuilderOption extends TemplateOption {

@@ -1,9 +1,8 @@
 import { ActivityContext, Expression, ParallelExecutor, ActivityType } from '../core';
 import { Task } from '../decorators';
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { ControlerActivity } from './ControlerActivity';
 import { isNullOrUndefined } from '@tsdi/ioc';
-// import { BodyActivity } from './BodyActivity';
 
 
 @Task('each')
@@ -11,7 +10,7 @@ export class EachActicity<T> extends ControlerActivity<T> {
 
     @Input() each: Expression<any[]>;
 
-    @Input() body: ActivityType<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<T>;
 
     @Input() parallel: boolean;
 
@@ -32,9 +31,10 @@ export class EachActicity<T> extends ControlerActivity<T> {
                     }));
                 }
             } else {
+                let actions = await this.getExector().parseActions(this.body);
                 await this.getExector().execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
                     await c.setBody(v, true);
-                    await this.getExector().execActivity(c, this.body);
+                    await this.getExector().execActions(c, actions);
                     await next();
                 }));
             }
