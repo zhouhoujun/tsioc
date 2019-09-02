@@ -1,7 +1,4 @@
-import {
-    isString, createClassDecorator, MetadataExtends,
-    isClass, ITypeDecorator, lang, ClassType, Type, ArgsIteratorAction
-} from '@tsdi/ioc';
+import { isString, createClassDecorator, MetadataExtends, isClass, ITypeDecorator, lang, ClassType, Type, ArgsIteratorAction } from '@tsdi/ioc';
 import { ActivityConfigure } from '../core/ActivityConfigure';
 import { RegFor, BootContext } from '@tsdi/boot';
 

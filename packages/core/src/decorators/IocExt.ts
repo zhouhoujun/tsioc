@@ -1,4 +1,4 @@
-import { createClassDecorator, ITypeDecorator, AutorunMetadata, isClassMetadata, isString } from '@tsdi/ioc';
+import { createClassDecorator, ITypeDecorator, AutorunMetadata, isString } from '@tsdi/ioc';
 
 
 /**
@@ -46,4 +46,7 @@ export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('Io
         return metadata;
     }) as IocExtDecorator;
 
+/**
+ * IocModule decorator.
+ */
 export const IocModule = IocExt;
