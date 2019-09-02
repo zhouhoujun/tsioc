@@ -23,6 +23,14 @@ export interface ContextInit<T extends BootContext = BootContext> {
     onContextInit(ctx: T);
 }
 
+/**
+ * check boot args.
+ *
+ * @export
+ * @param {(LoadType[] | LoadType | string)} [deps]
+ * @param {...string[]} args
+ * @returns {{ args: string[], deps: LoadType[] }}
+ */
 export function checkBootArgs(deps?: LoadType[] | LoadType | string, ...args: string[]): { args: string[], deps: LoadType[] } {
     let mdeps: LoadType[] = [];
     if (isString(deps)) {

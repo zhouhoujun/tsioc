@@ -97,6 +97,12 @@ export class BuildContext extends IocRaiseContext<IContainer> implements ICompon
      */
     target?: any;
 
+    /**
+     * decorator.
+     *
+     * @type {string}
+     * @memberof BuildContext
+     */
     decorator: string;
 
     /**
