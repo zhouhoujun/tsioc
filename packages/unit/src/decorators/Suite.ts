@@ -1,7 +1,4 @@
-import {
-    MetadataExtends, createClassDecorator,
-    isString, ITypeDecorator, isNumber, ArgsIteratorAction
-} from '@tsdi/ioc';
+import { MetadataExtends, createClassDecorator, isString, ITypeDecorator, isNumber, ArgsIteratorAction } from '@tsdi/ioc';
 import { SuiteMetadata } from '../metadata/SuiteMetadata';
 import { SuiteRunnerToken } from '../runner/ISuiteRunner';
 
