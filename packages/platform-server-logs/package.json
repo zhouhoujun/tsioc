@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-logs",
-  "version": "5.2.2",
+  "version": "5.2.3",
   "description": "service logs, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
@@ -34,12 +34,12 @@
     "log4js": "^3.0.6"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "^5.2.2",
-    "@tsdi/core": "^5.2.2",
-    "@tsdi/aop": "^5.2.2",
-    "@tsdi/logs": "^5.2.2",
-    "@tsdi/boot": "^5.2.2",
-    "@tsdi/platform-server": "^5.2.2",
+    "@tsdi/ioc": "^5.2.3",
+    "@tsdi/core": "^5.2.3",
+    "@tsdi/aop": "^5.2.3",
+    "@tsdi/logs": "^5.2.3",
+    "@tsdi/boot": "^5.2.3",
+    "@tsdi/platform-server": "^5.2.3",
     "globby": "^9.0.0",
     "interpret": "^1.2.0",
     "time-stamp": "^2.2.0",
