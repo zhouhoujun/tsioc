@@ -108,11 +108,4 @@ export interface IBindingTypeReflect extends ITypeReflect {
      */
     propRefChildBindings: Map<string, IBinding>;
 
-    /**
-     * method params binding metadata.
-     *
-     * @type {Map<string, IBinding[]>}
-     * @memberof IBindingTypeReflect
-     */
-    paramsBindings: Map<string, IBinding[]>;
 }

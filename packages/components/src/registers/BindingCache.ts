@@ -27,9 +27,6 @@ export class BindingCacheFactory extends BindingCache {
     }
 
     getCache(ref: IBindingTypeReflect): Map<string, IBinding> {
-        if (!ref.paramsBindings) {
-            ref.paramsBindings = new Map();
-        }
         return this.mapGetter(ref);
     }
 }

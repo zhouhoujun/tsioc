@@ -132,7 +132,6 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
 
     protected bindContextToken(ctx: T) {
         this.container.bindProvider(ApplicationContextToken, ctx);
-        // this.container.bindProvider(new InjectReference(BootApplication, ctx.module), this);
     }
 
     /**

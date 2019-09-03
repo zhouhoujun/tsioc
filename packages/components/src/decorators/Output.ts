@@ -1,4 +1,4 @@
-import { Token, isString, isToken, ClassType, Registration, createPropDecorator, IPropertyDecorator } from '@tsdi/ioc';
+import { Token, isString, isToken, ClassType, Registration, createPropDecorator } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**
