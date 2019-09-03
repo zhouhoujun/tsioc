@@ -50,7 +50,7 @@ export class TryCatchActivity<T> extends Activity<T> {
         } catch (err) {
             this.result.error = err;
             if (this.catchs) {
-                await this.execActivity(ctx, this.catchs);
+                await this.runActivity(ctx, this.catchs);
             }
         } finally {
             if (this.finallies) {

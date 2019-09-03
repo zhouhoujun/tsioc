@@ -73,7 +73,7 @@ export class TscBuilder extends NodeActivity<void> {
             shell = `tsc ${this.formatCompileOptions(compilerOptions)} ${srcFiles.join(' ')}`;
         }
 
-        await this.execActivity(ctx, {
+        await this.runActivity(ctx, {
             activity: 'shell',
             parallel: true,
             shell: shell,

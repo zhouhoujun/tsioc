@@ -90,11 +90,7 @@ export class ActivityExecutor implements IActivityExecutor {
         return express;
     }
 
-    runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
-        return this.execActivity(ctx, activities, next);
-    }
-
-    async execActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
+    async runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
         await this.execActions(ctx, this.parseActions(activities), next);
     }
 

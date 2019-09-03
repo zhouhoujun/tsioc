@@ -8,7 +8,7 @@ import {
     ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
-import { ActivityResult, NextToken } from './ActivityResult';
+import { ActivityResult } from './ActivityResult';
 import { ValuePipe } from './ValuePipe';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
 
@@ -109,21 +109,22 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
         if (this.$scope) {
             ctx.scope = this.$scope;
         }
-        this._result = await this.initResult(ctx, next);
+        this._result = await this.initResult(ctx);
         await this.refreshResult(ctx);
         await this.execute(ctx);
         await this.refreshContext(ctx);
         if (this.isScope) {
             ctx.runnable.status.scopeEnd();
         }
-        await this.result.next(ctx);
+        if (next) {
+            await next();
+        }
     }
 
 
     protected abstract execute(ctx: TCtx): Promise<void>;
 
-    protected async initResult(ctx: TCtx, next?: () => Promise<void>, ...providers: ProviderTypes[]): Promise<ActivityResult> {
-        providers.unshift({ provide: NextToken, useValue: next });
+    protected async initResult(ctx: TCtx, ...providers: ProviderTypes[]): Promise<ActivityResult> {
         let result = this.getContainer().getService({ token: ActivityResult, target: lang.getClass(this) }, ...providers);
         if (!isNullOrUndefined(ctx.result)) {
             if (this.pipe) {
@@ -174,8 +175,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     }
 
 
-    protected async execActivity(ctx: TCtx, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
-        await this.getExector().execActivity(ctx, activities, next);
+    protected async runActivity(ctx: TCtx, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
+        await this.getExector().runActivity(ctx, activities, next);
         if (refresh !== false) {
             await this.refreshResult(ctx);
         }

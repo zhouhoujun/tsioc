@@ -44,17 +44,6 @@ export interface IActivityExecutor {
      */
     runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void>;
     /**
-     * execute activities.
-     *
-     * @template T
-     * @param {T} ctx
-     * @param {(ActivityType | ActivityType[])} activities
-     * @param {() => Promise<void>} [next]
-     * @returns {Promise<void>}
-     * @memberof IActivityExecutor
-     */
-    execActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void>;
-    /**
      * execute actions.
      *
      * @template T
