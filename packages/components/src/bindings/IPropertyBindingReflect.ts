@@ -17,6 +17,7 @@ export enum BindingTypes {
     dynamic
 }
 
+
 /**
  * binding.
  *
@@ -74,6 +75,13 @@ export interface IBinding<T = any> {
      * @memberof IBinding
      */
     defaultValue?: T;
+    /**
+     * decorator
+     *
+     * @type {string}
+     * @memberof IBinding
+     */
+    decorator?: string;
 }
 
 /**

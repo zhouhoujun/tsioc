@@ -10,7 +10,7 @@ import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, Bindi
 import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor } from '@tsdi/boot';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope,
-    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, ValifyTeamplateHandle
+    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, ValifyTeamplateHandle, BindingOutputHandle
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
@@ -78,6 +78,7 @@ export class ComponentsModule {
             .use(ResolveTemplateScope)
             .use(ValifyTeamplateHandle)
             .use(BindingTemplateHandle)
+            .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
 
         container.resolve(DesignDecoratorRegisterer)

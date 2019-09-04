@@ -38,6 +38,10 @@ export class BindingPropertyTypeAction extends IocDesignAction {
                             binding.type = prop.type;
                         }
 
+                        if (!binding.decorator) {
+                            binding.decorator = prop.decorator;
+                        }
+
                         if (!binding.provider) {
                             binding.provider = this.container.getToken(prop.provider || prop.type, prop.alias);
                         }

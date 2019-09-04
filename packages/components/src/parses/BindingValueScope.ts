@@ -34,7 +34,7 @@ export class BindingValueScope extends ParsersHandle {
  */
 export class BindingScopeHandle extends ParseHandle {
 
-    async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
+    async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
         if (!ctx.dataBinding && ctx.bindExpression instanceof DataBinding) {
             ctx.dataBinding = ctx.bindExpression;
         }
@@ -68,7 +68,7 @@ export class BindingScopeHandle extends ParseHandle {
             ctx.value = ctx.dataBinding.getSourceValue();
         }
 
-        if (isNullOrUndefined(ctx.value)) {
+        if (next && isNullOrUndefined(ctx.value)) {
             await next();
         }
     }
