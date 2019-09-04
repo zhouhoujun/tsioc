@@ -1,4 +1,4 @@
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 
 
 /**

@@ -9,8 +9,8 @@ import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory } from './registers';
 import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor } from '@tsdi/boot';
 import {
-    BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope,
-    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, ValifyTeamplateHandle, BindingOutputHandle
+    BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
+    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentDecoratorService } from './ComponentDecoratorService';
