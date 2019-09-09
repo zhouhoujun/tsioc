@@ -44,7 +44,12 @@ export interface RollupOption extends TemplateOption {
      * @memberof RollupOption
      */
     external?: Binding<NodeExpression<ExternalOption>>;
-
+    /**
+     * globals.
+     *
+     * @type {Binding<NodeExpression<GlobalsOption>>}
+     * @memberof RollupOption
+     */
     globals?: Binding<NodeExpression<GlobalsOption>>;
     /**
      * rollup plugins setting.
@@ -76,51 +81,31 @@ export interface RollupOption extends TemplateOption {
 @Task('rollup')
 export class RollupActivity extends NodeActivity<void> {
 
-    @Input()
-    input: NodeExpression<Src>;
+    @Input() input: NodeExpression<Src>;
 
-    @Input()
-    output: NodeExpression<OutputOptionsFile | OutputOptionsDir>;
+    @Input() output: NodeExpression<OutputOptionsFile | OutputOptionsDir>;
 
-    @Input()
-    plugins: NodeExpression<Plugin[]>;
+    @Input() plugins: NodeExpression<Plugin[]>;
 
-    @Input()
-    external: NodeExpression<ExternalOption>;
+    @Input() external: NodeExpression<ExternalOption>;
 
-    @Input()
-    globals?: NodeExpression<GlobalsOption>;
+    @Input() globals?: NodeExpression<GlobalsOption>;
 
-    @Input()
-    sourcemap?: NodeExpression<boolean>;
+    @Input() sourcemap?: NodeExpression<boolean>;
 
-    @Input()
-    cache: NodeExpression<RollupCache>;
+    @Input() cache: NodeExpression<RollupCache>;
 
-    @Input()
-    options: NodeExpression<RollupFileOptions | RollupDirOptions>;
+    @Input() options: NodeExpression<RollupFileOptions | RollupDirOptions>;
 
-    @Input()
-    watch: NodeExpression<WatcherOptions>;
-
+    @Input() watch: NodeExpression<WatcherOptions>;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let opts = await this.resolveExpression(this.options, ctx);
         opts = opts || { input: '' };
-        await Promise.all(['input', 'output', 'plugins', 'external', 'cache', 'watch']
+        await Promise.all(this.getInputProps()
             .map(async n => {
                 let val = await this.resolveExpression(this[n], ctx);
-                if (n === 'input') {
-                    val = ctx.platform.toRootSrc(val);
-                }
-                if (isArray(val) && val.length) {
-                    val = val.filter(f => !isNullOrUndefined(f));
-                    if (val.length) {
-                        opts[n] = val;
-                    }
-                } else if (val) {
-                    opts[n] = val;
-                }
+                this.setOptions(ctx, opts, n, val);
             }));
         if (this.sourcemap) {
             let sourceMap = await this.resolveExpression(this.sourcemap, ctx);
@@ -132,6 +117,16 @@ export class RollupActivity extends NodeActivity<void> {
             let globals = await this.resolveExpression(this.globals, ctx);
             opts.output.globals = globals;
         }
+        opts.external = opts.external || [];
+        if (isArray(opts.external)) {
+            opts.external = this.vailfExternal(opts.external);
+            opts.external.forEach(k => {
+                if (!opts.output.globals[k]) {
+                    opts.output.globals[k] = k;
+                }
+            });
+        }
+
         if (opts.output.file) {
             opts.output.file = ctx.platform.toRootPath(opts.output.file);
         }
@@ -141,11 +136,38 @@ export class RollupActivity extends NodeActivity<void> {
         if (!opts.output.name && opts.output.file) {
             opts.output.name = ctx.platform.getFileName(opts.output.file);
         }
+        await this.resolvePlugins(ctx, opts);
         if (opts.plugins) {
             opts.plugins = opts.plugins.filter(p => p);
         }
 
         let bundle = await rollup(opts as any);
         await bundle.write(opts.output);
+    }
+
+    protected getInputProps(): string[] {
+        return ['input', 'output', 'plugins', 'external', 'cache', 'watch'];
+    }
+
+    protected setOptions(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions, key: string, val: any) {
+        if (key === 'input') {
+            val = ctx.platform.toRootSrc(val);
+        }
+        if (isArray(val) && val.length) {
+            val = val.filter(f => !isNullOrUndefined(f));
+            if (val.length) {
+                opts[key] = val;
+            }
+        } else if (val) {
+            opts[key] = val;
+        }
+    }
+
+    protected vailfExternal(external: string[]): string[] {
+        return external || [];
+    }
+
+    protected async resolvePlugins(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions) {
+
     }
 }
