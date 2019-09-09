@@ -7,19 +7,19 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
-    "IoC",
+    "platform",
+    "server",
     "AOP",
-    "dependency",
-    "injection",
-    "ts-ioc",
+    "aop",
+    "tsdi",
     "@tsdi",
     "tsioc",
-    "container",
-    "decorator",
-    "autofac",
-    "Inject",
+    "ioc",
+    "IoC",
     "type",
-    "typescript"
+    "container",
+    "dependency",
+    "injection"
   ],
   "author": "houjun",
   "license": "MIT",

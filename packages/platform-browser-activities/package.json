@@ -7,15 +7,21 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
+    "platform",
+    "browser",
     "activity",
     "workflow",
     "task",
     "framework",
-    "ts-ioc",
+    "AOP",
+    "aop",
+    "tsdi",
     "@tsdi",
     "tsioc",
+    "ioc",
     "IoC",
-    "AOP",
+    "type",
+    "container",
     "dependency",
     "injection"
   ],
