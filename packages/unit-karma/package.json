@@ -44,8 +44,8 @@
     "@tsdi/platform-server-boot": "^5.2.5",
     "@tsdi/unit": "^5.2.5",
     "reflect-metadata": "^0.1.13",
-    "tslib": "^1.9.2",
-    "globby": "^7.1.1"
+    "tslib": "^1.10.0",
+    "globby": "^10.0.1"
   },
   "directories": {
     "lib": "lib",

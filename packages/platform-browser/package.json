@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "core-js": "^3.1.4"
+    "core-js": "^3.2.1"
   },
   "peerDependencies": {
     "@tsdi/ioc": "^5.2.5",

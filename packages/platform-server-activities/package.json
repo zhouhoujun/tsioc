@@ -41,7 +41,7 @@
     "@tsdi/platform-server-logs": "^5.2.5",
     "bluebird": "^3.5.3",
     "chalk": "^2.4.2",
-    "globby": "^9.0.0",
+    "globby": "^10.0.1",
     "minimatch": "^3.0.4",
     "minimist": "^1.2.0",
     "interpret": "^1.2.0",
