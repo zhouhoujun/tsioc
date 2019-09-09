@@ -7,6 +7,14 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
 
+# build
+
+to fix lib error, use command
+```shell
+npm i ts-node@8.3.0 tslib@1.10.0 typescript@3.5.3
+
+```
+
 # builder
 
 ```shell
