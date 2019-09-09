@@ -128,7 +128,7 @@ export class TranslateAtrrHandle extends ParseHandle {
                     scope: ctx.scope,
                     template: template,
                     raiseContainer: ctx.getContainerFactory()
-                }, ...ctx.providers);
+                }, ...(ctx.providers || []));
             }
 
         }

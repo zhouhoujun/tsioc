@@ -15,6 +15,7 @@ import { AfterInit } from '@tsdi/components';
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
         annotation: true,
+        externalLibs: ['buffer', 'module'],
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
             { input: 'src/index.js', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'pack.js', format: 'cjs' },

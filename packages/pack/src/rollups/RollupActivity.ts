@@ -116,6 +116,8 @@ export class RollupActivity extends NodeActivity<void> {
         if (this.globals) {
             let globals = await this.resolveExpression(this.globals, ctx);
             opts.output.globals = globals;
+        } else {
+            opts.output.globals = {};
         }
         opts.external = opts.external || [];
         if (isArray(opts.external)) {
