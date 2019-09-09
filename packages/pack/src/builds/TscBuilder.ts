@@ -56,7 +56,7 @@ export class TscBuilder extends NodeActivity<void> {
         }
         let dist = await this.resolveExpression(this.dist, ctx);
         if (dist) {
-            if (!/.ts/.test(dist)) {
+            if (!/.js/.test(dist)) {
                 compilerOptions.outDir = dist;
             } else {
                 compilerOptions.outFile = dist;
