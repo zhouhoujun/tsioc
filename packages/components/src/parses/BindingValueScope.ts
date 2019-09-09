@@ -127,8 +127,9 @@ export class TranslateAtrrHandle extends ParseHandle {
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: ctx.scope,
                     template: template,
-                    raiseContainer: ctx.getContainerFactory()
-                }, ...(ctx.providers || []));
+                    raiseContainer: ctx.getContainerFactory(),
+                    providers: ctx.providers
+                });
             }
 
         }
