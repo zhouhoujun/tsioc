@@ -1,4 +1,5 @@
 import { Task } from '@tsdi/activities';
+import { isBoolean } from '@tsdi/ioc';
 import { Binding, Input } from '@tsdi/components';
 import { NodeExpression, NodeActivityContext } from '../core';
 import { Plugin, RollupFileOptions, RollupDirOptions } from 'rollup';
@@ -139,18 +140,21 @@ export class RollupTsActivity extends RollupActivity {
             plugins.push(await this.getDefaultTsCompiler(ctx));
         }
 
+        if (opts.plugins && opts.plugins.length) {
+            plugins.push(...opts.plugins);
+        }
         if (afterCompile && afterCompile.length) {
             plugins.push(...beforeCompile);
         }
 
-        // if (this.uglify) {
-        //     let ugfy = await this.resolveExpression(this.uglify, ctx);
-        //     if (isBoolean(ugfy)) {
-        //         plugins.push(uglify());
-        //     } else {
-        //         plugins.push(ugfy);
-        //     }
-        // }
+        if (this.uglify) {
+            let ugfy = await this.resolveExpression(this.uglify, ctx);
+            if (isBoolean(ugfy)) {
+                ugfy && plugins.push(uglify());
+            } else {
+                plugins.push(ugfy);
+            }
+        }
     }
 
     async getDefaultTsCompiler(ctx: NodeActivityContext): Promise<Plugin> {
@@ -160,9 +164,7 @@ export class RollupTsActivity extends RollupActivity {
         let exclude = await this.resolveExpression(this.exclude, ctx)
         const filter = createFilter(include, exclude);
 
-        console.log(filter);
         let compilerOptions = await this.createProject(ctx);
-        console.log(compilerOptions)
         return {
             name: 'typescript',
 
