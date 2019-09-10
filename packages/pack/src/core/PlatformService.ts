@@ -64,19 +64,6 @@ export class PlatformService {
         let filename = this.toRootPath(tsconfig);
         let cfg = syncRequire(filename) || {};
         return cfg.compilerOptions || {};
-
-        // let cfg = readConfigFile(this.toRootPath(tsconfig), sys.readFile);
-        // if (cfg.error) {
-        //     console.log(cfg.error.messageText);
-        // }
-        // let parsed = parseJsonConfigFileContent(cfg.config || {}, {
-        //     useCaseSensitiveFileNames: sys.useCaseSensitiveFileNames,
-        //     readDirectory: sys.readDirectory,
-        //     fileExists: sys.fileExists,
-        //     readFile: sys.readFile
-        // }, this.getRootPath());
-        // console.log(parsed);
-        // return parsed.options;
     }
 
     getFileName(pathName: string): string {

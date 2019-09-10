@@ -56,9 +56,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
 
     @Input('dtsValuePipe') tdsPipe: ValuePipe;
 
-
-    @Input('tsconfig', './tsconfig.json')
-    tsconfig: NodeExpression<string | ObjectMap>;
+    @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string | ObjectMap>;
 
 
     onAfterInit(): void | Promise<void> {

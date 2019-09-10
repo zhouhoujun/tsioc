@@ -8,16 +8,10 @@ import { NodeActivityContext, NodeExpression } from '../core';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
-// const buildin = require('rollup-plugin-node-builtins');
-// const ts = require('rollup-plugin-typescript');
-// import { rollupClassAnnotations } from '@tsdi/annotations';
 import { isNullOrUndefined, isBoolean, isArray, lang } from '@tsdi/ioc';
 import { join } from 'path';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
-// const grollup = require('gulp-rollup');
-// const postcss = require('rollup-plugin-postcss');
-// const terser = require('rollup-plugin-terser');
 
 
 export interface LibBundleOption {
@@ -228,7 +222,7 @@ export interface LibPackBuilderOption extends TemplateOption {
             body: [
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.body.target && (!ctx.body.input),
+                    condition: ctx => ctx.body.target,
                     body: <TsBuildOption>{
                         activity: 'ts',
                         src: 'binding: src',
@@ -244,7 +238,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                     condition: ctx => ctx.body.input,
                     body: {
                         activity: 'rts',
-                        input: (ctx: NodeActivityContext) =>  ctx.platform.toRootSrc(ctx.body.input),
+                        input: (ctx: NodeActivityContext) => ctx.platform.toRootSrc(ctx.body.input),
                         sourcemap: 'binding: sourcemap',
                         afterCompilePlugins: 'binding: plugins',
                         external: 'binding: external',
@@ -252,7 +246,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                         globals: 'binding: globals',
                         annotation: 'binding: annotation',
                         compileOptions: ctx => ctx.scope.getCompileOptions(ctx.body.target),
-                        uglify: ctx => ctx.body.uglify,
+                        // uglify: ctx => ctx.body.uglify,
                         output: ctx => {
                             return {
                                 format: ctx.body.format || 'cjs',
@@ -260,6 +254,20 @@ export interface LibPackBuilderOption extends TemplateOption {
                                 dir: ctx.body.outputFile ? undefined : ctx.scope.toModulePath(ctx.body),
                             }
                         }
+                    }
+                },
+                {
+                    activity: Activities.if,
+                    condition: ctx => ctx.body.uglify,
+                    body: <AssetActivityOption>{
+                        activity: 'asset',
+                        src: ctx => isArray(ctx.body.input) ? ctx.scope.toModulePath(ctx.body, '/**/*.js') : ctx.scope.toModulePath(ctx.body, ctx.body.outputFile),
+                        dist: ctx => ctx.scope.toModulePath(ctx.body),
+                        sourcemap: 'binding: zipMapsource',
+                        pipes: [
+                            ctx => uglify(),
+                            (ctx) => rename({ suffix: '.min' })
+                        ]
                     }
                 },
                 {
@@ -406,15 +414,6 @@ export class LibPackBuilder implements AfterInit {
             this.external = (ctx) => {
                 return func(ctx);
             }
-            this.globals = (ctx) => {
-                let globals = {};
-                func(ctx).forEach(k => {
-                    if (!globals[k]) {
-                        globals[k] = k;
-                    }
-                });
-                return globals;
-            }
         }
 
         if (isNullOrUndefined(this.sourcemap)) {
@@ -422,18 +421,13 @@ export class LibPackBuilder implements AfterInit {
         }
         if (!this.plugins) {
             this.plugins = async (ctx: NodeActivityContext) => {
-                // let cssOptions = await ctx.resolveExpression(this.postcssOption);
                 let beforeResolve = await ctx.resolveExpression(this.beforeResolve);
                 let sourcemap = await ctx.resolveExpression(this.sourcemap);
                 return [
                     ...(beforeResolve || []),
-                    // cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
                     resolve({ browser: ctx.body.format === 'umd' }),
-                    commonjs(),
-                    // ctx.body.format === 'cjs' ? buildin() : null,
-                    // ctx.body.annotation ? rollupClassAnnotations() : null,
-                    sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null,
-                    // ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null
+                    commonjs({ extensions: ['.js', '.ts', '.tsx'] }),
+                    sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
                 ];
             };
         }

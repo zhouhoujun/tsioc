@@ -4,13 +4,14 @@ import { Binding, Input } from '@tsdi/components';
 import { NodeExpression, NodeActivityContext } from '../core';
 import { Plugin, RollupFileOptions, RollupDirOptions } from 'rollup';
 import { rollupClassAnnotations } from '@tsdi/annotations';
-import { CompilerOptions, nodeModuleNameResolver, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory, ProjectReference, convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent } from 'typescript';
+import { CompilerOptions, nodeModuleNameResolver, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory, ProjectReference, convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic } from 'typescript';
 import * as ts from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
 import { syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 import * as fs from 'fs';
-import { uglify } from 'rollup-plugin-uglify';
+import * as resolve from 'resolve';
+import uglify from 'rollup-plugin-uglify';
 import { RollupActivity, RollupOption } from './RollupActivity';
 
 /**
@@ -108,7 +109,10 @@ export class RollupTsActivity extends RollupActivity {
     }
 
     protected vailfExternal(external: string[]): string[] {
-        return (external || []).filter(ex => this.includeLib.indexOf(ex) < 0);
+        if (this.includeLib && this.includeLib.length) {
+            return (external || []).filter(ex => this.includeLib.indexOf(ex) < 0);
+        }
+        return super.vailfExternal(external);
     }
 
     protected setOptions(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions, key: string, val: any) {
@@ -124,6 +128,7 @@ export class RollupTsActivity extends RollupActivity {
     protected async resolvePlugins(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions) {
         let plugins: Plugin[] = [];
         let { beforeCompile, afterCompile } = this.exeCache;
+
         if (beforeCompile && beforeCompile.length) {
             plugins.push(...beforeCompile);
         }
@@ -143,8 +148,9 @@ export class RollupTsActivity extends RollupActivity {
         if (opts.plugins && opts.plugins.length) {
             plugins.push(...opts.plugins);
         }
+
         if (afterCompile && afterCompile.length) {
-            plugins.push(...beforeCompile);
+            plugins.push(...afterCompile);
         }
 
         if (this.uglify) {
@@ -155,6 +161,7 @@ export class RollupTsActivity extends RollupActivity {
                 plugins.push(ugfy);
             }
         }
+        opts.plugins = plugins;
     }
 
     async getDefaultTsCompiler(ctx: NodeActivityContext): Promise<Plugin> {
@@ -163,8 +170,9 @@ export class RollupTsActivity extends RollupActivity {
         let include = await this.resolveExpression(this.include, ctx);
         let exclude = await this.resolveExpression(this.exclude, ctx)
         const filter = createFilter(include, exclude);
-
+        const tsdexp = /.d.ts$/;
         let compilerOptions = await this.createProject(ctx);
+        const allImportedFiles = new Set();
         return {
             name: 'typescript',
 
@@ -177,32 +185,16 @@ export class RollupTsActivity extends RollupActivity {
                     return null;
                 }
                 importer = importer.split('\\').join('/');
+                if (!allImportedFiles.has(importer)) {
+                    return;
+                }
 
-                const result = nodeModuleNameResolver(importee, importer, compilerOptions, {
-                    readFile(fileName: string) {
-                        return fs.readFileSync(fileName, 'utf8');
-                    },
-                    directoryExists(dirPath: string) {
-                        try {
-                            return fs.statSync(dirPath).isDirectory();
-                        } catch (err) {
-                            return false;
-                        }
-                    },
-                    fileExists(filePath: string) {
-                        try {
-                            return fs.statSync(filePath).isFile();
-                        } catch (err) {
-                            return false;
-                        }
-                    }
-                });
+                const result = nodeModuleNameResolver(importee, importer, compilerOptions, ts.sys);
 
                 if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
-                    if ((result.resolvedModule.resolvedFileName || '').endsWith('.d.ts')) {
+                    if (tsdexp.test(result.resolvedModule.resolvedFileName || '')) {
                         return null;
                     }
-
                     return result.resolvedModule.resolvedFileName;
                 }
 
@@ -217,8 +209,9 @@ export class RollupTsActivity extends RollupActivity {
 
             transform(code, id) {
                 if (!filter(id)) {
-                    return null;
+                    return undefined;
                 }
+                allImportedFiles.add(id.split('\\').join('/'));
 
                 const transformed = transpileModule(code, {
                     fileName: id,
@@ -227,7 +220,7 @@ export class RollupTsActivity extends RollupActivity {
                 });
 
                 // All errors except `Cannot compile modules into 'es6' when targeting 'ES5' or lower.`
-                const diagnostics = transformed.diagnostics ?
+                const diagnostics: Diagnostic[] = transformed.diagnostics ?
                     transformed.diagnostics.filter(diagnostic => diagnostic.code !== 1204) : [];
 
                 let fatalError = false;
@@ -254,7 +247,6 @@ export class RollupTsActivity extends RollupActivity {
 
                 return {
                     code: transformed.outputText,
-
                     // Rollup expects `map` to be an object so we must parse the string
                     map: transformed.sourceMapText ? JSON.parse(transformed.sourceMapText) : null
                 };
@@ -265,7 +257,7 @@ export class RollupTsActivity extends RollupActivity {
     protected async createProject(ctx: NodeActivityContext): Promise<CompilerOptions> {
         let projectDirectory = ctx.platform.getRootPath();
         let compilerOptions: CompilerOptions;
-        let projectReferences: ReadonlyArray<ProjectReference>;
+        // let projectReferences: ReadonlyArray<ProjectReference>;
         let settings: CompilerOptions = await this.resolveExpression(this.compileOptions, ctx);
         let fileName = await this.resolveExpression(this.tsconfig, ctx);
         fileName = ctx.platform.toRootPath(fileName);
@@ -275,7 +267,6 @@ export class RollupTsActivity extends RollupActivity {
         // if (settingsResult.errors) {
         //     throw settingsResult.errors;
         // }
-
         compilerOptions = settingsResult.options;
 
         let tsConfig = readConfigFile(fileName, ts.sys.readFile);
@@ -296,8 +287,7 @@ export class RollupTsActivity extends RollupActivity {
         // }
 
         compilerOptions = parsed.options;
-        projectReferences = parsed.projectReferences;
-
+        // projectReferences = parsed.projectReferences;
         return compilerOptions;
     }
 
