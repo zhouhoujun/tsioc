@@ -1,4 +1,4 @@
-import { Token, isString, isToken, ClassType, Registration, createPropDecorator } from '@tsdi/ioc';
+import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**
@@ -24,16 +24,16 @@ export interface InputPropertyDecorator {
     /**
      * define Input property decorator with binding property name and provider.
      *
-     * @param {string} bindingName binding property name
      * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
+     * @param {*} [defaultVal] default value.
      */
-    (bindingName: string, provider: Registration | ClassType): PropertyDecorator;
+    (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
 
     /**
      * define Input property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
-     * @param {*} binding default value.
+     * @param {*} defaultVal default value.
      */
     (bindingName: string, defaultVal: any): PropertyDecorator;
 
@@ -42,7 +42,7 @@ export interface InputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      * @param {Token} provider define provider to resolve value to the property.
-     * @param {*} binding default value.
+     * @param {*} defaultVal default value.
      */
     (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
     /**
@@ -57,11 +57,14 @@ export const Input: InputPropertyDecorator = createPropDecorator<BindingProperty
         if (isString(arg)) {
             ctx.metadata.bindingName = arg;
             ctx.next(next);
+        } else if (isClassType(arg) || arg instanceof Registration) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
         }
     },
     (ctx, next) => {
         let arg = ctx.currArg;
-        if (ctx.args.length > 2 && isToken(arg)) {
+        if ((ctx.args.length > 2 && isToken(arg))) {
             ctx.metadata.provider = arg;
             ctx.next(next);
         } else {

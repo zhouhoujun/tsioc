@@ -29,14 +29,11 @@ export class SwitchActivity<T> extends ControlerActivity<T> {
 
     isScope = true;
 
-    @Input()
-    switch: Expression;
+    @Input() switch: Expression;
 
-    @Input('cases', CaseActivity)
-    cases: CaseActivity<T>[];
+    @Input(CaseActivity) cases: CaseActivity<T>[];
 
-    @Input()
-    defaults: BodyActivity<T>;
+    @Input() defaults: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let matchkey = await this.resolveExpression(this.switch, ctx);

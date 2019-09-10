@@ -27,9 +27,6 @@ export function isToken(target: any): target is Token {
  * @returns {target is ProvideToken}
  */
 export function isProvideToken(target: any): target is ProvideToken<any> {
-    if (!target) {
-        return false;
-    }
     if (isString(target) || isSymbol(target) || (target instanceof Registration)) {
         return true
     }

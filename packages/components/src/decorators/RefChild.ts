@@ -1,4 +1,4 @@
-import { isString, isToken, Registration, ClassType, Token, createPropDecorator } from '@tsdi/ioc';
+import { isString, isToken, Registration, ClassType, Token, createPropDecorator, isClassType } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**
@@ -25,16 +25,16 @@ export interface IRefChildDecorator {
     /**
      * define RefChild property decorator with binding property name and provider.
      *
-     * @param {string} bindingName binding property name
      * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
+     * @param {*} defaultVal default value.
      */
-    (bindingName: string, provider: Registration | ClassType): PropertyDecorator;
+    (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
 
     /**
      * define RefChild property decorator with binding property name and provider.
      *
      * @param {string} bindingName binding property name
-     * @param {*} binding default value.
+     * @param {*} defaultVal default value.
      */
     (bindingName: string, defaultVal: any): PropertyDecorator;
 
@@ -43,7 +43,7 @@ export interface IRefChildDecorator {
      *
      * @param {string} bindingName binding property name
      * @param {Token} provider define provider to resolve value to the property.
-     * @param {*} binding default value.
+     * @param {*} defaultVal default value.
      */
     (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
     /**
@@ -62,6 +62,9 @@ export const RefChild: IRefChildDecorator = createPropDecorator<BindingPropertyM
         let arg = ctx.currArg;
         if (isString(arg)) {
             ctx.metadata.bindingName = arg;
+            ctx.next(next);
+        } else if (isClassType(arg) || arg instanceof Registration) {
+            ctx.metadata.provider = arg;
             ctx.next(next);
         }
     },

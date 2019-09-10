@@ -1,4 +1,4 @@
-import { Token, isString, isToken, ClassType, Registration, createPropDecorator } from '@tsdi/ioc';
+import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 /**
@@ -24,10 +24,9 @@ export interface OutputPropertyDecorator {
     /**
      * define Output property decorator with binding property name and provider.
      *
-     * @param {string} bindingName binding property name
      * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
      */
-    (bindingName: string, provider: Registration | ClassType): PropertyDecorator;
+    (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
 
     /**
      * define Output property decorator with binding property name and provider.
@@ -61,11 +60,13 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingProper
         if (isString(arg)) {
             ctx.metadata.bindingName = arg;
             ctx.next(next);
+        } else if (isClassType(arg) || arg instanceof Registration) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
         }
     },
     (ctx, next) => {
         let arg = ctx.currArg;
-
         if (ctx.args.length > 2 && isToken(arg)) {
             ctx.metadata.provider = arg;
             ctx.next(next);
