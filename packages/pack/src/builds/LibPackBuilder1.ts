@@ -3,7 +3,6 @@ import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption, Plugin } from 'rollup';
-import { RollupOption } from '../rollups';
 import { Input, AfterInit, Binding } from '@tsdi/components';
 import { NodeActivityContext, NodeExpression } from '../core';
 const resolve = require('rollup-plugin-node-resolve');
