@@ -119,8 +119,8 @@ export class RollupActivity extends NodeActivity<void> {
         } else {
             opts.output.globals = {};
         }
-        opts.external = opts.external || [];
-        if (isArray(opts.external)) {
+
+        if (isArray(opts.external) && opts.external.length) {
             opts.external = this.vailfExternal(opts.external);
             opts.external.forEach(k => {
                 if (!opts.output.globals[k]) {
