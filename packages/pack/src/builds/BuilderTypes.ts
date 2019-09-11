@@ -1,4 +1,5 @@
 
 export enum BuilderTypes {
-    libs = 'libs'
+    libs = 'libs',
+    tslibs = 'tslibs'
 }

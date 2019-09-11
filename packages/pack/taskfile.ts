@@ -10,17 +10,16 @@ import { AfterInit } from '@tsdi/components';
     ],
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
-        activity: 'libs',
+        activity: 'tslibs',
         outDir: '../../dist/pack',
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
         annotation: true,
-        // externalLibs: ['buffer', 'module'],
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
-            { input: 'src/index.ts', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'pack.js', format: 'cjs' },
-            { target: 'es2015', input: 'src/index.ts', moduleName: ['fesm2015', 'esm2015'], outputFile: 'pack.js', format: 'cjs' },
-            { target: 'es2017', input: 'src/index.ts', moduleName: ['fesm2017', 'esm2017'], outputFile: 'pack.js', format: 'cjs' }
+            { input: 'src/index.js', moduleName: ['fesm5', 'main', 'esm5'], outputFile: 'pack.js', format: 'cjs' },
+            { target: 'es2015', input: 'es2015/index.js', moduleName: ['fesm2015', 'esm2015'], outputFile: 'pack.js', format: 'cjs' },
+            { target: 'es2017', input: 'es2015/index.js', moduleName: ['fesm2017', 'esm2017'], outputFile: 'pack.js', format: 'cjs' }
         ]
     }
 })

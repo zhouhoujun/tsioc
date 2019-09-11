@@ -420,15 +420,6 @@ export class LibPackBuilder implements AfterInit {
             this.external = (ctx) => {
                 return func(ctx);
             }
-            this.globals = (ctx) => {
-                let globals = {};
-                func(ctx).forEach(k => {
-                    if (!globals[k]) {
-                        globals[k] = k;
-                    }
-                });
-                return globals;
-            }
         }
 
         if (isNullOrUndefined(this.sourcemap)) {
@@ -436,18 +427,13 @@ export class LibPackBuilder implements AfterInit {
         }
         if (!this.plugins) {
             this.plugins = async (ctx: NodeActivityContext) => {
-                // let cssOptions = await ctx.resolveExpression(this.postcssOption);
                 let beforeResolve = await ctx.resolveExpression(this.beforeResolve);
                 let sourcemap = await ctx.resolveExpression(this.sourcemap);
                 return [
                     ...(beforeResolve || []),
-                    // cssOptions ? postcss(ctx.resolveExpression(cssOptions)) : null,
                     resolve({ browser: ctx.body.format === 'umd' }),
-                    commonjs(),
-                    // ctx.body.format === 'cjs' ? buildin() : null,
-                    // ctx.body.annotation ? rollupClassAnnotations() : null,
-                    sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null,
-                    // ctx.body.tsconfig ? ts(isString(ctx.body.tsconfig) ? ctx.platform.getCompilerOptions(ctx.body.tsconfig) : ctx.body.tsconfig) : null
+                    commonjs({ extensions: ['.js', '.ts', '.tsx'] }),
+                    sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
                 ];
             };
         }
