@@ -1,7 +1,7 @@
 {
   "name": "@tsdi/core",
-  "version": "5.2.6",
-  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "version": "5.2.7",
+  "description": "@tsdi/core is Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
@@ -33,7 +33,7 @@
   "peerDependencies": {
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0",
-    "@tsdi/ioc": "^5.2.6"
+    "@tsdi/ioc": "^5.2.7"
   },
   "directories": {
     "lib": "lib",

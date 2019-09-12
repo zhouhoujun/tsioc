@@ -1,7 +1,7 @@
 {
   "name": "@tsdi/ioc",
-  "version": "5.2.6",
-  "description": "tsioc is AOP, Ioc container, via typescript decorator",
+  "version": "5.2.7",
+  "description": "@tsdi is base Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
