@@ -13,7 +13,8 @@ import { CompilerOptions } from 'typescript';
 import { NodeActivityContext } from './NodeActivityContext';
 import { PlatformServiceToken, CmdOptions } from './IPlatformService';
 import { GlobbyOptions } from 'globby';
-const globby = require('globby');
+import * as globby from 'globby';
+
 const minimist = require('minimist');
 const del = require('del');
 

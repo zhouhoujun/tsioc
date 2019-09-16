@@ -52,7 +52,6 @@
     "@tsdi/platform-server": "^5.2.8",
     "@tsdi/platform-server-boot": "^5.2.8",
     "@types/execa": "^0.9.0",
-    "@types/globby": "^9.1.0",
     "uglify": "^0.1.5",
     "uglify-js": "^3.5.12",
     "reflect-metadata": "^0.1.13",
