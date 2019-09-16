@@ -1,4 +1,3 @@
-import { isString } from '@tsdi/ioc';
 import * as path from 'path';
 import { existsSync } from 'fs';
 

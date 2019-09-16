@@ -48,9 +48,8 @@ export class WatchActivity extends Activity<Src> {
 
     protected async execute(ctx: NodeActivityContext) {
         let watchSrc = await this.resolveExpression(this.watch, ctx);
-        watchSrc = ctx.platform.toRootSrc(watchSrc);
         let options = await this.resolveExpression(this.options, ctx);
-        let watcher = chokidar.watch(watchSrc, Object.assign({ ignored: /[\/\\]\./, ignoreInitial: true }, options));
+        let watcher = chokidar.watch(watchSrc, Object.assign({ ignored: /[\/\\]\./, ignoreInitial: true, cwd: ctx.platform.getRootPath() }, options));
 
         let defer = PromiseUtil.defer();
         fromEventPattern<string[]>(

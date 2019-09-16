@@ -2,8 +2,7 @@ import { NodeActivityContext, NodeActivity, NodeExpression } from '../core';
 import { Input, Binding } from '@tsdi/components';
 import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
-    RollupFileOptions, rollup, WatcherOptions, RollupDirOptions, RollupCache,
-    OutputOptionsFile, OutputOptionsDir, ExternalOption, GlobalsOption
+    rollup, WatcherOptions, RollupCache, ExternalOption, GlobalsOption, RollupOptions, OutputOptions
 } from 'rollup';
 import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
 
@@ -33,10 +32,10 @@ export interface RollupOption extends TemplateOption {
     /**
      * rollup output setting.
      *
-     * @type {(Binding<NodeExpression<OutputOptionsFile | OutputOptionsDir>>)}
+     * @type {(Binding<NodeExpression<OutputOptions>>)}
      * @memberof RollupOption
      */
-    output?: Binding<NodeExpression<OutputOptionsFile | OutputOptionsDir>>;
+    output?: Binding<NodeExpression<OutputOptions>>;
     /**
      * rollup external setting.
      *
@@ -65,10 +64,10 @@ export interface RollupOption extends TemplateOption {
     /**
      * custom setup rollup options.
      *
-     * @type {(Binding<RollupFileOptions | RollupDirOptions>)}
+     * @type {(Binding<RollupOptions>)}
      * @memberof RollupOption
      */
-    options?: Binding<NodeExpression<RollupFileOptions | RollupDirOptions>>;
+    options?: Binding<NodeExpression<RollupOptions>>;
 }
 
 /**
@@ -83,7 +82,7 @@ export class RollupActivity extends NodeActivity<void> {
 
     @Input() input: NodeExpression<Src>;
 
-    @Input() output: NodeExpression<OutputOptionsFile | OutputOptionsDir>;
+    @Input() output: NodeExpression<OutputOptions>;
 
     @Input() plugins: NodeExpression<Plugin[]>;
 
@@ -95,7 +94,7 @@ export class RollupActivity extends NodeActivity<void> {
 
     @Input() cache: NodeExpression<RollupCache>;
 
-    @Input() options: NodeExpression<RollupFileOptions | RollupDirOptions>;
+    @Input() options: NodeExpression<RollupOptions>;
 
     @Input() watch: NodeExpression<WatcherOptions>;
 
@@ -128,7 +127,6 @@ export class RollupActivity extends NodeActivity<void> {
                 }
             });
         }
-
         if (opts.output.file) {
             opts.output.file = ctx.platform.toRootPath(opts.output.file);
         }
@@ -143,7 +141,7 @@ export class RollupActivity extends NodeActivity<void> {
             opts.plugins = opts.plugins.filter(p => p);
         }
 
-        let bundle = await rollup(opts as any);
+        let bundle = await rollup(opts);
         await bundle.write(opts.output);
     }
 
@@ -151,7 +149,7 @@ export class RollupActivity extends NodeActivity<void> {
         return ['input', 'output', 'plugins', 'external', 'cache', 'watch'];
     }
 
-    protected setOptions(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions, key: string, val: any) {
+    protected setOptions(ctx: NodeActivityContext, opts: RollupOptions, key: string, val: any) {
         if (key === 'input') {
             val = ctx.platform.toRootSrc(val);
         }
@@ -169,7 +167,7 @@ export class RollupActivity extends NodeActivity<void> {
         return external || [];
     }
 
-    protected async resolvePlugins(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions) {
+    protected async resolvePlugins(ctx: NodeActivityContext, opts: RollupOptions) {
 
     }
 }

@@ -2,15 +2,13 @@ import { Task } from '@tsdi/activities';
 import { isBoolean } from '@tsdi/ioc';
 import { Binding, Input } from '@tsdi/components';
 import { NodeExpression, NodeActivityContext } from '../core';
-import { Plugin, RollupFileOptions, RollupDirOptions } from 'rollup';
+import { Plugin, RollupOptions } from 'rollup';
 import { rollupClassAnnotations } from '@tsdi/annotations';
-import { CompilerOptions, nodeModuleNameResolver, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory, ProjectReference, convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic } from 'typescript';
+import { CompilerOptions, nodeModuleNameResolver, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory, convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic } from 'typescript';
 import * as ts from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
 import { syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
-import * as fs from 'fs';
-import * as resolve from 'resolve';
 import uglify from 'rollup-plugin-uglify';
 import { RollupActivity, RollupOption } from './RollupActivity';
 
@@ -115,7 +113,7 @@ export class RollupTsActivity extends RollupActivity {
         return super.vailfExternal(external);
     }
 
-    protected setOptions(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions, key: string, val: any) {
+    protected setOptions(ctx: NodeActivityContext, opts: RollupOptions, key: string, val: any) {
         if (key === 'beforeCompile') {
             this.exeCache.beforeCompile = val;
         } else if (key === 'afterCompile') {
@@ -125,7 +123,7 @@ export class RollupTsActivity extends RollupActivity {
         }
     }
 
-    protected async resolvePlugins(ctx: NodeActivityContext, opts: RollupFileOptions | RollupDirOptions) {
+    protected async resolvePlugins(ctx: NodeActivityContext, opts: RollupOptions) {
         let plugins: Plugin[] = [];
         let { beforeCompile, afterCompile } = this.exeCache;
 

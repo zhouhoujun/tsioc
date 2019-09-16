@@ -42,7 +42,7 @@ export class UnitTestActivity extends Activity<void> {
         let test = await this.resolveExpression(this.test, ctx);
         let options = await this.resolveExpression(this.options, ctx);
         if (test) {
-            await runTest(ctx.platform.toRootSrc(test), options, ConsoleReporter);
+            await runTest(test, Object.assign({ baseURL: ctx.platform.getRootPath() }, options || {}), ConsoleReporter);
         }
     }
 }

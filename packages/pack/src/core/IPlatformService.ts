@@ -2,6 +2,7 @@ import { IContainer } from '@tsdi/core';
 import { ObjectMap, Express2, InjectToken } from '@tsdi/ioc';
 import { CompilerOptions } from 'typescript';
 import { Src } from '@tsdi/activities';
+import { GlobbyOptions } from 'globby';
 
 export interface IPlatformService {
     container: IContainer;
@@ -34,7 +35,7 @@ export interface IPlatformService {
      */
     getFolders(pathstr: string, express?: Express2<string, string, boolean>): string[];
     /**
-     * filter fileName in directory.
+     * find filter fileName in directory.
      *
      * @param {Src} express
      * @param {(fileName: string) => boolean} [filter]
@@ -43,11 +44,23 @@ export interface IPlatformService {
      * @memberof NodeContext
      */
     getFiles(express: Src, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]>;
+    /**
+     * find filter fileName in directory.
+     *
+     * @param {Src} express
+     * @param {GlobbyOptions} options
+     * @param {(fileName: string) => boolean} [filter]
+     * @param {(filename: string) => string} [mapping]
+     * @returns {Promise<string[]>}
+     * @memberof IPlatformService
+     */
+    getFiles(express: Src, options: GlobbyOptions, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]>;
     copyFile(src: Src, dist: string, options?: CmdOptions): void;
     existsFile(filename: string): boolean;
     copyDir(src: Src, dist: string, options?: CmdOptions): void;
     copyTo(filePath: string, dist: string): Promise<any>;
     del(src: Src, opts?: {
+        cwd?: string;
         force?: boolean;
         dryRun?: boolean;
     }): Promise<any>;

@@ -1,5 +1,5 @@
 import { Src, WorkflowContextToken } from '@tsdi/activities';
-import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject } from '@tsdi/ioc';
+import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject, isFunction } from '@tsdi/ioc';
 import { toAbsolutePath, runMainPath, syncRequire } from '@tsdi/platform-server';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative, basename, extname } from 'path';
@@ -12,6 +12,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { NodeActivityContext } from './NodeActivityContext';
 import { PlatformServiceToken, CmdOptions } from './IPlatformService';
+import { GlobbyOptions } from 'globby';
 const globby = require('globby');
 const minimist = require('minimist');
 const del = require('del');
@@ -108,9 +109,16 @@ export class PlatformService {
      * @returns {Promise<string[]>}
      * @memberof NodeContext
      */
-    async getFiles(express: Src, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]> {
+    async getFiles(express: Src, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]>;
+    async getFiles(express: Src, options: GlobbyOptions, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]>;
+    async getFiles(express: Src, options: any, filter?: any, mapping?: (filename: string) => string): Promise<string[]> {
         lang.assertExp(isString(express) || isArray(express), 'input express param type error!');
-        let filePaths: string[] = await globby(express);
+        if (isFunction(options)) {
+            filter = options;
+            mapping = filter;
+            options = {};
+        }
+        let filePaths: string[] = await globby(express, options);
         if (filter) {
             filePaths = filePaths.filter(filter);
         }
@@ -161,7 +169,7 @@ export class PlatformService {
         });
     }
 
-    del(src: Src, opts?: { force?: boolean, dryRun?: boolean }): Promise<any> {
+    del(src: Src, opts?: { force?: boolean, cwd?: string, dryRun?: boolean }): Promise<any> {
         return del(src, opts);
     }
 

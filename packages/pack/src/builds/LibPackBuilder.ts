@@ -2,7 +2,7 @@ import { Task, TemplateOption, Src, Activities, ActivityTemplate } from '@tsdi/a
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
-import { ExternalOption, RollupCache, WatcherOptions, RollupFileOptions, RollupDirOptions, GlobalsOption, Plugin } from 'rollup';
+import { ExternalOption, RollupCache, WatcherOptions, GlobalsOption, Plugin, RollupOptions } from 'rollup';
 import { RollupOption } from '../rollups';
 import { Input, AfterInit, Binding } from '@tsdi/components';
 import { NodeActivityContext, NodeExpression } from '../core';
@@ -165,10 +165,10 @@ export interface LibPackBuilderOption extends TemplateOption {
     /**
      * custom setup rollup options.
      *
-     * @type {(NodeExpression<RollupFileOptions | RollupDirOptions>)}
+     * @type {(NodeExpression<RollupOptions>)}
      * @memberof RollupOption
      */
-    options?: Binding<NodeExpression<RollupFileOptions | RollupDirOptions>>;
+    options?: Binding<NodeExpression<RollupOptions>>;
 
     /**
      * postcss option.
@@ -352,10 +352,10 @@ export class LibPackBuilder implements AfterInit {
     /**
      * custom setup rollup options.
      *
-     * @type {(NodeExpression<RollupFileOptions | RollupDirOptions>)}
+     * @type {(NodeExpression<RollupOptions>)}
      * @memberof RollupOption
      */
-    @Input() options?: NodeExpression<RollupFileOptions | RollupDirOptions>;
+    @Input() options?: NodeExpression<RollupOptions>;
     @Input() sourcemap?: NodeExpression<boolean | string>;
     @Input() postcssOption: NodeExpression;
 

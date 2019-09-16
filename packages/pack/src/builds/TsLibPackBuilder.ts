@@ -84,7 +84,7 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                     },
                     body: {
                         activity: 'rts',
-                        input: (ctx: NodeActivityContext) => ctx.platform.toRootSrc(ctx.body.input || ctx.scope.mainFile),
+                        input: (ctx: NodeActivityContext) => ctx.body.input || ctx.scope.mainFile,
                         sourcemap: 'binding: sourcemap',
                         beforeCompilePlugins: 'binding: beforeCompile',
                         afterCompilePlugins: 'binding: plugins',
