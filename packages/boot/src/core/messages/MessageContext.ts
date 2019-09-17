@@ -31,6 +31,14 @@ export interface MessageOption {
      * @memberof MessageContext
      */
     data?: any;
+
+    /**
+     * message of target.
+     *
+     * @type {*}
+     * @memberof MessageOption
+     */
+    target?: any;
 }
 
 /**
@@ -56,6 +64,14 @@ export class MessageContext implements IHandleContext {
     getRaiseContainer(): IContainer {
         return this.raiseContainerGetter();
     }
+
+    /**
+     * message of target.
+     *
+     * @type {*}
+     * @memberof MessageContext
+     */
+    target?: any;
 
     /**
      * message type
