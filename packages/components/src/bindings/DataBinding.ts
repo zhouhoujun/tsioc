@@ -59,7 +59,16 @@ export abstract class DataBinding<T = any> {
 }
 
 /**
+ * element template.
+ *
+ * @export
+ * @interface ElementTemplate
+ */
+export interface ElementTemplate {
+
+}
+/**
  * binding
  */
-export type Binding<T> = string | DataBinding<T> | T;
+export type Binding<T, Temp extends ElementTemplate = ElementTemplate> = string | DataBinding<T> | T | Temp;
 

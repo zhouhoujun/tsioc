@@ -3,7 +3,7 @@ import { RunnableConfigure } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ValuePipe } from './ValuePipe';
-import { Binding } from '@tsdi/components';
+import { Binding, ElementTemplate } from '@tsdi/components';
 
 
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
@@ -89,7 +89,7 @@ export interface ActivityConfigure<T extends TemplateOption = ControlTemplate>  
  * @interface TemplateOption
  * @template T
  */
-export interface TemplateOption extends ObjectMap {
+export interface TemplateOption extends ElementTemplate {
     /**
      * activity selector math the template option tag.
      *
