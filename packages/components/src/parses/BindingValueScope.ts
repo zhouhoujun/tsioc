@@ -89,7 +89,11 @@ export class TranslateExpressionHandle extends ParseHandle {
                 .get(TemplateParseScope)
                 .execute(tpCtx);
             if (!isNullOrUndefined(tpCtx.value)) {
-                ctx.bindExpression = tpCtx.value;
+                if (lang.isExtendsClass(lang.getClass(tpCtx.value), ctx.binding.type)) {
+                    ctx.value = tpCtx.value;
+                } else {
+                    ctx.bindExpression = tpCtx.value;
+                }
             }
         }
         if (isNullOrUndefined(ctx.value)) {
