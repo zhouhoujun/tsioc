@@ -186,17 +186,11 @@ program
     .action((files, options) => {
         requireRegisters();
         if (isArray(files)) {
-            files = files.filter(f => f && isString(f)).map(f => {
-                if (/^!/.test(f)) {
-                    return '!' + path.join(processRoot, f.substring(1));
-                }
-                return path.join(processRoot, f)
-            })
+            files = files.filter(f => f && isString(f));
         } else {
             if (!files || !isString(files)) {
                 files = 'test/**/*.ts';
             }
-            files = path.join(processRoot, files)
         }
         let unit = requireCwd('@tsdi/unit');
         let reporter;
@@ -210,6 +204,7 @@ program
             config = requireCwd(options.config);
         }
         config = config || {};
+        config.baseURL = config.baseURL || processRoot;
         if (isBoolean(options.debug)) {
             config.debug = options.debug;
         }
