@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser",
-  "version": "5.2.8",
+  "version": "5.2.9",
   "description": "@tsdi/platform-browser is platform of @tsdi framework for browser.",
   "scripts": {
     "postinstall": "npm prune",
@@ -35,8 +35,8 @@
     "core-js": "^3.2.1"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "^5.2.8",
-    "@tsdi/core": "^5.2.8",
+    "@tsdi/ioc": "^5.2.9",
+    "@tsdi/core": "^5.2.9",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0"
   },
