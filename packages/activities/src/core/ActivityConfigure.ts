@@ -89,7 +89,7 @@ export interface ActivityConfigure<T extends TemplateOption = ControlTemplate>  
  * @interface TemplateOption
  * @template T
  */
-export interface TemplateOption extends ElementTemplate {
+export interface TemplateOption extends ElementTemplate, ObjectMap {
     /**
      * activity selector math the template option tag.
      *
