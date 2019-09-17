@@ -18,7 +18,7 @@ export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
     }
 
     protected normalize(pth: string) {
-        return (pth || '').replace(/\\/g, '/');
+        return pth ? pth.replace(/\\/g, '/') : pth;
     }
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         if (isString(files)) {
