@@ -21,6 +21,8 @@ export interface IModuleResolveOption {
 
     template?: any;
 
+    parsing?: boolean;
+
     decorator?: string;
 
     /**
@@ -72,6 +74,8 @@ export class BuildContext extends IocRaiseContext<IContainer> implements ICompon
      * @memberof BuildContext
      */
     template?: any;
+
+    parsing?: boolean;
 
     /**
      * instance of current type annoation template

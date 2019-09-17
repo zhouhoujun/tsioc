@@ -18,6 +18,7 @@ export class ParseSelectorHandle extends ParsersHandle {
             ctx.value = await this.container.resolve(ComponentBuilderToken)
                 .resolve(selector, {
                     scope: ctx.scope,
+                    parsing: true,
                     template: ctx.template,
                     raiseContainer: ctx.getContainerFactory()
                 }, ...ctx.providers);
