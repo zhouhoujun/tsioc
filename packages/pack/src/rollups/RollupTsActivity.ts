@@ -182,7 +182,7 @@ export class RollupTsActivity extends RollupActivity {
                 if (!importer) {
                     return null;
                 }
-                importer = importer.split('\\').join('/');
+                importer = ctx.platform.normalize(importer);
                 if (!allImportedFiles.has(importer)) {
                     return;
                 }

@@ -119,7 +119,7 @@ export class PlatformService {
             mapping = filter;
             options = {};
         }
-        let filePaths: string[] = await globby(express, options);
+        let filePaths: string[] = await globby(this.normalizeSrc(express), options);
         if (filter) {
             filePaths = filePaths.filter(filter);
         }
@@ -129,6 +129,18 @@ export class PlatformService {
         }
 
         return filePaths;
+    }
+
+    normalize(url: string): string {
+        return url ? url.split('\\').join('/') : url;
+    }
+
+    normalizeSrc(src: Src): Src {
+        if (isString(src)) {
+            return this.normalize(src);
+        } else {
+            return src.map(s => this.normalize(s));
+        }
     }
 
     copyFile(src: Src, dist: string, options?: CmdOptions) {

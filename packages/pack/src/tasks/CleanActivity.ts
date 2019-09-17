@@ -34,7 +34,7 @@ export class CleanActivity extends Activity<void> {
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let clean = await this.resolveExpression(this.clean, ctx);
         if (clean) {
-            await ctx.platform.del(clean, { force: true, cwd: ctx.platform.getRootPath() });
+            await ctx.platform.del(ctx.platform.normalizeSrc(clean), { force: true, cwd: ctx.platform.getRootPath() });
         }
     }
 }

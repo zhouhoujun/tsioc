@@ -25,6 +25,9 @@ export interface IPlatformService {
     getRootFolders(express?: Express2<string, string, boolean>): string[];
     getCompilerOptions(tsconfig: string): CompilerOptions;
     getFileName(pathName: string): string;
+
+    normalize(url: string): string;
+    normalizeSrc(src: Src): Src;
     /**
      * get folders of path.
      *
