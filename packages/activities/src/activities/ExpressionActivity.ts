@@ -2,6 +2,8 @@ import { Task } from '../decorators';
 import { ActivityContext, Expression } from '../core';
 import { Input } from '@tsdi/components';
 import { ControlerActivity } from './ControlerActivity';
+import { isString } from '@tsdi/ioc';
+
 
 /**
  * expression activity.
@@ -18,7 +20,14 @@ export class ExpressionActivity<T> extends ControlerActivity<T> {
     @Input() expression: Expression<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        this.result.value = await this.resolveExpression(this.expression, ctx);
+        if (isString(this.expression)) {
+            try {
+                // tslint:disable-next-line:no-eval
+                this.result.value = eval(this.expression);
+            } catch { }
+        } else {
+            this.result.value = await this.resolveExpression(this.expression, ctx);
+        }
     }
 
 }

@@ -40,7 +40,12 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
             body: [
                 {
                     activity: Activities.if,
-                    condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().setvs,
+                    // condition: {
+                    //     activity: 'exists',
+                    //     expect: `ctx.platform.getEnvArgs().setvs`
+                    // },
+                    condition: `!!ctx.platform.getEnvArgs().setvs`,
+                    // condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().setvs,
                     body: [{
                         activity: 'asset',
                         name: 'version-setting',
