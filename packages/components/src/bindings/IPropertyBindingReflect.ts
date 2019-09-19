@@ -92,6 +92,11 @@ export interface IBinding<T = any> {
  * @extends {ITypeReflect}
  */
 export interface IBindingTypeReflect extends ITypeReflect {
+
+    componentDecorator?: string;
+    componentSelector?: string;
+    componentSelectorId?: string;
+    attrSelector?: string;
     /**
      * property input binding metadata.
      *

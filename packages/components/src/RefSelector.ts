@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Type, isClass, hasOwnClassMetadata } from '@tsdi/ioc';
 
 
 /**
@@ -10,6 +10,10 @@ import { Abstract } from '@tsdi/ioc';
  */
 @Abstract()
 export abstract class RefSelector {
+
+    abstract getComponentSelector(): string;
+
+    abstract getSelectorId(): string;
     /**
      * select ref tag in element.
      *
@@ -20,5 +24,11 @@ export abstract class RefSelector {
      * @memberof RefSelector
      */
     abstract select(element: any, selector: string): any;
+
+    isComponentType(decorator: string, element: any): boolean {
+        return isClass(element) && hasOwnClassMetadata(decorator, element);
+    }
+
+    abstract getDefaultCompose(): Type;
 }
 

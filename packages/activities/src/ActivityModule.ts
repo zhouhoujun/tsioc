@@ -5,9 +5,10 @@ import * as activites from './activities';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes, DecoratorProvider, InjectReference, ProviderTypes } from '@tsdi/ioc';
 import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor } from '@tsdi/boot';
-import { ComponentRegisterAction, BootComponentAccessor } from '@tsdi/components'
+import { ComponentRegisterAction, BootComponentAccessor, RefSelector } from '@tsdi/components'
 import { TaskInjectorRegisterAction, ActivityContext } from './core';
 import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
+import { ActivityRefSelector } from './ActivityRefSelector';
 
 
 /**
@@ -32,7 +33,7 @@ export class ActivityModule {
             .register(container, TaskDecorSelectorHandle);
 
         container.get(DecoratorProvider)
-            .bindProviders(Task, { provide: BootTargetAccessor, useClass: BootComponentAccessor})
+            .bindProviders(Task, { provide: BootTargetAccessor, useClass: BootComponentAccessor })
 
 
         container.get(DesignDecoratorRegisterer)
@@ -44,10 +45,8 @@ export class ActivityModule {
             .register(Task, StartupScopes.ValifyComponent, ValidTaskComponentHandle)
             .register(Task, StartupScopes.Binding, BindingTaskComponentHandle);
 
-        container.use(core)
-            .use(RunAspect)
-            .use(activites);
 
+        container.register(ActivityRefSelector);
         container.get(DecoratorProvider)
             .bindProviders(Task, {
                 provide: BootContext,
@@ -60,6 +59,11 @@ export class ActivityModule {
                         return container.get(ActivityContext, ...providers);
                     }
                 }
-            });
+            }, { provide: RefSelector, useClass: ActivityRefSelector });
+
+
+        container.use(core)
+            .use(RunAspect)
+            .use(activites);
     }
 }

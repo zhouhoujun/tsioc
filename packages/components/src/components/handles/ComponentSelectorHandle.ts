@@ -1,7 +1,8 @@
-import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray } from '@tsdi/ioc';
+import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray, DecoratorProvider } from '@tsdi/ioc';
 import { ElementNode } from '../ElementNode';
 import { TemplateHandle, TemplateContext } from '../../parses';
 import { SelectorManager } from '../../SelectorManager';
+import { RefSelector } from '../../RefSelector';
 
 /**
  * component selector handle.
@@ -12,13 +13,14 @@ import { SelectorManager } from '../../SelectorManager';
  */
 export class ComponentSelectorHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
+        let refSelector = ctx.getRaiseContainer().get(DecoratorProvider).resolve(ctx.decorator, RefSelector);
         if (isArray(ctx.template) && ctx.annoation.template === ctx.template) {
-            ctx.selector = this.getDefaultCompose();
-        } else if (this.isElement(ctx.decorator, ctx.template)) {
+            ctx.selector = refSelector.getDefaultCompose();
+        } else if (refSelector.isComponentType(ctx.decorator, ctx.template)) {
             ctx.selector = ctx.template;
             ctx.template = null;
         } else if (ctx.template) {
-            ctx.selector = this.getComponent(ctx, ctx.template);
+            ctx.selector = this.getComponent(ctx, ctx.template, refSelector);
         }
 
         if (!ctx.selector) {
@@ -26,28 +28,16 @@ export class ComponentSelectorHandle extends TemplateHandle {
         }
     }
 
-    protected getComponent(ctx: TemplateContext, template: any): Type {
-        let selector = this.getSelector(template);
+    protected getComponent(ctx: TemplateContext, template: any, refSelector: RefSelector): Type {
+        let selector = template ? template[refSelector.getComponentSelector()] : null;
         if (selector) {
             let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
             if (isString(selector) && mgr.has(selector)) {
                 return mgr.get(selector);
-            } else if (this.isElement(ctx.decorator, selector)) {
+            } else if (refSelector.isComponentType(ctx.decorator, selector)) {
                 return selector;
             }
         }
         return null;
-    }
-
-    protected getSelector(template: any) {
-        return isMetadataObject(template) ? template.element : null;
-    }
-
-    protected getDefaultCompose(): Type {
-        return ElementNode;
-    }
-
-    protected isElement(decorator: string, element: any): boolean {
-        return isClass(element) && (hasOwnClassMetadata(decorator, element) || lang.isExtendsClass(element, ElementNode));
     }
 }
