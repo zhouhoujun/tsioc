@@ -1,5 +1,5 @@
 import { Events, BindEventType } from './Events';
-import { lang } from '@tsdi/ioc';
+import { lang, isFunction, Type, ClassType, ObjectMap } from '@tsdi/ioc';
 
 /**
  * observe property change.
@@ -31,16 +31,18 @@ export namespace observe {
         return events.has(target);
     }
 
+
+
     /**
      * on property change.
      *
      * @export
      * @param {*} target subscribe change handle of target.
-     * @param {string} property subscribe change handle of target property.
+     * @param {(string | ((tag: T) => any))} property subscribe change handle of target property.
      * @param {(target: any, prop: string, vaule?: any, old?: any) => void} onChange change handle.
      * @returns
      */
-    export function onPropertyChange(target: any, property: string, onChange: (target: any, prop: string, vaule?: any, old?: any) => void) {
+    export function onPropertyChange<T extends Object = any>(target: T, property: string | ((tag: T) => any), onChange: (target: T, prop: string, vaule?: any, old?: any) => void) {
         let evt: Events;
         if (!events.has(target)) {
             evt = new Events();
@@ -49,11 +51,23 @@ export namespace observe {
             evt = events.get(target);
         }
 
-        if (!defines.has(target) || !defines.get(target)[property]) {
+        let propName: string;
+        if (isFunction(property)) {
+            let objMap: any = {};
+            Object.keys(target).forEach(k => {
+                objMap[k] = k;
+            })
+            propName = property(objMap);
+        } else {
+            propName = property;
+        }
+
+
+        if (!defines.has(target) || !defines.get(target)[propName]) {
             let descriptors = Object.getOwnPropertyDescriptors(lang.getClass(target).prototype);
-            let descriptor = descriptors[property];
-            let value = Reflect.get(target, property);
-            Reflect.defineProperty(target, property, {
+            let descriptor = descriptors[propName];
+            let value = Reflect.get(target, propName);
+            Reflect.defineProperty(target, propName, {
                 get() {
                     if (descriptor && descriptor.get) {
                         return descriptor.get.call(target);
@@ -69,17 +83,32 @@ export namespace observe {
                         descriptor.set.call(target, val);
                     }
                     if (isChanged) {
-                        evt.emit(BindEventType.fieldChanged, target, property, val, old);
+                        evt.emit(BindEventType.fieldChanged, target, propName, val, old);
                     }
                 }
             });
 
             let pps = defines.get(target) || {};
-            pps[property] = true;
+            pps[propName] = true;
             defines.set(target, pps)
         }
 
         evt.on(BindEventType.fieldChanged, onChange);
 
+    }
+
+    /**
+     * on property changed.
+     *
+     * @export
+     * @template T
+     * @param {T} target
+     * @param {(string | ((tag: T) => any))} property
+     * @param {(vaule?: any, old?: any, target?: T, prop?: string) => void} callback
+     */
+    export function onChanged<T extends Object = any>(target: T, property: string | ((tag: T) => any), callback: (vaule?: any, old?: any, target?: T, prop?: string) => void) {
+        onPropertyChange(target, property, (target, prop, vaule, old) => {
+            callback(vaule, old, target, prop);
+        });
     }
 }

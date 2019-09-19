@@ -21,6 +21,7 @@ export class Events {
     constructor() {
         this.maps = {};
     }
+    test: string;
 
     /**
      * subscribe event.
