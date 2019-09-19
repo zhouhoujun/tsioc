@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/activities",
-  "version": "5.2.13",
+  "version": "5.2.14",
   "description": "Type workflow frameworks, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -35,12 +35,12 @@
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "^5.2.13",
-    "@tsdi/core": "^5.2.13",
-    "@tsdi/aop": "^5.2.13",
-    "@tsdi/boot": "^5.2.13",
-    "@tsdi/components": "^5.2.13",
-    "@tsdi/logs": "^5.2.13",
+    "@tsdi/ioc": "^5.2.14",
+    "@tsdi/core": "^5.2.14",
+    "@tsdi/aop": "^5.2.14",
+    "@tsdi/boot": "^5.2.14",
+    "@tsdi/components": "^5.2.14",
+    "@tsdi/logs": "^5.2.14",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0"
   }

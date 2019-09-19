@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit-console",
-  "version": "5.2.13",
+  "version": "5.2.14",
   "description": "unit testing console reporter",
   "scripts": {
     "postinstall": "npm prune",
@@ -36,15 +36,15 @@
     "chalk": "^2.3.1"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "^5.2.13",
-    "@tsdi/core": "^5.2.13",
-    "@tsdi/aop": "^5.2.13",
-    "@tsdi/boot": "^5.2.13",
-    "@tsdi/logs": "^5.2.13",
-    "@tsdi/platform-server": "^5.2.13",
-    "@tsdi/platform-server-logs": "^5.2.13",
-    "@tsdi/platform-server-boot": "^5.2.13",
-    "@tsdi/unit": "^5.2.13",
+    "@tsdi/ioc": "^5.2.14",
+    "@tsdi/core": "^5.2.14",
+    "@tsdi/aop": "^5.2.14",
+    "@tsdi/boot": "^5.2.14",
+    "@tsdi/logs": "^5.2.14",
+    "@tsdi/platform-server": "^5.2.14",
+    "@tsdi/platform-server-logs": "^5.2.14",
+    "@tsdi/platform-server-boot": "^5.2.14",
+    "@tsdi/unit": "^5.2.14",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0",
     "globby": "^10.0.1"
