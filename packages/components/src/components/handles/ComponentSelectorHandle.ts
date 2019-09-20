@@ -1,5 +1,4 @@
-import { isString, isClass, hasOwnClassMetadata, lang, Type, isMetadataObject, isArray, DecoratorProvider } from '@tsdi/ioc';
-import { ElementNode } from '../ElementNode';
+import { isString, Type, isArray, DecoratorProvider } from '@tsdi/ioc';
 import { TemplateHandle, TemplateContext } from '../../parses';
 import { SelectorManager } from '../../SelectorManager';
 import { RefSelector } from '../../RefSelector';
