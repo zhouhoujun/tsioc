@@ -42,7 +42,7 @@ export namespace observe {
      * @param {(vaule?: any, old?: any, target?: any, prop?: string) => void} onChange change handle.
      * @returns
      */
-    export function onPropertyChange<T extends Object = any>(target: T, property: string | ((tag: T) => any), onChange: (vaule?: any, old?: any, target?: T, prop?: string ) => void) {
+    export function onPropertyChange<T extends Object = any>(target: T, property: string | ((tag: T) => any), onChange: (vaule?: any, old?: any, target?: T, prop?: string) => void) {
         let evt: Events;
         if (!events.has(target)) {
             evt = new Events();
@@ -56,9 +56,10 @@ export namespace observe {
             let objMap: any = {};
             let descriptors = Object.getOwnPropertyDescriptors(lang.getClass(target).prototype);
             [...Object.keys(target), ...Object.keys(descriptors)].forEach(k => {
-                objMap[k] = k;
+                if (!objMap[k]) {
+                    objMap[k] = k;
+                }
             });
-
             propName = property(objMap);
         } else {
             propName = property;

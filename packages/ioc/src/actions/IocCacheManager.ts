@@ -35,19 +35,6 @@ export interface IIocCacheManager {
      * @memberof ICacheManager
      */
     get(targetType: Type, expires?: number): any;
-    // /**
-    //  * is check expires or not.
-    //  *
-    //  * @returns {boolean}
-    //  * @memberof ICacheManager
-    //  */
-    // isChecking(): boolean;
-    // /**
-    //  * run check expires.
-    //  *
-    //  * @memberof ICacheManager
-    //  */
-    // checkExpires();
     /**
      * destory cache
      *

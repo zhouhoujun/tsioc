@@ -22,6 +22,14 @@ export class BindProviderAction extends IocDesignAction {
             if (!anno) {
                 return;
             }
+            if (!tgReflect.singleton) {
+                if (anno.singleton) {
+                    tgReflect.singleton = anno.singleton;
+                }
+                if (anno.expires) {
+                    tgReflect.expires = anno.expires;
+                }
+            }
             if (anno.provide) {
                 let provide = raiseContainer.getToken(anno.provide, anno.alias);
                 tgReflect.provides.push(provide);

@@ -28,8 +28,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getClassDecorState(ctx: RuntimeActionContext) {
         if (!ctx.classDecors) {
-            ctx.classDecors = this.container.get(MetadataService)
-                .getClassDecorators(ctx.targetType)
+            ctx.classDecors = Object.keys(ctx.targetReflect.classDecors)
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
@@ -40,8 +39,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getMethodDecorState(ctx: RuntimeActionContext) {
         if (!ctx.methodDecors) {
-            ctx.methodDecors = this.container.get(MetadataService)
-                .getMethodDecorators(ctx.targetType)
+            ctx.methodDecors = Object.keys(ctx.targetReflect.methodDecors)
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
@@ -52,9 +50,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getPropDecorState(ctx: RuntimeActionContext) {
         if (!ctx.propsDecors) {
-            ctx.propsDecors = this.container.get(MetadataService)
-                .getPropertyDecorators(ctx.targetType)
-                .reduce((obj, dec) => {
+            ctx.propsDecors = Object.keys(ctx.targetReflect.propsDecors).reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});

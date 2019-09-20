@@ -1,5 +1,5 @@
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
-import { Type, LoadType, isArray, isString, isClass, MetadataService, getOwnTypeMetadata } from '@tsdi/ioc';
+import { Type, LoadType, isArray, isString, isClass, MetadataService, getOwnTypeMetadata, getClassDecorators } from '@tsdi/ioc';
 import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BuilderServiceToken } from './builder';
@@ -172,8 +172,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     protected getTargetDeps(target: Type | BootOption | T) {
         let dependences = [];
         if (isClass(target)) {
-            this.container.get(MetadataService)
-                .getClassDecorators(target)
+            getClassDecorators(target)
                 .forEach(d => {
                     let metas = getOwnTypeMetadata<RunnableConfigure>(d, target);
                     if (metas && metas.length) {

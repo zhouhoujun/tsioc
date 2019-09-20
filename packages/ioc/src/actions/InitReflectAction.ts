@@ -1,9 +1,9 @@
-import { Singleton } from '../decorators';
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
 import { ITypeReflect, MetadataService } from '../services';
-import { hasOwnClassMetadata } from '../factories';
-import { isNumber, isClass } from '../utils';
+import { isClass } from '../utils';
+import { Singleton } from '../decorators';
+import { hasOwnClassMetadata, getClassDecorators, getPropDecorators, getMethodDecorators } from '../factories/DecoratorFactory';
 
 /**
  * init class reflect action.
@@ -21,18 +21,17 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
         if (!ctx.targetReflect && ctx.targetType) {
             let typeRefs = this.container.getTypeReflects();
             if (!typeRefs.has(ctx.targetType)) {
-                let metaSer = this.container.get(MetadataService);
                 let targetReflect: ITypeReflect = {
                     type: ctx.targetType,
-                    classDecors: metaSer.getClassDecorators(ctx.targetType).reduce((obj, dec) => {
+                    classDecors: getClassDecorators(ctx.targetType).reduce((obj, dec) => {
                         obj[dec] = false;
                         return obj;
                     }, {}),
-                    propsDecors: metaSer.getPropertyDecorators(ctx.targetType).reduce((obj, dec) => {
+                    propsDecors: getPropDecorators(ctx.targetType).reduce((obj, dec) => {
                         obj[dec] = false;
                         return obj;
                     }, {}),
-                    methodDecors: metaSer.getMethodDecorators(ctx.targetType).reduce((obj, dec) => {
+                    methodDecors: getMethodDecorators(ctx.targetType).reduce((obj, dec) => {
                         obj[dec] = false;
                         return obj;
                     }, {}),
@@ -41,23 +40,7 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
                     methodParamProviders: new Map(),
                     provides: []
                 };
-
-                let singleton = hasOwnClassMetadata(Singleton, ctx.targetType);
-                if (!singleton) {
-                    metaSer.eachClassMetadata(ctx.targetType, (meta, decor) => {
-                        if (!meta) {
-                            return true;
-                        }
-                        if (meta.singleton) {
-                            singleton = meta.singleton;
-                        }
-                        if (!targetReflect.expires && meta.expires > 0) {
-                            targetReflect.expires = meta.expires;
-                        }
-                        return !singleton;
-                    });
-                }
-                targetReflect.singleton = singleton;
+                targetReflect.singleton = hasOwnClassMetadata(Singleton, ctx.targetType);
                 typeRefs.set(ctx.targetType, targetReflect);
                 ctx.targetReflect = targetReflect;
             } else {

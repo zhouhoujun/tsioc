@@ -1,7 +1,6 @@
 import { ParallelExecutor } from '@tsdi/activities';
 import { syncRequire } from '@tsdi/platform-server';
-import { Injectable, PromiseUtil } from '@tsdi/ioc';
-// import * as cluster from 'cluster';
+import { Injectable } from '@tsdi/ioc';
 
 @Injectable
 export class ServerParallelExecutor extends ParallelExecutor {
