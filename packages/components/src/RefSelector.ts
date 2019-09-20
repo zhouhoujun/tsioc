@@ -1,4 +1,5 @@
-import { Abstract, Type, isClass, hasOwnClassMetadata } from '@tsdi/ioc';
+import { Abstract, Type, isClass, hasOwnClassMetadata, isString } from '@tsdi/ioc';
+import { NodeSelector } from './ComponentManager';
 
 
 /**
@@ -14,21 +15,40 @@ export abstract class RefSelector {
     abstract getComponentSelector(): string;
 
     abstract getSelectorId(): string;
+
+    abstract getDefaultCompose(): Type;
+
+    abstract createNodeSelector(element): NodeSelector;
+
     /**
      * select ref tag in element.
      *
-     * @abstract
      * @param {*} element
-     * @param {string} selector
+     * @param {(string | ((e: any) => boolean))} selector
      * @returns {*}
      * @memberof RefSelector
      */
-    abstract select(element: any, selector: string): any;
+    select(element: any, selector: string | ((e: any) => boolean)): any {
+        let selFunc: (e: any) => boolean;
+        if (isString(selector)) {
+            let id = this.getSelectorId();
+            selFunc = e => e[id] === selector;
+        } else {
+            selFunc = selector;
+        }
+        if (selFunc(element)) {
+            return element;
+        }
+        let cmpSelector = this.createNodeSelector(element);
+        if (cmpSelector) {
+            return cmpSelector.find(e => selFunc(e));
+        }
+        return null;
+    }
 
     isComponentType(decorator: string, element: any): boolean {
         return isClass(element) && hasOwnClassMetadata(decorator, element);
     }
 
-    abstract getDefaultCompose(): Type;
 }
 

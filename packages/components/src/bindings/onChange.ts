@@ -1,5 +1,5 @@
 import { Events, BindEventType } from './Events';
-import { lang, isFunction, Type, ClassType, ObjectMap } from '@tsdi/ioc';
+import { lang, isFunction } from '@tsdi/ioc';
 
 /**
  * observe property change.
@@ -39,10 +39,10 @@ export namespace observe {
      * @export
      * @param {*} target subscribe change handle of target.
      * @param {(string | ((tag: T) => any))} property subscribe change handle of target property.
-     * @param {(target: any, prop: string, vaule?: any, old?: any) => void} onChange change handle.
+     * @param {(vaule?: any, old?: any, target?: any, prop?: string) => void} onChange change handle.
      * @returns
      */
-    export function onPropertyChange<T extends Object = any>(target: T, property: string | ((tag: T) => any), onChange: (target: T, prop: string, vaule?: any, old?: any) => void) {
+    export function onPropertyChange<T extends Object = any>(target: T, property: string | ((tag: T) => any), onChange: (vaule?: any, old?: any, target?: T, prop?: string ) => void) {
         let evt: Events;
         if (!events.has(target)) {
             evt = new Events();
@@ -54,9 +54,11 @@ export namespace observe {
         let propName: string;
         if (isFunction(property)) {
             let objMap: any = {};
-            Object.keys(target).forEach(k => {
+            let descriptors = Object.getOwnPropertyDescriptors(lang.getClass(target).prototype);
+            [...Object.keys(target), ...Object.keys(descriptors)].forEach(k => {
                 objMap[k] = k;
-            })
+            });
+
             propName = property(objMap);
         } else {
             propName = property;
@@ -93,7 +95,11 @@ export namespace observe {
             defines.set(target, pps)
         }
 
-        evt.on(BindEventType.fieldChanged, onChange);
+        evt.on(BindEventType.fieldChanged, (tg, prop, val, old) => {
+            if (target === tg && prop === propName) {
+                onChange(val, old, tg, prop);
+            }
+        });
 
     }
 
@@ -107,8 +113,6 @@ export namespace observe {
      * @param {(vaule?: any, old?: any, target?: T, prop?: string) => void} callback
      */
     export function onChanged<T extends Object = any>(target: T, property: string | ((tag: T) => any), callback: (vaule?: any, old?: any, target?: T, prop?: string) => void) {
-        onPropertyChange(target, property, (target, prop, vaule, old) => {
-            callback(vaule, old, target, prop);
-        });
+        onPropertyChange(target, property, callback);
     }
 }

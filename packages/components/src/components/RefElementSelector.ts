@@ -1,7 +1,8 @@
 import { RefSelector } from '../RefSelector';
-import { Injectable, Type, lang } from '@tsdi/ioc';
+import { Singleton, Type, lang } from '@tsdi/ioc';
 import { CompositeNode } from './CompositeNode';
 import { ElementNode } from './ElementNode';
+import { NodeSelector } from '../ComponentManager';
 
 /**
  * ref element selector.
@@ -10,7 +11,7 @@ import { ElementNode } from './ElementNode';
  * @class RefElementSelector
  * @extends {RefSelector}
  */
-@Injectable()
+@Singleton()
 export class RefElementSelector extends RefSelector {
     isComponentType(decorator: string, element: any): boolean {
         return super.isComponentType(decorator, element) || lang.isExtendsClass(element, ElementNode);
@@ -24,13 +25,10 @@ export class RefElementSelector extends RefSelector {
     getSelectorId(): string {
         return 'selector';
     }
-    select(element: any, selector: string): any {
+
+    createNodeSelector(element): NodeSelector {
         if (element instanceof CompositeNode) {
-            return element.getSelector()
-                .find(e => e.selector === selector)
-        }
-        if (element.selector === selector) {
-            return element;
+            return element.getSelector();
         }
         return null;
     }

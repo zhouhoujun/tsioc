@@ -1,10 +1,11 @@
-import { RefSelector } from '@tsdi/components';
-import { Type, Inject, Injectable, lang } from '@tsdi/ioc';
+import { RefSelector, NodeSelector, ComponentManager } from '@tsdi/components';
+import { Type, lang, Singleton } from '@tsdi/ioc';
 import { SequenceActivity } from './activities';
 import { Activity } from './core';
 
-@Injectable
+@Singleton()
 export class ActivityRefSelector extends RefSelector {
+
     getComponentSelector(): string {
         return 'activity';
     }
@@ -13,13 +14,18 @@ export class ActivityRefSelector extends RefSelector {
         return 'refId';
     }
 
-    select(element: any, selector: string) {
-
+    createNodeSelector(element: any): NodeSelector<any> {
+        if (element instanceof Activity) {
+            return element.getContainer().get(ComponentManager).getSelector(element);
+        }
+        return null;
     }
+
+
     getDefaultCompose(): Type<any> {
         return SequenceActivity
     }
-    isComponentType(dectoator: string, element: any):  boolean {
+    isComponentType(dectoator: string, element: any): boolean {
         return super.isComponentType(dectoator, element) || lang.isExtendsClass(element, Activity);
     }
 }
