@@ -1,10 +1,11 @@
 import { BuilderService, HandleRegisterer, IModuleResolveOption, BootTargetAccessor } from '@tsdi/boot';
-import { Singleton, ProviderTypes, Type, DecoratorProvider, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, hasPropertyMetadata, isArray } from '@tsdi/ioc';
+import { Singleton, ProviderTypes, Type, DecoratorProvider, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, hasPropertyMetadata, isArray, isNumber } from '@tsdi/ioc';
 import { TemplateContext, TemplateParseScope } from './parses';
 import { Component, NonSerialize } from './decorators';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IBindingTypeReflect } from './bindings';
 import { RefSelector } from './RefSelector';
+
 /**
  * component builder.
  *
@@ -42,17 +43,19 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
 
     serialize<T = any>(component: T): any {
         if (!component) {
-            return {};
+            return null;
         }
 
         if (isArray(component)) {
             return component.map(c => this.serialize(c));
-        } else if (isString(component) || isBoolean(component) || isDate(component)) {
+        } else if (isString(component) || isNumber(component) || isBoolean(component)) {
             return component;
+        } else if (isDate(component)) {
+            return component.toString();
         } else if (isObject(component)) {
             let compClass = lang.getClass(component);
             let refs = this.container.getTypeReflects().get(compClass) as IBindingTypeReflect;
-            if (refs.componentSelector) {
+            if (refs && refs.componentSelector) {
                 let json = {};
                 let refselector = this.container.get(DecoratorProvider).resolve(refs.componentDecorator, RefSelector);
                 json[refselector.getComponentSelector()] = refs.componentSelector;
@@ -60,12 +63,12 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
                     if (hasPropertyMetadata(NonSerialize, compClass, key)) {
                         return;
                     }
-                    let val = this.serialize(v);
+                    let val = this.serialize(component[key]);
                     if (!isNullOrUndefined(val)) {
                         json[key] = val;
                     }
                 });
-                return json;
+                return JSON.parse(JSON.stringify(json));
             } else {
                 return null;
             }

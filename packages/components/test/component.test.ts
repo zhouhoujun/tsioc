@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext, BuilderService, HandleRegisterer, ParentContainerToken, ContainerPoolToken } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ComponentSelectorHandle, RefChild } from '../src';
+import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ComponentSelectorHandle, RefChild, NonSerialize } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, Autorun } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
@@ -43,7 +43,10 @@ class Component2 extends Component1 {
 class Components {
 
     @Input() name: string;
-    @Input() address: string;
+
+    @NonSerialize()
+    @Input()
+    address: string;
 
     @RefChild('comp1') cmp1: Component1;
 
@@ -245,6 +248,7 @@ export class CTest {
         console.log('comp3 :', comp3);
         expect(comp3 instanceof Component3).toBeTruthy();
         expect(comp3.phone).toEqual('+86177000000010');
+        console.log(container.get(ComponentBuilder).serialize(comp3))
     }
 
     @Test('can boot sub module component')
@@ -276,6 +280,11 @@ export class CTest {
         expect(comp.cmp1.name).toEqual('test111');
         expect(comp.cmp2.name).toEqual('test111');
         expect(comp.cmp2.address).toEqual('cd111');
+        let json = container.get(ComponentBuilder).serialize(comp);
+        console.log(json);
+        expect(json.element).toEqual('comp');
+        expect(json.name).toEqual('test111');
+        expect(json.address).toBeUndefined();
     }
 
     @Test('can get refchild, two way binding name')
