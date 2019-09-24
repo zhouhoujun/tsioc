@@ -4,7 +4,6 @@ import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { MetadataService } from '../../services';
 import { getParamDecorators } from '../../factories';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
