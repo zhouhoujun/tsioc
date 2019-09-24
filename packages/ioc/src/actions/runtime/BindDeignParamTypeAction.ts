@@ -1,9 +1,9 @@
 import { Token, Type } from '../../types';
 import { isClass } from '../../utils';
-import { MetadataService } from '../../services';
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IParameter } from '../../IParameter';
+import { getParamerterNames } from '../../factories';
 
 /**
  * bind parameter type action.
@@ -39,7 +39,7 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
             }
         });
 
-        let names = this.container.get(MetadataService).getParamerterNames(type, propertyKey);
+        let names = getParamerterNames(type, propertyKey);
         let params: IParameter[];
         if (names.length) {
             params = names.map((name, idx) => {

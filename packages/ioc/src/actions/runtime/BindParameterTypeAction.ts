@@ -1,10 +1,9 @@
 import { isClass, isArray, isToken, lang } from '../../utils';
-import { getParamMetadata } from '../../factories';
+import { getParamMetadata, getParamerterNames } from '../../factories';
 import { ParameterMetadata } from '../../metadatas';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IParameter } from '../../IParameter';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
-import { MetadataService } from '../../services';
 
 /**
  * bind parameter type action.
@@ -64,7 +63,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                         return true;
                     }
 
-                    let names = this.container.get(MetadataService).getParamerterNames(ty, propertyKey);
+                    let names = getParamerterNames(ty, propertyKey);
                     if (names.length < 1) {
                         return true;
                     }

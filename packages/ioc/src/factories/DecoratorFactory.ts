@@ -4,7 +4,7 @@ import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
-    isNumber, isArray, lang, isString, isBaseObject
+    isNumber, isArray, lang, isString
 } from '../utils';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
 
@@ -157,6 +157,7 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     }
 }
 
+const notClassExp = /__(method|props|params)$/;
 /**
  * get type decorators of class.
  *
@@ -170,13 +171,15 @@ export function getClassDecorators(target: Type | AbstractType): string[] {
             if (!(d && isString(d))) {
                 return false;
             }
-            if (!/^@/.test(d)) {
-                return false;
-            }
-            return !/__(method|props|params)$/.test(d);
+            // if (!/^@/.test(d)) {
+            //     return false;
+            // }
+            return !notClassExp.test(d);
         });
 }
 
+const methExp = /^@\S+__method$/;
+const methRep = /__method$/ig;
 /**
  * get type decorators of class.
  *
@@ -186,11 +189,13 @@ export function getClassDecorators(target: Type | AbstractType): string[] {
  */
 export function getMethodDecorators(target: Type | AbstractType): string[] {
     return Reflect.getMetadataKeys(target)
-        .filter(d => d && isString(d) && /^@\S+__method$/.test(d))
-        .map(d => d.replace(/__method$/ig, ''));
+        .filter(d => d && isString(d) && methExp.test(d))
+        .map(d => d.replace(methRep, ''));
 }
 
 
+const propExp = /^@\S+__props$/;
+const propRep = /__props$/ig;
 /**
  * get type decorators of class.
  *
@@ -200,10 +205,12 @@ export function getMethodDecorators(target: Type | AbstractType): string[] {
  */
 export function getPropDecorators(target: Type | AbstractType): string[] {
     return Reflect.getMetadataKeys(target)
-        .filter(d => d && isString(d) && /^@\S+__props$/.test(d))
-        .map(d => d.replace(/__props$/ig, ''));
+        .filter(d => d && isString(d) && propExp.test(d))
+        .map(d => d.replace(propRep, ''));
 }
 
+const parmExp = /^@\S+__params$/;
+const parmRep = /__params$/ig;
 /**
  * get type decorators of class.
  *
@@ -211,10 +218,10 @@ export function getPropDecorators(target: Type | AbstractType): string[] {
  * @param {(Type | AbstractType)} target
  * @returns {string[]}
  */
-export function getParamDecorators(target: any, propertyKey?: string): string[] {
+export function getParamDecorators(target: any, propertyKey = 'constructor'): string[] {
     return ((propertyKey && propertyKey !== 'constructor') ? Reflect.getMetadataKeys(target, propertyKey) : Reflect.getMetadataKeys(lang.getClass(target)) || [])
-        .filter(d => d && isString(d) && /^@\S+__params$/.test(d))
-        .map((d: string) => d.replace(/__params$/ig, ''));
+        .filter(d => d && isString(d) && parmExp.test(d))
+        .map((d: string) => d.replace(parmRep, ''));
 }
 
 /**
@@ -381,7 +388,7 @@ function setMethodMetadata<T extends MethodMetadata>(name: string, metaName: str
     Reflect.defineMetadata(metaName + methodMetadataExt, meta, target.constructor);
 }
 
-let propertyMetadataExt = '__props';
+const propertyMetadataExt = '__props';
 /**
  * get all property metadata of one specail decorator in target type.
  *
@@ -466,7 +473,7 @@ function setPropertyMetadata<T extends PropertyMetadata>(name: string, metaName:
 }
 
 
-let paramsMetadataExt = '__params';
+const paramsMetadataExt = '__params';
 /**
  * get paramerter metadata of one specail decorator in target method.
  *
@@ -562,22 +569,44 @@ function setParamMetadata<T extends ParameterMetadata>(name: string, metaName: s
 }
 
 
-
-export function getParamerterNames(target: Type | AbstractType): ObjectMap<string[]> {
+/**
+ * get all method paramerter names.
+ *
+ * @export
+ * @param {ClassType} target
+ * @returns {ObjectMap<string[]>}
+ */
+export function getParamerterNames(target: ClassType): ObjectMap<string[]>;
+/**
+ * get paramerter names.
+ *
+ * @template T
+ * @param {Type<T>} type
+ * @param {string} propertyKey
+ * @returns {string[]}
+ * @memberof LifeScope
+ */
+export function getParamerterNames(target: ClassType<any>, propertyKey: string): string[];
+export function getParamerterNames(target: ClassType<any>, propertyKey?: string): any {
     let meta = Reflect.getMetadata(ParamerterName, target);
     if (!meta || isArray(meta) || !lang.hasField(meta)) {
         meta = Reflect.getMetadata(ParamerterName, target.constructor);
     }
-    return isArray(meta) ? {} : (meta || {});
+    let metadata = isArray(meta) ? {} : (meta || {});
+    if (propertyKey) {
+        let paramNames = [];
+        if (metadata && metadata.hasOwnProperty(propertyKey)) {
+            paramNames = metadata[propertyKey]
+        }
+        if (!isArray(paramNames)) {
+            paramNames = [];
+        }
+        return paramNames;
+    } else {
+        return metadata;
+    }
 }
 
-export function getOwnParamerterNames(target: Type | AbstractType): ObjectMap<string[]> {
-    let meta = Reflect.getOwnMetadata(ParamerterName, target);
-    if (!meta || isArray(meta) || !lang.hasField(meta)) {
-        meta = Reflect.getOwnMetadata(ParamerterName, target.constructor);
-    }
-    return isArray(meta) ? {} : (meta || {});
-}
 
 export function setParamerterNames(target: ClassType) {
     let meta = { ...getParamerterNames(target) };

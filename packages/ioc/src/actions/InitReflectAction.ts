@@ -1,6 +1,6 @@
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
-import { ITypeReflect, MetadataService } from '../services';
+import { ITypeReflect } from '../services';
 import { isClass } from '../utils';
 import { Singleton } from '../decorators';
 import { hasOwnClassMetadata, getClassDecorators, getPropDecorators, getMethodDecorators } from '../factories/DecoratorFactory';

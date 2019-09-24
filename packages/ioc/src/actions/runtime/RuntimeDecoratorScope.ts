@@ -5,6 +5,7 @@ import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { MetadataService } from '../../services';
+import { getParamDecorators } from '../../factories';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 
@@ -60,8 +61,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
 
     protected getParamDecorState(ctx: RuntimeActionContext) {
         if (!ctx.paramDecors) {
-            ctx.paramDecors = this.container.get(MetadataService)
-                .getParameterDecorators(ctx.target || ctx.targetType, ctx.propertyKey)
+            ctx.paramDecors = getParamDecorators(ctx.target || ctx.targetType, ctx.propertyKey)
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
