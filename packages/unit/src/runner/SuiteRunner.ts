@@ -1,8 +1,5 @@
 import { Runnable } from '@tsdi/boot';
-import {
-    getMethodMetadata, isNumber, lang, PromiseUtil,
-    getOwnTypeMetadata, Injectable
-} from '@tsdi/ioc';
+import { isNumber, lang, PromiseUtil,  Injectable } from '@tsdi/ioc';
 import { Before } from '../decorators/Before';
 import { BeforeEach } from '../decorators/BeforeEach';
 import { Test } from '../decorators/Test';
@@ -36,7 +33,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
      */
     getSuiteDescribe(): ISuiteDescribe {
         let type = this.getBootType();
-        let metas = getOwnTypeMetadata<SuiteMetadata>(Suite, type);
+        let metas = this.context.reflects.getMetadata<SuiteMetadata>(Suite, type);
         let meta = metas.find(m => isNumber(m.timeout));
         this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
         this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || lang.getClassName(type);
@@ -96,7 +93,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runBefore(describe: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<BeforeTestMetadata>(Before, this.getBoot());
+        let methodMaps = this.context.reflects.getMethodMetadata<BeforeTestMetadata>(Before, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -109,7 +106,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runBeforeEach() {
-        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.getBoot());
+        let methodMaps = this.context.reflects.getMethodMetadata<BeforeEachTestMetadata>(BeforeEach, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -122,7 +119,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runAfterEach() {
-        let methodMaps = getMethodMetadata<BeforeEachTestMetadata>(AfterEach, this.getBoot());
+        let methodMaps = this.context.reflects.getMethodMetadata<BeforeEachTestMetadata>(AfterEach, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -135,7 +132,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runAfter(describe: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<BeforeTestMetadata>(After, this.getBoot());
+        let methodMaps = this.context.reflects.getMethodMetadata<BeforeTestMetadata>(After, this.getBoot());
         await PromiseUtil.step(
             Object.keys(methodMaps)
                 .map(key => () => {
@@ -148,7 +145,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let methodMaps = getMethodMetadata<TestCaseMetadata>(Test, this.getBoot());
+        let methodMaps = this.context.reflects.getMethodMetadata<TestCaseMetadata>(Test, this.getBoot());
         let keys = Object.keys(methodMaps);
         await PromiseUtil.step(
             keys.map(key => {

@@ -1,4 +1,4 @@
-import { isClass, LifeScope, Type, Inject, hasOwnClassMetadata } from '@tsdi/ioc';
+import { isClass, LifeScope, Type, Inject } from '@tsdi/ioc';
 import { ModuleResovler } from './ModuleResovler';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
@@ -44,7 +44,7 @@ export class DIModuleInjectorScope extends InjectorRegisterScope {
     }
 
     protected getTypes(ctx: InjectorActionContext): Type[] {
-        return ctx.types.filter(ty => hasOwnClassMetadata(ctx.currDecoractor, ty));
+        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.currDecoractor, ty));
     }
 
     protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {

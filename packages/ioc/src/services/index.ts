@@ -1,4 +1,5 @@
+export * from './ITypeReflect';
+export * from './DecoractorDescriptor';
 export * from './IocCoreService';
-export * from './MetadataService';
-export * from './TypeReflect';
+export * from './TypeReflects';
 

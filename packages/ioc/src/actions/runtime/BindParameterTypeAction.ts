@@ -1,5 +1,4 @@
 import { isClass, isArray, isToken, lang } from '../../utils';
-import { getParamMetadata, getParamerterNames } from '../../factories';
 import { ParameterMetadata } from '../../metadatas';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IParameter } from '../../IParameter';
@@ -26,10 +25,11 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         if (ctx.targetReflect.methodParams.has(propertyKey)) {
             designParams = ctx.targetReflect.methodParams.get(propertyKey);
         } else {
-            designParams = this.createDesignParams(type, target, propertyKey);
+            designParams = this.createDesignParams(ctx, type, target, propertyKey);
         }
 
-        let parameters = (target || propertyKey !== 'constructor') ? getParamMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey) : getParamMetadata<ParameterMetadata>(ctx.currDecoractor, type);
+        let refs = ctx.reflects;
+        let parameters = (target || propertyKey !== 'constructor') ? refs.getMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey, 'parameter') : refs.getMetadata<ParameterMetadata>(ctx.currDecoractor, type, 'constructor');
         if (isArray(parameters) && parameters.length) {
             parameters.forEach(params => {
                 let parm = (isArray(params) && params.length > 0) ? params[0] : null;
@@ -58,12 +58,12 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                         return true;
                     }
 
-                    let parameters = getParamMetadata<ParameterMetadata>(ctx.currDecoractor, ty);
+                    let parameters = refs.getMetadata<ParameterMetadata>(ctx.currDecoractor, ty, 'constructor');
                     if (parameters.length < 1) {
                         return true;
                     }
 
-                    let names = getParamerterNames(ty, propertyKey);
+                    let names = refs.getParamerterNames(ty, propertyKey);
                     if (names.length < 1) {
                         return true;
                     }

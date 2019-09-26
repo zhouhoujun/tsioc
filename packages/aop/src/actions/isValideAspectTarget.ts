@@ -1,5 +1,4 @@
-import { Type, hasOwnClassMetadata, isClass, isBaseType, lang, IocCoreService } from '@tsdi/ioc';
-import { NonePointcut } from './decorators/NonePointcut';
+import { Type, isClass, isBaseType, lang, IocCoreService } from '@tsdi/ioc';
 
 /**
  * is target can aspect or not.
@@ -13,11 +12,6 @@ export function isValideAspectTarget(targetType: Type): boolean {
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-
-    if (hasOwnClassMetadata(NonePointcut, targetType)) {
-        return false;
-    }
-
 
     if (lang.isExtendsClass(targetType, IocCoreService)) {
         return false;

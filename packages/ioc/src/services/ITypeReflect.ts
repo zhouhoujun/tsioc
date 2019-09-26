@@ -1,5 +1,4 @@
-import { Token, ClassType, ObjectMap } from '../types';
-import { IocCoreService } from './IocCoreService';
+import { Token, ObjectMap } from '../types';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers';
 import { ClassMetadata } from '../metadatas';
@@ -73,38 +72,4 @@ export interface ITypeReflect extends ClassMetadata {
      * @memberof ITypeReflect
      */
     provides?: Token[];
-}
-
-/**
- * type reflects.
- *
- * @export
- * @class TypeReflects
- * @extends {IocCoreService}
- */
-export class TypeReflects extends IocCoreService {
-    map: WeakMap<ClassType, ITypeReflect>;
-    constructor() {
-        super();
-        this.map = new WeakMap();
-    }
-
-    has(type: ClassType): boolean {
-        return this.map.has(type);
-    }
-
-    set(type: ClassType, typeInfo: ITypeReflect): this {
-        if (!this.map.has(type)) {
-            this.map.set(type, typeInfo);
-        }
-        return this;
-    }
-
-    get<T extends ITypeReflect>(type: ClassType): T {
-        if (this.map.has(type)) {
-            return this.map.get(type) as T;
-        }
-        return null;
-    }
-
 }

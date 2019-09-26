@@ -1,7 +1,7 @@
 import { IocCoreService, Singleton, Token, IResolver, ProviderTypes } from '@tsdi/ioc';
 import { IModuleResolver } from '../modules';
 
-@Singleton
+@Singleton()
 export class DIModuleExports extends IocCoreService implements IResolver {
 
     /**

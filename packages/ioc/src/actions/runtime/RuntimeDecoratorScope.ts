@@ -4,7 +4,6 @@ import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { getParamDecorators } from '../../factories';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 
@@ -51,16 +50,16 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
     protected getPropDecorState(ctx: RuntimeActionContext) {
         if (!ctx.propsDecors) {
             ctx.propsDecors = Object.keys(ctx.targetReflect.propsDecors).reduce((obj, dec) => {
-                    obj[dec] = false;
-                    return obj;
-                }, {});
+                obj[dec] = false;
+                return obj;
+            }, {});
         }
         return ctx.propsDecors;
     }
 
     protected getParamDecorState(ctx: RuntimeActionContext) {
         if (!ctx.paramDecors) {
-            ctx.paramDecors = getParamDecorators(ctx.target || ctx.targetType, ctx.propertyKey)
+            ctx.paramDecors = ctx.reflects.getDecorators(ctx.target || ctx.targetType, 'parameter', ctx.propertyKey)
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;

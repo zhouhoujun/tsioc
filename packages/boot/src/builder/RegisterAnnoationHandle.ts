@@ -1,19 +1,17 @@
-import { AnnoationHandle, ModuleInjectLifeScope } from '../core';
+import { AnnoationHandle, ModuleInjectLifeScope, AnnotationServiceToken } from '../core';
 import { lang } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
-import { ModuleDecoratorServiceToken } from '../core';
 
 
 export class RegisterAnnoationHandle extends AnnoationHandle {
-    async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (!ctx.decorator) {
-            ctx.decorator = this.container.get(ModuleDecoratorServiceToken).getDecorator(ctx.module);
-        }
 
-        if (ctx.decorator) {
+    async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
+        let dec = this.container.get(AnnotationServiceToken).getDecorator(ctx.module);
+        if (dec) {
             this.container
                 .getActionRegisterer()
-                .get(ModuleInjectLifeScope).execute(ctx);
+                .get(ModuleInjectLifeScope).register(ctx.module, dec);
+
             await next();
         } else {
             console.log(ctx.module);

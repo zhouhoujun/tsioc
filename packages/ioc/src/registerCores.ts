@@ -1,5 +1,5 @@
 import { IIocContainer, IocContainerToken, ContainerFactoryToken } from './IIocContainer';
-import { TypeReflects, MetadataService } from './services';
+import { TypeReflects } from './services';
 import { ProviderMap, ProviderParser, DecoratorProvider } from './providers';
 import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
@@ -18,12 +18,11 @@ export function registerCores(container: IIocContainer) {
     container.bindProvider(IocSingletonManager, new IocSingletonManager(container));
     container.registerSingleton(ActionRegisterer, () => new ActionRegisterer());
 
-    container.registerSingleton(TypeReflects, () => new TypeReflects());
+    container.registerSingleton(TypeReflects, () => new TypeReflects(container));
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
     container.register(ProviderMap, () => new ProviderMap(container));
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));
     container.registerSingleton(DecoratorProvider, () => new DecoratorProvider(container));
-    container.registerSingleton(MetadataService, () => new MetadataService());
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());
 
     // bing action.

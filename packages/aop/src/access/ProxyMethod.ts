@@ -1,6 +1,6 @@
 import {
     Singleton, Inject, Type, isFunction, RuntimeLifeScope,
-    ObjectMapProvider, IocContainerToken, IIocContainer, MetadataService
+    ObjectMapProvider, IocContainerToken, IIocContainer,
 } from '@tsdi/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut, JoinpointOptionToken, Joinpoint } from '../joinpoints';
@@ -86,7 +86,7 @@ export class ProxyMethod implements IProxyMethod {
                     name: methodName,
                     fullName: fullName,
                     provJoinpoint: provJoinpoint,
-                    annotations: provJoinpoint ? null : this.container.get(MetadataService).getMethodMetadatas(targetType, methodName),
+                    annotations: provJoinpoint ? null : this.container.getTypeReflects().getMetadatas(targetType, methodName, 'method'),
                     params: lifeScope.getMethodParameters(this.container, targetType, target, methodName),
                     args: args,
                     target: target,

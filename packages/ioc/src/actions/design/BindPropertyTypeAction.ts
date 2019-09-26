@@ -1,7 +1,6 @@
 import { isClass, lang } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
-import { getOwnPropertyMetadata } from '../../factories';
 import { PropertyMetadata } from '../../metadatas';
 
 /**
@@ -14,8 +13,9 @@ import { PropertyMetadata } from '../../metadatas';
 export class BindPropertyTypeAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
+        let refs = ctx.reflects;
         lang.forInClassChain(ctx.targetType, ty => {
-            let propMetas = getOwnPropertyMetadata<PropertyMetadata>(ctx.currDecoractor, ty);
+            let propMetas = refs.getMetadata<PropertyMetadata>(ctx.currDecoractor, ty, 'property');
             Object.keys(propMetas).forEach(key => {
                 let props = propMetas[key];
                 props.forEach(prop => {

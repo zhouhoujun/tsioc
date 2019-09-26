@@ -1,8 +1,9 @@
 import { AdvisorToken } from '../IAdvisor';
 import { AdviceMatcherToken } from '../IAdviceMatcher';
 import { Advices, Advicer } from '../advices';
-import { isValideAspectTarget } from '../isValideAspectTarget';
+import { isValideAspectTarget } from './isValideAspectTarget';
 import { RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
+import { NonePointcut } from '../decorators/NonePointcut';
 
 /**
  *  match pointcut action.
@@ -15,7 +16,7 @@ export class MatchPointcutAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!isValideAspectTarget(ctx.targetType)) {
+        if (ctx.reflects.hasMetadata(NonePointcut, ctx.targetType) || !isValideAspectTarget(ctx.targetType)) {
             return next();
         }
 

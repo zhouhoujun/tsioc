@@ -3,9 +3,9 @@ import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
-import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes, DecoratorProvider, InjectReference, ProviderTypes } from '@tsdi/ioc';
-import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor } from '@tsdi/boot';
-import { ComponentRegisterAction, BootComponentAccessor, RefSelector } from '@tsdi/components'
+import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes, DecoratorProvider, InjectReference, ProviderTypes, DecoractorDescriptorToken, DecoractorDescriptor } from '@tsdi/ioc';
+import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnotationMerger } from '@tsdi/boot';
+import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationMerger } from '@tsdi/components'
 import { TaskInjectorRegisterAction, ActivityContext } from './core';
 import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 import { ActivityRefSelector } from './ActivityRefSelector';
@@ -48,18 +48,30 @@ export class ActivityModule {
 
         container.register(ActivityRefSelector);
         container.get(DecoratorProvider)
-            .bindProviders(Task, {
-                provide: BootContext,
-                deps: [ContainerToken],
-                useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
-                    let ref = new InjectReference(BootContext, Task.toString());
-                    if (container.has(ref)) {
-                        return container.get(ref, ...providers);
-                    } else {
-                        return container.get(ActivityContext, ...providers);
+            .bindProviders(Task,
+                {
+                    provide: BootContext,
+                    deps: [ContainerToken],
+                    useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
+                        let ref = new InjectReference(BootContext, Task.toString());
+                        if (container.has(ref)) {
+                            return container.get(ref, ...providers);
+                        } else {
+                            return container.get(ActivityContext, ...providers);
+                        }
+                    }
+                },
+                { provide: RefSelector, useClass: ActivityRefSelector },
+                { provide: AnnotationMerger, useClass: ComponentAnnotationMerger },
+                {
+                    provide: DecoractorDescriptorToken,
+                    useValue: <DecoractorDescriptor>{
+                        type: Task.decoratorType,
+                        annoation: true,
+                        decoractor: Task
                     }
                 }
-            }, { provide: RefSelector, useClass: ActivityRefSelector });
+            );
 
 
         container.use(core)

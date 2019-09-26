@@ -1,7 +1,8 @@
 import { IPointcut } from '../joinpoints';
-import { isValideAspectTarget } from '../isValideAspectTarget';
+import { isValideAspectTarget } from './isValideAspectTarget';
 import { ProxyMethodToken } from '../access';
-import { RuntimeActionContext, lang, getParamerterNames, isUndefined, IocRuntimeAction } from '@tsdi/ioc';
+import { RuntimeActionContext, lang, isUndefined, IocRuntimeAction } from '@tsdi/ioc';
+import { NonePointcut } from '../decorators';
 
 
 /**
@@ -23,7 +24,7 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
      */
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!ctx.target || !isValideAspectTarget(ctx.targetType)) {
+        if (!ctx.target || ctx.reflects.hasMetadata(NonePointcut, ctx.targetType) || !isValideAspectTarget(ctx.targetType)) {
             return next();
         }
         if (!this.container.has(ProxyMethodToken)) {
@@ -50,7 +51,7 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
             });
         });
 
-        let allmethods = getParamerterNames(targetType);
+        let allmethods = ctx.reflects.getParamerterNames(targetType);
         lang.forIn(allmethods, (item, name: string) => {
             if (name === 'constructor') {
                 return;

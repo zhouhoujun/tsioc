@@ -16,6 +16,9 @@ export class ModuleBeforeInitHandle extends ResolveComponentHandle {
         if (!this.isComponent(ctx)) {
             return;
         }
+        if (!ctx.decorator) {
+            ctx.decorator = ctx.targetReflect.decorator;
+        }
         if (ctx.decorator) {
             let target = ctx.target as BeforeInit;
             if (target && isFunction(target.onBeforeInit)) {

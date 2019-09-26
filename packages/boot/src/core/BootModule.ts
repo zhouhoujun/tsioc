@@ -3,7 +3,7 @@ import {
     IocSetCacheAction, RuntimeDecoratorRegisterer, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
-    RegisterSingletionAction, IocResolveScope
+    RegisterSingletionAction, IocResolveScope, DecoratorProvider, DecoractorDescriptorToken, DecoractorDescriptor
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,
@@ -19,7 +19,7 @@ import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesActi
 import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction } from './registers';
 import { DIModuleInjectorScope, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
 import { Message } from './decorators';
-import { ModuleDecoratorService } from './ModuleDecoratorService';
+import { AnnotationService } from './AnnotationService';
 
 
 /**
@@ -42,6 +42,7 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
+        container.register(AnnotationService);
         let registerer = container.getActionRegisterer();
 
         registerer
@@ -56,8 +57,6 @@ export class BootModule {
         registerer.get(IocExtRegisterScope)
             .useBefore(RegForInjectorAction);
 
-        container.use(ModuleDecoratorService);
-
         container.get(DesignDecoratorRegisterer)
             .register(DIModule, DecoratorScopes.Injector, DIModuleInjectorScope)
             .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
@@ -69,8 +68,17 @@ export class BootModule {
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
+        container.get(DecoratorProvider)
+            .bindProviders(DIModule, {
+                provide: DecoractorDescriptorToken,
+                useValue: <DecoractorDescriptor>{
+                    type: DIModule.decoratorType,
+                    annoation: true,
+                    decoractor: DIModule
+                }
+            })
+
         container.use(modules, messages);
-        // container.register(DIModuleExports);
 
 
         // route service

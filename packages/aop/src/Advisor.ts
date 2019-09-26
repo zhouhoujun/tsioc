@@ -1,6 +1,6 @@
 import {
-    IIocContainer, Singleton, getOwnMethodMetadata,
-    Type, ObjectMap, lang, ParamProviders
+    IIocContainer, Singleton,
+    Type, ObjectMap, lang, ParamProviders, TypeReflects, Inject
 } from '@tsdi/ioc';
 import { Advices } from './advices';
 import { Advice } from './decorators/Advice';
@@ -41,6 +41,7 @@ export class Advisor implements IAdvisor {
      */
     advices: Map<string, Advices>;
 
+    @Inject() reflects: TypeReflects;
 
     constructor() {
         this.aspects = new Map();
@@ -97,7 +98,7 @@ export class Advisor implements IAdvisor {
      */
     add(aspect: Type, raiseContainer: IIocContainer) {
         if (!this.aspects.has(aspect)) {
-            let metas = getOwnMethodMetadata<AdviceMetadata>(Advice, aspect);
+            let metas = this.reflects.getMethodMetadata<AdviceMetadata>(Advice, aspect);
             this.aspects.set(aspect, metas);
             this.aspectIocs.set(aspect, raiseContainer);
         }

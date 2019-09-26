@@ -8,7 +8,6 @@ import { ModuleInjectorScope } from './ModuleInjectorScope';
 
 export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
     setup() {
-
         let ijdr = new InjectorDecoratorRegisterer();
         this.registerAction(IocExtRegisterScope, true);
         this.container.get(DesignDecoratorRegisterer)
@@ -19,6 +18,13 @@ export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
 
         this.use(ModuleToTypesAction)
             .use(ModuleInjectorScope, true);
+    }
+
+    execute(ctx: InjectorActionContext, next?: () => void): void {
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
+        super.execute(ctx, next);
     }
 
     register(...modules: Modules[]): Type[] {

@@ -1,4 +1,4 @@
-import { Abstract, Type, isClass, hasOwnClassMetadata, isString } from '@tsdi/ioc';
+import { Abstract, Type, isClass, isString, TypeReflects, Inject } from '@tsdi/ioc';
 import { NodeSelector } from './ComponentManager';
 
 
@@ -11,6 +11,8 @@ import { NodeSelector } from './ComponentManager';
  */
 @Abstract()
 export abstract class RefSelector {
+
+    @Inject() private reflects: TypeReflects;
 
     abstract getComponentSelector(): string;
 
@@ -47,7 +49,7 @@ export abstract class RefSelector {
     }
 
     isComponentType(decorator: string, element: any): boolean {
-        return isClass(element) && hasOwnClassMetadata(decorator, element);
+        return isClass(element) && this.reflects.hasMetadata(decorator, element);
     }
 
 }

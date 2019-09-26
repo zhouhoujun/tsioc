@@ -24,6 +24,8 @@ export interface ITypeDecorator<T extends ClassMetadata> {
      * not allow abstract to decorator with out metadata.
      */
     (target: Type): void;
+
+    decoratorType?: DecoratorType;
 }
 
 /**

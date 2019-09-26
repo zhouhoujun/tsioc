@@ -3,7 +3,6 @@ import { isClass } from '../../utils';
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IParameter } from '../../IParameter';
-import { getParamerterNames } from '../../factories';
 
 /**
  * bind parameter type action.
@@ -18,13 +17,13 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
         if (!ctx.targetReflect.methodParams.has(propertyKey)) {
             ctx.targetReflect.methodParams.set(
                 propertyKey,
-                this.createDesignParams(ctx.targetType, ctx.target, propertyKey));
+                this.createDesignParams(ctx, ctx.targetType, ctx.target, propertyKey));
         }
         next();
     }
 
 
-    protected createDesignParams(type: Type, target: any, propertyKey: string): IParameter[] {
+    protected createDesignParams(ctx: RuntimeActionContext, type: Type, target: any, propertyKey: string): IParameter[] {
         let paramTokens: Token[];
         if (target && propertyKey) {
             paramTokens = Reflect.getMetadata('design:paramtypes', target, propertyKey) || [];
@@ -38,8 +37,7 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
                 this.container.register(dtype);
             }
         });
-
-        let names = getParamerterNames(type, propertyKey);
+        let names = ctx.reflects.getParamerterNames(type, propertyKey);
         let params: IParameter[];
         if (names.length) {
             params = names.map((name, idx) => {

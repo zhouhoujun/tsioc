@@ -1,6 +1,6 @@
 import { Type, Token } from '../types';
 import { ActionContextOption } from './Action';
-import { ITypeReflect } from '../services';
+import { ITypeReflect, TypeReflects } from '../services';
 import { DecoratorActionContext } from './DecoratorActionContext';
 
 /**
@@ -73,13 +73,6 @@ export abstract class RegisterActionContext extends DecoratorActionContext {
      * @memberof RegisterActionContext
      */
     targetType?: Type;
-    /**
-     * target type reflect.
-     *
-     * @type {ITypeReflect}
-     * @memberof RegisterActionContext
-     */
-    targetReflect?: ITypeReflect;
 
 
     constructor(targetType: Type) {

@@ -1,5 +1,5 @@
 import { Handle, HandleType, IHandleContext, IHandle } from './Handle';
-import { Type, ActionRegisterer, isClass } from '@tsdi/ioc';
+import { Type, ActionRegisterer, isClass, TypeReflects } from '@tsdi/ioc';
 import { Handles } from './Handles';
 
 /**
@@ -18,6 +18,11 @@ export class HandleRegisterer<T extends IHandle = IHandle> extends ActionRegiste
     }
 }
 
+export interface IBuildContext extends IHandleContext {
+
+    reflects?: TypeReflects;
+}
+
 /**
  * build handle.
  *
@@ -27,7 +32,7 @@ export class HandleRegisterer<T extends IHandle = IHandle> extends ActionRegiste
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends IHandleContext = IHandleContext> extends Handle<T> {
+export abstract class BuildHandle<T extends IBuildContext = IBuildContext> extends Handle<T> {
     protected registerHandle(handle: HandleType<T>, setup?: boolean): this {
         if (isClass(handle)) {
             this.container.resolve(HandleRegisterer)
@@ -38,14 +43,14 @@ export abstract class BuildHandle<T extends IHandleContext = IHandleContext> ext
 }
 
 /**
- * composite handles.
+ * composite build handles.
  *
  * @export
- * @class CompositeHandle
- * @extends {BuildHandle<T>}
+ * @class BuildHandles
+ * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends IHandleContext> extends Handles<T> {
+export class BuildHandles<T extends IBuildContext = IBuildContext> extends Handles<T> {
 
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
         if (isClass(HandleType)) {
@@ -53,6 +58,13 @@ export class BuildHandles<T extends IHandleContext> extends Handles<T> {
                 .register(this.container, HandleType, setup);
         }
         return this;
+    }
+
+    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
+        await super.execute(ctx, next);
     }
 
     protected resolveHanlde(ac: Type<BuildHandle<T>>): BuildHandle<T> {

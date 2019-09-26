@@ -3,7 +3,6 @@ import { RegisterActionContext } from './RegisterActionContext';
 import { ITypeReflect } from '../services';
 import { isClass } from '../utils';
 import { Singleton } from '../decorators';
-import { hasOwnClassMetadata, getClassDecorators, getPropDecorators, getMethodDecorators } from '../factories/DecoratorFactory';
 
 /**
  * init class reflect action.
@@ -18,20 +17,23 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
         if (!isClass(ctx.targetType)) {
             return;
         }
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
         if (!ctx.targetReflect && ctx.targetType) {
-            let typeRefs = this.container.getTypeReflects();
+            let typeRefs = ctx.reflects;
             if (!typeRefs.has(ctx.targetType)) {
                 let targetReflect: ITypeReflect = {
                     type: ctx.targetType,
-                    classDecors: getClassDecorators(ctx.targetType).reduce((obj, dec) => {
+                    classDecors: ctx.reflects.getDecorators(ctx.targetType, 'class').reduce((obj, dec) => {
                         obj[dec] = false;
                         return obj;
                     }, {}),
-                    propsDecors: getPropDecorators(ctx.targetType).reduce((obj, dec) => {
+                    propsDecors: ctx.reflects.getDecorators(ctx.targetType, 'property').reduce((obj, dec) => {
                         obj[dec] = false;
                         return obj;
                     }, {}),
-                    methodDecors: getMethodDecorators(ctx.targetType).reduce((obj, dec) => {
+                    methodDecors: ctx.reflects.getDecorators(ctx.targetType, 'method').reduce((obj, dec) => {
                         obj[dec] = false;
                         return obj;
                     }, {}),
@@ -40,7 +42,7 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
                     methodParamProviders: new Map(),
                     provides: []
                 };
-                targetReflect.singleton = hasOwnClassMetadata(Singleton, ctx.targetType);
+                targetReflect.singleton = ctx.reflects.hasMetadata(Singleton, ctx.targetType);
                 typeRefs.set(ctx.targetType, targetReflect);
                 ctx.targetReflect = targetReflect;
             } else {

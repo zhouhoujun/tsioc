@@ -1,6 +1,6 @@
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
-import { Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer, DecoratorProvider, ProviderTypes, InjectReference } from '@tsdi/ioc';
+import { Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer, DecoratorProvider, ProviderTypes, InjectReference, DecoractorDescriptorToken, DecoractorDescriptor } from '@tsdi/ioc';
 import { BootContext } from '@tsdi/boot';
 import { UnitTestContext } from './UnitTestContext';
 
@@ -28,16 +28,25 @@ export class UnitSetup {
             .register(Suite, DecoratorScopes.Class, RegisterSingletionAction);
 
         container.get(DecoratorProvider)
-            .bindProviders(Suite, {
-                provide: BootContext,
-                deps: [ContainerToken],
-                useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
-                    let ref = new InjectReference(BootContext, Suite.toString());
-                    if (container.has(ref)) {
-                        return container.get(ref, ...providers);
+            .bindProviders(Suite,
+                {
+                    provide: BootContext,
+                    deps: [ContainerToken],
+                    useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
+                        let ref = new InjectReference(BootContext, Suite.toString());
+                        if (container.has(ref)) {
+                            return container.get(ref, ...providers);
+                        }
+                        return null;
                     }
-                    return null;
-                }
-            });
+                },
+                {
+                    provide: DecoractorDescriptorToken,
+                    useValue: <DecoractorDescriptor>{
+                        type: Suite.decoratorType,
+                        annoation: true,
+                        decoractor: Suite
+                    }
+                });
     }
 }

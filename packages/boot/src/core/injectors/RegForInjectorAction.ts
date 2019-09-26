@@ -1,5 +1,5 @@
 import { InjectorAction, InjectorActionContext } from '@tsdi/core';
-import { getOwnTypeMetadata, lang, isClass, hasOwnClassMetadata } from '@tsdi/ioc';
+import { lang, isClass } from '@tsdi/ioc';
 import { RegisterForMetadata, RegisterFor } from '../decorators';
 import { RegFor } from '../modules';
 import { ContainerPoolToken } from '../ContainerPoolToken';
@@ -9,8 +9,8 @@ export class RegForInjectorAction extends InjectorAction {
 
         if (isClass(ctx.currType)
             && ctx.currDecoractor
-            && hasOwnClassMetadata(RegisterFor, ctx.currType)) {
-            let meta = lang.first(getOwnTypeMetadata<RegisterForMetadata>(RegisterFor, ctx.currType));
+            && ctx.reflects.hasMetadata(RegisterFor, ctx.currType)) {
+            let meta = lang.first(ctx.reflects.getMetadata<RegisterForMetadata>(RegisterFor, ctx.currType));
             if (meta && meta.regFor) {
                 let pools = this.container.get(ContainerPoolToken);
                 switch (meta.regFor) {

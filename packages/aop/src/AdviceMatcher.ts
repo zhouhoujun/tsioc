@@ -1,10 +1,8 @@
 import { IAdviceMatcher, AdviceMatcherToken } from './IAdviceMatcher';
 import { AdviceMetadata, AspectMetadata } from './metadatas';
 import {
-    Inject, getParamerterNames, getOwnMethodMetadata, hasOwnMethodMetadata,
-    hasOwnClassMetadata, Singleton, isString, isRegExp, isUndefined,
-    Type, ObjectMap, lang, getOwnTypeMetadata,
-    isArray, isFunction, IIocContainer, IocContainerToken, hasMethodMetadata
+    Inject, Singleton, isString, isRegExp, isUndefined,
+    Type, ObjectMap, lang, isArray, isFunction, IIocContainer, IocContainerToken, Refs, TypeReflects
 } from '@tsdi/ioc';
 import { IPointcut, MatchPointcut } from './joinpoints';
 import { Advice } from './decorators/Advice';
@@ -27,13 +25,20 @@ export type MatchExpress = (method: string, fullName: string, targetType?: Type,
 @Singleton(AdviceMatcherToken)
 export class AdviceMatcher implements IAdviceMatcher {
 
+    private _refs;
+    get reflects(): TypeReflects {
+        if (!this._refs) {
+            this._refs = this.container.getTypeReflects();
+        }
+        return this._refs;
+    }
     constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
     }
 
     match(aspectType: Type, targetType: Type, adviceMetas?: ObjectMap<AdviceMetadata[]>, target?: any): MatchPointcut[] {
-
-        let aspectMeta = lang.first(getOwnTypeMetadata<AspectMetadata>(Aspect, aspectType));
+        let refs = this.reflects;
+        let aspectMeta = lang.first(refs.getMetadata<AspectMetadata>(Aspect, aspectType));
         if (aspectMeta) {
             if (aspectMeta.without) {
                 let outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
@@ -52,14 +57,14 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (aspectMeta.annotation) {
                 let annotation = isFunction(aspectMeta.annotation) ? aspectMeta.annotation.toString() : aspectMeta.annotation;
                 let anno = (/^\^?@\w+/.test(annotation) ? '' : '@') + annotation;
-                if (!hasOwnClassMetadata(anno, targetType)) {
+                if (!refs.hasMetadata(anno, targetType)) {
                     return [];
                 }
             }
         }
 
         let className = lang.getClassName(targetType);
-        adviceMetas = adviceMetas || getOwnMethodMetadata<AdviceMetadata>(Advice, targetType);
+        adviceMetas = adviceMetas || refs.getMetadata<AdviceMetadata>(Advice, targetType, 'method');
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
@@ -95,7 +100,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 });
             }
 
-            let allmethods = getParamerterNames(targetType);
+            let allmethods = refs.getParamerterNames(targetType);
             lang.forIn(allmethods, (item, name: string) => {
                 if (name === 'constructor') {
                     return;
@@ -174,7 +179,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         if (metadata.annotation) {
             expresses.push((method: string, fullName: string, targetType?: Type, target?: any) => {
-                return hasOwnMethodMetadata(metadata.annotation, targetType, method);
+                return this.reflects.hasMethodMetadata(metadata.annotation, targetType, method);
             });
             expresses.push('&&')
         }
@@ -216,15 +221,15 @@ export class AdviceMatcher implements IAdviceMatcher {
             let annotation = /^@/.test(exp) ? exp : ('@' + exp);
             return (name: string, fullName: string) => {
                 if (name === 'constructor') {
-                    return hasOwnClassMetadata(annotation, type);
+                    return this.reflects.hasMetadata(annotation, type);
                 }
-                return hasMethodMetadata(annotation, type, name);
+                return this.reflects.hasMethodMetadata(annotation, type, name);
             }
 
         } else if (/^execution\(.*\)$/.test(strExp)) {
             let exp = strExp.substring(10, strExp.length - 1);
             if (exp === '*' || exp === '*.*') {
-                return (name: string, fullName: string) => !!name && !hasOwnClassMetadata(Aspect, type);
+                return (name: string, fullName: string) => !!name && !this.reflects.hasMetadata(Aspect, type);
             } else if (/^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/.test(exp)) {
                 // if is method name, will match aspect self only.
                 return () => false;

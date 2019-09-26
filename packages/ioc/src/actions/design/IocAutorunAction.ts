@@ -1,7 +1,6 @@
 import { AutorunMetadata } from '../../metadatas';
 import { isFunction } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
-import { getOwnTypeMetadata, hasOwnClassMetadata } from '../../factories';
 import { DesignActionContext } from './DesignActionContext';
 
 /**
@@ -19,10 +18,11 @@ export class IocAutorunAction extends IocDesignAction {
     }
 
     protected runAuto(ctx: DesignActionContext) {
-        if (!hasOwnClassMetadata(ctx.currDecoractor, ctx.targetType)) {
+        let refs = ctx.reflects;
+        if (!refs.hasMetadata(ctx.currDecoractor, ctx.targetType)) {
             return;
         }
-        let metadatas = getOwnTypeMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.targetType);
+        let metadatas = refs.getMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.targetType);
         metadatas.forEach(meta => {
             if (meta && meta.autorun) {
                 let instance = this.container.get(ctx.tokenKey || ctx.targetType);

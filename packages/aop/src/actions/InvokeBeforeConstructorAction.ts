@@ -1,7 +1,8 @@
 import { AdvisorToken } from '../IAdvisor';
 import { Joinpoint, JoinpointState, JoinpointOptionToken } from '../joinpoints';
-import { isValideAspectTarget } from '../isValideAspectTarget';
+import { isValideAspectTarget } from './isValideAspectTarget';
 import { ParamProviders, lang, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
+import { NonePointcut } from '../decorators/NonePointcut';
 
 /**
  * actions invoke before constructor.
@@ -14,7 +15,7 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!isValideAspectTarget(ctx.targetType)) {
+        if (ctx.reflects.hasMetadata(NonePointcut, ctx.targetType) || !isValideAspectTarget(ctx.targetType)) {
             return next();
         }
 

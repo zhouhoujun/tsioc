@@ -6,7 +6,7 @@ export class RegModuleProvidersAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {
         let parser = this.container.get(ProviderParser);
         let container = ctx.getRaiseContainer();
-        let tRef = container.getTypeReflects();
+        let tRef = ctx.reflects;
         let config = ctx.annoation;
         let map = parser.parse(...config.providers || []);
         // bind module providers

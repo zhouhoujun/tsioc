@@ -1,7 +1,7 @@
 import { Token } from '../types';
 import { lang, isFunction, isClass } from '../utils';
 import { Inject } from '../decorators';
-import { IocCoreService, ITypeReflect } from '../services';
+import { IocCoreService, ITypeReflect, TypeReflects } from '../services';
 import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 
 
@@ -31,6 +31,7 @@ export class IocActionContext extends IocCoreService {
      */
     actionScope?: any;
 
+    reflects: TypeReflects;
 
     constructor() {
         super()
@@ -149,7 +150,6 @@ export abstract class IocAction<T extends IocActionContext = IocActionContext> {
         }
         return isFunction(ac) ? ac : null;
     }
-
 }
 
 /**

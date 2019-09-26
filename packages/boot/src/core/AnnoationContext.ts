@@ -77,7 +77,7 @@ export class AnnoationContext extends IocRaiseContext<IContainer> {
 
     module: Type;
 
-    decorator?: string;
+    // decorator?: string;
 
     /**
      * annoation config.

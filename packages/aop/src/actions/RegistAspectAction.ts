@@ -1,5 +1,5 @@
 import {
-    ClassMetadata, getOwnTypeMetadata, IocDesignAction,
+    ClassMetadata, IocDesignAction,
     isClass, DesignActionContext, isArray
 } from '@tsdi/ioc';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
@@ -17,7 +17,7 @@ export class RegistAspectAction extends IocDesignAction {
         let type = ctx.targetType;
         let aspectMgr = this.container.get<IAdvisor>(AdvisorToken);
         let raiseContainer = ctx.getRaiseContainer();
-        let metadata = getOwnTypeMetadata<ClassMetadata>(ctx.currDecoractor, type);
+        let metadata = ctx.reflects.getMetadata<ClassMetadata>(ctx.currDecoractor, type);
         if (isArray(metadata) && metadata.length > 0) {
             metadata.forEach(meta => {
                 if (isClass(meta.type)) {

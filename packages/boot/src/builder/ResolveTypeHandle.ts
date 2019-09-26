@@ -10,7 +10,7 @@ export class ResolveTypeHandle extends BootHandle {
                 scope: ctx.scope,
                 template: ctx.template,
                 annoation: ctx.annoation,
-                decorator: ctx.decorator,
+                decorator: ctx.targetReflect.decorator,
                 providers: ctx.providers,
                 targetReflect: ctx.targetReflect,
                 raiseContainer: ctx.getContainerFactory()

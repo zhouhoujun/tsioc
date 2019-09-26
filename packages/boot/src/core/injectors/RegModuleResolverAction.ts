@@ -8,7 +8,7 @@ export class RegModuleResolverAction extends AnnoationAction {
         let annoation = ctx.annoation;
         let container = ctx.getRaiseContainer();
         let mdResolver = new ModuleResovler(annoation.token || ctx.module, annoation, container, ctx.module, ctx.exports);
-        let reflect = container.getTypeReflects().get<IDIModuleReflect>(ctx.module);
+        let reflect = ctx.reflects.get<IDIModuleReflect>(ctx.module);
         if (reflect) {
             reflect.moduleResolver = mdResolver;
         }

@@ -45,9 +45,11 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     async resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
-        let reflect = this.container.getTypeReflects().get(target);
+        let refs = this.container.getTypeReflects()
+        let reflect = refs.get(target);
         if (reflect) {
             let rctx = await this.resolveModule(ctx => {
+                ctx.reflects = refs;
                 ctx.targetReflect = reflect;
             }, target, options, ...providers);
             return rctx.target;

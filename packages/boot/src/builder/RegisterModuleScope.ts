@@ -1,8 +1,7 @@
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
-import { AnnoationContext, BuildHandles } from '../core';
+import { AnnoationContext, BuildHandles, AnnotationServiceToken } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
-import { ModuleDecoratorServiceToken } from '../core';
 
 
 export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
@@ -14,14 +13,13 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
         // has build module instance.
         if (!(this.container.has(ctx.module) && ctx.getRaiseContainer().has(ctx.module))) {
             await super.execute(ctx);
-        } else {
-            if (!ctx.decorator) {
-                ctx.decorator = this.container.get(ModuleDecoratorServiceToken).getDecorator(ctx.module);
-            }
-            if (ctx.decorator) {
-                if (!ctx.annoation) {
-                    ctx.annoation = this.container.get(ModuleDecoratorServiceToken).getAnnoation(ctx.module, ctx.decorator);
-                }
+        }
+        if (!ctx.targetReflect) {
+            ctx.targetReflect = ctx.reflects.get(ctx.module);
+        }
+        if (ctx.targetReflect) {
+            if (!ctx.annoation) {
+                ctx.annoation = this.container.get(AnnotationServiceToken).getAnnoation(ctx.module, ctx.targetReflect.decorator);
             }
         }
 

@@ -9,8 +9,11 @@ import { InitReflectAction } from '../InitReflectAction';
 
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
     execute(ctx: RuntimeActionContext, next?: () => void): void {
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
         if (!ctx.targetReflect) {
-            let typeRefs = this.container.getTypeReflects();
+            let typeRefs = ctx.reflects;
             if (typeRefs.has(ctx.targetType)) {
                 ctx.targetReflect = typeRefs.get(ctx.targetType);
             } else {

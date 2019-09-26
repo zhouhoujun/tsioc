@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, lang, getOwnPropertyMetadata, isClassType, isUndefined, DecoratorProvider } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, lang, isClassType, isUndefined, DecoratorProvider } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from '../decorators';
 import { IBindingTypeReflect } from '../bindings';
 import { BindingCache } from './BindingCache';
@@ -22,7 +22,7 @@ export class BindingPropertyTypeAction extends IocDesignAction {
 
         if (propBindings) {
             lang.forInClassChain(ctx.targetType, ty => {
-                let propMetas = getOwnPropertyMetadata<BindingPropertyMetadata>(ctx.currDecoractor, ty);
+                let propMetas = ctx.reflects.getPropertyMetadata<BindingPropertyMetadata>(ctx.currDecoractor, ty);
                 Object.keys(propMetas).forEach(key => {
                     if (!propBindings.has(key)) {
                         propBindings.set(key, { name: key, type: null });

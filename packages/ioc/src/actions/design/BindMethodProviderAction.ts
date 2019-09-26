@@ -1,4 +1,3 @@
-import { getOwnMethodMetadata } from '../../factories';
 import { MethodMetadata } from '../../metadatas';
 import { isArray, lang } from '../../utils';
 import { DesignActionContext } from './DesignActionContext';
@@ -15,10 +14,9 @@ import { IocDesignAction } from './IocDesignAction';
 export class BindMethodProviderAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
-
+        let refs = ctx.reflects;
         lang.forInClassChain(ctx.targetType, ty => {
-            let metas = getOwnMethodMetadata<MethodMetadata>(ctx.currDecoractor, ty);
-
+            let metas = refs.getMetadata<MethodMetadata>(ctx.currDecoractor, ty, 'method');
             Object.keys(metas).forEach(propertyKey => {
                 let metadatas = metas[propertyKey];
                 let providers = [];

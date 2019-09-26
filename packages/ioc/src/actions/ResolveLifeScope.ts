@@ -15,6 +15,9 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
 
     execute(ctx: ResolveActionContext, next?: () => void): void {
         if (!ctx.instance) {
+            if (!ctx.reflects) {
+                ctx.reflects = this.container.getTypeReflects();
+            }
             super.execute(ctx, next);
         }
     }
@@ -43,7 +46,7 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
             return null;
         }
         ctx.providers = [...(ctx.providers || []), ...providers];
-        this.container.getActionRegisterer().get(ResolveLifeScope).execute(ctx);
+        this.execute(ctx);
         return ctx.instance;
     }
 }

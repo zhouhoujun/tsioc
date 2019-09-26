@@ -1,6 +1,5 @@
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
-import { getOwnTypeMetadata } from '../../factories';
 import { ClassMetadata } from '../../metadatas';
 
 /**
@@ -16,7 +15,10 @@ export class BindProviderAction extends IocDesignAction {
         let tgReflect = ctx.targetReflect;
         let raiseContainer = ctx.getRaiseContainer();
 
-        let metadatas = getOwnTypeMetadata<ClassMetadata>(ctx.currDecoractor, ctx.targetType);
+        if (!tgReflect.decorator) {
+            tgReflect.decorator = ctx.currDecoractor;
+        }
+        let metadatas = ctx.reflects.getMetadata<ClassMetadata>(ctx.currDecoractor, ctx.targetType);
         metadatas.forEach(anno => {
             // bind all provider.
             if (!anno) {

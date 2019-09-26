@@ -3,6 +3,7 @@ import * as path from 'path';
 import { PackModule, NodeActivityContext, JsonReplaceActivityOption } from '@tsdi/pack';
 import { Type, isString } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { lang } from 'dist/ioc/src';
 
 @Task({
     deps: [
@@ -95,7 +96,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                         action: async (ctx) => {
                             let activitys = Object.values(require(path.join(ctx.body, 'taskfile.ts'))).filter(b => isAcitvityClass(b)) as Type<Activity<any>>[];
                             // await ctx.getExector().runActivity(ctx, activitys);
-                            await Workflow.sequence(...activitys);
+                            await Workflow.run(lang.first(activitys));
                         }
                     }
                 }

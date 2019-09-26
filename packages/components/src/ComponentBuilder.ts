@@ -1,5 +1,5 @@
 import { BuilderService, HandleRegisterer, IModuleResolveOption, BootTargetAccessor } from '@tsdi/boot';
-import { Singleton, ProviderTypes, Type, DecoratorProvider, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, hasPropertyMetadata, isArray, isNumber } from '@tsdi/ioc';
+import { Singleton, ProviderTypes, Type, DecoratorProvider, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, isArray, isNumber } from '@tsdi/ioc';
 import { TemplateContext, TemplateParseScope } from './parses';
 import { Component, NonSerialize } from './decorators';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
@@ -53,18 +53,27 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         } else if (isDate(component)) {
             return component.toString();
         } else if (isObject(component)) {
+            let refl = this.container.getTypeReflects();
             let compClass = lang.getClass(component);
-            let refs = this.container.getTypeReflects().get(compClass) as IBindingTypeReflect;
+            let refs = refl.get(compClass) as IBindingTypeReflect;
             if (refs && refs.componentSelector) {
                 let json = {};
                 let refselector = this.container.get(DecoratorProvider).resolve(refs.componentDecorator, RefSelector);
                 json[refselector.getComponentSelector()] = refs.componentSelector;
                 refs.propInBindings.forEach((v, key) => {
-                    if (hasPropertyMetadata(NonSerialize, compClass, key)) {
+                    if (refl.hasMetadata(NonSerialize, compClass, key, 'property')) {
                         return;
                     }
                     let val = this.serialize(component[key]);
-                    if (!isNullOrUndefined(val)) {
+                    if (isNullOrUndefined(val)) {
+                        if (v) {
+                            try {
+                                json[key] = JSON.parse(JSON.stringify(v));
+                            } catch (er) {
+                                console.log(er);
+                            }
+                        }
+                    } else {
                         json[key] = val;
                     }
                 });

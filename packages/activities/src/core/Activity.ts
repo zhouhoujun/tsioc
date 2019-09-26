@@ -3,7 +3,7 @@ import { IContainer } from '@tsdi/core';
 import { Input, ComponentManager } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
 import {
-    isClass, Type, hasClassMetadata, getOwnTypeMetadata, isFunction,
+    isClass, Type, isFunction,
     Abstract, PromiseUtil, Inject, ProviderTypes, lang, isNullOrUndefined,
     ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
@@ -241,9 +241,10 @@ export function isAcitvityClass(target: any, ext?: (meta: ActivityConfigure) => 
     if (!isClass(target)) {
         return false;
     }
-    if (hasClassMetadata(Task, target)) {
+    let key = Task.toString();
+    if (Reflect.hasOwnMetadata(key, target)) {
         if (ext) {
-            return getOwnTypeMetadata<ActivityConfigure>(Task, target).some(meta => meta && ext(meta));
+            return Reflect.getOwnMetadata(key, target).some(meta => meta && ext(meta));
         }
         return true;
     }

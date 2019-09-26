@@ -308,7 +308,7 @@ let methodMetadataExt = '__method';
  * @param {Type} target
  * @returns {ObjectMap<T[]>}
  */
-export function getMethodMetadata<T extends MethodMetadata = MethodMetadata>(decorator: string | Function, target: Type): ObjectMap<T[]> {
+export function getMethodMetadata<T extends MethodMetadata = MethodMetadata>(decorator: string | Function, target: ClassType): ObjectMap<T[]> {
     let name = isFunction(decorator) ? decorator.toString() : decorator;
     let meta = Reflect.getMetadata(name + methodMetadataExt, target);
     if (!meta || isArray(meta) || !lang.hasField(meta)) {

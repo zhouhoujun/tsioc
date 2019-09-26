@@ -8,6 +8,5 @@ export * from './handles';
 export * from './messages';
 export * from './ContainerPool';
 export * from './ContainerPoolToken';
-export * from './types';
-export * from './IModuleDecoratorService';
-export * from './ModuleDecoratorService';
+export * from './IAnnotationService';
+export * from './AnnotationService';
