@@ -1,4 +1,4 @@
-import { hasOwnMethodMetadata, hasPropertyMetadata, Inject, AutoWired, Injectable, Singleton, ParameterMetadata, Param, isFunction, getParamDecorators } from '@tsdi/ioc';
+import { Inject, AutoWired, Injectable, Singleton, ParameterMetadata, Param, isFunction } from '@tsdi/ioc';
 import { ContainerBuilder, IContainer } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
@@ -77,16 +77,18 @@ describe('method exec test', () => {
     });
 
     it('show has prop metadata', () => {
-        expect(hasPropertyMetadata(Inject, MethodTest2)).toBeTruthy();
-        expect(hasPropertyMetadata(Inject, MethodTest2, 'testAt')).toBeTruthy();
-        expect(hasPropertyMetadata(Inject, MethodTest2, 'tester')).toBeFalsy();
-        expect(hasOwnMethodMetadata(Inject, MethodTest3)).toBeFalsy();
+        let refs = container.getTypeReflects();
+        expect(refs.hasPropertyMetadata(Inject, MethodTest2)).toBeTruthy();
+        expect(refs.hasPropertyMetadata(Inject, MethodTest2, 'testAt')).toBeTruthy();
+        expect(refs.hasPropertyMetadata(Inject, MethodTest2, 'tester')).toBeFalsy();
+        expect(refs.hasMethodMetadata(Inject, MethodTest3)).toBeFalsy();
     });
 
     it('show has method metadata', () => {
-        expect(hasOwnMethodMetadata(AutoWired, MethodTest3)).toBeTruthy();
-        expect(hasOwnMethodMetadata(AutoWired, MethodTest3, 'sayHello')).toBeTruthy();
-        expect(hasOwnMethodMetadata(AutoWired, MethodTest3, 'sayHello2')).toBeFalsy();
+        let refs = container.getTypeReflects();
+        expect(refs.hasMethodMetadata(AutoWired, MethodTest3)).toBeTruthy();
+        expect(refs.hasMethodMetadata(AutoWired, MethodTest3, 'sayHello')).toBeTruthy();
+        expect(refs.hasMethodMetadata(AutoWired, MethodTest3, 'sayHello2')).toBeFalsy();
     });
 
     it('show exec with type and instance', async () => {
