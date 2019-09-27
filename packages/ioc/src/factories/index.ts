@@ -1,7 +1,6 @@
 export * from './ArgsIterator';
 export * from './DecoratorType';
-// export * from './DecoratorFactory';
-export { MetadataExtends, createDecorator, MetadataTarget } from './DecoratorFactory';
+export * from './DecoratorFactory';
 export * from './ClassDecoratorFactory';
 export * from './MethodDecoratorFactory';
 export * from './ParamDecoratorFactory';
