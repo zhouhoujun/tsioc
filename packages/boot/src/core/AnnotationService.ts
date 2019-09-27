@@ -1,7 +1,7 @@
 import {
     Singleton, Inject, lang, DecoratorProvider, ClassType, TypeReflects, DesignDecoratorRegisterer, DecoratorScopes
 } from '@tsdi/ioc';
-import { ModuleConfigure } from './modules';
+import { ModuleConfigure, IModuleReflect } from './modules';
 import { AnnotationServiceToken, IAnnotationService } from './IAnnotationService';
 import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { AnnotationMerger } from './AnnotationMerger';
@@ -22,6 +22,10 @@ export class AnnotationService implements IAnnotationService {
     }
 
     getAnnoation(type: ClassType, decorator?: string): ModuleConfigure {
+        let reft = this.reflects.get<IModuleReflect>(type);
+        if (reft && reft.getAnnoation) {
+            return reft.getAnnoation();
+        }
         if (!decorator) {
             decorator = this.getDecorator(type);
         }

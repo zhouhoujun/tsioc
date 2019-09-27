@@ -100,7 +100,7 @@ export class ActivityContext extends BootContext {
     setBody(value: any, way?: any) {
         if (isString(way)) {
             this.body = this.body || {};
-            this.body[name] = value;
+            this.body[way] = value;
         } else if (isBoolean(way)) {
             this.body = isTypeObject(value) ? Object.assign(this.body || {}, value) : value;
         } else {
