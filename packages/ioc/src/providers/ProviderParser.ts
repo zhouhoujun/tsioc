@@ -92,9 +92,6 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
                     }
                 }
             }
-            // else if (isFunction(p)) {
-            //     map.add(name, () => p);
-            // }
         });
 
         return map;
@@ -118,7 +115,6 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
  */
 export function isProvider(target: any): target is ProviderTypes {
     return isProviderMap(target)
-        // || isClass(target)
         || target instanceof ObjectMapProvider
         || target instanceof Provider
         || (isMetadataObject(target, 'provide') && isToken(target.provide));

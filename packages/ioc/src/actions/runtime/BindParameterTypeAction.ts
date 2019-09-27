@@ -29,7 +29,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         }
 
         let refs = ctx.reflects;
-        let parameters = (target || propertyKey !== 'constructor') ? refs.getMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey, 'parameter') : refs.getMetadata<ParameterMetadata>(ctx.currDecoractor, type, 'constructor');
+        let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, type);
         if (isArray(parameters) && parameters.length) {
             parameters.forEach(params => {
                 let parm = (isArray(params) && params.length > 0) ? params[0] : null;
@@ -58,7 +58,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                         return true;
                     }
 
-                    let parameters = refs.getMetadata<ParameterMetadata>(ctx.currDecoractor, ty, 'constructor');
+                    let parameters = refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, ty);
                     if (parameters.length < 1) {
                         return true;
                     }

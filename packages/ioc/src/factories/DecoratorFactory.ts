@@ -171,9 +171,9 @@ export function getClassDecorators(target: Type | AbstractType): string[] {
             if (!(d && isString(d))) {
                 return false;
             }
-            // if (!/^@/.test(d)) {
-            //     return false;
-            // }
+            if (d === ParamerterName) {
+                return false;
+            }
             return !notClassExp.test(d);
         });
 }

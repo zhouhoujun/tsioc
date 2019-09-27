@@ -1,5 +1,4 @@
 import { Type } from '../types';
-import { IocAction } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { IocCompositeAction } from './IocCompositeAction';
 import { IocCoreService } from '../IocCoreService';
@@ -10,8 +9,8 @@ import { IocCoreService } from '../IocCoreService';
  * @export
  * @class ActionRegisterer
  */
-export class ActionRegisterer<T = IocAction> extends IocCoreService {
-    private maps: Map<Type<T>, T>;
+export class ActionRegisterer extends IocCoreService {
+    private maps: Map<Type, any>;
 
     constructor() {
         super()
@@ -25,21 +24,21 @@ export class ActionRegisterer<T = IocAction> extends IocCoreService {
      * @returns {boolean}
      * @memberof ActionRegisterer
      */
-    has(type: Type<T>): boolean {
+    has<T>(type: Type<T>): boolean {
         return this.maps.has(type);
     }
 
     /**
      * get action of type.
      *
-     * @template TAction
-     * @param {Type<TAction>} type
-     * @returns {TAction}
+     * @template T
+     * @param {Type<T>} type
+     * @returns {T}
      * @memberof ActionRegisterer
      */
-    get<TAction extends T>(type: Type<TAction>): TAction {
+    get<T>(type: Type<T>): T {
         if (this.maps.has(type)) {
-            return this.maps.get(type) as TAction;
+            return this.maps.get(type) as T;
         }
         return null;
     }
@@ -53,7 +52,7 @@ export class ActionRegisterer<T = IocAction> extends IocCoreService {
      * @returns {this}
      * @memberof ActionRegisterer
      */
-    register(container: IIocContainer, action: Type<T>, setup?: boolean): this {
+    register<T>(container: IIocContainer, action: Type<T>, setup?: boolean): this {
         if (this.maps.has(action)) {
             return this;
         }
@@ -65,7 +64,7 @@ export class ActionRegisterer<T = IocAction> extends IocCoreService {
         return this;
     }
 
-    protected setup(action: T) {
+    protected setup(action: any) {
         if (action instanceof IocCompositeAction) {
             action.setup();
         }

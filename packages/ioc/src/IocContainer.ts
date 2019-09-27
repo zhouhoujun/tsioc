@@ -52,7 +52,7 @@ export class IocContainer implements IIocContainer {
     }
 
     getActionRegisterer(): ActionRegisterer {
-        return this.get(ActionRegisterer) as ActionRegisterer;
+        return this.get(ActionRegisterer);
     }
 
     getProviderParser(): IProviderParser {
@@ -64,9 +64,6 @@ export class IocContainer implements IIocContainer {
     }
 
     getSingletonManager(): IocSingletonManager {
-        if (!this.has(IocSingletonManager)) {
-            this.bindProvider(IocSingletonManager, new IocSingletonManager(this));
-        }
         return this.get(IocSingletonManager);
     }
 

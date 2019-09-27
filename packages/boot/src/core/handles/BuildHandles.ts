@@ -10,7 +10,7 @@ import { Handles } from './Handles';
  * @extends {ActionRegisterer<IHandle>}
  * @template T
  */
-export class HandleRegisterer<T extends IHandle = IHandle> extends ActionRegisterer<IHandle> {
+export class HandleRegisterer<T extends IHandle = IHandle> extends ActionRegisterer {
     protected setup(handle: T) {
         if (handle instanceof BuildHandles) {
             handle.setup();

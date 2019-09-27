@@ -16,7 +16,7 @@ export class BindMethodProviderAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void) {
         let refs = ctx.reflects;
         lang.forInClassChain(ctx.targetType, ty => {
-            let metas = refs.getMetadata<MethodMetadata>(ctx.currDecoractor, ty, 'method');
+            let metas = refs.getMethodMetadata<MethodMetadata>(ctx.currDecoractor, ty);
             Object.keys(metas).forEach(propertyKey => {
                 let metadatas = metas[propertyKey];
                 let providers = [];
@@ -33,7 +33,6 @@ export class BindMethodProviderAction extends IocDesignAction {
                     ctx.targetReflect.methodParamProviders.set(propertyKey, providers);
                 }
             });
-
         });
 
         next();
