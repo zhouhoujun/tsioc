@@ -2,7 +2,7 @@ import {
     Token, Type, ParamProviders, isToken,
     IResolver, IResolverContainer, InstanceFactory, SymbolType, ContainerFactory
 } from '@tsdi/ioc';
-import { IModuleMetadata, IModuleResolver } from '../modules';
+import { IModuleResolver } from '../modules';
 import { IContainer, isContainer } from '@tsdi/core';
 import { DIModuleExports } from './DIModuleExports';
 
@@ -18,7 +18,6 @@ export class ModuleResovler<T> implements IModuleResolver {
 
     constructor(
         public token: Token<T>,
-        public config: IModuleMetadata<T>,
         container: IContainer,
         public type?: Type,
         providers?: IResolverContainer

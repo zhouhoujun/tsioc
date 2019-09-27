@@ -1,24 +1,23 @@
 import {
-    Singleton, Inject, lang, DecoratorProvider, ClassType, DecoractorDescriptorToken, TypeReflects, Abstract
+    Singleton, Inject, lang, DecoratorProvider, ClassType, TypeReflects, DesignDecoratorRegisterer, DecoratorScopes
 } from '@tsdi/ioc';
 import { ModuleConfigure } from './modules';
 import { AnnotationServiceToken, IAnnotationService } from './IAnnotationService';
+import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
+import { AnnotationMerger } from './AnnotationMerger';
 
-@Abstract()
-export abstract class AnnotationMerger<T extends ModuleConfigure = ModuleConfigure> {
-    abstract merge(configs: T[]): T;
-}
 
 @Singleton(AnnotationServiceToken)
 export class AnnotationService implements IAnnotationService {
 
     @Inject() reflects: TypeReflects;
     @Inject() decProvider: DecoratorProvider;
+    @Inject() register: DesignDecoratorRegisterer;
 
 
     getDecorator(type: ClassType) {
         let dec = this.reflects.getDecorators(type, 'class')
-            .find(d => this.decProvider.has(d, DecoractorDescriptorToken) ? this.decProvider.resolve(d, DecoractorDescriptorToken).annoation : false);
+            .find(d => this.register.has(d, DecoratorScopes.Class, AnnoationDesignAction));
         return dec;
     }
 
@@ -30,7 +29,7 @@ export class AnnotationService implements IAnnotationService {
         if (this.decProvider.has(decorator, AnnotationMerger)) {
             return this.decProvider.resolve(decorator, AnnotationMerger).merge(annos);
         } else {
-           return { ...lang.first(annos) };
+            return { ...lang.first(annos) };
         }
     }
 }

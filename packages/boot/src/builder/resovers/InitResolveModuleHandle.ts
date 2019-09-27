@@ -16,9 +16,9 @@ export class InitResolveModuleHandle extends ResolveHandle {
             }
         }
 
-        if (ctx.targetReflect.decorator) {
+        if (ctx.targetReflect) {
             if (!ctx.annoation) {
-                ctx.annoation = this.container.get(AnnotationServiceToken).getAnnoation(ctx.type, ctx.targetReflect.decorator);
+                ctx.annoation = ctx.targetReflect.getAnnoation ? ctx.targetReflect.getAnnoation() : this.container.get(AnnotationServiceToken).getAnnoation(ctx.type, ctx.targetReflect.decorator);
             }
             await next();
         }

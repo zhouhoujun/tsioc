@@ -1,13 +1,13 @@
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import {
     BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, Inject, DecoratorProvider, DecoractorDescriptorToken, DecoractorDescriptor
+    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, Inject, DecoratorProvider
 } from '@tsdi/ioc';
 import { Component, Input, Output, RefChild } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory } from './registers';
-import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnotationMerger } from '@tsdi/boot';
+import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnotationMerger, AnnoationDesignAction } from '@tsdi/boot';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
     BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle
@@ -68,15 +68,7 @@ export class ComponentsModule {
             })
             .bindProviders(Component,
                 { provide: BootTargetAccessor, useClass: BootComponentAccessor },
-                { provide: AnnotationMerger, useClass: ComponentAnnotationMerger },
-                {
-                    provide: DecoractorDescriptorToken,
-                    useValue: <DecoractorDescriptor>{
-                        type: Component.decoratorType,
-                        annoation: true,
-                        decoractor: Component
-                    }
-                });
+                { provide: AnnotationMerger, useClass: ComponentAnnotationMerger });
 
         container.resolve(HandleRegisterer)
             .register(container, BindingScope, true)
@@ -92,7 +84,7 @@ export class ComponentsModule {
             .use(ModuleAfterContentInitHandle);
 
         container.resolve(DesignDecoratorRegisterer)
-            .register(Component, DecoratorScopes.Class, BindProviderAction, ComponentRegisterAction)
+            .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction);

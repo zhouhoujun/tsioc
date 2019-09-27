@@ -17,10 +17,9 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
         if (!ctx.targetReflect) {
             ctx.targetReflect = ctx.reflects.get(ctx.module);
         }
-        if (ctx.targetReflect) {
-            if (!ctx.annoation) {
-                ctx.annoation = this.container.get(AnnotationServiceToken).getAnnoation(ctx.module, ctx.targetReflect.decorator);
-            }
+
+        if (!ctx.annoation && ctx.targetReflect) {
+            ctx.annoation = ctx.targetReflect.getAnnoation ? ctx.targetReflect.getAnnoation() : this.container.get(AnnotationServiceToken).getAnnoation(ctx.module, ctx.targetReflect.decorator);
         }
 
         if (ctx.annoation && ctx.annoation.baseURL) {

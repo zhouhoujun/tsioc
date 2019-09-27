@@ -7,8 +7,11 @@ export class CheckAnnoationAction extends AnnoationAction {
         if (!ctx.reflects) {
             ctx.reflects = this.container.getTypeReflects();
         }
+        if (!ctx.targetReflect) {
+            ctx.targetReflect = ctx.reflects.get(ctx.module);
+        }
         if (!ctx.annoation) {
-            ctx.annoation = this.container.get(AnnotationServiceToken).getAnnoation(ctx.module);
+            ctx.annoation = (ctx.targetReflect && ctx.targetReflect.getAnnoation) ? ctx.targetReflect.getAnnoation() : this.container.get(AnnotationServiceToken).getAnnoation(ctx.module);
         }
         if (ctx.annoation) {
             next();

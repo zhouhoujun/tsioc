@@ -1,5 +1,5 @@
 import { Type, ProviderMap, ActionContextOption, isClass, ContainerFactory, IocRaiseContext } from '@tsdi/ioc';
-import { ModuleConfigure, RegFor, IModuleResolver } from './modules';
+import { ModuleConfigure, RegFor, IModuleResolver, IModuleReflect } from './modules';
 import { IContainer } from '@tsdi/core';
 
 /**
@@ -77,7 +77,7 @@ export class AnnoationContext extends IocRaiseContext<IContainer> {
 
     module: Type;
 
-    // decorator?: string;
+    targetReflect?: IModuleReflect;
 
     /**
      * annoation config.

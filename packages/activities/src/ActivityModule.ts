@@ -3,8 +3,8 @@ import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
-import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes, DecoratorProvider, InjectReference, ProviderTypes, DecoractorDescriptorToken, DecoractorDescriptor } from '@tsdi/ioc';
-import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnotationMerger } from '@tsdi/boot';
+import { Inject, BindProviderAction, DesignDecoratorRegisterer, DecoratorScopes, DecoratorProvider, InjectReference, ProviderTypes } from '@tsdi/ioc';
+import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnotationMerger, AnnoationDesignAction } from '@tsdi/boot';
 import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationMerger } from '@tsdi/components'
 import { TaskInjectorRegisterAction, ActivityContext } from './core';
 import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
@@ -37,7 +37,7 @@ export class ActivityModule {
 
 
         container.get(DesignDecoratorRegisterer)
-            .register(Task, DecoratorScopes.Class, BindProviderAction, ComponentRegisterAction)
+            .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Task, DecoratorScopes.Injector, TaskInjectorRegisterAction);
 
         container.get(StartupDecoratorRegisterer)
@@ -62,15 +62,7 @@ export class ActivityModule {
                     }
                 },
                 { provide: RefSelector, useClass: ActivityRefSelector },
-                { provide: AnnotationMerger, useClass: ComponentAnnotationMerger },
-                {
-                    provide: DecoractorDescriptorToken,
-                    useValue: <DecoractorDescriptor>{
-                        type: Task.decoratorType,
-                        annoation: true,
-                        decoractor: Task
-                    }
-                }
+                { provide: AnnotationMerger, useClass: ComponentAnnotationMerger }
             );
 
 

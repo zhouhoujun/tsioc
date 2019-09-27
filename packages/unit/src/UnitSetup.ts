@@ -1,8 +1,10 @@
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
-import { Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer, DecoratorProvider, ProviderTypes, InjectReference, DecoractorDescriptorToken, DecoractorDescriptor } from '@tsdi/ioc';
-import { BootContext } from '@tsdi/boot';
-import { UnitTestContext } from './UnitTestContext';
+import {
+    Inject, DecoratorScopes, RegisterSingletionAction, RuntimeDecoratorRegisterer,
+    DecoratorProvider, ProviderTypes, InjectReference, DesignDecoratorRegisterer
+} from '@tsdi/ioc';
+import { BootContext, AnnoationDesignAction } from '@tsdi/boot';
 
 
 /**
@@ -24,6 +26,10 @@ export class UnitSetup {
      * @memberof AopModule
      */
     setup(@Inject(ContainerToken) container: IContainer) {
+
+        container.get(DesignDecoratorRegisterer)
+            .register(Suite, DecoratorScopes.Class, AnnoationDesignAction);
+
         container.get(RuntimeDecoratorRegisterer)
             .register(Suite, DecoratorScopes.Class, RegisterSingletionAction);
 
@@ -38,14 +44,6 @@ export class UnitSetup {
                             return container.get(ref, ...providers);
                         }
                         return null;
-                    }
-                },
-                {
-                    provide: DecoractorDescriptorToken,
-                    useValue: <DecoractorDescriptor>{
-                        type: Suite.decoratorType,
-                        annoation: true,
-                        decoractor: Suite
                     }
                 });
     }

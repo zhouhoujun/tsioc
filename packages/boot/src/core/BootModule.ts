@@ -3,7 +3,7 @@ import {
     IocSetCacheAction, RuntimeDecoratorRegisterer, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
-    RegisterSingletionAction, IocResolveScope, DecoratorProvider, DecoractorDescriptorToken, DecoractorDescriptor
+    RegisterSingletionAction, IocResolveScope
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt,
@@ -16,7 +16,7 @@ import * as modules from './modules';
 import * as messages from './messages';
 
 import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
-import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction } from './registers';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction, AnnoationDesignAction } from './registers';
 import { DIModuleInjectorScope, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
 import { Message } from './decorators';
 import { AnnotationService } from './AnnotationService';
@@ -49,7 +49,8 @@ export class BootModule {
             .register(container, ModuleInjectLifeScope, true)
             .register(container, DIModuleInjectorScope, true)
             .register(container, RegForInjectorAction)
-            .register(container, MessageRegisterAction);
+            .register(container, MessageRegisterAction)
+            .register(container, AnnoationDesignAction);
 
         // inject module
         registerer.get(TypesRegisterScope)
@@ -59,24 +60,14 @@ export class BootModule {
 
         container.get(DesignDecoratorRegisterer)
             .register(DIModule, DecoratorScopes.Injector, DIModuleInjectorScope)
-            .register(Annotation, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
-            .register(DIModule, DecoratorScopes.Class, BindProviderAction, IocAutorunAction)
+            .register(Annotation, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
+            .register(DIModule, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
             .register(Message, DecoratorScopes.Class, BindProviderAction, IocAutorunAction, MessageRegisterAction);
 
         container.get(RuntimeDecoratorRegisterer)
             .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
-
-        container.get(DecoratorProvider)
-            .bindProviders(DIModule, {
-                provide: DecoractorDescriptorToken,
-                useValue: <DecoractorDescriptor>{
-                    type: DIModule.decoratorType,
-                    annoation: true,
-                    decoractor: DIModule
-                }
-            })
 
         container.use(modules, messages);
 

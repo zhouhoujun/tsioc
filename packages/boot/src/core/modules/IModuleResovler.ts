@@ -1,5 +1,6 @@
-import { IResolverContainer, ITypeReflect } from '@tsdi/ioc';
+import { IResolverContainer } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
+import { IModuleReflect } from './IModuleReflect';
 
 /**
  * module resolver.
@@ -21,7 +22,7 @@ export interface IModuleResolver extends IResolverContainer {
  * @interface IDIModuleReflect
  * @extends {ITypeReflect}
  */
-export interface IDIModuleReflect extends ITypeReflect {
+export interface IDIModuleReflect extends IModuleReflect {
     /**
      * module resolver of DIModule
      *

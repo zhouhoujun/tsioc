@@ -8,5 +8,6 @@ export * from './handles';
 export * from './messages';
 export * from './ContainerPool';
 export * from './ContainerPoolToken';
+export * from './AnnotationMerger';
 export * from './IAnnotationService';
 export * from './AnnotationService';
