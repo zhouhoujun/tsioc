@@ -15,8 +15,6 @@ export interface IMetadataAccess {
     getMetadata(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): any[];
     getMetadata(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): any[][];
 
-    getDecorators(target: ClassType, type: DefineClassTypes): string[];
-    getDecorators(target: ClassType, type: 'parameter', propertyKey: string): string[];
 }
 
 /**

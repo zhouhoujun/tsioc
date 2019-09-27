@@ -148,15 +148,30 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     getDecorators(target: ClassType, type: DefineClassTypes): string[]
     getDecorators(target: ClassType, type: 'parameter', propertyKey?: string): string[]
     getDecorators(target: ClassType, type: DecoratorTypes, propertyKey?: string): string[] {
+        let tgref = this.get(target);
+        let decorators: string[];
         switch (type) {
             case 'class':
-                return getClassDecorators(target);
+                decorators = (tgref && tgref.designRegState) ? Object.keys(tgref.designRegState.classDecors).concat(tgref.runtimeDecorators.classDecors) : getClassDecorators(target);
+                break;
             case 'method':
-                return getMethodDecorators(target);
+                decorators = (tgref && tgref.designRegState) ? Object.keys(tgref.designRegState.methodDecors).concat(tgref.runtimeDecorators.methodDecors) : getMethodDecorators(target);
+                break;
             case 'property':
-                return getPropDecorators(target);
+                decorators = (tgref && tgref.designRegState) ? Object.keys(tgref.designRegState.propsDecors).concat(tgref.runtimeDecorators.propsDecors) : getPropDecorators(target);
+                break;
             case 'parameter':
-                return getParamDecorators(target, propertyKey);
+                decorators = (tgref && tgref.runtimeDecorators) ? tgref.runtimeDecorators.getParamDecors(propertyKey, target) : getParamDecorators(target, propertyKey);
+                break;
+        }
+        if (decorators && decorators.length) {
+            let decs = [];
+            decorators.forEach(d => {
+                if (decs.indexOf(d) < 0) {
+                    decs.push(d);
+                }
+            });
+            return decs;
         }
         return [];
     }
