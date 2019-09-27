@@ -1,9 +1,7 @@
-import { ProviderMap } from './ProviderMap';
-import { IocCoreService } from '../services';
+import { ProviderMap, ProviderParser, ProviderTypes } from '../providers';
+import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
 import { Token, Factory } from '../types';
-import { ProviderTypes } from './types';
-import { ProviderParser } from './ProviderParser';
 import { isFunction, lang, isString } from '../utils';
 
 /**

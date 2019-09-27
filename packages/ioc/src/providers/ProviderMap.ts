@@ -3,7 +3,7 @@ import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IIocContainer, ContainerFactory } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ProviderTypes } from './types';
-import { IocCoreService } from '../services';
+import { IocCoreService } from '../IocCoreService';
 
 // use core-js in browser.
 

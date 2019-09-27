@@ -1,7 +1,7 @@
 import { isString, isClass, lang, isFunction } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { IocAction, IocActionType } from './Action';
-import { IocCoreService } from '../services';
+import { IocCoreService } from '../IocCoreService';
 
 /**
  * decorator action registerer.

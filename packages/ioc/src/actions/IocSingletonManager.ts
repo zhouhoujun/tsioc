@@ -1,6 +1,6 @@
 import { Token } from '../types';
 import { IIocContainer } from '../IIocContainer';
-import { IocCoreService } from '../services';
+import { IocCoreService } from '../IocCoreService';
 
 export class IocSingletonManager  extends IocCoreService {
 

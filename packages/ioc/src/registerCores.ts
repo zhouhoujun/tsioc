@@ -1,6 +1,6 @@
 import { IIocContainer, IocContainerToken, ContainerFactoryToken } from './IIocContainer';
-import { TypeReflects } from './services';
-import { ProviderMap, ProviderParser, DecoratorProvider } from './providers';
+import { TypeReflects, DecoratorProvider } from './services';
+import { ProviderMap, ProviderParser } from './providers';
 import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
     IocSingletonManager, ResolveLifeScope, ActionRegisterer

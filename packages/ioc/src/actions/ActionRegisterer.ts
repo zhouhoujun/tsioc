@@ -2,7 +2,7 @@ import { Type } from '../types';
 import { IocAction } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { IocCompositeAction } from './IocCompositeAction';
-import { IocCoreService } from '../services';
+import { IocCoreService } from '../IocCoreService';
 
 /**
  * action registerer.

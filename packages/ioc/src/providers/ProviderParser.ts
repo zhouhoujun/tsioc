@@ -7,7 +7,7 @@ import { IProviderParser } from './IProviderParser';
 import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, isProviderMap } from './ProviderMap';
 import { Provider, ParamProvider, ObjectMapProvider } from './Provider';
-import { IocCoreService } from '../services';
+import { IocCoreService } from '../IocCoreService';
 
 /**
  * provider matcher. use to find custome providers in resolve.

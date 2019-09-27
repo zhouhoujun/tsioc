@@ -1,6 +1,6 @@
 import { ClassType, ObjectMap } from '../types';
-import { IocCoreService } from './IocCoreService';
-import { DecoratorProvider } from '../providers';
+import { IocCoreService } from '../IocCoreService';
+import { DecoratorProvider } from './DecoratorProvider';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect } from './ITypeReflect';
 import { MetadataTypes, DecoratorTypes, DefineClassTypes } from '../factories';

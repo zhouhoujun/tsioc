@@ -2,6 +2,7 @@ export * from './IResolver';
 export * from './IIocContainer';
 export * from './IocContainer';
 
+export * from './IocCoreService';
 export * from './Registration';
 export * from './types';
 export * from './InjectReference';
