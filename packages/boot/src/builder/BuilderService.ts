@@ -1,4 +1,4 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects } from '@tsdi/ioc';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken } from '../core';
@@ -26,6 +26,14 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     @Inject(ContainerToken)
     protected container: IContainer;
 
+    private _refs;
+    get reflects(): TypeReflects {
+        if (!this._refs) {
+            this._refs = this.container.getTypeReflects();
+        }
+        return this._refs;
+    }
+
     setup() {
         this.container.get(HandleRegisterer)
             .register(this.container, ResolveMoudleScope, true)
@@ -45,7 +53,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     async resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
-        let refs = this.container.getTypeReflects()
+        let refs = this.reflects;
         let reflect = refs.get(target);
         if (reflect) {
             let rctx = await this.resolveModule(ctx => {

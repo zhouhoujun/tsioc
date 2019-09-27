@@ -1,6 +1,6 @@
 import {
     Singleton, Inject, Type, isFunction, RuntimeLifeScope,
-    ObjectMapProvider, IocContainerToken, IIocContainer,
+    ObjectMapProvider, IocContainerToken, IIocContainer, TypeReflects,
 } from '@tsdi/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut, JoinpointOptionToken, Joinpoint } from '../joinpoints';
@@ -22,6 +22,14 @@ export class ProxyMethod implements IProxyMethod {
 
     constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
+    }
+
+    private _refs;
+    get reflects(): TypeReflects {
+        if (!this._refs) {
+            this._refs = this.container.getTypeReflects();
+        }
+        return this._refs;
     }
 
     private _advisor: IAdvisor;
@@ -86,7 +94,7 @@ export class ProxyMethod implements IProxyMethod {
                     name: methodName,
                     fullName: fullName,
                     provJoinpoint: provJoinpoint,
-                    annotations: provJoinpoint ? null : this.container.getTypeReflects().getMetadatas(targetType, methodName, 'method'),
+                    annotations: provJoinpoint ? null : this.reflects.getMetadatas(targetType, methodName, 'method'),
                     params: lifeScope.getMethodParameters(this.container, targetType, target, methodName),
                     args: args,
                     target: target,

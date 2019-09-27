@@ -53,7 +53,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         } else if (isDate(component)) {
             return component.toString();
         } else if (isObject(component)) {
-            let refl = this.container.getTypeReflects();
+            let refl = this.reflects;
             let compClass = lang.getClass(component);
             let refs = refl.get(compClass) as IBindingTypeReflect;
             if (refs && refs.componentSelector) {
