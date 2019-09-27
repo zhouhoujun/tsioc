@@ -3,7 +3,40 @@ import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers';
 import { ClassMetadata } from '../metadatas';
 
+export interface IDesignRegistState {
+    /**
+     * class decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof ITypeReflect
+     */
+    classDecors?: ObjectMap<boolean>;
 
+    /**
+     * props decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    propsDecors?: ObjectMap<boolean>;
+
+    /**
+     * method decorators annoationed state.
+     *
+     * @type {ObjectMap<boolean>}
+     * @memberof RegisterActionContext
+     */
+    methodDecors?: ObjectMap<boolean>;
+}
+
+export interface IRuntimeDecorators {
+    classDecors: string[];
+    propsDecors: string[];
+    methodDecors: string[];
+    beforeCstrDecors?: string[];
+    getParamDecors(propertyKey: string, target?: any): string[];
+    afterCstrDecors?: string[];
+}
 
 /**
  * type reflect.
@@ -20,29 +53,11 @@ export interface ITypeReflect extends ClassMetadata {
      * @memberof ITypeReflect
      */
     decorator?: string;
-    /**
-     * class decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof ITypeReflect
-     */
-    classDecors: ObjectMap<boolean>;
 
-    /**
-     * props decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    propsDecors: ObjectMap<boolean>;
+    designRegState?: IDesignRegistState;
 
-    /**
-     * method decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    methodDecors: ObjectMap<boolean>;
+    runtimeDecorators?: IRuntimeDecorators;
+
     /**
      * props.
      *

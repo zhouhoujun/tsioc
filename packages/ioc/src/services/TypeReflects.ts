@@ -22,10 +22,10 @@ import { isUndefined } from '../utils';
  * @extends {IocCoreService}
  */
 export class TypeReflects extends IocCoreService implements IMetadataAccess {
-    map: WeakMap<ClassType, ITypeReflect>;
+    protected map: Map<ClassType, ITypeReflect>;
     constructor(private container: IIocContainer) {
         super();
-        this.map = new WeakMap();
+        this.map = new Map();
     }
 
     has(type: ClassType): boolean {
@@ -158,7 +158,6 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
             case 'parameter':
                 return getParamDecorators(target, propertyKey);
         }
-        console.log(target, type, propertyKey);
         return [];
     }
 

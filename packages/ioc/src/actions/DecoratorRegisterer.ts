@@ -28,7 +28,7 @@ export enum DecoratorScopes {
  * @class DecoratorRegisterer
  */
 export abstract class DecoratorScopeRegisterer<T = IocAction, TAction = lang.IAction> extends IocCoreService {
-    map: Map<Token, any>;
+    protected map: Map<Token, any>;
     constructor(protected container: IIocContainer) {
         super()
         this.map = new Map();

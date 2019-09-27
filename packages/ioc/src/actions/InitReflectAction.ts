@@ -3,6 +3,9 @@ import { RegisterActionContext } from './RegisterActionContext';
 import { ITypeReflect } from '../services';
 import { isClass } from '../utils';
 import { Singleton } from '../decorators';
+import { DesignDecoratorRegisterer, DecoratorScopes, RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
+import { RuntimeDecorators } from './RuntimeDecorators';
+import { DesignDecorators } from './DesignDecorators';
 
 /**
  * init class reflect action.
@@ -23,20 +26,12 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
         if (!ctx.targetReflect && ctx.targetType) {
             let typeRefs = ctx.reflects;
             if (!typeRefs.has(ctx.targetType)) {
+                let designReger = this.container.get(DesignDecoratorRegisterer);
+                let runtimeReger = this.container.get(RuntimeDecoratorRegisterer);
                 let targetReflect: ITypeReflect = {
                     type: ctx.targetType,
-                    classDecors: ctx.reflects.getDecorators(ctx.targetType, 'class').reduce((obj, dec) => {
-                        obj[dec] = false;
-                        return obj;
-                    }, {}),
-                    propsDecors: ctx.reflects.getDecorators(ctx.targetType, 'property').reduce((obj, dec) => {
-                        obj[dec] = false;
-                        return obj;
-                    }, {}),
-                    methodDecors: ctx.reflects.getDecorators(ctx.targetType, 'method').reduce((obj, dec) => {
-                        obj[dec] = false;
-                        return obj;
-                    }, {}),
+                    designRegState: new DesignDecorators(ctx.targetType, ctx.reflects, designReger),
+                    runtimeDecorators: new RuntimeDecorators(ctx.targetType, ctx.reflects, runtimeReger),
                     propProviders: new Map(),
                     methodParams: new Map(),
                     methodParamProviders: new Map(),

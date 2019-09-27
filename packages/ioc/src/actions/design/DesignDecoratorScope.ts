@@ -9,11 +9,11 @@ export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActio
     protected getState(ctx: DesignActionContext, dtype: DecoratorScopes): ObjectMap<boolean> {
         switch (dtype) {
             case DecoratorScopes.Class:
-                return ctx.targetReflect.classDecors;
+                return ctx.targetReflect.designRegState.classDecors;
             case DecoratorScopes.Method:
-                return ctx.targetReflect.methodDecors;
+                return ctx.targetReflect.designRegState.methodDecors;
             case DecoratorScopes.Property:
-                return ctx.targetReflect.propsDecors;
+                return ctx.targetReflect.designRegState.propsDecors;
         }
         return null;
     }

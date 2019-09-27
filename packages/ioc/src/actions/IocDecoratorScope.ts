@@ -26,8 +26,9 @@ export abstract class IocDecoratorScope<T extends DecoratorActionContext> extend
     }
     protected getDecorators(ctx: T): string[] {
         let reg = this.getScopeRegisterer();
-        let states = this.getState(ctx, this.getDecorScope());
-        return reg.getRegisterer(this.getDecorScope())
+        let scope = this.getDecorScope();
+        let states = this.getState(ctx, scope);
+        return reg.getRegisterer(scope)
             .getDecorators()
             .filter(dec => states[dec] === false);
     }
