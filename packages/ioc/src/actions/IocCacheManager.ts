@@ -106,10 +106,10 @@ export class IocCacheManager implements IIocCacheManager {
 
     get(targetType: Type, expires?: number) {
         let result = null;
-        if (!this.cacheTokens.has(targetType)) {
-            return null;
-        }
         let cache = this.cacheTokens.get(targetType);
+        if (!cache) {
+            return result;
+        }
         if (cache.expires <= Date.now()) {
             result = cache.target;
             if (isNumber(expires) && expires > 0) {

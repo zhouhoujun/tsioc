@@ -13,9 +13,9 @@ export function isValideAspectTarget(targetType: Type): boolean {
         return false;
     }
 
-    if (lang.isExtendsClass(targetType, IocCoreService)) {
-        return false;
-    }
+    // if (lang.isExtendsClass(targetType, IocCoreService)) {
+    //     return false;
+    // }
 
     return true;
 }

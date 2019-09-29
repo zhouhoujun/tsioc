@@ -23,7 +23,6 @@ export class InjectPropertyAction extends IocRuntimeAction {
 
         props.forEach((token, propertyKey) => {
             if (isToken(token) && !ctx.injecteds[propertyKey]) {
-                // let token =  prop.provider ? container.getToken(prop.provider, prop.alias) : prop.type;
                 let pdrMap = container.get(new InjectReference(ProviderMap, ctx.targetType));
                 if (pdrMap && pdrMap.has(token)) {
                     ctx.target[propertyKey] = pdrMap.resolve(token, providerMap);

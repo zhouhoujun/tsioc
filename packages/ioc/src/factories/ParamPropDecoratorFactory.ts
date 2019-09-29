@@ -34,6 +34,8 @@ export interface IParamPropDecorator<T extends ParamPropMetadata> {
      * define parameter or property decorator.
      */
     (target: object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>): void;
+
+    decoratorType?: DecoratorType;
 }
 
 /**

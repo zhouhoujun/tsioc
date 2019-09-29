@@ -1,4 +1,4 @@
-import { createDecorator } from '../factories';
+import { createDecorator, DecoratorType } from '../factories';
 import { RefMetadata } from '../metadatas';
 import { isToken, isString } from '../utils';
 import { Token } from '../types';
@@ -41,6 +41,8 @@ export interface IRefsDecorator {
      * @param {RefMetadata} [metadata] metadata map.
      */
     (metadata: RefMetadata): ClassDecorator;
+
+    decoratorType?: DecoratorType;
 }
 
 /**

@@ -55,12 +55,7 @@ export class TargetDecoractors implements ITargetDecoractors {
     get classDecors() {
         if (!this._clsDc) {
             let decs = Object.keys(this.design.classDecors);
-            this.runtime.classDecors.forEach(d => {
-                if (decs.indexOf(d) < 0) {
-                    decs.push(d);
-                }
-            })
-            this._clsDc = decs;
+            this._clsDc = decs.concat(this.runtime.classDecors.filter(d => decs.indexOf(d) < 0));
         }
         return this._clsDc;
     }
@@ -69,26 +64,16 @@ export class TargetDecoractors implements ITargetDecoractors {
     get methodDecors() {
         if (!this._methodDc) {
             let decs = Object.keys(this.design.methodDecors);
-            this.runtime.methodDecors.forEach(d => {
-                if (decs.indexOf(d) < 0) {
-                    decs.push(d);
-                }
-            })
-            this._methodDc = decs;
+            this._methodDc = decs.concat(this.runtime.methodDecors.filter(d => decs.indexOf(d) < 0));
         }
         return this._methodDc;
     }
 
-    private _propDc
+    private _propDc;
     get propsDecors() {
         if (!this._propDc) {
             let decs = Object.keys(this.design.propsDecors);
-            this.runtime.propsDecors.forEach(d => {
-                if (decs.indexOf(d) < 0) {
-                    decs.push(d);
-                }
-            })
-            this._propDc = decs;
+            this._propDc = decs.concat(this.runtime.propsDecors.filter(d => decs.indexOf(d) < 0));
         }
         return this._propDc;
     }

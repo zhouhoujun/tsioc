@@ -16,17 +16,18 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
     execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
 
+
+        if (ctx.targetReflect.methodParams.has(propertyKey)) {
+            // designParams = ctx.targetReflect.methodParams.get(propertyKey);
+            return next();
+        }
+
         let target = ctx.target
         let type = ctx.targetType;
 
 
-        let designParams: IParameter[];
+        let designParams = this.createDesignParams(ctx, type, target, propertyKey);
 
-        if (ctx.targetReflect.methodParams.has(propertyKey)) {
-            designParams = ctx.targetReflect.methodParams.get(propertyKey);
-        } else {
-            designParams = this.createDesignParams(ctx, type, target, propertyKey);
-        }
 
         let refs = ctx.reflects;
         let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, type);

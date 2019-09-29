@@ -29,6 +29,7 @@ export interface IParameterDecorator<T extends ParameterMetadata> {
      * define paramete decorator.
      */
     (target: object, propertyKey: string | symbol, parameterIndex: number): void;
+    decoratorType?: DecoratorType;
 }
 
 

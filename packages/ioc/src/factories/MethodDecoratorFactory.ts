@@ -31,6 +31,8 @@ export interface IMethodDecorator<T extends MethodMetadata> {
      * @param {TypedPropertyDescriptor<any>} descriptor
      */
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
+
+    decoratorType?: DecoratorType;
 }
 
 

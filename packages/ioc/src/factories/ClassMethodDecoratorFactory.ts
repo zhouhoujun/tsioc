@@ -24,6 +24,8 @@ export interface IClassMethodDecorator<T extends TypeMetadata> {
 
     (target: Type): void;
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
+
+    decoratorType?: DecoratorType;
 }
 
 /**

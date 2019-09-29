@@ -1,4 +1,4 @@
-import { IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../factories';
+import { IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator, DecoratorType } from '../factories';
 import { AutorunMetadata } from '../metadatas';
 import { isString, isNumber } from '../utils';
 
@@ -34,6 +34,7 @@ export interface IAutorunDecorator extends IClassMethodDecorator<AutorunMetadata
      * @param {AutorunMetadata} [metadata] metadata map.
      */
     (metadata?: AutorunMetadata): ClassMethodDecorator;
+    decoratorType?: DecoratorType;
 }
 
 /**

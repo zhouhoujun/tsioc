@@ -39,6 +39,7 @@ export interface IMethodPropParamDecorator<T extends TypeMetadata> {
      * define method, property or parameter decorator.
      */
     (target: object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>): void;
+    decoratorType?: DecoratorType;
 }
 
 /**

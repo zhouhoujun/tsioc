@@ -479,30 +479,6 @@ export function isMetadataObject(target: any, ...props: (string | string[])[]): 
 }
 
 /**
- * check object is class metadata or not.
- *
- * @export
- * @param {*} target
- * @param {...(string | string[])[]} extendsProps
- * @returns {boolean}
- */
-export function isClassMetadata(target, ...extendsProps: (string | string[])[]): boolean {
-    return isMetadataObject(target, ...extendsProps.concat(['singleton', 'provide', 'alias', 'type']));
-}
-
-/**
- * check object is property metadata or not.
- *
- * @export
- * @param {*} target
- * @param {...(string | string[])[]} extendsProps
- * @returns {boolean}
- */
-export function isProvideMetadata(target, ...extendsProps: (string | string[])[]): boolean {
-    return isMetadataObject(target, ...extendsProps.concat(['type', 'provider']));
-}
-
-/**
  * check target is string or not.
  *
  * @export
