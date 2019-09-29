@@ -48,7 +48,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.get(ContainerBuilderToken);
+        return this.getInstance(ContainerBuilderToken.toString());
     }
 
     /**
@@ -58,7 +58,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.get(ModuleLoader);
+        return this.getInstance(ModuleLoader);
     }
 
     /**

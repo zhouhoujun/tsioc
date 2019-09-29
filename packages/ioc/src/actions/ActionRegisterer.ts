@@ -37,10 +37,7 @@ export class ActionRegisterer extends IocCoreService {
      * @memberof ActionRegisterer
      */
     get<T>(type: Type<T>): T {
-        if (this.maps.has(type)) {
-            return this.maps.get(type) as T;
-        }
-        return null;
+        return this.maps.get(type) as T || null;
     }
 
     /**

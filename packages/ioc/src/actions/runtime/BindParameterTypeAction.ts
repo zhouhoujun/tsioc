@@ -1,7 +1,6 @@
 import { isClass, isArray, isToken, lang } from '../../utils';
 import { ParameterMetadata } from '../../metadatas';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { IParameter } from '../../IParameter';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 
 /**
@@ -18,16 +17,13 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
 
 
         if (ctx.targetReflect.methodParams.has(propertyKey)) {
-            // designParams = ctx.targetReflect.methodParams.get(propertyKey);
             return next();
         }
 
         let target = ctx.target
         let type = ctx.targetType;
 
-
         let designParams = this.createDesignParams(ctx, type, target, propertyKey);
-
 
         let refs = ctx.reflects;
         let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, type);

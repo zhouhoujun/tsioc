@@ -3,7 +3,7 @@ import { RegisterActionContext } from './RegisterActionContext';
 import { ITypeReflect, TargetDecoractors } from '../services';
 import { isClass } from '../utils';
 import { Singleton } from '../decorators';
-import { DesignDecoratorRegisterer, DecoratorScopes, RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
+import { DesignDecoratorRegisterer, RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RuntimeDecorators } from './RuntimeDecorators';
 import { DesignDecorators } from './DesignDecorators';
 

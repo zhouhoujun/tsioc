@@ -2,7 +2,7 @@ import { Token } from '../types';
 import { IIocContainer } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 
-export class IocSingletonManager  extends IocCoreService {
+export class IocSingletonManager extends IocCoreService {
 
     protected singletons: Map<Token, any>;
     constructor(protected container: IIocContainer) {
@@ -16,10 +16,7 @@ export class IocSingletonManager  extends IocCoreService {
 
     get<T>(token: Token<T>) {
         let key = this.container.getTokenKey(token);
-        if (this.singletons.has(key)) {
-            return this.singletons.get(key);
-        }
-        return null;
+        return this.singletons.get(key) || null;
     }
 
     set<T>(token: Token<T>, instance: T) {
