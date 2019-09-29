@@ -4,7 +4,7 @@ import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects } from './services';
-import { ResolveActionContext, ActionRegisterer, ResolveActionOption, IocSingletonManager } from './actions';
+import { ResolveActionContext, ActionRegisterer, ResolveActionOption, IocSingletonManager, IocCacheManager } from './actions';
 
 /**
  * IContainer token.
@@ -51,7 +51,6 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     getProviderParser(): IProviderParser;
-
     /**
      * get singleton manager.
      *
@@ -59,7 +58,13 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     getSingletonManager(): IocSingletonManager;
-
+    /**
+     * get cache manager.
+     *
+     * @returns {IocCacheManager}
+     * @memberof IIocContainer
+     */
+    getCacheManager(): IocCacheManager;
     /**
      * get type reflects manager in current container.
      *

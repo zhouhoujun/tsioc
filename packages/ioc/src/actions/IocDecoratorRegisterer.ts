@@ -112,11 +112,7 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
     }
 
     get<Type extends T>(decorator: string | Function): IocActionType<Type, TAction>[] {
-        let dec = this.getKey(decorator);
-        if (this.actionMap.has(dec)) {
-            return this.actionMap.get(dec) as Type[];
-        }
-        return [];
+        return this.actionMap.get(this.getKey(decorator)) as Type[] || [];
     }
 
 
