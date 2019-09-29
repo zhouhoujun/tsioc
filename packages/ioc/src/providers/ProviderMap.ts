@@ -26,7 +26,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         return this.containerFac();
     }
 
-    map: Map<Token, InstanceFactory>;
+    protected map: Map<Token, InstanceFactory>;
     constructor(container: IIocContainer) {
         super()
         this.containerFac = container.getFactory();
@@ -53,7 +53,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
     }
 
     provides(): Token[] {
-        return this.keys().filter(k => isToken(k)) as Token[];
+        return this.keys().filter(k => !isNumber(k)) as Token[];
     }
 
     /**
