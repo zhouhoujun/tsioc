@@ -5,13 +5,15 @@ import { ModuleConfigure, IModuleReflect } from '../modules';
 
 export class AnnoationDesignAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
-        if (!ctx.targetReflect.decorator) {
-            ctx.targetReflect.decorator = ctx.currDecoractor;
+        let tgRef = ctx.targetReflect as IModuleReflect;
+        if (!tgRef.decorator) {
+            tgRef.decorator = ctx.currDecoractor;
         }
-        let decorator = ctx.currDecoractor || ctx.targetReflect.decorator;
+        tgRef.annoDecoractor = ctx.currDecoractor;
+        let decorator = ctx.currDecoractor || tgRef.decorator;
         let metas = ctx.reflects.getMetadata(decorator, ctx.targetType);
         let proder = this.container.get(DecoratorProvider);
-        (<IModuleReflect>ctx.targetReflect).getAnnoation = () => {
+        tgRef.getAnnoation = () => {
             let merger = proder.resolve(decorator, AnnotationMerger);
             let annon: ModuleConfigure;
             if (merger) {

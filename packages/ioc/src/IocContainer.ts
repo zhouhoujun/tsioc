@@ -52,19 +52,19 @@ export class IocContainer implements IIocContainer {
     }
 
     getActionRegisterer(): ActionRegisterer {
-        return this.get(ActionRegisterer);
+        return this.getInstance(ActionRegisterer);
     }
 
     getProviderParser(): IProviderParser {
-        return this.get(ProviderParser);
+        return this.getInstance(ProviderParser);
     }
 
     getTypeReflects(): TypeReflects {
-        return this.get(TypeReflects);
+        return this.getInstance(TypeReflects);
     }
 
     getSingletonManager(): IocSingletonManager {
-        return this.get(IocSingletonManager);
+        return this.getInstance(IocSingletonManager);
     }
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
@@ -81,8 +81,7 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     has<T>(token: Token<T>, alias?: string): boolean {
-        let key = this.getTokenKey(token, alias);
-        return this.factories.has(this.getTokenKey(key));
+        return this.factories.has(this.getTokenKey(token, alias));
     }
 
 
@@ -106,7 +105,10 @@ export class IocContainer implements IIocContainer {
                 providers.unshift(alias);
             }
         }
+        return this.getInstance(key, ...providers);
+    }
 
+    protected getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
         let factory = this.factories.get(key);
         return factory ? factory(...providers) : null;
     }
@@ -343,7 +345,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IContainer
      */
     clearCache(targetType: Type) {
-        this.get(IocCacheManager).destroy(targetType);
+        this.getInstance(IocCacheManager).destroy(targetType);
     }
 
     /**
@@ -484,10 +486,10 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
-        return this.get(MethodAccessor).invoke(this, target, propertyKey, ...providers);
+        return this.getInstance(MethodAccessor).invoke(this, target, propertyKey, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.get(MethodAccessor).createParams(this, params, ...providers);
+        return this.getInstance(MethodAccessor).createParams(this, params, ...providers);
     }
 }

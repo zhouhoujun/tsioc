@@ -70,10 +70,7 @@ export class Advisor implements IAdvisor {
      * @memberof Advisor
      */
     getAdvices(key: string) {
-        if (!this.advices.has(key)) {
-            return null;
-        }
-        return this.advices.get(key);
+        return this.advices.get(key) || null;
     }
 
     /**
@@ -105,10 +102,7 @@ export class Advisor implements IAdvisor {
     }
 
     getContainer(aspect: Type, defaultContainer?: IIocContainer): IIocContainer {
-        if (this.aspectIocs.has(aspect)) {
-            return this.aspectIocs.get(aspect) || defaultContainer;
-        }
-        return defaultContainer;
+        return this.aspectIocs.get(aspect) || defaultContainer;
     }
 
     /**

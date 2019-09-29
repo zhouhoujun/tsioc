@@ -1,9 +1,9 @@
 import { DecoratorScopes, DesignDecoratorRegisterer } from './DecoratorRegisterer';
-import { TypeReflects, IDesignRegistState } from '../services';
+import { TypeReflects, IDesignDecorators } from '../services';
 import { ClassType, ObjectMap } from '../types';
 
 
-export class DesignDecorators implements IDesignRegistState {
+export class DesignDecorators implements IDesignDecorators {
     constructor(private type: ClassType, private reflects: TypeReflects, private register: DesignDecoratorRegisterer) {
 
     }

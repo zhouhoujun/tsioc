@@ -40,10 +40,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     }
 
     get<T extends ITypeReflect>(type: ClassType): T {
-        if (this.map.has(type)) {
-            return this.map.get(type) as T;
-        }
-        return null;
+        return this.map.get(type) as T || null;
     }
 
     hasMetadata<T = any>(decorator: string | Function, target: ClassType): boolean;
@@ -81,6 +78,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
                 return access ? access.hasMetadata(decorator, target, propertyKey, type) : hasParamMetadata(decorator, target, propertyKey);
 
         }
+        return false;
     }
 
     hasMethodMetadata(decorator: string | Function, target: any, propertyKey?: string): boolean {
@@ -152,28 +150,19 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
         let decorators: string[];
         switch (type) {
             case 'class':
-                decorators = (tgref && tgref.designRegState) ? Object.keys(tgref.designRegState.classDecors).concat(tgref.runtimeDecorators.classDecors) : getClassDecorators(target);
+                decorators = (tgref && tgref.decorators) ? tgref.decorators.classDecors : getClassDecorators(target);
                 break;
             case 'method':
-                decorators = (tgref && tgref.designRegState) ? Object.keys(tgref.designRegState.methodDecors).concat(tgref.runtimeDecorators.methodDecors) : getMethodDecorators(target);
+                decorators = (tgref && tgref.decorators) ? tgref.decorators.methodDecors : getMethodDecorators(target);
                 break;
             case 'property':
-                decorators = (tgref && tgref.designRegState) ? Object.keys(tgref.designRegState.propsDecors).concat(tgref.runtimeDecorators.propsDecors) : getPropDecorators(target);
+                decorators = (tgref && tgref.decorators) ? tgref.decorators.propsDecors : getPropDecorators(target);
                 break;
             case 'parameter':
-                decorators = (tgref && tgref.runtimeDecorators) ? tgref.runtimeDecorators.getParamDecors(propertyKey, target) : getParamDecorators(target, propertyKey);
+                decorators = (tgref && tgref.decorators) ? tgref.decorators.runtime.getParamDecors(propertyKey, target) : getParamDecorators(target, propertyKey);
                 break;
         }
-        if (decorators && decorators.length) {
-            let decs = [];
-            decorators.forEach(d => {
-                if (decs.indexOf(d) < 0) {
-                    decs.push(d);
-                }
-            });
-            return decs;
-        }
-        return [];
+        return decorators || [];
     }
 
     getMetadatas<T = any>(target: ClassType): T[];

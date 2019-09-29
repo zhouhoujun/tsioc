@@ -1,6 +1,5 @@
 import { ITypeReflect } from './ITypeReflect';
 import { ClassType, ObjectMap } from '../types';
-import { DefineClassTypes } from '../factories';
 
 export interface IMetadataAccess {
     hasMetadata(decorator: string | Function, target: ClassType): boolean;
@@ -37,8 +36,6 @@ export abstract class MetadataAccess implements IMetadataAccess {
     abstract getMetadata(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): any[];
     abstract getMetadata(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): any[][];
 
-    abstract getDecorators(target: ClassType, type: DefineClassTypes): string[];
-    abstract getDecorators(target: ClassType, type: 'parameter', propertyKey: string): string[];
     /**
      * set the dectoactor metadata to type reflect.
      *
