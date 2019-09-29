@@ -33,10 +33,9 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
      */
     getSuiteDescribe(): ISuiteDescribe {
         let type = this.getBootType();
-        let metas = this.context.reflects.getMetadata<SuiteMetadata>(Suite, type);
-        let meta = metas.find(m => isNumber(m.timeout));
+        let meta = this.context.targetReflect.getAnnoation<SuiteMetadata>();
         this.timeout = meta ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = metas.map(m => m.describe).filter(d => d).join('; ') || lang.getClassName(type);
+        this.describe = meta.describe || lang.getClassName(type);
         return {
             timeout: this.timeout,
             describe: this.describe,

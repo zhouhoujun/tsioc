@@ -13,7 +13,7 @@ export class AnnoationDesignAction extends IocDesignAction {
         let decorator = ctx.currDecoractor || tgRef.decorator;
         let metas = ctx.reflects.getMetadata(decorator, ctx.targetType);
         let proder = this.container.get(DecoratorProvider);
-        tgRef.getAnnoation = () => {
+        tgRef.getAnnoation = <T extends ModuleConfigure>() => {
             let merger = proder.resolve(decorator, AnnotationMerger);
             let annon: ModuleConfigure;
             if (merger) {
@@ -21,7 +21,7 @@ export class AnnoationDesignAction extends IocDesignAction {
             } else {
                 annon = { ...lang.first(metas) };
             }
-            return annon;
+            return annon as T;
         };
 
         next();

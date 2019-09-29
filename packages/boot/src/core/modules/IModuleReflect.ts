@@ -3,5 +3,5 @@ import { ModuleConfigure } from './ModuleConfigure';
 
 export interface IModuleReflect extends ITypeReflect {
     annoDecoractor?: string;
-    getAnnoation?(): ModuleConfigure;
+    getAnnoation?<T extends ModuleConfigure>(): T;
 }
