@@ -15,7 +15,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 @Aspect
 export class DebugLogAspect extends LoggerAspect {
 
-    constructor( @Inject(ContainerToken) container: IContainer) {
+    constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
     }
 
@@ -36,5 +36,11 @@ export class DebugLogAspect extends LoggerAspect {
                 break;
         }
         this.processLog(joinPoint, null, null, level);
+    }
+
+    protected formatMessage(joinPoint: Joinpoint, message?: string) {
+        let msg = super.formatMessage(joinPoint, message);
+        let now = new Date();
+        return `[${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} ${now.getMilliseconds()}] ${msg}`;
     }
 }
