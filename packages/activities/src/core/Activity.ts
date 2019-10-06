@@ -3,8 +3,8 @@ import { IContainer } from '@tsdi/core';
 import { Input, ComponentManager } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
 import {
-    isClass, Type, isFunction,
-    Abstract, PromiseUtil, Inject, ProviderTypes, lang, isNullOrUndefined,
+    isClass, Type, isFunction, isNullOrUndefined,
+    Abstract, PromiseUtil, Inject, ProviderTypes, lang,
     ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
@@ -205,6 +205,9 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: TCtx): Promise<TVal> {
+        if (isNullOrUndefined(express)) {
+            return null;
+        }
         return await this.getExector().resolveExpression(ctx, express, this.getContainer());
     }
 
