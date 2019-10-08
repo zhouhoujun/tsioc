@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory, ClassType } from './types';
 import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang } from './utils';
 import { Registration } from './Registration';
 
@@ -73,6 +73,23 @@ export class IocContainer implements IIocContainer {
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
         return this.getInstance(ContainerFactoryToken.toString()) as ContainerFactory<T>;
+    }
+
+    isExtends(token: Token, base: ClassType): boolean {
+        let type = this.getTokenProvider(token);
+        let reft = this.getTypeReflects().get(type);
+        if (reft && reft.defines) {
+            return reft.defines.isExtends(base);
+        }
+        return lang.isExtendsClass(type, base);
+    }
+
+    getExtends(type: ClassType): ClassType[] {
+        let ref = this.getTypeReflects().get(type);
+        if (ref && ref.defines) {
+            return ref.defines.extendTypes;
+        }
+        return lang.getClassChain(type);
     }
 
     /**
@@ -443,7 +460,7 @@ export class IocContainer implements IIocContainer {
         if (!Reflect.isExtensible(ClassT)) {
             return;
         }
-        if (lang.isExtendsClass(ClassT, IocRegisterAction) || lang.isExtendsClass(ClassT, IocRegisterScope)) {
+        if (this.isExtends(ClassT, IocRegisterAction) || this.isExtends(ClassT, IocRegisterScope)) {
             throw new Error(`can not register Register Action Class [${lang.getClassName(ClassT)}].`);
         }
 

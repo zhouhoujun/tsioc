@@ -50,7 +50,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
 
         if (propertyKey === 'constructor') {
             if (designParams.some(pa => !pa.type && !pa.provider)) {
-                lang.forInClassChain(ctx.targetType, ty => {
+                ctx.targetReflect.defines.extendTypes.forEach(ty => {
                     if (ty === ctx.targetType) {
                         return true;
                     }

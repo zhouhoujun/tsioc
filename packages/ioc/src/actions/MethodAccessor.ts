@@ -77,11 +77,12 @@ export class MethodAccessor implements IMethodAccessor {
         let key: string;
         if (isFunction(propertyKey)) {
             let meth = propertyKey(instance);
-            lang.forInClassChain(targetClass, t => {
-                let dcp = Object.getOwnPropertyDescriptors(t.prototype);
-                key = Object.keys(dcp).find(k => isFunction(dcp[k].value) && !(dcp[k].set || dcp[k].get) && instance[k] === meth);
-                return !key;
-            });
+            container.getTypeReflects().get(targetClass)
+                .defines.extendTypes.forEach(t => {
+                    let dcp = Object.getOwnPropertyDescriptors(t.prototype);
+                    key = Object.keys(dcp).find(k => isFunction(dcp[k].value) && !(dcp[k].set || dcp[k].get) && instance[k] === meth);
+                    return !key;
+                });
         } else {
             key = propertyKey;
         }

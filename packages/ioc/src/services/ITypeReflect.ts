@@ -1,7 +1,8 @@
-import { Token, ObjectMap } from '../types';
+import { Token, ObjectMap, ClassType } from '../types';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers';
 import { ClassMetadata } from '../metadatas';
+import { lang } from '../utils';
 
 export interface ITypeDecoractors {
     classDecors: string[];
@@ -82,6 +83,24 @@ export class TargetDecoractors implements ITargetDecoractors {
     }
 }
 
+export class TypeDefine {
+    constructor(private type: ClassType) {
+
+    }
+
+    private _extends: ClassType[];
+    get extendTypes(): ClassType[] {
+        if (!this._extends) {
+            this._extends = lang.getClassChain(this.type);
+        }
+        return this._extends;
+    }
+
+    isExtends(type: ClassType): boolean {
+        return this.extendTypes.indexOf(type) >= 0;
+    }
+}
+
 /**
  * type reflect.
  *
@@ -89,6 +108,8 @@ export class TargetDecoractors implements ITargetDecoractors {
  * @interface ITypeReflect
  */
 export interface ITypeReflect extends ClassMetadata {
+
+    type: ClassType;
 
     /**
      * main module decorator.
@@ -99,6 +120,14 @@ export interface ITypeReflect extends ClassMetadata {
     decorator?: string;
 
     decorators?: ITargetDecoractors;
+
+    /**
+     * defines.
+     *
+     * @type {TypeDefine}
+     * @memberof ITypeReflect
+     */
+    readonly defines?: TypeDefine;
     /**
      * props.
      *

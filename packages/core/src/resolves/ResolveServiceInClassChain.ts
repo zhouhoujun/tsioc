@@ -1,4 +1,4 @@
-import { IocResolveScope, lang, isClassType, isToken } from '@tsdi/ioc';
+import { IocResolveScope, isClassType, isToken } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
@@ -11,7 +11,7 @@ export class ResolveServiceInClassChain extends IocResolveScope {
             let classType = ctx.currTargetType;
             let currTagTk = ctx.currTargetToken;
             if (isClassType(classType)) {
-                lang.forInClassChain(classType, ty => {
+                this.container.getExtends(classType).some(ty => {
                     if (currTgRef instanceof TargetService) {
                         ctx.currTargetRef = currTgRef.clone(ty);
                     } else {
@@ -20,7 +20,7 @@ export class ResolveServiceInClassChain extends IocResolveScope {
                     ctx.currTargetToken = isToken(ctx.currTargetRef) ? ctx.currTargetRef : ctx.currTargetRef.getToken();
                     ctx.currTargetType = isClassType(ctx.currTargetToken) ? ctx.currTargetToken : this.container.getTokenProvider(ctx.currTargetToken);
                     super.execute(ctx);
-                    return !ctx.instance;
+                    return ctx.instance;
                 });
             } else {
                 super.execute(ctx);

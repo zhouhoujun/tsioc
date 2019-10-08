@@ -1,5 +1,5 @@
 import { MethodMetadata } from '../../metadatas';
-import { isArray, lang } from '../../utils';
+import { isArray } from '../../utils';
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
 
@@ -15,7 +15,7 @@ export class BindMethodProviderAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
         let refs = ctx.reflects;
-        lang.forInClassChain(ctx.targetType, ty => {
+        ctx.targetReflect.defines.extendTypes.forEach(ty => {
             let metas = refs.getMethodMetadata<MethodMetadata>(ctx.currDecoractor, ty);
             Object.keys(metas).forEach(propertyKey => {
                 let metadatas = metas[propertyKey];

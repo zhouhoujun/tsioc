@@ -1,7 +1,7 @@
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
-import { ITypeReflect, TargetDecoractors } from '../services';
-import { isClass } from '../utils';
+import { ITypeReflect, TargetDecoractors, TypeDefine } from '../services';
+import { isClass, lang } from '../utils';
 import { Singleton } from '../decorators';
 import { DesignDecoratorRegisterer, RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RuntimeDecorators } from './RuntimeDecorators';
@@ -34,6 +34,7 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
                 let targetReflect: ITypeReflect = {
                     type: ctx.targetType,
                     decorators: decs,
+                    defines: new TypeDefine(ctx.targetType),
                     propProviders: new Map(),
                     methodParams: new Map(),
                     methodParamProviders: new Map(),
@@ -45,6 +46,7 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
             } else {
                 ctx.targetReflect = typeRefs.get(ctx.targetType);
             }
+
         }
         if (next) {
             return next();

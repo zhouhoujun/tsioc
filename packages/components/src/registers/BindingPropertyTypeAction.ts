@@ -21,7 +21,7 @@ export class BindingPropertyTypeAction extends IocDesignAction {
             .getCache(ref);
 
         if (propBindings) {
-            lang.forInClassChain(ctx.targetType, ty => {
+            ctx.targetReflect.defines.extendTypes.forEach(ty => {
                 let propMetas = ctx.reflects.getPropertyMetadata<BindingPropertyMetadata>(ctx.currDecoractor, ty);
                 Object.keys(propMetas).forEach(key => {
                     if (!propBindings.has(key)) {

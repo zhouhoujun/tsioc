@@ -1,4 +1,5 @@
-import { Type, isClass, isBaseType, lang, IocCoreService } from '@tsdi/ioc';
+import { Type, isClass, isBaseType, lang, IocCoreService, IIocContainer } from '@tsdi/ioc';
+
 
 /**
  * is target can aspect or not.
@@ -7,13 +8,13 @@ import { Type, isClass, isBaseType, lang, IocCoreService } from '@tsdi/ioc';
  * @param {Type} targetType
  * @returns {boolean}
  */
-export function isValideAspectTarget(targetType: Type): boolean {
+export function isValideAspectTarget(targetType: Type, container?: IIocContainer): boolean {
 
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
 
-    if (lang.isExtendsClass(targetType, IocCoreService)) {
+    if (container ? container.isExtends(targetType, IocCoreService) : lang.isExtendsClass(targetType, IocCoreService)) {
         return false;
     }
 

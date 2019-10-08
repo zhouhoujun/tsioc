@@ -1,5 +1,6 @@
 import { Abstract, Type, isClass, isString, TypeReflects, Inject } from '@tsdi/ioc';
 import { NodeSelector } from './ComponentManager';
+import { IContainer, ContainerToken } from '@tsdi/core';
 
 
 /**
@@ -12,7 +13,9 @@ import { NodeSelector } from './ComponentManager';
 @Abstract()
 export abstract class RefSelector {
 
-    @Inject() private reflects: TypeReflects;
+    @Inject() protected reflects: TypeReflects;
+
+    @Inject(ContainerToken) protected container: IContainer;
 
     abstract getComponentSelector(): string;
 

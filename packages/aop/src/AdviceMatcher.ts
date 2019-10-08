@@ -42,13 +42,13 @@ export class AdviceMatcher implements IAdviceMatcher {
         if (aspectMeta) {
             if (aspectMeta.without) {
                 let outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
-                if (outs.some(t => lang.isExtendsClass(targetType, t))) {
+                if (outs.some(t => this.container.isExtends(targetType, t))) {
                     return [];
                 }
             }
             if (aspectMeta.within) {
                 let ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
-                if (!ins.some(t => lang.isExtendsClass(targetType, t))) {
+                if (!ins.some(t => this.container.isExtends(targetType, t))) {
                     if (!aspectMeta.annotation) {
                         return [];
                     }
@@ -163,9 +163,9 @@ export class AdviceMatcher implements IAdviceMatcher {
         if (metadata.within) {
             expresses.push((method: string, fullName: string, targetType?: Type) => {
                 if (isArray(metadata.within)) {
-                    return metadata.within.some(t => lang.isExtendsClass(targetType, t));
+                    return metadata.within.some(t => this.container.isExtends(targetType, t));
                 } else {
-                    return lang.isExtendsClass(targetType, metadata.within);
+                    return this.container.isExtends(targetType, metadata.within);
                 }
             });
             expresses.push('&&')
