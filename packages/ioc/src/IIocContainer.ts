@@ -18,7 +18,7 @@ export type ContainerFactory<T extends IIocContainer = IIocContainer> = () => T;
 /**
  * container factory token.
  */
-export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_ContainerFactory')
+export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_ContainerFactory');
 
 /**
  * container interface.
