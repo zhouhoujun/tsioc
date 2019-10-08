@@ -1,7 +1,7 @@
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { Type, LoadType, isArray, isString, isClass } from '@tsdi/ioc';
-import { ContainerPool } from './core';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
+import { ContainerPool } from './core';
 import { BuilderServiceToken } from './builder';
 import { IBootApplication } from './IBootApplication';
 import { BootSetup } from './setup';

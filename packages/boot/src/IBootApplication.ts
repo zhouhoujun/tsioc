@@ -1,7 +1,7 @@
-import { BootContext, BootOption } from './BootContext';
-import { ContextInit } from './BootApplication';
 import { LoadType, Type } from '@tsdi/ioc';
 import { IContainerPool } from './core';
+import { ContextInit } from './BootApplication';
+import { BootContext, BootOption } from './BootContext';
 
 /**
  * boot application interface.

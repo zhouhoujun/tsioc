@@ -1,4 +1,4 @@
-import { Singleton, IocCoreService, Token, Inject, ContainerFactoryToken, ContainerFactory, ProviderTypes, isToken } from '@tsdi/ioc';
+import { Singleton, IocCoreService, Token, Inject, ContainerFactoryToken, ContainerFactory, isToken } from '@tsdi/ioc';
 
 /**
  * startup services.
