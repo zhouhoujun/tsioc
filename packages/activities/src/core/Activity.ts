@@ -3,8 +3,8 @@ import { IContainer } from '@tsdi/core';
 import { Input, ComponentManager } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
 import {
-    isClass, Type, isFunction,
-    Abstract, PromiseUtil, Inject, ProviderTypes, lang, isNullOrUndefined,
+    isClass, Type, isFunction, isNullOrUndefined,
+    Abstract, PromiseUtil, Inject, ProviderTypes, lang,
     ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
