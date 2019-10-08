@@ -1,7 +1,7 @@
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from '../services';
-import { isClass, lang } from '../utils';
+import { isClass } from '../utils';
 import { Singleton } from '../decorators';
 import { DesignDecoratorRegisterer, RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RuntimeDecorators } from './RuntimeDecorators';
