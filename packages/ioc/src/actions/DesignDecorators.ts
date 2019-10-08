@@ -1,54 +1,49 @@
-import { DecoratorScopes, DesignDecoratorRegisterer } from './DecoratorRegisterer';
-import { TypeReflects, IDesignDecorators } from '../services';
-import { ClassType, ObjectMap } from '../types';
+import { TypeDecorators } from './DecoratorRegisterer';
+import { IDesignDecorators } from '../services';
+import { ObjectMap } from '../types';
 
+/**
+ * design decorators.
+ *
+ * @export
+ * @class DesignDecorators
+ * @implements {IDesignDecorators}
+ */
+export class DesignDecorators extends TypeDecorators implements IDesignDecorators {
 
-export class DesignDecorators implements IDesignDecorators {
-    constructor(private type: ClassType, private reflects: TypeReflects, private register: DesignDecoratorRegisterer) {
-
-    }
-
-    private _clsDecors: any;
-    get classDecors(): ObjectMap<boolean> {
-        if (!this._clsDecors) {
-            this._clsDecors = this.register.getRegisterer(DecoratorScopes.Class)
-                .getDecorators()
-                .filter(d => this.reflects.hasMetadata(d, this.type))
+    private _clsDecorSt: any;
+    get classDecorState(): ObjectMap<boolean> {
+        if (!this._clsDecorSt) {
+            this._clsDecorSt = this.classDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
         }
-        return this._clsDecors;
+        return this._clsDecorSt;
     }
 
-    private _prsDecors: any;
-    get propsDecors(): ObjectMap<boolean> {
-        if (!this._prsDecors) {
-            this._prsDecors = this.register
-                .getRegisterer(DecoratorScopes.Property)
-                .getDecorators()
-                .filter(d => this.reflects.hasPropertyMetadata(d, this.type))
+    private _prsDecorSt: any;
+    get propsDecorState(): ObjectMap<boolean> {
+        if (!this._prsDecorSt) {
+            this._prsDecorSt = this.propsDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
         }
-        return this._prsDecors;
+        return this._prsDecorSt;
     }
 
-    private _mthDecors: any;
-    get methodDecors(): ObjectMap<boolean> {
-        if (!this._mthDecors) {
-            this._mthDecors = this.register
-                .getRegisterer(DecoratorScopes.Method)
-                .getDecorators()
-                .filter(d => this.reflects.hasMethodMetadata(d, this.type))
+    private _mthDecorSt: any;
+    get methodDecorState(): ObjectMap<boolean> {
+        if (!this._mthDecorSt) {
+            this._mthDecorSt = this.methodDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
         }
-        return this._mthDecors;
+        return this._mthDecorSt;
     }
 }

@@ -4,10 +4,16 @@ import { Registration } from '../Registration';
 import { IIocContainer } from '../IIocContainer';
 import { IocActionType, IocAction } from './Action';
 import { IocCoreService } from '../IocCoreService';
-import { Token } from '../types';
+import { Token, ClassType } from '../types';
+import { TypeReflects } from '../services/TypeReflects';
 
 
-
+/**
+ * decorator scopes.
+ *
+ * @export
+ * @enum {number}
+ */
 export enum DecoratorScopes {
     Class = 'Class',
     Parameter = 'Parameter',
@@ -111,5 +117,49 @@ export class DesignDecoratorRegisterer extends DecoratorScopeRegisterer {
 export class RuntimeDecoratorRegisterer extends DecoratorScopeRegisterer {
     protected createRegister(): DecoratorRegisterer {
         return new IocDecoratorRegisterer() as DecoratorRegisterer;
+    }
+}
+
+/**
+ * type decorators.
+ *
+ * @export
+ * @abstract
+ * @class TypeDecorators
+ */
+export abstract class TypeDecorators {
+    constructor(protected type: ClassType, protected reflects: TypeReflects, protected register: DecoratorScopeRegisterer) {
+    }
+
+    private _clsDecors: any[];
+    get classDecors(): string[] {
+        if (!this._clsDecors) {
+            this._clsDecors = this.register.getRegisterer(DecoratorScopes.Class)
+                .getDecorators()
+                .filter(d => this.reflects.hasMetadata(d, this.type))
+        }
+        return this._clsDecors;
+    }
+
+    private _prsDecors: any[];
+    get propsDecors(): string[] {
+        if (!this._prsDecors) {
+            this._prsDecors = this.register
+                .getRegisterer(DecoratorScopes.Property)
+                .getDecorators()
+                .filter(d => this.reflects.hasPropertyMetadata(d, this.type))
+        }
+        return this._prsDecors;
+    }
+
+    private _mthDecors: any[];
+    get methodDecors(): string[] {
+        if (!this._mthDecors) {
+            this._mthDecors = this.register
+                .getRegisterer(DecoratorScopes.Method)
+                .getDecorators()
+                .filter(d => this.reflects.hasMethodMetadata(d, this.type))
+        }
+        return this._mthDecors;
     }
 }

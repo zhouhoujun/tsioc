@@ -3,14 +3,20 @@ import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers';
 import { ClassMetadata } from '../metadatas';
 
-export interface IDesignDecorators {
+export interface ITypeDecoractors {
+    classDecors: string[];
+    propsDecors: string[];
+    methodDecors: string[];
+}
+
+export interface IDesignDecorators extends ITypeDecoractors {
     /**
      * class decorators annoationed state.
      *
      * @type {ObjectMap<boolean>}
      * @memberof ITypeReflect
      */
-    classDecors?: ObjectMap<boolean>;
+    classDecorState?: ObjectMap<boolean>;
 
     /**
      * props decorators annoationed state.
@@ -18,7 +24,7 @@ export interface IDesignDecorators {
      * @type {ObjectMap<boolean>}
      * @memberof RegisterActionContext
      */
-    propsDecors?: ObjectMap<boolean>;
+    propsDecorState?: ObjectMap<boolean>;
 
     /**
      * method decorators annoationed state.
@@ -26,13 +32,10 @@ export interface IDesignDecorators {
      * @type {ObjectMap<boolean>}
      * @memberof RegisterActionContext
      */
-    methodDecors?: ObjectMap<boolean>;
+    methodDecorState?: ObjectMap<boolean>;
 }
 
-export interface IRuntimeDecorators {
-    classDecors: string[];
-    propsDecors: string[];
-    methodDecors: string[];
+export interface IRuntimeDecorators extends ITypeDecoractors {
     beforeCstrDecors?: string[];
     getParamDecors(propertyKey: string, target?: any): string[];
     afterCstrDecors?: string[];
@@ -54,7 +57,7 @@ export class TargetDecoractors implements ITargetDecoractors {
     private _clsDc;
     get classDecors() {
         if (!this._clsDc) {
-            let decs = Object.keys(this.design.classDecors);
+            let decs = this.design.classDecors;
             this._clsDc = decs.concat(this.runtime.classDecors.filter(d => decs.indexOf(d) < 0));
         }
         return this._clsDc;
@@ -63,7 +66,7 @@ export class TargetDecoractors implements ITargetDecoractors {
     private _methodDc;
     get methodDecors() {
         if (!this._methodDc) {
-            let decs = Object.keys(this.design.methodDecors);
+            let decs = this.design.methodDecors;
             this._methodDc = decs.concat(this.runtime.methodDecors.filter(d => decs.indexOf(d) < 0));
         }
         return this._methodDc;
@@ -72,7 +75,7 @@ export class TargetDecoractors implements ITargetDecoractors {
     private _propDc;
     get propsDecors() {
         if (!this._propDc) {
-            let decs = Object.keys(this.design.propsDecors);
+            let decs = this.design.propsDecors;
             this._propDc = decs.concat(this.runtime.propsDecors.filter(d => decs.indexOf(d) < 0));
         }
         return this._propDc;

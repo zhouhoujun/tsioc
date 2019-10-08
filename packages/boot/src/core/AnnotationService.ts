@@ -21,7 +21,7 @@ export class AnnotationService implements IAnnotationService {
         if (reft && reft.annoDecoractor) {
             return reft.annoDecoractor;
         } else if (reft && reft.decorators.design) {
-            keys = Object.keys(reft.decorators.design.classDecors);
+            keys = reft.decorators.design.classDecors;
         } else {
             keys = this.reflects.getDecorators(type, 'class');
         }
