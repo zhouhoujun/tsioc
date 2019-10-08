@@ -11,9 +11,8 @@ import { IResolver } from './IResolver';
 import { TypeReflects } from './services';
 import { IParameter } from './IParameter';
 import {
-    RuntimeActionContext, DesignActionContext, IocRegisterAction, IocRegisterScope,
-    ResolveActionContext, ActionRegisterer, ResolveLifeScope, IocCacheManager, MethodAccessor,
-    RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption
+    RuntimeActionContext, DesignActionContext, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption
 } from './actions';
 
 
@@ -460,12 +459,6 @@ export class IocContainer implements IIocContainer {
     }
 
     protected bindTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
-        if (!Reflect.isExtensible(ClassT)) {
-            return;
-        }
-        if (this.isExtends(ClassT, IocRegisterAction) || this.isExtends(ClassT, IocRegisterScope)) {
-            throw new Error(`can not register Register Action Class [${lang.getClassName(ClassT)}].`);
-        }
 
         let factory = (...providers: ParamProviders[]) => {
             let mgr = this.getSingletonManager();

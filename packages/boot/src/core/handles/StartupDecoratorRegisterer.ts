@@ -24,7 +24,7 @@ export enum StartupScopes {
     /**
      * binding.
      */
-    Binding =  'Binding',
+    Binding = 'Binding',
     /**
      * valify component.
      */
