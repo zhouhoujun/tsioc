@@ -13,8 +13,6 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 @Abstract()
 export abstract class RefSelector {
 
-    @Inject() protected reflects: TypeReflects;
-
     @Inject(ContainerToken) protected container: IContainer;
 
     abstract getComponentSelector(): string;
@@ -52,7 +50,7 @@ export abstract class RefSelector {
     }
 
     isComponentType(decorator: string, element: any): boolean {
-        return isClass(element) && this.reflects.hasMetadata(decorator, element);
+        return isClass(element) && this.container.getTypeReflects().hasMetadata(decorator, element);
     }
 
 }

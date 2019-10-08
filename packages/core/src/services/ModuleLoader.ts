@@ -1,6 +1,6 @@
 import {
-    LoadType, Modules, Type, Token, IocCoreService, isString,
-    isObject, PathModules, isArray, isClass, Singleton, InjectReference, lang
+    LoadType, Modules, Type, Token, IocCoreService, isString, lang,
+    isObject, PathModules, isArray, isClass, Singleton, InjectReference
 } from '@tsdi/ioc';
 
 

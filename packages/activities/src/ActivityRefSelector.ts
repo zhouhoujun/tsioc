@@ -30,8 +30,9 @@ export class ActivityRefSelector extends RefSelector {
 
 
     getDefaultCompose(): Type<any> {
-        return SequenceActivity
+        return SequenceActivity;
     }
+
     isComponentType(dectoator: string, element: any): boolean {
         return super.isComponentType(dectoator, element) || this.container.isExtends(element, Activity);
     }

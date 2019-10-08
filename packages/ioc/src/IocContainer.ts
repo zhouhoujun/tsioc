@@ -218,11 +218,8 @@ export class IocContainer implements IIocContainer {
      */
     registerValue<T>(token: Token<T>, value: T): this {
         let key = this.getTokenKey(token);
-        this.getSingletonManager().set(key, value);
         if (!this.factories.has(key)) {
-            this.factories.set(key, () => {
-                return this.getSingletonManager().get(key);
-            });
+            this.factories.set(key, () => value);
         }
         return this;
     }

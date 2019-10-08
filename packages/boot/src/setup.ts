@@ -4,8 +4,8 @@ import * as annotations from './annotations';
 import * as runnable from './runnable';
 import * as services from './services';
 import {
-    BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, Inject
+    BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer, Inject,
+    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction
 } from '@tsdi/ioc';
 import { DIModuleInjectorScope } from './core';
 import { BuilderService } from './builder';
