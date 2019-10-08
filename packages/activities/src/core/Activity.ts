@@ -205,6 +205,9 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     protected async resolveExpression<TVal>(express: Expression<TVal>, ctx: TCtx): Promise<TVal> {
+        if (isNullOrUndefined(express)) {
+            return null;
+        }
         return await this.getExector().resolveExpression(ctx, express, this.getContainer());
     }
 
