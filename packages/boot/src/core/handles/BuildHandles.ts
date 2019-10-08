@@ -18,8 +18,20 @@ export class HandleRegisterer<T extends IHandle = IHandle> extends ActionRegiste
     }
 }
 
+/**
+ * build context.
+ *
+ * @export
+ * @interface IBuildContext
+ * @extends {IHandleContext}
+ */
 export interface IBuildContext extends IHandleContext {
-
+    /**
+     * types reflect
+     *
+     * @type {TypeReflects}
+     * @memberof IBuildContext
+     */
     reflects?: TypeReflects;
 }
 

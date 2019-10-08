@@ -7,6 +7,13 @@ import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { AnnotationMerger } from './AnnotationMerger';
 
 
+/**
+ * annotation service.
+ *
+ * @export
+ * @class AnnotationService
+ * @implements {IAnnotationService}
+ */
 @Singleton(AnnotationServiceToken)
 export class AnnotationService implements IAnnotationService {
 
