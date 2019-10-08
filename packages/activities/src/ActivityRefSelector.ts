@@ -3,6 +3,13 @@ import { Type, lang, Singleton } from '@tsdi/ioc';
 import { SequenceActivity } from './activities';
 import { Activity } from './core';
 
+/**
+ * activity ref selector.
+ *
+ * @export
+ * @class ActivityRefSelector
+ * @extends {RefSelector}
+ */
 @Singleton()
 export class ActivityRefSelector extends RefSelector {
 

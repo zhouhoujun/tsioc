@@ -2,6 +2,13 @@ import { BuildHandle, BuildContext } from '@tsdi/boot';
 import { isArray } from '@tsdi/ioc';
 import { SequenceActivity, ParallelActivity } from '../activities';
 
+/**
+ * vaild task component handle.
+ *
+ * @export
+ * @class ValidTaskComponentHandle
+ * @extends {BuildHandle<BuildContext>}
+ */
 export class ValidTaskComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.composite) {

@@ -3,6 +3,12 @@ import { ActivityContext } from './ActivityContext';
 import { Expression, ActivityType } from './ActivityConfigure';
 import { PromiseUtil, InjectToken } from '@tsdi/ioc';
 
+/**
+ * activity executor.
+ *
+ * @export
+ * @interface IActivityExecutor
+ */
 export interface IActivityExecutor {
     /**
      * get container.

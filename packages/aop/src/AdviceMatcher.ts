@@ -12,7 +12,7 @@ import { NonePointcut } from './decorators/NonePointcut';
 /**
  * match express.
  */
-export type MatchExpress = (method: string, fullName: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean
+export type MatchExpress = (method: string, fullName: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
 
 /**
  * advice matcher, use to match advice when a registered create instance.

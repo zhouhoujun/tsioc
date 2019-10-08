@@ -1,7 +1,14 @@
-import { DIModuleInjectorScope } from '@tsdi/boot';
 import { InjectorActionContext } from '@tsdi/core';
+import { DIModuleInjectorScope } from '@tsdi/boot';
 import { Type } from '@tsdi/ioc';
 
+/**
+ * task injector register action.
+ *
+ * @export
+ * @class TaskInjectorRegisterAction
+ * @extends {DIModuleInjectorScope}
+ */
 export class TaskInjectorRegisterAction extends DIModuleInjectorScope {
 
     protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {

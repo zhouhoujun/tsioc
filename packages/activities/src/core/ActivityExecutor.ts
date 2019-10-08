@@ -78,7 +78,7 @@ export class ActivityExecutor implements IActivityExecutor {
     async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {
         if (isClass(express)) {
             let bctx = await (container || this.getContainer()).get(BuilderService).run({ module: express, scope: ctx.scope });
-            return bctx['result'] || bctx.data;
+            return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
         } else if (express instanceof Activity) {

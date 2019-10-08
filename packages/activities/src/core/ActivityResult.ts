@@ -1,4 +1,4 @@
-import { InjectToken, Injectable } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 
 
 /**

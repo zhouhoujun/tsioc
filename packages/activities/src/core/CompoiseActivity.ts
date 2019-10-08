@@ -1,7 +1,8 @@
-import { PromiseUtil, Injectable } from '@tsdi/ioc';
+import { PromiseUtil } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityType } from './ActivityConfigure';
+import { Task } from '../decorators/Task';
 
 /**
  * chain activity.
@@ -10,7 +11,7 @@ import { ActivityType } from './ActivityConfigure';
  * @class ChainActivity
  * @extends {ControlActivity}
  */
-@Injectable
+@Task
 export class CompoiseActivity<T> extends Activity<T> {
 
     isScope = true;

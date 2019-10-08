@@ -1,12 +1,12 @@
 import { Task } from '../decorators/Task';
-import { IContainer } from '@tsdi/core';
-import { Input, ComponentManager } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
 import {
     isClass, Type, isFunction, isNullOrUndefined,
     Abstract, PromiseUtil, Inject, ProviderTypes, lang,
     ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
+import { Input, ComponentManager } from '@tsdi/components';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
 import { ActivityResult } from './ActivityResult';
 import { ValuePipe } from './ValuePipe';
