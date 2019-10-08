@@ -15,8 +15,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
     private _bcDecors: any[];
     get beforeCstrDecors(): string[] {
         if (!this._bcDecors) {
-            this._bcDecors = this.register
-                .getRegisterer(DecoratorScopes.BeforeConstructor)
+            this._bcDecors = this.register.getRegisterer(DecoratorScopes.BeforeConstructor)
                 .getDecorators()
                 .filter(d => this.reflects.hasMethodMetadata(d, this.type))
         }
@@ -26,8 +25,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
     private _afDecors: any[];
     get afterCstrDecors(): string[] {
         if (!this._afDecors) {
-            this._afDecors = this.register
-                .getRegisterer(DecoratorScopes.AfterConstructor)
+            this._afDecors = this.register.getRegisterer(DecoratorScopes.AfterConstructor)
                 .getDecorators()
                 .filter(d => this.reflects.hasMethodMetadata(d, this.type))
         }

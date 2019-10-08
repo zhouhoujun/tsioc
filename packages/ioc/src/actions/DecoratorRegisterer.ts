@@ -144,8 +144,7 @@ export abstract class TypeDecorators {
     private _prsDecors: any[];
     get propsDecors(): string[] {
         if (!this._prsDecors) {
-            this._prsDecors = this.register
-                .getRegisterer(DecoratorScopes.Property)
+            this._prsDecors = this.register.getRegisterer(DecoratorScopes.Property)
                 .getDecorators()
                 .filter(d => this.reflects.hasPropertyMetadata(d, this.type))
         }
@@ -155,8 +154,7 @@ export abstract class TypeDecorators {
     private _mthDecors: any[];
     get methodDecors(): string[] {
         if (!this._mthDecors) {
-            this._mthDecors = this.register
-                .getRegisterer(DecoratorScopes.Method)
+            this._mthDecors = this.register.getRegisterer(DecoratorScopes.Method)
                 .getDecorators()
                 .filter(d => this.reflects.hasMethodMetadata(d, this.type))
         }

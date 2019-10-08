@@ -87,9 +87,9 @@ export class IocContainer implements IIocContainer {
     }
 
     getExtends(type: ClassType): ClassType[] {
-        let ref = this.getTypeReflects().get(type);
-        if (ref && ref.defines) {
-            return ref.defines.extendTypes;
+        let reft = this.getTypeReflects().get(type);
+        if (reft && reft.defines) {
+            return reft.defines.extendTypes;
         }
         return lang.getClassChain(type);
     }
@@ -238,7 +238,7 @@ export class IocContainer implements IIocContainer {
         let factory;
         if (isToken(provider)) {
             factory = (...providers: ParamProviders[]) => {
-                return this.resolve(provider, ...providers);
+                return this.get(provider, ...providers);
             };
         } else {
             if (isFunction(provider)) {
