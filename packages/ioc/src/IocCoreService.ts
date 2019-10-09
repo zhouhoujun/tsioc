@@ -6,6 +6,5 @@
  * @class IocCoreService
  */
 export abstract class IocCoreService {
-    constructor() {
-    }
+    constructor() { }
 }

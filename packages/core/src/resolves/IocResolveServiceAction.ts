@@ -1,4 +1,4 @@
-import { Token, IocResolveAction, isNullOrUndefined, isClassType, lang } from '@tsdi/ioc';
+import { Token, IocResolveAction, isNullOrUndefined, isClassType } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 
 /**

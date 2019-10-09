@@ -198,7 +198,6 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
 
     protected getContentTypes(regModule: Modules): Type[] {
         let regModules: Type[] = [];
-
         if (isClass(regModule)) {
             regModules.push(regModule);
         } else if (regModule) {
@@ -210,7 +209,6 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
                 }
             }
         }
-
         return regModules;
     }
 }
