@@ -19,7 +19,7 @@ let gls = {
     afterEach: undefined
 };
 
-let globals = typeof window !== 'undefined' ? window : global;
+const globals = typeof window !== 'undefined' ? window : global;
 
 /**
  * Suite runner.

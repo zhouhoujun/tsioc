@@ -1,4 +1,4 @@
-import { InjectStartupToken, IStartup, IRunnable } from '@tsdi/boot';
+import { InjectStartupToken, IRunnable } from '@tsdi/boot';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 
