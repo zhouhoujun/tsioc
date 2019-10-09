@@ -58,8 +58,7 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
      * @type {ActivityStatus}
      * @memberof ActivityContext
      */
-    @Inject
-    status: ActivityStatus;
+    @Inject() status: ActivityStatus;
 
     state: RunState;
 

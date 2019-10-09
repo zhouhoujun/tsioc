@@ -2,6 +2,13 @@ import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
 import { AnnotationServiceToken } from '../IAnnotationService';
 
+/**
+ * check annoation action.
+ *
+ * @export
+ * @class CheckAnnoationAction
+ * @extends {AnnoationAction}
+ */
 export class CheckAnnoationAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {
         if (!ctx.reflects) {

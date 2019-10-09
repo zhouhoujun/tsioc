@@ -5,7 +5,9 @@ import { ActivityContext } from './ActivityContext';
 import { ValuePipe } from './ValuePipe';
 import { Binding, ElementTemplate } from '@tsdi/components';
 
-
+/**
+ * workflow id.
+ */
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
 
 

@@ -8,6 +8,13 @@ import { RegModuleImportsAction } from './RegModuleImportsAction';
 import { RegModuleProvidersAction } from './RegModuleProvidersAction';
 import { RegModuleResolverAction } from './RegModuleResolverAction';
 
+/**
+ * annoation register scope.
+ *
+ * @export
+ * @class AnnoationRegisterScope
+ * @extends {IocCompositeAction<AnnoationContext>}
+ */
 export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext> {
     execute(ctx: AnnoationContext, next?: () => void): void {
         let pools = this.container.get(ContainerPoolToken);

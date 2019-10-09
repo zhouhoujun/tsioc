@@ -8,6 +8,13 @@ import { RegModuleExportsAction } from './RegModuleExportsAction';
 import { InjectorAction, InjectorActionContext, InjectorRegisterScope } from '@tsdi/core';
 
 
+/**
+ * Module inject life scope.
+ *
+ * @export
+ * @class ModuleInjectLifeScope
+ * @extends {LifeScope<AnnoationContext>}
+ */
 export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
 
     @Inject(ContainerToken)
@@ -35,6 +42,13 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
 }
 
 
+/**
+ * di module injector scope.
+ *
+ * @export
+ * @class DIModuleInjectorScope
+ * @extends {InjectorRegisterScope}
+ */
 export class DIModuleInjectorScope extends InjectorRegisterScope {
 
     execute(ctx: InjectorActionContext, next?: () => void): void {

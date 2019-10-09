@@ -15,8 +15,20 @@ export class ActivityResult<T = any> {
 
     }
 
+    /**
+     * activity result vaule.
+     *
+     * @type {T}
+     * @memberof ActivityResult
+     */
     value: T;
 
+    /**
+     * error of activity result.
+     *
+     * @type {Error}
+     * @memberof ActivityResult
+     */
     error: Error;
 
 }
