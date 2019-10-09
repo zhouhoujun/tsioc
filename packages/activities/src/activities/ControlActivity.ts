@@ -19,3 +19,5 @@ export abstract class ControlActivity<T = any> extends Activity<T> {
 
     }
 }
+
+export const ControlerActivity = ControlActivity;
