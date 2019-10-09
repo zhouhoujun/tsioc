@@ -61,8 +61,6 @@ export class AopModule {
         registerer.get(RuntimeMethodScope)
             .useBefore(BindMethodPointcutAction);
 
-        // registerer.get(DesignAnnoationScope)
-        //     .use(MatchPointcutAction);
         registerer.get(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, ConstructorArgsAction);
 

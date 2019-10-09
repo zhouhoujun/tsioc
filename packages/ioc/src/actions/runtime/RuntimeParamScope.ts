@@ -7,6 +7,13 @@ import { BindParameterTypeAction } from './BindParameterTypeAction';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 import { InitReflectAction } from '../InitReflectAction';
 
+/**
+ * runtime param scope.
+ *
+ * @export
+ * @class RuntimeParamScope
+ * @extends {IocRegisterScope<RuntimeActionContext>}
+ */
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
     execute(ctx: RuntimeActionContext, next?: () => void): void {
         if (!ctx.reflects) {

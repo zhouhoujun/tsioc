@@ -32,10 +32,16 @@ export class IocActionContext extends IocCoreService {
      */
     actionScope?: any;
 
+    /**
+     * reflects.
+     *
+     * @type {TypeReflects}
+     * @memberof IocActionContext
+     */
     reflects: TypeReflects;
 
     constructor() {
-        super()
+        super();
     }
 
     /**

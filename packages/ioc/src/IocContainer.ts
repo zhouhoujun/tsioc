@@ -156,9 +156,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IExports
      */
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IResolver) => void | boolean): void | boolean {
-        return !Array.from(this.factories.keys()).some(tk => {
-            return callbackfn(this.factories.get(tk), tk, this) === false;
-        });
+        return !Array.from(this.factories.keys()).some(tk => callbackfn(this.factories.get(tk), tk, this) === false);
     }
 
     /**

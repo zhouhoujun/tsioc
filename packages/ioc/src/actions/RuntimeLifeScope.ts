@@ -65,7 +65,6 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     setup() {
         this.container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(this.container));
-
         this.registerAction(InstanceCheckAction)
             .registerAction(RuntimeDecoratorAction)
             .registerAction(RuntimeParamScope, true);
@@ -85,6 +84,10 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     protected getParameters<T>(container: IIocContainer, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
         propertyKey = propertyKey || 'constructor';
+        let targetReflect = container.getTypeReflects().get(type);
+        if (targetReflect && targetReflect.methodParams.has(propertyKey)) {
+            return targetReflect.methodParams.get(propertyKey) || [];
+        }
         let ctx = RuntimeActionContext.parse({
             targetType: type,
             target: instance,
