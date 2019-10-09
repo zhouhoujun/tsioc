@@ -216,9 +216,7 @@ export abstract class NodeSelector<T = any> {
 
 
     protected eachChildren<Tc extends T>(node: T, express: Express<Tc, void | boolean>) {
-        this.getChildren(node).some(item => {
-            return express(item as Tc) === false;
-        });
+        this.getChildren(node).some(item => express(item as Tc) === false);
     }
 
     /**
@@ -250,24 +248,19 @@ export abstract class NodeSelector<T = any> {
             return false;
         }
         let children = this.getChildren(node);
-        for (let i = 0; i < children.length; i++) {
-            let result = this.trans(children[i], express);
-            if (result === false) {
-                return result;
-            }
+
+        if (children.some(r => this.trans(r, express) === false)) {
+            return false;
         }
+
         return true;
     }
 
     transAfter(node: T, express: Express<T, void | boolean>) {
         let children = this.getChildren(node);
-        for (let i = 0; i < children.length; i++) {
-            let result = this.transAfter(children[i], express);
-            if (result === false) {
-                return false;
-            }
+        if (children.some(r => this.transAfter(r, express) === false)) {
+            return false;
         }
-
         if (express(node) === false) {
             return false;
         }

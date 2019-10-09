@@ -171,17 +171,10 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
         if (!propertyKey) {
             type = 'class';
         }
-        if (isUndefined(type) && propertyKey) {
-            type = propertyKey;
-            propertyKey = undefined;
-        }
         return this.getDecorators(target, type, propertyKey)
-            .map(v => {
-                return this.getMetadata(v, target, propertyKey, type);
-            })
+            .map(v => this.getMetadata(v, target, propertyKey, type))
             .reduce((v, c) => {
-                v.concat(c);
-                return v;
+                return v.concat(c);
             }, []);
     }
 

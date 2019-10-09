@@ -24,8 +24,7 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
         this.configs = [];
     }
 
-    @Inject(ContainerToken)
-    container: IContainer;
+    @Inject(ContainerToken) container: IContainer;
 
     private config: T;
     protected configs: (string | T)[];

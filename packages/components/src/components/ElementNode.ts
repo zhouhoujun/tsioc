@@ -10,6 +10,12 @@ import { CompositeNode } from './CompositeNode';
  */
 @Component()
 export class ElementNode extends CompositeNode  {
+    /**
+     * scope of element.
+     *
+     * @type {*}
+     * @memberof ElementNode
+     */
     $scope: any;
     /**
      * element id.

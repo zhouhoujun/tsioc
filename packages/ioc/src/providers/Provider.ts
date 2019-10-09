@@ -123,8 +123,8 @@ export interface ExistingProvider extends IProvider {
 /**
  * provider type.
  */
-export type ProviderType = ObjectMapProvider | Provider |
-    ValueProvider | ClassProvider | ExistingProvider | FactoryProvider;
+export type ProviderType = ObjectMapProvider | Provider | ValueProvider
+    | ClassProvider | ExistingProvider | FactoryProvider;
 
 
 /**

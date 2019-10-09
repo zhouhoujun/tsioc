@@ -128,7 +128,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
         let result = this.getContainer().getService({ token: ActivityResult, target: lang.getClass(this) }, ...providers);
         if (!isNullOrUndefined(ctx.result)) {
             if (this.pipe) {
-                result.value = this.pipe.transform(ctx.result);
+                result.value = await this.pipe.transform(ctx.result);
             } else {
                 result.value = ctx.result;
             }

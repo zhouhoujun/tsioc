@@ -75,15 +75,16 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     protected onInit(target: Type | BootOption | T) {
         this.deps = this.deps || [];
         let raiseContainer: IContainer;
-        if (target instanceof BootContext) {
-            this.context = target;
-            if (this.context.hasRaiseContainer()) {
-                raiseContainer = this.context.getRaiseContainer();
+        if (target) {
+            if (target instanceof BootContext) {
+                this.context = target;
+                if (this.context.hasRaiseContainer()) {
+                    raiseContainer = this.context.getRaiseContainer();
+                }
+            } else if (!isClass(target) && target.raiseContainer) {
+                raiseContainer = target.raiseContainer();
             }
-        } else if (target && !isClass(target) && target.raiseContainer) {
-            raiseContainer = target.raiseContainer();
         }
-
         if (raiseContainer) {
             this.pools = raiseContainer.get(ContainerPool);
             if (this.pools) {
@@ -172,15 +173,11 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     protected getTargetDeps(target: Type | BootOption | T) {
         let dependences = [];
         if (isClass(target)) {
-            let refs = this.container.getTypeReflects();
-            refs.getDecorators(target, 'class')
-                .forEach(d => {
-                    let metas = refs.getMetadata<RunnableConfigure>(d, target);
-                    if (metas && metas.length) {
-                        metas.filter(m => m && m.deps && m.deps.length > 0)
-                            .forEach(m => {
-                                dependences.push(...m.deps);
-                            });
+            this.container.getTypeReflects()
+                .getMetadatas(target)
+                .forEach((meta: RunnableConfigure) => {
+                    if (meta && meta.deps) {
+                        dependences.push(...meta.deps);
                     }
                 });
         } else if (target.deps) {

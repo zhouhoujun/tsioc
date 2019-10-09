@@ -13,8 +13,8 @@ import { BootContext } from '../BootContext';
  */
 @Abstract()
 export abstract class StartupService<T extends BootContext = BootContext> {
-    constructor() {
-    }
+
+    constructor() { }
 
     @Inject(ContainerToken)
     protected container: IContainer;

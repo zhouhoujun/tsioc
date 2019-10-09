@@ -51,10 +51,10 @@ export namespace observe {
             evt = events.get(target);
         }
 
+        let descriptors = Object.getOwnPropertyDescriptors(lang.getClass(target).prototype);
         let propName: string;
         if (isFunction(property)) {
             let objMap: any = {};
-            let descriptors = Object.getOwnPropertyDescriptors(lang.getClass(target).prototype);
             [...Object.keys(target), ...Object.keys(descriptors)].forEach(k => {
                 if (!objMap[k]) {
                     objMap[k] = k;
@@ -67,7 +67,6 @@ export namespace observe {
 
 
         if (!defines.has(target) || !defines.get(target)[propName]) {
-            let descriptors = Object.getOwnPropertyDescriptors(lang.getClass(target).prototype);
             let descriptor = descriptors[propName];
             let value = Reflect.get(target, propName);
             Reflect.defineProperty(target, propName, {
