@@ -169,7 +169,6 @@ export namespace PromiseUtil {
      */
     export function runInChain<T>(handles: ActionHandle<T>[], ctx: T, next?: () => Promise<void>): Promise<void> {
         let index = -1;
-        return dispatch(0);
         function dispatch(idx: number): Promise<any> {
             if (idx <= index) {
                 return Promise.reject('in chain next called mutiple times.');
@@ -188,6 +187,7 @@ export namespace PromiseUtil {
                 return Promise.reject(err);
             }
         }
+        return dispatch(0);
     }
 
 }

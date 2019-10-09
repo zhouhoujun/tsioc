@@ -250,12 +250,12 @@ export namespace lang {
      */
     export function isExtendsClass(target: Token, baseClass: ClassType | ((type: ClassType) => boolean)): boolean {
         let isExtnds = false;
-        if (isClassType(target)) {
+        if (isClassType(target) && baseClass) {
             let isCls = isClassType(baseClass);
             forInClassChain(target, t => {
                 if (isCls) {
                     isExtnds = t === baseClass;
-                } else if (baseClass) {
+                } else {
                     isExtnds = (<Function>baseClass)(t);
                 }
                 return !isExtnds;

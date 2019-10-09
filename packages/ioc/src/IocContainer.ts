@@ -309,9 +309,8 @@ export class IocContainer implements IIocContainer {
             }
         } else {
             maps.iterator((fac, key) => {
-                isToken(key) && this.factories.set(key, (...prds) => maps.resolve(key, ...prds));
-            })
-
+                isToken(key) && this.factories.set(key, (...prods) => maps.resolve(key, ...prods));
+            });
         }
         return this;
     }
@@ -411,7 +410,6 @@ export class IocContainer implements IIocContainer {
     protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
         (async () => {
             let key = this.getTokenKey(token);
-
             if (this.factories.has(key)) {
                 return;
             }
@@ -469,7 +467,7 @@ export class IocContainer implements IIocContainer {
                 singleton: singleton,
                 providers: providers,
                 providerMap: providerMap
-            }, () => this);
+            }, this.getFactory());
             this.getActionRegisterer().get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
@@ -484,7 +482,7 @@ export class IocContainer implements IIocContainer {
                 DesignActionContext.parse({
                     tokenKey: key,
                     targetType: ClassT
-                }, this));
+                }, this.getFactory()));
         })();
     }
 
