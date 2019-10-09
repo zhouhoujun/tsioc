@@ -26,28 +26,4 @@ export class ServerParallelExecutor extends ParallelExecutor {
             }));
         }
     }
-
-    // runByCluster<T>(func: (item: T) => any, items: T[]) {
-    //     const cluster = syncRequire('cluster');
-    //     let defer = PromiseUtil.defer();
-    //     if (cluster.isMaster) {
-    //         for (let i = 0; i < this.workers; i++) {
-    //             cluster.fork();
-    //         }
-    //         let workers = this.workers;
-    //         cluster.on('exit', function (worker, code, signal) {
-    //             console.log('cluster worker', worker.id, code);
-    //             if (code > 0) {
-    //                 process.exit(1);
-    //             }
-    //             if (!--workers) {
-    //                 defer.resolve();
-    //             }
-    //         });
-    //     } else {
-    //         items.map(item => func(item));
-    //     }
-    //     return defer.promise;
-    // }
-
 }
