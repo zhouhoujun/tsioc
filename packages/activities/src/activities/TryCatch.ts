@@ -3,10 +3,10 @@ import { ActivityContext, Activity } from '../core';
 import { BodyActivity } from './BodyActivity';
 import { Input } from '@tsdi/components';
 import { lang, Type } from '@tsdi/ioc';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 @Task('catch')
-export class CatchActivity<T = any> extends ControlerActivity<T> {
+export class CatchActivity<T = any> extends ControlActivity<T> {
 
     @Input() error: Type<Error>;
 

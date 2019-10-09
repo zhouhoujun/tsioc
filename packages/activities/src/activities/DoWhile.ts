@@ -3,7 +3,7 @@ import { ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 import { BodyActivity } from './BodyActivity';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 
 
@@ -15,7 +15,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ContentActivity}
  */
 @Task('dowhile')
-export class DoWhileActivity<T> extends ControlerActivity<T> {
+export class DoWhileActivity<T> extends ControlActivity<T> {
 
     @Input() condition: ConditionActivity;
 

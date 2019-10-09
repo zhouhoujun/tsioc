@@ -1,10 +1,10 @@
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from '../ControlerActivity';
+import { ControlActivity } from '../ControlActivity';
 import { ActivityContext } from '../../core';
 import { Task } from '../../decorators';
 
 @Task('equals')
-export class EqualsActivity extends ControlerActivity<boolean> {
+export class EqualsActivity extends ControlActivity<boolean> {
 
     @Input() expect: string;
 

@@ -12,6 +12,13 @@ import { ComponentBuilderToken, ComponentManager, SelectorManager } from '@tsdi/
 import { ActivityOption } from './ActivityOption';
 
 
+/**
+ * activity executor.
+ *
+ * @export
+ * @class ActivityExecutor
+ * @implements {IActivityExecutor}
+ */
 @Injectable(ActivityExecutorToken)
 export class ActivityExecutor implements IActivityExecutor {
 

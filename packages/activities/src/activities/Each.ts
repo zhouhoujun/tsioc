@@ -1,12 +1,12 @@
 import { ActivityContext, Expression, ParallelExecutor, ActivityType } from '../core';
 import { Task } from '../decorators';
 import { Input, BindingTypes } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 import { isNullOrUndefined } from '@tsdi/ioc';
 
 
 @Task('each')
-export class EachActicity<T> extends ControlerActivity<T> {
+export class EachActicity<T> extends ControlActivity<T> {
 
     @Input() each: Expression<any[]>;
 

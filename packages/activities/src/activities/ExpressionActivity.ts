@@ -1,7 +1,7 @@
 import { Task } from '../decorators';
 import { ActivityContext, Expression } from '../core';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 import { isString } from '@tsdi/ioc';
 
 
@@ -15,7 +15,7 @@ import { isString } from '@tsdi/ioc';
  * @template T
  */
 @Task('[expression]')
-export class ExpressionActivity<T> extends ControlerActivity<T> {
+export class ExpressionActivity<T> extends ControlActivity<T> {
 
     @Input() expression: Expression<T>;
 

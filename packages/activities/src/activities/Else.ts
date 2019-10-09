@@ -3,7 +3,7 @@ import { ActivityContext } from '../core';
 import { BodyActivity } from './BodyActivity';
 import { IfActivity } from './If';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 /**
  * else activity.
@@ -14,7 +14,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @template T
  */
 @Task('else')
-export class ElseActivity<T> extends ControlerActivity<T> {
+export class ElseActivity<T> extends ControlActivity<T> {
 
     @Input() body: BodyActivity<T>;
 

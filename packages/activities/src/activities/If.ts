@@ -3,7 +3,7 @@ import { ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 import { Input } from '@tsdi/components';
 import { BodyActivity } from './BodyActivity';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 /**
  * if control activity.
@@ -13,7 +13,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ControlActivity}
  */
 @Task('if')
-export class IfActivity<T = any> extends ControlerActivity<T> {
+export class IfActivity<T = any> extends ControlActivity<T> {
 
     @Input() condition: ConditionActivity;
 

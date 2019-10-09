@@ -4,7 +4,7 @@ import { ActivityContext } from '../core';
 import { TimerActivity } from './TimerActivity';
 import { BodyActivity } from './BodyActivity';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 
 
@@ -16,7 +16,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ControlActivity}
  */
 @Task('delay')
-export class DelayActivity<T> extends ControlerActivity<T> {
+export class DelayActivity<T> extends ControlActivity<T> {
 
     @Input() timer: TimerActivity;
 

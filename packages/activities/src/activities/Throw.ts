@@ -1,7 +1,7 @@
 import { Task } from '../decorators/Task';
 import { ActivityContext, Expression } from '../core';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 
 /**
@@ -12,7 +12,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ControlActivity}
  */
 @Task('[throw]')
-export class ThrowActivity extends ControlerActivity<Error> {
+export class ThrowActivity extends ControlActivity<Error> {
 
     @Input('throw') error: Expression<Error>;
 

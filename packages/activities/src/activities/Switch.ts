@@ -2,11 +2,11 @@ import { Task } from '../decorators';
 import { ActivityContext, Expression } from '../core';
 import { BodyActivity } from './BodyActivity';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 
 @Task('case')
-export class CaseActivity<T> extends ControlerActivity<T> {
+export class CaseActivity<T> extends ControlActivity<T> {
 
     @Input() caseKey: any;
 
@@ -25,7 +25,7 @@ export class CaseActivity<T> extends ControlerActivity<T> {
  * @extends {ControlActivity}
  */
 @Task('switch')
-export class SwitchActivity<T> extends ControlerActivity<T> {
+export class SwitchActivity<T> extends ControlActivity<T> {
 
     isScope = true;
 

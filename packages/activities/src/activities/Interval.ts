@@ -3,7 +3,7 @@ import { ActivityContext } from '../core';
 import { TimerActivity } from './TimerActivity';
 import { Input } from '@tsdi/components';
 import { BodyActivity } from './BodyActivity';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 /**
  * while control activity.
@@ -13,7 +13,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ControlActivity}
  */
 @Task('interval')
-export class IntervalActivity<T> extends ControlerActivity<T> {
+export class IntervalActivity<T> extends ControlActivity<T> {
 
     @Input() timer: TimerActivity;
 

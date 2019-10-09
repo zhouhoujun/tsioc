@@ -8,6 +8,9 @@ import { IContainer } from '@tsdi/core';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ComponentManager } from '@tsdi/components';
 
+/**
+ * workflow context token.
+ */
 export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowContext')
 /**
  * base activity execute context.
@@ -19,14 +22,6 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
 export class ActivityContext extends BootContext {
-
-    /**
-     * activty execute result data.
-     *
-     * @type {*}
-     * @memberof ActivityContext
-     */
-    result: any;
     /**
      * workflow id.
      *
@@ -41,7 +36,6 @@ export class ActivityContext extends BootContext {
     * @memberof ActivityOption
     */
     name: string;
-
     /**
      * activities component template scope.
      *
@@ -49,7 +43,6 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityConfigure
      */
     template?: ActivityTemplate;
-
     /**
      * activity annoation metadata.
      *
@@ -57,7 +50,6 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     annoation: ActivityConfigure;
-
     /**
      * bootstrap runnable service.
      *
@@ -65,8 +57,6 @@ export class ActivityContext extends BootContext {
      * @memberof BootContext
      */
     runnable?: WorkflowInstance;
-
-
     /**
      * context share body data.
      *
@@ -74,6 +64,13 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     body: any;
+    /**
+     * current result.
+     *
+     * @type {*}
+     * @memberof ActivityContext
+     */
+    result?: any;
     /**
      * set context share body.
      *
@@ -135,8 +132,6 @@ export class ActivityContext extends BootContext {
         }
         return baseURL || this.baseURL;
     }
-
-
 
     static parse(target: Type | ActivityOption, raiseContainer?: ContainerFactory<IContainer>): ActivityContext {
         return createAnnoationContext(ActivityContext, target, raiseContainer);

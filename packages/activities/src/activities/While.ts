@@ -3,7 +3,7 @@ import { ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 import { Input } from '@tsdi/components';
 import { BodyActivity } from './BodyActivity';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 
 /**
@@ -14,7 +14,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ControlActivity}
  */
 @Task('while')
-export class WhileActivity<T> extends ControlerActivity<T> {
+export class WhileActivity<T> extends ControlActivity<T> {
 
     @Input() condition: ConditionActivity;
 

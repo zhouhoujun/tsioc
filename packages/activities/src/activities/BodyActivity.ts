@@ -2,7 +2,7 @@ import { Task } from '../decorators';
 import { ActivityType, ActivityContext } from '../core';
 import { Input } from '@tsdi/components';
 import { isArray, PromiseUtil } from '@tsdi/ioc';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 /**
  * body activity.
@@ -13,7 +13,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @template T
  */
 @Task('[body]')
-export class BodyActivity<T = any> extends ControlerActivity<T> {
+export class BodyActivity<T = any> extends ControlActivity<T> {
 
     private actions: PromiseUtil.ActionHandle<ActivityContext>[];
     @Input('body') activities: ActivityType | ActivityType[];

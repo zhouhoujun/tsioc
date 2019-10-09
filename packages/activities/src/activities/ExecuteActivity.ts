@@ -1,7 +1,7 @@
 import { Task } from '../decorators';
 import { ActivityContext, Activity } from '../core';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 import { isFunction } from '@tsdi/ioc';
 
 /**
@@ -14,7 +14,7 @@ import { isFunction } from '@tsdi/ioc';
  * @template T
  */
 @Task('execute')
-export class ExecuteActivity<T> extends ControlerActivity<T> {
+export class ExecuteActivity<T> extends ControlActivity<T> {
 
     @Input('action')  action: (ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>;
 

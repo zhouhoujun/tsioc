@@ -3,7 +3,7 @@ import { BodyActivity } from './BodyActivity';
 import { ActivityContext } from '../core';
 import { ConditionActivity } from './ConditionActivity';
 import { Input } from '@tsdi/components';
-import { ControlerActivity } from './ControlerActivity';
+import { ControlActivity } from './ControlActivity';
 
 
 
@@ -15,7 +15,7 @@ import { ControlerActivity } from './ControlerActivity';
  * @extends {ControlActivity}
  */
 @Task('confirm')
-export class ConfirmActivity<T> extends ControlerActivity<T> {
+export class ConfirmActivity<T> extends ControlActivity<T> {
 
     @Input() condition: ConditionActivity;
 
