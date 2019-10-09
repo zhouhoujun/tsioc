@@ -64,7 +64,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
 
         let className = lang.getClassName(targetType);
-        adviceMetas = adviceMetas || refs.getMetadata<AdviceMetadata>(Advice, targetType, 'method');
+        adviceMetas = adviceMetas || refs.getMethodMetadata<AdviceMetadata>(Advice, targetType);
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
