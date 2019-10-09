@@ -2,7 +2,7 @@ import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
-import { Task, Activity, ControlerActivity } from '@tsdi/activities';
+import { Task, Activity, ControlActivity } from '@tsdi/activities';
 
 /**
  * Task Log
@@ -62,7 +62,7 @@ export class ActionLogAspect extends LoggerAspect {
 @Aspect({
     annotation: Task,
     within: Activity,
-    without: ControlerActivity,
+    without: ControlActivity,
     singleton: true
 })
 export class TaskLogAspect extends ActionLogAspect {
@@ -82,7 +82,7 @@ export class TaskLogAspect extends ActionLogAspect {
  */
 @Aspect({
     annotation: Task,
-    within: ControlerActivity,
+    within: ControlActivity,
     singleton: true
 })
 export class TaskControlLogAspect extends ActionLogAspect {
