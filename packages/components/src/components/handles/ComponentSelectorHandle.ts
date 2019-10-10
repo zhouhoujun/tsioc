@@ -27,7 +27,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
         }
     }
 
-    protected getSelector(template: any, refSelector: RefSelector): any {
+    protected getSelector(template: any, refSelector?: RefSelector): any {
         return template ? template[refSelector.getComponentSelector()] : null
     }
 
