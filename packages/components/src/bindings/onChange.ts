@@ -42,7 +42,7 @@ export namespace observe {
      * @param {(vaule?: any, old?: any, target?: any, prop?: string) => void} onChange change handle.
      * @returns
      */
-    export function onPropertyChange<T extends Object = any>(target: T, property: string | ((tag: T) => any), onChange: (vaule?: any, old?: any, target?: T, prop?: string) => void) {
+    export function onPropertyChange<T extends Object = any>(target: T, property: string | ((tag: T) => any), onChange: (vaule?: any, old?: any, target?: T, prop?: string) => void, changed?: (target?: T, prop?: string, vaule?: any, old?: any) => void) {
         let evt: Events;
         if (!events.has(target)) {
             evt = new Events();
@@ -96,8 +96,11 @@ export namespace observe {
         }
 
         evt.on(BindEventType.fieldChanged, (tg, prop, val, old) => {
-            if (target === tg && prop === propName) {
-                onChange(val, old, tg, prop);
+            if (target === tg) {
+                if (prop === propName) {
+                    onChange(val, old, tg, prop);
+                }
+                changed && changed(tg, prop, val, old);
             }
         });
 
@@ -112,7 +115,7 @@ export namespace observe {
      * @param {(string | ((tag: T) => any))} property
      * @param {(vaule?: any, old?: any, target?: T, prop?: string) => void} callback
      */
-    export function onChanged<T extends Object = any>(target: T, property: string | ((tag: T) => any), callback: (vaule?: any, old?: any, target?: T, prop?: string) => void) {
-        onPropertyChange(target, property, callback);
+    export function onChanged<T extends Object = any>(target: T, property: string | ((tag: T) => any), callback: (vaule?: any, old?: any, target?: T, prop?: string) => void, changed?: (target?: T, prop?: string, vaule?: any, old?: any) => void) {
+        onPropertyChange(target, property, callback, changed);
     }
 }

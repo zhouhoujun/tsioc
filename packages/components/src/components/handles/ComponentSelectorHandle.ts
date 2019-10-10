@@ -27,8 +27,12 @@ export class ComponentSelectorHandle extends TemplateHandle {
         }
     }
 
+    protected getSelector(template: any, refSelector: RefSelector): any {
+        return template ? template[refSelector.getComponentSelector()] : null
+    }
+
     protected getComponent(ctx: TemplateContext, template: any, refSelector: RefSelector): Type {
-        let selector = template ? template[refSelector.getComponentSelector()] : null;
+        let selector = this.getSelector(template, refSelector);
         if (selector) {
             let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
             if (isString(selector) && mgr.has(selector)) {
