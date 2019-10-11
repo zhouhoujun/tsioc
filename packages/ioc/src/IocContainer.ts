@@ -255,13 +255,9 @@ export class IocContainer implements IIocContainer {
             }
             this.provideTypes.set(provideKey, provider);
         } else if (isToken(provider)) {
-            let token = provider;
-            while (this.provideTypes.has(token) && !isClass(token)) {
-                token = this.provideTypes.get(token);
-                if (isClass(token)) {
-                    this.provideTypes.set(provideKey, token);
-                    break;
-                }
+            let token = this.provideTypes.get(provider);
+            if (isClass(token)) {
+                this.provideTypes.set(provideKey, token);
             }
         }
 

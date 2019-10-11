@@ -3,7 +3,7 @@ import {
     CreateInstanceAction, ConstructorArgsAction,
     IocBeforeConstructorScope, IocAfterConstructorScope,
     RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
-    InstanceCheckAction, RuntimeDecoratorAction, GetSingletionAction
+    RuntimeDecoratorAction, GetSingletionAction
 } from './runtime';
 import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RegisterLifeScope } from './RegisterLifeScope';
@@ -20,15 +20,14 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     execute(ctx: RuntimeActionContext, next?: () => void): void {
         let raiseContainer = ctx.getRaiseContainer();
-        if (raiseContainer === this.container) {
+        if (!ctx.target && raiseContainer === this.container) {
             super.execute(ctx, next);
         }
     }
 
     setup() {
         this.container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(this.container));
-        this.registerAction(InstanceCheckAction)
-            .registerAction(RuntimeDecoratorAction)
+        this.registerAction(RuntimeDecoratorAction)
             .registerAction(RuntimeParamScope, true);
 
         this.use(InitReflectAction)

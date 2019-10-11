@@ -11,7 +11,6 @@ export * from './RuntimeParamScope';
 export * from './IocBeforeConstructorScope';
 export * from './IocAfterConstructorScope';
 
-export * from './InstanceCheckAction';
 export * from './BindDeignParamTypeAction';
 export * from './BindParameterTypeAction';
 export * from './InjectPropertyAction';
