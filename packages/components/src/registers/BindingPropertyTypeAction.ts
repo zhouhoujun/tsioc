@@ -42,6 +42,10 @@ export class BindingPropertyTypeAction extends IocDesignAction {
                             binding.decorator = prop.decorator;
                         }
 
+                        if (!binding.direction) {
+                            binding.direction = prop.direction;
+                        }
+
                         if (!binding.provider) {
                             binding.provider = this.container.getToken(prop.provider || prop.type, prop.alias);
                         }

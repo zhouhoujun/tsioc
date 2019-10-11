@@ -17,6 +17,16 @@ export enum BindingTypes {
     dynamic
 }
 
+/**
+ * binding direction.
+ *
+ * @export
+ * @enum {number}
+ */
+export enum BindingDirection {
+    input = 1,
+    output
+}
 
 /**
  * binding.
@@ -26,6 +36,7 @@ export enum BindingTypes {
  * @template T
  */
 export interface IBinding<T = any> {
+
     /**
      * binding property name.
      *
@@ -82,6 +93,13 @@ export interface IBinding<T = any> {
      * @memberof IBinding
      */
     decorator?: string;
+    /**
+     * binding direction.
+     *
+     * @type {BindingDirections}
+     * @memberof IBinding
+     */
+    direction?: BindingDirection;
 }
 
 /**

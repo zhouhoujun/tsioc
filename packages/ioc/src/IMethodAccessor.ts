@@ -58,4 +58,7 @@ export interface IMethodAccessor {
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[];
 }
 
-export const MethodAccessorToken = new InjectToken<IMethodAccessor>('ioc__methodAccessor');
+/**
+ * method accessor.
+ */
+export const MethodAccessorToken = new InjectToken<IMethodAccessor>('__ioc__methodAccessor');

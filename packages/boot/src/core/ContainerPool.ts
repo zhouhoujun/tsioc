@@ -108,8 +108,8 @@ export class ContainerPool implements IContainerPool {
             return;
         }
         if (!container.has(ContainerPoolToken)) {
-            container.bindProvider(ContainerPoolToken, () => this);
             container.bindProvider(ContainerPool, () => this);
+            container.bindProvider(ContainerPoolToken, ContainerPool);
         }
         parent = parent || this.root;
         if (parent !== container) {

@@ -1,4 +1,4 @@
-import { BindingTypes } from '../bindings';
+import { BindingTypes, BindingDirection } from '../bindings';
 import { ParamPropMetadata } from '@tsdi/ioc';
 
 /**
@@ -9,6 +9,7 @@ import { ParamPropMetadata } from '@tsdi/ioc';
  * @extends {ParamPropMetadata}
  */
 export interface BindingPropertyMetadata extends ParamPropMetadata {
+
     /**
      * binding name.s
      *
@@ -30,4 +31,12 @@ export interface BindingPropertyMetadata extends ParamPropMetadata {
      * @memberof BindingPropertyMetadata
      */
     bindingType?: BindingTypes;
+
+    /**
+     * binding direction.
+     *
+     * @type {BindingDirections}
+     * @memberof IBinding
+     */
+    direction?: BindingDirection;
 }

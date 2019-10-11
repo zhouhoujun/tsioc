@@ -1,5 +1,6 @@
 import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
+import { BindingDirection } from '../bindings';
 
 /**
  * Input decorator.
@@ -75,4 +76,6 @@ export const Input: InputPropertyDecorator = createPropDecorator<BindingProperty
     (ctx, next) => {
         ctx.metadata.defaultValue = ctx.currArg;
     }
-]);
+], meta => {
+    meta.direction = BindingDirection.input;
+});

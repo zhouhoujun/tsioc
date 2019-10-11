@@ -1,7 +1,7 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { isNullOrUndefined, lang, isString, isArray, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
-import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding } from '../bindings';
+import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
 import { HandleRegisterer, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -25,6 +25,10 @@ export class BindingValueScope extends ParsersHandle {
     }
 }
 
+const bindPref = 'binding:';
+const twobindPref = 'binding=:';
+const two2bindPref = '[(binding)]:';
+const eventBindPref = '(binding):'
 /**
  * binding scope handle.
  *
@@ -45,12 +49,20 @@ export class BindingScopeHandle extends ParseHandle {
                 await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
             } else {
                 let exp = ctx.bindExpression.trim();
-                if (exp.startsWith('binding:')) {
-                    let bindingField = ctx.bindExpression.replace('binding:', '').trim();
-                    ctx.dataBinding = new OneWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
-                } else if (exp.startsWith('binding=:')) {
-                    let bindingField = ctx.bindExpression.replace('binding=:', '').trim();
-                    ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
+                if (ctx.binding.direction === BindingDirection.input) {
+                    if (exp.startsWith(bindPref)) {
+                        let bindingField = ctx.bindExpression.replace(bindPref, '').trim();
+                        ctx.dataBinding = new OneWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
+                    } else if (exp.startsWith(twobindPref)) {
+                        let bindingField = ctx.bindExpression.replace(twobindPref, '').trim();
+                        ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
+                    } else if (exp.startsWith(two2bindPref)) {
+                        let bindingField = ctx.bindExpression.replace(two2bindPref, '').trim();
+                        ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
+                    }
+                } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
+                    let expression = ctx.bindExpression.replace(eventBindPref, '').trim();
+                    ctx.dataBinding = new EventBinding(this.container, ctx.scope, ctx.binding, expression);
                 }
             }
         }
