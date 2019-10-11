@@ -1,4 +1,4 @@
-import { ClassType, ObjectMap } from '../types';
+import { ClassType, ObjectMap, Type } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { DecoratorProvider } from './DecoratorProvider';
 import { IIocContainer } from '../IIocContainer';
@@ -12,6 +12,9 @@ import {
 } from '../factories/DecoratorFactory';
 import { MetadataAccess, IMetadataAccess } from './MetadataAccess';
 import { isUndefined } from '../utils';
+import { ParamProviders } from '../providers/types';
+import { IParameter } from '../IParameter';
+import { MethodAccessorToken } from '../IMethodAccessor';
 
 
 /**
@@ -198,6 +201,43 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     getParamerterNames(target: ClassType<any>, propertyKey: string): string[];
     getParamerterNames(target: ClassType<any>, propertyKey?: string): any {
         return getParamerterNames(target, propertyKey);
+    }
+
+    getParamProviders<T>(type: ClassType<T>, propertyKey: string): ParamProviders[] {
+        let tref = this.get(type);
+        if (tref.methodParamProviders) {
+            return tref.methodParamProviders.get(propertyKey) || [];
+        }
+        return [];
+    }
+
+    /**
+     * get type class constructor parameters.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @returns {IParameter[]}
+     * @memberof TypeReflects
+     */
+    getParameters<T>(type: Type<T>): IParameter[];
+    /**
+     * get method parameters of type.
+     *
+     * @template T
+     * @param {Type<T>} type
+     * @param {T} instance
+     * @param {string} propertyKey
+     * @returns {IParameter[]}
+     * @memberof TypeReflects
+     */
+    getParameters<T>(type: Type<T>, instance: T, propertyKey: string): IParameter[];
+    getParameters<T>(type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
+        propertyKey = propertyKey || 'constructor';
+        let targetReflect = this.get(type);
+        if (targetReflect && targetReflect.methodParams.has(propertyKey)) {
+            return targetReflect.methodParams.get(propertyKey) || [];
+        }
+        return this.container.get(MethodAccessorToken).getParameters(this.container, type, instance, propertyKey);
     }
 
 }

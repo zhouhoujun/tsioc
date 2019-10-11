@@ -1,7 +1,7 @@
 export * from './IResolver';
 export * from './IIocContainer';
 export * from './IocContainer';
-
+export * from './IMethodAccessor';
 export * from './IocCoreService';
 export * from './Registration';
 export * from './types';

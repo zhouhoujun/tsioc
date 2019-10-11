@@ -95,7 +95,7 @@ export class ProxyMethod implements IProxyMethod {
                     fullName: fullName,
                     provJoinpoint: provJoinpoint,
                     annotations: provJoinpoint ? null : this.reflects.getMetadatas(targetType, methodName, 'method'),
-                    params: lifeScope.getMethodParameters(this.container, targetType, target, methodName),
+                    params: this.reflects.getParameters(targetType, target, methodName),
                     args: args,
                     target: target,
                     targetType: targetType

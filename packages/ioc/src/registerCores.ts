@@ -5,6 +5,7 @@ import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
     IocSingletonManager, ResolveLifeScope, ActionRegisterer
 } from './actions';
+import { MethodAccessorToken } from './IMethodAccessor';
 
 /**
  * register core for container.
@@ -24,6 +25,7 @@ export function registerCores(container: IIocContainer) {
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));
     container.registerSingleton(DecoratorProvider, () => new DecoratorProvider(container));
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());
+    container.bindProvider(MethodAccessorToken, MethodAccessor);
 
     // bing action.
     container.getActionRegisterer()
