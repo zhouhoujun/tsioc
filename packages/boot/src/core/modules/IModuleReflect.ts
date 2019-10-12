@@ -3,5 +3,14 @@ import { ModuleConfigure } from './ModuleConfigure';
 
 export interface IModuleReflect extends ITypeReflect {
     annoDecoractor?: string;
-    getAnnoation?<T extends ModuleConfigure>(): T;
+    baseURL?: string;
+    /**
+     * get annoation.
+     *
+     * @template T
+     * @param {boolean} [clone] default true.
+     * @returns {T}
+     * @memberof IModuleReflect
+     */
+    getAnnoation?<T extends ModuleConfigure>(clone?: boolean): T;
 }

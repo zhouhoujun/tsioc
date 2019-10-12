@@ -1,12 +1,11 @@
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
-import { BootContext, createAnnoationContext } from '@tsdi/boot';
+import { BootContext, createAnnoationContext, IModuleReflect } from '@tsdi/boot';
 import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfigure';
-import { Injectable, Type, Refs, ContainerFactory, isString, isBoolean, isTypeObject, InjectToken } from '@tsdi/ioc';
+import { Injectable, Type, Refs, ContainerFactory, isString, isBoolean, isTypeObject, InjectToken, lang } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { ActivityExecutor } from './ActivityExecutor';
-import { ComponentManager } from '@tsdi/components';
 
 /**
  * workflow context token.
@@ -116,13 +115,13 @@ export class ActivityContext extends BootContext {
     getCurrBaseURL() {
         let baseURL = '';
         if (this.runnable) {
-            let mgr = this.getRaiseContainer().resolve(ComponentManager);
+            let mgr = this.reflects;
             this.runnable.status.scopes.some(s => {
                 if (s.scope.$scopes && s.scope.$scopes.length) {
                     return s.scope.$scopes.some(c => {
-                        let ann = mgr.getAnnoation(c);
-                        if (ann) {
-                            baseURL = ann.baseURL;
+                        let refl = mgr.get<IModuleReflect>(lang.getClass(c));
+                        if (refl && refl.baseURL) {
+                            baseURL = refl.baseURL;
                         }
                         return !!baseURL
                     })

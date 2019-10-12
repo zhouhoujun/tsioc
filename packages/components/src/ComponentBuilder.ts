@@ -31,7 +31,6 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
 
     async resolveNode<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any> {
         let bootTarget = this.resolve(target, options, ...providers);
-
         let pdr = this.container.get(DecoratorProvider);
         let deckey = pdr.getKey(bootTarget);
         if (deckey && pdr.has(deckey, BootTargetAccessor)) {

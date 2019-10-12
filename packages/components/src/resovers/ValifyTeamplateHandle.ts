@@ -5,10 +5,7 @@ import { ComponentManager } from '../ComponentManager';
 export class ValifyTeamplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.target && ctx.composite) {
-
             let mgr = this.container.get(ComponentManager);
-
-            mgr.setAnnoation(ctx.target, ctx.annoation);
             if (ctx.scope) {
                 mgr.setComposite(ctx.scope, ctx.target);
             }

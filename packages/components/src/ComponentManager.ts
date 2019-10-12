@@ -12,12 +12,10 @@ export class ComponentManager {
 
     protected composites: WeakMap<any, any>;
     protected scopes: WeakMap<any, any>;
-    protected annoations: WeakMap<any, ModuleConfigure>;
 
     constructor() {
         this.composites = new WeakMap();
         this.scopes = new WeakMap();
-        this.annoations = new WeakMap();
     }
 
     hasScope(component: any): boolean {
@@ -68,14 +66,6 @@ export class ComponentManager {
         return this.composites.has(component) ? this.composites.get(component) : null;
     }
 
-    setAnnoation(component: any, annoation: ModuleConfigure) {
-        this.annoations.set(component, annoation);
-    }
-
-    getAnnoation(component: any) {
-        return this.annoations.has(component) ? this.annoations.get(component) : null;
-    }
-
     protected forIn(component: any, map: WeakMap<any, any>, action?: (component: any) => void) {
         component = this.composites.get(component);
         while (map.has(component)) {
@@ -109,7 +99,6 @@ export class ComponentManager {
     clear() {
         this.composites = new WeakMap();
         this.scopes = new WeakMap();
-        this.annoations = new WeakMap();
     }
 }
 
