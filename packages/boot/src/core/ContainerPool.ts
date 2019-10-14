@@ -59,8 +59,8 @@ export class ContainerPool implements IContainerPool {
 
     protected initContainer(container: IContainer) {
         container.bindProvider(RootContainerToken, this.root);
-        container.bindProvider(ContainerPoolToken, () => this);
         container.bindProvider(ContainerPool, () => this);
+        container.bindProvider(ContainerPoolToken, ContainerPool);
         if (this.isRoot(container)) {
             container.registerSingleton(HandleRegisterer, () => new HandleRegisterer());
             container.registerSingleton(StartupDecoratorRegisterer, () => new StartupDecoratorRegisterer(container));
