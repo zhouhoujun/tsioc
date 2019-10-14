@@ -22,8 +22,9 @@ export class ModuleContainer extends Container {
         root.iterator((fac, tk) => {
             this.bindProvider(tk, (...providers: ProviderTypes[]) => root.get(tk, ...providers));
         });
-        this.bindProvider(ContainerToken, () => this);
-        this.bindProvider(IocContainerToken, () => this);
+        let fac = () => this;
+        this.bindProvider(ContainerToken, fac);
+        this.bindProvider(IocContainerToken, fac);
     }
 
     init() {

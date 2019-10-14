@@ -14,8 +14,9 @@ import { MethodAccessorToken } from './IMethodAccessor';
  * @param {IIocContainer} container
  */
 export function registerCores(container: IIocContainer) {
-    container.bindProvider(IocContainerToken, container);
-    container.bindProvider(ContainerFactoryToken, () => () => container);
+    let fac = () => container;
+    container.bindProvider(IocContainerToken, fac);
+    container.bindProvider(ContainerFactoryToken, () => fac);
     container.bindProvider(IocSingletonManager, new IocSingletonManager(container));
     container.registerSingleton(ActionRegisterer, () => new ActionRegisterer());
 

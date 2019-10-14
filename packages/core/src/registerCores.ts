@@ -12,7 +12,7 @@ import { ServiceResolveLifeScope, ServicesResolveLifeScope } from './resolves';
 
 export function registerCores(container: IContainer) {
 
-    container.bindProvider(ContainerToken, () => container);
+    container.bindProvider(ContainerToken, container.getFactory());
     if (!container.has(ModuleLoader)) {
         container.register(ModuleLoader);
     }
