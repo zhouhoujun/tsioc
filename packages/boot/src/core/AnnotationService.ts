@@ -5,6 +5,7 @@ import { ModuleConfigure, IModuleReflect } from './modules';
 import { AnnotationServiceToken, IAnnotationService } from './IAnnotationService';
 import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { AnnotationMerger } from './AnnotationMerger';
+import { AnnotationCloner } from './AnnotationCloner';
 
 
 /**
@@ -45,10 +46,14 @@ export class AnnotationService implements IAnnotationService {
             decorator = this.getDecorator(type);
         }
         let annos = this.reflects.getMetadata<ModuleConfigure>(decorator, type);
-        if (this.decProvider.has(decorator, AnnotationMerger)) {
-            return this.decProvider.resolve(decorator, AnnotationMerger).merge(annos);
-        } else {
-            return { ...lang.first(annos) };
+        let merger = this.decProvider.resolve(decorator, AnnotationMerger);
+        let merged = merger ? merger.merge(annos) : lang.first(annos);
+        let annon = { ...merged };
+        let cloner = this.decProvider.resolve(decorator, AnnotationCloner);
+        if (cloner) {
+            annon = cloner.clone(annon);
         }
+        return annon;
+
     }
 }

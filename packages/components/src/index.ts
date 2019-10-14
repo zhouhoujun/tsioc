@@ -9,7 +9,7 @@ export * from './RefSelector';
 export * from './ComponentManager';
 export * from './BootComponentAccessor';
 export * from './SelectorManager';
-export * from './ComponentAnnotationMerger';
+export * from './ComponentAnnotationCloner';
 export * from './IComponentBuilder';
 export * from './ComponentBuilder';
 export * from './ComponentsModule';

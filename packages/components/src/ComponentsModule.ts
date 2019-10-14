@@ -7,15 +7,15 @@ import { Component, Input, Output, RefChild } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory } from './registers';
-import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnotationMerger, AnnoationDesignAction } from '@tsdi/boot';
+import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnotationMerger, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
     BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
-import { ComponentAnnotationMerger } from './ComponentAnnotationMerger';
 import { ComponentBuilder } from './ComponentBuilder';
 import { BootComponentAccessor } from './BootComponentAccessor';
+import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 
 
 /**
@@ -32,7 +32,7 @@ export class ComponentsModule {
         container.register(SelectorManager)
             .register(ComponentManager)
             .register(BootComponentAccessor)
-            .register(ComponentAnnotationMerger);
+            .register(ComponentAnnotationCloner);
 
         container.getActionRegisterer()
             .register(container, ComponentRegisterAction)
@@ -68,7 +68,7 @@ export class ComponentsModule {
             })
             .bindProviders(Component,
                 { provide: BootTargetAccessor, useClass: BootComponentAccessor },
-                { provide: AnnotationMerger, useClass: ComponentAnnotationMerger });
+                { provide: AnnotationCloner, useClass: ComponentAnnotationCloner });
 
         container.resolve(HandleRegisterer)
             .register(container, BindingScope, true)

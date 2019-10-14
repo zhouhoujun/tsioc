@@ -1,5 +1,4 @@
 import { Singleton, Express, isFunction, isBoolean, isArray, Abstract, OnDestroy } from '@tsdi/ioc';
-import { ModuleConfigure } from '@tsdi/boot';
 
 /**
  * component manager.

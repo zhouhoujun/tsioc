@@ -1,6 +1,7 @@
 import { IocDesignAction, DesignActionContext, DecoratorProvider, lang } from '@tsdi/ioc';
 import { AnnotationMerger } from '../AnnotationMerger';
 import { ModuleConfigure, IModuleReflect } from '../modules';
+import { AnnotationCloner } from '../AnnotationCloner';
 
 
 export class AnnoationDesignAction extends IocDesignAction {
@@ -14,16 +15,16 @@ export class AnnoationDesignAction extends IocDesignAction {
         let metas = ctx.reflects.getMetadata(decorator, ctx.targetType);
         if (metas.length) {
             let proder = this.container.get(DecoratorProvider);
+            let merger = proder.resolve(decorator, AnnotationMerger);
+            let merged = merger ? merger.merge(metas) : lang.first(metas);
             if (!tgRef.baseURL) {
-                tgRef.baseURL = lang.first(metas).baseURL
+                tgRef.baseURL = merged.baseURL;
             }
             tgRef.getAnnoation = <T extends ModuleConfigure>() => {
-                let merger = proder.resolve(decorator, AnnotationMerger);
-                let annon: ModuleConfigure;
-                if (merger) {
-                    annon = merger.merge(metas);
-                } else {
-                    annon = { ...lang.first(metas) };
+                let annon = { ...merged };
+                let cloner = proder.resolve(decorator, AnnotationCloner);
+                if (cloner) {
+                    annon = cloner.clone(annon);
                 }
                 return annon as T;
             };

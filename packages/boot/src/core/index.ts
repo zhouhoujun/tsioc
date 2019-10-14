@@ -9,5 +9,6 @@ export * from './messages';
 export * from './ContainerPool';
 export * from './ContainerPoolToken';
 export * from './AnnotationMerger';
+export * from './AnnotationCloner';
 export * from './IAnnotationService';
 export * from './AnnotationService';

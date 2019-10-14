@@ -1,17 +1,16 @@
 import { Singleton, isArray, isFunction, isMetadataObject, lang, isBaseValue } from '@tsdi/ioc';
-import { ModuleConfigure, AnnotationMerger } from '@tsdi/boot';
+import { ModuleConfigure, AnnotationCloner } from '@tsdi/boot';
 
 /**
- * component decorator service.
+ * Component annotation metadata cloner
  *
  * @export
- * @class ComponentDecoratorService
- * @extends {ModuleDecoratorService}
+ * @class ComponentAnnotationCloner
+ * @extends {AnnotationCloner}
  */
 @Singleton()
-export class ComponentAnnotationMerger extends AnnotationMerger {
-    merge(configs: ModuleConfigure[]): ModuleConfigure {
-        let ann = { ...lang.first(configs) };
+export class ComponentAnnotationCloner extends AnnotationCloner {
+    clone(ann: ModuleConfigure): ModuleConfigure {
         if (ann.template) {
             ann.template = this.cloneTemplate(ann.template);
         }
