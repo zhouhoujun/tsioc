@@ -1,6 +1,5 @@
 import { ResolveHandle } from './ResolveHandle';
 import { BuildContext } from './BuildContext';
-import { AnnotationServiceToken } from '../../core';
 
 export class InitResolveModuleHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
@@ -9,18 +8,18 @@ export class InitResolveModuleHandle extends ResolveHandle {
             ctx.reflects = this.container.getTypeReflects();
         }
 
-        if (!ctx.targetReflect) {
-            let reflect = ctx.reflects.get(ctx.type);
-            if (reflect) {
-                ctx.targetReflect = reflect;
-            }
+        if (!ctx.targetReflect && ctx.reflects.has(ctx.type)) {
+            ctx.targetReflect = ctx.reflects.get(ctx.type);
         }
 
-        if (ctx.targetReflect) {
-            if (!ctx.annoation) {
-                ctx.annoation = ctx.targetReflect.getAnnoation ? ctx.targetReflect.getAnnoation() : this.container.get(AnnotationServiceToken).getAnnoation(ctx.type, ctx.targetReflect.decorator);
-            }
+        if (!ctx.annoation && ctx.targetReflect && ctx.targetReflect.getAnnoation) {
+            ctx.annoation = ctx.targetReflect.getAnnoation();
+        }
+
+        if (ctx.annoation) {
             await next();
+        } else {
+            ctx.target = this.resolve(ctx, ctx.type, ...(ctx.providers || []))
         }
     }
 }

@@ -2,7 +2,7 @@ import { ClassType, ObjectMap, Type } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { DecoratorProvider } from './DecoratorProvider';
 import { IIocContainer } from '../IIocContainer';
-import { ITypeReflect } from './ITypeReflect';
+import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import { MetadataTypes, DecoratorTypes, DefineClassTypes } from '../factories';
 import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
@@ -15,6 +15,10 @@ import { isUndefined } from '../utils';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
+import { DesignDecoratorRegisterer, RuntimeDecoratorRegisterer } from '../actions/DecoratorRegisterer';
+import { DesignDecorators } from '../actions/DesignDecorators';
+import { RuntimeDecorators } from '../actions/RuntimeDecorators';
+import { Singleton } from '../decorators';
 
 
 /**
@@ -40,6 +44,32 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
             this.map.set(type, typeInfo);
         }
         return this;
+    }
+
+    create(type: ClassType, info?: ITypeReflect) {
+        if (this.has(type)) {
+            return this.get(type);
+        }
+        let designReger = this.container.get(DesignDecoratorRegisterer);
+        let runtimeReger = this.container.get(RuntimeDecoratorRegisterer);
+        let decs = new TargetDecoractors(
+            new DesignDecorators(type, this, designReger),
+            new RuntimeDecorators(type, this, runtimeReger));
+        let targetReflect: ITypeReflect = {
+            type: type,
+            decorators: decs,
+            defines: new TypeDefine(type),
+            propProviders: new Map(),
+            methodParams: new Map(),
+            methodParamProviders: new Map(),
+            provides: []
+        };
+        targetReflect.singleton = this.hasMetadata(Singleton, type);
+        if (info) {
+            targetReflect = Object.assign(targetReflect, info);
+        }
+        this.set(type, targetReflect);
+        return targetReflect;
     }
 
     get<T extends ITypeReflect>(type: ClassType): T {

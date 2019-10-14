@@ -39,8 +39,8 @@ export class AnnotationService implements IAnnotationService {
 
     getAnnoation(type: ClassType, decorator?: string): ModuleConfigure {
         let reft = this.reflects.get<IModuleReflect>(type);
-        if (reft && reft.getAnnoation) {
-            return reft.getAnnoation();
+        if (reft) {
+            return reft.getAnnoation ? reft.getAnnoation() : {};
         }
         if (!decorator) {
             decorator = this.getDecorator(type);
@@ -48,12 +48,18 @@ export class AnnotationService implements IAnnotationService {
         let annos = this.reflects.getMetadata<ModuleConfigure>(decorator, type);
         let merger = this.decProvider.resolve(decorator, AnnotationMerger);
         let merged = merger ? merger.merge(annos) : lang.first(annos);
-        let annon = { ...merged };
-        let cloner = this.decProvider.resolve(decorator, AnnotationCloner);
-        if (cloner) {
-            annon = cloner.clone(annon);
-        }
-        return annon;
-
+        reft = this.reflects.create(type, <IModuleReflect>{
+            annoDecoractor: decorator,
+            baseURL: merged.baseURL,
+            getAnnoation: () => {
+                let annon = { ...merged };
+                let cloner = this.decProvider.resolve(decorator, AnnotationCloner);
+                if (cloner) {
+                    annon = cloner.clone(annon);
+                }
+                return annon;
+            }
+        });
+        return reft.getAnnoation();
     }
 }

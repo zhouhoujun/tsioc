@@ -18,16 +18,21 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
             ctx.targetReflect = ctx.reflects.get(ctx.module);
         }
 
-        if (!ctx.annoation) {
-            ctx.annoation = (ctx.targetReflect && ctx.targetReflect.getAnnoation) ? ctx.targetReflect.getAnnoation() : this.container.get(AnnotationServiceToken).getAnnoation(ctx.module, ctx.targetReflect.decorator);
+        if (!ctx.annoation && ctx.targetReflect && ctx.targetReflect.getAnnoation) {
+            ctx.annoation = ctx.targetReflect.getAnnoation();
         }
 
         if (ctx.annoation && ctx.annoation.baseURL) {
             ctx.baseURL = ctx.annoation.baseURL;
         }
 
-        if (next) {
-            await next();
+        if (ctx.annoation) {
+            if (ctx.annoation.baseURL) {
+                ctx.baseURL = ctx.annoation.baseURL;
+            }
+            if (next) {
+                await next();
+            }
         }
 
     }

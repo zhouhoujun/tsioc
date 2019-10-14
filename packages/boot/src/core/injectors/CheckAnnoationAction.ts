@@ -18,7 +18,7 @@ export class CheckAnnoationAction extends AnnoationAction {
             ctx.targetReflect = ctx.reflects.get(ctx.module);
         }
         if (!ctx.annoation) {
-            ctx.annoation = (ctx.targetReflect && ctx.targetReflect.getAnnoation) ? ctx.targetReflect.getAnnoation() : this.container.get(AnnotationServiceToken).getAnnoation(ctx.module);
+            ctx.annoation = ctx.targetReflect ? (ctx.targetReflect.getAnnoation ? ctx.targetReflect.getAnnoation() : null) : this.container.get(AnnotationServiceToken).getAnnoation(ctx.module);
         }
         if (ctx.annoation) {
             next();
