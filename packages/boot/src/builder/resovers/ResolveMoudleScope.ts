@@ -2,24 +2,42 @@ import { BuildHandles } from '../../core';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';
-import { InitResolveModuleHandle } from './InitResolveModuleHandle';
 
-
+/**
+ * resolve module scope.
+ *
+ * @export
+ * @class ResolveMoudleScope
+ * @extends {BuildHandles<BuildContext>}
+ */
 export class ResolveMoudleScope extends BuildHandles<BuildContext> {
 
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        // has build module instance.
-        if (!ctx.target) {
-            await super.execute(ctx, next);
+        if (ctx.target) {
+            return;
         }
-        if (next) {
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
+
+        if (!ctx.targetReflect && ctx.reflects.has(ctx.type)) {
+            ctx.targetReflect = ctx.reflects.get(ctx.type);
+        }
+
+        if (!ctx.annoation && ctx.targetReflect && ctx.targetReflect.getAnnoation) {
+            ctx.annoation = ctx.targetReflect.getAnnoation();
+        }
+
+        // has build module instance.
+        await super.execute(ctx);
+        if (ctx.annoation && next) {
             await next();
         }
+
     }
 
     setup() {
-        this.use(InitResolveModuleHandle)
-            .use(ResolveModuleHandle)
+        this.use(ResolveModuleHandle)
             .use(DecoratorBuildHandle);
     }
 }

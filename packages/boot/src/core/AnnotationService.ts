@@ -39,16 +39,20 @@ export class AnnotationService implements IAnnotationService {
 
     getAnnoation(type: ClassType, decorator?: string): ModuleConfigure {
         let reft = this.reflects.get<IModuleReflect>(type);
-        if (reft) {
-            return reft.getAnnoation ? reft.getAnnoation() : {};
+        if (reft && reft.getAnnoation) {
+            return reft.getAnnoation();
         }
         if (!decorator) {
             decorator = this.getDecorator(type);
         }
         let annos = this.reflects.getMetadata<ModuleConfigure>(decorator, type);
+        if (!annos.length) {
+            return null;
+        }
         let merger = this.decProvider.resolve(decorator, AnnotationMerger);
         let merged = merger ? merger.merge(annos) : lang.first(annos);
         reft = this.reflects.create(type, <IModuleReflect>{
+            decorator: decorator,
             annoDecoractor: decorator,
             baseURL: merged.baseURL,
             getAnnoation: () => {

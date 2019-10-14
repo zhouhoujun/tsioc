@@ -1,5 +1,5 @@
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
-import { AnnoationContext, BuildHandles, AnnotationServiceToken } from '../core';
+import { AnnoationContext, BuildHandles } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
 
@@ -22,10 +22,6 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
             ctx.annoation = ctx.targetReflect.getAnnoation();
         }
 
-        if (ctx.annoation && ctx.annoation.baseURL) {
-            ctx.baseURL = ctx.annoation.baseURL;
-        }
-
         if (ctx.annoation) {
             if (ctx.annoation.baseURL) {
                 ctx.baseURL = ctx.annoation.baseURL;
@@ -34,7 +30,6 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
                 await next();
             }
         }
-
     }
     setup() {
         this.use(RegisterAnnoationHandle)

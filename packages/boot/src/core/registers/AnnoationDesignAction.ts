@@ -7,13 +7,14 @@ import { AnnotationCloner } from '../AnnotationCloner';
 export class AnnoationDesignAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let tgRef = ctx.targetReflect as IModuleReflect;
+        if (tgRef.getAnnoation) {
+            return next();
+        }
+
         if (!tgRef.decorator) {
             tgRef.decorator = ctx.currDecoractor;
         }
         tgRef.annoDecoractor = ctx.currDecoractor;
-        if (tgRef.getAnnoation) {
-            return next();
-        }
         let decorator = ctx.currDecoractor || tgRef.decorator;
         let metas = ctx.reflects.getMetadata(decorator, ctx.targetType);
         if (metas.length) {
