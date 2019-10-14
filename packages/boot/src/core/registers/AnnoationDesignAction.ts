@@ -12,19 +12,22 @@ export class AnnoationDesignAction extends IocDesignAction {
         tgRef.annoDecoractor = ctx.currDecoractor;
         let decorator = ctx.currDecoractor || tgRef.decorator;
         let metas = ctx.reflects.getMetadata(decorator, ctx.targetType);
-        let proder = this.container.get(DecoratorProvider);
-        let merger = proder.resolve(decorator, AnnotationMerger);
-        let annon: ModuleConfigure;
-        if (merger) {
-            annon = merger.merge(metas);
-        } else {
-            annon = lang.first(metas);
+        if (metas.length) {
+            let proder = this.container.get(DecoratorProvider);
+            if (!tgRef.baseURL) {
+                tgRef.baseURL = lang.first(metas).baseURL
+            }
+            tgRef.getAnnoation = <T extends ModuleConfigure>() => {
+                let merger = proder.resolve(decorator, AnnotationMerger);
+                let annon: ModuleConfigure;
+                if (merger) {
+                    annon = merger.merge(metas);
+                } else {
+                    annon = { ...lang.first(metas) };
+                }
+                return annon as T;
+            };
         }
-        tgRef.baseURL = annon.baseURL;
-        tgRef.getAnnoation = <T extends ModuleConfigure>(clone = true) => {
-            return (clone ? { ...annon } : annon) as T;
-        };
-
         next();
     }
 }

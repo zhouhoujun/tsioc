@@ -21,8 +21,7 @@ export class BootComponentAccessor extends BootTargetAccessor {
      * @memberof BootComponentAccessor
      */
     getBoot(target: any, raiseContainer: IContainer) {
-        let composite = raiseContainer.resolve(ComponentManager)
-            .getLeaf(target);
+        let composite = raiseContainer.resolve(ComponentManager).getLeaf(target);
         return (isArray(composite) ? lang.first(composite) : composite) || target;
     }
 }
