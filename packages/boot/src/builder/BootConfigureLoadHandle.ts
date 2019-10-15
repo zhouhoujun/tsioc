@@ -2,7 +2,13 @@ import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { ConfigureManager } from '../annotations';
 
-
+/**
+ * boot configure load handle.
+ *
+ * @export
+ * @class BootConfigureLoadHandle
+ * @extends {BootHandle}
+ */
 export class BootConfigureLoadHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         if (!(ctx instanceof BootContext)) {
@@ -19,13 +25,14 @@ export class BootConfigureLoadHandle extends BootHandle {
             mgr.useConfiguration();
         }
 
-        let { deps, baseURL } = await mgr.getConfig();
-        if (deps && deps.length) {
+        let config = await mgr.getConfig();
+        config = ctx.configuration = Object.assign({}, config, ctx.annoation);
+        if (config.deps && config.deps.length) {
             let container = ctx.getRaiseContainer();
-            await container.load(...deps);
+            await container.load(...config.deps);
         }
-        if (baseURL) {
-            ctx.baseURL = baseURL;
+        if (config.baseURL) {
+            ctx.baseURL = config.baseURL;
         }
 
         await next();

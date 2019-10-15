@@ -1,6 +1,6 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { ConfigureRegister, ConfigureManager } from '../annotations';
+import { ConfigureRegister } from '../annotations';
 import { LogConfigureToken } from '@tsdi/logs';
 
 /**
@@ -12,9 +12,7 @@ import { LogConfigureToken } from '@tsdi/logs';
  */
 export class BootConfigureRegisterHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        let mgr = this.resolve(ctx, ConfigureManager);
-        let config = await mgr.getConfig();
-        config = ctx.configuration = Object.assign({}, config, ctx.annoation);
+        let config = ctx.configuration;
         let regs = ctx.getRaiseContainer().getServices(ConfigureRegister);
         if (regs && regs.length) {
             await Promise.all(regs.map(reg => reg.register(config, ctx)));

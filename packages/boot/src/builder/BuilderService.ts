@@ -26,6 +26,9 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     @Inject(ContainerToken)
     protected container: IContainer;
 
+    @Inject()
+    protected reflects: TypeReflects;
+
     setup() {
         this.container.get(HandleRegisterer)
             .register(this.container, ResolveMoudleScope, true)
@@ -45,7 +48,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     async resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
-        let refs = this.container.getTypeReflects();
+        let refs = this.reflects;
         let reflect = refs.get(target);
         if (reflect) {
             let rctx = await this.resolveModule(ctx => {
