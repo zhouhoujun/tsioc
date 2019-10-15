@@ -10,6 +10,9 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
         if (!(ctx instanceof BootContext)) {
             return;
         }
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
         // has build module instance.
         if (!(this.container.has(ctx.module) && ctx.getRaiseContainer().has(ctx.module))) {
             await super.execute(ctx);

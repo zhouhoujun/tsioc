@@ -72,13 +72,6 @@ export class BuildHandles<T extends IBuildContext = IBuildContext> extends Handl
         return this;
     }
 
-    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        if (!ctx.reflects) {
-            ctx.reflects = this.container.getTypeReflects();
-        }
-        await super.execute(ctx, next);
-    }
-
     protected resolveHanlde(ac: Type<BuildHandle<T>>): BuildHandle<T> {
         return this.container.resolve(HandleRegisterer).get(ac)
     }
