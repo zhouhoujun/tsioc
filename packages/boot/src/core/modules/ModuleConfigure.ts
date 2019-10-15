@@ -115,5 +115,5 @@ export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
  * @extends {IModuleMetadata}
  */
 export interface ModuleConfigure extends IModuleMetadata {
-
+    debug?: boolean;
 }

@@ -17,11 +17,6 @@ export class RegForInjectorAction extends InjectorAction {
                     case RegFor.root:
                         pools.getRoot().register(ctx.currType);
                         break;
-                    case RegFor.all:
-                        pools.iterator(c => {
-                            c.register(ctx.currType);
-                        });
-                        break;
                     case RegFor.child:
                         ctx.getRaiseContainer().register(ctx.currType);
                         break;

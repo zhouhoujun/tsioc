@@ -1,4 +1,4 @@
-import { IocCompositeAction } from '@tsdi/ioc';
+import { IocCompositeAction, lang } from '@tsdi/ioc';
 import { AnnoationContext } from '../AnnoationContext';
 import { ContainerPoolToken } from '../ContainerPoolToken';
 import { RegFor } from '../modules';
@@ -7,6 +7,7 @@ import { RegModuleAction } from './RegModuleAction';
 import { RegModuleImportsAction } from './RegModuleImportsAction';
 import { RegModuleProvidersAction } from './RegModuleProvidersAction';
 import { RegModuleResolverAction } from './RegModuleResolverAction';
+import { RegisterFor, RegisterForMetadata } from '../decorators';
 
 /**
  * annoation register scope.
@@ -19,39 +20,32 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext>
     execute(ctx: AnnoationContext, next?: () => void): void {
         let pools = this.container.get(ContainerPoolToken);
         if (!ctx.regFor) {
-            ctx.regFor = ctx.annoation.regFor || RegFor.child;
+            ctx.regFor = ctx.annoation.regFor;
+        }
+        if (!ctx.regFor) {
+            let meta = lang.first(ctx.reflects.getMetadata<RegisterForMetadata>(RegisterFor, ctx.module));
+            ctx.regFor = meta ? meta.regFor : RegFor.child;
         }
 
-        let container = ctx.getRaiseContainer();
         if (ctx.regFor === RegFor.boot) {
             return super.execute(ctx, next);
         }
 
-        let moduleContainers: IContainer[] = [];
+        let container = ctx.getRaiseContainer();
+        let moduleContainer: IContainer;
         switch (ctx.regFor) {
             case RegFor.root:
-                moduleContainers.push(pools.getRoot());
-                break;
-            case RegFor.all:
-                moduleContainers = pools.getContainers();
+                moduleContainer = pools.getRoot();
                 break;
             case RegFor.child:
-                moduleContainers.push(pools.create(container));
+                moduleContainer = pools.create(container);
                 break;
         }
-
-        if (moduleContainers.length === 1) {
-            ctx.setRaiseContainer(moduleContainers[0]);
-            return super.execute(ctx, next);
-        } else if (moduleContainers.length > 1) {
-            moduleContainers.forEach(c => () => {
-                ctx.setRaiseContainer(c);
-                super.execute(ctx);
-            });
-            // reset raise
-            ctx.setRaiseContainer(container);
-            return next();
+        if (moduleContainer) {
+            ctx.setRaiseContainer(moduleContainer);
         }
+
+        return super.execute(ctx, next);
 
     }
 

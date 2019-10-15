@@ -16,4 +16,14 @@ export interface IProviderParser {
      * @memberof IProviderParser
      */
     parse(...providers: ParamProviders[]): ProviderMap;
+
+    /**
+     * parse providers to map.
+     *
+     * @param {ProviderMap} map
+     * @param {...ParamProviders[]} providers
+     * @returns {ProviderMap}
+     * @memberof IProviderParser
+     */
+    parseTo(map: ProviderMap, ...providers: ParamProviders[]): ProviderMap;
 }

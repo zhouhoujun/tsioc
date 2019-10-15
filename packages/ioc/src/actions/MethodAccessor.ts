@@ -1,6 +1,6 @@
 import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
-import { ParamProviders, ProviderParser } from '../providers';
+import { ParamProviders } from '../providers';
 import { isToken, lang, isFunction, isBaseType } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { RuntimeActionContext, RuntimeParamScope } from './runtime';
@@ -79,7 +79,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @memberof MethodAccessor
      */
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
-        let providerMap = container.get(ProviderParser).parse(...providers);
+        let providerMap = container.getProviderParser().parse(...providers);
         return params.map((param, index) => {
             if (param.provider && providerMap.has(param.provider)) {
                 return providerMap.resolve(param.provider);

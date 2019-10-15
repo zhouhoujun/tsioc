@@ -9,14 +9,11 @@ import { Type, isClass, isBaseType, lang, IocCoreService, IIocContainer } from '
  * @returns {boolean}
  */
 export function isValideAspectTarget(targetType: Type, container?: IIocContainer): boolean {
-
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-
     if (container ? container.isExtends(targetType, IocCoreService) : lang.isExtendsClass(targetType, IocCoreService)) {
         return false;
     }
-
     return true;
 }

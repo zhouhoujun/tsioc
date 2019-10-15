@@ -17,9 +17,5 @@ export enum RegFor {
     /**
      * regiser as root module
      */
-    root,
-    /**
-     * register all container in pools.
-     */
-    all
+    root
 }

@@ -20,7 +20,6 @@ export class MessageRegisterAction extends IocDesignAction {
         } else if (after) {
             msgQueue.useAfter(ctx.targetType, after);
         } else {
-
             msgQueue.use(ctx.targetType);
         }
 

@@ -7,7 +7,6 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         PackModule,
         ServerActivitiesModule
     ],
-    // debug: true,
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
