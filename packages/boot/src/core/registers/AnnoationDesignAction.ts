@@ -24,9 +24,12 @@ export class AnnoationDesignAction extends IocDesignAction {
             if (!tgRef.baseURL) {
                 tgRef.baseURL = merged.baseURL;
             }
+            let cloner: AnnotationCloner;
             tgRef.getAnnoation = <T extends ModuleConfigure>() => {
                 let annon = { ...merged };
-                let cloner = proder.resolve(decorator, AnnotationCloner);
+                if (!cloner) {
+                    cloner = proder.resolve(decorator, AnnotationCloner);
+                }
                 if (cloner) {
                     annon = cloner.clone(annon);
                 }

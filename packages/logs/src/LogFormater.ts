@@ -2,8 +2,8 @@ import {
     Singleton, isString, isNull, IParameter, isDate, isFunction,
     isArray, isClass, InjectToken, lang, Token
 } from '@tsdi/ioc';
-import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
 import { Container } from '@tsdi/core';
+import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
 
 
 /**

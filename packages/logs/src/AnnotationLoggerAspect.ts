@@ -1,8 +1,8 @@
+import { Singleton, Inject } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Aspect, Joinpoint, Pointcut } from '@tsdi/aop';
 import { LoggerMetadata } from './decorators/Logger';
 import { LoggerAspect } from './LoggerAspect';
-import { Singleton, Inject } from '@tsdi/ioc';
 
 /**
  * Annotation logger aspect. log for class or method with @Logger decorator.

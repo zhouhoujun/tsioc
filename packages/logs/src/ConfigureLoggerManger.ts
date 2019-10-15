@@ -1,10 +1,10 @@
 import { IContainer,  ContainerToken } from '@tsdi/core';
-import { Injectable, Inject, isString, Token, Registration, Type, isClass } from '@tsdi/ioc'
+import { Injectable, Inject, isString, Token, Registration, Type, isClass } from '@tsdi/ioc';
+import { NonePointcut } from '@tsdi/aop';
 import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
 import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { ILogger } from './ILogger';
-import { NonePointcut } from '@tsdi/aop';
 
 
 /**

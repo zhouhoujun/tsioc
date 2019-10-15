@@ -1,5 +1,5 @@
-import { RegisterActionContext } from './RegisterActionContext';
 import { IocAction } from './Action';
+import { RegisterActionContext } from './RegisterActionContext';
 import { DecoratorScopeRegisterer } from './DecoratorRegisterer';
 
 

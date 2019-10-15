@@ -75,12 +75,8 @@ export class IocContainer implements IIocContainer {
         return this.getInstance(TypeReflects);
     }
 
-    private _singletons: IocSingletonManager;
     getSingletonManager(): IocSingletonManager {
-        if (!this._singletons) {
-            this._singletons = this.getInstance(IocSingletonManager);
-        }
-        return this._singletons;
+        return this.getInstance(IocSingletonManager);
     }
 
     getCacheManager(): IocCacheManager {
