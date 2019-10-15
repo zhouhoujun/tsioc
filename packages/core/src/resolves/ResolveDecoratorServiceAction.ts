@@ -1,11 +1,11 @@
-import { isClassType, DecoratorProvider } from '@tsdi/ioc';
+import { isClassType } from '@tsdi/ioc';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { ResolveServiceContext } from './ResolveServiceContext';
 
 export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
         if (isClassType(ctx.currTargetType)) {
-            let dprvoider = this.container.get(DecoratorProvider);
+            let dprvoider = this.container.getDecoratorProvider();
             ctx.reflects.getDecorators(ctx.currTargetType, 'class')
                 .some(dec => {
                     if (dprvoider.has(dec)) {

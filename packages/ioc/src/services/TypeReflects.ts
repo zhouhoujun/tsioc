@@ -1,6 +1,5 @@
 import { ClassType, ObjectMap, Type } from '../types';
 import { IocCoreService } from '../IocCoreService';
-import { DecoratorProvider } from './DecoratorProvider';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import { MetadataTypes, DecoratorTypes, DefineClassTypes } from '../factories';
@@ -15,7 +14,6 @@ import { isUndefined } from '../utils';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
-import { DesignDecoratorRegisterer, RuntimeDecoratorRegisterer } from '../actions/DecoratorRegisterer';
 import { DesignDecorators } from '../actions/DesignDecorators';
 import { RuntimeDecorators } from '../actions/RuntimeDecorators';
 import { Singleton } from '../decorators';
@@ -50,11 +48,9 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
         if (this.has(type)) {
             return this.get(type);
         }
-        let designReger = this.container.get(DesignDecoratorRegisterer);
-        let runtimeReger = this.container.get(RuntimeDecoratorRegisterer);
         let decs = new TargetDecoractors(
-            new DesignDecorators(type, this, designReger),
-            new RuntimeDecorators(type, this, runtimeReger));
+            new DesignDecorators(type, this, this.container.getDesignRegisterer()),
+            new RuntimeDecorators(type, this, this.container.getRuntimeRegisterer()));
         let targetReflect: ITypeReflect = {
             type: type,
             decorators: decs,
@@ -82,7 +78,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): boolean;
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): boolean;
     hasMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): boolean {
-        let access = this.container.get(DecoratorProvider).resolve(decorator, MetadataAccess);
+        let access = this.container.getDecoratorProvider().resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }
@@ -146,7 +142,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): T[];
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): T[][];
     getMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): any {
-        let access = this.container.get(DecoratorProvider).resolve(decorator, MetadataAccess);
+        let access = this.container.getDecoratorProvider().resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }

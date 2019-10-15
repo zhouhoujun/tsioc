@@ -10,7 +10,6 @@ import { IocSingletonManager } from '../IocSingletonManager';
  * @extends {IocRuntimeAction}
  */
 export class RegisterSingletionAction extends IocRuntimeAction {
-
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (ctx.targetType && ctx.target && ctx.targetReflect.singleton) {
             let mgr = this.container.get(IocSingletonManager);

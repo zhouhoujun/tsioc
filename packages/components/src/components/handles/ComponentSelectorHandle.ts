@@ -1,4 +1,4 @@
-import { isString, Type, isArray, DecoratorProvider } from '@tsdi/ioc';
+import { isString, Type, isArray } from '@tsdi/ioc';
 import { TemplateHandle, TemplateContext } from '../../parses';
 import { SelectorManager } from '../../SelectorManager';
 import { RefSelector } from '../../RefSelector';
@@ -12,7 +12,7 @@ import { RefSelector } from '../../RefSelector';
  */
 export class ComponentSelectorHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let refSelector = ctx.getRaiseContainer().get(DecoratorProvider).resolve(ctx.decorator, RefSelector);
+        let refSelector = ctx.getRaiseContainer().getDecoratorProvider().resolve(ctx.decorator, RefSelector);
         if (isArray(ctx.template) && ctx.annoation.template === ctx.template) {
             ctx.selector = refSelector.getDefaultCompose();
         } else if (refSelector.isComponentType(ctx.decorator, ctx.template)) {

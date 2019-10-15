@@ -4,14 +4,14 @@ import { DesignActionContext } from './DesignActionContext';
 import { Injectable, Singleton, Providers, Refs, Autorun } from '../../decorators';
 import { BindProviderAction } from './BindProviderAction';
 import { IocAutorunAction } from './IocAutorunAction';
-import { DesignDecoratorRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
+import { DecoratorScopes } from '../DecoratorRegisterer';
 
 export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> {
     setup() {
         this.registerAction(BindProviderAction)
             .registerAction(IocAutorunAction);
 
-        this.container.get(DesignDecoratorRegisterer)
+        this.container.getDesignRegisterer()
             .register(Injectable, DecoratorScopes.Class, BindProviderAction)
             .register(Singleton, DecoratorScopes.Class, BindProviderAction)
             .register(Providers, DecoratorScopes.Class, BindProviderAction)

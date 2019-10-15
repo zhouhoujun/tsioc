@@ -1,4 +1,4 @@
-import { isClass, isArray, isToken, lang } from '../../utils';
+import { isClass, isArray, isToken } from '../../utils';
 import { ParameterMetadata } from '../../metadatas';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
@@ -14,7 +14,6 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
         let propertyKey = ctx.propertyKey || 'constructor';
-
 
         if (ctx.targetReflect.methodParams.has(propertyKey)) {
             return next();
@@ -85,7 +84,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                         }
                     });
                     return false;
-                })
+                });
             }
         }
 

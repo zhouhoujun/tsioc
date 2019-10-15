@@ -3,8 +3,8 @@ import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
-import { TypeReflects } from './services';
-import { ResolveActionContext, ActionRegisterer, ResolveActionOption, IocSingletonManager, IocCacheManager } from './actions';
+import { TypeReflects, DecoratorProvider } from './services';
+import { ResolveActionContext, ActionRegisterer, ResolveActionOption, IocSingletonManager, IocCacheManager, DesignDecoratorRegisterer, RuntimeDecoratorRegisterer } from './actions';
 
 /**
  * IContainer token.
@@ -44,6 +44,12 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     getActionRegisterer(): ActionRegisterer;
+
+    getDesignRegisterer(): DesignDecoratorRegisterer;
+
+    getRuntimeRegisterer(): RuntimeDecoratorRegisterer;
+
+    getDecoratorProvider(): DecoratorProvider;
     /**
      * get provider parser.
      *

@@ -1,4 +1,3 @@
-import { DesignDecoratorRegisterer } from './DecoratorRegisterer';
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { DesignActionContext, DesignDecoratorAction, DesignPropertyScope, DesignMethodScope, DesignAnnoationScope } from './design';
 import { InitReflectAction } from './InitReflectAction';
@@ -14,7 +13,6 @@ import { InitReflectAction } from './InitReflectAction';
 export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
 
     setup() {
-        this.container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(this.container));
         this.registerAction(DesignDecoratorAction);
 
         this.use(InitReflectAction)

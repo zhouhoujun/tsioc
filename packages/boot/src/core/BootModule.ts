@@ -1,6 +1,5 @@
 import {
-    Inject, BindProviderAction, DesignDecoratorRegisterer,
-    IocSetCacheAction, RuntimeDecoratorRegisterer, DesignLifeScope,
+    Inject, BindProviderAction, IocSetCacheAction, DesignLifeScope,
     IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
     RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
     RegisterSingletionAction, IocResolveScope
@@ -58,13 +57,13 @@ export class BootModule {
         registerer.get(IocExtRegisterScope)
             .useBefore(RegForInjectorAction);
 
-        container.get(DesignDecoratorRegisterer)
+        container.getDesignRegisterer()
             .register(DIModule, DecoratorScopes.Injector, DIModuleInjectorScope)
             .register(Annotation, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
             .register(DIModule, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
             .register(Message, DecoratorScopes.Class, BindProviderAction, IocAutorunAction, MessageRegisterAction);
 
-        container.get(RuntimeDecoratorRegisterer)
+        container.getRuntimeRegisterer()
             .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

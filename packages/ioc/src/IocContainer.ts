@@ -8,11 +8,11 @@ import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { TypeReflects } from './services';
+import { TypeReflects, DecoratorProvider } from './services';
 import { IParameter } from './IParameter';
 import {
     RuntimeActionContext, DesignActionContext, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
-    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption, DesignDecoratorRegisterer, RuntimeDecoratorRegisterer
 } from './actions';
 
 
@@ -55,6 +55,18 @@ export class IocContainer implements IIocContainer {
         return this.getInstance(ActionRegisterer);
     }
 
+    getDesignRegisterer(): DesignDecoratorRegisterer {
+        return this.getInstance(DesignDecoratorRegisterer);
+    }
+
+    getRuntimeRegisterer(): RuntimeDecoratorRegisterer {
+        return this.getInstance(RuntimeDecoratorRegisterer);
+    }
+
+    getDecoratorProvider(): DecoratorProvider {
+        return this.getInstance(DecoratorProvider);
+    }
+
     getProviderParser(): IProviderParser {
         return this.getInstance(ProviderParser);
     }
@@ -63,8 +75,12 @@ export class IocContainer implements IIocContainer {
         return this.getInstance(TypeReflects);
     }
 
+    private _singletons: IocSingletonManager;
     getSingletonManager(): IocSingletonManager {
-        return this.getInstance(IocSingletonManager);
+        if (!this._singletons) {
+            this._singletons = this.getInstance(IocSingletonManager);
+        }
+        return this._singletons;
     }
 
     getCacheManager(): IocCacheManager {

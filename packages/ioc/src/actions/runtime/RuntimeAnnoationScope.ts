@@ -1,17 +1,24 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { RuntimeDecoratorRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
+import { DecoratorScopes } from '../DecoratorRegisterer';
 import { Singleton, Injectable } from '../../decorators';
 import { RegisterSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';
 
+/**
+ * runtime annoation action scope.
+ *
+ * @export
+ * @class RuntimeAnnoationScope
+ * @extends {IocRegisterScope<RuntimeActionContext>}
+ */
 export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> {
     setup() {
         this.registerAction(RegisterSingletionAction)
             .registerAction(IocSetCacheAction);
 
-        this.container.get(RuntimeDecoratorRegisterer)
+        this.container.getRuntimeRegisterer()
             .register(Singleton, DecoratorScopes.Class, RegisterSingletionAction)
             .register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
@@ -20,6 +27,13 @@ export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext
     }
 }
 
+/**
+ * runtime annoation decorator action scope.
+ *
+ * @export
+ * @class RuntimeAnnoationDecorScope
+ * @extends {RuntimeDecoratorScope}
+ */
 export class RuntimeAnnoationDecorScope extends RuntimeDecoratorScope {
     protected getDecorScope(): DecoratorScopes {
         return DecoratorScopes.Class;

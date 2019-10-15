@@ -4,8 +4,7 @@ import * as annotations from './annotations';
 import * as runnable from './runnable';
 import * as services from './services';
 import {
-    BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer, Inject,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction
+    BindProviderAction, IocSetCacheAction, Inject, DecoratorScopes, RegisterSingletionAction
 } from '@tsdi/ioc';
 import { DIModuleInjectorScope } from './core';
 import { BuilderService } from './builder';
@@ -18,11 +17,11 @@ export class BootSetup {
         container.register(BuilderService);
         container.use(annotations, runnable, services);
 
-        container.get(DesignDecoratorRegisterer)
+        container.getDesignRegisterer()
             .register(Bootstrap, DecoratorScopes.Class, BindProviderAction)
             .register(Bootstrap, DecoratorScopes.Injector, DIModuleInjectorScope);
 
-        container.get(RuntimeDecoratorRegisterer)
+        container.getRuntimeRegisterer()
             .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
     }

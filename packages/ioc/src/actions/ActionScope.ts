@@ -1,6 +1,15 @@
 import { IocActionContext } from './Action';
 import { IocCompositeAction } from './IocCompositeAction';
 
+/**
+ * action scope.
+ *
+ * @export
+ * @abstract
+ * @class ActionScope
+ * @extends {IocCompositeAction<T>}
+ * @template T
+ */
 export abstract class ActionScope<T extends IocActionContext> extends IocCompositeAction<T> {
     execute(ctx: T, next?: () => void): void {
         let scope = ctx.actionScope;

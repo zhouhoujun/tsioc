@@ -1,7 +1,6 @@
 import {
     Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer, Autorun,
-    RuntimeMethodScope, DesignDecoratorRegisterer, BindProviderAction, RuntimeDecoratorRegisterer,
-    RegisterSingletionAction, DecoratorScopes, RuntimeLifeScope, ConstructorArgsAction
+    RuntimeMethodScope, BindProviderAction, RegisterSingletionAction, DecoratorScopes, RuntimeLifeScope, ConstructorArgsAction
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -64,10 +63,10 @@ export class AopModule {
         registerer.get(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, ConstructorArgsAction);
 
-        container.get(DesignDecoratorRegisterer)
+        container.getDesignRegisterer()
             .register(Aspect, DecoratorScopes.Class, BindProviderAction, RegistAspectAction);
 
-        container.get(RuntimeDecoratorRegisterer)
+        container.getRuntimeRegisterer()
             .register(Aspect, DecoratorScopes.Class, RegisterSingletionAction);
 
     }

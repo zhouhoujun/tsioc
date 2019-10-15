@@ -13,10 +13,7 @@ import { IocRuntimeAction } from './IocRuntimeAction';
 export class IocSetCacheAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
-        if (!ctx.targetReflect.expires || ctx.targetReflect.singleton || !ctx.targetType || !isClass(ctx.targetType)) {
-            return next();
-        }
-        if (ctx.targetReflect.expires <= 0) {
+        if (ctx.targetReflect.singleton || !ctx.targetReflect.expires || ctx.targetReflect.expires <= 0) {
             return next();
         }
         let cacheManager = this.container.getCacheManager();
@@ -25,6 +22,5 @@ export class IocSetCacheAction extends IocRuntimeAction {
         }
         next();
     }
-
 }
 

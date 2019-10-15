@@ -1,7 +1,6 @@
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import {
-    BindProviderAction, IocSetCacheAction, DesignDecoratorRegisterer,
-    RuntimeDecoratorRegisterer, DecoratorScopes, RegisterSingletionAction, Inject, DecoratorProvider
+    BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction, Inject
 } from '@tsdi/ioc';
 import { Component, Input, Output, RefChild } from './decorators';
 import { SelectorManager } from './SelectorManager';
@@ -38,7 +37,7 @@ export class ComponentsModule {
             .register(container, ComponentRegisterAction)
             .register(container, BindingPropertyTypeAction);
 
-        container.get(DecoratorProvider)
+        container.getDecoratorProvider()
             .bindProviders(Input, {
                 provide: BindingCache,
                 useFactory: () => new BindingCacheFactory(ref => {
@@ -83,13 +82,13 @@ export class ComponentsModule {
             .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
 
-        container.resolve(DesignDecoratorRegisterer)
+        container.getDesignRegisterer()
             .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction);
 
-        container.resolve(RuntimeDecoratorRegisterer)
+        container.getRuntimeRegisterer()
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.register(ComponentBuilder);

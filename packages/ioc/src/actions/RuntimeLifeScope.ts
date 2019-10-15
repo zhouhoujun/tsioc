@@ -5,7 +5,6 @@ import {
     RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
     RuntimeDecoratorAction, GetSingletionAction
 } from './runtime';
-import { RuntimeDecoratorRegisterer } from './DecoratorRegisterer';
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { InitReflectAction } from './InitReflectAction';
 
@@ -26,7 +25,6 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
     }
 
     setup() {
-        this.container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(this.container));
         this.registerAction(RuntimeDecoratorAction)
             .registerAction(RuntimeParamScope, true);
 

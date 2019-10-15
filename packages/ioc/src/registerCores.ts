@@ -3,7 +3,7 @@ import { TypeReflects, DecoratorProvider } from './services';
 import { ProviderMap, ProviderParser } from './providers';
 import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
-    IocSingletonManager, ResolveLifeScope, ActionRegisterer
+    IocSingletonManager, ResolveLifeScope, ActionRegisterer, RuntimeDecoratorRegisterer, DesignDecoratorRegisterer
 } from './actions';
 import { MethodAccessorToken } from './IMethodAccessor';
 
@@ -19,6 +19,8 @@ export function registerCores(container: IIocContainer) {
     container.bindProvider(ContainerFactoryToken, () => fac);
     container.bindProvider(IocSingletonManager, new IocSingletonManager(container));
     container.registerSingleton(ActionRegisterer, () => new ActionRegisterer());
+    container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(container));
+    container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(container));
 
     container.registerSingleton(TypeReflects, () => new TypeReflects(container));
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));

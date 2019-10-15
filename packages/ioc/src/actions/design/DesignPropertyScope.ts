@@ -1,7 +1,7 @@
 import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { DesignActionContext } from './DesignActionContext';
 import { IocRegisterScope } from '../IocRegisterScope';
-import { DesignDecoratorRegisterer, DecoratorScopes } from '../DecoratorRegisterer';
+import { DecoratorScopes } from '../DecoratorRegisterer';
 import { BindPropertyTypeAction } from './BindPropertyTypeAction';
 import { Inject, AutoWired } from '../../decorators';
 
@@ -10,7 +10,7 @@ export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> {
     setup() {
         this.registerAction(BindPropertyTypeAction);
 
-        this.container.get(DesignDecoratorRegisterer)
+        this.container.getDesignRegisterer()
             .register(Inject, DecoratorScopes.Property, BindPropertyTypeAction)
             .register(AutoWired, DecoratorScopes.Property, BindPropertyTypeAction);
 
