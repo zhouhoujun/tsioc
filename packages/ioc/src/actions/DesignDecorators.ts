@@ -1,4 +1,4 @@
-import { TypeDecorators } from './DecoratorRegisterer';
+import { TypeDecorators } from './DecoratorsRegisterer';
 import { IDesignDecorators } from '../services';
 import { ObjectMap } from '../types';
 

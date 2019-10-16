@@ -4,7 +4,7 @@ import { DesignActionContext } from './DesignActionContext';
 import { Injectable, Singleton, Providers, Refs, Autorun } from '../../decorators';
 import { BindProviderAction } from './BindProviderAction';
 import { IocAutorunAction } from './IocAutorunAction';
-import { DecoratorScopes, DesignRegisterer } from '../DecoratorRegisterer';
+import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
 
 export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> {
     setup() {

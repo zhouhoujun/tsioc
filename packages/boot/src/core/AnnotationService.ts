@@ -31,7 +31,7 @@ export class AnnotationService implements IAnnotationService {
         } else if (reft && reft.decorators.design) {
             keys = reft.decorators.design.classDecors;
         } else {
-            keys = this.reflects.getDecorators(type, 'class');
+            keys = this.reflects.getDecorators(type);
         }
 
         return keys.find(d => this.register.has(d, DecoratorScopes.Class, AnnoationDesignAction));

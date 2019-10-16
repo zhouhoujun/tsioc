@@ -1,6 +1,6 @@
 import { IocAction } from './Action';
 import { RegisterActionContext } from './RegisterActionContext';
-import { DecoratorScopeRegisterer } from './DecoratorRegisterer';
+import { DecoratorsRegisterer } from './DecoratorsRegisterer';
 
 
 /**
@@ -25,6 +25,6 @@ export abstract class ExecDecoratorAtion extends IocAction<RegisterActionContext
             next && next();
         }
     }
-    protected abstract getScopeRegisterer(): DecoratorScopeRegisterer;
+    protected abstract getScopeRegisterer(): DecoratorsRegisterer;
 }
 

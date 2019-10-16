@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorRegisterer';
+import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
 import { Inject, AutoWired, Param } from '../../decorators';
 import { BindParameterTypeAction } from './BindParameterTypeAction';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';

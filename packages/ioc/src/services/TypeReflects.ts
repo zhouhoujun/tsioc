@@ -10,7 +10,7 @@ import {
     getMethodDecorators, getPropDecorators, getParamDecorators
 } from '../factories/DecoratorFactory';
 import { MetadataAccess, IMetadataAccess } from './MetadataAccess';
-import { isUndefined } from '../utils';
+import { isUndefined, isBoolean } from '../utils';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
@@ -125,7 +125,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     getMethodMetadata<T = any>(decorator: string | Function, target: any): ObjectMap<T[]>;
     getMethodMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string): T[]
     getMethodMetadata(decorator: string | Function, target: any, propertyKey?: string): any {
-        return propertyKey ? this.getMetadata(decorator, target, propertyKey, 'method') : this.getMetadata(decorator, target, 'method')
+        return propertyKey ? this.getMetadata(decorator, target, propertyKey, 'method') : this.getMetadata(decorator, target, 'method');
     }
 
     getPropertyMetadata<T = any>(decorator: string | Function, target: any): ObjectMap<T[]>;
@@ -174,23 +174,37 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
         }
     }
 
-    getDecorators(target: ClassType, type: DefineClassTypes): string[]
-    getDecorators(target: ClassType, type: 'parameter', propertyKey?: string): string[]
-    getDecorators(target: ClassType, type: DecoratorTypes, propertyKey?: string): string[] {
-        let tgref = this.get(target);
+    getDecorators(target: ClassType): string[];
+    getDecorators(target: ClassType, cache: boolean): string[];
+    getDecorators(target: ClassType, type: DefineClassTypes): string[];
+    getDecorators(target: ClassType, type: DefineClassTypes, cache: boolean): string[];
+    getDecorators(target: ClassType, type: 'parameter', propertyKey?: string, cache?: boolean): string[];
+    getDecorators(target: ClassType, type?: any, propertyKey?: any, cache?: boolean): string[] {
+        if (isBoolean(type)) {
+            cache = type;
+            type = undefined;
+        }
+        if (isBoolean(propertyKey)) {
+            cache = propertyKey;
+            propertyKey = undefined;
+        }
+        let tgref = cache !== false ? this.get(target) : null;
         let decorators: string[];
+        if (!type) {
+            type = 'class';
+        }
         switch (type) {
             case 'class':
-                decorators = (tgref && tgref.decorators) ? tgref.decorators.classDecors : getClassDecorators(target);
+                decorators = tgref ? tgref.decorators.classDecors : getClassDecorators(target);
                 break;
             case 'method':
-                decorators = (tgref && tgref.decorators) ? tgref.decorators.methodDecors : getMethodDecorators(target);
+                decorators = tgref ? tgref.decorators.methodDecors : getMethodDecorators(target);
                 break;
             case 'property':
-                decorators = (tgref && tgref.decorators) ? tgref.decorators.propsDecors : getPropDecorators(target);
+                decorators = tgref ? tgref.decorators.propsDecors : getPropDecorators(target);
                 break;
             case 'parameter':
-                decorators = (tgref && tgref.decorators) ? tgref.decorators.runtime.getParamDecors(propertyKey, target) : getParamDecorators(target, propertyKey);
+                decorators = tgref ? tgref.decorators.runtime.getParamDecors(propertyKey, target) : getParamDecorators(target, propertyKey);
                 break;
         }
         return decorators || [];

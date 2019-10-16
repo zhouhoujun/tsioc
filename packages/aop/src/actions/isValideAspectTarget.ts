@@ -10,11 +10,8 @@ import { NonePointcut } from '../decorators';
  * @returns {boolean}
  */
 export function isValideAspectTarget(targetType: Type, reflects: TypeReflects): boolean {
-    if (!isClass(targetType)) {
+    if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-    if (reflects.hasMetadata(NonePointcut, targetType)) {
-        return false;
-    }
-    return !isBaseType(targetType);
+    return !reflects.hasMetadata(NonePointcut, targetType);
 }

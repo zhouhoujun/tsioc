@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScopes } from '../DecoratorRegisterer';
+import { DecoratorScopes } from '../DecoratorsRegisterer';
 
 /**
  * ioc register actions scope run after constructor.

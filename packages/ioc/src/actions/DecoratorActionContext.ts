@@ -1,5 +1,5 @@
 import { IocRaiseContext } from './Action';
-import { DecoratorScopes } from './DecoratorRegisterer';
+import { DecoratorScopes } from './DecoratorsRegisterer';
 
 export class DecoratorActionContext extends IocRaiseContext {
     /**

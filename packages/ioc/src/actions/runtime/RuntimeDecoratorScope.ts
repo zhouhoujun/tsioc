@@ -1,5 +1,5 @@
 
-import { DecoratorScopeRegisterer, DecoratorScopes, RuntimeRegisterer } from '../DecoratorRegisterer';
+import { DecoratorsRegisterer, DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
@@ -97,7 +97,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
         return ctx.afterCstrDecors;
     }
 
-    protected getScopeRegisterer(): DecoratorScopeRegisterer {
+    protected getScopeRegisterer(): DecoratorsRegisterer {
         return this.container.getInstance(RuntimeRegisterer);
     }
 

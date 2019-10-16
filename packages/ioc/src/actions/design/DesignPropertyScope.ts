@@ -1,7 +1,7 @@
 import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { DesignActionContext } from './DesignActionContext';
 import { IocRegisterScope } from '../IocRegisterScope';
-import { DecoratorScopes, DesignRegisterer } from '../DecoratorRegisterer';
+import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
 import { BindPropertyTypeAction } from './BindPropertyTypeAction';
 import { Inject, AutoWired } from '../../decorators';
 

@@ -1,5 +1,5 @@
 import { IHandle } from './Handle';
-import { PromiseUtil, DecoratorScopeRegisterer } from '@tsdi/ioc';
+import { PromiseUtil, DecoratorsRegisterer } from '@tsdi/ioc';
 import { IocBuildDecoratorRegisterer } from './IocBuildDecoratorRegisterer';
 
 /**
@@ -36,10 +36,10 @@ export enum StartupScopes {
  *
  * @export
  * @class StartupDecoratorRegisterer
- * @extends {DecoratorScopeRegisterer<T, PromiseUtil.ActionHandle>}
+ * @extends {DecoratorsRegisterer<T, PromiseUtil.ActionHandle>}
  * @template T
  */
-export class StartupDecoratorRegisterer<T extends IHandle = IHandle> extends DecoratorScopeRegisterer<T, PromiseUtil.ActionHandle> {
+export class StartupDecoratorRegisterer<T extends IHandle = IHandle> extends DecoratorsRegisterer<T, PromiseUtil.ActionHandle> {
 
     protected createRegister(): IocBuildDecoratorRegisterer<T> {
         return new IocBuildDecoratorRegisterer();

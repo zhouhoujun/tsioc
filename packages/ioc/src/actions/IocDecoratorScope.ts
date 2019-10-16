@@ -1,7 +1,7 @@
 import { ObjectMap } from '../types';
 import { IocCompositeAction } from './IocCompositeAction';
 import { DecoratorActionContext } from './DecoratorActionContext';
-import { DecoratorScopes, DecoratorScopeRegisterer } from './DecoratorRegisterer';
+import { DecoratorScopes, DecoratorsRegisterer } from './DecoratorsRegisterer';
 
 
 export abstract class IocDecoratorScope<T extends DecoratorActionContext> extends IocCompositeAction<T> {
@@ -34,6 +34,6 @@ export abstract class IocDecoratorScope<T extends DecoratorActionContext> extend
     }
 
     protected abstract getState(ctx: T, dtype: DecoratorScopes): ObjectMap<boolean>;
-    protected abstract getScopeRegisterer(): DecoratorScopeRegisterer;
+    protected abstract getScopeRegisterer(): DecoratorsRegisterer;
     protected abstract getDecorScope(): DecoratorScopes;
 }

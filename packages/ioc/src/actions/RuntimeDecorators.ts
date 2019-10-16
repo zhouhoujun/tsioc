@@ -1,4 +1,4 @@
-import { DecoratorScopes, TypeDecorators } from './DecoratorRegisterer';
+import { DecoratorScopes, TypeDecorators } from './DecoratorsRegisterer';
 import { IRuntimeDecorators } from '../services';
 import { ObjectMap } from '../types';
 

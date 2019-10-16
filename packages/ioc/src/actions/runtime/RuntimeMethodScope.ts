@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorRegisterer';
+import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
 import { Autorun } from '../../decorators';
 import { MethodAutorunAction } from './MethodAutorunAction';
 

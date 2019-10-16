@@ -1,6 +1,6 @@
 import { DesignDecoratorAction } from './DesignDecoratorAction';
 import { DesignActionContext } from './DesignActionContext';
-import { DecoratorScopeRegisterer, DecoratorScopes, DesignRegisterer } from '../DecoratorRegisterer';
+import { DecoratorsRegisterer, DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 
@@ -17,7 +17,7 @@ export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActio
         }
         return null;
     }
-    protected getScopeRegisterer(): DecoratorScopeRegisterer {
+    protected getScopeRegisterer(): DecoratorsRegisterer {
         return this.container.getInstance(DesignRegisterer);
     }
 
