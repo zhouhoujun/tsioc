@@ -1,10 +1,10 @@
 import { Type, Token, Factory, ClassType, SymbolType } from './types';
 import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
-import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
+import { ParamProviders, ProviderTypes } from './providers';
 import { IParameter } from './IParameter';
-import { TypeReflects, DecoratorProvider } from './services';
-import { ResolveActionContext, ActionRegisterer, ResolveActionOption, IocSingletonManager, IocCacheManager, DesignRegisterer, RuntimeRegisterer } from './actions';
+import { TypeReflects } from './services';
+import { ResolveActionContext, ResolveActionOption } from './actions';
 
 /**
  * IContainer token.

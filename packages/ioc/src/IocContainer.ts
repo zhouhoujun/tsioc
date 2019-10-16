@@ -12,7 +12,7 @@ import { TypeReflects } from './services';
 import { IParameter } from './IParameter';
 import {
     RuntimeActionContext, DesignActionContext, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
-    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption, DesignRegisterer, RuntimeRegisterer
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption
 } from './actions';
 
 
