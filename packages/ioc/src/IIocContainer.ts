@@ -4,7 +4,7 @@ import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects, DecoratorProvider } from './services';
-import { ResolveActionContext, ActionRegisterer, ResolveActionOption, IocSingletonManager, IocCacheManager, DesignDecoratorRegisterer, RuntimeDecoratorRegisterer } from './actions';
+import { ResolveActionContext, ActionRegisterer, ResolveActionOption, IocSingletonManager, IocCacheManager, DesignRegisterer, RuntimeRegisterer } from './actions';
 
 /**
  * IContainer token.
@@ -37,40 +37,6 @@ export interface IIocContainer extends IResolverContainer {
      */
     getFactory<T extends IIocContainer>(): ContainerFactory<T>;
 
-    /**
-     * get action registerer.
-     *
-     * @returns {ActionRegisterer}
-     * @memberof IIocContainer
-     */
-    getActionRegisterer(): ActionRegisterer;
-
-    getDesignRegisterer(): DesignDecoratorRegisterer;
-
-    getRuntimeRegisterer(): RuntimeDecoratorRegisterer;
-
-    getDecoratorProvider(): DecoratorProvider;
-    /**
-     * get provider parser.
-     *
-     * @returns {IProviderParser}
-     * @memberof IIocContainer
-     */
-    getProviderParser(): IProviderParser;
-    /**
-     * get singleton manager.
-     *
-     * @returns {IocSingletonManager}
-     * @memberof IIocContainer
-     */
-    getSingletonManager(): IocSingletonManager;
-    /**
-     * get cache manager.
-     *
-     * @returns {IocCacheManager}
-     * @memberof IIocContainer
-     */
-    getCacheManager(): IocCacheManager;
     /**
      * get type reflects manager in current container.
      *

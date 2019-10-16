@@ -1,6 +1,7 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
 import { IocRegisterScope } from '../IocRegisterScope';
+import { ActionRegisterer } from '../ActionRegisterer';
 
 /**
  * resolve constructor args action.
@@ -16,7 +17,7 @@ export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext
             if (ctx.targetReflect.methodParams.has('constructor')) {
                 ctx.params = ctx.targetReflect.methodParams.get('constructor');
             } else {
-                this.container.getActionRegisterer().get(RuntimeParamScope)
+                this.container.getInstance(ActionRegisterer).get(RuntimeParamScope)
                     .execute(ctx);
                 ctx.params = ctx.targetReflect.methodParams.get('constructor');
             }

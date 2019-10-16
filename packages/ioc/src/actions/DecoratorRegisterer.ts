@@ -98,27 +98,30 @@ export abstract class DecoratorScopeRegisterer<T = IocAction, TAction = lang.IAc
  * design decorator register.
  *
  * @export
- * @class DesignDecoratorRegisterer
+ * @class DesignRegisterer
  * @extends {DecoratorScopeRegisterer}
  */
-export class DesignDecoratorRegisterer extends DecoratorScopeRegisterer {
+export class DesignRegisterer extends DecoratorScopeRegisterer {
     protected createRegister(): DecoratorRegisterer {
         return new IocDecoratorRegisterer() as DecoratorRegisterer;
     }
 }
 
+export const DesignDecoratorRegisterer = DesignRegisterer;
+
 /**
  * runtiem decorator registerer.
  *
  * @export
- * @class RuntimeDecoratorRegisterer
+ * @class RuntimeRegisterer
  * @extends {DecoratorScopeRegisterer}
  */
-export class RuntimeDecoratorRegisterer extends DecoratorScopeRegisterer {
+export class RuntimeRegisterer extends DecoratorScopeRegisterer {
     protected createRegister(): DecoratorRegisterer {
         return new IocDecoratorRegisterer() as DecoratorRegisterer;
     }
 }
+export const RuntimeDecoratorRegisterer = RuntimeRegisterer;
 
 /**
  * type decorators.

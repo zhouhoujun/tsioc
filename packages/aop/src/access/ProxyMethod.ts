@@ -1,6 +1,6 @@
 import {
     Singleton, Inject, Type, isFunction, RuntimeLifeScope,
-    ObjectMapProvider, IocContainerToken, IIocContainer, TypeReflects,
+    ObjectMapProvider, IocContainerToken, IIocContainer, TypeReflects, ActionRegisterer,
 } from '@tsdi/ioc';
 import { Advices } from '../advices';
 import { JoinpointState, IPointcut, JoinpointOptionToken, Joinpoint } from '../joinpoints';
@@ -43,7 +43,7 @@ export class ProxyMethod implements IProxyMethod {
     private _lifeScope: RuntimeLifeScope;
     get lifeScope(): RuntimeLifeScope {
         if (!this._lifeScope) {
-            this._lifeScope = this.container.getActionRegisterer().get(RuntimeLifeScope);
+            this._lifeScope = this.container.getInstance(ActionRegisterer).get(RuntimeLifeScope);
         }
         return this._lifeScope;
     }

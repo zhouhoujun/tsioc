@@ -1,4 +1,4 @@
-import { Inject, DecoratorScopes, BindMethodProviderAction } from '@tsdi/ioc';
+import { Inject, DecoratorScopes, BindMethodProviderAction, DesignRegisterer } from '@tsdi/ioc';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { AopModule } from '@tsdi/aop';
 import { Logger } from './decorators/Logger';
@@ -29,7 +29,7 @@ export class LogModule {
         if (!container.has(AopModule)) {
             container.register(AopModule);
         }
-        container.getDesignRegisterer()
+        container.getInstance(DesignRegisterer)
             .register(Logger, DecoratorScopes.Class, BindMethodProviderAction)
             .register(Logger, DecoratorScopes.Method, BindMethodProviderAction);
 

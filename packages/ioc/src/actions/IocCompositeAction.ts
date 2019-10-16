@@ -1,6 +1,7 @@
 import { lang, isBoolean, isClass } from '../utils';
 import { IocAction, IocActionType, IocActionContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
+import { ActionRegisterer } from './ActionRegisterer';
 
 
 /**
@@ -139,7 +140,7 @@ export class IocCompositeAction<T extends IocActionContext = IocActionContext> e
 
     protected registerAction(action: IocActionType, setup?: boolean): this {
         if (isClass(action)) {
-            this.container.getActionRegisterer().register(this.container, action, setup);
+            this.container.getInstance(ActionRegisterer).register(this.container, action, setup);
         }
         return this;
     }

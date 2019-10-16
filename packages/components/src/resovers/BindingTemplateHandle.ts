@@ -2,6 +2,7 @@ import { ResolveHandle, BuildContext, StartupDecoratorRegisterer, StartupScopes 
 import { IBindingTypeReflect } from '../bindings';
 import { ComponentManager } from '../ComponentManager';
 import { RefSelector } from '../RefSelector';
+import { DecoratorProvider } from '@tsdi/ioc';
 
 /**
  * binding temlpate handle.
@@ -15,7 +16,7 @@ export class BindingTemplateHandle extends ResolveHandle {
         if (ctx.target && ctx.composite) {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propRefChildBindings) {
-                let dpr = this.container.getDecoratorProvider();
+                let dpr = this.container.getInstance(DecoratorProvider);
                 if (dpr.has(ctx.decorator, RefSelector)) {
                     // todo ref chile view
                     let refSelector = dpr.resolve(ctx.decorator, RefSelector);

@@ -1,4 +1,4 @@
-import { ProviderMap, ProviderTypes } from '../providers';
+import { ProviderMap, ProviderTypes, ProviderParser } from '../providers';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
 import { Token, Factory } from '../types';
@@ -87,7 +87,7 @@ export class DecoratorProvider extends IocCoreService {
     }
 
     bindProviders(decorator: string | Function, ...providers: ProviderTypes[]): this {
-        this.container.getProviderParser().parseTo(this.existify(decorator), ...providers);
+        this.container.getInstance(ProviderParser).parseTo(this.existify(decorator), ...providers);
         return this;
     }
 

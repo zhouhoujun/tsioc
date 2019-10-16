@@ -1,5 +1,5 @@
 import {
-    Singleton, Inject, lang, DecoratorProvider, ClassType, TypeReflects, DesignDecoratorRegisterer, DecoratorScopes
+    Singleton, Inject, lang, DecoratorProvider, ClassType, TypeReflects, DesignRegisterer, DecoratorScopes
 } from '@tsdi/ioc';
 import { ModuleConfigure, IModuleReflect } from './modules';
 import { AnnotationServiceToken, IAnnotationService } from './IAnnotationService';
@@ -20,7 +20,7 @@ export class AnnotationService implements IAnnotationService {
 
     @Inject() reflects: TypeReflects;
     @Inject() decProvider: DecoratorProvider;
-    @Inject() register: DesignDecoratorRegisterer;
+    @Inject() register: DesignRegisterer;
 
 
     getDecorator(type: ClassType) {

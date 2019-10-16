@@ -3,6 +3,7 @@ import {
 } from '@tsdi/core';
 import { DIModuleExports } from '../injectors';
 import { IModuleResolver } from '../modules';
+import { ActionRegisterer } from '@tsdi/ioc';
 
 
 export class ResolveSerivesInExportAction extends IocResolveServicesAction {
@@ -18,7 +19,7 @@ export class ResolveSerivesInExportAction extends IocResolveServicesAction {
 
     depIterator(ctx: ResolveServicesContext, resolver: IModuleResolver) {
         resolver.getContainer()
-            .getActionRegisterer()
+            .getInstance(ActionRegisterer)
             .get(ResolveServicesScope).execute(ctx);
         if (resolver.has(DIModuleExports)) {
             resolver.resolve(DIModuleExports).getResolvers()

@@ -1,10 +1,10 @@
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
-import { Type, ProviderTypes, isArray } from '@tsdi/ioc';
+import { Type, ProviderTypes, isArray, ProviderParser } from '@tsdi/ioc';
 
 export class RegModuleProvidersAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {
-        let parser = this.container.getProviderParser();
+        let parser = this.container.getInstance(ProviderParser);
         let container = ctx.getRaiseContainer();
         let tRef = ctx.reflects;
         let config = ctx.annoation;

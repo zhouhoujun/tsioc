@@ -1,6 +1,6 @@
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import {
-    BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction, Inject
+    BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction, Inject, ActionRegisterer, DecoratorProvider, DesignRegisterer, RuntimeRegisterer
 } from '@tsdi/ioc';
 import { Component, Input, Output, RefChild } from './decorators';
 import { SelectorManager } from './SelectorManager';
@@ -33,11 +33,11 @@ export class ComponentsModule {
             .register(BootComponentAccessor)
             .register(ComponentAnnotationCloner);
 
-        container.getActionRegisterer()
+        container.getInstance(ActionRegisterer)
             .register(container, ComponentRegisterAction)
             .register(container, BindingPropertyTypeAction);
 
-        container.getDecoratorProvider()
+        container.getInstance(DecoratorProvider)
             .bindProviders(Input, {
                 provide: BindingCache,
                 useFactory: () => new BindingCacheFactory(ref => {
@@ -82,13 +82,13 @@ export class ComponentsModule {
             .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
 
-        container.getDesignRegisterer()
+        container.getInstance(DesignRegisterer)
             .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction);
 
-        container.getRuntimeRegisterer()
+        container.getInstance(RuntimeRegisterer)
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.register(ComponentBuilder);

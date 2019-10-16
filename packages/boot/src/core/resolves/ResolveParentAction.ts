@@ -1,4 +1,4 @@
-import { IocResolveAction, ResolveActionContext, Type, IocCompositeAction, lang } from '@tsdi/ioc';
+import { IocResolveAction, ResolveActionContext, Type, IocCompositeAction, lang, ActionRegisterer } from '@tsdi/ioc';
 import { ParentContainerToken } from '../ContainerPoolToken';
 
 
@@ -19,7 +19,7 @@ export class ResolveParentAction extends IocResolveAction {
                     ctx.instance = parent.get(ctx.token, ...ctx.providers);
                 }
                 if (!ctx.instance) {
-                    parent.getActionRegisterer().get(scopeType).execute(ctx, next);
+                    parent.getInstance(ActionRegisterer).get(scopeType).execute(ctx, next);
                 }
             }
         }

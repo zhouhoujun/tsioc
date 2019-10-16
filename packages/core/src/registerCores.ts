@@ -2,7 +2,7 @@ import { IContainer, ContainerToken } from './IContainer';
 import { ModuleLoader } from './services';
 import { IocExt } from './decorators';
 import {
-    IocAutorunAction, DecoratorScopes, RegisterSingletionAction
+    IocAutorunAction, DecoratorScopes, RegisterSingletionAction, ActionRegisterer, RuntimeRegisterer, DesignRegisterer
 } from '@tsdi/ioc';
 import { InjectorLifeScope } from './injectors';
 import { ServiceResolveLifeScope, ServicesResolveLifeScope } from './resolves';
@@ -17,15 +17,15 @@ export function registerCores(container: IContainer) {
     }
 
     // register action
-    container.getActionRegisterer()
+    container.getInstance(ActionRegisterer)
         .register(container, InjectorLifeScope, true)
         .register(container, ServiceResolveLifeScope, true)
         .register(container, ServicesResolveLifeScope, true);
 
-    container.getRuntimeRegisterer()
+    container.getInstance(RuntimeRegisterer)
         .register(IocExt, DecoratorScopes.Class, RegisterSingletionAction);
 
-    container.getDesignRegisterer()
+    container.getInstance(DesignRegisterer)
         .register(IocExt, DecoratorScopes.Class, IocAutorunAction);
 
 }

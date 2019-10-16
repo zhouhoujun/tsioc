@@ -6,13 +6,13 @@ import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
-import { ParamProviders, ProviderMap, ProviderTypes, IProviderParser, ProviderParser } from './providers';
+import { ParamProviders, ProviderMap, ProviderTypes, ProviderParser } from './providers';
 import { IResolver } from './IResolver';
-import { TypeReflects, DecoratorProvider } from './services';
+import { TypeReflects } from './services';
 import { IParameter } from './IParameter';
 import {
     RuntimeActionContext, DesignActionContext, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
-    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption, DesignDecoratorRegisterer, RuntimeDecoratorRegisterer
+    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption, DesignRegisterer, RuntimeRegisterer
 } from './actions';
 
 
@@ -51,36 +51,8 @@ export class IocContainer implements IIocContainer {
         return this.factories.size;
     }
 
-    getActionRegisterer(): ActionRegisterer {
-        return this.getInstance(ActionRegisterer);
-    }
-
-    getDesignRegisterer(): DesignDecoratorRegisterer {
-        return this.getInstance(DesignDecoratorRegisterer);
-    }
-
-    getRuntimeRegisterer(): RuntimeDecoratorRegisterer {
-        return this.getInstance(RuntimeDecoratorRegisterer);
-    }
-
-    getDecoratorProvider(): DecoratorProvider {
-        return this.getInstance(DecoratorProvider);
-    }
-
-    getProviderParser(): IProviderParser {
-        return this.getInstance(ProviderParser);
-    }
-
     getTypeReflects(): TypeReflects {
         return this.getInstance(TypeReflects);
-    }
-
-    getSingletonManager(): IocSingletonManager {
-        return this.getInstance(IocSingletonManager);
-    }
-
-    getCacheManager(): IocCacheManager {
-        return this.getInstance(IocCacheManager);
     }
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
@@ -158,7 +130,7 @@ export class IocContainer implements IIocContainer {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
-        return this.getActionRegisterer().get(ResolveLifeScope).resolve(token, ...providers);
+        return this.getInstance(ActionRegisterer).get(ResolveLifeScope).resolve(token, ...providers);
     }
 
     /**
@@ -304,7 +276,7 @@ export class IocContainer implements IIocContainer {
             prods.unshift(target);
         }
 
-        let maps = this.getProviderParser().parse(...prods);
+        let maps = this.getInstance(ProviderParser).parse(...prods);
         if (tgt) {
             let refKey = new InjectReference(ProviderMap, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
             if (this.has(refKey)) {
@@ -448,7 +420,7 @@ export class IocContainer implements IIocContainer {
     protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ParamProviders[]) => {
-                let mgr = this.getSingletonManager();
+                let mgr = this.getInstance(IocSingletonManager);
                 if (mgr.has(key)) {
                     return mgr.get(key);
                 }
@@ -462,11 +434,11 @@ export class IocContainer implements IIocContainer {
     protected bindTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
 
         let factory = (...providers: ParamProviders[]) => {
-            let mgr = this.getSingletonManager();
+            let mgr = this.getInstance(IocSingletonManager);
             if (mgr.has(key)) {
                 return mgr.get(key);
             }
-            let providerMap = this.getProviderParser().parse(...providers);
+            let providerMap = this.getInstance(ProviderParser).parse(...providers);
             let ctx = RuntimeActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT,
@@ -474,7 +446,7 @@ export class IocContainer implements IIocContainer {
                 providers: providers,
                 providerMap: providerMap
             }, this.getFactory());
-            this.getActionRegisterer().get(RuntimeLifeScope).register(ctx);
+            this.getInstance(ActionRegisterer).get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
 
@@ -484,7 +456,7 @@ export class IocContainer implements IIocContainer {
         }
 
         (async () => {
-            this.getActionRegisterer().get(DesignLifeScope).register(
+            this.getInstance(ActionRegisterer).get(DesignLifeScope).register(
                 DesignActionContext.parse({
                     tokenKey: key,
                     targetType: ClassT

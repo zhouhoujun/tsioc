@@ -1,5 +1,5 @@
 import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
-import { Inject } from '@tsdi/ioc';
+import { Inject, DecoratorProvider } from '@tsdi/ioc';
 import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { Component } from '../decorators';
 import { ComponentSelectorHandle, ValidComponentHandle, BindingComponentHandle } from './handles';
@@ -32,7 +32,7 @@ export class ElementModule {
             .register(container, ValidComponentHandle)
             .register(container, BindingComponentHandle);
 
-        container.getDecoratorProvider()
+        container.getInstance(DecoratorProvider)
             .bindProviders(Component, { provide: RefSelector, useClass: RefElementSelector })
 
         container.register(ElementNode);

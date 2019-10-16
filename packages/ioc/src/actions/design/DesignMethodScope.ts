@@ -2,14 +2,14 @@ import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
 import { BindMethodProviderAction } from './BindMethodProviderAction';
-import { DecoratorScopes } from '../DecoratorRegisterer';
+import { DecoratorScopes, DesignRegisterer } from '../DecoratorRegisterer';
 import { AutoWired, Providers } from '../../decorators';
 
 export class DesignMethodScope extends IocRegisterScope<DesignActionContext> {
     setup() {
         this.registerAction(BindMethodProviderAction);
 
-        this.container.getDesignRegisterer()
+        this.container.getInstance(DesignRegisterer)
             .register(AutoWired, DecoratorScopes.Method, BindMethodProviderAction)
             .register(Providers, DecoratorScopes.Method, BindMethodProviderAction);
 

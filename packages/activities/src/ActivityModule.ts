@@ -3,7 +3,7 @@ import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
-import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes } from '@tsdi/ioc';
+import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, ActionRegisterer, DecoratorProvider, DesignRegisterer } from '@tsdi/ioc';
 import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
 import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationCloner } from '@tsdi/components'
 import { TaskInjectorRegisterAction, ActivityContext } from './core';
@@ -24,7 +24,7 @@ export class ActivityModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.getActionRegisterer()
+        container.getInstance(ActionRegisterer)
             .register(container, TaskInjectorRegisterAction, true);
 
         container.getInstance(HandleRegisterer)
@@ -32,11 +32,11 @@ export class ActivityModule {
             .register(container, BindingTaskComponentHandle)
             .register(container, TaskDecorSelectorHandle);
 
-        container.getDecoratorProvider()
+        container.getInstance(DecoratorProvider)
             .bindProviders(Task, { provide: BootTargetAccessor, useClass: BootComponentAccessor })
 
 
-        container.getDesignRegisterer()
+        container.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Task, DecoratorScopes.Injector, TaskInjectorRegisterAction);
 
@@ -47,7 +47,7 @@ export class ActivityModule {
 
 
         container.register(ActivityRefSelector);
-        container.getDecoratorProvider()
+        container.getInstance(DecoratorProvider)
             .bindProviders(Task,
                 {
                     provide: BootContext,

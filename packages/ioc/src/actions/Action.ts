@@ -4,6 +4,7 @@ import { Inject } from '../decorators';
 import { ITypeReflect, TypeReflects } from '../services';
 import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
+import { ActionRegisterer } from './ActionRegisterer';
 
 
 /**
@@ -150,7 +151,7 @@ export abstract class IocAction<T extends IocActionContext = IocActionContext> {
 
     protected parseAction(ac: IocActionType) {
         if (isClass(ac)) {
-            let action = this.container.getActionRegisterer().get(ac);
+            let action = this.container.getInstance(ActionRegisterer).get(ac);
             return action instanceof IocAction ? action.toAction() : null;
         } if (ac instanceof IocAction) {
             return ac.toAction()

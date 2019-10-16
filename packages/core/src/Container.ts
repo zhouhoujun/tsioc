@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, isArray } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, isArray, ActionRegisterer } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import {
@@ -83,7 +83,7 @@ export class Container extends IocContainer implements IContainer {
      */
     use(...modules: Modules[]): this {
         (async () => {
-            this.getActionRegisterer().get(InjectorLifeScope).register(...modules);
+            this.getInstance(ActionRegisterer).get(InjectorLifeScope).register(...modules);
         })();
         return this;
     }
@@ -97,7 +97,7 @@ export class Container extends IocContainer implements IContainer {
      */
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
-        return this.getActionRegisterer().get(InjectorLifeScope).register(...mdls);
+        return this.getInstance(ActionRegisterer).get(InjectorLifeScope).register(...mdls);
     }
 
     /**
@@ -125,7 +125,7 @@ export class Container extends IocContainer implements IContainer {
             context.providers = providers;
         }
 
-        this.getActionRegisterer().get(ServiceResolveLifeScope).execute(context);
+        this.getInstance(ActionRegisterer).get(ServiceResolveLifeScope).execute(context);
         return context.instance || null;
     }
 
@@ -165,7 +165,7 @@ export class Container extends IocContainer implements IContainer {
         } else {
             context = ResolveServicesContext.parse(target);
         }
-        this.getActionRegisterer().get(ServicesResolveLifeScope).execute(context);
+        this.getInstance(ActionRegisterer).get(ServicesResolveLifeScope).execute(context);
         return context.services;
     }
 }

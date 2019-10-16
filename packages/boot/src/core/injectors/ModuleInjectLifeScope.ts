@@ -1,4 +1,4 @@
-import { isClass, LifeScope, Type, Inject } from '@tsdi/ioc';
+import { isClass, LifeScope, Type, Inject, ActionRegisterer } from '@tsdi/ioc';
 import { ModuleResovler } from './ModuleResovler';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
@@ -73,8 +73,7 @@ export class DIModuleInjectorScope extends InjectorRegisterScope {
 export class RegisterDIModuleAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next: () => void): void {
         if (isClass(ctx.currType) && ctx.currDecoractor) {
-            this.container
-                .getActionRegisterer()
+            this.container.getInstance(ActionRegisterer)
                 .get(ModuleInjectLifeScope)
                 .register(ctx.currType, ctx.currDecoractor);
             ctx.registered.push(ctx.currType);

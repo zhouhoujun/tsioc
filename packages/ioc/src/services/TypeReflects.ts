@@ -17,6 +17,8 @@ import { MethodAccessorToken } from '../IMethodAccessor';
 import { DesignDecorators } from '../actions/DesignDecorators';
 import { RuntimeDecorators } from '../actions/RuntimeDecorators';
 import { Singleton } from '../decorators';
+import { DesignRegisterer, RuntimeRegisterer } from '../actions';
+import { DecoratorProvider } from './DecoratorProvider';
 
 
 /**
@@ -49,8 +51,8 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
             return this.get(type);
         }
         let decs = new TargetDecoractors(
-            new DesignDecorators(type, this, this.container.getDesignRegisterer()),
-            new RuntimeDecorators(type, this, this.container.getRuntimeRegisterer()));
+            new DesignDecorators(type, this, this.container.getInstance(DesignRegisterer)),
+            new RuntimeDecorators(type, this, this.container.getInstance(RuntimeRegisterer)));
         let targetReflect: ITypeReflect = {
             type: type,
             decorators: decs,
@@ -78,7 +80,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): boolean;
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): boolean;
     hasMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): boolean {
-        let access = this.container.getDecoratorProvider().resolve(decorator, MetadataAccess);
+        let access = this.container.getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }
@@ -142,7 +144,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): T[];
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): T[][];
     getMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): any {
-        let access = this.container.getDecoratorProvider().resolve(decorator, MetadataAccess);
+        let access = this.container.getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }

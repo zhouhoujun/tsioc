@@ -1,6 +1,6 @@
 import {
     IocDesignAction, IocRuntimeAction, lang, Type, RuntimeActionContext,
-    DesignActionContext, IocCompositeAction
+    DesignActionContext, IocCompositeAction, ActionRegisterer
 } from '@tsdi/ioc';
 import { ParentContainerToken } from '../ContainerPoolToken';
 
@@ -10,7 +10,7 @@ export class RouteRuntimRegisterAction extends IocRuntimeAction {
             let scopeType: Type<IocCompositeAction> = lang.getClass(ctx.actionScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.getActionRegisterer().get(scopeType).execute(ctx, next);
+                parent.getInstance(ActionRegisterer).get(scopeType).execute(ctx, next);
             }
         } else {
             next();
@@ -24,7 +24,7 @@ export class RouteDesignRegisterAction extends IocDesignAction {
             let scopeType: Type<IocCompositeAction> = lang.getClass(ctx.actionScope);
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.getActionRegisterer().get(scopeType).execute(ctx, next);
+                parent.getInstance(ActionRegisterer).get(scopeType).execute(ctx, next);
             }
         } else {
             next();

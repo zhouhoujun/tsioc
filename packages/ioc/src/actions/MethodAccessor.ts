@@ -1,10 +1,11 @@
 import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
-import { ParamProviders } from '../providers';
+import { ParamProviders, ProviderParser } from '../providers';
 import { isToken, lang, isFunction, isBaseType } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { RuntimeActionContext, RuntimeParamScope } from './runtime';
 import { IMethodAccessor } from '../IMethodAccessor';
+import { ActionRegisterer } from './ActionRegisterer';
 
 
 
@@ -79,7 +80,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @memberof MethodAccessor
      */
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
-        let providerMap = container.getProviderParser().parse(...providers);
+        let providerMap = container.getInstance(ProviderParser).parse(...providers);
         return params.map((param, index) => {
             if (param.provider && providerMap.has(param.provider)) {
                 return providerMap.resolve(param.provider);
@@ -129,7 +130,7 @@ export class MethodAccessor implements IMethodAccessor {
             target: instance,
             propertyKey: propertyKey
         }, container);
-        container.getActionRegisterer().get(RuntimeParamScope).execute(ctx);
+        container.getInstance(ActionRegisterer).get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
     }

@@ -2,6 +2,7 @@ import { isString, isClass, lang, isFunction } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { IocAction, IocActionType } from './Action';
 import { IocCoreService } from '../IocCoreService';
+import { ActionRegisterer } from './ActionRegisterer';
 
 /**
  * decorator action registerer.
@@ -140,7 +141,7 @@ export class IocDecoratorRegisterer<T = IocAction> extends DecoratorRegisterer<T
 
     toFunc(container: IIocContainer, ac: T): lang.IAction {
         if (isClass(ac)) {
-            let action = container.getActionRegisterer().get(ac);
+            let action = container.getInstance(ActionRegisterer).get(ac);
             return action instanceof IocAction ? action.toAction() : null;
         } if (ac instanceof IocAction) {
             return ac.toAction()

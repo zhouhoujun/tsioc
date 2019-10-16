@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { IIocContainer } from '../IIocContainer';
-import { IocCompositeAction } from './IocCompositeAction';
 import { IocCoreService } from '../IocCoreService';
+import { isFunction } from '../utils';
 
 /**
  * action registerer.
@@ -62,7 +62,7 @@ export class ActionRegisterer extends IocCoreService {
     }
 
     protected setup(action: any) {
-        if (action instanceof IocCompositeAction) {
+        if (isFunction(action.setup)) {
             action.setup();
         }
     }

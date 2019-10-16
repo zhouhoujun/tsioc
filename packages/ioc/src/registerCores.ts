@@ -3,7 +3,7 @@ import { TypeReflects, DecoratorProvider } from './services';
 import { ProviderMap, ProviderParser } from './providers';
 import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
-    IocSingletonManager, ResolveLifeScope, ActionRegisterer, RuntimeDecoratorRegisterer, DesignDecoratorRegisterer
+    IocSingletonManager, ResolveLifeScope, ActionRegisterer, RuntimeRegisterer, DesignRegisterer
 } from './actions';
 import { MethodAccessorToken } from './IMethodAccessor';
 
@@ -19,8 +19,8 @@ export function registerCores(container: IIocContainer) {
     container.bindProvider(ContainerFactoryToken, () => fac);
     container.bindProvider(IocSingletonManager, new IocSingletonManager(container));
     container.registerSingleton(ActionRegisterer, () => new ActionRegisterer());
-    container.registerSingleton(RuntimeDecoratorRegisterer, () => new RuntimeDecoratorRegisterer(container));
-    container.registerSingleton(DesignDecoratorRegisterer, () => new DesignDecoratorRegisterer(container));
+    container.registerSingleton(RuntimeRegisterer, () => new RuntimeRegisterer(container));
+    container.registerSingleton(DesignRegisterer, () => new DesignRegisterer(container));
 
     container.registerSingleton(TypeReflects, () => new TypeReflects(container));
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
@@ -31,7 +31,7 @@ export function registerCores(container: IIocContainer) {
     container.bindProvider(MethodAccessorToken, MethodAccessor);
 
     // bing action.
-    container.getActionRegisterer()
+    container.getInstance(ActionRegisterer)
         .register(container, DesignLifeScope, true)
         .register(container, RuntimeLifeScope, true)
         .register(container, ResolveLifeScope, true);
