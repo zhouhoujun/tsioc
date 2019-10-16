@@ -2,7 +2,6 @@ import { Provider, ParamProviders, lang, RuntimeActionContext, IocRuntimeAction 
 import { AdvisorToken } from '../IAdvisor';
 import { Joinpoint, JoinpointState, JoinpointOptionToken } from '../joinpoints';
 import { isValideAspectTarget } from './isValideAspectTarget';
-import { NonePointcut } from '../decorators/NonePointcut';
 
 /**
  * invoke after constructor action.
@@ -15,7 +14,7 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!ctx.target ||  ctx.reflects.hasMetadata(NonePointcut, ctx.targetType) || !isValideAspectTarget(ctx.targetType, this.container)) {
+        if (!ctx.target || !isValideAspectTarget(ctx.targetType, ctx.reflects)) {
             return next();
         }
 
