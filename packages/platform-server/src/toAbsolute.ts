@@ -23,9 +23,9 @@ export function syncRequire(filename: string): any {
  */
 export function toAbsolutePath(root: string, pathstr: string): string {
     if (!root || path.isAbsolute(pathstr)) {
-        return path.normalize(pathstr);
+        return pathstr;
     }
-    return path.join(path.normalize(root), path.normalize(pathstr));
+    return path.join(root, pathstr);
 }
 
 /**

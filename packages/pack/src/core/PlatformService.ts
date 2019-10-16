@@ -183,7 +183,7 @@ export class PlatformService {
     }
 
     del(src: Src, opts?: { force?: boolean, cwd?: string, dryRun?: boolean }): Promise<any> {
-        return del(src, opts);
+        return del(this.normalizeSrc(src), opts);
     }
 
     /**

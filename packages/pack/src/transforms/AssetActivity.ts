@@ -1,10 +1,10 @@
 import { Src, Task, TemplateOption, ActivityType } from '@tsdi/activities';
+import { Input, Binding } from '@tsdi/components';
 import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
-import { Input, Binding } from '@tsdi/components';
 import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
 

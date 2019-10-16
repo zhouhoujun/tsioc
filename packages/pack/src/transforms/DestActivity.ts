@@ -1,9 +1,8 @@
-import { NodeActivityContext, ITransform, NodeExpression } from '../core';
-import { Task, ActivityType, TemplateOption } from '@tsdi/activities';
-import { DestOptions, dest } from 'vinyl-fs';
 import { Input, Binding } from '@tsdi/components';
+import { Task, ActivityType, TemplateOption } from '@tsdi/activities';
+import { NodeActivityContext, ITransform, NodeExpression } from '../core';
+import { DestOptions, dest } from 'vinyl-fs';
 import { PipeActivity } from './PipeActivity';
-
 
 
 /**
