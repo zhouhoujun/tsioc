@@ -19,7 +19,7 @@ export class BindingTemplateHandle extends ResolveHandle {
                 if (dpr.has(ctx.decorator, RefSelector)) {
                     // todo ref chile view
                     let refSelector = dpr.resolve(ctx.decorator, RefSelector);
-                    let mgr = this.container.get(ComponentManager);
+                    let mgr = this.container.getInstance(ComponentManager);
                     ref.propRefChildBindings.forEach(b => {
                         mgr.getSelector(ctx.target)
                             .each((it) => {
@@ -32,7 +32,7 @@ export class BindingTemplateHandle extends ResolveHandle {
                 }
             }
 
-            let startupRegr = this.container.get(StartupDecoratorRegisterer);
+            let startupRegr = this.container.getInstance(StartupDecoratorRegisterer);
 
             let bindRegs = startupRegr.getRegisterer(StartupScopes.Binding);
             if (bindRegs.has(ctx.decorator)) {

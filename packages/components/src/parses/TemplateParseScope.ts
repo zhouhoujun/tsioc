@@ -38,7 +38,7 @@ export class TemplateParseScope extends TemplatesHandle {
 export class ElementsTemplateHandle extends TemplateHandle {
 
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let registerer = this.container.get(HandleRegisterer);
+        let registerer = this.container.getInstance(HandleRegisterer);
         if (isArray(ctx.template)) {
             ctx.value = await Promise.all(ctx.template.map(async tp => {
                 let subCtx = TemplateContext.parse({

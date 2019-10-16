@@ -43,7 +43,8 @@ export class BindingScopeHandle extends ParseHandle {
             ctx.dataBinding = ctx.bindExpression;
         }
         if (!ctx.dataBinding && isString(ctx.bindExpression)) {
-            let regs = this.container.get(StartupDecoratorRegisterer).getRegisterer(StartupScopes.BindExpression);
+            let regs = this.container.getInstance(StartupDecoratorRegisterer)
+                .getRegisterer(StartupScopes.BindExpression);
             // translate binding expression via current decorator.
             if (regs.has(ctx.decorator)) {
                 await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
@@ -97,7 +98,7 @@ export class TranslateExpressionHandle extends ParseHandle {
                 providers: ctx.providers,
                 raiseContainer: ctx.getContainerFactory()
             });
-            await this.container.get(HandleRegisterer)
+            await this.container.getInstance(HandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(tpCtx);
             if (!isNullOrUndefined(tpCtx.value)) {

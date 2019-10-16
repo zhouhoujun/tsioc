@@ -69,7 +69,7 @@ export class ComponentsModule {
                 { provide: BootTargetAccessor, useClass: BootComponentAccessor },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner });
 
-        container.resolve(HandleRegisterer)
+        container.getInstance(HandleRegisterer)
             .register(container, BindingScope, true)
             .register(container, TemplateParseScope, true)
             .get(ResolveMoudleScope)

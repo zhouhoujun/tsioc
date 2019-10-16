@@ -101,7 +101,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
         if (providers.length === 1 && isProviderMap(providers[0])) {
             return providers[0] as ProviderMap;
         }
-        let map = this.container.get(ProviderMap);
+        let map = this.container.getInstance(ProviderMap);
         return this.parseTo(map, ...providers);
     }
 }

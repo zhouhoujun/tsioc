@@ -17,7 +17,7 @@ export class ValidComponentHandle extends BuildHandle<BuildContext> {
                 ctx.target.add(...ctx.composite);
                 ctx.composite = null;
             } else {
-                let content = this.container.get(ElementNode);
+                let content = this.container.getInstance(ElementNode);
                 content.add(...ctx.composite);
                 ctx.composite = content;
             }

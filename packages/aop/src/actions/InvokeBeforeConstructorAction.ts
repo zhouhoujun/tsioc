@@ -29,7 +29,7 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
         let targetType = ctx.targetType;
         let target = ctx.target;
 
-        let joinPoint = this.container.get(Joinpoint, {
+        let joinPoint = this.container.getInstance(Joinpoint, {
             provide: JoinpointOptionToken,
             useValue: {
                 name: 'constructor',

@@ -8,7 +8,7 @@ export class BindingOutputHandle extends ResolveHandle {
         if (ctx.target) {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propOutBindings) {
-                let registerer = this.container.get(HandleRegisterer);
+                let registerer = this.container.getInstance(HandleRegisterer);
                 await Promise.all(Array.from(ref.propOutBindings.keys()).map(async n => {
                     let binding = ref.propOutBindings.get(n);
                     let expression = ctx.template ? ctx.template[binding.bindingName || binding.name] : null;

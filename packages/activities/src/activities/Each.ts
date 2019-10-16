@@ -20,7 +20,7 @@ export class EachActicity<T> extends ControlActivity<T> {
         if (items && items.length) {
             if (this.parallel) {
                 if (this.getContainer().has(ParallelExecutor)) {
-                    await this.getContainer().get(ParallelExecutor).run(v => {
+                    await this.getContainer().getInstance(ParallelExecutor).run(v => {
                         ctx.setBody(v, true);
                         return this.runWorkflow(ctx, this.body);
                     }, items);

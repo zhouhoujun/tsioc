@@ -1,4 +1,4 @@
-import { Type, Token, Factory, ClassType } from './types';
+import { Type, Token, Factory, ClassType, SymbolType } from './types';
 import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes, IProviderParser } from './providers';
@@ -120,6 +120,17 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IContainer
      */
     get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
+
+    /**
+     * get instace in current container.
+     *
+     * @template T
+     * @param {SymbolType<T>} key
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T
 
     /**
      * resolve instance with token and param provider.

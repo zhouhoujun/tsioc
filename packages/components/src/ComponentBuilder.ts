@@ -22,7 +22,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         if (!ctx.hasRaiseContainer()) {
             ctx.setRaiseContainer(this.container);
         }
-        await this.container.get(HandleRegisterer)
+        await this.container.getInstance(HandleRegisterer)
             .get(TemplateParseScope)
             .execute(ctx);
         return ctx.value;

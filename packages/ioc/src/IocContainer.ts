@@ -143,7 +143,7 @@ export class IocContainer implements IIocContainer {
         return this.getInstance(key, ...providers);
     }
 
-    protected getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
         let factory = this.factories.get(key);
         return factory ? factory(...providers) : null;
     }

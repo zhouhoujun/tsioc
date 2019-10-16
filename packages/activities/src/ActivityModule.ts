@@ -27,7 +27,7 @@ export class ActivityModule {
         container.getActionRegisterer()
             .register(container, TaskInjectorRegisterAction, true);
 
-        container.get(HandleRegisterer)
+        container.getInstance(HandleRegisterer)
             .register(container, ValidTaskComponentHandle)
             .register(container, BindingTaskComponentHandle)
             .register(container, TaskDecorSelectorHandle);
@@ -40,7 +40,7 @@ export class ActivityModule {
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Task, DecoratorScopes.Injector, TaskInjectorRegisterAction);
 
-        container.get(StartupDecoratorRegisterer)
+        container.getInstance(StartupDecoratorRegisterer)
             .register(Task, StartupScopes.TranslateTemplate, TaskDecorSelectorHandle)
             .register(Task, StartupScopes.ValifyComponent, ValidTaskComponentHandle)
             .register(Task, StartupScopes.Binding, BindingTaskComponentHandle);
@@ -57,7 +57,7 @@ export class ActivityModule {
                         if (container.has(ref)) {
                             return container.get(ref, ...providers);
                         } else {
-                            return container.get(ActivityContext, ...providers);
+                            return container.getInstance(ActivityContext, ...providers);
                         }
                     }
                 },

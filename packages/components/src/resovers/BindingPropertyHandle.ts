@@ -15,7 +15,7 @@ export class BindingPropertyHandle extends ResolveHandle {
         if (ctx.target) {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propInBindings) {
-                let registerer = this.container.get(HandleRegisterer);
+                let registerer = this.container.getInstance(HandleRegisterer);
                 await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {
                     let binding = ref.propInBindings.get(n);
                     let expression = ctx.template ? ctx.template[binding.bindingName || binding.name] : null;

@@ -7,7 +7,7 @@ export class IocBuildDecoratorRegisterer<T extends IHandle> extends DecoratorReg
 
     toFunc(container: IIocContainer, ac: T): PromiseUtil.ActionHandle {
         if (isClass(ac)) {
-            let action = container.get(HandleRegisterer).get(ac);
+            let action = container.getInstance(HandleRegisterer).get(ac);
             return action instanceof BuildHandle ? action.toAction() : null;
 
         } else if (ac instanceof BuildHandle) {

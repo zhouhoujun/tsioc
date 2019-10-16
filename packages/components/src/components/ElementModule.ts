@@ -22,12 +22,12 @@ export class ElementModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
         container.register(RefElementSelector);
-        container.get(StartupDecoratorRegisterer)
+        container.getInstance(StartupDecoratorRegisterer)
             .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle)
             .register(Component, StartupScopes.ValifyComponent, ValidComponentHandle)
             .register(Component, StartupScopes.Binding, BindingComponentHandle);
 
-        container.get(HandleRegisterer)
+        container.getInstance(HandleRegisterer)
             .register(container, ComponentSelectorHandle)
             .register(container, ValidComponentHandle)
             .register(container, BindingComponentHandle);

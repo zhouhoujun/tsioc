@@ -5,12 +5,12 @@ import { ComponentManager } from '../ComponentManager';
 export class ValifyTeamplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.target && ctx.composite) {
-            let mgr = this.container.get(ComponentManager);
+            let mgr = this.container.getInstance(ComponentManager);
             if (ctx.scope) {
                 mgr.setComposite(ctx.scope, ctx.target);
             }
 
-            let startupRegr = this.container.get(StartupDecoratorRegisterer);
+            let startupRegr = this.container.getInstance(StartupDecoratorRegisterer);
 
             let validRegs = startupRegr.getRegisterer(StartupScopes.ValifyComponent);
             if (validRegs.has(ctx.decorator)) {

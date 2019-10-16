@@ -47,7 +47,7 @@ export interface IBuildContext extends IHandleContext {
 export abstract class BuildHandle<T extends IBuildContext = IBuildContext> extends Handle<T> {
     protected registerHandle(handle: HandleType<T>, setup?: boolean): this {
         if (isClass(handle)) {
-            this.container.resolve(HandleRegisterer)
+            this.container.getInstance(HandleRegisterer)
                 .register(this.container, handle, setup);
         }
         return this;
@@ -66,14 +66,14 @@ export class BuildHandles<T extends IBuildContext = IBuildContext> extends Handl
 
     protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
         if (isClass(HandleType)) {
-            this.container.resolve(HandleRegisterer)
+            this.container.getInstance(HandleRegisterer)
                 .register(this.container, HandleType, setup);
         }
         return this;
     }
 
     protected resolveHanlde(ac: Type<BuildHandle<T>>): BuildHandle<T> {
-        return this.container.resolve(HandleRegisterer).get(ac)
+        return this.container.getInstance(HandleRegisterer).get(ac)
     }
 
     setup() {

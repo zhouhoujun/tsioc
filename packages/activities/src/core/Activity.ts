@@ -51,7 +51,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     get $scopes(): any[] {
         if (!this._scopes) {
-            this._scopes = this.getContainer().get(ComponentManager).getScopes(this.$scope);
+            this._scopes = this.getContainer().getInstance(ComponentManager).getScopes(this.$scope);
         }
         return this._scopes;
     }

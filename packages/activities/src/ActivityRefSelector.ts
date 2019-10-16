@@ -23,7 +23,7 @@ export class ActivityRefSelector extends RefSelector {
 
     createNodeSelector(element: any): NodeSelector<any> {
         if (element instanceof Activity) {
-            return element.getContainer().get(ComponentManager).getSelector(element);
+            return element.getContainer().getInstance(ComponentManager).getSelector(element);
         }
         return null;
     }

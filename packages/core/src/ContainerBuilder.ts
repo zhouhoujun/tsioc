@@ -51,7 +51,7 @@ export class ContainerBuilder implements IContainerBuilder {
     }
 
     protected getLoader(container: IContainer): IModuleLoader {
-        return container.get(ModuleLoader) || this._loader;
+        return container.getInstance(ModuleLoader) || this._loader;
     }
 
 }

@@ -17,7 +17,7 @@ export class ValidTaskComponentHandle extends BuildHandle<BuildContext> {
                     ctx.target.add(...ctx.composite);
                     ctx.composite = null;
                 } else {
-                    let sequence = this.container.get(SequenceActivity);
+                    let sequence = this.container.getInstance(SequenceActivity);
                     sequence.add(...ctx.composite);
                     ctx.composite = sequence;
                 }

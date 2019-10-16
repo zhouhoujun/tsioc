@@ -38,7 +38,7 @@ export class BindingScope extends ParsersHandle {
 export class BindingArrayHandle extends ParseHandle {
 
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-        let registerer = this.container.get(HandleRegisterer);
+        let registerer = this.container.getInstance(HandleRegisterer);
 
         if (ctx.binding.type === Array && isArray(ctx.bindExpression)) {
             ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
