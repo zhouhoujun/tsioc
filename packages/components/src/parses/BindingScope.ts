@@ -14,6 +14,9 @@ import { isArray, isNullOrUndefined } from '@tsdi/ioc';
 export class BindingScope extends ParsersHandle {
 
     async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
         if (ctx.binding) {
             await super.execute(ctx);
         }

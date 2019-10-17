@@ -15,6 +15,9 @@ import { HandleRegisterer } from '@tsdi/boot';
  */
 export class TemplateParseScope extends TemplatesHandle {
     async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
+        if (!ctx.reflects) {
+            ctx.reflects = this.container.getTypeReflects();
+        }
         await super.execute(ctx);
         if (isNullOrUndefined(ctx.value) && next) {
             await next();
