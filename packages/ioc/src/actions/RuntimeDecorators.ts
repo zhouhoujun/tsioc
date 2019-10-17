@@ -45,7 +45,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
         return this.paramsDesc[propertyKey];
     }
 
-    reset(){
+    reset() {
         super.reset();
         this._bcDecors = null;
         this._afDecors = null;
