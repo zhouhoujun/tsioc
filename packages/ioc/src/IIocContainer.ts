@@ -1,4 +1,4 @@
-import { Type, Token, Factory, ClassType, SymbolType } from './types';
+import { Type, Token, Factory, SymbolType } from './types';
 import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes } from './providers';
@@ -44,25 +44,6 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     getTypeReflects(): TypeReflects;
-
-    /**
-     * is token extends of base class type.
-     *
-     * @param {Token} token
-     * @param {ClassType} base
-     * @returns {boolean}
-     * @memberof IIocContainer
-     */
-    isExtends(token: Token, base: ClassType): boolean;
-
-    /**
-     * get extends.
-     *
-     * @param {ClassType} type
-     * @returns {ClassType[]}
-     * @memberof IIocContainer
-     */
-    getExtends(type: ClassType): ClassType[];
 
     /**
      * get token factory resolve instace in current container.

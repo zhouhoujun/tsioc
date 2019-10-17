@@ -24,7 +24,7 @@ export class ResolvePrivateServiceAction extends IocResolveServiceAction {
                     ctx.instance = map.resolve(token, ...ctx.providers);
                 }
                 if (ctx.extend && isNullOrUndefined(ctx.instance) && isClassType(token)) {
-                    let extk = map.keys().find(k => isClassType(k) && this.container.isExtends(k, token));
+                    let extk = map.keys().find(k => isClassType(k) && ctx.reflects.isExtends(k, token));
                     if (extk) {
                         ctx.instance = map.resolve(extk, ...ctx.providers);
                     }

@@ -1,4 +1,4 @@
-import { isClass, lang } from '../../utils';
+import { isClass } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
 import { PropertyMetadata } from '../../metadatas';

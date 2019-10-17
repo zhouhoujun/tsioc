@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory, ClassType } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined, lang, isClassType } from './utils';
+import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
+import { isClass, isFunction, isSymbol, isToken, isString, isUndefined } from './utils';
 import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
@@ -57,25 +57,6 @@ export class IocContainer implements IIocContainer {
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
         return this.getInstance(ContainerFactoryToken.toString()) as ContainerFactory<T>;
-    }
-
-    isExtends(type: Token, base: ClassType): boolean {
-        if (!isClassType(type)) {
-            return false;
-        }
-        let reft = this.getTypeReflects().get(type);
-        if (reft && reft.defines) {
-            return reft.defines.isExtends(base);
-        }
-        return lang.isExtendsClass(type, base);
-    }
-
-    getExtends(type: ClassType): ClassType[] {
-        let reft = this.getTypeReflects().get(type);
-        if (reft && reft.defines) {
-            return reft.defines.extendTypes;
-        }
-        return lang.getClassChain(type);
     }
 
     /**

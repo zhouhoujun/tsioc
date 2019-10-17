@@ -1,4 +1,4 @@
-import { ClassType, ObjectMap, Type } from '../types';
+import { ClassType, ObjectMap, Type, Token } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
@@ -9,7 +9,7 @@ import {
     getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess, IMetadataAccess } from './MetadataAccess';
-import { isUndefined } from '../utils';
+import { isUndefined, isClassType, lang } from '../utils';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
@@ -76,6 +76,25 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
 
     get<T extends ITypeReflect>(type: ClassType): T {
         return this.map.get(type) as T || null;
+    }
+
+    isExtends(type: Token, base: ClassType): boolean {
+        if (!isClassType(type)) {
+            return false;
+        }
+        let reft = this.get(type);
+        if (reft && reft.defines) {
+            return reft.defines.isExtends(base);
+        }
+        return lang.isExtendsClass(type, base);
+    }
+
+    getExtends(type: ClassType): ClassType[] {
+        let reft = this.get(type);
+        if (reft && reft.defines) {
+            return reft.defines.extendTypes;
+        }
+        return lang.getClassChain(type);
     }
 
     hasMetadata<T = any>(decorator: string | Function, target: ClassType): boolean;

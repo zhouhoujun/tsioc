@@ -14,7 +14,7 @@ import { NodeSelector } from '../ComponentManager';
 @Singleton()
 export class RefElementSelector extends RefSelector {
     isComponentType(decorator: string, element: any): boolean {
-        return super.isComponentType(decorator, element) || this.container.isExtends(element, ElementNode);
+        return super.isComponentType(decorator, element) || this.reflects.isExtends(element, ElementNode);
     }
     getDefaultCompose(): Type<any> {
         return ElementNode;

@@ -34,6 +34,6 @@ export class ActivityRefSelector extends RefSelector {
     }
 
     isComponentType(dectoator: string, element: any): boolean {
-        return super.isComponentType(dectoator, element) || this.container.isExtends(element, Activity);
+        return super.isComponentType(dectoator, element) || this.reflects.isExtends(element, Activity);
     }
 }

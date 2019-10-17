@@ -102,7 +102,7 @@ export class TranslateExpressionHandle extends ParseHandle {
                 .get(TemplateParseScope)
                 .execute(tpCtx);
             if (!isNullOrUndefined(tpCtx.value)) {
-                if (this.container.isExtends(lang.getClass(tpCtx.value), ctx.binding.type)) {
+                if (ctx.reflects.isExtends(lang.getClass(tpCtx.value), ctx.binding.type)) {
                     ctx.value = tpCtx.value;
                 } else {
                     ctx.bindExpression = tpCtx.value;
@@ -168,7 +168,7 @@ export class AssignBindValueHandle extends ParseHandle {
                     .parse(type, ctx.bindExpression);
             } else if (isClassType(type)) {
                 let ttype = lang.getClass(ctx.bindExpression);
-                if (this.container.isExtends(ttype, type)) {
+                if (ctx.reflects.isExtends(ttype, type)) {
                     ctx.value = ctx.bindExpression;
                 }
             } else {

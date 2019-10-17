@@ -11,7 +11,7 @@ export class ResolveServiceInClassChain extends IocResolveScope {
             let classType = ctx.currTargetType;
             let currTagTk = ctx.currTargetToken;
             if (isClassType(classType)) {
-                this.container.getExtends(classType).some(ty => {
+                ctx.reflects.getExtends(classType).some(ty => {
                     if (currTgRef instanceof TargetService) {
                         ctx.currTargetRef = currTgRef.clone(ty);
                     } else {
