@@ -9,7 +9,7 @@ import {
     getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess, IMetadataAccess } from './MetadataAccess';
-import { isUndefined, isClassType, lang } from '../utils';
+import { isUndefined, isClassType, lang, isBaseType } from '../utils';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
@@ -46,6 +46,9 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     }
 
     create<T extends ITypeReflect>(type: ClassType, info?: T): T {
+        if (isBaseType(type)) {
+            return null;
+        }
         let targetReflect: ITypeReflect;
         let exists = this.has(type);
         if (exists) {
@@ -90,7 +93,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     }
 
     getExtends(type: ClassType): ClassType[] {
-        let reft = this.get(type);
+        let reft = this.create(type);
         if (reft && reft.defines) {
             return reft.defines.extendTypes;
         }
