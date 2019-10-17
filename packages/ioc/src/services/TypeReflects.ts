@@ -5,8 +5,7 @@ import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import { MetadataTypes, DefineClassTypes } from '../factories';
 import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
-    hasParamMetadata, hasPropertyMetadata, hasMethodMetadata,
-    getOwnTypeMetadata, getParamerterNames
+    hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess, IMetadataAccess } from './MetadataAccess';
 import { isUndefined, isClassType, lang } from '../utils';
@@ -252,6 +251,15 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
         return getParamerterNames(target, propertyKey);
     }
 
+    /**
+     * get method paramerter providers.
+     *
+     * @template T
+     * @param {ClassType<T>} type
+     * @param {string} propertyKey
+     * @returns {ParamProviders[]}
+     * @memberof TypeReflects
+     */
     getParamProviders<T>(type: ClassType<T>, propertyKey: string): ParamProviders[] {
         let tref = this.get(type);
         if (tref.methodParamProviders) {
