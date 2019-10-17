@@ -1,6 +1,6 @@
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
-import { isClass, isBaseType } from '../utils';
+import { isClass } from '../utils';
 
 /**
  * init class reflect action.
@@ -13,9 +13,6 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
 
     execute(ctx: RegisterActionContext, next?: () => void): void {
         if (!isClass(ctx.targetType)) {
-            return;
-        }
-        if (isBaseType(ctx.targetType)) {
             return;
         }
         if (!ctx.reflects) {
