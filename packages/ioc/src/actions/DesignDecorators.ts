@@ -46,4 +46,11 @@ export class DesignDecorators extends TypeDecorators implements IDesignDecorator
         }
         return this._mthDecorSt;
     }
+
+    reset() {
+        super.reset();
+        this._clsDecorSt = null;
+        this._mthDecorSt = null;
+        this._prsDecorSt = null;
+    }
 }

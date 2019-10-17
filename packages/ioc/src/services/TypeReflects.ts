@@ -46,28 +46,33 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
         return this;
     }
 
-    create(type: ClassType, info?: ITypeReflect) {
-        if (this.has(type)) {
-            return this.get(type);
+    create<T extends ITypeReflect>(type: ClassType, info?: T): T {
+        let targetReflect: ITypeReflect;
+        let exists = this.has(type);
+        if (exists) {
+            targetReflect = this.get(type);
+        } else {
+            let decs = new TargetDecoractors(
+                new DesignDecorators(type, this, this.container.getInstance(DesignRegisterer)),
+                new RuntimeDecorators(type, this, this.container.getInstance(RuntimeRegisterer)));
+            targetReflect = {
+                type: type,
+                decorators: decs,
+                defines: new TypeDefine(type),
+                propProviders: new Map(),
+                methodParams: new Map(),
+                methodParamProviders: new Map(),
+                provides: []
+            };
+            targetReflect.singleton = this.hasMetadata(Singleton, type);
         }
-        let decs = new TargetDecoractors(
-            new DesignDecorators(type, this, this.container.getInstance(DesignRegisterer)),
-            new RuntimeDecorators(type, this, this.container.getInstance(RuntimeRegisterer)));
-        let targetReflect: ITypeReflect = {
-            type: type,
-            decorators: decs,
-            defines: new TypeDefine(type),
-            propProviders: new Map(),
-            methodParams: new Map(),
-            methodParamProviders: new Map(),
-            provides: []
-        };
-        targetReflect.singleton = this.hasMetadata(Singleton, type);
         if (info) {
             targetReflect = Object.assign(targetReflect, info);
         }
-        this.set(type, targetReflect);
-        return targetReflect;
+        if (!exists || info) {
+            this.set(type, targetReflect);
+        }
+        return targetReflect as T;
     }
 
     get<T extends ITypeReflect>(type: ClassType): T {
@@ -175,36 +180,28 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     }
 
     getDecorators(target: ClassType): string[];
-    getDecorators(target: ClassType, cache: boolean): string[];
+    getDecorators(target: ClassType): string[];
     getDecorators(target: ClassType, type: DefineClassTypes): string[];
-    getDecorators(target: ClassType, type: DefineClassTypes, cache: boolean): string[];
-    getDecorators(target: ClassType, type: 'parameter', propertyKey?: string, cache?: boolean): string[];
-    getDecorators(target: ClassType, type?: any, propertyKey?: any, cache?: boolean): string[] {
-        if (isBoolean(type)) {
-            cache = type;
-            type = undefined;
-        }
-        if (isBoolean(propertyKey)) {
-            cache = propertyKey;
-            propertyKey = undefined;
-        }
-        let tgref = cache !== false ? this.get(target) : null;
+    getDecorators(target: ClassType, type: DefineClassTypes): string[];
+    getDecorators(target: ClassType, type: 'parameter', propertyKey?: string): string[];
+    getDecorators(target: ClassType, type?: any, propertyKey?: any): string[] {
+        let tgref = this.create(target);
         let decorators: string[];
         if (!type) {
             type = 'class';
         }
         switch (type) {
             case 'class':
-                decorators = tgref ? tgref.decorators.classDecors : getClassDecorators(target);
+                decorators = tgref.decorators.classDecors;
                 break;
             case 'method':
-                decorators = tgref ? tgref.decorators.methodDecors : getMethodDecorators(target);
+                decorators = tgref.decorators.methodDecors;
                 break;
             case 'property':
-                decorators = tgref ? tgref.decorators.propsDecors : getPropDecorators(target);
+                decorators = tgref.decorators.propsDecors;
                 break;
             case 'parameter':
-                decorators = tgref ? tgref.decorators.runtime.getParamDecors(propertyKey, target) : getParamDecorators(target, propertyKey);
+                decorators = tgref.decorators.runtime.getParamDecors(propertyKey, target);
                 break;
         }
         return decorators || [];

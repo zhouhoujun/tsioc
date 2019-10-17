@@ -196,7 +196,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     async bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext> {
-        await this.container.load(...application.getBootDeps());
         return await this.execLifeScope(
             (ctx) => {
                 ctx.regFor = RegFor.boot;

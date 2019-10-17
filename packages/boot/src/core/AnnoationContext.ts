@@ -77,6 +77,7 @@ export class AnnoationContext extends IocRaiseContext<IContainer> {
 
     module: Type;
 
+    decorator?: string;
     targetReflect?: IModuleReflect;
 
     /**

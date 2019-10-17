@@ -1,3 +1,4 @@
+import { isBaseType } from '@tsdi/ioc';
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
 import { AnnoationContext, BuildHandles } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
@@ -8,6 +9,9 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         if (!(ctx instanceof BootContext)) {
+            return;
+        }
+        if (isBaseType(ctx.module)) {
             return;
         }
         if (!ctx.reflects) {

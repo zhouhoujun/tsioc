@@ -159,6 +159,8 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
      * @memberof BootApplication
      */
     async run(...args: string[]): Promise<T> {
+        await this.container.load(...this.getBootDeps());
+        await this.container.load(...this.getTargetDeps(this.target));
         let ctx = await this.container.resolve(BuilderServiceToken).bootApp(this, ...args);
         return ctx as T;
     }
@@ -186,8 +188,8 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         return dependences;
     }
 
-    getBootDeps(): LoadType[] {
-        return [...this.deps, ...this.getTargetDeps(this.target)];
+    protected getBootDeps(): LoadType[] {
+        return this.deps;
     }
 
 

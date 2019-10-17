@@ -73,7 +73,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
         this.container.bindProvider(WorkflowContextToken, ctx);
     }
 
-    getBootDeps() {
+    protected getBootDeps() {
         let deps = super.getBootDeps();
         if (!isClass(this.target) && this.target['staticSeq']) {
             deps = [];

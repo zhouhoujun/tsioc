@@ -8,6 +8,7 @@ export interface ITypeDecoractors {
     classDecors: string[];
     propsDecors: string[];
     methodDecors: string[];
+    reset();
 }
 
 export interface IDesignDecorators extends ITypeDecoractors {
@@ -48,6 +49,7 @@ export interface ITargetDecoractors {
     readonly classDecors: string[];
     readonly methodDecors: string[];
     readonly propsDecors: string[];
+    reset();
 }
 
 export class TargetDecoractors implements ITargetDecoractors {
@@ -80,6 +82,14 @@ export class TargetDecoractors implements ITargetDecoractors {
             this._propDc = decs.concat(this.runtime.propsDecors.filter(d => decs.indexOf(d) < 0));
         }
         return this._propDc;
+    }
+
+    reset() {
+        this._clsDc = null;
+        this._methodDc = null;
+        this._propDc = null;
+        this.design.reset();
+        this.runtime.reset();
     }
 }
 

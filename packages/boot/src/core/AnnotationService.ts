@@ -28,12 +28,14 @@ export class AnnotationService implements IAnnotationService {
         let keys: string[];
         if (reft && reft.annoDecoractor) {
             return reft.annoDecoractor;
-        } else if (reft && reft.decorators.design) {
+        } else if (reft && reft.decorators) {
+            if (!reft.decorators.design.classDecors.length) {
+                reft.decorators.reset();
+            }
             keys = reft.decorators.design.classDecors;
         } else {
             keys = this.reflects.getDecorators(type);
         }
-
         return keys.find(d => this.register.has(d, DecoratorScopes.Class, AnnoationDesignAction));
     }
 

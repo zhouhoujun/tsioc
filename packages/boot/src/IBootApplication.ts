@@ -47,11 +47,4 @@ export interface IBootApplication<T extends BootContext = BootContext> extends C
      */
     getPools(): IContainerPool;
 
-    /**
-     * boot applicaton extends.
-     *
-     * @returns {LoadType[]}
-     * @memberof IBootApplication
-     */
-    getBootDeps(): LoadType[];
 }
