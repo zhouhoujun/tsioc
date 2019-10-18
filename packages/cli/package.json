@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/cli",
-  "version": "5.3.0",
+  "version": "5.3.0-beta",
   "description": "tsioc cli.",
   "main": "./lib/cli.js",
   "bin": {
