@@ -94,7 +94,6 @@ export class TranslateExpressionHandle extends ParseHandle {
                 scope: ctx.scope,
                 template: ctx.bindExpression,
                 decorator: ctx.decorator,
-                annoation: ctx.annoation,
                 providers: ctx.providers,
                 raiseContainer: ctx.getContainerFactory()
             });
@@ -144,7 +143,6 @@ export class TranslateAtrrHandle extends ParseHandle {
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: ctx.scope,
                     template: template,
-                    annoation: ctx.annoation,
                     raiseContainer: ctx.getContainerFactory(),
                     providers: ctx.providers
                 });

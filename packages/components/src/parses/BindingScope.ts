@@ -49,8 +49,8 @@ export class BindingArrayHandle extends ParseHandle {
                     scope: ctx.scope,
                     binding: ctx.binding,
                     bindExpression: tp,
+                    template: ctx.template,
                     decorator: ctx.decorator,
-                    annoation: ctx.annoation,
                     raiseContainer: ctx.getContainerFactory()
                 });
                 await registerer.get(BindingScope).execute(subCtx);
