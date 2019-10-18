@@ -81,11 +81,11 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
         if (!isClassType(type)) {
             return false;
         }
-        return this.has(type) ? this.get(type).defines.isExtends(base) : lang.isExtendsClass(type, base);
+        return this.has(type) ? this.get(type).defines.isExtends(base) : false; // lang.isExtendsClass(type, base);
     }
 
     getExtends(type: ClassType): ClassType[] {
-        return this.has(type) ? this.get(type).defines.extendTypes : lang.getClassChain(type);
+        return this.has(type) ? this.get(type).defines.extendTypes : []; // lang.getClassChain(type);
     }
 
     hasMetadata<T = any>(decorator: string | Function, target: ClassType): boolean;
