@@ -1,7 +1,7 @@
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
 import { isBaseValue, lang } from '@tsdi/ioc';
-import { BaseTypeParserToken } from '@tsdi/boot';
+import { BaseTypeParser } from '@tsdi/boot';
 
 
 /**
@@ -29,7 +29,7 @@ export class OneWayBinding<T> extends ParseBinding<T> {
             if (isBaseValue(value)) {
                 let type = this.container.getTokenProvider(this.binding.provider) || this.binding.type;
                 if (type !== lang.getClass(value)) {
-                    value = this.container.get(BaseTypeParserToken).parse(type, value);
+                    value = this.container.getInstance(BaseTypeParser).parse(type, value);
                 }
             }
             target[this.binding.name] = value;

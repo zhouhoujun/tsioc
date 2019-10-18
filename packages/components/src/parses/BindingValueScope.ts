@@ -1,8 +1,8 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isString, isArray, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
 import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
-import { HandleRegisterer, BaseTypeParserToken, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
@@ -129,7 +129,7 @@ export class TranslateAtrrHandle extends ParseHandle {
             let mgr = this.container.get(SelectorManager);
             let pdr = ctx.binding.provider;
             let selector: ClassType;
-            let template = isArray(ctx.template) ? {} : (ctx.template || {});
+            let template = {};
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
                 selector = mgr.getAttr(pdr);
@@ -144,6 +144,7 @@ export class TranslateAtrrHandle extends ParseHandle {
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: ctx.scope,
                     template: template,
+                    annoation: ctx.annoation,
                     raiseContainer: ctx.getContainerFactory(),
                     providers: ctx.providers
                 });
@@ -164,8 +165,7 @@ export class AssignBindValueHandle extends ParseHandle {
         if (!isNullOrUndefined(ctx.bindExpression)) {
             let type = ctx.binding.type;
             if (isBaseType(type)) {
-                ctx.value = this.container.get(BaseTypeParserToken)
-                    .parse(type, ctx.bindExpression);
+                ctx.value = this.container.getInstance(BaseTypeParser).parse(type, ctx.bindExpression);
             } else if (isClassType(type)) {
                 let ttype = lang.getClass(ctx.bindExpression);
                 if (ctx.reflects.isExtends(ttype, type)) {
