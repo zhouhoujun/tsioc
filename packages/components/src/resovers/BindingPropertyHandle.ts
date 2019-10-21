@@ -1,5 +1,5 @@
 import { IBindingTypeReflect, BindingTypes, DataBinding, ParseBinding } from '../bindings';
-import { isNullOrUndefined, isTypeObject, isBaseValue } from '@tsdi/ioc';
+import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
 import { BindingScope, ParseContext } from '../parses';
 import { BuildContext, ResolveHandle, HandleRegisterer } from '@tsdi/boot';
 
@@ -16,9 +16,16 @@ export class BindingPropertyHandle extends ResolveHandle {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propInBindings) {
                 let registerer = this.container.getInstance(HandleRegisterer);
+                let template = ctx.template ? { ...ctx.template } : {};
                 await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {
                     let binding = ref.propInBindings.get(n);
-                    let expression = ctx.template ? ctx.template[binding.bindingName || binding.name] : null;
+                    let filed = binding.bindingName || binding.name;
+                    let expression = ctx.template ? ctx.template[filed] : null;
+                    if (isNullOrUndefined(expression)) {
+                        expression = template[filed];
+                    } else {
+                        delete ctx.template[filed];
+                    }
                     if (!isNullOrUndefined(expression)) {
                         if (binding.bindingType === BindingTypes.dynamic) {
                             ctx.target[binding.name] = expression;

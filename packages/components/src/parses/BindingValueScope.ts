@@ -1,6 +1,6 @@
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, isArray } from '@tsdi/ioc';
 import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
 import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
@@ -128,7 +128,8 @@ export class TranslateAtrrHandle extends ParseHandle {
             let mgr = this.container.get(SelectorManager);
             let pdr = ctx.binding.provider;
             let selector: ClassType;
-            let template = {};
+            let template = (!ctx.template || isArray(ctx.template)) ? {} : { ...ctx.template };
+            console.log(template);
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
                 selector = mgr.getAttr(pdr);
