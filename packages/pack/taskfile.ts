@@ -10,7 +10,7 @@ import { AfterInit } from '@tsdi/components';
     ],
     baseURL: __dirname,
     template: <LibPackBuilderOption>{
-        activity: 'tslibs',
+        activity: 'libs',
         outDir: '../../dist/pack',
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
