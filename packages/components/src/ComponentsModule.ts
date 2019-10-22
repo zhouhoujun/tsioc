@@ -6,7 +6,7 @@ import { Component, Input, Output, RefChild } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory } from './registers';
-import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnotationMerger, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
+import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
     BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle

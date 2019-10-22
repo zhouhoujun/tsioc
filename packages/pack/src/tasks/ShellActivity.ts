@@ -1,8 +1,8 @@
 import { ExecOptions, exec } from 'child_process';
+import { Input, Binding } from '@tsdi/components';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
 import { Src, Task, TemplateOption, Activity } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
-import { Input, Binding } from '@tsdi/components';
 
 
 /**

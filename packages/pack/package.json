@@ -39,21 +39,6 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
   "dependencies": {
-    "@tsdi/ioc": "^5.3.0-beta",
-    "@tsdi/aop": "^5.3.0-beta",
-    "@tsdi/boot": "^5.3.0-beta",
-    "@tsdi/components": "^5.3.0-beta",
-    "@tsdi/core": "^5.3.0-beta",
-    "@tsdi/unit": "^5.3.0-beta",
-    "@tsdi/unit-console": "^5.3.0-beta",
-    "@tsdi/logs": "^5.3.0-beta",
-    "@tsdi/annotations": "^5.3.0-beta",
-    "@tsdi/activities": "^5.3.0-beta",
-    "@tsdi/platform-server": "^5.3.0-beta",
-    "@tsdi/platform-server-boot": "^5.3.0-beta",
-    "@types/execa": "^0.9.0",
-    "uglify": "^0.1.5",
-    "uglify-js": "^3.5.12",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0",
     "minimist": "^1.2.0",
@@ -69,7 +54,6 @@
     "json-in-place": "^1.0.1",
     "rollup": "^1.21.3",
     "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
     "rollup-pluginutils": "^2.8.2",
@@ -79,11 +63,25 @@
     "through2": "^3.0.0",
     "ts-node": "^8.4.1",
     "typescript": "^3.5.3",
-    "tsconfig-paths": "^3.7.0"
+    "tsconfig-paths": "^3.9.0"
   },
-  "peerDependencies": {},
+  "peerDependencies": {
+    "@tsdi/ioc": "^5.3.0-beta",
+    "@tsdi/aop": "^5.3.0-beta",
+    "@tsdi/boot": "^5.3.0-beta",
+    "@tsdi/components": "^5.3.0-beta",
+    "@tsdi/core": "^5.3.0-beta",
+    "@tsdi/unit": "^5.3.0-beta",
+    "@tsdi/unit-console": "^5.3.0-beta",
+    "@tsdi/logs": "^5.3.0-beta",
+    "@tsdi/annotations": "^5.3.0-beta",
+    "@tsdi/activities": "^5.3.0-beta",
+    "@tsdi/platform-server": "^5.3.0-beta",
+    "@tsdi/platform-server-boot": "^5.3.0-beta",
+    "rollup-plugin-uglify": "^6.0.3",
+    "rollup-plugin-node-builtins": "^2.1.2"
+  },
   "devDependencies": {
-    "rollup-plugin-uglify": "^6.0.3"
   },
   "directories": {
     "lib": "lib",
