@@ -1,5 +1,5 @@
-import { Events, BindEventType } from './Events';
 import { lang, isFunction } from '@tsdi/ioc';
+import { Events, BindEventType } from './Events';
 
 /**
  * observe property change.

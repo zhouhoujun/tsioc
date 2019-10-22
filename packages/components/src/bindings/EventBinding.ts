@@ -1,7 +1,7 @@
-import { DataBinding } from './DataBinding';
-import { IContainer } from '@tsdi/core';
-import { IBinding } from './IPropertyBindingReflect';
 import { isObservable } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
+import { DataBinding } from './DataBinding';
+import { IBinding } from './IPropertyBindingReflect';
 
 
 export class EventBinding<T = any> extends DataBinding<T> {

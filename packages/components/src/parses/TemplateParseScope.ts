@@ -48,7 +48,6 @@ export class ElementsTemplateHandle extends TemplateHandle {
                     scope: ctx.scope,
                     template: tp,
                     decorator: ctx.decorator,
-                    annoation: ctx.annoation,
                     raiseContainer: ctx.getContainerFactory()
                 });
                 await registerer.get(TemplateParseScope).execute(subCtx);

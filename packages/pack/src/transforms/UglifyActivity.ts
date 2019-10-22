@@ -1,8 +1,9 @@
-import { PipeActivity } from './PipeActivity';
 import { Task } from '@tsdi/activities';
-import { NodeActivityContext, NodeExpression } from '../core';
 import { Input } from '@tsdi/components';
+import { PipeActivity } from './PipeActivity';
+import { NodeActivityContext, NodeExpression } from '../core';
 const uglify = require('gulp-uglify');
+
 
 @Task('uglify, [uglify]')
 export class UglifyActivity extends PipeActivity {

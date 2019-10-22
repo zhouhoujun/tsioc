@@ -1,10 +1,10 @@
-import { NodeActivityContext, NodeActivity, NodeExpression } from '../core';
+import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     rollup, WatcherOptions, RollupCache, ExternalOption, GlobalsOption, RollupOptions, OutputOptions
 } from 'rollup';
-import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
+import { NodeActivityContext, NodeActivity, NodeExpression } from '../core';
 
 /**
  * rollup activity template option.

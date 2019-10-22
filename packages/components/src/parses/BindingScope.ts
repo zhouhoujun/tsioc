@@ -1,8 +1,8 @@
+import { isArray, isNullOrUndefined } from '@tsdi/ioc';
+import { HandleRegisterer } from '@tsdi/boot';
 import { ParsersHandle, ParseHandle } from './ParseHandle';
 import { BindingValueScope } from './BindingValueScope';
 import { ParseContext } from './ParseContext';
-import { HandleRegisterer } from '@tsdi/boot';
-import { isArray, isNullOrUndefined } from '@tsdi/ioc';
 
 /**
  * binding scope.
@@ -39,10 +39,8 @@ export class BindingScope extends ParsersHandle {
  * @extends {ParseHandle}
  */
 export class BindingArrayHandle extends ParseHandle {
-
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
         let registerer = this.container.getInstance(HandleRegisterer);
-
         if (ctx.binding.type === Array && isArray(ctx.bindExpression)) {
             ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
                 let subCtx = ParseContext.parse(ctx.type, {
@@ -61,6 +59,5 @@ export class BindingArrayHandle extends ParseHandle {
         if (isNullOrUndefined(ctx.value)) {
             await next();
         }
-
     }
 }

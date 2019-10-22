@@ -2,13 +2,13 @@ import {
     Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerFactoryToken,
     ContainerFactory, isMetadataObject, lang, isFunction, isPromise
 } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
+import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
+import { ComponentBuilderToken, ComponentManager, SelectorManager } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
-import { IContainer } from '@tsdi/core';
-import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
-import { ComponentBuilderToken, ComponentManager, SelectorManager } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 
 

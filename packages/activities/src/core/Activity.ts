@@ -1,5 +1,3 @@
-import { Task } from '../decorators/Task';
-import { ActivityContext } from './ActivityContext';
 import {
     isClass, Type, isFunction, isNullOrUndefined,
     Abstract, PromiseUtil, Inject, ProviderTypes, lang,
@@ -7,9 +5,11 @@ import {
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { Input, ComponentManager } from '@tsdi/components';
-import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
-import { ActivityResult } from './ActivityResult';
+import { Task } from '../decorators/Task';
+import { ActivityContext } from './ActivityContext';
 import { ValuePipe } from './ValuePipe';
+import { ActivityResult } from './ActivityResult';
+import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
 
 
@@ -130,17 +130,18 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     }
 
     protected async refreshResult(ctx: TCtx): Promise<any> {
-        if (!isNullOrUndefined(ctx.result)) {
+        let ret = isNullOrUndefined(ctx.result) ? ctx.result : ctx.data;
+        if (!isNullOrUndefined(ret)) {
             if (this.pipe) {
-                this.result.value = await this.pipe.transform(ctx.result);
+                this.result.value = await this.pipe.transform(ret);
             } else {
-                this.setActivityResult(ctx);
+                this.setActivityResult(ctx, ret);
             }
         }
     }
 
-    protected setActivityResult(ctx: TCtx) {
-        this.result.value = ctx.result;
+    protected setActivityResult(ctx: TCtx, value?: any) {
+        this.result.value = value || ctx.result;
     }
 
     protected async refreshContext(ctx: TCtx) {

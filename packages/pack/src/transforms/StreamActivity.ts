@@ -1,8 +1,8 @@
-import { Task, Expression } from '@tsdi/activities';
-import { ITransform, NodeActivityContext, isTransform } from '../core';
-import { Input } from '@tsdi/components';
-import { PipeActivity } from './PipeActivity';
 import { isUndefined } from '@tsdi/ioc';
+import { Input } from '@tsdi/components';
+import { Task, Expression } from '@tsdi/activities';
+import { PipeActivity } from './PipeActivity';
+import { ITransform, NodeActivityContext, isTransform } from '../core';
 
 @Task('[pipes]')
 export class StreamActivity extends PipeActivity {

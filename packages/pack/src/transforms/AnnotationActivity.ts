@@ -1,8 +1,8 @@
-import { PipeActivity } from './PipeActivity';
-import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 import { Input } from '@tsdi/components';
 import { classAnnotations } from '@tsdi/annotations';
 import { Task } from '@tsdi/activities';
+import { PipeActivity } from './PipeActivity';
+import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 
 @Task('annotation, [annotation]')
 export class AnnotationActivity extends PipeActivity {

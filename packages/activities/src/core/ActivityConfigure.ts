@@ -1,9 +1,9 @@
 import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from '@tsdi/ioc';
 import { RunnableConfigure } from '@tsdi/boot';
+import { Binding, ElementTemplate } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ValuePipe } from './ValuePipe';
-import { Binding, ElementTemplate } from '@tsdi/components';
 
 /**
  * workflow id.

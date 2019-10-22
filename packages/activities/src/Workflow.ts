@@ -1,11 +1,12 @@
+import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
+import { AopModule } from '@tsdi/aop';
+import { LogModule } from '@tsdi/logs';
 import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
 import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
     ActivityType, ActivityOption, WorkflowContextToken
 } from './core';
-import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
-import { AopModule } from '@tsdi/aop';
-import { LogModule } from '@tsdi/logs';
+
 import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';
 import { ComponentsModule } from '@tsdi/components';
@@ -43,7 +44,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
      * @memberof Workflow
      */
     static async sequence<T extends ActivityContext>(...activities: ActivityType[]): Promise<T> {
-        let option = { template: activities , module: SequenceActivity, staticSeq: true } as ActivityOption<T>;
+        let option = { template: activities, module: SequenceActivity, staticSeq: true } as ActivityOption<T>;
         let runner = await Workflow.run(option) as T;
         return runner;
     }

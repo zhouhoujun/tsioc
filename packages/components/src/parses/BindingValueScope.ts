@@ -1,12 +1,13 @@
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, isArray } from '@tsdi/ioc';
+import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, isArray } from '@tsdi/ioc';
-import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
-import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
 import { ComponentBuilderToken } from '../IComponentBuilder';
+import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
+
 
 /**
  * binding value scope.
@@ -100,6 +101,7 @@ export class TranslateExpressionHandle extends ParseHandle {
             await this.container.getInstance(HandleRegisterer)
                 .get(TemplateParseScope)
                 .execute(tpCtx);
+
             if (!isNullOrUndefined(tpCtx.value)) {
                 if (ctx.reflects.isExtends(lang.getClass(tpCtx.value), ctx.binding.type)) {
                     ctx.value = tpCtx.value;

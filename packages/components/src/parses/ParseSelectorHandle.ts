@@ -1,6 +1,6 @@
+import { isNullOrUndefined } from '@tsdi/ioc';
 import { ParsersHandle } from './ParseHandle';
 import { TemplateContext } from './TemplateContext';
-import { isNullOrUndefined } from '@tsdi/ioc';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 
 
@@ -20,8 +20,9 @@ export class ParseSelectorHandle extends ParsersHandle {
                     scope: ctx.scope,
                     parsing: true,
                     template: ctx.template,
-                    raiseContainer: ctx.getContainerFactory()
-                }, ...ctx.providers);
+                    raiseContainer: ctx.getContainerFactory(),
+                    providers: ctx.providers
+                });
         }
         if (isNullOrUndefined(ctx.value)) {
             await next();

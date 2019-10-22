@@ -1,7 +1,7 @@
-import { RefSelector } from '../RefSelector';
 import { Singleton, Type } from '@tsdi/ioc';
-import { CompositeNode } from './CompositeNode';
+import { RefSelector } from '../RefSelector';
 import { ElementNode } from './ElementNode';
+import { CompositeNode } from './CompositeNode';
 import { NodeSelector } from '../ComponentManager';
 
 /**

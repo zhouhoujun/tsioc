@@ -1,14 +1,14 @@
+import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, ActionRegisterer, DecoratorProvider, DesignRegisterer } from '@tsdi/ioc';
+import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
+import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import * as core from './core';
 import * as activites from './activities';
-import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
-import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, ActionRegisterer, DecoratorProvider, DesignRegisterer } from '@tsdi/ioc';
-import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
-import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationCloner } from '@tsdi/components'
 import { TaskInjectorRegisterAction, ActivityContext } from './core';
-import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 import { ActivityRefSelector } from './ActivityRefSelector';
+import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 
 
 /**

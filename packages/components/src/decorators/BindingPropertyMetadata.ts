@@ -1,5 +1,5 @@
-import { BindingTypes, BindingDirection } from '../bindings';
 import { ParamPropMetadata } from '@tsdi/ioc';
+import { BindingTypes, BindingDirection } from '../bindings';
 
 /**
  * binding property metadata.

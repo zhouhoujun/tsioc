@@ -1,6 +1,6 @@
+import { isString } from '@tsdi/ioc';
 import { AroundMetadata } from '../metadatas';
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
-import { isString } from '@tsdi/ioc';
 
 /**
  * aop around decorator.

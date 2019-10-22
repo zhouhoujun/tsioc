@@ -1,7 +1,7 @@
-import { observe } from './onChange';
-import { ParseBinding } from './ParseBinding';
 import { isBaseValue, lang } from '@tsdi/ioc';
 import { BaseTypeParser } from '@tsdi/boot';
+import { observe } from './onChange';
+import { ParseBinding } from './ParseBinding';
 
 /**
  * two way binding.

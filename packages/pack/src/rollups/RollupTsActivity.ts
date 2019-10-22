@@ -1,15 +1,15 @@
-import { Task } from '@tsdi/activities';
 import { isBoolean } from '@tsdi/ioc';
-import { Binding, Input } from '@tsdi/components';
-import { NodeExpression, NodeActivityContext } from '../core';
-import { Plugin, RollupOptions } from 'rollup';
 import { rollupClassAnnotations } from '@tsdi/annotations';
+import { Binding, Input } from '@tsdi/components';
+import { Task } from '@tsdi/activities';
+import { Plugin, RollupOptions } from 'rollup';
 import { CompilerOptions, nodeModuleNameResolver, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory, convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic } from 'typescript';
 import * as ts from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
 import { syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 import uglify from 'rollup-plugin-uglify';
+import { NodeExpression, NodeActivityContext } from '../core';
 import { RollupActivity, RollupOption } from './RollupActivity';
 
 /**

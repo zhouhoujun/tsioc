@@ -1,5 +1,5 @@
-import { IBinding } from './IPropertyBindingReflect';
 import { IContainer } from '@tsdi/core';
+import { IBinding } from './IPropertyBindingReflect';
 
 /**
  * data binding.

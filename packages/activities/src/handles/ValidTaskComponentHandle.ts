@@ -1,5 +1,5 @@
-import { BuildHandle, BuildContext } from '@tsdi/boot';
 import { isArray } from '@tsdi/ioc';
+import { BuildHandle, BuildContext } from '@tsdi/boot';
 import { SequenceActivity, ParallelActivity } from '../activities';
 
 /**

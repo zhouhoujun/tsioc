@@ -1,5 +1,5 @@
-import { Service, Startup } from '@tsdi/boot';
 import { Injectable, Refs, Inject } from '@tsdi/ioc';
+import { Service, Startup } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityConfigure } from './ActivityConfigure';

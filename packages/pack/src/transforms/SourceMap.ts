@@ -1,8 +1,9 @@
+import { isString } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../core';
 import { PipeActivity } from './PipeActivity';
-import { isString } from '@tsdi/ioc';
+
 
 export abstract class SourcemapActivity extends PipeActivity {
 
