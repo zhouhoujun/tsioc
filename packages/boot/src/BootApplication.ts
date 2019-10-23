@@ -1,48 +1,13 @@
-import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { Type, LoadType, isArray, isString, isClass } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { ContainerPool } from './core';
-import { BuilderServiceToken } from './builder';
-import { IBootApplication } from './IBootApplication';
-import { BootSetup } from './setup';
 import { RunnableConfigure } from './annotations';
+import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
+import { IBootApplication, ContextInit } from './IBootApplication';
+import { BuilderServiceToken } from './builder';
+import { BootSetup } from './setup';
 
-/**
- * boot application hooks.
- *
- * @export
- * @interface ContextInit
- */
-export interface ContextInit<T extends BootContext = BootContext> {
-    /**
-     * on context init.
-     *
-     * @param {T} ctx
-     * @memberof ContextInit
-     */
-    onContextInit(ctx: T);
-}
 
-/**
- * check boot args.
- *
- * @export
- * @param {(LoadType[] | LoadType | string)} [deps]
- * @param {...string[]} args
- * @returns {{ args: string[], deps: LoadType[] }}
- */
-export function checkBootArgs(deps?: LoadType[] | LoadType | string, ...args: string[]): { args: string[], deps: LoadType[] } {
-    let mdeps: LoadType[] = [];
-    if (isString(deps)) {
-        args.unshift(deps);
-    } else if (deps) {
-        mdeps = isArray(deps) ? deps : [deps];
-    }
-    return {
-        args: args,
-        deps: mdeps
-    }
-}
 /**
  * boot application.
  *
@@ -197,4 +162,26 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         return new ContainerBuilder(this.loader);
     }
 
+}
+
+
+/**
+ * check boot args.
+ *
+ * @export
+ * @param {(LoadType[] | LoadType | string)} [deps]
+ * @param {...string[]} args
+ * @returns {{ args: string[], deps: LoadType[] }}
+ */
+export function checkBootArgs(deps?: LoadType[] | LoadType | string, ...args: string[]): { args: string[], deps: LoadType[] } {
+    let mdeps: LoadType[] = [];
+    if (isString(deps)) {
+        args.unshift(deps);
+    } else if (deps) {
+        mdeps = isArray(deps) ? deps : [deps];
+    }
+    return {
+        args: args,
+        deps: mdeps
+    }
 }

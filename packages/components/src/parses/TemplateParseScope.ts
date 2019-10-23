@@ -1,9 +1,9 @@
+import { isNullOrUndefined, isArray } from '@tsdi/ioc';
+import { HandleRegisterer } from '@tsdi/boot';
 import { TemplateHandle, TemplatesHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
-import { isNullOrUndefined, isArray } from '@tsdi/ioc';
 import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
-import { HandleRegisterer } from '@tsdi/boot';
 
 
 /**

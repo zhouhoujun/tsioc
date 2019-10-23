@@ -1,5 +1,5 @@
-import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
 import { IBinding, DataBinding } from '../bindings';
 

@@ -1,11 +1,11 @@
-import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
-import { RunnableConfigure, ConfigureManager } from './annotations';
-import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
+import { IModuleLoader, IContainer } from '@tsdi/core';
+import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
-import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { StartupServices } from './services';
+import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
+import { RunnableConfigure, ConfigureManager } from './annotations';
 
 
 

@@ -1,5 +1,5 @@
-import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type, ProviderTypes, InjectToken, IocRaiseContext } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { IComponentContext, ModuleConfigure } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
 

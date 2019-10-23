@@ -1,7 +1,23 @@
 import { LoadType, Type } from '@tsdi/ioc';
 import { IContainerPool } from './core';
-import { ContextInit } from './BootApplication';
 import { BootContext, BootOption } from './BootContext';
+
+
+/**
+ * boot application hooks.
+ *
+ * @export
+ * @interface ContextInit
+ */
+export interface ContextInit<T extends BootContext = BootContext> {
+    /**
+     * on context init.
+     *
+     * @param {T} ctx
+     * @memberof ContextInit
+     */
+    onContextInit(ctx: T);
+}
 
 /**
  * boot application interface.

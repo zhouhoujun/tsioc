@@ -1,6 +1,7 @@
+import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplatesHandle, TemplateHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
-import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+
 
 /**
  * translate selector scope.

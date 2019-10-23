@@ -5,8 +5,8 @@ import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentA
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import * as core from './core';
-import * as activites from './activities';
 import { TaskInjectorRegisterAction, ActivityContext } from './core';
+import * as activites from './activities';
 import { ActivityRefSelector } from './ActivityRefSelector';
 import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 
