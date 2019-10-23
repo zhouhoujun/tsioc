@@ -1,5 +1,6 @@
-import { ElementNode } from '../ElementNode';
 import { BuildHandle, BuildContext } from '@tsdi/boot';
+import { ElementNode } from '../ElementNode';
+
 
 /**
  * binding component handle.

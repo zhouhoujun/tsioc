@@ -2,6 +2,7 @@ import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
+import { ComponentsModule } from '@tsdi/components';
 import {
     UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
     ActivityType, ActivityOption, WorkflowContextToken
@@ -9,7 +10,6 @@ import {
 
 import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';
-import { ComponentsModule } from '@tsdi/components';
 
 /**
  * workflow builder.

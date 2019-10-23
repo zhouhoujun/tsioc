@@ -1,6 +1,7 @@
+import { Type } from '@tsdi/ioc';
 import { InjectorActionContext } from '@tsdi/core';
 import { DIModuleInjectorScope } from '@tsdi/boot';
-import { Type } from '@tsdi/ioc';
+
 
 /**
  * task injector register action.

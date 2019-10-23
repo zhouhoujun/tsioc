@@ -1,6 +1,7 @@
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { CompoiseActivity, ActivityType } from '../core';
-import { Input } from '@tsdi/components';
+
 
 /**
  * sequence activity.

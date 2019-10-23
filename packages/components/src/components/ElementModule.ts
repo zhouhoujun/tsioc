@@ -1,5 +1,5 @@
-import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
 import { Inject, DecoratorProvider } from '@tsdi/ioc';
+import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
 import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { Component } from '../decorators';
 import { ElementNode } from './ElementNode';

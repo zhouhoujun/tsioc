@@ -1,5 +1,5 @@
-import { IBuilderService, IModuleResolveOption } from '@tsdi/boot';
 import { ProviderTypes, Type, InjectToken, ClassType } from '@tsdi/ioc';
+import { IBuilderService, IModuleResolveOption } from '@tsdi/boot';
 
 /**
  * template option.

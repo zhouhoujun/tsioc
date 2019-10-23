@@ -1,6 +1,6 @@
 import { isArray } from '@tsdi/ioc';
-import { ElementNode } from '../ElementNode';
 import { BuildHandle, BuildContext } from '@tsdi/boot';
+import { ElementNode } from '../ElementNode';
 
 /**
  * valid component handle.

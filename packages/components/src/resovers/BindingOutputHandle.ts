@@ -1,6 +1,6 @@
 import { ResolveHandle, BuildContext, HandleRegisterer } from '@tsdi/boot';
 import { IBindingTypeReflect } from '../bindings';
-import { isNullOrUndefined, lang } from '@tsdi/ioc';
+import { isNullOrUndefined } from '@tsdi/ioc';
 import { ParseContext, BindingScopeHandle } from '../parses';
 
 export class BindingOutputHandle extends ResolveHandle {
@@ -15,11 +15,10 @@ export class BindingOutputHandle extends ResolveHandle {
                     let expression = ctx.template ? ctx.template[filed] : null;
                     if (!isNullOrUndefined(expression)) {
                         let pctx = ParseContext.parse(ctx.type, {
-                            scope: ctx.scope,
+                            scope: ctx.scope || ctx.target,
                             bindExpression: expression,
                             template: ctx.template,
                             binding: binding,
-                            annoation: ctx.annoation,
                             decorator: ctx.decorator,
                             raiseContainer: ctx.getContainerFactory()
                         })

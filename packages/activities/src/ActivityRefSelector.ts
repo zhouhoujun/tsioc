@@ -1,7 +1,8 @@
-import { RefSelector, NodeSelector, ComponentManager } from '@tsdi/components';
 import { Type, Singleton } from '@tsdi/ioc';
+import { RefSelector, NodeSelector, ComponentManager } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core';
+
 
 /**
  * activity ref selector.

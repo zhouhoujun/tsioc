@@ -1,6 +1,6 @@
-import { TemplateParseScope, TemplateContext } from '../parses';
-import { HandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
 import { isNullOrUndefined } from '@tsdi/ioc';
+import { HandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
+import { TemplateParseScope, TemplateContext } from '../parses';
 
 export class ResolveTemplateScope extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {

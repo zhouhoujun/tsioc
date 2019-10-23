@@ -1,7 +1,8 @@
-import { BootTargetAccessor } from '@tsdi/boot';
-import { Injectable, isArray, lang } from '@tsdi/ioc';
-import { ComponentManager } from './ComponentManager';
 import { IContainer } from '@tsdi/core';
+import { Injectable, isArray, lang } from '@tsdi/ioc';
+import { BootTargetAccessor } from '@tsdi/boot';
+import { ComponentManager } from './ComponentManager';
+
 
 /**
  * component boot accessor.

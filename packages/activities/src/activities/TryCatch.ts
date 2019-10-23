@@ -1,9 +1,10 @@
+import { lang, Type } from '@tsdi/ioc';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
 import { ActivityContext, Activity } from '../core';
 import { BodyActivity } from './BodyActivity';
-import { Input } from '@tsdi/components';
-import { lang, Type } from '@tsdi/ioc';
 import { ControlActivity } from './ControlActivity';
+
 
 @Task('catch')
 export class CatchActivity<T = any> extends ControlActivity<T> {

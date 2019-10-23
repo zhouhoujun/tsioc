@@ -1,6 +1,6 @@
+import { isFunction } from '@tsdi/ioc';
 import { BuildContext } from '@tsdi/boot';
 import { BeforeInit } from '../ComponentLifecycle';
-import { isFunction } from '@tsdi/ioc';
 import { ResolveComponentHandle } from './ResolveComponentHandle';
 
 

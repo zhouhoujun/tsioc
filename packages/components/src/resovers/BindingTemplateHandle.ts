@@ -1,8 +1,8 @@
+import { DecoratorProvider } from '@tsdi/ioc';
 import { ResolveHandle, BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { IBindingTypeReflect } from '../bindings';
 import { ComponentManager } from '../ComponentManager';
 import { RefSelector } from '../RefSelector';
-import { DecoratorProvider } from '@tsdi/ioc';
 
 /**
  * binding temlpate handle.

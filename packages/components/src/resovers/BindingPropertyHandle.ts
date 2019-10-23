@@ -1,5 +1,5 @@
 import { IBindingTypeReflect, BindingTypes, DataBinding, ParseBinding } from '../bindings';
-import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
+import { isNullOrUndefined, isTypeObject, isBaseValue } from '@tsdi/ioc';
 import { BindingScope, ParseContext } from '../parses';
 import { BuildContext, ResolveHandle, HandleRegisterer } from '@tsdi/boot';
 
