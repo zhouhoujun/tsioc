@@ -1,6 +1,6 @@
 import { isFunction, ObjectMap, lang } from '@tsdi/ioc';
-import { Task, TemplateOption } from '@tsdi/activities';
 import { Input, Binding } from '@tsdi/components';
+import { Task, TemplateOption } from '@tsdi/activities';
 import * as through from 'through2';
 import { TransformActivity } from './TransformActivity';
 import { NodeActivityContext } from '../core';

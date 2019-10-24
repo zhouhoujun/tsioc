@@ -1,5 +1,5 @@
-import { Input } from '@tsdi/components';
 import { classAnnotations } from '@tsdi/annotations';
+import { Input } from '@tsdi/components';
 import { Task } from '@tsdi/activities';
 import { PipeActivity } from './PipeActivity';
 import { NodeActivityContext, ITransform, NodeExpression } from '../core';

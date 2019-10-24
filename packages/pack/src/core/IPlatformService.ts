@@ -1,5 +1,5 @@
-import { IContainer } from '@tsdi/core';
 import { ObjectMap, Express2, InjectToken } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { Src } from '@tsdi/activities';
 import { GlobbyOptions } from 'globby';

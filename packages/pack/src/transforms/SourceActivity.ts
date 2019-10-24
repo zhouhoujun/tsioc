@@ -1,5 +1,5 @@
-import { Task, Src, TemplateOption } from '@tsdi/activities';
 import { Input, Binding } from '@tsdi/components';
+import { Task, Src, TemplateOption } from '@tsdi/activities';
 import { SrcOptions, src } from 'vinyl-fs';
 import { NodeActivityContext, NodeExpression } from '../core';
 import { TransformActivity } from './TransformActivity';

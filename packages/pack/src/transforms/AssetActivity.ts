@@ -1,5 +1,5 @@
-import { Src, Task, TemplateOption, ActivityType } from '@tsdi/activities';
 import { Input, Binding } from '@tsdi/components';
+import { Src, Task, TemplateOption, ActivityType } from '@tsdi/activities';
 import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';

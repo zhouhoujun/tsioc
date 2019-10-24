@@ -1,14 +1,14 @@
-import { Src, WorkflowContextToken } from '@tsdi/activities';
 import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject, isFunction } from '@tsdi/ioc';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { toAbsolutePath, runMainPath, syncRequire } from '@tsdi/platform-server';
+import { ProcessRunRootToken } from '@tsdi/boot';
+import { Src, WorkflowContextToken } from '@tsdi/activities';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative, basename, extname } from 'path';
 import {
     mkdir, cp, rm
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
-import { ProcessRunRootToken } from '@tsdi/boot';
-import { IContainer, ContainerToken } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { NodeActivityContext } from './NodeActivityContext';
 import { PlatformServiceToken, CmdOptions } from './IPlatformService';

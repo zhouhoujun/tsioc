@@ -1,5 +1,5 @@
-import { IContainer,  ContainerToken } from '@tsdi/core';
 import { Injectable, Inject, isString, Token, Registration, Type, isClass } from '@tsdi/ioc';
+import { IContainer,  ContainerToken } from '@tsdi/core';
 import { NonePointcut } from '@tsdi/aop';
 import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
