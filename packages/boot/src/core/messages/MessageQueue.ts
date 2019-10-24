@@ -1,7 +1,8 @@
-import { Handles, HandleType, IHandle } from '../handles';
 import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
+import { Handles, HandleType, IHandle } from '../handles';
+
 
 /**
  * composite message.

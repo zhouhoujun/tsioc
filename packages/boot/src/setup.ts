@@ -1,11 +1,11 @@
+import {
+    BindProviderAction, IocSetCacheAction, Inject, DecoratorScopes, RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer
+} from '@tsdi/ioc';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Bootstrap } from './decorators/Bootstrap';
 import * as annotations from './annotations';
 import * as runnable from './runnable';
 import * as services from './services';
-import {
-    BindProviderAction, IocSetCacheAction, Inject, DecoratorScopes, RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer
-} from '@tsdi/ioc';
 import { DIModuleInjectorScope } from './core';
 import { BuilderService } from './builder';
 

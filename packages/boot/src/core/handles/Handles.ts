@@ -1,6 +1,6 @@
-import { IHandleContext, HandleType, Handle } from './Handle';
 import { PromiseUtil, isBoolean } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
+import { IHandleContext, HandleType, Handle } from './Handle';
 
 /**
  * composite handles.

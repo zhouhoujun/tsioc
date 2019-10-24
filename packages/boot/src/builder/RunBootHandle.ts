@@ -1,7 +1,7 @@
+import { isFunction } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { StartupInit } from '../runnable';
-import { isFunction } from '@tsdi/ioc';
 
 export class RunBootHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {

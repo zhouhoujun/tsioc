@@ -1,6 +1,6 @@
 import { Type, ProviderMap, ActionContextOption, isClass, ContainerFactory, IocRaiseContext } from '@tsdi/ioc';
-import { ModuleConfigure, RegFor, IModuleResolver, IModuleReflect } from './modules';
 import { IContainer } from '@tsdi/core';
+import { ModuleConfigure, RegFor, IModuleResolver, IModuleReflect } from './modules';
 
 /**
  * annoation action option.

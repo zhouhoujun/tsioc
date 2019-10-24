@@ -1,11 +1,11 @@
 import { isClass, LifeScope, Type, Inject, ActionRegisterer } from '@tsdi/ioc';
-import { ModuleResovler } from './ModuleResovler';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, ContainerToken, InjectorAction, InjectorActionContext, InjectorRegisterScope } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
 import { AnnoationRegisterScope } from './AnnoationRegisterScope';
 import { RegModuleExportsAction } from './RegModuleExportsAction';
-import { InjectorAction, InjectorActionContext, InjectorRegisterScope } from '@tsdi/core';
+import { ModuleResovler } from './ModuleResovler';
+
 
 
 /**

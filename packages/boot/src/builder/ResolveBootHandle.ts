@@ -1,7 +1,7 @@
-import { BootHandle } from './BootHandle';
-import { BootContext } from '../BootContext';
 import { isClass, lang } from '@tsdi/ioc';
 import { BuilderServiceToken } from './IBuilderService';
+import { BootHandle } from './BootHandle';
+import { BootContext } from '../BootContext';
 
 
 export class ResolveBootHandle extends BootHandle {

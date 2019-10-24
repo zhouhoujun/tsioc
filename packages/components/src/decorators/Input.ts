@@ -52,6 +52,9 @@ export interface InputPropertyDecorator {
     (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
 }
 
+/**
+ * Input decorator.
+ */
 export const Input: InputPropertyDecorator = createPropDecorator<BindingPropertyMetadata>('Input', [
     (ctx, next) => {
         let arg = ctx.currArg;

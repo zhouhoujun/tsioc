@@ -1,4 +1,4 @@
-import { isNullOrUndefined, isTypeObject, isBaseValue } from '@tsdi/ioc';
+import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
 import { BuildContext, ResolveHandle, HandleRegisterer } from '@tsdi/boot';
 import { BindingScope, ParseContext } from '../parses';
 import { IBindingTypeReflect, BindingTypes, DataBinding, ParseBinding } from '../bindings';
@@ -49,6 +49,19 @@ export class BindingPropertyHandle extends ResolveHandle {
                         }
                     } else if (!isNullOrUndefined(binding.defaultValue)) {
                         ctx.target[binding.name] = binding.defaultValue;
+                    }
+
+                    let bvaild = ref.propVaildates ? ref.propVaildates.get(binding.name) : null;
+                    if (bvaild) {
+                        if (bvaild.required && !isNullOrUndefined(ctx.target[binding.name])) {
+                            throw new Error(`${lang.getClassName(ctx.target)}.${binding.name} is not vaild. ${bvaild.errorMsg}`)
+                        }
+                        if (bvaild.vaild) {
+                            let vaild = await bvaild.vaild(ctx.target[binding.name], ctx.target);
+                            if (!vaild) {
+                                throw new Error(`${lang.getClassName(ctx.target)}.${binding.name} is not vaild. ${bvaild.errorMsg}`)
+                            }
+                        }
                     }
                 }));
             }

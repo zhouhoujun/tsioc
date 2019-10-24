@@ -1,6 +1,6 @@
-import { IStartup, Startup, StartupInit } from './Startup';
 import { Abstract, InjectReference, Token } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
+import { IStartup, Startup, StartupInit } from './Startup';
 
 /**
  * IService interface

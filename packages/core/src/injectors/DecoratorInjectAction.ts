@@ -1,6 +1,6 @@
+import { DecoratorScopes, DesignRegisterer } from '@tsdi/ioc';
 import { InjectorAction } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
-import { DecoratorScopes, DesignRegisterer } from '@tsdi/ioc';
 
 export class DecoratorInjectAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next?: () => void): void {

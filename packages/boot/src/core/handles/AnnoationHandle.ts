@@ -1,5 +1,5 @@
-import { BuildHandle } from './BuildHandles';
 import { Abstract } from '@tsdi/ioc';
+import { BuildHandle } from './BuildHandles';
 import { AnnoationContext } from '../AnnoationContext';
 
 

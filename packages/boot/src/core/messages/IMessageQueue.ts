@@ -1,6 +1,7 @@
+import { InjectToken, ProviderTypes, Token } from '@tsdi/ioc';
 import { HandleType, IHandle } from '../handles';
 import { MessageContext, MessageOption } from './MessageContext';
-import { InjectToken, ProviderTypes, Token } from '@tsdi/ioc';
+
 
 /**
  * application message handle.

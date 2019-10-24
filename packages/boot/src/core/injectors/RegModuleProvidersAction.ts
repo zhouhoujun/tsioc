@@ -1,6 +1,7 @@
+import { Type, ProviderTypes, isArray, ProviderParser } from '@tsdi/ioc';
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
-import { Type, ProviderTypes, isArray, ProviderParser } from '@tsdi/ioc';
+
 
 export class RegModuleProvidersAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {

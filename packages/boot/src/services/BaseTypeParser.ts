@@ -1,5 +1,5 @@
-import { IBaseTypeParser, BaseTypeParserToken } from './IBaseTypeParser';
 import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNullOrUndefined } from '@tsdi/ioc';
+import { IBaseTypeParser, BaseTypeParserToken } from './IBaseTypeParser';
 
 @Singleton(BaseTypeParserToken)
 export class BaseTypeParser implements IBaseTypeParser {

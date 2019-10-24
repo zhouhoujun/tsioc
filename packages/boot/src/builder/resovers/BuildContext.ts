@@ -1,6 +1,6 @@
-import { ModuleConfigure, IModuleReflect } from '../../core';
-import { IContainer } from '@tsdi/core';
 import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext, ITypeReflect } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
+import { ModuleConfigure, IModuleReflect } from '../../core';
 import { IComponentContext } from '../ComponentContext';
 
 /**

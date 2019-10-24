@@ -1,6 +1,6 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects } from '@tsdi/ioc';
-import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { IContainer, ContainerToken } from '@tsdi/core';
+import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';

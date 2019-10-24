@@ -1,5 +1,5 @@
-import { InjectorAction, InjectorActionContext } from '@tsdi/core';
 import { lang, isClass } from '@tsdi/ioc';
+import { InjectorAction, InjectorActionContext } from '@tsdi/core';
 import { RegisterForMetadata, RegisterFor } from '../decorators';
 import { RegFor } from '../modules';
 import { ContainerPoolToken } from '../ContainerPoolToken';

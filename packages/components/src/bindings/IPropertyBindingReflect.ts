@@ -102,6 +102,12 @@ export interface IBinding<T = any> {
     direction?: BindingDirection;
 }
 
+export interface IProperyVaildate {
+    required?: boolean;
+    vaild?: (value: any, target?: any) => boolean | Promise<boolean>;
+    errorMsg?: string;
+}
+
 /**
  * binding type reflect data.
  *
@@ -138,5 +144,13 @@ export interface IBindingTypeReflect extends ITypeReflect {
      * @memberof IBindingTypeReflect
      */
     propRefChildBindings: Map<string, IBinding>;
+
+    /**
+     * property vaildate metadata.
+     *
+     * @type {Map<string, IProperyVaildate>}
+     * @memberof IBindingTypeReflect
+     */
+    propVaildates: Map<string, IProperyVaildate>;
 
 }

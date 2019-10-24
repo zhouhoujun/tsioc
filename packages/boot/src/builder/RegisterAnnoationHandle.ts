@@ -1,6 +1,6 @@
-import { AnnoationHandle, ModuleInjectLifeScope, AnnotationServiceToken } from '../core';
 import { lang, ActionRegisterer } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
+import { AnnoationHandle, ModuleInjectLifeScope, AnnotationServiceToken } from '../core';
 
 
 export class RegisterAnnoationHandle extends AnnoationHandle {

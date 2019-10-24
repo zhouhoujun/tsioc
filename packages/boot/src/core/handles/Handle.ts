@@ -1,5 +1,5 @@
-import { ContainerToken, IContainer } from '@tsdi/core';
 import { PromiseUtil, Inject, ProviderTypes, Token, IocCoreService, isFunction, IocActionType, isToken } from '@tsdi/ioc';
+import { ContainerToken, IContainer } from '@tsdi/core';
 
 
 /**

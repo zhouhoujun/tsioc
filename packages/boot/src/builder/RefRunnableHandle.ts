@@ -1,6 +1,6 @@
+import { lang } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { lang } from '@tsdi/ioc';
 import { Startup, Runnable, Service, Renderer } from '../runnable';
 
 

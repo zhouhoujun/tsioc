@@ -1,5 +1,5 @@
-import { MessageContext, RootMessageQueueToken, MessageQueue } from '../core';
 import { Singleton } from '@tsdi/ioc';
+import { MessageContext, RootMessageQueueToken, MessageQueue } from '../core';
 
 
 /**

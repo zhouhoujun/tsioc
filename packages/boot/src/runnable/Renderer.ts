@@ -1,7 +1,6 @@
+import { Inject, Abstract, InjectReference, Token } from '@tsdi/ioc';
 import { Startup, IStartup } from './Startup';
 import { BootContext } from '../BootContext';
-import { Inject, Abstract, InjectReference, Token } from '@tsdi/ioc';
-
 
 
 /**
