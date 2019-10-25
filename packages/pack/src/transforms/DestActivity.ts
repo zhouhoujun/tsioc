@@ -51,8 +51,7 @@ export class DestActivity extends PipeActivity {
 
     @Input() dist: NodeExpression<string>;
 
-    @Input('destOptions')
-    options: NodeExpression<DestOptions>;
+    @Input('destOptions') options: NodeExpression<DestOptions>;
 
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let dist = await this.resolveExpression(this.dist, ctx);
