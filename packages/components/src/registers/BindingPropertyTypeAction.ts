@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, isClassType, isUndefined, DecoratorProvider } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, isClassType, isUndefined, DecoratorProvider, lang } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from '../decorators';
 import { IBindingTypeReflect } from '../bindings';
 import { BindingCache } from './BindingCache';

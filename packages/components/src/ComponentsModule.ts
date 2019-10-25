@@ -3,10 +3,10 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
-import { Component, Input, Output, RefChild } from './decorators';
+import { Component, Input, Output, RefChild, Vaildate } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
-import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory } from './registers';
+import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory, RegisterVaildateAction } from './registers';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
     BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle
@@ -86,7 +86,8 @@ export class ComponentsModule {
             .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
-            .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction);
+            .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction)
+            .register(Vaildate, DecoratorScopes.Property, RegisterVaildateAction);
 
         container.getInstance(RuntimeRegisterer)
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

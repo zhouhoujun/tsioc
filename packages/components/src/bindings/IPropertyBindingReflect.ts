@@ -151,6 +151,6 @@ export interface IBindingTypeReflect extends ITypeReflect {
      * @type {Map<string, IProperyVaildate>}
      * @memberof IBindingTypeReflect
      */
-    propVaildates: Map<string, IProperyVaildate>;
+    propVaildates: Map<string, IProperyVaildate[]>;
 
 }

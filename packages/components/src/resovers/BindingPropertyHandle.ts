@@ -51,17 +51,19 @@ export class BindingPropertyHandle extends ResolveHandle {
                         ctx.target[binding.name] = binding.defaultValue;
                     }
 
-                    let bvaild = ref.propVaildates ? ref.propVaildates.get(binding.name) : null;
-                    if (bvaild) {
-                        if (bvaild.required && !isNullOrUndefined(ctx.target[binding.name])) {
-                            throw new Error(`${lang.getClassName(ctx.target)}.${binding.name} is not vaild. ${bvaild.errorMsg}`)
-                        }
-                        if (bvaild.vaild) {
-                            let vaild = await bvaild.vaild(ctx.target[binding.name], ctx.target);
-                            if (!vaild) {
+                    let bvailds = ref.propVaildates ? ref.propVaildates.get(binding.name) : null;
+                    if (bvailds && bvailds.length) {
+                        await Promise.all(bvailds.map(async bvaild => {
+                            if (bvaild.required && !isNullOrUndefined(ctx.target[binding.name])) {
                                 throw new Error(`${lang.getClassName(ctx.target)}.${binding.name} is not vaild. ${bvaild.errorMsg}`)
                             }
-                        }
+                            if (bvaild.vaild) {
+                                let vaild = await bvaild.vaild(ctx.target[binding.name], ctx.target);
+                                if (!vaild) {
+                                    throw new Error(`${lang.getClassName(ctx.target)}.${binding.name} is not vaild. ${bvaild.errorMsg}`)
+                                }
+                            }
+                        }));
                     }
                 }));
             }
