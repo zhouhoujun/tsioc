@@ -1,7 +1,6 @@
 import {
-    isClass, Type, isFunction, isNullOrUndefined,
-    Abstract, PromiseUtil, Inject, ProviderTypes, lang,
-    ContainerFactoryToken, ContainerFactory
+    isClass, Type, isFunction, isNullOrUndefined, Abstract, PromiseUtil, Inject,
+    ProviderTypes, lang, ContainerFactoryToken, ContainerFactory
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { Input, ComponentManager } from '@tsdi/components';

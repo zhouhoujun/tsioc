@@ -1,5 +1,5 @@
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { isClassType, lang, ProviderTypes } from '@tsdi/ioc';
+import { isClassType, ProviderTypes } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 
 export class ResovleServicesInRaiseAction extends IocResolveServicesAction {

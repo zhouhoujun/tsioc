@@ -94,7 +94,7 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
             this.uglify,
             this.sourcemapWrite,
             this.dist
-        ]
+        ];
     }
 
     protected async complieTs(ctx: NodeActivityContext): Promise<void> {

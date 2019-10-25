@@ -1,5 +1,5 @@
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { isToken, InjectReference, ProviderMap, isClassType, lang, ProviderTypes } from '@tsdi/ioc';
+import { isToken, InjectReference, ProviderMap, isClassType, ProviderTypes } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 
 

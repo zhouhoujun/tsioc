@@ -1,5 +1,5 @@
-import { IContainer } from '@tsdi/core';
 import { Injectable, isArray, lang } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { BootTargetAccessor } from '@tsdi/boot';
 import { ComponentManager } from './ComponentManager';
 

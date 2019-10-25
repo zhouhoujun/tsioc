@@ -6,7 +6,7 @@ import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
 import { ComponentBuilderToken } from '../IComponentBuilder';
-import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
+import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection, IBindingTypeReflect } from '../bindings';
 
 
 /**
@@ -130,8 +130,6 @@ export class TranslateAtrrHandle extends ParseHandle {
             let mgr = this.container.get(SelectorManager);
             let pdr = ctx.binding.provider;
             let selector: ClassType;
-            let template = (!ctx.template || isArray(ctx.template)) ? {} : ctx.template;
-            template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
                 selector = mgr.getAttr(pdr);
             } else if (isClassType(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
@@ -141,6 +139,20 @@ export class TranslateAtrrHandle extends ParseHandle {
             }
 
             if (selector) {
+                let template1 = (!ctx.template || isArray(ctx.template)) ? null : ctx.template;
+                let template = {};
+                if (template1) {
+                    let brefl = ctx.reflects.get<IBindingTypeReflect>(selector);
+                    if (brefl && brefl.propInBindings) {
+                        brefl.propInBindings.forEach((v, k) => {
+                            if (k === 'name' || k === 'id') {
+                                return;
+                            }
+                            template[k] = template1[k];
+                        });
+                    }
+                }
+                template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
                 let container = ctx.getRaiseContainer();
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: ctx.scope,

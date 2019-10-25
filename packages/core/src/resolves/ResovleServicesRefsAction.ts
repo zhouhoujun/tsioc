@@ -1,6 +1,6 @@
-import { IocResolveServicesAction } from './IocResolveServicesAction';
 import { isToken, InjectReference, ProviderTypes } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
+import { IocResolveServicesAction } from './IocResolveServicesAction';
 
 
 export class ResovleServicesRefsAction extends IocResolveServicesAction {

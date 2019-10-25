@@ -195,7 +195,7 @@ export class PlatformService {
      */
     toRootPath(pathstr: string): string {
         let root = this.getRootPath();
-        return root ? toAbsolutePath(root, pathstr) : pathstr;
+        return root ? toAbsolutePath(root, pathstr) : this.normalize(pathstr);
     }
 
     /**

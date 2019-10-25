@@ -21,7 +21,6 @@ export class ComponentRegisterAction extends IocDesignAction {
             if (!meta.selector) {
                 return;
             }
-
             reflects.componentSelector = meta.selector;
             if (meta.selector.indexOf(',') > 0) {
                 meta.selector.split(',').forEach(sel => {

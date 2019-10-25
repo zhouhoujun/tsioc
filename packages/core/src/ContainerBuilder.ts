@@ -1,7 +1,7 @@
+import { Modules, LoadType } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { Container } from './Container';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { Modules, LoadType } from '@tsdi/ioc';
 import { IModuleLoader, ModuleLoader } from './services';
 
 /**

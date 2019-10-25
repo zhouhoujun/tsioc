@@ -1,4 +1,4 @@
-import { isFunction, isToken, isArray, lang, isClassType, isClass, ClassType } from '@tsdi/ioc';
+import { isFunction, isToken, isArray, lang, isClassType, isClass } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';

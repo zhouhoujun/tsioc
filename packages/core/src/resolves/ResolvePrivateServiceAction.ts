@@ -1,4 +1,4 @@
-import { InjectReference, ProviderMap, Token, isToken, isClassType, isNullOrUndefined, lang } from '@tsdi/ioc';
+import { InjectReference, ProviderMap, Token, isToken, isClassType, isNullOrUndefined } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetPrivateService } from '../TargetService';

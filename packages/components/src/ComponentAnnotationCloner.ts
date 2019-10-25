@@ -10,6 +10,7 @@ import { ModuleConfigure, AnnotationCloner } from '@tsdi/boot';
  */
 @Singleton()
 export class ComponentAnnotationCloner extends AnnotationCloner {
+
     clone(ann: ModuleConfigure): ModuleConfigure {
         if (ann.template) {
             ann.template = this.cloneTemplate(ann.template);

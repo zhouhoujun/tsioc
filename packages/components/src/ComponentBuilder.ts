@@ -1,8 +1,8 @@
 import { Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider } from '@tsdi/ioc';
 import { BuilderService, HandleRegisterer, IModuleResolveOption, BootTargetAccessor } from '@tsdi/boot';
+import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { TemplateContext, TemplateParseScope } from './parses';
 import { Component, NonSerialize } from './decorators';
-import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IBindingTypeReflect } from './bindings';
 import { RefSelector } from './RefSelector';
 
@@ -27,7 +27,6 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
             .execute(ctx);
         return ctx.value;
     }
-
 
     async resolveNode<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any> {
         let bootTarget = this.resolve(target, options, ...providers);
