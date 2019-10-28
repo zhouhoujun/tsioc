@@ -13,6 +13,10 @@ import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfi
 export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowContext');
 
 /**
+ * each body token.
+ */
+export const EachBodyToken = new InjectToken<any>('each_body');
+/**
  * base activity execute context.
  *
  * @export
@@ -82,7 +86,7 @@ export class ActivityContext extends BootContext {
      */
     get body(): any {
         if (!this._body) {
-            this._body = {};
+            this._body = this.getContext(EachBodyToken) || {};
         }
         return this._body;
     }
@@ -117,7 +121,7 @@ export class ActivityContext extends BootContext {
         } else {
             this._body = value;
         }
-        // this.setContext(EachBodyToken, this._body);
+        this.setContext(EachBodyToken, this._body);
     }
 
     getCurrBaseURL() {
