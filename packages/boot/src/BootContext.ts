@@ -1,4 +1,4 @@
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, ProviderMap, Token, ProviderParser } from '@tsdi/ioc';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, ProviderMap, Token, ProviderParser, isToken } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
@@ -195,17 +195,33 @@ export class BootContext extends AnnoationContext implements IComponentContext {
         return null;
     }
     /**
+     * set provider of this context.
+     *
+     * @param {Token} token context provider token.
+     * @param {*} provider context provider.
+     * @memberof BootContext
+     */
+    setContext(token: Token, provider: any);
+    /**
      * set context provider of boot application.
      *
      * @param {...ProviderTypes[]} providers
      * @memberof BootContext
      */
-    setContext(...providers: ProviderTypes[]) {
-        let pr = this.getRaiseContainer().getInstance(ProviderParser);
-        if (this.contexts) {
-            pr.parseTo(this.contexts, ...providers);
+    setContext(...providers: ProviderTypes[]);
+    setContext(...providers: any[]) {
+        if (providers.length === 2 && isToken(providers[0])) {
+            if (!this.contexts) {
+                this.contexts = this.getRaiseContainer().getInstance(ProviderMap);
+            }
+            this.contexts.add(providers[0], providers[1]);
         } else {
-            this.contexts = pr.parse(...providers);
+            let pr = this.getRaiseContainer().getInstance(ProviderParser);
+            if (this.contexts) {
+                pr.parseTo(this.contexts, ...providers);
+            } else {
+                this.contexts = pr.parse(...providers);
+            }
         }
     }
 

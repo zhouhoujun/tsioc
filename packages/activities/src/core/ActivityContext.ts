@@ -12,6 +12,7 @@ import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfi
  */
 export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowContext');
 
+export const EachBodyToken = new InjectToken<any>('each_body');
 /**
  * base activity execute context.
  *
@@ -72,13 +73,20 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     preCondition: boolean;
+
+    private _body: any;
     /**
      * context share body data.
      *
      * @type {*}
      * @memberof ActivityContext
      */
-    body: any;
+    get body(): any {
+        if (!this._body) {
+            this._body = this.getContext(EachBodyToken) || {};
+        }
+        return this._body;
+    }
     /**
      * set context share body.
      *
@@ -104,13 +112,13 @@ export class ActivityContext extends BootContext {
     setBody(value: any, merge: boolean);
     setBody(value: any, way?: any) {
         if (isString(way)) {
-            this.body = this.body || {};
             this.body[way] = value;
         } else if (isBoolean(way)) {
-            this.body = isTypeObject(value) ? Object.assign(this.body || {}, value) : value;
+            this._body = isTypeObject(value) ? Object.assign(this.body, value) : value;
         } else {
-            this.body = value;
+            this._body = value;
         }
+        this.setContext(EachBodyToken, this._body);
     }
 
     getCurrBaseURL() {
