@@ -13,10 +13,6 @@ import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfi
 export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowContext');
 
 /**
- * each body token.
- */
-export const EachBodyToken = new InjectToken<any>('each_body');
-/**
  * base activity execute context.
  *
  * @export
