@@ -1,4 +1,4 @@
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory } from '@tsdi/ioc';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, ProviderMap, Token, ProviderParser } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
@@ -133,7 +133,7 @@ export interface BootOption extends AnnoationOption {
     deps?: LoadType[];
 
     /**
-    * providers.
+    * providers for global boot application..
     *
     * @type {ProviderTypes[]}
     * @memberof BootOptions
@@ -141,7 +141,15 @@ export interface BootOption extends AnnoationOption {
     providers?: ProviderTypes[];
 
     /**
-     * container getter.
+     * providers for contexts.
+     *
+     * @type {(ProviderTypes[] | ProviderMap)}
+     * @memberof BootOption
+     */
+    contexts?: ProviderTypes[] | ProviderMap;
+
+    /**
+     * the raise container factory for appplication boot.
      *
      * @type {ContainerFactory}
      * @memberof BootOption
@@ -160,8 +168,45 @@ export const BootTargetToken = new InjectToken('module_type');
 @Injectable
 export class BootContext extends AnnoationContext implements IComponentContext {
 
+    /**
+     * context providers of boot.
+     *
+     * @type {ProviderMap}
+     * @memberof BootContext
+     */
+    contexts: ProviderMap;
+
     constructor(@Inject(BootTargetToken) type: Type) {
         super(type);
+    }
+
+    /**
+     * get context provider of boot application.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {T}
+     * @memberof BootContext
+     */
+    getContext<T>(token: Token<T>): T {
+        if (this.contexts) {
+            return this.contexts.resolve<T>(token);
+        }
+        return null;
+    }
+    /**
+     * set context provider of boot application.
+     *
+     * @param {...ProviderTypes[]} providers
+     * @memberof BootContext
+     */
+    setContext(...providers: ProviderTypes[]) {
+        let pr = this.getRaiseContainer().getInstance(ProviderParser);
+        if (this.contexts) {
+            pr.parseTo(this.contexts, ...providers);
+        } else {
+            this.contexts = pr.parse(...providers);
+        }
     }
 
     getLogManager(): ILoggerManager {
@@ -278,12 +323,13 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     deps?: LoadType[];
+
     /**
-    * providers.
-    *
-    * @type {ProviderTypes[]}
-    * @memberof BootOptions
-    */
+     * providers for global boot application.
+     *
+     * @type {ProviderTypes[]}
+     * @memberof BootContext
+     */
     providers?: ProviderTypes[];
     /**
      * get boot target.
@@ -306,6 +352,19 @@ export class BootContext extends AnnoationContext implements IComponentContext {
         return this.getRaiseContainer().resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
+    setOptions(options: BootOption) {
+        if (options) {
+            if (options.contexts) {
+                if (options.contexts instanceof ProviderMap) {
+                    this.contexts = options.contexts;
+                } else {
+                    this.setContext(...options.contexts);
+                }
+                delete options.contexts;
+            }
+            Object.assign(this, options);
+        }
+    }
     static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {
         return createAnnoationContext(BootContext, target, raiseContainer);
     }

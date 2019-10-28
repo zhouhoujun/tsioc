@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, ContainerFactory, isString, isBoolean, isTypeObject, InjectToken, lang } from '@tsdi/ioc';
+import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext, createAnnoationContext, IModuleReflect } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';
@@ -10,7 +10,12 @@ import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfi
 /**
  * workflow context token.
  */
-export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowContext')
+export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowContext');
+
+/**
+ *  each body.
+ */
+export const EachBodyToken = new InjectToken<any>('each_body');
 /**
  * base activity execute context.
  *
@@ -57,52 +62,12 @@ export class ActivityContext extends BootContext {
      */
     runnable?: WorkflowInstance;
     /**
-     * context share body data.
-     *
-     * @type {*}
-     * @memberof ActivityContext
-     */
-    body: any;
-    /**
      * current result.
      *
      * @type {*}
      * @memberof ActivityContext
      */
     result?: any;
-    /**
-     * set context share body.
-     *
-     * @param {*} value the value set to body.
-     * @memberof ActivityContext
-     */
-    setBody(value: any);
-    /**
-     * set context share body.
-     *
-     * @param {*} value  the value set to body.
-     * @param {string} filed name of filed to set value to
-     * @memberof ActivityContext
-     */
-    setBody(value: any, filed: string);
-    /**
-     * set context share body.
-     *
-     * @param {*} value the value set to body.
-     * @param {boolean} merge merge to existe body or not.
-     * @memberof ActivityContext
-     */
-    setBody(value: any, merge: boolean);
-    setBody(value: any, way?: any) {
-        if (isString(way)) {
-            this.body = this.body || {};
-            this.body[way] = value;
-        } else if (isBoolean(way)) {
-            this.body = isTypeObject(value) ? Object.assign(this.body || {}, value) : value;
-        } else {
-            this.body = value;
-        }
-    }
 
     /**
      * previous if elseif condition.
@@ -111,6 +76,11 @@ export class ActivityContext extends BootContext {
      * @memberof ActivityContext
      */
     preCondition: boolean;
+
+
+    get body() {
+        return this.getContext(EachBodyToken) || {};
+    }
 
     getCurrBaseURL() {
         let baseURL = '';

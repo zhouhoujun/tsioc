@@ -1,6 +1,6 @@
 import { isNullOrUndefined, isBoolean, isArray, lang } from '@tsdi/ioc';
 import { Input, AfterInit, Binding } from '@tsdi/components';
-import { Task, TemplateOption, Src, Activities, ActivityTemplate } from '@tsdi/activities';
+import { Task, TemplateOption, Src, Activities, ActivityTemplate, EachBodyToken } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';

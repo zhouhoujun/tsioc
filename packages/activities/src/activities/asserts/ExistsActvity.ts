@@ -1,6 +1,5 @@
-
-import { Input } from '@tsdi/components';
 import { isNullOrUndefined } from '@tsdi/ioc';
+import { Input } from '@tsdi/components';
 import { ActivityContext } from '../../core';
 import { Task } from '../../decorators';
 import { ControlActivity } from '../ControlActivity';

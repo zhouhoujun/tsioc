@@ -1,6 +1,6 @@
 import { isArray } from '@tsdi/ioc';
 import { AfterInit, Binding, Input } from '@tsdi/components';
-import { Task, Activities, ActivityTemplate } from '@tsdi/activities';
+import { Task, Activities, ActivityTemplate, EachBodyToken } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { Plugin } from 'rollup';
@@ -55,11 +55,12 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                 {
                     activity: Activities.if,
                     condition: ctx => {
-                        if (!ctx.body.target) {
+                        let body = ctx.body;
+                        if (!body.target) {
                             return false;
                         }
-                        if (ctx.body.moduleName) {
-                            return isArray(ctx.body.moduleName) ? ctx.body.moduleName.some(i => /^esm/.test(i)) : /^esm/.test(ctx.body.moduleName);
+                        if (body.moduleName) {
+                            return isArray(body.moduleName) ? body.moduleName.some(i => /^esm/.test(i)) : /^esm/.test(body.moduleName);
                         }
                         return true;
                     },
@@ -115,10 +116,11 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                         options: 'binding: options',
                         globals: 'binding: globals',
                         output: ctx => {
+                            let body = ctx.body;
                             return {
-                                format: ctx.body.format || 'cjs',
-                                file: ctx.body.outputFile ? ctx.scope.toModulePath(ctx.body, ctx.body.outputFile) : undefined,
-                                dir: ctx.body.outputFile ? undefined : ctx.scope.toModulePath(ctx.body),
+                                format: body.format || 'cjs',
+                                file: body.outputFile ? ctx.scope.toModulePath(body, body.outputFile) : undefined,
+                                dir: body.outputFile ? undefined : ctx.scope.toModulePath(body),
                             }
                         }
                     }
@@ -149,20 +151,20 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
                                 json: (json, ctx) => {
-                                    // to replace module export.
-                                    if (ctx.body.target) {
-                                        json[ctx.body.target] = ['.', ctx.scope.getTargetFolder(ctx.body), ctx.body.main || 'index.js'].join('/');
+                                    let body = ctx.body;                                 // to replace module export.
+                                    if (body.target) {
+                                        json[body.target] = ['.', ctx.scope.getTargetFolder(body), body.main || 'index.js'].join('/');
                                     }
-                                    let outmain = ['.', ctx.scope.getModuleFolder(ctx.body), ctx.body.outputFile || 'index.js'].join('/');
-                                    if (isArray(ctx.body.moduleName)) {
-                                        ctx.body.moduleName.forEach(n => {
+                                    let outmain = ['.', ctx.scope.getModuleFolder(body), body.outputFile || 'index.js'].join('/');
+                                    if (isArray(body.moduleName)) {
+                                        body.moduleName.forEach(n => {
                                             json[n] = outmain;
                                         })
-                                    } else if (ctx.body.moduleName) {
-                                        json[ctx.body.moduleName] = outmain;
+                                    } else if (body.moduleName) {
+                                        json[body.moduleName] = outmain;
                                     }
-                                    if (ctx.body.dtsMain) {
-                                        json['typings'] = ['.', ctx.scope.getTargetFolder(ctx.body), ctx.body.dtsMain].join('/');
+                                    if (body.dtsMain) {
+                                        json['typings'] = ['.', ctx.scope.getTargetFolder(body), body.dtsMain].join('/');
                                     }
                                     return json;
                                 }

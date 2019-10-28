@@ -86,7 +86,6 @@ export class ProxyMethod implements IProxyMethod {
         let fullName = pointcut.fullName;
         let methodName = pointcut.name;
         let container = this.container;
-        let lifeScope = this.lifeScope;
         return (...args: any[]) => {
             let joinPoint = this.container.getInstance(Joinpoint, {
                 provide: JoinpointOptionToken,

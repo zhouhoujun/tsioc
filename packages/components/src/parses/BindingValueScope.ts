@@ -139,19 +139,7 @@ export class TranslateAtrrHandle extends ParseHandle {
             }
 
             if (selector) {
-                let template1 = (!ctx.template || isArray(ctx.template)) ? null : ctx.template;
-                let template = {};
-                if (template1) {
-                    let brefl = ctx.reflects.get<IBindingTypeReflect>(selector);
-                    if (brefl && brefl.propInBindings) {
-                        brefl.propInBindings.forEach((v, k) => {
-                            if (k === 'name' || k === 'id') {
-                                return;
-                            }
-                            template[k] = template1[k];
-                        });
-                    }
-                }
+                let template = (!ctx.template || isArray(ctx.template)) ? {} : lang.omit(ctx.template, 'id', 'name');
                 template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
                 let container = ctx.getRaiseContainer();
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
@@ -161,7 +149,6 @@ export class TranslateAtrrHandle extends ParseHandle {
                     providers: ctx.providers
                 });
             }
-
         }
 
         if (isNullOrUndefined(ctx.value)) {

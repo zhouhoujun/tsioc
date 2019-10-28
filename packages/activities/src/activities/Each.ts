@@ -2,7 +2,7 @@ import { isNullOrUndefined } from '@tsdi/ioc';
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators';
 import { ControlActivity } from './ControlActivity';
-import { ActivityContext, Expression, ParallelExecutor, ActivityType } from '../core';
+import { ActivityContext, Expression, ParallelExecutor, ActivityType, EachBodyToken } from '../core';
 
 
 @Task('each')
@@ -21,19 +21,19 @@ export class EachActicity<T> extends ControlActivity<T> {
             if (this.parallel) {
                 if (this.getContainer().has(ParallelExecutor)) {
                     await this.getContainer().getInstance(ParallelExecutor).run(v => {
-                        ctx.setBody(v, true);
+                        ctx.setContext({ provide: EachBodyToken, useValue: v });
                         return this.runWorkflow(ctx, this.body);
                     }, items);
                 } else {
                     await Promise.all(items.map(v => {
-                        ctx.setBody(v, true);
+                        ctx.setContext({ provide: EachBodyToken, useValue: v });
                         return this.runWorkflow(ctx, this.body);
                     }));
                 }
             } else {
                 let actions = await this.getExector().parseActions(this.body);
                 await this.getExector().execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
-                    await c.setBody(v, true);
+                    ctx.setContext({ provide: EachBodyToken, useValue: v });
                     await this.getExector().execActions(c, actions);
                     await next();
                 }));

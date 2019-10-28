@@ -41,10 +41,6 @@ export class IocActionContext extends IocCoreService {
      */
     reflects: TypeReflects;
 
-    constructor() {
-        super();
-    }
-
     /**
      * set options.
      *

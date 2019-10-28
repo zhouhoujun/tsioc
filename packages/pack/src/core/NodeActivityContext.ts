@@ -27,5 +27,6 @@ export class NodeActivityContext extends ActivityContext {
         }
         return this._platform;
     }
+
 }
 

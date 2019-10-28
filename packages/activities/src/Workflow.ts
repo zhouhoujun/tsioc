@@ -22,8 +22,9 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
 
     protected onInit(target: Type | ActivityOption<T> | T) {
         if (!isClass(target)) {
-            if (!target.module && isArray(target.template)) {
+            if (!target.module) {
                 target.module = SequenceActivity;
+                target.template = isArray(target.template) ? target.template : [target.template];
             }
         }
         super.onInit(target);
