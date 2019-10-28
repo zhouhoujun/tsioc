@@ -1,6 +1,6 @@
 import { isArray } from '@tsdi/ioc';
 import { AfterInit, Binding, Input } from '@tsdi/components';
-import { Task, Activities, ActivityTemplate, EachBodyToken } from '@tsdi/activities';
+import { Task, Activities, ActivityTemplate } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { Plugin } from 'rollup';
