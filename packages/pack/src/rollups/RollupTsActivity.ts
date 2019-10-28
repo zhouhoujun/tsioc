@@ -8,7 +8,6 @@ import { CompilerOptions, nodeModuleNameResolver, transpileModule, flattenDiagno
 import * as ts from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
 import * as path from 'path';
-import uglify from 'rollup-plugin-uglify';
 import { NodeExpression, NodeActivityContext } from '../core';
 import { RollupActivity, RollupOption } from './RollupActivity';
 
@@ -153,6 +152,7 @@ export class RollupTsActivity extends RollupActivity {
 
         if (this.uglify) {
             let ugfy = await this.resolveExpression(this.uglify, ctx);
+            const uglify =  syncRequire('rollup-plugin-uglify');
             if (isBoolean(ugfy)) {
                 ugfy && plugins.push(uglify());
             } else {
