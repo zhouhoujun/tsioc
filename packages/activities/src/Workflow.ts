@@ -40,14 +40,45 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
      *
      * @static
      * @template T
+     * @param {T} ctx
+     * @returns {Promise<T>}
+     * @memberof Workflow
+     */
+    static async sequence<T extends ActivityContext>(ctx: T): Promise<T>;
+    /**
+     * run sequence.
+     *
+     * @static
+     * @template T
+     * @param {Type} type
+     * @returns {Promise<T>}
+     * @memberof Workflow
+     */
+    static async sequence<T extends ActivityContext>(type: Type): Promise<T>;
+    /**
+     * run sequence.
+     *
+     * @static
+     * @template T
      * @param {...ActivityType<T>[]} activities
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async sequence<T extends ActivityContext>(...activities: ActivityType[]): Promise<T> {
-        let option = { template: activities, module: SequenceActivity, staticSeq: true } as ActivityOption<T>;
-        let runner = await Workflow.run(option) as T;
-        return runner;
+    static async sequence<T extends ActivityContext>(...activities: ActivityType[]): Promise<T>;
+    static async sequence<T extends ActivityContext>(...activities: any[]): Promise<T> {
+        if (activities.length > 1) {
+            let option = { template: activities, module: SequenceActivity, staticSeq: true } as ActivityOption<T>;
+            return await Workflow.run<T>(option);
+        } else if (activities.length === 1) {
+            let actType = activities[0];
+            if (isClass(actType)) {
+                return await Workflow.run<T>(actType);
+            } else if (actType instanceof ActivityContext) {
+                return await Workflow.run(actType as T);
+            } else {
+                return await Workflow.run<T>((actType && actType.template) ? actType : { template: actType });
+            }
+        }
     }
 
     /**
