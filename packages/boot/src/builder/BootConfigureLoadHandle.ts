@@ -1,6 +1,8 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { ConfigureManager } from '../annotations';
+import { AnnotationServiceToken, AnnotationMerger } from '../core';
+import { DecoratorProvider } from '@tsdi/ioc';
 
 /**
  * boot configure load handle.
@@ -14,6 +16,12 @@ export class BootConfigureLoadHandle extends BootHandle {
         if (!(ctx instanceof BootContext)) {
             return;
         }
+        let annService = this.container.get(AnnotationServiceToken);
+        ctx.decorator = annService.getDecorator(ctx.module);
+        if (!ctx.annoation) {
+            ctx.annoation = this.container.get(AnnotationServiceToken).getAnnoation(ctx.module, ctx.decorator);
+        }
+
         let mgr = this.resolve(ctx, ConfigureManager);
 
         if (ctx.configures && ctx.configures.length) {
@@ -26,7 +34,8 @@ export class BootConfigureLoadHandle extends BootHandle {
         }
 
         let config = await mgr.getConfig();
-        config = ctx.configuration = Object.assign({}, config, ctx.annoation);
+        let merge = this.container.getInstance(DecoratorProvider).resolve(ctx.decorator, AnnotationMerger);
+        config = ctx.configuration = merge ? merge.merge([config, ctx.annoation]) : Object.assign({}, config, ctx.annoation);
         if (config.deps && config.deps.length) {
             let container = ctx.getRaiseContainer();
             await container.load(...config.deps);
