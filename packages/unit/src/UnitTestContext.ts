@@ -1,7 +1,7 @@
-import { BootContext, createAnnoationContext } from '@tsdi/boot';
-import { UnitTestConfigure, UnitTestOptions } from './UnitTestConfigure';
 import { Type, Refs, Injectable, ContainerFactory } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
+import { BootContext, createAnnoationContext } from '@tsdi/boot';
+import { UnitTestConfigure, UnitTestOptions } from './UnitTestConfigure';
 
 
 @Injectable()

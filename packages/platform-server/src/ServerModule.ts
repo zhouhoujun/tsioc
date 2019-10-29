@@ -1,6 +1,6 @@
+import { Inject } from '@tsdi/ioc';
 import { IocExt, ContainerToken, IContainer, ModuleLoader } from '@tsdi/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
-import { Inject } from '@tsdi/ioc';
 
 /**
  * server module for ioc. auto run setup after registered.

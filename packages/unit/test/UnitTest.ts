@@ -1,6 +1,6 @@
-import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '../src';
-import { IContainer, ContainerToken } from '@tsdi/core';
 import { PromiseUtil, Inject } from '@tsdi/ioc';
+import { IContainer, ContainerToken } from '@tsdi/core';
+import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '../src';
 
 
 

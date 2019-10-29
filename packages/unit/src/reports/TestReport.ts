@@ -1,8 +1,11 @@
-import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Singleton, Inject, Token, InjectToken, Type, lang } from '@tsdi/ioc';
-import { Reporter, RealtimeReporter } from './Reporter';
 import { ContainerToken, IContainer } from '@tsdi/core';
+import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
+import { Reporter, RealtimeReporter } from './Reporter';
 
+/**
+ * report token.
+ */
 export const ReportsToken = new InjectToken<Type<Reporter>[]>('unit-reports')
 
 /**

@@ -16,8 +16,7 @@ import { IocRecognizer } from './IocRecognizer';
 @Injectable(AdvisorChainToken)
 export class AdvisorChain implements IAdvisorChain {
 
-    @Inject(IocContainerToken)
-    container: IIocContainer;
+    @Inject(IocContainerToken) protected container: IIocContainer;
 
     protected actions: Express<Joinpoint, any>[];
 

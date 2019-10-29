@@ -1,9 +1,8 @@
+import { isNumber, lang, PromiseUtil, Injectable } from '@tsdi/ioc';
 import { Runnable } from '@tsdi/boot';
-import { isNumber, lang, PromiseUtil,  Injectable } from '@tsdi/ioc';
 import { Before } from '../decorators/Before';
 import { BeforeEach } from '../decorators/BeforeEach';
 import { Test } from '../decorators/Test';
-import { Suite } from '../decorators/Suite';
 import { AfterEach } from '../decorators/AfterEach';
 import { After } from '../decorators/After';
 

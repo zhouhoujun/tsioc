@@ -1,11 +1,16 @@
-import { IContainer } from '@tsdi/core';
-import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegFor } from '@tsdi/boot';
-import * as path from 'path';
-import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import { Injectable } from '@tsdi/ioc';
-import { RunnableConfigure } from '@tsdi/boot';
+import { IContainer } from '@tsdi/core';
+import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegFor, RunnableConfigure } from '@tsdi/boot';
+import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
+import * as path from 'path';
 
-
+/**
+ * configure file loader.
+ *
+ * @export
+ * @class ConfigureFileLoader
+ * @implements {IConfigureLoader<RunnableConfigure>}
+ */
 @Injectable(ConfigureLoaderToken)
 export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> {
     constructor(private baseURL: string, private container: IContainer) {

@@ -1,7 +1,6 @@
-
-import { ILoggerManager, ILogger, LoggerManagerToken } from '@tsdi/logs';
-import { NonePointcut } from '@tsdi/aop';
 import { Singleton, Injectable } from '@tsdi/ioc';
+import { NonePointcut } from '@tsdi/aop';
+import { ILoggerManager, ILogger, LoggerManagerToken } from '@tsdi/logs';
 import { syncRequire } from '@tsdi/platform-server';
 
 /**

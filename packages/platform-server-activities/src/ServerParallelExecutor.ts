@@ -1,6 +1,6 @@
+import { Injectable } from '@tsdi/ioc';
 import { ParallelExecutor } from '@tsdi/activities';
 import { syncRequire } from '@tsdi/platform-server';
-import { Injectable } from '@tsdi/ioc';
 
 @Injectable
 export class ServerParallelExecutor extends ParallelExecutor {

@@ -1,7 +1,8 @@
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
 import {
-    Inject, DecoratorScopes, RegisterSingletionAction, ProviderTypes, InjectReference, DesignRegisterer, RuntimeRegisterer, DecoratorProvider
+    Inject, DecoratorScopes, RegisterSingletionAction, ProviderTypes, InjectReference,
+    DesignRegisterer, RuntimeRegisterer, DecoratorProvider
 } from '@tsdi/ioc';
 import { BootContext, AnnoationDesignAction } from '@tsdi/boot';
 

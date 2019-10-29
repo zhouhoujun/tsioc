@@ -1,7 +1,7 @@
+import { AfterInit } from '@tsdi/components';
 import { Workflow, Task } from '@tsdi/activities';
 import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-import { AfterInit } from '@tsdi/components';
 
 @Task({
     deps: [

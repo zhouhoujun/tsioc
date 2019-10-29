@@ -1,9 +1,9 @@
 import { Inject, PromiseUtil, Singleton, Type } from '@tsdi/ioc';
+import { ContainerToken, IContainer } from '@tsdi/core';
+import { BootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { Assert } from '../assert';
-import { ContainerToken, IContainer } from '@tsdi/core';
-import { BootContext } from '@tsdi/boot';
 
 declare let window: any;
 declare let global: any;

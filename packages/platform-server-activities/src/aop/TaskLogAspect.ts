@@ -1,9 +1,9 @@
+import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
-import chalk from 'chalk';
 import { Task, Activity, ControlActivity } from '@tsdi/activities';
-import { Inject, lang } from '@tsdi/ioc';
+import chalk from 'chalk';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
 
