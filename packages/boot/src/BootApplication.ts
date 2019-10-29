@@ -1,6 +1,6 @@
 import { Type, LoadType, isArray, isString, isClass } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
-import { ContainerPool } from './core';
+import { ContainerPool, AnnotationServiceToken } from './core';
 import { RunnableConfigure } from './annotations';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
@@ -140,13 +140,10 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     protected getTargetDeps(target: Type | BootOption | T) {
         let dependences = [];
         if (isClass(target)) {
-            this.container.getTypeReflects()
-                .getMetadatas(target)
-                .forEach((meta: RunnableConfigure) => {
-                    if (meta && meta.deps) {
-                        dependences.push(...meta.deps);
-                    }
-                });
+            let meta = this.container.get(AnnotationServiceToken).getAnnoation(target) as RunnableConfigure;
+            if (meta && meta.deps) {
+                dependences.push(...meta.deps);
+            }
         } else if (target.deps) {
             dependences.push(...target.deps);
         }
