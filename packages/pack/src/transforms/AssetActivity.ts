@@ -5,8 +5,8 @@ import { SourcemapInitActivity, SourcemapWriteActivity } from './SourceMap';
 import { StreamActivity } from './StreamActivity';
 import { SourceActivity } from './SourceActivity';
 import { DestActivity } from './DestActivity';
-import { CleanActivity } from '../tasks';
 import { PipeActivity } from './PipeActivity';
+import { CleanActivity } from '../tasks';
 
 /**
  * shell activity config.
