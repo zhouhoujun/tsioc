@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, ComponentManager, SelectorManager } from '@tsdi/components';
+import { ComponentBuilderToken, ComponentManager, SelectorManager, AstParserToken } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
@@ -79,6 +79,23 @@ export class ActivityExecutor implements IActivityExecutor {
             };
 
             return container.get(BuilderServiceToken).run<T>(option);
+        }
+    }
+
+    eval(ctx: ActivityContext, expression: string) {
+        if (!expression) {
+            return expression;
+        }
+        let container = this.getContainer();
+        if (container.has(AstParserToken)) {
+            return container.get(AstParserToken).parse(expression).execute({ ctx: ctx });
+        }
+
+        try {
+            // tslint:disable-next-line:no-eval
+            return eval(expression);
+        } catch {
+            return expression;
         }
     }
 

@@ -212,6 +212,19 @@ export class CTest {
         expect(comp11 instanceof Component1).toBeTruthy();
     }
 
+    @Test('can run component template')
+    async testRun() {
+
+        let ctx = await BootApplication.run({
+            deps: [ComponentsModule, ElementModule, Component1],
+            template: { element: 'selector1', name: 'test1' }
+        });
+
+        let comp1 = ctx.getBootTarget();
+        expect(comp1 instanceof Component1).toBeTruthy();
+        expect(comp1.name).toEqual('test1');
+    }
+
 
     @Test('can resolve component template in sub module')
     async test3() {

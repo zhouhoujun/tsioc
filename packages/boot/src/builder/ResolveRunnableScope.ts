@@ -6,9 +6,11 @@ import { RefRunnableHandle } from './RefRunnableHandle';
 
 export class ResolveRunnableScope extends BuildHandles<BootContext> {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        ctx.runnable = ctx.getBootTarget();
-        if (!(ctx.runnable instanceof Startup)) {
+        let target = ctx.getBootTarget();
+        if (!(target instanceof Startup)) {
             super.execute(ctx);
+        } else {
+            ctx.runnable = target;
         }
 
         if (ctx.runnable) {

@@ -11,6 +11,12 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
         if (!(ctx instanceof BootContext)) {
             return;
         }
+        if (!ctx.module) {
+            if (ctx.template && next) {
+                return await next();
+            }
+            return;
+        }
         if (isBaseType(ctx.module)) {
             return;
         }

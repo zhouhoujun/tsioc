@@ -17,6 +17,16 @@ export interface IActivityExecutor {
      * @memberof IActivityExecutor
      */
     getContainer(): IContainer;
+
+    /**
+     * eval expression.
+     *
+     * @param {ActivityContext} ctx
+     * @param {string} expression
+     * @returns {*}
+     * @memberof IActivityExecutor
+     */
+    eval(ctx: ActivityContext, expression: string): any;
     /**
      * run activity in sub workflow.
      *

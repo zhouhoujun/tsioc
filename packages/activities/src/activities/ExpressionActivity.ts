@@ -22,10 +22,7 @@ export class ExpressionActivity<T> extends ControlActivity<T> {
     protected async execute(ctx: ActivityContext): Promise<void> {
         let expression;
         if (isString(this.expression)) {
-            try {
-                // tslint:disable-next-line:no-eval
-                expression = eval(this.expression);
-            } catch { }
+            expression = this.getExector().eval(ctx, this.expression);
         } else {
             expression = this.expression;
         }

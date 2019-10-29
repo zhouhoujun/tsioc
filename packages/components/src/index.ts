@@ -13,3 +13,4 @@ export * from './ComponentAnnotationCloner';
 export * from './IComponentBuilder';
 export * from './ComponentBuilder';
 export * from './ComponentsModule';
+export * from './AstParser';

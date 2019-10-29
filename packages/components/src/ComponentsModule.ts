@@ -2,14 +2,14 @@ import {
     BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction, Inject, ActionRegisterer, DecoratorProvider, DesignRegisterer, RuntimeRegisterer
 } from '@tsdi/ioc';
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
-import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
+import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner, BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope } from '@tsdi/boot';
 import { Component, Input, Output, RefChild, Vaildate } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory, RegisterVaildateAction } from './registers';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
-    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle
+    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle, BootTemplateHandle
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentBuilder } from './ComponentBuilder';
@@ -69,8 +69,8 @@ export class ComponentsModule {
                 { provide: BootTargetAccessor, useClass: BootComponentAccessor },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner });
 
-        container.getInstance(HandleRegisterer)
-            .register(container, BindingScope, true)
+        let hdregr = container.getInstance(HandleRegisterer);
+        hdregr.register(container, BindingScope, true)
             .register(container, TemplateParseScope, true)
             .get(ResolveMoudleScope)
             .use(ModuleBeforeInitHandle)
@@ -81,6 +81,12 @@ export class ComponentsModule {
             .use(BindingTemplateHandle)
             .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
+
+        hdregr.get(BootLifeScope)
+            .useBefore(BootTemplateHandle, ModuleBuildScope);
+        hdregr.get(RunnableBuildLifeScope)
+            .useBefore(BootTemplateHandle, ModuleBuildScope);
+
 
         container.getInstance(DesignRegisterer)
             .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)

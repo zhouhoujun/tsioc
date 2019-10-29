@@ -11,12 +11,7 @@ export class EqualsActivity extends ControlActivity<boolean> {
     @Input() value: any;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        try {
-            // tslint:disable-next-line:no-eval
-            let exp = eval(this.expect);
-            this.result.value = exp === this.value;
-        } catch {
-
-        }
+        let exp = this.getExector().eval(ctx, this.expect);
+        this.result.value = exp === this.value;
     }
 }

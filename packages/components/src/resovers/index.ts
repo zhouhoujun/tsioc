@@ -7,3 +7,4 @@ export * from './ModuleAfterInitHandle';
 export * from './ModuleBeforeInitHandle';
 export * from './ModuleAfterContentInitHandle';
 export * from './ResolveTemplateScope';
+export * from './BootTemplateHandle';
