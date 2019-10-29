@@ -17,7 +17,7 @@ export class BootConfigureLoadHandle extends BootHandle {
             return;
         }
         let annService = this.container.get(AnnotationServiceToken);
-        ctx.decorator = annService.getDecorator(ctx.module);
+        ctx.decorator = ctx.decorator || annService.getDecorator(ctx.module);
         if (!ctx.annoation) {
             ctx.annoation = this.container.get(AnnotationServiceToken).getAnnoation(ctx.module, ctx.decorator);
         }
