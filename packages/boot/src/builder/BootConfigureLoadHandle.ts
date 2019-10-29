@@ -1,8 +1,8 @@
+import { DecoratorProvider } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { ConfigureManager } from '../annotations';
 import { AnnotationServiceToken, AnnotationMerger } from '../core';
-import { DecoratorProvider } from '@tsdi/ioc';
 
 /**
  * boot configure load handle.

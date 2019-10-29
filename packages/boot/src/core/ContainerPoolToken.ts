@@ -18,6 +18,12 @@ export const ChildrenContainerToken = new InjectToken<IContainer[]>('__ioc_child
  */
 export const ContainerPoolToken = new InjectToken<IContainerPool>('DI_ContainerPool');
 
+/**
+ * container pool.
+ *
+ * @export
+ * @interface IContainerPool
+ */
 export interface IContainerPool {
     getTokenKey(token: Token): SymbolType;
 

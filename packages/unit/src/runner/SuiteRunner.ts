@@ -5,7 +5,6 @@ import { BeforeEach } from '../decorators/BeforeEach';
 import { Test } from '../decorators/Test';
 import { AfterEach } from '../decorators/AfterEach';
 import { After } from '../decorators/After';
-
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';

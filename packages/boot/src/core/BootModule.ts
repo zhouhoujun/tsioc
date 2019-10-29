@@ -1,12 +1,11 @@
 import {
-    Inject, BindProviderAction, IocSetCacheAction, DesignLifeScope,
-    IocBeforeConstructorScope, IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope,
-    RuntimePropertyScope, RuntimeAnnoationScope, IocAutorunAction,
-    RegisterSingletionAction, IocResolveScope, ActionRegisterer, DesignRegisterer, RuntimeRegisterer
+    Inject, BindProviderAction, IocSetCacheAction, DesignLifeScope, IocBeforeConstructorScope,
+    IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope, RuntimePropertyScope,
+    RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction, IocResolveScope,
+    ActionRegisterer, DesignRegisterer, RuntimeRegisterer
 } from '@tsdi/ioc';
 import {
-    IContainer, ContainerToken, IocExt,
-    ResolvePrivateServiceAction, ResolveServiceInClassChain,
+    IContainer, ContainerToken, IocExt, ResolvePrivateServiceAction, ResolveServiceInClassChain,
     ServicesResolveLifeScope, TypesRegisterScope, IocExtRegisterScope
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';

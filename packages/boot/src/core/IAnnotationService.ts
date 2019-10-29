@@ -27,4 +27,7 @@ export interface IAnnotationService {
     getAnnoation(type: ClassType, decorator?: string): ModuleConfigure;
 }
 
+/**
+ *  annotation service.
+ */
 export const AnnotationServiceToken = new InjectToken<IAnnotationService>('IAnnotationService');

@@ -1,5 +1,6 @@
 import {
-    Singleton, Inject, lang, DecoratorProvider, ClassType, TypeReflects, DesignRegisterer, DecoratorScopes
+    Singleton, Inject, lang, DecoratorProvider, ClassType,
+    TypeReflects, DesignRegisterer, DecoratorScopes
 } from '@tsdi/ioc';
 import { ModuleConfigure, IModuleReflect } from './modules';
 import { AnnotationServiceToken, IAnnotationService } from './IAnnotationService';
