@@ -3,7 +3,6 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Inject, isString, isFunction, Token } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 import { Input } from '@tsdi/components';
-import { createTextChangeRange } from 'typescript';
 
 @Task('stest')
 export class SimpleTask extends Activity<string> {
@@ -35,7 +34,7 @@ export class LoadData extends Activity<any> {
                 let getFunc = isString(this.getParams) ? this.getExector().eval(ctx, this.getParams) : this.getParams;
                 params = isFunction(getFunc) ? getFunc(ctx) : [];
             }
-            service[this.action](...params);
+            this.result.value = await service[this.action](...params);
         }
     }
 }
