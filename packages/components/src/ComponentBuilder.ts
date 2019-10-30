@@ -5,6 +5,8 @@ import { TemplateContext, TemplateParseScope } from './parses';
 import { Component, NonSerialize } from './decorators';
 import { IBindingTypeReflect } from './bindings';
 import { RefSelector } from './RefSelector';
+import { AstParserToken } from './AstParser';
+
 
 /**
  * component builder.

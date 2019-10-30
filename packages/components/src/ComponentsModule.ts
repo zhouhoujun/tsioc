@@ -15,6 +15,7 @@ import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentBuilder } from './ComponentBuilder';
 import { BootComponentAccessor } from './BootComponentAccessor';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
+import { AstResolver } from './AstResolver';
 
 
 /**
@@ -31,7 +32,8 @@ export class ComponentsModule {
         container.register(SelectorManager)
             .register(ComponentManager)
             .register(BootComponentAccessor)
-            .register(ComponentAnnotationCloner);
+            .register(ComponentAnnotationCloner)
+            .register(AstResolver);
 
         container.getInstance(ActionRegisterer)
             .register(container, ComponentRegisterAction)

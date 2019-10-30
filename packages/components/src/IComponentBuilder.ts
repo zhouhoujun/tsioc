@@ -55,4 +55,5 @@ export interface IComponentBuilder extends IBuilderService {
      * @memberof IComponentBuilder
      */
     serialize(component: any): any;
+
 }

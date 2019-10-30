@@ -1,10 +1,10 @@
 import {
     Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerFactoryToken,
-    ContainerFactory, isMetadataObject, lang, isFunction, isPromise
+    ContainerFactory, isMetadataObject, lang, isFunction, isPromise, ObjectMap
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, ComponentManager, SelectorManager, AstParserToken } from '@tsdi/components';
+import { ComponentBuilderToken, ComponentManager, SelectorManager, AstResolver } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
@@ -82,21 +82,15 @@ export class ActivityExecutor implements IActivityExecutor {
         }
     }
 
-    eval(ctx: ActivityContext, expression: string) {
+    eval(ctx: ActivityContext, expression: string, envOptions?: ObjectMap) {
         if (!expression) {
             return expression;
         }
+        envOptions = envOptions || {};
+        envOptions['ctx'] = ctx;
         let container = this.getContainer();
-        if (container.has(AstParserToken)) {
-            return container.get(AstParserToken).parse(expression).execute({ ctx: ctx });
-        }
-
-        try {
-            // tslint:disable-next-line:no-eval
-            return eval(expression);
-        } catch {
-            return expression;
-        }
+        return container.getInstance(AstResolver)
+            .resolve(expression, envOptions, container);
     }
 
     async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {

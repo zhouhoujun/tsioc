@@ -1,7 +1,8 @@
-import { isObservable } from '@tsdi/ioc';
+import { isObservable, isFunction } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { DataBinding } from './DataBinding';
 import { IBinding } from './IPropertyBindingReflect';
+import { AstResolver } from '../AstResolver';
 
 
 export class EventBinding<T = any> extends DataBinding<T> {
@@ -15,8 +16,10 @@ export class EventBinding<T = any> extends DataBinding<T> {
         let outEvent = target[this.binding.name];
         if (outEvent && isObservable(this.binding.type)) {
             outEvent.subsrcibe($event => {
-                // tslint:disable-next-line:no-eval
-                eval(this.expression)
+                let result = this.container.getInstance(AstResolver).resolve(this.expression, { target: target, $scope: $scope, $event: $event });
+                if (isFunction(result)) {
+                    result($event);
+                }
             });
         }
     }
