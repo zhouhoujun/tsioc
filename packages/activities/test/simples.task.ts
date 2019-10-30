@@ -1,7 +1,9 @@
 import { Task, Activity, ActivityContext, Activities } from '../src';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { Inject } from '@tsdi/ioc';
+import { Inject, isString, isFunction, Token } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
+import { Input } from '@tsdi/components';
+import { createTextChangeRange } from 'typescript';
 
 @Task('stest')
 export class SimpleTask extends Activity<string> {
@@ -14,6 +16,39 @@ export class SimpleTask extends Activity<string> {
             });
     }
 
+}
+
+@Task('loaddata')
+export class LoadData extends Activity<string> {
+    @Input() service: Token;
+    @Input() action: string;
+    @Input() getParams: string | ((ctx: ActivityContext) => any[]);
+    @Input() params: any[];
+    async execute(ctx: ActivityContext): Promise<void> {
+        let service = this.getContainer().resolve(this.service);
+        if (service && service[this.action]) {
+
+            let params: any[];
+            if (this.params && this.params.length) {
+                params = this.params;
+            } else if (this.getParams) {
+                let getFunc = isString(this.getParams) ? this.getExector().eval(ctx, this.getParams) : this.getParams;
+                params = isFunction(getFunc) ? getFunc(ctx) : [];
+            }
+            service[this.action](...params);
+        }
+    }
+}
+
+@Task('setdata')
+export class SetData extends Activity<string> {
+    @Input() func: string | Function;
+    async execute(ctx: ActivityContext): Promise<void> {
+        let func = isString(this.func) ? this.getExector().eval(ctx, this.func) : this.func;
+        if (isFunction(func)) {
+            func(ctx);
+        }
+    }
 }
 
 @Task('comowork')
@@ -49,7 +84,11 @@ export class WorkTask extends Activity<string> {
                 },
                 {
                     activity: 'comowork'
-                }
+                },
+                // {
+                //     activity: 'setdata',
+                //     func: `ctx => ctx.getConext('xxxxx').setResult(ctx.result)`
+                // }
             ]
         },
         // {
