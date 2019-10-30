@@ -19,7 +19,7 @@ export class SimpleTask extends Activity<string> {
 }
 
 @Task('loaddata')
-export class LoadData extends Activity<string> {
+export class LoadData extends Activity<any> {
     @Input() service: Token;
     @Input() action: string;
     @Input() getParams: string | ((ctx: ActivityContext) => any[]);
@@ -41,7 +41,7 @@ export class LoadData extends Activity<string> {
 }
 
 @Task('setdata')
-export class SetData extends Activity<string> {
+export class SetData extends Activity<void> {
     @Input() func: string | Function;
     async execute(ctx: ActivityContext): Promise<void> {
         let func = isString(this.func) ? this.getExector().eval(ctx, this.func) : this.func;
