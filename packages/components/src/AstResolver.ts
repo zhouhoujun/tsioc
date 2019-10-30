@@ -2,9 +2,6 @@ import { Singleton, Inject } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { AstParserToken } from './AstParser';
 
-
-declare let func1: any;
-
 @Singleton()
 export class AstResolver {
 
@@ -33,28 +30,18 @@ export class AstResolver {
 
         try {
             if (envOptions) {
-                let params = Object.keys(envOptions).join(',');
                 // tslint:disable-next-line:no-eval
-                eval(`function func1(${params}) {
-                        return eval('${expression}');
-                    }`);
-                if (func1) {
-                    return func1(...Object.values(envOptions));
-                } else {
-                    // tslint:disable-next-line:no-eval
-                    let func = eval(`(${params}) => {
+                let func = eval(`(${Object.keys(envOptions).join(',')}) => {
                     return eval('${expression}');
                 }`
-                    );
-                    return func(...Object.values(envOptions));
-                }
-
-
+                );
+                return func(...Object.values(envOptions));
             } else {
                 // tslint:disable-next-line:no-eval
                 return eval(expression);
             }
         } catch (err) {
+            console.log(err);
             return expression;
         }
     }
