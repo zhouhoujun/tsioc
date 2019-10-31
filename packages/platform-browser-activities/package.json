@@ -37,7 +37,9 @@
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-browser-activities#readme",
   "dependencies": {
     "reflect-metadata": "^0.1.13",
-    "tslib": "^1.10.0",
+    "tslib": "^1.10.0"
+  },
+  "peerDependencies": {
     "@tsdi/ioc": "~5.3.2",
     "@tsdi/core": "~5.3.2",
     "@tsdi/aop": "~5.3.2",
@@ -46,7 +48,6 @@
     "@tsdi/activities": "~5.3.2",
     "@tsdi/platform-browser": "~5.3.2"
   },
-  "peerDependencies": {},
   "directories": {
     "lib": "lib",
     "test": "test"
