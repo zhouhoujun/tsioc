@@ -12,7 +12,6 @@ export class BootTemplateHandle extends BootHandle {
                     template: ctx.template,
                     raiseContainer: ctx.getContainerFactory()
                 });
-                console.log(ctx.target);
             }
             if (ctx.target) {
                 await next();
