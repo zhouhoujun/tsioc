@@ -1,6 +1,8 @@
-import { Singleton, Inject } from '@tsdi/ioc';
+import { Singleton, Inject, isNodejsEnv } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { AstParserToken } from './AstParser';
+
+declare let __dy_eval_func: any;
 
 @Singleton()
 export class AstResolver {
@@ -41,7 +43,6 @@ export class AstResolver {
                 return eval(expression);
             }
         } catch (err) {
-            console.log(err);
             return expression;
         }
     }
