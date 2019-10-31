@@ -9,7 +9,6 @@ export class AnntotationLogAspect extends LoggerAspect {
 
     @Pointcut('@annotation(Logger)', 'logAnnotation')
     logging(logAnnotation: MethodMetadata[], joinPoint: Joinpoint) {
-        console.log('-----------------------------------\nAnntotationLogAspect:', logAnnotation);
         this.processLog(joinPoint, logAnnotation);
     }
 }
