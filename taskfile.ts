@@ -61,12 +61,12 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                                     chgs.set('version', version);
                                     Object.keys(json.peerDependencies || {}).forEach(key => {
                                         if (/^@tsdi/.test(key)) {
-                                            chgs.set('peerDependencies.' + key, '^' + version);
+                                            chgs.set('peerDependencies.' + key, '~' + version);
                                         }
                                     });
                                     Object.keys(json.dependencies || {}).forEach(key => {
                                         if (/^@tsdi/.test(key)) {
-                                            chgs.set('dependencies.' + key, '^' + version);
+                                            chgs.set('dependencies.' + key, '~' + version);
                                         }
                                     });
                                     return chgs;
