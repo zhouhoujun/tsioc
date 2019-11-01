@@ -33,6 +33,7 @@ export class InjectReference<T> extends Registration<T> {
     }
 }
 
+const refInjExp = /^Ref\s+[\w\{\}]+\sfor/;
 /**
  * is inject reference token or not.
  *
@@ -45,5 +46,5 @@ export function isInjectReference<T>(target: any): target is InjectReference<T> 
     if (!target) {
         return false;
     }
-    return target instanceof InjectReference || (isString(target) && /^Ref\s+[\w\{\}]+\sfor/.test(target));
+    return target instanceof InjectReference || (isString(target) && refInjExp.test(target));
 }

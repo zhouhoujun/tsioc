@@ -8,7 +8,7 @@ import {
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess, IMetadataAccess } from './MetadataAccess';
-import { isUndefined, isClassType, lang } from '../utils';
+import { isUndefined, isClassType } from '../utils';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';

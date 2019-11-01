@@ -4,6 +4,9 @@ import { ObjectMap, Type, AbstractType, Token, ClassType } from '../types';
 
 declare let process: any;
 
+
+const clsStartExp = /^[A-Z@]/;
+const clsUglifyExp = /^[a-z0-9]$/;
 /**
  * lang utils
  */
@@ -190,7 +193,7 @@ export namespace lang {
         if (!isFunction(classType)) {
             return '';
         }
-        if (/^[a-z]$/.test(classType.name)) {
+        if (clsUglifyExp.test(classType.name)) {
             let classAnnations = getClassAnnations(classType);
             return classAnnations ? classAnnations.name : classType.name;
         }
@@ -356,9 +359,6 @@ export function isClassType(target: any): target is ClassType {
     return classCheck(target, tg => Reflect.getOwnMetadataKeys(tg).length > 0);
 }
 
-
-const clsStartExp = /^[A-Z@]/;
-const clsUglifyExp = /^[a-z0-9]$/;
 
 function classCheck(target: any, preChecks?: (target: Function) => boolean, exclude?: (target: Function) => boolean): boolean {
     if (!isFunction(target)) {

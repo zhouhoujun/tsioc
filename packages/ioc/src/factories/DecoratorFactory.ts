@@ -4,7 +4,7 @@ import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
-    isNumber, isArray, lang, isString
+    isNumber, isArray, lang
 } from '../utils';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
 
