@@ -1,6 +1,8 @@
 import { IContainer } from '@tsdi/core';
 import { IBinding } from './IPropertyBindingReflect';
 
+export const wTestExp = /\./;
+const noabExp = /\?$/;
 /**
  * data binding.
  *
@@ -32,7 +34,7 @@ export abstract class DataBinding<T = any> {
             if (!p) {
                 return obj;
             }
-            p = /\?$/.test(p) ? p.substring(0, p.length - 1) : p;
+            p = noabExp.test(p) ? p.substring(0, p.length - 1) : p;
             let pv = obj[p];
             if (!pv) {
                 return null;
@@ -44,7 +46,7 @@ export abstract class DataBinding<T = any> {
     }
 
     getScopeField(): string {
-        return /\./.test(this.prop) ? this.prop.substring(this.prop.lastIndexOf('.') + 1) : this.prop;
+        return wTestExp.test(this.prop) ? this.prop.substring(this.prop.lastIndexOf('.') + 1) : this.prop;
     }
 
     getSourceValue(): T {

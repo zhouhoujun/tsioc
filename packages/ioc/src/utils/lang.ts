@@ -6,7 +6,7 @@ declare let process: any;
 
 
 const clsStartExp = /^[A-Z@]/;
-const clsUglifyExp = /^[a-z0-9]$/;
+export const clsUglifyExp = /^[a-z0-9]$/;
 /**
  * lang utils
  */

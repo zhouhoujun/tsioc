@@ -2,6 +2,7 @@ import { isBaseValue, lang } from '@tsdi/ioc';
 import { BaseTypeParser } from '@tsdi/boot';
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
+import { wTestExp } from './DataBinding';
 
 /**
  * two way binding.
@@ -23,7 +24,7 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
         }
 
         let scopeFiled = this.getScopeField();
-        let scope = this.getValue(this.getScope(), /\./.test(this.prop) ? this.prop.substring(0, this.prop.lastIndexOf('.')) : '');
+        let scope = this.getValue(this.getScope(), wTestExp.test(this.prop) ? this.prop.substring(0, this.prop.lastIndexOf('.')) : '');
 
         observe.onPropertyChange(scope, scopeFiled, (value, oldVal) => {
             if (isBaseValue(value)) {

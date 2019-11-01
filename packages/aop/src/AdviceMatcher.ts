@@ -14,6 +14,22 @@ import { NonePointcut } from './decorators/NonePointcut';
  */
 export type MatchExpress = (method: string, fullName: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
 
+const aExp = /^@/;
+const annPreChkExp = /^\^?@\w+/;
+const annContentExp = /^@annotation\(.*\)$/;
+const executionChkExp = /^execution\(\S+\)$/;
+const execContentExp = /^execution\(.*\)$/;
+const mthNameExp = /^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/;
+const tgMthChkExp = /^([\w\*]+\.)+[\w\*]+(\((\s*\w+\s*,)*\s*\w*\))?$/;
+const preParam = /^\(/;
+const endParam = /\)$/;
+const withInChkExp = /^@within\(\s*\w+/;
+const targetChkExp = /^@target\(\s*\w+/;
+const replAny = /\*\*/gi;
+const replAny1 = /\*/gi;
+const replDot = /\./gi;
+const replNav = /\//gi;
+
 /**
  * advice matcher, use to match advice when a registered create instance.
  *
@@ -56,7 +72,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
             if (aspectMeta.annotation) {
                 let annotation = isFunction(aspectMeta.annotation) ? aspectMeta.annotation.toString() : aspectMeta.annotation;
-                let anno = (/^\^?@\w+/.test(annotation) ? '' : '@') + annotation;
+                let anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
                 if (!refs.hasMetadata(anno, targetType)) {
                     return [];
                 }
@@ -130,7 +146,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             let pointcut = metadata.pointcut;
 
             if (isString(pointcut)) {
-                if (/^execution\(\S+\)$/.test(pointcut)) {
+                if (executionChkExp.test(pointcut)) {
                     pointcut = pointcut.substring(10, pointcut.length - 1);
                 }
                 return pointcut.startsWith(name);
@@ -188,7 +204,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             expresses.push(this.tranlateExpress(type, pointcuts));
         } else if (isRegExp(pointcut)) {
             let pointcutReg = pointcut;
-            if (/^\^?@\w+/.test(pointcutReg.source)) {
+            if (annPreChkExp.test(pointcutReg.source)) {
                 expresses.push((name: string, fullName: string, targetType?: Type) => {
                     let decName = Reflect.getMetadataKeys(type, name);
                     return decName.some(n => isString(n) && pointcutReg.test(n));
@@ -204,11 +220,11 @@ export class AdviceMatcher implements IAdviceMatcher {
     protected spiltBrace(strExp: string) {
         strExp = strExp.trim();
 
-        if (/^\(/.test(strExp) && /\)$/.test(strExp)) {
+        if (preParam.test(strExp) && endParam.test(strExp)) {
             strExp = strExp.substring(1, strExp.length - 1).trim();
         }
 
-        if (/^\(/.test(strExp) && /\)$/.test(strExp)) {
+        if (preParam.test(strExp) && endParam.test(strExp)) {
             return this.spiltBrace(strExp);
         } else {
             return strExp;
@@ -216,9 +232,9 @@ export class AdviceMatcher implements IAdviceMatcher {
     }
 
     protected expressToFunc(type: Type, strExp: string): MatchExpress {
-        if (/^@annotation\(.*\)$/.test(strExp)) {
+        if (annContentExp.test(strExp)) {
             let exp = strExp.substring(12, strExp.length - 1);
-            let annotation = /^@/.test(exp) ? exp : ('@' + exp);
+            let annotation = aExp.test(exp) ? exp : ('@' + exp);
             return (name: string, fullName: string) => {
                 if (name === 'constructor') {
                     return this.reflects.hasMetadata(annotation, type);
@@ -226,28 +242,28 @@ export class AdviceMatcher implements IAdviceMatcher {
                 return this.reflects.hasMethodMetadata(annotation, type, name);
             }
 
-        } else if (/^execution\(.*\)$/.test(strExp)) {
+        } else if (execContentExp.test(strExp)) {
             let exp = strExp.substring(10, strExp.length - 1);
             if (exp === '*' || exp === '*.*') {
                 return (name: string, fullName: string) => !!name && !this.reflects.hasMetadata(Aspect, type);
-            } else if (/^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/.test(exp)) {
+            } else if (mthNameExp.test(exp)) {
                 // if is method name, will match aspect self only.
                 return () => false;
-            } else if (/^([\w\*]+\.)+[\w\*]+(\((\s*\w+\s*,)*\s*\w*\))?$/.test(exp)) {
-                exp = exp.replace(/\*\*/gi, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                    .replace(/\*/gi, '\\\w+')
-                    .replace(/\./gi, '\\\.')
-                    .replace(/\//gi, '\\\/');
+            } else if (tgMthChkExp.test(exp)) {
+                exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+')
+                    .replace(replDot, '\\\.')
+                    .replace(replNav, '\\\/');
 
                 let matcher = new RegExp(exp + '$');
                 return (name: string, fullName: string) => matcher.test(fullName);
             } else {
                 return () => false;
             }
-        } else if (/^@within\(\s*\w+/.test(strExp)) {
+        } else if (withInChkExp.test(strExp)) {
             let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
             return (name: string, fullName: string, targetType?: Type) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
-        } else if (/^@target\(\s*\w+/.test(strExp)) {
+        } else if (targetChkExp.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             return (name: string, fullName: string, targetType?: Type) => this.container.getTokenProvider(torken) === targetType;
         } else {

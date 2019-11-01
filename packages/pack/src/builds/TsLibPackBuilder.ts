@@ -23,6 +23,8 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
     beforeCompile?: Binding<NodeExpression<Plugin[]>>;
 }
 
+const esmChkExp = /^esm/;
+const tsFileExp = /.ts$/;
 
 /**
  * build ts project by rollup
@@ -60,7 +62,7 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                             return false;
                         }
                         if (body.moduleName) {
-                            return isArray(body.moduleName) ? body.moduleName.some(i => /^esm/.test(i)) : /^esm/.test(body.moduleName);
+                            return isArray(body.moduleName) ? body.moduleName.some(i => esmChkExp.test(i)) : esmChkExp.test(body.moduleName);
                         }
                         return true;
                     },
@@ -79,7 +81,7 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                     condition: ctx => {
                         let input = ctx.body.input || ctx.scope.mainFile;
                         if (input) {
-                            return isArray(input) ? input.some(i => /.ts$/.test(i)) : /.ts$/.test(input)
+                            return isArray(input) ? input.some(i => tsFileExp.test(i)) : tsFileExp.test(input)
                         }
                         return false
                     },

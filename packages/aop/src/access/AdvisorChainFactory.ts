@@ -6,6 +6,7 @@ import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators/NonePointcut';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
+const AnnoDecorExp = /^@/;
 /**
  * advisor chain factory.
  *
@@ -188,7 +189,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
                     if (isArray(annotations)) {
                         if (metadata.annotationName) {
                             let d: string = metadata.annotationName;
-                            d = /^@/.test(d) ? d : `@${d}`;
+                            d = AnnoDecorExp.test(d) ? d : `@${d}`;
                             return annotations.filter(a => a.decorator === d);
                         }
                         return annotations;
