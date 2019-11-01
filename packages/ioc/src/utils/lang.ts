@@ -340,7 +340,7 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return classCheck(target) && (!Reflect.hasOwnMetadata('@Abstract', target))
+    return classCheck(target, tg => Reflect.getOwnMetadataKeys(tg).length && !Reflect.hasOwnMetadata('@Abstract', tg))
 }
 
 /**
@@ -351,12 +351,19 @@ export function isClass(target: any): target is Type {
  * @returns {target is ClassType}
  */
 export function isClassType(target: any): target is ClassType {
-    return classCheck(target);
+    return classCheck(target, tg => Reflect.getOwnMetadataKeys(tg).length > 0);
 }
 
-function classCheck(target: any): boolean {
+
+const clsStartExp = /^[a-zA-Z@]/;
+const clsUglifyExp = /^[a-z0-9]$/;
+function classCheck(target: any, preChecks?: (target: any) => boolean): boolean {
     if (!isFunction(target)) {
         return false;
+    }
+
+    if (preChecks && preChecks(target)) {
+        return true;
     }
 
     if (target.prototype) {
@@ -365,27 +372,15 @@ function classCheck(target: any): boolean {
         }
 
         let type = target as Type;
-
-        // for uglify
-        if (/^[a-z]$/.test(type.name)) {
-            if (lang.hasClassAnnations(type)) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            if (lang.hasClassAnnations(type)) {
-                return true;
-            }
-            if (!/^[A-Z@]/.test(target.name)) {
-                return false;
-            }
-        }
-
-        // for IE 8, 9
-        if (!isNodejsEnv() && /MSIE [6-9]/.test(navigator.userAgent)) {
+        if (lang.hasClassAnnations(type)) {
             return true;
+        } else if (clsUglifyExp.test(target.name)) {
+            return false;
         }
+        if (!clsStartExp.test(target.name)) {
+            return false;
+        }
+
         try {
             target.arguments && target.caller;
             return false;
