@@ -28,6 +28,7 @@ export function toAbsolutePath(root: string, pathstr: string): string {
     return path.join(root, pathstr);
 }
 
+const jsTsChkExp = /(\w+\.ts|\.js)$/;
 /**
  * get run main path.
  *
@@ -40,7 +41,7 @@ export function runMainPath(): string {
         return path.dirname(process.mainModule.filename);
     }
     if (process.argv.length > 2) {
-        let mainfile = process.argv.slice(2).find(arg => /(\w+\.ts|\.js)$/.test(arg) && existsSync(path.join(cwd, arg)));
+        let mainfile = process.argv.slice(2).find(arg => jsTsChkExp.test(arg) && existsSync(path.join(cwd, arg)));
         if (mainfile) {
             return path.dirname(path.join(cwd, mainfile));
         }
