@@ -320,6 +320,8 @@ export function isFunction(target: any): target is Function {
     return typeof target === 'function';
 }
 
+const AbstractDecor = '@Abstract';
+
 /**
  * check Abstract class with @Abstract or not
  *
@@ -328,7 +330,7 @@ export function isFunction(target: any): target is Function {
  * @returns {target is AbstractType}
  */
 export function isAbstractClass(target: any): target is AbstractType {
-    return classCheck(target) && Reflect.hasOwnMetadata('@Abstract', target);
+    return classCheck(target) && Reflect.hasOwnMetadata(AbstractDecor, target);
 }
 
 
@@ -340,7 +342,9 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return classCheck(target, tg => Reflect.getOwnMetadataKeys(tg).length && !Reflect.hasOwnMetadata('@Abstract', tg))
+    return classCheck(target,
+        tg => Reflect.getOwnMetadataKeys(tg).length && !Reflect.hasOwnMetadata(AbstractDecor, tg),
+        tg => Reflect.hasOwnMetadata(AbstractDecor, tg))
 }
 
 /**
@@ -357,13 +361,17 @@ export function isClassType(target: any): target is ClassType {
 
 const clsStartExp = /^[a-zA-Z@]/;
 const clsUglifyExp = /^[a-z0-9]$/;
-function classCheck(target: any, preChecks?: (target: any) => boolean): boolean {
+function classCheck(target: any, preChecks?: (target: Function) => boolean, exclude?: (target: Function) => boolean): boolean {
     if (!isFunction(target)) {
         return false;
     }
 
     if (preChecks && preChecks(target)) {
         return true;
+    }
+
+    if (exclude && exclude(target)) {
+        return false;
     }
 
     if (target.prototype) {
@@ -598,6 +606,7 @@ export function isDate(target: any): target is Date {
     return isObject(target) && target instanceof Date;
 }
 
+const symbolExp = /^Symbol\(/;
 /**
  * check target is symbol or not.
  *
@@ -606,7 +615,7 @@ export function isDate(target: any): target is Date {
  * @returns {target is Symbol}
  */
 export function isSymbol(target: any): target is Symbol {
-    return typeof target === 'symbol' || (isObject(target) && /^Symbol\(/.test(target.toString()));
+    return typeof target === 'symbol' || (isObject(target) && symbolExp.test(target.toString()));
 }
 
 /**
