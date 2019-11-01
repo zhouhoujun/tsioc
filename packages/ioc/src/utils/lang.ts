@@ -342,9 +342,7 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return classCheck(target,
-        tg => Reflect.getOwnMetadataKeys(tg).length && !Reflect.hasOwnMetadata(AbstractDecor, tg),
-        tg => Reflect.hasOwnMetadata(AbstractDecor, tg))
+    return classCheck(target, tg => Reflect.getOwnMetadataKeys(tg).length > 0, tg => Reflect.hasOwnMetadata(AbstractDecor, tg))
 }
 
 /**
@@ -359,19 +357,20 @@ export function isClassType(target: any): target is ClassType {
 }
 
 
-const clsStartExp = /^[a-zA-Z@]/;
+const clsStartExp = /^[A-Z@]/;
 const clsUglifyExp = /^[a-z0-9]$/;
+
 function classCheck(target: any, preChecks?: (target: Function) => boolean, exclude?: (target: Function) => boolean): boolean {
     if (!isFunction(target)) {
         return false;
     }
 
-    if (preChecks && preChecks(target)) {
-        return true;
-    }
-
+    let flag = preChecks ? preChecks(target) : false;
     if (exclude && exclude(target)) {
         return false;
+    }
+    if (flag) {
+        return true;
     }
 
     if (target.prototype) {
@@ -382,7 +381,8 @@ function classCheck(target: any, preChecks?: (target: Function) => boolean, excl
         let type = target as Type;
         if (lang.hasClassAnnations(type)) {
             return true;
-        } else if (clsUglifyExp.test(target.name)) {
+        }
+        if (clsUglifyExp.test(target.name)) {
             return false;
         }
         if (!clsStartExp.test(target.name)) {
