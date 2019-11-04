@@ -1,5 +1,3 @@
-import { isBaseValue, lang } from '@tsdi/ioc';
-import { BaseTypeParser } from '@tsdi/boot';
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
 
@@ -23,20 +21,13 @@ export class OneWayBinding<T> extends ParseBinding<T> {
             obj[this.binding.name] = target;
         }
 
-        let scopeFiled = this.getScopeField();
-        let scope = this.getValue(this.getScope(), /\./.test(this.prop) ? this.prop.substring(0, this.prop.lastIndexOf('.')) : '');
-        observe.onPropertyChange(scope, scopeFiled, (value, oldVal) => {
-            if (isBaseValue(value)) {
-                let type = this.container.getTokenProvider(this.binding.provider) || this.binding.type;
-                if (type !== lang.getClass(value)) {
-                    value = this.container.getInstance(BaseTypeParser).parse(type, value);
-                }
-            }
-            target[this.binding.name] = value;
+        target[this.binding.name] = this.getExressionValue();
+        this.getExprssionFileds().forEach(name => {
+            observe.onPropertyChange(this.source, name, (value, oldVal) => {
+                target[this.binding.name] = this.getExressionValue();
+            });
         });
 
-        let value = this.getSourceValue();
-        target[this.binding.name] = value;
     }
 }
 

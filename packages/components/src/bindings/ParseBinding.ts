@@ -18,4 +18,5 @@ export abstract class ParseBinding<T> extends DataBinding<T> {
      * @memberof ParseBinding
      */
     abstract bind(target: any, obj?: any): void;
+
 }

@@ -7,16 +7,16 @@ import { AstResolver } from '../AstResolver';
 
 export class EventBinding<T = any> extends DataBinding<T> {
 
-    constructor(protected container: IContainer, public source: any, public binding: IBinding, public expression: string) {
-        super(container, source, '', binding)
+    constructor(protected container: IContainer, source: any, binding: IBinding,  expression: string) {
+        super(container, source, binding, expression)
     }
 
     bind(target: any): void {
-        let $scope = this.getScope();
+        let $scope = this.source;
         let outEvent = target[this.binding.name];
         if (outEvent && isObservable(this.binding.type)) {
             outEvent.subsrcibe($event => {
-                let result = this.container.getInstance(AstResolver).resolve(this.expression, { target: target, $scope: $scope, $event: $event });
+                let result = this.container.getInstance(AstResolver).resolve(this.expression,  { ...$scope, target: target, $scope: $scope, $event: $event });
                 if (isFunction(result)) {
                     result($event);
                 }

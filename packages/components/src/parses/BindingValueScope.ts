@@ -6,7 +6,7 @@ import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
 import { ComponentBuilderToken } from '../IComponentBuilder';
-import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection, IBindingTypeReflect } from '../bindings';
+import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
 
 
 /**
@@ -53,18 +53,14 @@ export class BindingScopeHandle extends ParseHandle {
                 let exp = ctx.bindExpression.trim();
                 if (ctx.binding.direction === BindingDirection.input) {
                     if (exp.startsWith(bindPref)) {
-                        let bindingField = ctx.bindExpression.replace(bindPref, '').trim();
-                        ctx.dataBinding = new OneWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
+                        ctx.dataBinding = new OneWayBinding(this.container, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
                     } else if (exp.startsWith(twobindPref)) {
-                        let bindingField = ctx.bindExpression.replace(twobindPref, '').trim();
-                        ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
+                        ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
                     } else if (exp.startsWith(two2bindPref)) {
-                        let bindingField = ctx.bindExpression.replace(two2bindPref, '').trim();
-                        ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, bindingField, ctx.binding);
+                        ctx.dataBinding = new TwoWayBinding(this.container, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
                     }
                 } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                    let expression = ctx.bindExpression.replace(eventBindPref, '').trim();
-                    ctx.dataBinding = new EventBinding(this.container, ctx.scope, ctx.binding, expression);
+                    ctx.dataBinding = new EventBinding(this.container, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
                 }
             }
         }
@@ -74,12 +70,12 @@ export class BindingScopeHandle extends ParseHandle {
             if (!ctx.dataBinding.source) {
                 ctx.dataBinding.source = ctx.scope;
             }
-            ctx.bindExpression = ctx.dataBinding.getSourceValue();
+            ctx.bindExpression = ctx.dataBinding.getExressionValue();
         } else if (ctx.dataBinding instanceof DataBinding) {
             if (!ctx.dataBinding.source) {
                 ctx.dataBinding.source = ctx.scope;
             }
-            ctx.value = ctx.dataBinding.getSourceValue();
+            ctx.value = ctx.dataBinding.getExressionValue();
         }
 
         if (next && isNullOrUndefined(ctx.value)) {
