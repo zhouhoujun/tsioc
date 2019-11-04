@@ -70,12 +70,12 @@ export class BindingScopeHandle extends ParseHandle {
             if (!ctx.dataBinding.source) {
                 ctx.dataBinding.source = ctx.scope;
             }
-            ctx.bindExpression = ctx.dataBinding.getExressionValue();
+            ctx.bindExpression = ctx.dataBinding.resolveExression();
         } else if (ctx.dataBinding instanceof DataBinding) {
             if (!ctx.dataBinding.source) {
                 ctx.dataBinding.source = ctx.scope;
             }
-            ctx.value = ctx.dataBinding.getExressionValue();
+            ctx.value = ctx.dataBinding.resolveExression();
         }
 
         if (next && isNullOrUndefined(ctx.value)) {

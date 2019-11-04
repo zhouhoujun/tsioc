@@ -34,15 +34,14 @@ export class AstResolver {
                 // tslint:disable-next-line:no-eval
                 let func = eval(`(${Object.keys(envOptions).join(',')}) => {
                     return eval('${expression}');
-                }`
-                );
+                }`);
                 return func(...Object.values(envOptions));
             } else {
                 // tslint:disable-next-line:no-eval
                 return eval(expression);
             }
         } catch (err) {
-            return expression;
+            return void 0;
         }
     }
 }

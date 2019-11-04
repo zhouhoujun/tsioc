@@ -36,7 +36,7 @@ export class BindingPropertyHandle extends ResolveHandle {
                             await registerer.get(BindingScope).execute(pctx);
 
                             if (pctx.dataBinding instanceof ParseBinding) {
-                                if (pctx.dataBinding.getSourceValue() === pctx.value || isBaseValue(pctx.value)) {
+                                if (pctx.dataBinding.resolveExression() === pctx.value || isBaseValue(pctx.value)) {
                                     pctx.dataBinding.bind(ctx.target);
                                 } else if (isTypeObject(pctx.value)) {
                                     pctx.dataBinding.bind(pctx.value, ctx.target);

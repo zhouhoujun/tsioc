@@ -1,6 +1,6 @@
 import {
-    Inject, Singleton, isString, isRegExp, isUndefined,
-    Type, ObjectMap, lang, isArray, isFunction, IIocContainer, IocContainerToken, Refs, TypeReflects
+    Inject, Singleton, isString, isRegExp, isUndefined, isDefined,
+    Type, ObjectMap, lang, isArray, isFunction, IIocContainer, IocContainerToken, TypeReflects
 } from '@tsdi/ioc';
 import { IAdviceMatcher, AdviceMatcherToken } from './IAdviceMatcher';
 import { AdviceMetadata, AspectMetadata } from './metadatas';
@@ -310,7 +310,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         return (method: string, fullName: string, targetType?: Type, pointcut?: IPointcut) => {
             let flag;
             expresses.forEach((express, idx) => {
-                if (!isUndefined(flag)) {
+                if (isDefined(flag)) {
                     return;
                 }
                 if (isFunction(express)) {

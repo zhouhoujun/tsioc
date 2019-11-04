@@ -1,4 +1,4 @@
-import { isUndefined } from '@tsdi/ioc';
+import { isDefined } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task, Expression } from '@tsdi/activities';
 import { PipeActivity } from './PipeActivity';
@@ -86,7 +86,7 @@ export class StreamActivity extends PipeActivity {
                 }, err => {
                     next.removeAllListeners('error');
                     next.removeAllListeners('end');
-                    if (!isUndefined(process)) {
+                    if (isDefined(process)) {
                         console.error(err);
                         process.exit(1);
                         return err;

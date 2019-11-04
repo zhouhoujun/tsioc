@@ -23,7 +23,7 @@ export abstract class DataBinding<T = any> {
         return this.container.getInstance(AstResolver);
     }
 
-    getExressionValue() {
+    resolveExression(): T {
         return this.getAstResolver().resolve(this.expression, this.source);
     }
 

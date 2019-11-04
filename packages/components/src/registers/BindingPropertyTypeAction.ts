@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, isClassType, isUndefined, DecoratorProvider } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, isClassType, DecoratorProvider, isDefined } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from '../decorators';
 import { IBindingTypeReflect } from '../bindings';
 import { BindingCache } from './BindingCache';
@@ -52,7 +52,7 @@ export class BindingPropertyTypeAction extends IocDesignAction {
                         if (prop.bindingType) {
                             binding.bindingType = prop.bindingType;
                         }
-                        if (!isUndefined(prop.defaultValue)) {
+                        if (isDefined(prop.defaultValue)) {
                             binding.defaultValue = prop.defaultValue;
                         }
                     });

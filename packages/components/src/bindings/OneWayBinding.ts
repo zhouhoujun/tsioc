@@ -22,10 +22,10 @@ export class OneWayBinding<T> extends ParseBinding<T> {
             obj[this.binding.name] = target;
         }
 
-        target[this.binding.name] = this.getExressionValue();
+        target[this.binding.name] = this.resolveExression();
         this.getExprssionFileds().forEach(name => {
             observe.onPropertyChange(this.source, name, (value, oldVal) => {
-                target[this.binding.name] = this.getExressionValue();
+                target[this.binding.name] = this.resolveExression();
             });
         });
 

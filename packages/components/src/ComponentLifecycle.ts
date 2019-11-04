@@ -59,6 +59,16 @@ export interface AfterContentInit {
 }
 
 /**
+ * after view init.
+ *
+ * @export
+ * @interface AfterViewInit
+ */
+export interface AfterViewInit  {
+    onAfterViewInit(): void | Promise<void>;
+}
+
+/**
  * component destory hooks.
  *
  * @export

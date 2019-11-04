@@ -1,4 +1,4 @@
-import { Provider, Injectable, Inject, isUndefined, isArray, IocContainerToken, IIocContainer, ProviderTypes } from '@tsdi/ioc';
+import { Provider, Injectable, Inject, isDefined, isArray, IocContainerToken, IIocContainer, ProviderTypes } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState } from '../joinpoints';
 import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
@@ -68,7 +68,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             this.invokeAdvice(cloneJp, advicer);
         });
 
-        if (!isUndefined(cloneJp.args)) {
+        if (isDefined(cloneJp.args)) {
             joinPoint.args = cloneJp.args;
         }
 
@@ -89,7 +89,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
                 this.invokeAdvice(cloneJp, advicer);
             });
 
-        if (!isUndefined(cloneJp.args)) {
+        if (isDefined(cloneJp.args)) {
             joinPoint.args = cloneJp.args;
         }
     }
@@ -150,7 +150,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             });
 
         advChain.next((jp) => {
-            if (!isUndefined(jp.returning)) {
+            if (isDefined(jp.returning)) {
                 joinPoint.returning = jp.returning;
             }
             return joinPoint;
@@ -168,7 +168,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
         let metadata: any = advicer.advice;
 
-        if (!isUndefined(joinPoint.args) && metadata.args) {
+        if (isDefined(joinPoint.args) && metadata.args) {
             providers.push({ provide: metadata.args, useValue: joinPoint.args })
         }
 
@@ -200,11 +200,11 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             });
         }
 
-        if (!isUndefined(joinPoint.returning) && metadata.returning) {
+        if (isDefined(joinPoint.returning) && metadata.returning) {
             providers.push({ provide: metadata.returning, useValue: joinPoint.returning })
         }
 
-        if (!isUndefined(joinPoint.throwing) && metadata.throwing) {
+        if (isDefined(joinPoint.throwing) && metadata.throwing) {
             providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
 

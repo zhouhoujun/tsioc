@@ -1,6 +1,6 @@
 import { ParamProviders, ProviderTypes } from './types';
 import {
-    isClass, isArray, isFunction, isNumber, isString,
+    isClass, isArray, isFunction, isNumber, isString, isDefined,
     isUndefined, isNull, isToken, isBaseObject, lang, isMetadataObject
 } from '../utils';
 import { IProviderParser } from './IProviderParser';
@@ -66,7 +66,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
                             }
                         });
                     }
-                    if (!isUndefined(pr.useValue)) {
+                    if (isDefined(pr.useValue)) {
                         map.register(pr.provide, () => pr.useValue);
                     } else if (isClass(pr.useClass)) {
                         if (!this.container.has(pr.useClass)) {

@@ -7,6 +7,8 @@ declare let process: any;
 
 const clsStartExp = /^[A-Z@]/;
 export const clsUglifyExp = /^[a-z0-9]$/;
+
+const toString = Object.prototype.toString;
 /**
  * lang utils
  */
@@ -418,14 +420,8 @@ export function isNodejsEnv(): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    if (!target) {
-        return false;
-    }
-    let type = target.constructor || target.prototype.constructor;
-    if (type && type.name === 'Promise') {
-        return true;
-    }
-    return false;
+    return toString.call(target) === '[object Promise]'
+        || (isDefined(target) && isFunction(target.then) && isFunction(target.catch));
 }
 
 /**
@@ -436,14 +432,7 @@ export function isPromise(target: any): target is Promise<any> {
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    if (!target && !isObject(target)) {
-        return false;
-    }
-    let type = target.constructor || target.prototype.constructor;
-    if (type && type.name === 'Observable') {
-        return true;
-    }
-    return false;
+    return toString.call(target) === '[object Observable]';
 }
 
 /**
@@ -454,13 +443,7 @@ export function isObservable(target: any): boolean {
  * @returns {target is Promise<any>}
  */
 export function isBaseObject(target: any): target is object {
-    if (!target) {
-        return false;
-    }
-    if (target.constructor && target.constructor.name === 'Object') {
-        return true;
-    }
-    return false;
+    return toString.call(target) === '[object Object]' && target.constructor.name === 'Object';
 }
 
 /**
@@ -527,6 +510,17 @@ export function isUndefined(target: any): target is undefined {
 }
 
 /**
+ * check taget is defined.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isDefined(target: any): boolean {
+    return !isNullOrUndefined(target);
+}
+
+/**
  * check target is unll or not.
  *
  * @export
@@ -567,11 +561,7 @@ export function isArray(target: any): target is Array<any> {
  * @returns {target is object}
  */
 export function isObject(target: any): target is object {
-    if (isNullOrUndefined(target)) {
-        return false;
-    }
-    let type = typeof target;
-    return type === 'object' || type === 'function';
+    return target !== null && typeof target === 'object';
 }
 
 /**
@@ -582,17 +572,7 @@ export function isObject(target: any): target is object {
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    if (isNullOrUndefined(target)) {
-        return false;
-    }
-    if (typeof target !== 'object') {
-        return false;
-    }
-    let type = lang.getClass(target);
-    if (isBaseType(type)) {
-        return false;
-    }
-    return true;
+    return !(!isObject(target) || isBaseValue(target) || isBaseObject(target));
 }
 
 /**
@@ -603,10 +583,9 @@ export function isTypeObject(target: any): boolean {
  * @returns {target is Date}
  */
 export function isDate(target: any): target is Date {
-    return isObject(target) && target instanceof Date;
+    return toString.call(target) === '[object Date]';
 }
 
-const symbolExp = /^Symbol\(/;
 /**
  * check target is symbol or not.
  *
@@ -615,7 +594,7 @@ const symbolExp = /^Symbol\(/;
  * @returns {target is Symbol}
  */
 export function isSymbol(target: any): target is Symbol {
-    return typeof target === 'symbol' || (isObject(target) && symbolExp.test(target.toString()));
+    return toString.call(target) === '[object Symbol]';
 }
 
 /**
@@ -626,7 +605,7 @@ export function isSymbol(target: any): target is Symbol {
  * @returns {target is RegExp}
  */
 export function isRegExp(target: any): target is RegExp {
-    return target && target instanceof RegExp;
+    return toString.call(target) === '[object RegExp]';
 }
 
 /**
@@ -648,6 +627,29 @@ export function isBaseType(target: ClassType): boolean {
         || target === Array;
 }
 
+/**
+ * check target is primitive or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns
+ */
+export function isPrimitive(target): boolean {
+    let ty = typeof target;
+    return ty === 'string'
+        || ty === 'number'
+        || ty === 'symbol'
+        || ty === 'boolean';
+
+}
+
+/**
+ * check target is base value or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
 export function isBaseValue(target: any): boolean {
     return isBaseType(lang.getClass(target));
 }

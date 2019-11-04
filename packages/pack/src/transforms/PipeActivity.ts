@@ -1,4 +1,4 @@
-import { isUndefined } from '@tsdi/ioc';
+import { isDefined } from '@tsdi/ioc';
 import { TransformActivity } from './TransformActivity';
 import { ITransform, NodeActivityContext, isTransform, NodeExpression } from '../core';
 
@@ -52,7 +52,7 @@ export abstract class PipeActivity extends TransformActivity {
                 }, err => {
                     next.removeAllListeners('error');
                     next.removeAllListeners('end');
-                    if (!isUndefined(process)) {
+                    if (isDefined(process)) {
                         console.error(err);
                         process.exit(1);
                         return err;

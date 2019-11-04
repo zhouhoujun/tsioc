@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isUndefined } from './utils';
+import { isClass, isFunction, isSymbol, isToken, isString, isDefined } from './utils';
 import { Registration } from './Registration';
 
 import { registerCores } from './registerCores';
@@ -374,7 +374,7 @@ export class IocContainer implements IIocContainer {
             }
 
             let classFactory;
-            if (!isUndefined(value)) {
+            if (isDefined(value)) {
                 if (isFunction(value)) {
                     if (isClass(value)) {
                         this.bindTypeFactory(key, value as Type<T>, singleton);
