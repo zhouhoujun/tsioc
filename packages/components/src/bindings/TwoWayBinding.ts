@@ -2,6 +2,7 @@ import { isBaseValue, lang } from '@tsdi/ioc';
 import { BaseTypeParser } from '@tsdi/boot';
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
+import { wTestExp } from './DataBinding';
 
 /**
  * two way binding.
@@ -42,9 +43,9 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
         //     target[this.binding.name] = value;
         // });
 
-        observe.onPropertyChange(target, field, (value, oldVal) => {
-            scope[scopeFiled] = value;
-        });
+        // observe.onPropertyChange(target, field, (value, oldVal) => {
+        //     scope[scopeFiled] = value;
+        // });
 
         target[field] = this.getExressionValue();
 

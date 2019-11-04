@@ -19,6 +19,9 @@ const minimist = require('minimist');
 const del = require('del');
 
 
+const relChkExp = /^(.{1,2}\/?\\?)?$/;
+const notExp = /^!/;
+const replNodeMdlExp = /(node_modules)[\\\/]/g;
 
 @Injectable(PlatformServiceToken)
 export class PlatformService {
@@ -170,7 +173,7 @@ export class PlatformService {
     }
 
     async copyTo(filePath: string, dist: string): Promise<any> {
-        const outFile = join(dist, filePath.replace(/(node_modules)[\\\/]/g, ''));
+        const outFile = join(dist, filePath.replace(replNodeMdlExp, ''));
         return new Promise((res) => {
             if (!existsSync(outFile)) {
                 if (!existsSync(dirname(outFile))) {
@@ -206,7 +209,7 @@ export class PlatformService {
      * @memberof NodeActivityContext
      */
     relativeRoot(pathstr: string): string {
-        if (/^(.{1,2}\/?\\?)?$/.test(pathstr)) {
+        if (relChkExp.test(pathstr)) {
             return pathstr;
         }
         let fullpath = this.toRootPath(pathstr);
@@ -236,7 +239,7 @@ export class PlatformService {
 
     private prefixSrc(root: string, strSrc: string): string {
         let prefix = '';
-        if (/^!/.test(strSrc)) {
+        if (notExp.test(strSrc)) {
             prefix = '!';
             strSrc = strSrc.substring(1, strSrc.length);
         }

@@ -5,6 +5,9 @@ import { Plugin } from 'rollup';
 
 declare let Buffer: any;
 
+const tsChkExp = /\.ts$/;
+const replEmpty = /\s*$/;
+const repl$ = /\'\$\'/gi;
 /**
  * attach class Annotations before typescript ts compile.
  *
@@ -32,7 +35,7 @@ export function classAnnotations() {
 
 function iocAnnotations(contents) {
     // fix typescript '$' bug when create source file.
-    contents = contents.replace(/\'\$\'/gi, '"$"');
+    contents = contents.replace(repl$, '"$"');
     let sourceFile = ts.createSourceFile('cache.source.ts', contents, ts.ScriptTarget.Latest, true);
     let eachChild = (node: ts.Node, annations?: any) => {
         if (ts.isClassDeclaration(node)) {
@@ -50,7 +53,7 @@ function iocAnnotations(contents) {
                         return ${JSON.stringify(annations)};
                     }
                `;
-            let end = oldclass.replace(/\s*$/, '').length - 1;
+            let end = oldclass.replace(replEmpty, '').length - 1;
             contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end));
 
         } else if (ts.isConstructorDeclaration(node)) {
@@ -94,7 +97,7 @@ export function rollupClassAnnotations(options?: AnnOptions): Plugin {
     return {
         name: 'classAnnations',
         transform(code, id) {
-            if (!filter(id) && !/\.ts$/.test(id)) {
+            if (!filter(id) && !tsChkExp.test(id)) {
                 return null
             }
             return new Promise((resolve) => {

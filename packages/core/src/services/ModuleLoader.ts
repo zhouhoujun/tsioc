@@ -52,6 +52,7 @@ export interface IModuleLoader {
 
 declare let require: any;
 
+const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
 /**
  * default module loader.
  *
@@ -148,7 +149,7 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
     }
 
     protected isFile(str: string) {
-        return str && /\/((\w|%|\.))+\.\w+$/.test(str.replace(/\\\\/gi, '/'));
+        return str && fileChkExp.test(str.split('\\').join('/'));
     }
 
 

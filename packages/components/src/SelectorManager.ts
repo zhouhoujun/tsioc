@@ -1,5 +1,6 @@
 import { Singleton, InstanceFactory, Type, ProviderTypes, isString, ClassType } from '@tsdi/ioc';
 
+const attrChkExp = /^\[\w*\]$/;
 /**
  * selector manager.
  *
@@ -50,6 +51,6 @@ export class SelectorManager {
     }
 
     getAttrName(name: string): string {
-        return /^\[\w*\]$/.test(name) ? name : `[${name}]`
+        return attrChkExp.test(name) ? name : `[${name}]`
     }
 }

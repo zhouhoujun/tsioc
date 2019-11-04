@@ -51,7 +51,7 @@ export interface ShellActivityOption extends TemplateOption {
     parallel?: Binding<boolean>;
 }
 
-
+const preWordExp = /^[a-zA-Z]/;
 /**
  * Shell Task
  *
@@ -123,7 +123,7 @@ export class ShellActivity extends Activity<void> {
     protected formatArgs(args: ObjectMap): string[] {
         let strArgs = [];
         lang.forIn(args, (val, k: string) => {
-            if (k === 'root' || !/^[a-zA-Z]/.test(k)) {
+            if (k === 'root' || !preWordExp.test(k)) {
                 return;
             }
             if (isArray(val)) {

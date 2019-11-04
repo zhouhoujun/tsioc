@@ -4,7 +4,7 @@ import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
-    isNumber, isArray, lang
+    isNumber, isArray, lang, clsUglifyExp
 } from '../utils';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
 
@@ -544,7 +544,7 @@ export function getParamerterNames(target: ClassType<any>, propertyKey?: string)
 export function setParamerterNames(target: ClassType) {
     let meta = { ...getParamerterNames(target) };
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
-    let isUglify = /^[a-z]/.test(target.name);
+    let isUglify =  clsUglifyExp.test(target.name);
     let anName = '';
     let classAnnations = lang.getClassAnnations(target);
 

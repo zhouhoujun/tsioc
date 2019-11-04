@@ -1,5 +1,6 @@
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
+import { wTestExp } from './DataBinding';
 
 
 /**

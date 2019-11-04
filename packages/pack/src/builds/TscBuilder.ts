@@ -37,6 +37,8 @@ export interface TscBuilderOption extends TemplateOption {
     compilerOptions?: Binding<NodeExpression<CompilerOptions>>;
 }
 
+const jsChkExp = /.js/;
+
 @Task('tsc')
 export class TscBuilder extends NodeActivity<void> {
 
@@ -56,7 +58,7 @@ export class TscBuilder extends NodeActivity<void> {
         }
         let dist = await this.resolveExpression(this.dist, ctx);
         if (dist) {
-            if (!/.js/.test(dist)) {
+            if (!jsChkExp.test(dist)) {
                 compilerOptions.outDir = dist;
             } else {
                 compilerOptions.outFile = dist;
