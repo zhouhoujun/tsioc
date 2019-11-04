@@ -1,8 +1,6 @@
-import { isBaseValue, lang } from '@tsdi/ioc';
-import { BaseTypeParser } from '@tsdi/boot';
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
-import { wTestExp } from './DataBinding';
+import { lang } from '@tsdi/ioc';
 
 /**
  * two way binding.
@@ -30,12 +28,12 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
             });
         });
 
+        let nav = this.expression.split('.');
+        let scopeExp = nav.slice(0, nav.length - 1).join('.');
+        let scopeFile = nav.length > 1 ? lang.last(nav) : nav[0];
         observe.onPropertyChange(target, field, (value, oldVal) => {
-            let func = this.getAstResolver()
-                .resolve(`value => ${this.expression} = value`, this.source);
-            if (func) {
-                func(value);
-            }
+            let scope = nav.length > 1 ? this.getAstResolver().resolve(scopeExp, this.source) : this.source;
+            scope[scopeFile] = value;
         });
 
         target[field] = this.resolveExression();
