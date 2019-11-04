@@ -29,10 +29,10 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
         });
 
         let nav = this.expression.split('.');
-        let scopeExp = nav.slice(0, nav.length - 1).join('.');
+        let scopeExp = nav.length > 1 ? nav.slice(0, nav.length - 1).join('.') : '';
         let scopeFile = nav.length > 1 ? lang.last(nav) : nav[0];
         observe.onPropertyChange(target, field, (value, oldVal) => {
-            let scope = nav.length > 1 ? this.getAstResolver().resolve(scopeExp, this.source) : this.source;
+            let scope = scopeExp ? this.getAstResolver().resolve(scopeExp, this.source) : this.source;
             scope[scopeFile] = value;
         });
 
