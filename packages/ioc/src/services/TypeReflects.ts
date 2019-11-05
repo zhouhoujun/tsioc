@@ -38,9 +38,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     }
 
     set(type: ClassType, typeInfo: ITypeReflect): this {
-        if (!this.map.has(type)) {
-            this.map.set(type, typeInfo);
-        }
+        this.map.set(type, typeInfo);
         return this;
     }
 
