@@ -22,7 +22,7 @@ export class OneWayBinding<T> extends ParseBinding<T> {
 
         target[this.binding.name] = this.resolveExression();
         this.getFileds().forEach(field => {
-            this.bindTagChange(field, target, this.source);
+            this.bindTagChange(field, target);
         });
     }
 }

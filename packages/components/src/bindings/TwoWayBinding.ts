@@ -25,7 +25,7 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
         let field = this.binding.name;
         let fields = this.getFileds();
         fields.forEach(f => {
-            this.bindTagChange(f, target, this.source);
+            this.bindTagChange(f, target);
         });
 
         if (fields.length === 1) {
