@@ -5,10 +5,10 @@ import { lang } from '@tsdi/ioc';
 import { observe } from './onChange';
 import { BindEventType } from './Events';
 
-const filedExp = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/;
+// const filedExp = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/;
 const filedMatch = /[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*/g;
 export const pathCkExp = /\./;
-const noabExp = /\?$/;
+// const noabExp = /\?$/;
 
 
 
