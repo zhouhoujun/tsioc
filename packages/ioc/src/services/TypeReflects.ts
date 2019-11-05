@@ -78,10 +78,7 @@ export class TypeReflects extends IocCoreService implements IMetadataAccess {
     }
 
     isExtends(type: Token, base: ClassType): boolean {
-        if (!isClassType(type)) {
-            return false;
-        }
-        return this.has(type) ? this.get(type).defines.isExtends(base) : false; // lang.isExtendsClass(type, base);
+        return (isClassType(type) && this.has(type)) ? this.get(type).defines.isExtends(base) : false; // lang.isExtendsClass(type, base);
     }
 
     getExtends(type: ClassType): ClassType[] {
