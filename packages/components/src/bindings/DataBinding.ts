@@ -51,9 +51,10 @@ export abstract class DataBinding<T = any> {
     bindTagChange(field: string, target, source) {
         if (pathCkExp.test(field)) {
             let paths = field.split('.');
-            let scope = paths.slice(0, paths.length - 1).join('.');
+            let idx = field.lastIndexOf('.');
+            let scope = field.substring(0, idx);
             let sub = this.getAstResolver().resolve(scope, source);
-            let last = lang.last(paths);
+            let last = field.substring(idx + 1);
             observe.onPropertyChange(source, lang.first(paths), (value, oldVal) => {
                 target[this.binding.name] = this.resolveExression();
                 if (sub) {
