@@ -177,8 +177,8 @@ export namespace lang {
         if (isNullOrUndefined(target)) {
             return null;
         }
-        if (isClass(target)) {
-            return target;
+        if (isClassType(target)) {
+            return target as Type;
         }
         return target.constructor || target.prototype.constructor;
     }
@@ -192,7 +192,7 @@ export namespace lang {
      */
     export function getClassName(target: any): string {
         let classType = isFunction(target) ? target : getClass(target);
-        if (!isFunction(classType)) {
+        if (!isClassType(classType)) {
             return '';
         }
         if (clsUglifyExp.test(classType.name)) {
@@ -211,7 +211,7 @@ export namespace lang {
      */
     export function getParentClass(target: ClassType): ClassType {
         let p = Reflect.getPrototypeOf(target.prototype);
-        return isClass(p) ? p : p.constructor as ClassType;
+        return isClassType(p) ? p : p.constructor as ClassType;
     }
 
     /**
@@ -319,9 +319,6 @@ export namespace lang {
  * @returns
  */
 export function isFunction(target: any): target is Function {
-    if (!target) {
-        return false;
-    }
     return typeof target === 'function';
 }
 
@@ -364,6 +361,10 @@ export function isClassType(target: any): target is ClassType {
 
 function classCheck(target: any, preChecks?: (target: Function) => boolean, exclude?: (target: Function) => boolean): boolean {
     if (!isFunction(target)) {
+        return false;
+    }
+
+    if (isPrimitiveType(target)) {
         return false;
     }
 
@@ -506,7 +507,7 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return typeof target === 'undefined' || target === undefined;
+    return typeof target === 'undefined';
 }
 
 /**
@@ -616,15 +617,13 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: ClassType): boolean {
-    if (!isFunction(target)) {
-        return false;
-    }
-    return target === Object
-        || target === Boolean
-        || target === String
-        || target === Number
-        || target === Date
-        || target === Array;
+    return isFunction(target)
+        && (target === Object
+            || target === Boolean
+            || target === String
+            || target === Number
+            || target === Date
+            || target === Array);
 }
 
 /**
@@ -640,7 +639,21 @@ export function isPrimitive(target): boolean {
         || ty === 'number'
         || ty === 'symbol'
         || ty === 'boolean';
+}
 
+/**
+ * check target is primitive type or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isPrimitiveType(target): boolean {
+    return target === Function
+        || target === String
+        || target === Number
+        || target === Boolean
+        || target === Symbol;
 }
 
 /**

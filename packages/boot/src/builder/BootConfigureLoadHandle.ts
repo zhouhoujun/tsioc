@@ -3,7 +3,6 @@ import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 import { ConfigureManager } from '../annotations';
 import { AnnotationServiceToken, AnnotationMerger } from '../core';
-import { BuilderServiceToken } from './IBuilderService';
 
 /**
  * boot configure load handle.
