@@ -1,6 +1,7 @@
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
 import { lang } from '@tsdi/ioc';
+import { pathCkExp } from './DataBinding';
 
 /**
  * two way binding.
@@ -22,19 +23,20 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
         }
 
         let field = this.binding.name;
-        this.getExprssionFileds().forEach(f => {
-            observe.onPropertyChange(this.source, f, (value, oldVal) => {
-                target[field] = this.resolveExression();
-            });
+        let fields = this.getFileds();
+        fields.forEach(f => {
+            this.bindTagChange(f, target, this.source);
         });
 
-        let nav = this.expression.split('.');
-        let scopeExp = nav.length > 1 ? nav.slice(0, nav.length - 1).join('.') : '';
-        let scopeFile = nav.length > 1 ? lang.last(nav) : nav[0];
-        observe.onPropertyChange(target, field, (value, oldVal) => {
-            let scope = scopeExp ? this.getAstResolver().resolve(scopeExp, this.source) : this.source;
-            scope[scopeFile] = value;
-        });
+        if (fields.length === 1) {
+            let fd = lang.first(fields);
+            let scopeExp = pathCkExp.test(fd) ? fd.substring(0, fd.lastIndexOf('.')) : '';
+            let scopeFile = pathCkExp.test(fd) ? fd.substring(fd.lastIndexOf('.') + 1) : fd;
+            observe.onPropertyChange(target, field, (value, oldVal) => {
+                let scope = scopeExp ? this.getAstResolver().resolve(scopeExp, this.source) : this.source;
+                scope[scopeFile] = value;
+            });
+        }
 
         target[field] = this.resolveExression();
 

@@ -1,10 +1,17 @@
 import { IContainer } from '@tsdi/core';
 import { IBinding } from './IPropertyBindingReflect';
 import { AstResolver } from '../AstResolver';
+import { lang } from '@tsdi/ioc';
+import { observe } from './onChange';
+import { BindEventType } from './Events';
 
-const filedExp = /\s\w*/
-export const wTestExp = /\./;
+const filedExp = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/;
+const filedMatch = /[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*/g;
+export const pathCkExp = /\./;
 const noabExp = /\?$/;
+
+
+
 /**
  * data binding.
  *
@@ -27,8 +34,8 @@ export abstract class DataBinding<T = any> {
         return this.getAstResolver().resolve(this.expression, this.source);
     }
 
-    getExprssionFileds() {
-        return Object.keys(this.source).filter(k => this.expression.indexOf(k) >= 0)
+    getFileds() {
+        return this.expression.match(filedMatch).map(v => v);
     }
 
     getScope() {
@@ -36,10 +43,36 @@ export abstract class DataBinding<T = any> {
     }
 
     getScopeField(): string {
-        return wTestExp.test(this.expression) ? this.expression.substring(this.expression.lastIndexOf('.') + 1) : this.expression;
+        return pathCkExp.test(this.expression) ? this.expression.substring(this.expression.lastIndexOf('.') + 1) : this.expression;
     }
 
     abstract bind(target: any): void;
+
+    bindTagChange(field: string, target, source) {
+        if (pathCkExp.test(field)) {
+            let paths = field.split('.');
+            let scope = paths.slice(0, paths.length - 1).join('.');
+            let sub = this.getAstResolver().resolve(scope, source);
+            let last = lang.last(paths);
+            observe.onPropertyChange(source, lang.first(paths), (value, oldVal) => {
+                target[this.binding.name] = this.resolveExression();
+                if (sub) {
+                    observe.getEvents(sub).off(BindEventType.fieldChanged);
+                }
+                sub = this.getAstResolver().resolve(scope, source);
+                observe.onPropertyChange(sub, last, (value, oldVal) => {
+                    target[this.binding.name] = this.resolveExression();
+                });
+            });
+            observe.onPropertyChange(sub, last, (value, oldVal) => {
+                target[this.binding.name] = this.resolveExression();
+            });
+        } else {
+            observe.onPropertyChange(source, field, (value, oldVal) => {
+                target[this.binding.name] = this.resolveExression();
+            });
+        }
+    }
 }
 
 /**

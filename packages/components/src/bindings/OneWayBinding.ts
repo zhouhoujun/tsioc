@@ -1,6 +1,4 @@
-import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
-import { wTestExp } from './DataBinding';
 
 
 /**
@@ -23,12 +21,9 @@ export class OneWayBinding<T> extends ParseBinding<T> {
         }
 
         target[this.binding.name] = this.resolveExression();
-        this.getExprssionFileds().forEach(name => {
-            observe.onPropertyChange(this.source, name, (value, oldVal) => {
-                target[this.binding.name] = this.resolveExression();
-            });
+        this.getFileds().forEach(field => {
+            this.bindTagChange(field, target, this.source);
         });
-
     }
 }
 
