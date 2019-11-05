@@ -237,7 +237,7 @@ export namespace lang {
      * @param {(token: Type) => any} express
      */
     export function forInClassChain(target: ClassType, express: (token: ClassType) => any): void {
-        while (isClassType(target)) {
+        while (isClassType(target) && target !== Object) {
             if (express(target) === false) {
                 break;
             }
