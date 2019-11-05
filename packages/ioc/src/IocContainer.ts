@@ -16,6 +16,7 @@ import {
 } from './actions';
 
 
+const factoryToken = ContainerFactoryToken.toString();
 /**
  * Container
  *
@@ -56,7 +57,7 @@ export class IocContainer implements IIocContainer {
     }
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
-        return this.getInstance(ContainerFactoryToken.toString()) as ContainerFactory<T>;
+        return this.getInstance(factoryToken) as ContainerFactory<T>;
     }
 
     /**

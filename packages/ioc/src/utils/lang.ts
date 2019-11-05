@@ -572,7 +572,7 @@ export function isObject(target: any): target is object {
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    return !(!isObject(target) || isBaseValue(target) || isBaseObject(target));
+    return toString.call(target) === '[object Object]' && target.constructor.name !== 'Object';
 }
 
 /**
