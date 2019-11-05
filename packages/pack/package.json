@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/pack",
-  "version": "5.3.2",
+  "version": "5.3.3",
   "description": "@tsdi/pack is simple build tasks, base on AOP, Ioc container, via @tsdi. dev build pack activities.",
   "scripts": {
     "postinstall": "npm prune",
@@ -66,18 +66,18 @@
     "tsconfig-paths": "^3.9.0"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~5.3.2",
-    "@tsdi/aop": "~5.3.2",
-    "@tsdi/boot": "~5.3.2",
-    "@tsdi/components": "~5.3.2",
-    "@tsdi/core": "~5.3.2",
-    "@tsdi/unit": "~5.3.2",
-    "@tsdi/unit-console": "~5.3.2",
-    "@tsdi/logs": "~5.3.2",
-    "@tsdi/annotations": "~5.3.2",
-    "@tsdi/activities": "~5.3.2",
-    "@tsdi/platform-server": "~5.3.2",
-    "@tsdi/platform-server-boot": "~5.3.2",
+    "@tsdi/ioc": "~5.3.3",
+    "@tsdi/aop": "~5.3.3",
+    "@tsdi/boot": "~5.3.3",
+    "@tsdi/components": "~5.3.3",
+    "@tsdi/core": "~5.3.3",
+    "@tsdi/unit": "~5.3.3",
+    "@tsdi/unit-console": "~5.3.3",
+    "@tsdi/logs": "~5.3.3",
+    "@tsdi/annotations": "~5.3.3",
+    "@tsdi/activities": "~5.3.3",
+    "@tsdi/platform-server": "~5.3.3",
+    "@tsdi/platform-server-boot": "~5.3.3",
     "rollup-plugin-uglify": "^6.0.3",
     "rollup-plugin-node-builtins": "^2.1.2"
   },
