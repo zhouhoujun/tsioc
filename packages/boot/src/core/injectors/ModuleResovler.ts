@@ -1,8 +1,8 @@
 import {
     Token, Type, ParamProviders, isToken,
-    IResolver, IResolverContainer, InstanceFactory, SymbolType, ContainerFactory
+    IResolver, IResolverContainer, InstanceFactory, SymbolType
 } from '@tsdi/ioc';
-import { IContainer, isContainer } from '@tsdi/core';
+import { IContainer } from '@tsdi/core';
 import { IModuleResolver } from '../modules';
 import { DIModuleExports } from './DIModuleExports';
 
@@ -18,29 +18,19 @@ export class ModuleResovler<T> implements IModuleResolver {
 
     constructor(
         public token: Token<T>,
-        container: IContainer,
+        private container: IContainer,
         public type?: Type,
-        providers?: IResolverContainer
+        private providers?: IResolverContainer
     ) {
-        if (isContainer(container)) {
-            this.containerFac = container.getFactory();
-        }
-        if (providers) {
-            this.providersGetter = () => providers;
-        }
+
     }
-    private containerFac: ContainerFactory;
 
     getContainer(): IContainer {
-        return this.containerFac() as IContainer;
+        return this.container;
     }
 
-    private providersGetter: () => IResolverContainer;
     getProviders(): IResolverContainer {
-        if (this.providersGetter) {
-            return this.providersGetter();
-        }
-        return this.containerFac();
+        return this.providers || this.container;
     }
 
     get size(): number {
