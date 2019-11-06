@@ -447,7 +447,7 @@ export function isBaseObject(target: any): target is ObjectMap {
  * @param {...(string|string[])[]} props
  * @returns {boolean}
  */
-export function isMetadataObject(target: any, ...props: (string | string[])[]): target is ObjectMap {
+export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
     if (!isBaseObject(target)) {
         return false;
     }
