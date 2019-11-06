@@ -18,7 +18,8 @@ export interface JoinpointOption {
     annotations?: (ClassMetadata | MethodMetadata)[];
     target: any;
     targetType: Type,
-    providerMap?: ProviderMap;
+    originProvider?: ProviderMap;
+    currProvider?: ProviderMap;
 }
 export const JoinpointOptionToken = new InjectToken<IJoinpoint>('Joinpoint-Option');
 
@@ -136,7 +137,9 @@ export class Joinpoint implements IJoinpoint {
      * @type {ProviderMap}
      * @memberof Joinpoint
      */
-    providerMap: ProviderMap;
+    originProvider: ProviderMap;
+
+    currProvider: ProviderMap;
 
 
     constructor(@Inject(JoinpointOptionToken) options: JoinpointOption) {
@@ -153,7 +156,8 @@ export class Joinpoint implements IJoinpoint {
         this.annotations = options.annotations;
         this.target = options.target;
         this.targetType = options.targetType;
-        this.providerMap = options.providerMap;
+        this.originProvider = options.originProvider;
+        this.currProvider = options.currProvider;
     }
 
 }

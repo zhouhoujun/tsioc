@@ -96,6 +96,8 @@ export interface IJoinpoint extends IPointcut {
      */
     targetType: Type;
 
-    providerMap?: ProviderMap;
+    originProvider: ProviderMap;
+
+    currProvider: ProviderMap;
 
 }

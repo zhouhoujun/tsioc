@@ -1,9 +1,9 @@
 import {
     Singleton, Inject, Type, isFunction, RuntimeLifeScope,
-    ObjectMapProvider, IocContainerToken, IIocContainer, TypeReflects, ActionRegisterer,
+    ObjectMapProvider, IocContainerToken, IIocContainer, TypeReflects, ActionRegisterer
 } from '@tsdi/ioc';
 import { Advices } from '../advices';
-import { JoinpointState, IPointcut, JoinpointOptionToken, Joinpoint } from '../joinpoints';
+import { JoinpointState, IPointcut, JoinpointOptionToken, Joinpoint, JoinpointOption } from '../joinpoints';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { NonePointcut } from '../decorators/NonePointcut';
@@ -87,9 +87,10 @@ export class ProxyMethod implements IProxyMethod {
         let methodName = pointcut.name;
         let container = this.container;
         return (...args: any[]) => {
-            let joinPoint = this.container.getInstance(Joinpoint, {
+            let cuurPrd = container.invokedProvider(target, methodName);
+            let joinPoint = container.getInstance(Joinpoint, {
                 provide: JoinpointOptionToken,
-                useValue: {
+                useValue: <JoinpointOption>{
                     name: methodName,
                     fullName: fullName,
                     provJoinpoint: provJoinpoint,
@@ -98,7 +99,8 @@ export class ProxyMethod implements IProxyMethod {
                     args: args,
                     target: target,
                     targetType: targetType,
-                    providerMap: container.invokedProvider(target, methodName)
+                    originProvider: provJoinpoint ? provJoinpoint.originProvider || provJoinpoint.currProvider : cuurPrd,
+                    currProvider: provJoinpoint ? cuurPrd : null
                 }
             });
 

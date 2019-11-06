@@ -162,6 +162,13 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
     invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
         let providers: ProviderTypes[] = [];
 
+        if (joinPoint.originProvider) {
+            providers.push(joinPoint.originProvider);
+        }
+        if (joinPoint.currProvider) {
+            providers.push(joinPoint.currProvider);
+        }
+
         providers.push(Provider.createExtends(Joinpoint, joinPoint, (inst, provider) => {
             inst._cache_JoinPoint = provider.resolve(this.container);
         }));
@@ -206,18 +213,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
         if (isDefined(joinPoint.throwing) && metadata.throwing) {
             providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
-        }
-
-        let prov = joinPoint.provJoinpoint;
-        while (prov) {
-            if (prov.providerMap) {
-                providers.push(prov.providerMap)
-            }
-            prov = prov.provJoinpoint;
-        }
-
-        if (joinPoint.providerMap) {
-            providers.push(joinPoint.providerMap);
         }
 
         return this.advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);

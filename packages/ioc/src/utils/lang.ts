@@ -177,8 +177,8 @@ export namespace lang {
         if (isNullOrUndefined(target)) {
             return null;
         }
-        if (isClassType(target)) {
-            return target as Type;
+        if (isFunction(target)) {
+            return isClassType(target) ? target as Type : null;
         }
         return target.constructor || target.prototype.constructor;
     }
@@ -192,7 +192,7 @@ export namespace lang {
      */
     export function getClassName(target: any): string {
         let classType = isFunction(target) ? target : getClass(target);
-        if (!isClassType(classType)) {
+        if (!isFunction(classType)) {
             return '';
         }
         if (clsUglifyExp.test(classType.name)) {
@@ -237,7 +237,7 @@ export namespace lang {
      * @param {(token: Type) => any} express
      */
     export function forInClassChain(target: ClassType, express: (token: ClassType) => any): void {
-        while (isClassType(target) && target !== Object) {
+        while (isClassType(target)) {
             if (express(target) === false) {
                 break;
             }
@@ -363,32 +363,24 @@ function classCheck(target: any, preChecks?: (target: Function) => boolean, excl
     if (!isFunction(target)) {
         return false;
     }
-
     if (isPrimitiveType(target)) {
         return false;
     }
-
-    let flag = preChecks ? preChecks(target) : false;
     if (exclude && exclude(target)) {
         return false;
     }
-    if (flag) {
+    if (preChecks && preChecks(target)) {
         return true;
     }
 
     if (target.prototype) {
-        if (!target.name || target.name === 'Object') {
+        if (!target.name) {
             return false;
         }
-
-        let type = target as Type;
-        if (lang.hasClassAnnations(type)) {
+        if (lang.hasClassAnnations(target)) {
             return true;
         }
-        if (clsUglifyExp.test(target.name)) {
-            return false;
-        }
-        if (!clsStartExp.test(target.name)) {
+        if (clsUglifyExp.test(target.name) || !clsStartExp.test(target.name)) {
             return false;
         }
 
@@ -443,7 +435,7 @@ export function isObservable(target: any): boolean {
  * @param {*} target
  * @returns {target is Promise<any>}
  */
-export function isBaseObject(target: any): target is object {
+export function isBaseObject(target: any): target is ObjectMap {
     return toString.call(target) === '[object Object]' && target.constructor.name === 'Object';
 }
 
@@ -455,7 +447,7 @@ export function isBaseObject(target: any): target is object {
  * @param {...(string|string[])[]} props
  * @returns {boolean}
  */
-export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
+export function isMetadataObject(target: any, ...props: (string | string[])[]): target is ObjectMap {
     if (!isBaseObject(target)) {
         return false;
     }
@@ -485,7 +477,7 @@ export function isString(target: any): target is string {
  * @returns {target is boolean}
  */
 export function isBoolean(target: any): target is boolean {
-    return typeof target === 'boolean' || (target === true || target === false);
+    return typeof target === 'boolean';
 }
 
 /**
@@ -617,13 +609,9 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: ClassType): boolean {
-    return isFunction(target)
-        && (target === Object
-            || target === Boolean
-            || target === String
-            || target === Number
-            || target === Date
-            || target === Array);
+    return isFunction(target) && (isPrimitiveType(target)
+        || target === Date
+        || target === Array);
 }
 
 /**
@@ -650,6 +638,7 @@ export function isPrimitive(target): boolean {
  */
 export function isPrimitiveType(target): boolean {
     return target === Function
+        || target === Object
         || target === String
         || target === Number
         || target === Boolean

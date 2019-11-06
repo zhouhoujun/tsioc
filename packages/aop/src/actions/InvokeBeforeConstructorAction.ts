@@ -1,6 +1,6 @@
 import { ParamProviders, lang, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
 import { AdvisorToken } from '../IAdvisor';
-import { Joinpoint, JoinpointState, JoinpointOptionToken } from '../joinpoints';
+import { Joinpoint, JoinpointState, JoinpointOptionToken, JoinpointOption } from '../joinpoints';
 import { isValideAspectTarget } from './isValideAspectTarget';
 
 /**
@@ -30,7 +30,7 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
 
         let joinPoint = this.container.getInstance(Joinpoint, {
             provide: JoinpointOptionToken,
-            useValue: {
+            useValue: <JoinpointOption>{
                 name: 'constructor',
                 state: JoinpointState.Before,
                 fullName: className + '.constructor',
@@ -38,14 +38,14 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
                 args: ctx.args,
                 params: ctx.params,
                 targetType: targetType,
-                providerMap: ctx.providerMap
+                originProvider: ctx.providerMap
             }
         });
-        let providers: ParamProviders[] = [{ provide: Joinpoint, useValue: joinPoint }];
-
+        let providers: ParamProviders[] = [];
         if (ctx.providerMap) {
             providers.push(ctx.providerMap);
         }
+        providers.push({ provide: Joinpoint, useValue: joinPoint });
 
         advices.Before.forEach(advicer => {
             advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
