@@ -195,7 +195,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         if (!map) {
             return this;
         }
-        this.map.forEach((fac, key) => {
+        map.iterator((fac, key) => {
             this.map.set(key, fac);
         });
         return this;
