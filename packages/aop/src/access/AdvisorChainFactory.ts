@@ -1,5 +1,5 @@
 import { Provider, Injectable, Inject, isDefined, isArray, IocContainerToken, IIocContainer, ProviderTypes } from '@tsdi/ioc';
-import { Joinpoint, JoinpointState } from '../joinpoints';
+import { Joinpoint, JoinpointState, IJoinpoint } from '../joinpoints';
 import { Advicer, Advices } from '../advices';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
@@ -176,7 +176,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             providers.push({
                 provide: metadata.annotationArgName,
                 useFactory: () => {
-                    let curj = joinPoint;
+                    let curj: IJoinpoint = joinPoint;
                     let annotations = curj.annotations;
                     while (!annotations && curj && curj.provJoinpoint) {
                         curj = curj.provJoinpoint;
@@ -206,6 +206,18 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
 
         if (isDefined(joinPoint.throwing) && metadata.throwing) {
             providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
+        }
+
+        let prov = joinPoint.provJoinpoint;
+        while (prov) {
+            if (prov.providerMap) {
+                providers.push(prov.providerMap)
+            }
+            prov = prov.provJoinpoint;
+        }
+
+        if (joinPoint.providerMap) {
+            providers.push(joinPoint.providerMap);
         }
 
         return this.advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);

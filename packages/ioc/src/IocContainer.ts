@@ -461,6 +461,10 @@ export class IocContainer implements IIocContainer {
         return this.getInstance(MethodAccessor).invoke(this, target, propertyKey, ...providers);
     }
 
+    invokedProvider(target: any, propertyKey: string): ProviderMap {
+        return this.getInstance(MethodAccessor).invokedProvider(target, propertyKey);
+    }
+
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
         return this.getInstance(MethodAccessor).createParams(this, params, ...providers);
     }

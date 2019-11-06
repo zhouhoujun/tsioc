@@ -1,6 +1,6 @@
 import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
-import { ParamProviders, ProviderParser } from '../providers';
+import { ParamProviders, ProviderParser, ProviderMap } from '../providers';
 import { isToken, lang, isFunction, isBaseType } from '../utils';
 import { IIocContainer } from '../IIocContainer';
 import { RuntimeActionContext, RuntimeParamScope } from './runtime';
@@ -9,7 +9,7 @@ import { ActionRegisterer } from './ActionRegisterer';
 
 
 
-
+const invokedPdrKey = '__invoked_prds_'
 /**
  * method accessor
  *
@@ -65,13 +65,26 @@ export class MethodAccessor implements IMethodAccessor {
         let pds = tgRefl.methodParamProviders.get(key) || [];
         providers = providers.concat(pds);
         let parameters = tgRefl.methodParams.has(key) ? tgRefl.methodParams.get(key) : this.getParameters(container, targetClass, instance, key);
-        let paramInstances = this.createParams(container, parameters, ...providers);
+        let providerMap = container.getInstance(ProviderParser).parse(...providers);
+        let paramInstances = this.resolveParams(container, parameters, providerMap);
+        instance[invokedPdrKey + key] = providerMap;
         return instance[key](...paramInstances) as TR;
-
     }
 
     /**
-     *create params.
+     * get target invoked provider.
+     *
+     * @param {*} target
+     * @param {string} propertyKey
+     * @returns {ProviderMap}
+     * @memberof IMethodAccessor
+     */
+    invokedProvider(target: any, propertyKey: string): ProviderMap {
+        return target ? target[invokedPdrKey + propertyKey] : null;
+    }
+
+    /**
+     * create params instance.
      *
      * @param {IIocContainer} container
      * @param {IParameter[]} params
@@ -80,7 +93,10 @@ export class MethodAccessor implements IMethodAccessor {
      * @memberof MethodAccessor
      */
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[] {
-        let providerMap = container.getInstance(ProviderParser).parse(...providers);
+        return this.resolveParams(container, params, container.getInstance(ProviderParser).parse(...providers));
+    }
+
+    protected resolveParams(container: IIocContainer, params: IParameter[], providerMap: ProviderMap): any[] {
         return params.map((param, index) => {
             if (param.provider && providerMap.has(param.provider)) {
                 return providerMap.resolve(param.provider);

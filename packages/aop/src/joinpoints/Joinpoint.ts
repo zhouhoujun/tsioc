@@ -1,4 +1,4 @@
-import { Type, Injectable, MethodMetadata, IParameter, InjectToken, Inject, ClassMetadata } from '@tsdi/ioc';
+import { Type, Injectable, MethodMetadata, IParameter, InjectToken, Inject, ClassMetadata, ProviderMap } from '@tsdi/ioc';
 import { IJoinpoint } from './IJoinpoint';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices';
@@ -16,8 +16,9 @@ export interface JoinpointOption {
     state?: JoinpointState;
     advicer?: Advicer;
     annotations?: (ClassMetadata | MethodMetadata)[];
-    target;
-    targetType
+    target: any;
+    targetType: Type,
+    providerMap?: ProviderMap;
 }
 export const JoinpointOptionToken = new InjectToken<IJoinpoint>('Joinpoint-Option');
 
@@ -129,6 +130,14 @@ export class Joinpoint implements IJoinpoint {
      */
     targetType: Type;
 
+    /**
+     * prvoider map of joinpoint context.
+     *
+     * @type {ProviderMap}
+     * @memberof Joinpoint
+     */
+    providerMap: ProviderMap;
+
 
     constructor(@Inject(JoinpointOptionToken) options: JoinpointOption) {
         options = options || {} as JoinpointOption;
@@ -144,6 +153,7 @@ export class Joinpoint implements IJoinpoint {
         this.annotations = options.annotations;
         this.target = options.target;
         this.targetType = options.targetType;
+        this.providerMap = options.providerMap;
     }
 
 }

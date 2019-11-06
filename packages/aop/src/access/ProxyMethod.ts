@@ -97,7 +97,8 @@ export class ProxyMethod implements IProxyMethod {
                     params: this.reflects.getParameters(targetType, target, methodName),
                     args: args,
                     target: target,
-                    targetType: targetType
+                    targetType: targetType,
+                    providerMap: container.invokedProvider(target, methodName)
                 }
             });
 

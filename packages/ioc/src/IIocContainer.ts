@@ -1,7 +1,7 @@
 import { Type, Token, Factory, SymbolType } from './types';
 import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
-import { ParamProviders, ProviderTypes } from './providers';
+import { ParamProviders, ProviderTypes, ProviderMap } from './providers';
 import { IParameter } from './IParameter';
 import { TypeReflects } from './services';
 import { ResolveActionContext, ResolveActionOption } from './actions';
@@ -231,6 +231,15 @@ export interface IIocContainer extends IResolverContainer {
      */
     invoke<T, TR = any>(target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
 
+    /**
+     * try get target invoked providers.
+     *
+     * @param {*} target
+     * @param {string} propertyKey
+     * @returns {ProviderMap}
+     * @memberof IIocContainer
+     */
+    invokedProvider(target: any, propertyKey: string): ProviderMap;
     /**
      * create params instances with IParameter and provider
      *

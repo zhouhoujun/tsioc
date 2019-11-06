@@ -37,7 +37,8 @@ export class InvokeBeforeConstructorAction extends IocRuntimeAction {
                 target: target,
                 args: ctx.args,
                 params: ctx.params,
-                targetType: targetType
+                targetType: targetType,
+                providerMap: ctx.providerMap
             }
         });
         let providers: ParamProviders[] = [{ provide: Joinpoint, useValue: joinPoint }];

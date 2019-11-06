@@ -1,7 +1,7 @@
 import { IIocContainer } from './IIocContainer';
 import { Type, Token } from './types';
 import { IParameter } from './IParameter';
-import { ParamProviders } from './providers';
+import { ParamProviders, ProviderMap } from './providers';
 import { InjectToken } from './InjectToken';
 
 /**
@@ -56,6 +56,16 @@ export interface IMethodAccessor {
      * @memberof IMethodAccessor
      */
     createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[];
+
+    /**
+     * get target invoked provider.
+     *
+     * @param {*} target
+     * @param {string} propertyKey
+     * @returns {ProviderMap}
+     * @memberof IMethodAccessor
+     */
+    invokedProvider(target: any, propertyKey: string): ProviderMap;
 }
 
 /**
