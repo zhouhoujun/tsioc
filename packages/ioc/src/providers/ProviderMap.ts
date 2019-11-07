@@ -200,6 +200,14 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         });
         return this;
     }
+
+    clone() {
+        let newpdr = new ProviderMap(this.getContainer());
+        this.map.forEach((fac, key) => {
+            newpdr.map.set(key, fac);
+        });
+        return newpdr;
+    }
 }
 
 
