@@ -33,7 +33,7 @@ export class AstResolver {
             if (envOptions) {
                 // tslint:disable-next-line:no-eval
                 let func = eval(`(${Object.keys(envOptions).join(',')}) => {
-                    return eval('${expression}');
+                    return ${expression};
                 }`);
                 return func(...Object.values(envOptions));
             } else {

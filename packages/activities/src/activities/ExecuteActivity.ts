@@ -1,8 +1,7 @@
-import { isFunction } from '@tsdi/ioc';
+import { isFunction, isString } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
 import { ActivityContext, Activity } from '../core';
-import { ControlActivity } from './ControlActivity';
 
 /**
  * execute activity.
@@ -14,13 +13,14 @@ import { ControlActivity } from './ControlActivity';
  * @template T
  */
 @Task('execute')
-export class ExecuteActivity<T> extends ControlActivity<T> {
+export class ExecuteActivity<T> extends Activity<T> {
 
-    @Input('action')  action: (ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>;
+    @Input('action') action: string | ((ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>);
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        if (isFunction(this.action)) {
-            await this.action(ctx, this);
+        let action = isString(this.action) ? this.getExector().eval(ctx, this.action) : this.action;
+        if (isFunction(action)) {
+            this.result.value = await action(ctx, this);
         }
     }
 }

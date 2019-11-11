@@ -61,7 +61,7 @@
     "rxjs": "^6.3.3",
     "shelljs": "^0.8.3",
     "through2": "^3.0.0",
-    "ts-node": "^8.4.1",
+    "ts-node": "^8.5.0",
     "typescript": "^3.5.3",
     "tsconfig-paths": "^3.9.0"
   },

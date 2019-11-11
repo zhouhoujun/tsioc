@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Workflow, WorkflowInstance, ActivityModule, IfActivity } from '../src';
+import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities, ExecuteActivity } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 import { BootApplication, ContainerPool } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
@@ -108,6 +108,21 @@ describe('activity test', () => {
 
             });
             expect(ctx.result).toEqual('component task');
+        });
+
+        it('should get context by execute action.', async () => {
+            let ctx = await Workflow.run({
+                template: {
+                    activity: Activities.execute,
+                    action: `ctx => ctx.getContext('data')`
+                },
+                contexts: [
+                    {provide: 'data', useValue: 'test data'}
+                ]
+            });
+            expect(ctx.runnable instanceof WorkflowInstance).toBeTruthy();
+            // console.log(result);
+            expect(ctx.result).toEqual('test data');
         });
 
     });

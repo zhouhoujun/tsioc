@@ -40,7 +40,7 @@
     "chalk": "^2.4.2",
     "commander": "^2.18.0",
     "resolve": "^1.9.0",
-    "ts-node": "^8.4.1",
+    "ts-node": "^8.5.0",
     "tsconfig-paths": "^3.9.0"
   },
   "directories": {
