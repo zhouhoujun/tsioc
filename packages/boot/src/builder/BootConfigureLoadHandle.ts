@@ -52,8 +52,9 @@ export class BootConfigureLoadHandle extends BootHandle {
             let container = ctx.getRaiseContainer();
             await container.load(...config.deps);
         }
-        if (config.baseURL) {
+        if (config.baseURL && !ctx.baseURL) {
             ctx.baseURL = config.baseURL;
+            this.container.bindProvider(ProcessRunRootToken, ctx.baseURL);
         }
 
         await next();
