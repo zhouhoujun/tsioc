@@ -143,7 +143,6 @@ function requireRegisters() {
 
 function runActivity(fileName, options) {
     const wf = requireCwd('@tsdi/activities');
-    // const pk = requireCwd('@tsdi/pack');
 
     let config;
     if (options.config && isString(options.config)) {
@@ -161,14 +160,18 @@ function runActivity(fileName, options) {
     }
 }
 
-function vaildifyFile(fileName): string {
+function vaildifyFile(fileName, defaultFile = 'taskfile'): string {
     if (!fileName) {
-        if (fs.existsSync(path.join(processRoot, 'taskfile.ts'))) {
-            fileName = 'taskfile.ts';
-        } else if (fs.existsSync(path.join(processRoot, 'taskfile.js'))) {
-            fileName = 'taskfile.js';
-        }
+        defaultFile = defaultFile.trim().replace(/(\.ts|\.js)$/, '');
+        ['.ts', '.js'].some(ext => {
+            if (fs.existsSync(path.join(processRoot, defaultFile +  ext))) {
+                fileName = defaultFile + ext;
+                return true;
+            }
+        });
+        fileName && process.argv.push(fileName);
     }
+    fileName = path.normalize(fileName);
     if (!fs.existsSync(path.join(processRoot, fileName))) {
         console.log(chalk.red(`'${path.join(processRoot, fileName)}' not exsists`));
         process.exit(1);

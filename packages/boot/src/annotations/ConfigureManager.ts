@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject, isBaseObject } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import {
     ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken
@@ -44,6 +44,9 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
         let idx = this.configs.indexOf(config);
         if (idx >= 0) {
             this.configs.splice(idx, 1);
+        }
+        if (!this.baseURL && isBaseObject(config)) {
+            this.baseURL = config.baseURL;
         }
         this.configs.push(config);
 
