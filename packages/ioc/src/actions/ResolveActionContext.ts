@@ -36,7 +36,7 @@ export interface ResolveActionOption<T> extends ActionContextOption {
     providers?: ProviderTypes[];
 }
 
-export const CTX_REGIFY = new InjectToken<boolean>('CTX_REGIFY');
+export const CTX_RESOLVE_REGIFY = new InjectToken<boolean>('CTX_RESOLVE_REGIFY');
 /**
  * resolve action context.
  *
@@ -66,6 +66,10 @@ export class ResolveActionContext<T = any> extends IocRaiseContext {
      */
     instance?: T;
 
+    get providers(): ProviderTypes[] {
+        return this.getContext(CTX_PROVIDERS) || [];
+    }
+
     /**
      * set resolve target.
      *
@@ -85,7 +89,7 @@ export class ResolveActionContext<T = any> extends IocRaiseContext {
             this.setContext(CTX_PROVIDERS, options.providers);
         }
         if (options.regify) {
-            this.setContext(CTX_REGIFY, options.regify);
+            this.setContext(CTX_RESOLVE_REGIFY, options.regify);
         }
     }
 

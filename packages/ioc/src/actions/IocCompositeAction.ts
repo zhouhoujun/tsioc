@@ -1,5 +1,5 @@
 import { lang, isBoolean, isClass } from '../utils';
-import { IocAction, IocActionType, IocActionContext } from './Action';
+import { IocAction, IocActionType, IocActionContext, IocRaiseContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { ActionRegisterer } from './ActionRegisterer';
 
@@ -12,7 +12,7 @@ import { ActionRegisterer } from './ActionRegisterer';
  * @extends {IocAction<T>}
  * @template T
  */
-export class IocCompositeAction<T extends IocActionContext = IocActionContext> extends IocAction<T> {
+export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> extends IocAction<T> {
 
     protected actions: IocActionType[];
     protected befores: IocActionType[];

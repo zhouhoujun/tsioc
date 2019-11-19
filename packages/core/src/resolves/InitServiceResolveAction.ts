@@ -1,4 +1,4 @@
-import { isFunction, isToken, isArray, lang, isClassType, isClass } from '@tsdi/ioc';
+import { isFunction, isToken, isArray, lang, isClassType, isClass, CTX_RESOLVE_REGIFY } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
@@ -6,9 +6,9 @@ import { ResolveServicesContext } from './ResolveServicesContext';
 
 export class InitServiceResolveAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
-        if (!ctx.reflects) {
-            ctx.reflects = this.container.getTypeReflects();
-        }
+        // if (!ctx.reflects) {
+        //     ctx.reflects = this.container.getTypeReflects();
+        // }
         if (ctx.target) {
             ctx.targetRefs = (isArray(ctx.target) ? ctx.target : [ctx.target])
                 .map(t => {
@@ -47,7 +47,7 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
             ctx.tokens = ctx.tokens.filter(t => isToken(t));
             next();
 
-            if (!ctx.instance && ctx.regify && isClass(ctx.token) && !this.container.has(ctx.token)) {
+            if (!ctx.instance && ctx.getContext(CTX_RESOLVE_REGIFY) && isClass(ctx.token) && !this.container.has(ctx.token)) {
                 this.container.register(ctx.token);
                 ctx.instance = this.container.get(ctx.token, ...ctx.providers);
             }

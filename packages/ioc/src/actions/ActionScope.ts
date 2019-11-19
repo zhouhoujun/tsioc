@@ -1,6 +1,8 @@
-import { IocActionContext } from './Action';
+import { IocRaiseContext } from './Action';
 import { IocCompositeAction } from './IocCompositeAction';
+import { InjectToken } from '../InjectToken';
 
+export const CTX_ACTION_SCOPE = new InjectToken<any>('CTX_ACTION_SCOPE');
 /**
  * action scope.
  *
@@ -10,15 +12,15 @@ import { IocCompositeAction } from './IocCompositeAction';
  * @extends {IocCompositeAction<T>}
  * @template T
  */
-export abstract class ActionScope<T extends IocActionContext> extends IocCompositeAction<T> {
+export abstract class ActionScope<T extends IocRaiseContext> extends IocCompositeAction<T> {
     execute(ctx: T, next?: () => void): void {
-        let scope = ctx.actionScope;
+        let scope = ctx.getContext(CTX_ACTION_SCOPE);
         this.setScope(ctx, this);
         super.execute(ctx, next);
         this.setScope(ctx, scope);
     }
 
     protected setScope(ctx: T, parentScope?: any) {
-        ctx.actionScope = parentScope;
+        ctx.setContext(CTX_ACTION_SCOPE, parentScope);
     }
 }
