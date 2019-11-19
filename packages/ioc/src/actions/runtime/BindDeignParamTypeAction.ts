@@ -13,7 +13,7 @@ import { IParameter } from '../../IParameter';
  */
 export class BindDeignParamTypeAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void) {
-        let propertyKey = ctx.propertyKey || 'constructor';
+        let propertyKey = ctx.propertyKey;
         if (!ctx.targetReflect.methodParams.has(propertyKey)) {
             ctx.targetReflect.methodParams.set(
                 propertyKey,

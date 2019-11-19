@@ -168,65 +168,13 @@ export const BootTargetToken = new InjectToken('module_type');
 @Injectable
 export class BootContext extends AnnoationContext implements IComponentContext {
 
-    /**
-     * context providers of boot.
-     *
-     * @type {ProviderMap}
-     * @memberof BootContext
-     */
-    contexts: ProviderMap;
 
     constructor(@Inject(BootTargetToken) type: Type) {
         super(type);
     }
 
-    /**
-     * get context provider of boot application.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {T}
-     * @memberof BootContext
-     */
-    getContext<T>(token: Token<T>): T {
-        if (this.contexts) {
-            return this.contexts.resolve<T>(token);
-        }
-        return null;
-    }
-    /**
-     * set provider of this context.
-     *
-     * @param {Token} token context provider token.
-     * @param {*} provider context provider.
-     * @memberof BootContext
-     */
-    setContext(token: Token, provider: any);
-    /**
-     * set context provider of boot application.
-     *
-     * @param {...ProviderTypes[]} providers
-     * @memberof BootContext
-     */
-    setContext(...providers: ProviderTypes[]);
-    setContext(...providers: any[]) {
-        if (providers.length === 2 && isToken(providers[0])) {
-            if (!this.contexts) {
-                this.contexts = this.getRaiseContainer().getInstance(ProviderMap);
-            }
-            this.contexts.add(providers[0], providers[1]);
-        } else {
-            let pr = this.getRaiseContainer().getInstance(ProviderParser);
-            if (this.contexts) {
-                pr.parseTo(this.contexts, ...providers);
-            } else {
-                this.contexts = pr.parse(...providers);
-            }
-        }
-    }
-
     getLogManager(): ILoggerManager {
-        return this.raiseContainer().resolve(ConfigureLoggerManger);
+        return this.getRaiseContainer().resolve(ConfigureLoggerManger);
     }
 
     renderHost?: any;

@@ -17,20 +17,29 @@ import { IocCoreService } from '../IocCoreService';
  */
 export class ProviderMap extends IocCoreService implements IResolverContainer {
 
+    private containerFac: ContainerFactory;
+
+    protected map: Map<Token, InstanceFactory>;
+    constructor(container: IIocContainer | ContainerFactory) {
+        super()
+        this.setContainer(container);
+        this.map = new Map();
+    }
+
     get size(): number {
         return this.map.size;
     }
 
-    private containerFac: ContainerFactory;
+    getContainerFactory<T extends IIocContainer>(): ContainerFactory<T> {
+        return this.containerFac as ContainerFactory<T>;
+    }
+
     getContainer(): IIocContainer {
         return this.containerFac();
     }
 
-    protected map: Map<Token, InstanceFactory>;
-    constructor(container: IIocContainer) {
-        super()
-        this.containerFac = container.getFactory();
-        this.map = new Map();
+    setContainer(container: IIocContainer | ContainerFactory) {
+        this.containerFac = isFunction(container) ? container : container.getFactory();
     }
 
     keys(): (Token | number)[] {

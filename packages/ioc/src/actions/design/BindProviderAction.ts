@@ -1,6 +1,7 @@
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
 import { ClassMetadata } from '../../metadatas';
+import { CTX_CURR_DECOR } from '../RegisterActionContext';
 
 /**
  * bind provider action. for binding a factory to an token.
@@ -14,11 +15,11 @@ export class BindProviderAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void) {
         let tgReflect = ctx.targetReflect;
         let raiseContainer = ctx.getRaiseContainer();
-
+        let currDecoractor = ctx.getContext(CTX_CURR_DECOR);
         if (!tgReflect.decorator) {
-            tgReflect.decorator = ctx.currDecoractor;
+            tgReflect.decorator = currDecoractor;
         }
-        let metadatas = ctx.reflects.getMetadata<ClassMetadata>(ctx.currDecoractor, ctx.targetType);
+        let metadatas = ctx.reflects.getMetadata<ClassMetadata>(currDecoractor, ctx.targetType);
         metadatas.forEach(anno => {
             // bind all provider.
             if (!anno) {

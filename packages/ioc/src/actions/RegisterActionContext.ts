@@ -1,7 +1,6 @@
 import { Type, Token } from '../types';
-import { ActionContextOption } from './Action';
-import { ITypeReflect } from '../services';
-import { DecoratorActionContext } from './DecoratorActionContext';
+import { ActionContextOption, IocRaiseContext } from './Action';
+import { InjectToken } from '../InjectToken';
 
 /**
  * register action option.
@@ -26,22 +25,6 @@ export interface RegisterActionOption extends ActionContextOption {
     targetType: Type;
 
     /**
-     * target type reflect.
-     *
-     * @type {ITypeReflect}
-     * @memberof RegisterActionOption
-     */
-    targetReflect?: ITypeReflect;
-
-        /**
-     * property or method name of type.
-     *
-     * @type {string}
-     * @memberof RegisterActionOption
-     */
-    propertyKey?: string;
-
-    /**
      * custom set singleton or not.
      *
      * @type {boolean}
@@ -51,6 +34,8 @@ export interface RegisterActionOption extends ActionContextOption {
 
 }
 
+export const CTX_CURR_DECOR = new InjectToken<string>('CTX_CURR_DECOR');
+export const CTX_CURR_DECOR_SCOPE = new InjectToken<any>('CTX_CURR_DECOR_SCOPE');
 /**
  * Ioc Register action context.
  *
@@ -58,7 +43,7 @@ export interface RegisterActionOption extends ActionContextOption {
  * @class RegisterActionContext
  * @extends {IocActionContext}
  */
-export abstract class RegisterActionContext extends DecoratorActionContext {
+export class RegisterActionContext extends IocRaiseContext {
     /**
      * resolve token.
      *
@@ -74,14 +59,34 @@ export abstract class RegisterActionContext extends DecoratorActionContext {
      */
     targetType?: Type;
 
+    /**
+     * custom set singleton or not.
+     *
+     * @type {boolean}
+     * @memberof RegisterActionOption
+     */
+    singleton?: boolean;
 
-    constructor(targetType: Type) {
+
+    constructor(targetType?: Type) {
         super();
         this.targetType = targetType;
     }
 
     setOptions(options: RegisterActionOption) {
+        if (!options) {
+            return;
+        }
         super.setOptions(options);
+        if (options.tokenKey) {
+            this.tokenKey = options.tokenKey;
+        }
+        if (options.targetType) {
+            this.targetType = options.targetType;
+        }
+        if (options.singleton) {
+            this.singleton = options.singleton;
+        }
     }
 
 }

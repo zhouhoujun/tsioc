@@ -420,13 +420,11 @@ export class IocContainer implements IIocContainer {
             if (mgr.has(key)) {
                 return mgr.get(key);
             }
-            let providerMap = this.getInstance(ProviderParser).parse(...providers);
             let ctx = RuntimeActionContext.parse({
                 tokenKey: key,
                 targetType: ClassT,
                 singleton: singleton,
-                providers: providers,
-                providerMap: providerMap
+                providers: providers
             }, this.getFactory());
             this.getInstance(ActionRegisterer).get(RuntimeLifeScope).register(ctx);
             return ctx.target;

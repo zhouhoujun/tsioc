@@ -1,8 +1,10 @@
 import { ObjectMap, Type, Token } from '../../types';
 import { IParameter } from '../../IParameter';
-import { ParamProviders, ProviderMap } from '../../providers';
-import { ContainerFactory, IIocContainer } from '../../IIocContainer';
+import { ParamProviders, ProviderMap, ProviderParser } from '../../providers';
+import { ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
+import { createRaiseContext, CTX_PROVIDERS, CTX_PROVIDER_MAP } from '../Action';
+import { InjectToken } from '../../InjectToken';
 
 
 /**
@@ -16,18 +18,18 @@ export interface RuntimeActionOption extends RegisterActionOption {
      * the args.
      *
      * @type {any[]}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     args?: any[];
 
+    propertyKey?: string;
     /**
      * args params types.
      *
      * @type {IParameter[]}
-     * @memberof RegisterActionContext
+     * @memberof RuntimeActionContext
      */
     params?: IParameter[];
-
     /**
      * target instance.
      *
@@ -35,15 +37,6 @@ export interface RuntimeActionOption extends RegisterActionOption {
      * @memberof RegisterActionContext
      */
     target?: any;
-
-    /**
-     * property or method name of type.
-     *
-     * @type {string}
-     * @memberof RegisterActionContext
-     */
-    propertyKey?: string;
-
     /**
      * exter providers for resolve. origin providers
      *
@@ -51,32 +44,11 @@ export interface RuntimeActionOption extends RegisterActionOption {
      * @memberof RegisterActionContext
      */
     providers?: ParamProviders[];
-
-    /**
-     * exter providers convert to map.
-     *
-     * @type {ProviderMap}
-     * @memberof RegisterActionContext
-     */
-    providerMap?: ProviderMap;
-
-    /**
-     * execute context.
-     *
-     * @type {*}
-     * @memberof RegisterActionContext
-     */
-    context?: any;
-
-    /**
-     * has injected.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof IocActionContext
-     */
-    injecteds?: ObjectMap<boolean>;
 }
 
+export const CTX_PARAMS = new InjectToken<IParameter[]>('CTX_PARAMS');
+export const CTX_ARGS = new InjectToken<IParameter[]>('CTX_ARGS');
+export const CTX_PROPERTYKEY = new InjectToken<string>('CTX_PROPERTYKEY');
 /**
  * Ioc Register action context.
  *
@@ -85,23 +57,6 @@ export interface RuntimeActionOption extends RegisterActionOption {
  * @extends {RegisterActionContext}
  */
 export class RuntimeActionContext extends RegisterActionContext {
-
-    /**
-     * the args.
-     *
-     * @type {any[]}
-     * @memberof RuntimeActionContext
-     */
-    args?: any[];
-
-    /**
-     * args params types.
-     *
-     * @type {IParameter[]}
-     * @memberof RuntimeActionContext
-     */
-    params?: IParameter[];
-
     /**
      * target instance.
      *
@@ -110,64 +65,21 @@ export class RuntimeActionContext extends RegisterActionContext {
      */
     target?: any;
 
-    /**
-     * target type.
-     *
-     * @type {Type}
-     * @memberof RuntimeActionContext
-     */
-    targetType?: Type;
-
-    /**
-     * resolve token.
-     *
-     * @type {Token}
-     * @memberof RuntimeActionContext
-     */
-    tokenKey?: Token;
-
-    /**
-     * property or method name of type.
-     *
-     * @type {string}
-     * @memberof RuntimeActionContext
-     */
-    propertyKey?: string;
-
-    /**
-     * exter providers for resolve. origin providers
-     *
-     * @type {ParamProviders[]}
-     * @memberof RuntimeActionContext
-     */
-    providers?: ParamProviders[];
-
-    /**
-     * exter providers convert to map.
-     *
-     * @type {ProviderMap}
-     * @memberof RuntimeActionContext
-     */
-    providerMap?: ProviderMap;
-
-    /**
-     * execute context.
-     *
-     * @type {*}
-     * @memberof RuntimeActionContext
-     */
-    context?: any;
-
-    /**
-     * runtime props has injected.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RuntimeActionContext
-     */
-    injecteds?: ObjectMap<boolean>;
-
-    constructor(targetType: Type) {
+    constructor(targetType?: Type) {
         super(targetType);
+    }
+
+    get providerMap(): ProviderMap {
+        let pdrm = this.getContext(CTX_PROVIDER_MAP);
+        if (!pdrm) {
+            pdrm = this.getRaiseContainer().getInstance(ProviderParser).parse(...this.getContext(CTX_PROVIDERS) || []);
+            this.setContext(CTX_PROVIDER_MAP, pdrm);
+        }
+        return pdrm;
+    }
+
+    get propertyKey() {
+        return this.getContext(CTX_PROPERTYKEY) || 'constructor';
     }
 
     /**
@@ -179,63 +91,26 @@ export class RuntimeActionContext extends RegisterActionContext {
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static parse(options: RuntimeActionOption, raiseContainer?: IIocContainer | ContainerFactory): RuntimeActionContext {
-        let ctx = new RuntimeActionContext(options.targetType)
-        raiseContainer && ctx.setRaiseContainer(raiseContainer);
-        ctx.setOptions(options);
-        return ctx;
+    static parse(target: Type | RuntimeActionOption, raiseContainer?: ContainerFactory): RuntimeActionContext {
+        return createRaiseContext(RuntimeActionContext, target, raiseContainer);
     }
 
-    /**
-     * class decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof ITypeReflect
-     */
-    classDecors: ObjectMap<boolean>;
-
-    /**
-     * props decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    propsDecors: ObjectMap<boolean>;
-
-    /**
-     * method decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    methodDecors: ObjectMap<boolean>;
-
-    /**
-     * method param decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    paramDecors: ObjectMap<boolean>;
-
-    /**
-     * before constructor decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    beforeCstrDecors: ObjectMap<boolean>;
-
-    /**
-     * after constructor decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    afterCstrDecors?: ObjectMap<boolean>;
-
-
     setOptions(options: RuntimeActionOption) {
+        if (!options) {
+            return;
+        }
         super.setOptions(options);
+        if (options.propertyKey) {
+            this.setContext(CTX_PROPERTYKEY, options.propertyKey);
+        }
+        if (options.args) {
+            this.setContext(CTX_ARGS, options.args);
+        }
+        if (options.params) {
+            this.setContext(CTX_PARAMS, options.params);
+        }
+        if (options.providers) {
+            this.setContext(CTX_PROVIDERS, options.providers);
+        }
     }
 }

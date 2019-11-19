@@ -1,4 +1,4 @@
-import { Token, ResolveActionContext, ResolveActionOption, createResolveContext, ClassType } from '@tsdi/ioc';
+import { Token, ResolveActionContext, ResolveActionOption, createRaiseContext, ClassType, ContainerFactory } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
 
 
@@ -79,8 +79,8 @@ export class ResolveServiceContext<T = any> extends ResolveActionContext<T> {
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(target?: Token<T> | ServiceOption<T>): ResolveServiceContext<T> {
-        return createResolveContext<T, ResolveServiceContext<T>>(ResolveServiceContext, target);
+    static parse<T>(target?: Token<T> | ServiceOption<T>, raiseContainer?: ContainerFactory): ResolveServiceContext<T> {
+        return createRaiseContext<ResolveServiceContext>(ResolveServiceContext, target, raiseContainer);
     }
 
     /**

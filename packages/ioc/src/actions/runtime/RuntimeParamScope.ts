@@ -16,9 +16,9 @@ import { InitReflectAction } from '../InitReflectAction';
  */
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
     execute(ctx: RuntimeActionContext, next?: () => void): void {
-        if (!ctx.reflects) {
-            ctx.reflects = this.container.getTypeReflects();
-        }
+        // if (!ctx.reflects) {
+        //     ctx.reflects = this.container.getTypeReflects();
+        // }
         if (!ctx.targetReflect) {
             let typeRefs = ctx.reflects;
             if (typeRefs.has(ctx.targetType)) {

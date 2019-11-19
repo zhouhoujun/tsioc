@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeActionContext, CTX_ARGS, CTX_PARAMS } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { ActionRegisterer } from '../ActionRegisterer';
@@ -13,15 +13,15 @@ import { ActionRegisterer } from '../ActionRegisterer';
 export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext> {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
-        if (!ctx.args) {
+        if (!ctx.hasContext(CTX_ARGS)) {
             if (ctx.targetReflect.methodParams.has('constructor')) {
-                ctx.params = ctx.targetReflect.methodParams.get('constructor');
+                ctx.setContext(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
             } else {
                 this.container.getInstance(ActionRegisterer).get(RuntimeParamScope)
                     .execute(ctx);
-                ctx.params = ctx.targetReflect.methodParams.get('constructor');
+                ctx.setContext(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
             }
-            ctx.args = this.container.createParams(ctx.params, ctx.providerMap);
+            ctx.setContext(CTX_ARGS, this.container.createParams(ctx.getContext(CTX_PARAMS), ctx.providerMap));
         }
         next();
     }

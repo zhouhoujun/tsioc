@@ -1,5 +1,7 @@
 import { RegisterActionContext, RegisterActionOption } from '../RegisterActionContext';
-import { IIocContainer } from '../../IIocContainer';
+import { IIocContainer, ContainerFactory } from '../../IIocContainer';
+import { createRaiseContext } from '../Action';
+import { Type } from '../../types';
 
 /**
  * design action option.
@@ -25,16 +27,13 @@ export class DesignActionContext extends RegisterActionContext {
      * parse design action context.
      *
      * @static
-     * @param {DesignActionOption} options
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
+     * @param {(Type | DesignActionOption)} target
+     * @param { ContainerFactory } [raiseContainer]
      * @returns {DesignActionContext}
      * @memberof DesignActionContext
      */
-    static parse(options: DesignActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): DesignActionContext {
-        let ctx = new DesignActionContext(options.targetType);
-        raiseContainer && ctx.setRaiseContainer(raiseContainer);
-        ctx.setOptions(options);
-        return ctx;
+    static parse(target: Type | DesignActionOption, raiseContainer?: ContainerFactory): DesignActionContext {
+        return createRaiseContext(DesignActionContext, target, raiseContainer);
     }
 
 }

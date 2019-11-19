@@ -24,7 +24,7 @@ export function registerCores(container: IIocContainer) {
 
     container.registerSingleton(TypeReflects, () => new TypeReflects(container));
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
-    container.register(ProviderMap, () => new ProviderMap(container));
+    container.register(ProviderMap, () => new ProviderMap(fac));
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));
     container.registerSingleton(DecoratorProvider, () => new DecoratorProvider(container));
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());

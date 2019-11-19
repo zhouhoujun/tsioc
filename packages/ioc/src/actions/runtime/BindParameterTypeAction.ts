@@ -2,6 +2,7 @@ import { isClass, isArray, isToken } from '../../utils';
 import { ParameterMetadata } from '../../metadatas';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
+import { CTX_CURR_DECOR } from '../RegisterActionContext';
 
 /**
  * bind parameter type action.
@@ -13,7 +14,7 @@ import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 export class BindParameterTypeAction extends BindDeignParamTypeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
-        let propertyKey = ctx.propertyKey || 'constructor';
+        let propertyKey = ctx.propertyKey;
 
         if (ctx.targetReflect.methodParams.has(propertyKey)) {
             return next();
@@ -25,7 +26,8 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         let designParams = this.createDesignParams(ctx, type, target, propertyKey);
 
         let refs = ctx.reflects;
-        let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, type);
+        let currDecoractor = ctx.getContext(CTX_CURR_DECOR);
+        let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
         if (isArray(parameters) && parameters.length) {
             parameters.forEach(params => {
                 let parm = (isArray(params) && params.length > 0) ? params[0] : null;
@@ -54,7 +56,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                         return true;
                     }
 
-                    let parameters = refs.getParamerterMetadata<ParameterMetadata>(ctx.currDecoractor, ty);
+                    let parameters = refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, ty);
                     if (parameters.length < 1) {
                         return true;
                     }
