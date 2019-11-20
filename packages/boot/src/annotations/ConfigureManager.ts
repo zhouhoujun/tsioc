@@ -3,8 +3,8 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 import {
     ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken
 } from './IConfigureManager';
-import { RunnableConfigure } from './RunnableConfigure';
-import { ProcessRunRootToken } from './RunnableConfigure';
+import { RunnableConfigure, ProcessRunRootToken } from './RunnableConfigure';
+
 
 
 /**
@@ -15,6 +15,11 @@ import { ProcessRunRootToken } from './RunnableConfigure';
  */
 @Singleton(ConfigureMgrToken)
 export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> implements IConfigureManager<T> {
+
+    @Inject(ContainerToken) container: IContainer;
+    private config: T;
+    protected configs: (string | T)[];
+
     /**
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]
@@ -23,11 +28,6 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
     constructor(@Inject(ProcessRunRootToken) protected baseURL?: string) {
         this.configs = [];
     }
-
-    @Inject(ContainerToken) container: IContainer;
-
-    private config: T;
-    protected configs: (string | T)[];
     /**
      * use configuration.
      *

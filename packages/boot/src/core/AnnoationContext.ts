@@ -1,4 +1,4 @@
-import { Type, ProviderMap, ActionContextOption, isClass, ContainerFactory, IocRaiseContext } from '@tsdi/ioc';
+import { Type, ProviderMap, ContainerFactory, createRaiseContext, InjectToken, IocProvidersOption, IocProvidersContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { ModuleConfigure, RegFor, IModuleResolver, IModuleReflect } from './modules';
 
@@ -9,7 +9,7 @@ import { ModuleConfigure, RegFor, IModuleResolver, IModuleReflect } from './modu
  * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationOption extends ActionContextOption<IContainer> {
+export interface AnnoationOption extends IocProvidersOption<IContainer> {
     /**
      * target module type.
      *
@@ -26,30 +26,10 @@ export interface AnnoationOption extends ActionContextOption<IContainer> {
     decorator?: string;
 }
 
-/**
- * create annoation context.
- *
- * @export
- * @template T
- * @param {Type<T>} CtxType
- * @param {(Type | AnnoationOption)} target
- * @param {(IContainer | (() => IContainer))} [raiseContainer]
- * @returns {T}
- */
-export function createAnnoationContext<T extends AnnoationContext = AnnoationContext>(CtxType: Type<T>, target: Type | AnnoationOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): T {
-    let type: Type;
-    let options: AnnoationOption;
-    if (isClass(target)) {
-        type = target;
-    } else {
-        options = target;
-        type = target.module;
-    }
-    let ctx = new CtxType(type);
-    raiseContainer && ctx.setRaiseContainer(raiseContainer);
-    options && ctx.setOptions(options);
-    return ctx;
-}
+export const CTX_MODULE_REGFOR = new InjectToken<RegFor>('CTX_MODULE_REGFOR');
+export const CTX_MODULE_RESOLVER = new InjectToken<IModuleResolver>('CTX_MODULE_RESOLVER');
+export const CTX_MODULE_EXPORTS = new InjectToken<ProviderMap>('CTX_MODULE_EXPORTS');
+export const CTX_MODULE_ANNOATION = new InjectToken<ModuleConfigure>('CTX_MODULE_ANNOATION');
 
 /**
  * annoation context.
@@ -58,57 +38,68 @@ export function createAnnoationContext<T extends AnnoationContext = AnnoationCon
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext extends IocRaiseContext<IContainer> {
+export class AnnoationContext extends IocProvidersContext<IContainer> {
 
-    constructor(type: Type) {
+    constructor(type?: Type) {
         super();
         this.module = type;
     }
 
-    static parse(target: Type | AnnoationOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): AnnoationContext {
-        return createAnnoationContext(AnnoationContext, target, raiseContainer);
+    static parse(target: Type | AnnoationOption, raiseContainer?: ContainerFactory<IContainer>): AnnoationContext {
+        return createRaiseContext(AnnoationContext, target, raiseContainer);
     }
-
-
-    getRaiseContainer(): IContainer {
-        return super.getRaiseContainer() as IContainer;
-    }
-
 
     module: Type;
 
     decorator?: string;
-    targetReflect?: IModuleReflect;
 
-    /**
-     * annoation config.
-     *
-     * @type {ModuleConfigure}
-     * @memberof AnnoationContext
-     */
-    annoation?: ModuleConfigure;
+    get targetReflect(): IModuleReflect {
+        return this.reflects.get(this.module);
+    }
 
-    /**
-     * module type exports.
-     *
-     * @type {ProviderMap}
-     * @memberof AnnoationContext
-     */
-    exports?: ProviderMap;
+    // /**
+    //  * annoation config.
+    //  *
+    //  * @type {ModuleConfigure}
+    //  * @memberof AnnoationContext
+    //  */
+    // annoation?: ModuleConfigure;
 
-    /**
-     * module resolver.
-     *
-     * @type {ModuleResovler}
-     * @memberof AnnoationContext
-     */
-    moduleResolver?: IModuleResolver;
+    // /**
+    //  * module type exports.
+    //  *
+    //  * @type {ProviderMap}
+    //  * @memberof AnnoationContext
+    //  */
+    // exports?: ProviderMap;
 
-    /**
-     * the way to register the module. default as child module.
-     *
-     * @type {boolean}
-     * @memberof ModuleConfig
-     */
-    regFor?: RegFor;
+    // /**
+    //  * module resolver.
+    //  *
+    //  * @type {ModuleResovler}
+    //  * @memberof AnnoationContext
+    //  */
+    // moduleResolver?: IModuleResolver;
+
+    // /**
+    //  * the way to register the module. default as child module.
+    //  *
+    //  * @type {boolean}
+    //  * @memberof ModuleConfig
+    //  */
+    // regFor?: RegFor;
+
+
+    setOptions(options: AnnoationOption) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        if (options.module) {
+            this.module = options.module;
+        }
+        if (options.decorator) {
+            this.decorator = options.decorator;
+        }
+    }
 }

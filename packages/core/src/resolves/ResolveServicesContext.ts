@@ -66,4 +66,17 @@ export class ResolveServicesContext<T = any> extends ResolveServiceContext<T> {
      */
     services?: ProviderMap;
 
+    setOptions(options: ServicesOption<T>) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        if (options.both) {
+            this.both = options.both;
+        }
+        if (options.types) {
+            this.types = options.types;
+        }
+    }
+
 }

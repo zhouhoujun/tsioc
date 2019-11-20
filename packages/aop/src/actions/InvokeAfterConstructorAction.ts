@@ -1,4 +1,4 @@
-import { ParamProviders, lang, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
+import { ParamProviders, lang, RuntimeActionContext, IocRuntimeAction, CTX_ARGS, CTX_PARAMS } from '@tsdi/ioc';
 import { AdvisorToken } from '../IAdvisor';
 import { Joinpoint, JoinpointState, JoinpointOptionToken, JoinpointOption } from '../joinpoints';
 import { isValideAspectTarget } from './isValideAspectTarget';
@@ -34,8 +34,8 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
                 state: JoinpointState.After,
                 fullName: className + '.constructor',
                 target: target,
-                args: ctx.args,
-                params: ctx.params,
+                args: ctx.getContext(CTX_ARGS),
+                params: ctx.getContext(CTX_PARAMS),
                 targetType: targetType,
                 originProvider: ctx.providerMap
             }

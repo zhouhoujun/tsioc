@@ -1,4 +1,4 @@
-import { ActionContextOption, Type, IIocContainer, ObjectMap, Modules, IocRaiseContext } from '@tsdi/ioc';
+import { ActionContextOption, Type,  Modules, IocRaiseContext, ContainerFactory, createRaiseContext } from '@tsdi/ioc';
 
 
 /**
@@ -44,27 +44,27 @@ export class InjectorActionContext extends IocRaiseContext {
      */
     registered: Type[];
 
-    /**
-     * decorator action state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof InjectorActionContext
-     */
-    decorState: ObjectMap<boolean>;
-    /**
-     * curr register type.
-     *
-     * @type {Type}
-     * @memberof InjectorActionContext
-     */
-    currType?: Type;
-    /**
-     * curr decorator.
-     *
-     * @type {string}
-     * @memberof InjectorActionContext
-     */
-    currDecoractor?: string;
+    // /**
+    //  * decorator action state.
+    //  *
+    //  * @type {ObjectMap<boolean>}
+    //  * @memberof InjectorActionContext
+    //  */
+    // decorState: ObjectMap<boolean>;
+    // /**
+    //  * curr register type.
+    //  *
+    //  * @type {Type}
+    //  * @memberof InjectorActionContext
+    //  */
+    // currType?: Type;
+    // /**
+    //  * curr decorator.
+    //  *
+    //  * @type {string}
+    //  * @memberof InjectorActionContext
+    //  */
+    // currDecoractor?: string;
 
     /**
      * injector action context.
@@ -75,15 +75,18 @@ export class InjectorActionContext extends IocRaiseContext {
      * @returns {InjectorActionContext}
      * @memberof InjectorActionContext
      */
-    static parse(options: InjectorActionOption, raiseContainer?: IIocContainer | (() => IIocContainer)): InjectorActionContext {
-        let ctx = new InjectorActionContext();
-        raiseContainer && ctx.setRaiseContainer(raiseContainer);
-        ctx.setOptions(options);
-        return ctx;
+    static parse(options: InjectorActionOption, raiseContainer?: ContainerFactory): InjectorActionContext {
+        return createRaiseContext(InjectorActionContext, options, raiseContainer);
     }
 
     setOptions(options: InjectorActionOption) {
+        if (!options) {
+            return;
+        }
         super.setOptions(options);
+        if (options.module) {
+            this.module = options.module;
+        }
     }
 
 }

@@ -33,12 +33,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
                 map.copy(p);
             } else if (p instanceof Provider) {
                 if (p instanceof ParamProvider) {
-                    if (!p.type && isNumber(p.index)) {
-                        map.register(p.index, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
-                    } else {
-                        map.register(p.type, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
-                    }
-
+                    map.register(p.getToken(), (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
                 } else {
                     map.register(p.type, (...providers: ParamProviders[]) => p.resolve(this.container, ...providers));
                 }

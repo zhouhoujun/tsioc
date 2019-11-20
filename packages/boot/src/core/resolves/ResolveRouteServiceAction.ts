@@ -1,4 +1,4 @@
-import { ResolveServiceContext } from '@tsdi/core';
+import { ResolveServiceContext, CTX_CURR_TOKEN } from '@tsdi/core';
 import { IocCompositeAction } from '@tsdi/ioc';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentServiceAction } from './ResolveParentServiceAction';
@@ -10,7 +10,7 @@ export class ResolveRouteServiceAction extends IocCompositeAction<ResolveService
     execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (this.container.has(ContainerPoolToken)) {
             let token = ctx.token;
-            ctx.token = ctx.currToken || ctx.token;
+            ctx.token = ctx.getContext(CTX_CURR_TOKEN) || ctx.token;
             super.execute(ctx);
             if (!ctx.instance) {
                 ctx.token = token;

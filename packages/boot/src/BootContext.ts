@@ -1,10 +1,10 @@
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, ProviderMap, Token, ProviderParser, isToken } from '@tsdi/ioc';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, ProviderMap, createRaiseContext } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
 import { StartupServices } from './services';
-import { AnnoationContext, AnnoationOption, createAnnoationContext } from './core';
+import { AnnoationContext, AnnoationOption } from './core';
 import { RunnableConfigure, ConfigureManager } from './annotations';
 
 
@@ -139,14 +139,6 @@ export interface BootOption extends AnnoationOption {
     * @memberof BootOptions
     */
     providers?: ProviderTypes[];
-
-    /**
-     * providers for contexts.
-     *
-     * @type {(ProviderTypes[] | ProviderMap)}
-     * @memberof BootOption
-     */
-    contexts?: ProviderTypes[] | ProviderMap;
 
     /**
      * the raise container factory for appplication boot.
@@ -289,13 +281,6 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     deps?: LoadType[];
 
     /**
-     * providers for global boot application.
-     *
-     * @type {ProviderTypes[]}
-     * @memberof BootContext
-     */
-    providers?: ProviderTypes[];
-    /**
      * get boot target.
      *
      * @returns {*}
@@ -329,7 +314,8 @@ export class BootContext extends AnnoationContext implements IComponentContext {
             Object.assign(this, options);
         }
     }
+
     static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {
-        return createAnnoationContext(BootContext, target, raiseContainer);
+        return createRaiseContext(BootContext, target, raiseContainer);
     }
 }

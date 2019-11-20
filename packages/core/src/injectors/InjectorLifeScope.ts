@@ -20,17 +20,10 @@ export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
             .use(ModuleInjectorScope, true);
     }
 
-    execute(ctx: InjectorActionContext, next?: () => void): void {
-        if (!ctx.reflects) {
-            ctx.reflects = this.container.getTypeReflects();
-        }
-        super.execute(ctx, next);
-    }
-
     register(...modules: Modules[]): Type[] {
         let types: Type[] = [];
         modules.forEach(md => {
-            let ctx = InjectorActionContext.parse({ module: md }, this.container);
+            let ctx = InjectorActionContext.parse({ module: md }, this.container.getFactory());
             this.execute(ctx);
             if (ctx.registered) {
                 types.push(...ctx.registered);

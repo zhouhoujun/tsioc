@@ -2,6 +2,7 @@ import { Type, isArray } from '@tsdi/ioc';
 import { InjectorScope } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
 import { RegisterTypeAction } from './RegisterTypeAction';
+import { CTX_CURR_TYPE } from '../contextTokens';
 
 export abstract class InjectorRegisterScope extends InjectorScope {
 
@@ -17,7 +18,7 @@ export abstract class InjectorRegisterScope extends InjectorScope {
         if (isArray(types) && types.length) {
             types.forEach(ty => {
                 if (!this.container.has(ty)) {
-                    ctx.currType = ty;
+                    ctx.setContext(CTX_CURR_TYPE, ty);
                     super.execute(ctx);
                 }
             });

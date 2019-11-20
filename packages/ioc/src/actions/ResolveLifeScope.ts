@@ -2,6 +2,7 @@ import { Token } from '../types';
 import { ProviderTypes } from '../providers';
 import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
+import { CTX_PROVIDERS } from './Action';
 
 /**
  * resolve life scope.
@@ -15,9 +16,6 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
 
     execute(ctx: ResolveActionContext, next?: () => void): void {
         if (!ctx.instance) {
-            if (!ctx.reflects) {
-                ctx.reflects = this.container.getTypeReflects();
-            }
             super.execute(ctx, next);
         }
     }
@@ -39,13 +37,14 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
         let ctx: ResolveActionContext<T>;
         if (token instanceof ResolveActionContext) {
             ctx = token;
+            ctx.setRaiseContainer(this.container);
         } else {
-            ctx = ResolveActionContext.parse(token);
+            ctx = ResolveActionContext.parse(token, this.container.getFactory());
         }
         if (!ctx) {
             return null;
         }
-        ctx.providers = [...(ctx.providers || []), ...providers];
+        ctx.setContext(CTX_PROVIDERS, [...ctx.providers, ...providers])
         this.execute(ctx);
         return ctx.instance;
     }

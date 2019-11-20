@@ -1,9 +1,9 @@
-import { ObjectMap, Type, Token } from '../../types';
+import { Type } from '../../types';
 import { IParameter } from '../../IParameter';
 import { ParamProviders, ProviderMap, ProviderParser } from '../../providers';
 import { ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
-import { createRaiseContext, CTX_PROVIDERS, CTX_PROVIDER_MAP } from '../Action';
+import { createRaiseContext, CTX_PROVIDER_MAP } from '../Action';
 import { InjectToken } from '../../InjectToken';
 
 
@@ -72,7 +72,7 @@ export class RuntimeActionContext extends RegisterActionContext {
     get providerMap(): ProviderMap {
         let pdrm = this.getContext(CTX_PROVIDER_MAP);
         if (!pdrm) {
-            pdrm = this.getRaiseContainer().getInstance(ProviderParser).parse(...this.getContext(CTX_PROVIDERS) || []);
+            pdrm = this.getRaiseContainer().getInstance(ProviderParser).parse(...this.providers);
             this.setContext(CTX_PROVIDER_MAP, pdrm);
         }
         return pdrm;
@@ -108,9 +108,6 @@ export class RuntimeActionContext extends RegisterActionContext {
         }
         if (options.params) {
             this.setContext(CTX_PARAMS, options.params);
-        }
-        if (options.providers) {
-            this.setContext(CTX_PROVIDERS, options.providers);
         }
     }
 }

@@ -45,10 +45,6 @@ export class TemplateContext extends IocRaiseContext<IContainer> implements ICom
     */
     providers?: ProviderTypes[];
 
-    getRaiseContainer(): IContainer {
-        return this.raiseContainer() as IContainer;
-    }
-
     static parse(options: ITemplateOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): TemplateContext {
         let ctx = new TemplateContext();
         ctx.setOptions(options);

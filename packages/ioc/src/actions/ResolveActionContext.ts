@@ -1,5 +1,4 @@
-import { ActionContextOption, IocRaiseContext, createRaiseContext, CTX_PROVIDERS } from './Action';
-import { ProviderTypes } from '../providers';
+import { createRaiseContext, IocProvidersContext, IocProvidersOption } from './Action';
 import { Token } from '../types';
 import { ContainerFactory } from '../IIocContainer';
 import { InjectToken } from '../InjectToken';
@@ -11,7 +10,7 @@ import { InjectToken } from '../InjectToken';
  * @export
  * @interface ResolveActionOption
  */
-export interface ResolveActionOption<T> extends ActionContextOption {
+export interface ResolveActionOption<T> extends IocProvidersOption {
     /**
      * token.
      *
@@ -27,13 +26,7 @@ export interface ResolveActionOption<T> extends ActionContextOption {
      * @memberof ResolveActionOption
      */
     regify?: boolean;
-    /**
-     * resolver providers.
-     *
-     * @type {ParamProviders[]}
-     * @memberof IResolveContext
-     */
-    providers?: ProviderTypes[];
+
 }
 
 export const CTX_RESOLVE_REGIFY = new InjectToken<boolean>('CTX_RESOLVE_REGIFY');
@@ -43,7 +36,7 @@ export const CTX_RESOLVE_REGIFY = new InjectToken<boolean>('CTX_RESOLVE_REGIFY')
  * @export
  * @interface IResolverContext
  */
-export class ResolveActionContext<T = any> extends IocRaiseContext {
+export class ResolveActionContext<T = any> extends IocProvidersContext {
 
     constructor(token?: Token<T>) {
         super();
@@ -66,10 +59,6 @@ export class ResolveActionContext<T = any> extends IocRaiseContext {
      */
     instance?: T;
 
-    get providers(): ProviderTypes[] {
-        return this.getContext(CTX_PROVIDERS) || [];
-    }
-
     /**
      * set resolve target.
      *
@@ -84,9 +73,6 @@ export class ResolveActionContext<T = any> extends IocRaiseContext {
         super.setOptions(options);
         if (options.token) {
             this.token = options.token;
-        }
-        if (options.providers) {
-            this.setContext(CTX_PROVIDERS, options.providers);
         }
         if (options.regify) {
             this.setContext(CTX_RESOLVE_REGIFY, options.regify);

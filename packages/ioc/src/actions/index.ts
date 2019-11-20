@@ -13,8 +13,6 @@ export * from './IocSingletonManager';
 export * from './ResolveLifeScope';
 
 export * from './MethodAccessor';
-
-export * from './DecoratorActionContext';
 export * from './IocDecoratorScope';
 
 export * from './ExecDecoratorAtion';

@@ -1,6 +1,7 @@
 import { Type, Token } from '../types';
-import { ActionContextOption, IocRaiseContext } from './Action';
+import { IocProvidersContext, IocProvidersOption } from './Action';
 import { InjectToken } from '../InjectToken';
+import { ITypeReflect } from '../services/ITypeReflect';
 
 /**
  * register action option.
@@ -8,7 +9,14 @@ import { InjectToken } from '../InjectToken';
  * @export
  * @interface RegisterActionOption
  */
-export interface RegisterActionOption extends ActionContextOption {
+export interface RegisterActionOption extends IocProvidersOption {
+    /**
+     * target type reflect.
+     *
+     * @type {ITypeReflect}
+     * @memberof IocActionContext
+     */
+    targetReflect?: ITypeReflect;
     /**
      * resolve token.
      *
@@ -43,7 +51,7 @@ export const CTX_CURR_DECOR_SCOPE = new InjectToken<any>('CTX_CURR_DECOR_SCOPE')
  * @class RegisterActionContext
  * @extends {IocActionContext}
  */
-export class RegisterActionContext extends IocRaiseContext {
+export class RegisterActionContext extends IocProvidersContext {
     /**
      * resolve token.
      *
@@ -66,6 +74,10 @@ export class RegisterActionContext extends IocRaiseContext {
      * @memberof RegisterActionOption
      */
     singleton?: boolean;
+
+    get targetReflect(): ITypeReflect {
+        return this.reflects.get(this.targetType);
+    }
 
 
     constructor(targetType?: Type) {

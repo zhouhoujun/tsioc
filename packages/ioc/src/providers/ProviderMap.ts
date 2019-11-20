@@ -1,4 +1,4 @@
-import { isToken, isFunction, isUndefined, isObject, isNumber } from '../utils';
+import { isToken, isFunction, isUndefined, isObject } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
 import { IIocContainer, ContainerFactory } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
@@ -42,7 +42,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         this.containerFac = isFunction(container) ? container : container.getFactory();
     }
 
-    keys(): (Token | number)[] {
+    keys(): Token[] {
         return Array.from(this.map.keys());
     }
 
@@ -53,41 +53,38 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
     /**
      * has provide or not.
      *
-     * @param {(Token | number)} provide
+     * @param {Token} provide
      * @returns {boolean}
      * @memberof ProviderMap
      */
-    has(provide: Token | number): boolean {
+    has(provide: Token): boolean {
         return this.map.has(this.getTokenKey(provide));
     }
 
     provides(): Token[] {
-        return this.keys().filter(k => !isNumber(k)) as Token[];
+        return this.keys()
     }
 
     /**
      * get token key.
      *
-     * @param {(Token | number)} token
-     * @returns {(SymbolType | number)}
+     * @param {Token} token
+     * @returns {SymbolType)}
      * @memberof ProviderMap
      */
-    getTokenKey(token: Token | number): SymbolType {
-        if (!isNumber(token)) {
-            return this.getContainer().getTokenKey(token);
-        }
-        return token as any;
+    getTokenKey(token: Token): SymbolType {
+        return this.getContainer().getTokenKey(token);
     }
 
     /**
      * get token factory.
      *
      * @template T
-     * @param {(Token<T> | number)} provide
+     * @param {Token<T>} provide
      * @returns {InstanceFactory<T>}
      * @memberof ProviderMap
      */
-    get<T>(provide: Token<T> | number): InstanceFactory<T> {
+    get<T>(provide: Token<T>): InstanceFactory<T> {
         return this.map.get(this.getTokenKey(provide));
     }
 
@@ -123,12 +120,12 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
      * add and bind token provider.
      *
      * @template T
-     * @param {(Token<T> | number)} provide
+     * @param {Token<T>} provide
      * @param {(Token<T> | Factory<T>)} provider
      * @returns {this}
      * @memberof ProviderMap
      */
-    add<T>(provide: Token<T> | number, provider: Token<T> | Factory<T>): this {
+    add<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
         return this.register(provide, provider);
     }
 
@@ -136,12 +133,12 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
      * register provider.
      *
      * @template T
-     * @param {(Token<T> | number)} provide
+     * @param {Token<T>} provide
      * @param {(Token<T> | Factory<T>)} provider
      * @returns {this}
      * @memberof ProviderMap
      */
-    register<T>(provide: Token<T> | number, provider: Token<T> | Factory<T>): this {
+    register<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
         let key = this.getTokenKey(provide);
         if (isUndefined(key)) {
             return this;
@@ -175,7 +172,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
      * @returns {T}
      * @memberof ProviderMap
      */
-    resolve<T>(provide: Token<T> | number, ...providers: ProviderTypes[]): T {
+    resolve<T>(provide: Token<T>, ...providers: ProviderTypes[]): T {
         let key = this.getTokenKey(provide);
         if (this.has(key)) {
             let provider = this.get(key);

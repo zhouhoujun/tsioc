@@ -15,12 +15,10 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
         if (!isClass(ctx.targetType)) {
             return;
         }
-        // if (!ctx.reflects) {
-        //     ctx.reflects = this.container.getTypeReflects();
-        // }
-        if (!ctx.targetReflect && ctx.targetType) {
-            ctx.targetReflect = ctx.reflects.create(ctx.targetType);
+        if (ctx.singleton) {
+            ctx.targetReflect.singleton = ctx.singleton;
         }
+
         if (next) {
             return next();
         }

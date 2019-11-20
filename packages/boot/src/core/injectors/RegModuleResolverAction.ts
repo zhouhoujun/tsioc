@@ -1,5 +1,5 @@
 import { AnnoationAction } from './AnnoationAction';
-import { AnnoationContext } from '../AnnoationContext';
+import { AnnoationContext, CTX_MODULE_RESOLVER } from '../AnnoationContext';
 import { IDIModuleReflect } from '../modules';
 import { ModuleResovler } from './ModuleResovler';
 
@@ -11,7 +11,7 @@ export class RegModuleResolverAction extends AnnoationAction {
         if (reflect) {
             reflect.moduleResolver = mdResolver;
         }
-        ctx.moduleResolver = mdResolver;
+        ctx.setContext(CTX_MODULE_RESOLVER, mdResolver);
         next();
     }
 }

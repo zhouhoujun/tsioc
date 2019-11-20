@@ -1,6 +1,6 @@
-import { isClass, LifeScope, Type, Inject, ActionRegisterer } from '@tsdi/ioc';
-import { IContainer, ContainerToken, InjectorAction, InjectorActionContext, InjectorRegisterScope } from '@tsdi/core';
-import { AnnoationContext } from '../AnnoationContext';
+import { isClass, LifeScope, Type, Inject, ActionRegisterer, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { IContainer, ContainerToken, InjectorAction, InjectorActionContext, InjectorRegisterScope, CTX_CURR_TYPE } from '@tsdi/core';
+import { AnnoationContext, CTX_MODULE_RESOLVER } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
 import { AnnoationRegisterScope } from './AnnoationRegisterScope';
 import { RegModuleExportsAction } from './RegModuleExportsAction';
@@ -35,9 +35,9 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
         let ctx = AnnoationContext.parse({
             module: type,
             decorator: decorator
-        }, this.container);
+        }, this.container.getFactory());
         this.execute(ctx);
-        return ctx.moduleResolver as ModuleResovler<T>;
+        return ctx.getContext(CTX_MODULE_RESOLVER) as ModuleResovler<T>;
     }
 }
 
@@ -58,7 +58,7 @@ export class DIModuleInjectorScope extends InjectorRegisterScope {
     }
 
     protected getTypes(ctx: InjectorActionContext): Type[] {
-        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.currDecoractor, ty));
+        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.getContext(CTX_CURR_DECOR), ty));
     }
 
     protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {
@@ -72,11 +72,13 @@ export class DIModuleInjectorScope extends InjectorRegisterScope {
 
 export class RegisterDIModuleAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next: () => void): void {
-        if (isClass(ctx.currType) && ctx.currDecoractor) {
+        let currType = ctx.getContext(CTX_CURR_TYPE);
+        let currDecor = ctx.getContext(CTX_CURR_DECOR);
+        if (isClass(currType) && currDecor) {
             this.container.getInstance(ActionRegisterer)
                 .get(ModuleInjectLifeScope)
-                .register(ctx.currType, ctx.currDecoractor);
-            ctx.registered.push(ctx.currType);
+                .register(currType, currDecor);
+            ctx.registered.push(currType);
         }
         next();
     }

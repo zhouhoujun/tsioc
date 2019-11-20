@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, isArray, ActionRegisterer } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, ActionRegisterer, CTX_PROVIDERS } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import {
@@ -118,14 +118,11 @@ export class Container extends IocContainer implements IContainer {
         } else {
             context = ResolveServiceContext.parse(target);
         }
+        context.setContext(CTX_PROVIDERS, [...context.providers, ...providers]);
 
-        if (isArray(context.providers)) {
-            context.providers.push(...providers);
-        } else {
-            context.providers = providers;
-        }
-
-        this.getInstance(ActionRegisterer).get(ServiceResolveLifeScope).execute(context);
+        this.getInstance(ActionRegisterer)
+            .get(ServiceResolveLifeScope)
+            .execute(context);
         return context.instance || null;
     }
 
@@ -165,7 +162,10 @@ export class Container extends IocContainer implements IContainer {
         } else {
             context = ResolveServicesContext.parse(target);
         }
-        this.getInstance(ActionRegisterer).get(ServicesResolveLifeScope).execute(context);
+        this.getInstance(ActionRegisterer)
+            .get(ServicesResolveLifeScope)
+            .execute(context);
+
         return context.services;
     }
 }

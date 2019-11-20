@@ -2,6 +2,7 @@ import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { AutorunMetadata } from '../../metadatas';
 import { lang, isNumber } from '../../utils';
+import { CTX_CURR_DECOR } from '../RegisterActionContext';
 /**
  * method auto run action.
  *
@@ -17,8 +18,9 @@ export class MethodAutorunAction extends IocRuntimeAction {
     }
 
     protected runAuto(ctx: RuntimeActionContext) {
-        if (ctx.reflects.hasMethodMetadata(ctx.currDecoractor, ctx.targetType)) {
-            let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.targetType);
+        let currDec = ctx.getContext(CTX_CURR_DECOR);
+        if (ctx.reflects.hasMethodMetadata(currDec, ctx.targetType)) {
+            let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(currDec, ctx.targetType);
             let lastmetas: AutorunMetadata[] = [];
             let idx = Object.keys(metas).length;
             lang.forIn(metas, (mm, key: string) => {

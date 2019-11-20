@@ -1,4 +1,4 @@
-import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext, ITypeReflect } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext, ITypeReflect, createRaiseContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { ModuleConfigure, IModuleReflect } from '../../core';
 import { IComponentContext } from '../ComponentContext';
@@ -10,7 +10,7 @@ import { IComponentContext } from '../ComponentContext';
  * @interface IModuleResolveOption
  */
 export interface IModuleResolveOption {
-
+    type?: Type;
     /**
      * component scope.
      *
@@ -138,15 +138,7 @@ export class BuildContext extends IocRaiseContext<IContainer> implements ICompon
         this.type = type;
     }
 
-
-    getRaiseContainer(): IContainer {
-        return this.raiseContainer() as IContainer;
-    }
-
-    static parse(type: Type, options: IModuleResolveOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): BuildContext {
-        let ctx = new BuildContext(type);
-        ctx.setOptions(options);
-        raiseContainer && ctx.setRaiseContainer(raiseContainer);
-        return ctx;
+    static parse(target: Type | IModuleResolveOption, raiseContainer?: ContainerFactory<IContainer>): BuildContext {
+        return createRaiseContext(BuildContext, target, raiseContainer);
     }
 }

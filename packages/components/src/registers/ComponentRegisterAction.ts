@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, ProviderTypes } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, ProviderTypes, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
 import { SelectorManager } from '../SelectorManager';
 import { IBindingTypeReflect } from '../bindings';
@@ -14,9 +14,10 @@ const attrExp = /^\[\w+\]$/;
 export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
-        let metas = ctx.reflects.getMetadata<ModuleConfigure>(ctx.currDecoractor, ctx.targetType);
+        let currDecor = ctx.getContext(CTX_CURR_DECOR);
+        let metas = ctx.reflects.getMetadata<ModuleConfigure>(currDecor, ctx.targetType);
         let reflects = ctx.targetReflect as IBindingTypeReflect;
-        reflects.componentDecorator = ctx.currDecoractor;
+        reflects.componentDecorator = currDecor;
         metas.forEach(meta => {
             if (!meta.selector) {
                 return;

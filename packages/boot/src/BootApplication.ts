@@ -43,7 +43,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         if (target) {
             if (target instanceof BootContext) {
                 this.context = target;
-                if (this.context.hasRaiseContainer()) {
+                if (this.context.hasContext()) {
                     raiseContainer = this.context.getRaiseContainer();
                 }
             } else if (!isClass(target) && target.raiseContainer) {

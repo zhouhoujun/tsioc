@@ -1,16 +1,14 @@
-import { isFunction, isToken, isArray, lang, isClassType, isClass, CTX_RESOLVE_REGIFY } from '@tsdi/ioc';
+import { isToken, isArray, lang, isClassType, isClass, CTX_RESOLVE_REGIFY } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
 import { ResolveServicesContext } from './ResolveServicesContext';
+import { CTX_TARGET_REFS, CTX_SERVICE_TOKEN_FACTORY } from '../contextTokens';
 
 export class InitServiceResolveAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
-        // if (!ctx.reflects) {
-        //     ctx.reflects = this.container.getTypeReflects();
-        // }
         if (ctx.target) {
-            ctx.targetRefs = (isArray(ctx.target) ? ctx.target : [ctx.target])
+            ctx.setContext(CTX_TARGET_REFS, (isArray(ctx.target) ? ctx.target : [ctx.target])
                 .map(t => {
                     if (t instanceof TargetService) {
                         return t;
@@ -19,12 +17,12 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
                     }
                     return null;
                 })
-                .filter(t => t);
+                .filter(t => t));
         }
         ctx.tokens = ctx.tokens || [];
         if (ctx.token) {
-            if (isFunction(ctx.serviceTokenFactory)) {
-                ctx.tokens = (ctx.serviceTokenFactory(ctx.token) || []).concat(ctx.tokens);
+            if (ctx.hasContext(CTX_SERVICE_TOKEN_FACTORY)) {
+                ctx.tokens = (ctx.getContext(CTX_SERVICE_TOKEN_FACTORY)(ctx.token) || []).concat(ctx.tokens);
             } else {
                 ctx.tokens.push(ctx.token);
             }

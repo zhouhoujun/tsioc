@@ -1,17 +1,19 @@
 import { IocResolveScope, isToken, isClassType } from '@tsdi/ioc';
-import { ResolveServiceContext } from './ResolveServiceContext';
+import { ResolveServiceContext, CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE, CTX_CURR_TARGET_TOKEN, CTX_TARGET_REFS } from './ResolveServiceContext';
 import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
 import { ResolveDecoratorServiceAction } from './ResolveDecoratorServiceAction';
 
 export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceContext> {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
-        if (!ctx.instance && ctx.targetRefs) {
-            let has = ctx.targetRefs.some(t => {
-                ctx.currTargetRef = t;
-                ctx.currTargetToken = isToken(t) ? t : t.getToken();
-                ctx.currTargetType = isClassType(ctx.currTargetToken) ? ctx.currTargetToken : this.container.getTokenProvider(ctx.currTargetToken);
+        if (!ctx.instance && ctx.hasContext(CTX_TARGET_REFS)) {
+            let has = ctx.getContext(CTX_TARGET_REFS).some(t => {
+                ctx.setContext(CTX_CURR_TARGET_REF, t);
+                let tk = isToken(t) ? t : t.getToken();
+                ctx.setContext(CTX_CURR_TARGET_TOKEN, tk);
+                let ty = isClassType(tk) ? tk : this.container.getTokenProvider(tk);
+                isClassType(ty) ? ctx.setContext(CTX_CURR_TARGET_TYPE, ty) : ctx.removeContext(CTX_CURR_TARGET_TYPE);
                 return ctx.tokens.some(tk => {
-                    ctx.currToken = tk;
+                    ctx.setContext(CTX_CURR_TOKEN, tk);
                     super.execute(ctx);
                     return !!ctx.instance;
                 })
@@ -26,10 +28,7 @@ export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceCo
     }
 
     protected clear(ctx: ResolveServiceContext) {
-        ctx.currToken = null;
-        ctx.currTargetRef = null;
-        ctx.currTargetType = null;
-        ctx.currTargetToken = null;
+        ctx.removeContext(CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE, CTX_CURR_TARGET_TOKEN);
     }
 
     setup() {
