@@ -6,7 +6,7 @@ import { IComponentContext } from './builder';
 import { StartupServices } from './services';
 import { AnnoationContext, AnnoationOption } from './core';
 import { RunnableConfigure, ConfigureManager, ProcessRunRootToken } from './annotations';
-import { CTX_APP_CONFIGURE } from './context-tokens';
+import { CTX_APP_CONFIGURE, CTX_APP_INITDATA, CTX_APP_ENVARGS } from './context-tokens';
 
 
 
@@ -86,7 +86,7 @@ export interface BootOption extends AnnoationOption {
     template?: any;
 
     /**
-     * boot run args.
+     * boot run env args.
      *
      * @type {string[]}
      * @memberof BootOptions
@@ -168,6 +168,14 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
      */
     get configuration(): CFG {
         return this.get(CTX_APP_CONFIGURE) as CFG;
+    }
+
+    get args(): string[] {
+        return this.get(CTX_APP_ENVARGS) || [];
+    }
+
+    get data(): any {
+        return this.get(CTX_APP_INITDATA) || this.getOptions().data;
     }
 
     /**

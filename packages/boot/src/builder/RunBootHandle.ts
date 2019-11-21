@@ -10,7 +10,7 @@ export class RunBootHandle extends BootHandle {
             await runnable.onInit();
         }
 
-        if (ctx.autorun !== false) {
+        if (ctx.getOptions().autorun !== false) {
             await ctx.runnable.startup(ctx);
         }
 

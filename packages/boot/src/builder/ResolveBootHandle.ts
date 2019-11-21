@@ -14,9 +14,10 @@ export class ResolveBootHandle extends BootHandle {
                 { provide: lang.getClass(ctx), useValue: ctx }
             ]
             if (isClass(bootModule)) {
+                let options = ctx.getOptions();
                 ctx.bootstrap = await this.container.get(BuilderServiceToken).resolve(bootModule, {
-                    scope: ctx.scope,
-                    template: ctx.template,
+                    scope: options.scope,
+                    template: options.template,
                     providers: extProviders,
                     raiseContainer: ctx.getContainerFactory()
                 });

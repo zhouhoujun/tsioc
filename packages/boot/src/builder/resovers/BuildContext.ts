@@ -1,6 +1,6 @@
-import { ContainerFactory, Injectable, Type, ProviderTypes, IocRaiseContext, ITypeReflect, createRaiseContext } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, createRaiseContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { ModuleConfigure, IModuleReflect } from '../../core';
+import { AnnoationOption, AnnoationContext } from '../../core';
 import { IComponentContext } from '../ComponentContext';
 
 /**
@@ -9,8 +9,8 @@ import { IComponentContext } from '../ComponentContext';
  * @export
  * @interface IModuleResolveOption
  */
-export interface IModuleResolveOption {
-    type?: Type;
+export interface IModuleResolveOption extends AnnoationOption {
+
     /**
      * component scope.
      *
@@ -23,59 +23,10 @@ export interface IModuleResolveOption {
 
     parsing?: boolean;
 
-    decorator?: string;
-
-    /**
-     * annoation metadata config.
-     *
-     * @type {IAnnotationMetadata}
-     * @memberof BuildContext
-     */
-    annoation?: ModuleConfigure;
-    /**
-    * providers.
-    *
-    * @type {ProviderTypes[]}
-    * @memberof BootOptions
-    */
-    providers?: ProviderTypes[];
-
-    /**
-     * raise contianer.
-     *
-     * @type {ContainerFactory}
-     * @memberof IModuleResolveOption
-     */
-    raiseContainer?: ContainerFactory<IContainer>;
-
-    /**
-     * target type reflect.
-     *
-     * @type {ITypeReflect}
-     * @memberof IocActionContext
-     */
-    targetReflect?: ITypeReflect;
 }
 
 @Injectable
-export class BuildContext extends IocRaiseContext<IContainer> implements IComponentContext {
-    /**
-     * component scope.
-     *
-     * @type {*}
-     * @memberof BootOption
-     */
-    scope?: any;
-    /**
-     * template of module.
-     *
-     * @type {*}
-     * @memberof BuildContext
-     */
-    template?: any;
-
-    parsing?: boolean;
-
+export class BuildContext<T extends IModuleResolveOption = IModuleResolveOption> extends AnnoationContext<T> implements IComponentContext {
     /**
      * instance of current type annoation template
      *
@@ -85,14 +36,6 @@ export class BuildContext extends IocRaiseContext<IContainer> implements ICompon
     composite?: any;
 
     /**
-     * current module type.
-     *
-     * @type {Type}
-     * @memberof BuildContext
-     */
-    type: Type;
-
-    /**
      * current target module
      *
      * @type {*}
@@ -100,41 +43,6 @@ export class BuildContext extends IocRaiseContext<IContainer> implements ICompon
      */
     target?: any;
 
-    /**
-     * decorator.
-     *
-     * @type {string}
-     * @memberof BuildContext
-     */
-    decorator: string;
-
-    /**
-     * annoation metadata config.
-     *
-     * @type {ModuleConfigure}
-     * @memberof BuildContext
-     */
-    annoation?: ModuleConfigure;
-    /**
-    * providers.
-    *
-    * @type {ProviderTypes[]}
-    * @memberof BootOptions
-    */
-    providers?: ProviderTypes[];
-
-    /**
-     * current args providers.
-     *
-     * @type {ProviderTypes[]}
-     * @memberof BuildContext
-     */
-    argsProviders?: ProviderTypes[];
-
-    constructor(type: Type) {
-        super();
-        this.type = type;
-    }
 
     static parse(target: Type | IModuleResolveOption, raiseContainer?: ContainerFactory<IContainer>): BuildContext {
         return createRaiseContext(BuildContext, target, raiseContainer);

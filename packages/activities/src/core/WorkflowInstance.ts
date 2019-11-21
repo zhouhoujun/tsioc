@@ -64,14 +64,14 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
 
 
     async onInit(): Promise<void> {
-        let mgr = this.context.getConfigureManager<ActivityConfigure>();
+        let mgr = this.context.getConfigureManager();
         await mgr.getConfig();
     }
 
 
     async start(data?: any): Promise<TCtx> {
         let container = this.getContainer();
-        this.context.data = data;
+        this.context.getOptions().data = data;
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
         }

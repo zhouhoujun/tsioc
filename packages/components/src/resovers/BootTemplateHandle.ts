@@ -5,11 +5,12 @@ import { Component } from '../decorators';
 export class BootTemplateHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         if (!ctx.module) {
-            if (ctx.template) {
+            let options = ctx.getOptions();
+            if (options.template) {
                 ctx.target = await this.container.get(ComponentBuilderToken).resolveTemplate({
                     decorator: ctx.decorator || Component.toString(),
-                    scope: ctx.scope,
-                    template: ctx.template,
+                    scope: options.scope,
+                    template: options.template,
                     raiseContainer: ctx.getContainerFactory()
                 });
             }

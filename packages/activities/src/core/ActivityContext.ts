@@ -5,7 +5,7 @@ import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
-import { ActivityConfigure, ActivityTemplate, Expression } from './ActivityConfigure';
+import { ActivityConfigure, Expression } from './ActivityConfigure';
 
 /**
  * workflow context token.
@@ -25,7 +25,7 @@ export const EachBodyToken = new InjectToken<any>('each_body');
 @Injectable
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
-export class ActivityContext extends BootContext {
+export class ActivityContext extends BootContext<ActivityOption, ActivityConfigure> {
     /**
      * workflow id.
      *
@@ -40,20 +40,6 @@ export class ActivityContext extends BootContext {
     * @memberof ActivityOption
     */
     name: string;
-    /**
-     * activities component template scope.
-     *
-     * @type {ActivityTemplate}
-     * @memberof ActivityConfigure
-     */
-    template?: ActivityTemplate;
-    /**
-     * activity annoation metadata.
-     *
-     * @type {ActivityConfigure}
-     * @memberof ActivityContext
-     */
-    annoation: ActivityConfigure;
     /**
      * bootstrap runnable service.
      *

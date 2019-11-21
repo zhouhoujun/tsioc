@@ -24,7 +24,8 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
         if (!isClass(target)) {
             if (!target.module) {
                 target.module = SequenceActivity;
-                target.template = isArray(target.template) ? target.template : [target.template];
+                let options = target instanceof ActivityContext ? target.getOptions() : target;
+                options.template = isArray(options.template) ? options.template : [options.template];
             }
         }
         super.onInit(target);
@@ -110,7 +111,8 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
         let deps = super.getBootDeps();
         if (!isClass(this.target) && this.target['staticSeq']) {
             deps = [];
-            this.target.template.forEach(t => {
+            let options = this.target instanceof ActivityContext ? this.target.getOptions() : this.target;
+            options.template.forEach(t => {
                 deps.push(... this.getTargetDeps(t));
             });
         }

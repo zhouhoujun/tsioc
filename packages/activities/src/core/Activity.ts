@@ -106,7 +106,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
         ctx.runnable.status.current = this;
         if (this.$scope) {
-            ctx.scope = this.$scope;
+            ctx.getOptions().scope = this.$scope;
         }
         this._result = await this.initResult(ctx);
         await this.refreshResult(ctx);
@@ -128,7 +128,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     }
 
     protected async refreshResult(ctx: TCtx): Promise<any> {
-        let ret = isNullOrUndefined(ctx.result) ? ctx.data : ctx.result;
+        let ret = isNullOrUndefined(ctx.result) ? ctx.getOptions().data : ctx.result;
         if (!isNullOrUndefined(ret)) {
             if (this.pipe) {
                 this.result.value = await this.pipe.transform(ret);

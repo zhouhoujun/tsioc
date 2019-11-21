@@ -1,4 +1,4 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, CTX_ARGS } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken } from '../core';
@@ -9,6 +9,7 @@ import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
 import { IStartup } from '../runnable';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
+import { CTX_MODULE_RESOLVER, CTX_MODULE_REGFOR, CTX_APP_ENVARGS } from '../context-tokens';
 
 
 
@@ -64,9 +65,9 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     protected async resolveModule<T>(contextInit: (ctx: BuildContext) => void, target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
-        let rctx = BuildContext.parse(target, options);
+        let rctx = BuildContext.parse({ module: target, ...(options || {}) });
         if (providers.length) {
-            rctx.providers = (rctx.providers || []).concat(providers);
+            rctx.getOptions().providers = rctx.providers.concat(providers);
         }
         if (contextInit) {
             contextInit(rctx);
@@ -113,7 +114,9 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     async buildStartup<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>> {
-        let ctx = await this.execLifeScope(ctx => ctx.autorun = false, this.container.getInstance(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        let ctx = await this.execLifeScope(ctx => {
+            ctx.getOptions().autorun = false
+        }, this.container.getInstance(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }
 
@@ -176,7 +179,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             target,
             ...args);
 
-        if (isFunction(opt.regExports) && ctx.moduleResolver) {
+        if (isFunction(opt.regExports) && ctx.has(CTX_MODULE_RESOLVER)) {
             opt.regExports(ctx as T, this.container);
         }
         return ctx as T;
@@ -195,7 +198,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     async bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext> {
         return await this.execLifeScope(
             (ctx) => {
-                ctx.regFor = RegFor.boot;
+                ctx.set(CTX_MODULE_REGFOR, RegFor.boot);
                 if (isFunction(application.onContextInit)) {
                     application.onContextInit(ctx);
                 }
@@ -217,7 +220,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             }
         }
 
-        ctx.args = args;
+        ctx.set(CTX_APP_ENVARGS, args);
         if (contextInit) {
             contextInit(ctx);
         }

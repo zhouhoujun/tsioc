@@ -29,12 +29,28 @@ export interface AnnoationOption extends IocProvidersOption<IContainer> {
     decorator?: string;
 
     /**
+     * annoation metadata config.
+     *
+     * @type {IAnnotationMetadata}
+     * @memberof AnnoationOption
+     */
+    annoation?: ModuleConfigure;
+
+    /**
      * set where this module to register. default as child module.
      *
      * @type {boolean}
      * @memberof ModuleConfig
      */
     regFor?: RegFor;
+
+    /**
+     * raise contianer.
+     *
+     * @type {ContainerFactory}
+     * @memberof IModuleResolveOption
+     */
+    raiseContainer?: ContainerFactory<IContainer>;
 }
 
 
@@ -61,6 +77,9 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     get decorator(): string {
         if (!this.has(CTX_MODULE_DECTOR)) {
             let dec = this.getRaiseContainer().get(AnnotationServiceToken).getDecorator(this.module);
+            if (!dec) {
+                dec = this.targetReflect.decorator;
+            }
             if (dec) {
                 this.set(CTX_MODULE_DECTOR, dec);
             }
@@ -109,6 +128,9 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         }
         if (options.decorator) {
             this.set(CTX_MODULE_DECTOR, options.decorator);
+        }
+        if (options.annoation) {
+            this.set(CTX_MODULE_ANNOATION, options.annoation);
         }
 
         if (options.regFor) {

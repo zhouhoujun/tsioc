@@ -9,15 +9,17 @@ export class BindingOutputHandle extends ResolveHandle {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propOutBindings) {
                 let registerer = this.container.getInstance(HandleRegisterer);
+                let options = ctx.getOptions();
                 await Promise.all(Array.from(ref.propOutBindings.keys()).map(async n => {
                     let binding = ref.propOutBindings.get(n);
                     let filed = binding.bindingName || binding.name;
-                    let expression = ctx.template ? ctx.template[filed] : null;
+                    let expression = options.template ? options.template[filed] : null;
                     if (!isNullOrUndefined(expression)) {
-                        let pctx = ParseContext.parse(ctx.type, {
-                            scope: ctx.scope || ctx.target,
+                        let pctx = ParseContext.parse({
+                            module: ctx.module,
+                            scope: options.scope || ctx.target,
                             bindExpression: expression,
-                            template: ctx.template,
+                            template: options.template,
                             binding: binding,
                             decorator: ctx.decorator,
                             raiseContainer: ctx.getContainerFactory()

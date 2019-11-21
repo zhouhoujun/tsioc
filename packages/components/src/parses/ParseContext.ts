@@ -1,4 +1,4 @@
-import { ContainerFactory, Injectable, Type } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, createRaiseContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
 import { IBinding, DataBinding } from '../bindings';
@@ -25,23 +25,21 @@ export interface IBindingParseOption extends IModuleResolveOption  {
  * @implements {IComponentContext}
  */
 @Injectable
-export class ParseContext extends BuildContext implements IComponentContext {
+export class ParseContext extends BuildContext<IBindingParseOption> implements IComponentContext {
 
-    binding: IBinding;
+    get binding(): IBinding {
+        return this.getOptions().binding;
+    }
 
-    bindExpression?: any;
+    get bindExpression(): any {
+        return this.getOptions().bindExpression;
+    }
 
     dataBinding?: DataBinding;
 
-    scope?: any;
-
     value?: any;
 
-
-    static parse(type: Type, options: IBindingParseOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): ParseContext {
-        let ctx = new ParseContext(type);
-        ctx.setOptions(options);
-        raiseContainer && ctx.setRaiseContainer(raiseContainer);
-        return ctx;
+    static parse(target: Type | IBindingParseOption, raiseContainer?: ContainerFactory<IContainer>): ParseContext {
+        return createRaiseContext(ParseContext, target, raiseContainer);
     }
 }

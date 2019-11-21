@@ -6,13 +6,13 @@ import { BuilderServiceToken } from './IBuilderService';
 export class ResolveTypeHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         if (ctx.module && !ctx.target) {
+            let options = ctx.getOptions();
             ctx.target = await this.container.get(BuilderServiceToken).resolve(ctx.module, {
-                scope: ctx.scope,
-                template: ctx.template,
+                scope: options.scope,
+                template: options.template,
                 annoation: ctx.annoation,
                 decorator: ctx.targetReflect.decorator,
                 providers: ctx.providers,
-                targetReflect: ctx.targetReflect,
                 raiseContainer: ctx.getContainerFactory()
             });
         }

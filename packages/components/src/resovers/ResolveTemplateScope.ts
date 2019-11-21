@@ -4,8 +4,9 @@ import { TemplateParseScope, TemplateContext } from '../parses';
 
 export class ResolveTemplateScope extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
-        if (!ctx.scope && !ctx.parsing && ctx.template && !ctx.annoation.template) {
-            ctx.annoation.template = ctx.template;
+        let options = ctx.getOptions();
+        if (!options.scope && !options.parsing && options.template && !ctx.annoation.template) {
+            ctx.annoation.template = options.template;
         }
         if (ctx.target && ctx.annoation.template) {
             let pCtx = TemplateContext.parse({

@@ -144,10 +144,9 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
             if (meta && meta.deps) {
                 dependences.push(...meta.deps);
             }
-        } else if (target instanceof BootContext) {
-            target.getOptions().deps && dependences.push(...target.getOptions().deps);
         } else if (target) {
-            target.deps && dependences.push(...target.deps);
+            let options = target instanceof BootContext ? target.getOptions() : target;
+            options.deps && dependences.push(...options.deps);
         }
         return dependences;
     }

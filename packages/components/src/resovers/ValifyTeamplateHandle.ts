@@ -6,8 +6,9 @@ export class ValifyTeamplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.target && ctx.composite) {
             let mgr = this.container.getInstance(ComponentManager);
-            if (ctx.scope) {
-                mgr.setComposite(ctx.scope, ctx.target);
+            let options = ctx.getOptions();
+            if (options.scope) {
+                mgr.setComposite(options.scope, ctx.target);
             }
 
             let startupRegr = this.container.getInstance(StartupDecoratorRegisterer);

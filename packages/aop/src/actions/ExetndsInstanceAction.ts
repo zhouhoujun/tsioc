@@ -1,4 +1,4 @@
-import { ExtendsProvider, RuntimeActionContext, IocRuntimeAction, CTX_PROVIDERS } from '@tsdi/ioc';
+import { ExtendsProvider, RuntimeActionContext, IocRuntimeAction } from '@tsdi/ioc';
 
 /**
  * extends instance action.
@@ -11,8 +11,8 @@ export class ExetndsInstanceAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        let providers = ctx.get(CTX_PROVIDERS);
-        if (providers && providers.length) {
+        let providers = ctx.providers;
+        if (providers.length) {
             providers.forEach(p => {
                 if (p && p instanceof ExtendsProvider) {
                     p.extends(ctx.target);

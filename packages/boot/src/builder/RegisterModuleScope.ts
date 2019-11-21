@@ -12,7 +12,7 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
             return;
         }
         if (!ctx.module) {
-            if (ctx.template && next) {
+            if (ctx.getOptions().template && next) {
                 return await next();
             }
             return;
@@ -24,21 +24,9 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
         if (!(this.container.has(ctx.module) && ctx.getRaiseContainer().has(ctx.module))) {
             await super.execute(ctx);
         }
-        if (!ctx.targetReflect) {
-            ctx.targetReflect = ctx.reflects.get(ctx.module);
-        }
 
-        if (!ctx.annoation && ctx.targetReflect && ctx.targetReflect.getAnnoation) {
-            ctx.annoation = ctx.targetReflect.getAnnoation();
-        }
-
-        if (ctx.annoation) {
-            if (ctx.annoation.baseURL) {
-                ctx.baseURL = ctx.annoation.baseURL;
-            }
-            if (next) {
-                await next();
-            }
+        if (ctx.annoation && next) {
+            await next();
         }
     }
     setup() {

@@ -13,13 +13,14 @@ import { RefSelector } from '../../RefSelector';
 export class ComponentSelectorHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
         let refSelector = this.container.getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector);
-        if (isArray(ctx.template) && ctx.annoation.template === ctx.template) {
+        let options = ctx.getOptions();
+        if (isArray(options.template) && ctx.annoation.template === options.template) {
             ctx.selector = refSelector.getDefaultCompose();
-        } else if (refSelector.isComponentType(ctx.decorator, ctx.template)) {
-            ctx.selector = ctx.template;
-            ctx.template = null;
-        } else if (ctx.template) {
-            ctx.selector = this.getComponent(ctx, ctx.template, refSelector);
+        } else if (refSelector.isComponentType(ctx.decorator, options.template)) {
+            ctx.selector = options.template;
+            options.template = null;
+        } else if (options.template) {
+            ctx.selector = this.getComponent(ctx, options.template, refSelector);
         }
 
         if (!ctx.selector) {

@@ -1,8 +1,6 @@
 import { createRaiseContext, IocProvidersContext, IocProvidersOption } from './Action';
-import { Token, ClassType } from '../types';
+import { Token } from '../types';
 import { ContainerFactory } from '../IIocContainer';
-import { InjectToken } from '../InjectToken';
-
 
 /**
  * resovle action option.

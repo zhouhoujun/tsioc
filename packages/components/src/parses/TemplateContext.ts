@@ -1,13 +1,13 @@
-import { ContainerFactory, Injectable, Type, ProviderTypes, InjectToken, IocRaiseContext } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, InjectToken, createRaiseContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { IComponentContext, ModuleConfigure } from '@tsdi/boot';
+import { IComponentContext, AnnoationContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
 
 
-/**
- * Template option token.
- */
-export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
+// /**
+//  * Template option token.
+//  */
+// export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
 
 /**
  * template context.
@@ -18,39 +18,13 @@ export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_T
  * @implements {IComponentContext}
  */
 @Injectable
-export class TemplateContext extends IocRaiseContext<IContainer> implements IComponentContext {
+export class TemplateContext extends AnnoationContext<ITemplateOption> implements IComponentContext {
 
     selector?: Type;
 
-    scope?: any;
-
     value?: any;
 
-    template?: any;
-
-    decorator?: string;
-
-    /**
-     * annoation metadata config.
-     *
-     * @type {IAnnotationMetadata}
-     * @memberof BuildContext
-     */
-    annoation?: ModuleConfigure;
-    /**
-    * providers.
-    *
-    * @type {ProviderTypes[]}
-    * @memberof BootOptions
-    */
-    providers?: ProviderTypes[];
-
-    static parse(options: ITemplateOption, raiseContainer?: IContainer | ContainerFactory<IContainer>): TemplateContext {
-        let ctx = new TemplateContext();
-        ctx.setOptions(options);
-        ctx.providers = ctx.providers || [];
-        ctx.providers.push({ provide: TemplateOptionToken, useValue: options });
-        raiseContainer && ctx.setRaiseContainer(raiseContainer);
-        return ctx;
+    static parse(options: Type | ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
+        return createRaiseContext(TemplateContext, options, raiseContainer);
     }
 }

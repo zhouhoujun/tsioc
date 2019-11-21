@@ -5,7 +5,6 @@ import { TemplateContext, TemplateParseScope } from './parses';
 import { Component, NonSerialize } from './decorators';
 import { IBindingTypeReflect } from './bindings';
 import { RefSelector } from './RefSelector';
-import { AstParserToken } from './AstParser';
 
 
 /**
@@ -19,8 +18,7 @@ import { AstParserToken } from './AstParser';
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
-        let ctx = TemplateContext.parse({ ...options, providers: [...(options.providers || []), ...providers] });
-        ctx.decorator = ctx.decorator || Component.toString();
+        let ctx = TemplateContext.parse({ decorator: Component.toString(), ...options, providers: [...(options.providers || []), ...providers] });
         if (!ctx.hasRaiseContainer()) {
             ctx.setRaiseContainer(this.container);
         }

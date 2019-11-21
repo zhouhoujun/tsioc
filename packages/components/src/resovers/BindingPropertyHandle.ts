@@ -17,18 +17,20 @@ export class BindingPropertyHandle extends ResolveHandle {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propInBindings) {
                 let registerer = this.container.getInstance(HandleRegisterer);
+                let options = ctx.getOptions();
                 await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {
                     let binding = ref.propInBindings.get(n);
                     let filed = binding.bindingName || binding.name;
-                    let expression = ctx.template ? ctx.template[filed] : null;
+                    let expression = options.template ? options.template[filed] : null;
                     if (!isNullOrUndefined(expression)) {
                         if (binding.bindingType === BindingTypes.dynamic) {
                             ctx.target[binding.name] = expression;
                         } else {
-                            let pctx = ParseContext.parse(ctx.type, {
-                                scope: ctx.scope || ctx.target,
+                            let pctx = ParseContext.parse({
+                                module: ctx.module,
+                                scope: options.scope || ctx.target,
                                 bindExpression: expression,
-                                template: ctx.template,
+                                template: options.template,
                                 binding: binding,
                                 decorator: ctx.decorator,
                                 raiseContainer: ctx.getContainerFactory()

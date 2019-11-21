@@ -17,6 +17,7 @@ export class BootConfigureLoadHandle extends BootHandle {
         if (!(ctx instanceof BootContext)) {
             return;
         }
+        let options = ctx.getOptions();
         if (isClass(ctx.module)) {
             let baseURL = ctx.baseURL;
             if (baseURL) {
@@ -24,8 +25,8 @@ export class BootConfigureLoadHandle extends BootHandle {
             }
         }
         let mgr = this.resolve(ctx, ConfigureManager);
-        if (ctx.configures && ctx.configures.length) {
-            ctx.configures.forEach(config => {
+        if (options.configures && options.configures.length) {
+            options.configures.forEach(config => {
                 mgr.useConfiguration(config);
             });
         } else {

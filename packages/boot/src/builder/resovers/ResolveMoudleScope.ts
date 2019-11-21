@@ -17,14 +17,6 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> {
             return;
         }
 
-        if (!ctx.targetReflect && ctx.reflects.has(ctx.type)) {
-            ctx.targetReflect = ctx.reflects.get(ctx.type);
-        }
-
-        if (!ctx.annoation && ctx.targetReflect && ctx.targetReflect.getAnnoation) {
-            ctx.annoation = ctx.targetReflect.getAnnoation();
-        }
-
         if (ctx.targetReflect) {
             // has build module instance.
             await super.execute(ctx);

@@ -39,10 +39,11 @@ export class ElementsTemplateHandle extends TemplateHandle {
 
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
         let registerer = this.container.getInstance(HandleRegisterer);
-        if (isArray(ctx.template)) {
-            ctx.value = await Promise.all(ctx.template.map(async tp => {
+        let options = ctx.getOptions();
+        if (isArray(options.template)) {
+            ctx.value = await Promise.all(options.template.map(async tp => {
                 let subCtx = TemplateContext.parse({
-                    scope: ctx.scope,
+                    scope: options.scope,
                     template: tp,
                     decorator: ctx.decorator,
                     raiseContainer: ctx.getContainerFactory()

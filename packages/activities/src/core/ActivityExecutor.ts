@@ -95,7 +95,8 @@ export class ActivityExecutor implements IActivityExecutor {
 
     async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {
         if (isClass(express)) {
-            let bctx = await (container || this.getContainer()).getInstance(BuilderService).run({ module: express, scope: ctx.scope });
+            let options = ctx.getOptions();
+            let bctx = await (container || this.getContainer()).getInstance(BuilderService).run({ module: express, scope: options.scope });
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
@@ -135,7 +136,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity.toAction();
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type | ControlTemplate, ctx.scope);
+                let act = await this.buildActivity(activity as Type | ControlTemplate, ctx.getOptions().scope);
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
