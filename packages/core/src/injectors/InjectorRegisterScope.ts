@@ -18,7 +18,7 @@ export abstract class InjectorRegisterScope extends InjectorScope {
         if (isArray(types) && types.length) {
             types.forEach(ty => {
                 if (!this.container.has(ty)) {
-                    ctx.setContext(CTX_CURR_TYPE, ty);
+                    ctx.set(CTX_CURR_TYPE, ty);
                     super.execute(ctx);
                 }
             });

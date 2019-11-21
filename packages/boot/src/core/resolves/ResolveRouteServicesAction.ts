@@ -9,10 +9,11 @@ export class ResolveRouteServicesAction extends IocCompositeAction<ResolveServic
     execute(ctx: ResolveServicesContext, next?: () => void): void {
         if (this.container.has(ContainerPoolToken)) {
             let token = ctx.token;
-            ctx.token = ctx.getContext(CTX_CURR_TOKEN) || ctx.token;
+            let options = ctx.getOptions()
+            options.token = ctx.get(CTX_CURR_TOKEN) || ctx.token;
             super.execute(ctx);
             if (!ctx.instance) {
-                ctx.token = token;
+                options.token = token;
                 next && next();
             }
         } else {

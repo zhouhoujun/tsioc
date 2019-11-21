@@ -1,6 +1,9 @@
-import { Type, ProviderMap, ContainerFactory, createRaiseContext, InjectToken, IocProvidersOption, IocProvidersContext } from '@tsdi/ioc';
+import { Type, ContainerFactory, createRaiseContext, IocProvidersOption, IocProvidersContext, lang } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { ModuleConfigure, RegFor, IModuleResolver, IModuleReflect } from './modules';
+import { RegFor, IModuleReflect, ModuleConfigure } from './modules';
+import { AnnotationServiceToken } from './IAnnotationService';
+import { RegisterForMetadata, RegisterFor } from './decorators';
+import { CTX_MODULE_DECTOR, CTX_MODULE_REGFOR, CTX_MODULE_ANNOATION } from '../context-tokens';
 
 /**
  * annoation action option.
@@ -24,12 +27,16 @@ export interface AnnoationOption extends IocProvidersOption<IContainer> {
      * @memberof AnnoationActionOption
      */
     decorator?: string;
+
+    /**
+     * set where this module to register. default as child module.
+     *
+     * @type {boolean}
+     * @memberof ModuleConfig
+     */
+    regFor?: RegFor;
 }
 
-export const CTX_MODULE_REGFOR = new InjectToken<RegFor>('CTX_MODULE_REGFOR');
-export const CTX_MODULE_RESOLVER = new InjectToken<IModuleResolver>('CTX_MODULE_RESOLVER');
-export const CTX_MODULE_EXPORTS = new InjectToken<ProviderMap>('CTX_MODULE_EXPORTS');
-export const CTX_MODULE_ANNOATION = new InjectToken<ModuleConfigure>('CTX_MODULE_ANNOATION');
 
 /**
  * annoation context.
@@ -38,7 +45,7 @@ export const CTX_MODULE_ANNOATION = new InjectToken<ModuleConfigure>('CTX_MODULE
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext extends IocProvidersContext<IContainer> {
+export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, IContainer> {
 
     constructor(type?: Type) {
         super();
@@ -46,51 +53,53 @@ export class AnnoationContext extends IocProvidersContext<IContainer> {
     }
 
     static parse(target: Type | AnnoationOption, raiseContainer?: ContainerFactory<IContainer>): AnnoationContext {
-        return createRaiseContext(AnnoationContext, target, raiseContainer);
+        return createRaiseContext<AnnoationContext<AnnoationOption>>(AnnoationContext, target, raiseContainer);
     }
 
     module: Type;
 
-    decorator?: string;
+    get decorator(): string {
+        if (!this.has(CTX_MODULE_DECTOR)) {
+            let dec = this.getRaiseContainer().get(AnnotationServiceToken).getDecorator(this.module);
+            if (dec) {
+                this.set(CTX_MODULE_DECTOR, dec);
+            }
+        }
+        return this.get(CTX_MODULE_DECTOR);
+    }
 
     get targetReflect(): IModuleReflect {
         return this.reflects.get(this.module);
     }
 
-    // /**
-    //  * annoation config.
-    //  *
-    //  * @type {ModuleConfigure}
-    //  * @memberof AnnoationContext
-    //  */
-    // annoation?: ModuleConfigure;
+    get regFor(): RegFor {
+        if (!this.has(CTX_MODULE_REGFOR)) {
+            let regFor = this.annoation.regFor;
+            if (!regFor) {
+                let meta = lang.first(this.reflects.getMetadata<RegisterForMetadata>(RegisterFor, this.module));
+                regFor = meta ? meta.regFor : RegFor.child;
+            }
+            this.set(CTX_MODULE_REGFOR, regFor);
+        }
+        return this.get(CTX_MODULE_REGFOR);
+    }
 
-    // /**
-    //  * module type exports.
-    //  *
-    //  * @type {ProviderMap}
-    //  * @memberof AnnoationContext
-    //  */
-    // exports?: ProviderMap;
-
-    // /**
-    //  * module resolver.
-    //  *
-    //  * @type {ModuleResovler}
-    //  * @memberof AnnoationContext
-    //  */
-    // moduleResolver?: IModuleResolver;
-
-    // /**
-    //  * the way to register the module. default as child module.
-    //  *
-    //  * @type {boolean}
-    //  * @memberof ModuleConfig
-    //  */
-    // regFor?: RegFor;
+    /**
+     * annoation metadata.
+     *
+     * @type {ModuleConfigure}
+     * @memberof AnnoationContext
+     */
+    get annoation(): TMeta {
+        if (!this.has(CTX_MODULE_ANNOATION) && this.module) {
+            let tgRef = this.targetReflect;
+            this.set(CTX_MODULE_ANNOATION, (tgRef && tgRef.getAnnoation) ? tgRef.getAnnoation<TMeta>() : this.getRaiseContainer().get(AnnotationServiceToken).getAnnoation(this.module, this.get(CTX_MODULE_DECTOR)));
+        }
+        return this.get(CTX_MODULE_ANNOATION) as TMeta;
+    }
 
 
-    setOptions(options: AnnoationOption) {
+    setOptions(options: T) {
         if (!options) {
             return;
         }
@@ -99,7 +108,11 @@ export class AnnoationContext extends IocProvidersContext<IContainer> {
             this.module = options.module;
         }
         if (options.decorator) {
-            this.decorator = options.decorator;
+            this.set(CTX_MODULE_DECTOR, options.decorator);
+        }
+
+        if (options.regFor) {
+            this.set(CTX_MODULE_REGFOR, options.regFor);
         }
     }
 }

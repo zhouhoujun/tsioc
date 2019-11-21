@@ -7,4 +7,5 @@ export * from './builder';
 export * from './IBootApplication';
 export * from './BootApplication';
 export * from './BootTargetAccessor';
+export * from './context-tokens';
 export * from './BootContext';

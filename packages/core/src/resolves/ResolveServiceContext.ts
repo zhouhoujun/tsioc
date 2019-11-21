@@ -1,7 +1,5 @@
 import { Token, ResolveActionContext, ResolveActionOption, createRaiseContext, ContainerFactory } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
-import { CTX_TARGET_REF_FACTORY, CTX_SERVICE_TOKEN_FACTORY } from '../contextTokens';
-
 
 export type TargetRefType = Object | TargetRef;
 
@@ -67,7 +65,7 @@ export interface ServiceOption<T> extends ResolveActionOption<T> {
  * @class ResolveServiceContext
  * @extends {ResovleActionContext}
  */
-export class ResolveServiceContext<T = any> extends ResolveActionContext<T> {
+export class ResolveServiceContext<T = any> extends ResolveActionContext<T, ServiceOption<T>> {
 
     constructor(token?: Token<T>) {
         super(token)
@@ -85,20 +83,14 @@ export class ResolveServiceContext<T = any> extends ResolveActionContext<T> {
     }
 
     /**
-     * get extend servie or not.
-     *
-     * @type {boolean}
-     * @memberof ServiceOption
-     */
-    extend?: boolean;
-
-    /**
      * service tokens.
      *
      * @type {Type}
      * @memberof ResolveServiceContext
      */
-    tokens: Token[];
+    get tokens(): Token[] {
+        return this.getOptions().tokens;
+    }
 
     /**
      * service reference target.
@@ -106,7 +98,9 @@ export class ResolveServiceContext<T = any> extends ResolveActionContext<T> {
      * @type {*}
      * @memberof ResolveServiceContext
      */
-    target?: any;
+    get target(): any {
+        return this.getOptions().target;
+    }
 
     /**
      * reolve this defualt service, if not found any service.
@@ -114,31 +108,8 @@ export class ResolveServiceContext<T = any> extends ResolveActionContext<T> {
      * @type {Token}
      * @memberof ResolveServiceContext
      */
-    defaultToken?: Token;
-
-    setOptions(options: ServiceOption<T>) {
-        if (!options) {
-            return;
-        }
-        super.setOptions(options);
-        if (options.tokens) {
-            this.tokens = options.tokens;
-        }
-        if (options.target) {
-            this.target = options.target;
-        }
-        if (options.extend) {
-            this.extend = options.extend;
-        }
-        if (options.defaultToken) {
-            this.defaultToken = options.defaultToken;
-        }
-        if (options.refTargetFactory) {
-            this.setContext(CTX_TARGET_REF_FACTORY, options.refTargetFactory);
-        }
-        if (options.serviceTokenFactory) {
-            this.setContext(CTX_SERVICE_TOKEN_FACTORY, options.serviceTokenFactory);
-        }
+    get defaultToken(): Token {
+        return this.getOptions().defaultToken;
     }
 
 }

@@ -21,7 +21,7 @@ export interface DesignActionOption extends RegisterActionOption {
  * @class DesignActionContext
  * @extends {RegisterActionContext}
  */
-export class DesignActionContext extends RegisterActionContext {
+export class DesignActionContext extends RegisterActionContext<DesignActionOption> {
 
     /**
      * parse design action context.

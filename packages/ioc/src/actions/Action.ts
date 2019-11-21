@@ -68,9 +68,10 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ct
     return ctx;
 }
 
-
-export const CTX_PROVIDERS = new InjectToken<ProviderTypes[]>('CTX_PROVIDERS');
+export const CTX_OPTIONS = new InjectToken<ActionContextOption>('CTX_OPTIONS');
 export const CTX_PROVIDER_MAP = new InjectToken<ProviderMap>('CTX_PROVIDER_MAP');
+
+
 /**
  * context with raise container.
  *
@@ -78,10 +79,10 @@ export const CTX_PROVIDER_MAP = new InjectToken<ProviderMap>('CTX_PROVIDER_MAP')
  * @class IocRasieContext
  * @extends {IocActionContext}
  */
-export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> extends IocActionContext {
+export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
     get reflects(): TypeReflects {
-        return this.getContext(TypeReflects) || this.getRaiseContainer().getTypeReflects();
+        return this.get(TypeReflects) || this.getRaiseContainer().getTypeReflects();
     }
 
     /**
@@ -92,11 +93,19 @@ export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> e
      */
     contexts: ProviderMap;
 
-    hasContext(token?: Token): boolean {
+    /**
+     * has contxt or not.
+     * @param token
+     */
+    has(token?: Token): boolean {
         return this.contexts ? (token ? this.contexts.has(token) : true) : false;
     }
 
-    removeContext(...tokens: Token[]) {
+    /**
+     * remove contexts.
+     * @param tokens
+     */
+    remove(...tokens: Token[]) {
         if (this.contexts) {
             tokens.forEach(tk => {
                 this.contexts.unregister(tk);
@@ -111,7 +120,7 @@ export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> e
      * @returns {T}
      * @memberof BootContext
      */
-    getContext<T>(token: Token<T>): T {
+    get<T>(token: Token<T>): T {
         if (this.contexts) {
             return this.contexts.resolve<T>(token);
         }
@@ -124,15 +133,15 @@ export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> e
      * @param {*} provider context provider.
      * @memberof BootContext
      */
-    setContext(token: Token, provider: any);
+    set(token: Token, provider: any);
     /**
      * set context provider of boot application.
      *
      * @param {...ProviderTypes[]} providers
      * @memberof BootContext
      */
-    setContext(...providers: ProviderTypes[]);
-    setContext(...providers: any[]) {
+    set(...providers: ProviderTypes[]);
+    set(...providers: any[]) {
         if (providers.length === 2 && isToken(providers[0])) {
             if (!this.contexts) {
                 this.contexts = this.getRaiseContainer().getInstance(ProviderMap);
@@ -154,7 +163,7 @@ export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> e
      * @returns {ContainerFactory}
      * @memberof IocRasieContext
      */
-    getContainerFactory(): ContainerFactory<T> {
+    getContainerFactory(): ContainerFactory<TC> {
         return this.contexts.getContainerFactory();
     }
 
@@ -166,11 +175,11 @@ export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> e
      *
      * @memberof ResovleContext
      */
-    getRaiseContainer(): T {
-        return this.contexts.getContainer() as T;
+    getRaiseContainer(): TC {
+        return this.contexts.getContainer() as TC;
     }
 
-    setRaiseContainer(raiseContainer: T | ContainerFactory<T>) {
+    setRaiseContainer(raiseContainer: TC | ContainerFactory<TC>) {
         if (this.contexts) {
             this.contexts.setContainer(raiseContainer);
         } else if (raiseContainer) {
@@ -178,12 +187,13 @@ export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> e
         }
     }
 
-    setOptions(options: ActionContextOption) {
+    protected _options: T;
+    setOptions(options: T) {
         if (!options) {
             return;
         }
         if (options.raiseContainer) {
-            this.setRaiseContainer(options.raiseContainer as ContainerFactory<T>);
+            this.setRaiseContainer(options.raiseContainer as ContainerFactory<TC>);
         }
         if (options.contexts) {
             if (options.contexts instanceof ProviderMap) {
@@ -193,10 +203,19 @@ export abstract class IocRaiseContext<T extends IIocContainer = IIocContainer> e
                     this.contexts = options.contexts;
                 }
             } else {
-                this.setContext(...options.contexts);
+                this.set(...options.contexts);
             }
         }
+        this._options = this._options ? { ...this._options, ...options } : options;
     }
+
+    getOptions(): T {
+        if (!this._options) {
+            this._options = {} as T;
+        }
+        return this._options;
+    }
+
 }
 
 export interface IocProvidersOption<T extends IIocContainer = IIocContainer> extends ActionContextOption<T> {
@@ -205,17 +224,10 @@ export interface IocProvidersOption<T extends IIocContainer = IIocContainer> ext
      */
     providers?: ProviderTypes[];
 }
-export abstract class IocProvidersContext<T extends IIocContainer = IIocContainer> extends IocRaiseContext<T> {
+export abstract class IocProvidersContext<T extends IocProvidersOption = IocProvidersOption, TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TC> {
 
     get providers(): ProviderTypes[] {
-        return this.getContext(CTX_PROVIDERS) || [];
-    }
-
-    setOptions(options: IocProvidersOption) {
-        super.setOptions(options);
-        if (options && options.providers) {
-            this.setContext(CTX_PROVIDERS, options.providers);
-        }
+        return this.getOptions().providers || [];
     }
 }
 

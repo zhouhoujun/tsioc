@@ -15,7 +15,7 @@ export class BindProviderAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void) {
         let tgReflect = ctx.targetReflect;
         let raiseContainer = ctx.getRaiseContainer();
-        let currDecoractor = ctx.getContext(CTX_CURR_DECOR);
+        let currDecoractor = ctx.get(CTX_CURR_DECOR);
         if (!tgReflect.decorator) {
             tgReflect.decorator = currDecoractor;
         }

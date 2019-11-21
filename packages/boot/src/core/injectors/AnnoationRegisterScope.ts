@@ -7,7 +7,6 @@ import { RegModuleAction } from './RegModuleAction';
 import { RegModuleImportsAction } from './RegModuleImportsAction';
 import { RegModuleProvidersAction } from './RegModuleProvidersAction';
 import { RegModuleResolverAction } from './RegModuleResolverAction';
-import { RegisterFor, RegisterForMetadata } from '../decorators';
 
 /**
  * annoation register scope.
@@ -19,13 +18,6 @@ import { RegisterFor, RegisterForMetadata } from '../decorators';
 export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext> {
     execute(ctx: AnnoationContext, next?: () => void): void {
         let pools = this.container.get(ContainerPoolToken);
-        if (!ctx.regFor) {
-            ctx.regFor = ctx.annoation.regFor;
-        }
-        if (!ctx.regFor) {
-            let meta = lang.first(ctx.reflects.getMetadata<RegisterForMetadata>(RegisterFor, ctx.module));
-            ctx.regFor = meta ? meta.regFor : RegFor.child;
-        }
 
         if (ctx.regFor === RegFor.boot) {
             return super.execute(ctx, next);

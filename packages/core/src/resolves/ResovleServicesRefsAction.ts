@@ -1,12 +1,12 @@
 import { isToken, InjectReference, ProviderTypes } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { CTX_TARGET_REFS } from './ResolveServiceContext';
+import { CTX_TARGET_REFS } from '../contextTokens';
 
 
 export class ResovleServicesRefsAction extends IocResolveServicesAction {
     execute(ctx: ResolveServicesContext, next: () => void): void {
-        let targetRefs = ctx.getContext(CTX_TARGET_REFS);
+        let targetRefs = ctx.get(CTX_TARGET_REFS);
         if (targetRefs && targetRefs.length) {
             targetRefs.forEach(t => {
                 let tk = isToken(t) ? t : t.getToken();

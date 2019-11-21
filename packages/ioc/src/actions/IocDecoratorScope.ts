@@ -9,8 +9,8 @@ export abstract class IocDecoratorScope<T extends RegisterActionContext> extends
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
                 .forEach(dec => {
-                    ctx.setContext(CTX_CURR_DECOR, dec);
-                    ctx.setContext(CTX_CURR_DECOR_SCOPE, this.getDecorScope());
+                    ctx.set(CTX_CURR_DECOR, dec);
+                    ctx.set(CTX_CURR_DECOR_SCOPE, this.getDecorScope());
                     super.execute(ctx);
                     this.done(ctx);
                 });
@@ -19,7 +19,7 @@ export abstract class IocDecoratorScope<T extends RegisterActionContext> extends
     }
 
     protected done(ctx: T): boolean {
-        return this.getState(ctx, this.getDecorScope())[ctx.getContext(CTX_CURR_DECOR)] = true;
+        return this.getState(ctx, this.getDecorScope())[ctx.get(CTX_CURR_DECOR)] = true;
     }
     protected isCompleted(ctx: T): boolean {
         return !Object.values(this.getState(ctx, this.getDecorScope())).some(inj => !inj);

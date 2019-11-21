@@ -1,15 +1,16 @@
-import { isArray, InjectReference, isToken } from '@tsdi/ioc';
-import { ResolveServiceContext, CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TOKEN, CTX_TARGET_REF_FACTORY } from './ResolveServiceContext';
-import { TargetRefService } from '../TargetService';
+import { isArray, InjectReference } from '@tsdi/ioc';
+import { ResolveServiceContext  } from './ResolveServiceContext';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
+import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TOKEN } from '../contextTokens';
 
 export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
-        let currToken = ctx.getContext(CTX_CURR_TOKEN);
-        if (currToken && !(currToken instanceof InjectReference) && ctx.hasContext(CTX_CURR_TARGET_REF)) {
+        let currToken = ctx.get(CTX_CURR_TOKEN);
+        if (currToken && !(currToken instanceof InjectReference) && ctx.has(CTX_CURR_TARGET_REF)) {
             let currtk = currToken;
-            let targetTk = ctx.getContext(CTX_CURR_TARGET_TOKEN);
-            let refTk = ctx.hasContext(CTX_TARGET_REF_FACTORY) ? ctx.getContext(CTX_TARGET_REF_FACTORY)(targetTk, currtk) : new InjectReference(currtk, targetTk);
+            let targetTk = ctx.get(CTX_CURR_TARGET_TOKEN);
+            let options = ctx.getOptions();
+            let refTk = options.refTargetFactory ? options.refTargetFactory(targetTk, currtk) : new InjectReference(currtk, targetTk);
             let refTks = isArray(refTk) ? refTk : [refTk];
             if (!refTks.some(tk => {
                 this.resolvePrivate(ctx, tk);
@@ -18,7 +19,7 @@ export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
                 }
                 return !!ctx.instance;
             })) {
-                ctx.setContext(CTX_CURR_TOKEN, currtk);
+                ctx.set(CTX_CURR_TOKEN, currtk);
                 next();
             }
 

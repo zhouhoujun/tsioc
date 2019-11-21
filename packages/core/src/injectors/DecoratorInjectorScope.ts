@@ -10,7 +10,7 @@ export class DecoratorInjectorScope extends InjectorScope {
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
                 .some(dec => {
-                    ctx.setContext(CTX_CURR_DECOR, dec);
+                    ctx.set(CTX_CURR_DECOR, dec);
                     super.execute(ctx);
                     this.done(ctx);
                     return this.isCompleted(ctx);
@@ -24,19 +24,19 @@ export class DecoratorInjectorScope extends InjectorScope {
     }
 
     protected getState(ctx: InjectorActionContext): ObjectMap<boolean> {
-        if (!ctx.hasContext(DECOR_STATE)) {
-            ctx.setContext(DECOR_STATE, this.getRegisterer()
+        if (!ctx.has(DECOR_STATE)) {
+            ctx.set(DECOR_STATE, this.getRegisterer()
                 .getDecorators()
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {}));
         }
-        return ctx.getContext(DECOR_STATE);
+        return ctx.get(DECOR_STATE);
     }
 
     protected done(ctx: InjectorActionContext): boolean {
-        return this.getState(ctx)[ctx.getContext(CTX_CURR_DECOR)] = true;
+        return this.getState(ctx)[ctx.get(CTX_CURR_DECOR)] = true;
     }
     protected isCompleted(ctx: InjectorActionContext): boolean {
         return ctx.types.length === 0 || !Object.values(this.getState(ctx)).some(inj => !inj);

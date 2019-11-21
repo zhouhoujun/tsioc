@@ -26,7 +26,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         let designParams = this.createDesignParams(ctx, type, target, propertyKey);
 
         let refs = ctx.reflects;
-        let currDecoractor = ctx.getContext(CTX_CURR_DECOR);
+        let currDecoractor = ctx.get(CTX_CURR_DECOR);
         let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
         if (isArray(parameters) && parameters.length) {
             parameters.forEach(params => {

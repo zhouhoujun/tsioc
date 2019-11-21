@@ -16,7 +16,7 @@ export class BindPropertyTypeAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void) {
         let refs = ctx.reflects;
         ctx.targetReflect.defines.extendTypes.forEach(ty => {
-            let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.getContext(CTX_CURR_DECOR), ty);
+            let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.get(CTX_CURR_DECOR), ty);
             Object.keys(propMetas).forEach(key => {
                 let props = propMetas[key];
                 props.forEach(prop => {

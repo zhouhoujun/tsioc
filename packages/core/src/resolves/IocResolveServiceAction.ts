@@ -20,7 +20,7 @@ export abstract class IocResolveServiceAction extends IocResolveAction<ResolveSe
     protected resolve(ctx: ResolveServiceContext, token: Token) {
         if (!ctx.instance) {
             ctx.instance = this.container.get(token, ...ctx.providers);
-            if (ctx.extend && isNullOrUndefined(ctx.instance) && isClassType(token)) {
+            if (ctx.getOptions().extend && isNullOrUndefined(ctx.instance) && isClassType(token)) {
                 this.container.iterator((fac, k) => {
                     if (isNullOrUndefined(ctx.instance) && ctx.reflects.isExtends(k, token)) {
                         ctx.instance = fac(...ctx.providers);

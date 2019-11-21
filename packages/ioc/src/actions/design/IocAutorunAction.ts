@@ -20,7 +20,7 @@ export class IocAutorunAction extends IocDesignAction {
 
     protected runAuto(ctx: DesignActionContext) {
         let refs = ctx.reflects;
-        let currDec = ctx.getContext(CTX_CURR_DECOR);
+        let currDec = ctx.get(CTX_CURR_DECOR);
         if (!refs.hasMetadata(currDec, ctx.targetType)) {
             return;
         }

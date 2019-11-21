@@ -6,8 +6,8 @@ import { ContainerPoolToken } from '../ContainerPoolToken';
 
 export class RegForInjectorAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next: () => void): void {
-        let currType = ctx.getContext(CTX_CURR_TYPE);
-        let currDecor = ctx.getContext(CTX_CURR_DECOR);
+        let currType = ctx.get(CTX_CURR_TYPE);
+        let currDecor = ctx.get(CTX_CURR_DECOR);
         if (isClass(currType)
             && currDecor
             && ctx.reflects.hasMetadata(RegisterFor, currType)) {

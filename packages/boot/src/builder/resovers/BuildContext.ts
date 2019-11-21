@@ -59,8 +59,6 @@ export interface IModuleResolveOption {
 
 @Injectable
 export class BuildContext extends IocRaiseContext<IContainer> implements IComponentContext {
-
-    targetReflect?: IModuleReflect;
     /**
      * component scope.
      *

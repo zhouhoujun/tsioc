@@ -8,7 +8,6 @@ export class ResolveBootHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         if (ctx.annoation.bootstrap && !ctx.bootstrap) {
             let bootModule = ctx.annoation.bootstrap;
-            ctx.providers = ctx.providers || [];
             let extProviders = [
                 ...ctx.providers,
                 { provide: BootContext, useValue: ctx },

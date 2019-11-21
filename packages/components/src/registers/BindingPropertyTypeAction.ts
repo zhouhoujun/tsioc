@@ -15,7 +15,7 @@ export class BindingPropertyTypeAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
         let ref = ctx.targetReflect as IBindingTypeReflect;
-        let currDecor = ctx.getContext(CTX_CURR_DECOR);
+        let currDecor = ctx.get(CTX_CURR_DECOR);
         let propBindings = this.container.getInstance(DecoratorProvider)
             .resolve(currDecor, BindingCache)
             .getCache(ref);

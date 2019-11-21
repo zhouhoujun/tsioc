@@ -1,11 +1,12 @@
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, ProviderMap, createRaiseContext } from '@tsdi/ioc';
+import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, createRaiseContext, Token } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
 import { StartupServices } from './services';
 import { AnnoationContext, AnnoationOption } from './core';
-import { RunnableConfigure, ConfigureManager } from './annotations';
+import { RunnableConfigure, ConfigureManager, ProcessRunRootToken } from './annotations';
+import { CTX_APP_CONFIGURE } from './context-tokens';
 
 
 
@@ -37,14 +38,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     loader?: IModuleLoader;
-
-    /**
-     * annoation metadata config.
-     *
-     * @type {RunnableConfigure}
-     * @memberof AnnoationContext
-     */
-    annoation?: RunnableConfigure;
 
     /**
      * custom configures
@@ -109,14 +102,6 @@ export interface BootOption extends AnnoationOption {
     data?: any;
 
     /**
-     * bootstrap reference runable service.
-     *
-     * @type {Startup}
-     * @memberof BootOptions
-     */
-    runnable?: Startup;
-
-    /**
      * auto run runnable or not.
      *
      * @type {boolean}
@@ -131,22 +116,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     deps?: LoadType[];
-
-    /**
-    * providers for global boot application..
-    *
-    * @type {ProviderTypes[]}
-    * @memberof BootOptions
-    */
-    providers?: ProviderTypes[];
-
-    /**
-     * the raise container factory for appplication boot.
-     *
-     * @type {ContainerFactory}
-     * @memberof BootOption
-     */
-    raiseContainer?: ContainerFactory<IContainer>;
 }
 
 export const BootTargetToken = new InjectToken('module_type');
@@ -158,8 +127,7 @@ export const BootTargetToken = new InjectToken('module_type');
  * @extends {HandleContext}
  */
 @Injectable
-export class BootContext extends AnnoationContext implements IComponentContext {
-
+export class BootContext<T extends BootOption = BootOption, CFG extends RunnableConfigure = RunnableConfigure> extends AnnoationContext<T, CFG> implements IComponentContext {
 
     constructor(@Inject(BootTargetToken) type: Type) {
         super(type);
@@ -169,57 +137,39 @@ export class BootContext extends AnnoationContext implements IComponentContext {
         return this.getRaiseContainer().resolve(ConfigureLoggerManger);
     }
 
-    renderHost?: any;
-
     /**
      * boot base url.
      *
      * @type {string}
      * @memberof BootContext
      */
-    baseURL: string;
-    /**
-     * module loader
-     *
-     * @type {IModuleLoader}
-     * @memberof BootContext
-     */
-    loader?: IModuleLoader;
+    get baseURL(): string {
+        let url = this.get(ProcessRunRootToken)
+        if (!url) {
+            url = this.annoation.baseURL;
+            if (url) {
+                this.getRaiseContainer().bindProvider(ProcessRunRootToken, this.baseURL);
+            } else {
+                url = this.getRaiseContainer().get(ProcessRunRootToken);
+            }
+            if (url) {
+                this.set(ProcessRunRootToken, url);
+            }
+
+        }
+        return url;
+    }
+
     /**
      * configuration merge metadata config and all application config.
      *
-     * @type {RunnableConfigure}
+     * @type {CFG}
      * @memberof BootContext
      */
-    configuration: RunnableConfigure;
-    /**
-     * annoation metadata config.
-     *
-     * @type {RunnableConfigure}
-     * @memberof AnnoationContext
-     */
-    annoation: RunnableConfigure;
-    /**
-     * component scope.
-     *
-     * @type {*}
-     * @memberof BootOption
-     */
-    scope?: any;
-    /**
-     * the template data to binding property.
-     *
-     * @type {*}
-     * @memberof BootOption
-     */
-    template?: any;
-    /**
-     * custom configures
-     *
-     * @type {((string | RunnableConfigure)[])}
-     * @memberof BootContext
-     */
-    configures?: (string | RunnableConfigure)[] = [];
+    get configuration(): CFG {
+        return this.get(CTX_APP_CONFIGURE) as CFG;
+    }
+
     /**
      * target module instace.
      *
@@ -227,13 +177,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof BootContext
      */
     target?: any;
-    /**
-     * boot run args.
-     *
-     * @type {string[]}
-     * @memberof BootContext
-     */
-    args?: string[];
+
     /**
      * configure bootstrap instance.
      *
@@ -241,20 +185,7 @@ export class BootContext extends AnnoationContext implements IComponentContext {
      * @memberof RunnableOptions
      */
     bootstrap?: any;
-    /**
-     *  custom boot input data
-     *
-     * @type {*}
-     * @memberof RunnableOptions
-     */
-    data?: any;
-    /**
-     * auto run runnable or not.
-     *
-     * @type {boolean}
-     * @memberof BootContext
-     */
-    autorun?: boolean;
+
     /**
      * bootstrap runnable service.
      *
@@ -272,13 +203,13 @@ export class BootContext extends AnnoationContext implements IComponentContext {
         return this.getRaiseContainer().resolve(StartupServices);
     }
 
-    /**
-     * boot dependencies.
-     *
-     * @type {LoadType[]}
-     * @memberof BootContext
-     */
-    deps?: LoadType[];
+    getContext<T>(token: Token<T>): T {
+        return this.get(token);
+    }
+
+    setContext(token: Token, provider: any): void {
+        this.set(token, provider);
+    }
 
     /**
      * get boot target.
@@ -293,26 +224,11 @@ export class BootContext extends AnnoationContext implements IComponentContext {
     /**
      * get configure manager.
      *
-     * @template T
-     * @returns {ConfigureManager<T>}
+     * @returns {ConfigureManager<CFG>}
      * @memberof BootContext
      */
-    getConfigureManager<T>(): ConfigureManager<T> {
-        return this.getRaiseContainer().resolve(ConfigureManager) as ConfigureManager<T>;
-    }
-
-    setOptions(options: BootOption) {
-        if (options) {
-            if (options.contexts) {
-                if (options.contexts instanceof ProviderMap) {
-                    this.contexts = options.contexts;
-                } else {
-                    this.setContext(...options.contexts);
-                }
-                delete options.contexts;
-            }
-            Object.assign(this, options);
-        }
+    getConfigureManager(): ConfigureManager<CFG> {
+        return this.getRaiseContainer().resolve(ConfigureManager) as ConfigureManager<CFG>;
     }
 
     static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {

@@ -51,21 +51,26 @@ export const CTX_CURR_DECOR_SCOPE = new InjectToken<any>('CTX_CURR_DECOR_SCOPE')
  * @class RegisterActionContext
  * @extends {IocActionContext}
  */
-export class RegisterActionContext extends IocProvidersContext {
+export class RegisterActionContext<T extends RegisterActionOption = RegisterActionOption> extends IocProvidersContext<T> {
     /**
      * resolve token.
      *
      * @type {Token}
      * @memberof RegisterActionContext
      */
-    tokenKey?: Token;
+    get tokenKey(): Token {
+        return this.getOptions().tokenKey;
+    }
+
     /**
      * target type.
      *
      * @type {Type}
      * @memberof RegisterActionContext
      */
-    targetType?: Type;
+    get targetType(): Type {
+        return this.getOptions().targetType;
+    }
 
     /**
      * custom set singleton or not.
@@ -73,31 +78,18 @@ export class RegisterActionContext extends IocProvidersContext {
      * @type {boolean}
      * @memberof RegisterActionOption
      */
-    singleton?: boolean;
+    get singleton(): boolean {
+        return this.getOptions().singleton === true;
+    }
 
     get targetReflect(): ITypeReflect {
         return this.reflects.get(this.targetType);
     }
 
-
     constructor(targetType?: Type) {
         super();
-        this.targetType = targetType;
-    }
-
-    setOptions(options: RegisterActionOption) {
-        if (!options) {
-            return;
-        }
-        super.setOptions(options);
-        if (options.tokenKey) {
-            this.tokenKey = options.tokenKey;
-        }
-        if (options.targetType) {
-            this.targetType = options.targetType;
-        }
-        if (options.singleton) {
-            this.singleton = options.singleton;
+        if (targetType) {
+            this._options = { targetType: targetType } as T;
         }
     }
 

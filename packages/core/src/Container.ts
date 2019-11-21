@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, ActionRegisterer, CTX_PROVIDERS } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, ActionRegisterer } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import {
@@ -112,13 +112,14 @@ export class Container extends IocContainer implements IContainer {
     getService<T>(target: Token<T> | ServiceOption<T> | ResolveServiceContext<T>, ...providers: ProviderTypes[]): T {
         let context: ResolveServiceContext<T>;
         if (isToken(target)) {
-            context = ResolveServiceContext.parse(target);
+            context = ResolveServiceContext.parse(target, this.getFactory());
         } else if (target instanceof ResolveServiceContext) {
             context = target;
+            context.setRaiseContainer(this.getFactory());
         } else {
-            context = ResolveServiceContext.parse(target);
+            context = ResolveServiceContext.parse(target, this.getFactory());
         }
-        context.setContext(CTX_PROVIDERS, [...context.providers, ...providers]);
+        context.getOptions().providers = [...context.providers, ...providers];
 
         this.getInstance(ActionRegisterer)
             .get(ServiceResolveLifeScope)
@@ -156,11 +157,12 @@ export class Container extends IocContainer implements IContainer {
     getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap {
         let context: ResolveServicesContext<T>;
         if (isToken(target)) {
-            context = ResolveServicesContext.parse(target);
+            context = ResolveServicesContext.parse(target, this.getFactory());
         } else if (target instanceof ResolveServicesContext) {
             context = target;
+            context.setRaiseContainer(this.getFactory());
         } else {
-            context = ResolveServicesContext.parse(target);
+            context = ResolveServicesContext.parse(target, this.getFactory());
         }
         this.getInstance(ActionRegisterer)
             .get(ServicesResolveLifeScope)

@@ -18,7 +18,7 @@ export interface InjectorActionOption extends ActionContextOption {
  * @class InjectorActionContext
  * @extends {IocActionContext}
  */
-export class InjectorActionContext extends IocRaiseContext {
+export class InjectorActionContext extends IocRaiseContext<InjectorActionOption> {
 
     /**
      * the module to injector to container.
@@ -26,7 +26,9 @@ export class InjectorActionContext extends IocRaiseContext {
      * @type {Modules}
      * @memberof InjectorActionContext
      */
-    module: Modules;
+    get module(): Modules {
+        return this.getOptions().module;
+    }
 
     /**
      * types in  module.
@@ -44,28 +46,6 @@ export class InjectorActionContext extends IocRaiseContext {
      */
     registered: Type[];
 
-    // /**
-    //  * decorator action state.
-    //  *
-    //  * @type {ObjectMap<boolean>}
-    //  * @memberof InjectorActionContext
-    //  */
-    // decorState: ObjectMap<boolean>;
-    // /**
-    //  * curr register type.
-    //  *
-    //  * @type {Type}
-    //  * @memberof InjectorActionContext
-    //  */
-    // currType?: Type;
-    // /**
-    //  * curr decorator.
-    //  *
-    //  * @type {string}
-    //  * @memberof InjectorActionContext
-    //  */
-    // currDecoractor?: string;
-
     /**
      * injector action context.
      *
@@ -79,14 +59,14 @@ export class InjectorActionContext extends IocRaiseContext {
         return createRaiseContext(InjectorActionContext, options, raiseContainer);
     }
 
-    setOptions(options: InjectorActionOption) {
-        if (!options) {
-            return;
-        }
-        super.setOptions(options);
-        if (options.module) {
-            this.module = options.module;
-        }
-    }
+    // setOptions(options: InjectorActionOption) {
+    //     if (!options) {
+    //         return;
+    //     }
+    //     super.setOptions(options);
+    //     if (options.module) {
+    //         this.module = options.module;
+    //     }
+    // }
 
 }

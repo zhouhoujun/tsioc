@@ -48,7 +48,7 @@ export interface RuntimeActionOption extends RegisterActionOption {
 
 export const CTX_PARAMS = new InjectToken<IParameter[]>('CTX_PARAMS');
 export const CTX_ARGS = new InjectToken<IParameter[]>('CTX_ARGS');
-export const CTX_PROPERTYKEY = new InjectToken<string>('CTX_PROPERTYKEY');
+
 /**
  * Ioc Register action context.
  *
@@ -56,7 +56,7 @@ export const CTX_PROPERTYKEY = new InjectToken<string>('CTX_PROPERTYKEY');
  * @class RuntimeActionContext
  * @extends {RegisterActionContext}
  */
-export class RuntimeActionContext extends RegisterActionContext {
+export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOption> {
     /**
      * target instance.
      *
@@ -70,16 +70,16 @@ export class RuntimeActionContext extends RegisterActionContext {
     }
 
     get providerMap(): ProviderMap {
-        let pdrm = this.getContext(CTX_PROVIDER_MAP);
+        let pdrm = this.get(CTX_PROVIDER_MAP);
         if (!pdrm) {
             pdrm = this.getRaiseContainer().getInstance(ProviderParser).parse(...this.providers);
-            this.setContext(CTX_PROVIDER_MAP, pdrm);
+            this.set(CTX_PROVIDER_MAP, pdrm);
         }
         return pdrm;
     }
 
     get propertyKey() {
-        return this.getContext(CTX_PROPERTYKEY) || 'constructor';
+        return this.getOptions().propertyKey || 'constructor';
     }
 
     /**
@@ -100,14 +100,11 @@ export class RuntimeActionContext extends RegisterActionContext {
             return;
         }
         super.setOptions(options);
-        if (options.propertyKey) {
-            this.setContext(CTX_PROPERTYKEY, options.propertyKey);
-        }
         if (options.args) {
-            this.setContext(CTX_ARGS, options.args);
+            this.set(CTX_ARGS, options.args);
         }
         if (options.params) {
-            this.setContext(CTX_PARAMS, options.params);
+            this.set(CTX_PARAMS, options.params);
         }
     }
 }

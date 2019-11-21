@@ -1,5 +1,5 @@
 import { createRaiseContext, IocProvidersContext, IocProvidersOption } from './Action';
-import { Token } from '../types';
+import { Token, ClassType } from '../types';
 import { ContainerFactory } from '../IIocContainer';
 import { InjectToken } from '../InjectToken';
 
@@ -29,18 +29,20 @@ export interface ResolveActionOption<T> extends IocProvidersOption {
 
 }
 
-export const CTX_RESOLVE_REGIFY = new InjectToken<boolean>('CTX_RESOLVE_REGIFY');
+
 /**
  * resolve action context.
  *
  * @export
  * @interface IResolverContext
  */
-export class ResolveActionContext<T = any> extends IocProvidersContext {
+export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = ResolveActionOption<T>> extends IocProvidersContext<TOP> {
 
     constructor(token?: Token<T>) {
         super();
-        this.token = token
+        if (token) {
+            this._options = { token: token } as TOP;
+        }
     }
 
     /**
@@ -49,7 +51,9 @@ export class ResolveActionContext<T = any> extends IocProvidersContext {
      * @type {Token}
      * @memberof ResolveContext
      */
-    token: Token<T>;
+    get token(): Token<T> {
+        return this.getOptions().token;
+    }
 
     /**
      * reslove result instance.
@@ -58,26 +62,6 @@ export class ResolveActionContext<T = any> extends IocProvidersContext {
      * @memberof IResolveContext
      */
     instance?: T;
-
-    /**
-     * set resolve target.
-     *
-     * @param {Token} token
-     * @param {ProviderTypes[]} [providers]
-     * @memberof ResolveContext
-     */
-    setOptions(options: ResolveActionOption<T>) {
-        if (!options) {
-            return;
-        }
-        super.setOptions(options);
-        if (options.token) {
-            this.token = options.token;
-        }
-        if (options.regify) {
-            this.setContext(CTX_RESOLVE_REGIFY, options.regify);
-        }
-    }
 
     /**
      * create resolve context via options.

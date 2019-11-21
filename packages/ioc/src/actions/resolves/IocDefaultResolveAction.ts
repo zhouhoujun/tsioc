@@ -1,5 +1,5 @@
 import { IocResolveAction } from '../IocResolveAction';
-import { ResolveActionContext, CTX_RESOLVE_REGIFY } from '../ResolveActionContext';
+import { ResolveActionContext } from '../ResolveActionContext';
 import { isClass } from '../../utils';
 
 export class IocDefaultResolveAction extends IocResolveAction {
@@ -12,7 +12,7 @@ export class IocDefaultResolveAction extends IocResolveAction {
             next();
         }
 
-        if (!ctx.instance && ctx.getContext(CTX_RESOLVE_REGIFY) && isClass(ctx.token) && !this.container.has(ctx.token)) {
+        if (!ctx.instance && ctx.getOptions().regify && isClass(ctx.token) && !this.container.has(ctx.token)) {
             this.container.register(ctx.token);
             ctx.instance = this.container.get(ctx.token, ...ctx.providers);
         }

@@ -7,7 +7,6 @@ export * from './RegModuleProvidersAction';
 export * from './RegModuleResolverAction';
 export * from './RegModuleExportsAction';
 
-
 export * from './RegForInjectorAction';
 
 

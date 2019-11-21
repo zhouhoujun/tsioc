@@ -51,9 +51,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         let refs = this.reflects;
         let reflect = refs.get(target);
         if (reflect) {
-            let rctx = await this.resolveModule(ctx => {
-                ctx.targetReflect = reflect;
-            }, target, options, ...providers);
+            let rctx = await this.resolveModule(null, target, options, ...providers);
             return rctx.target;
         } else {
             return this.buildBootTarget({
@@ -73,7 +71,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         if (contextInit) {
             contextInit(rctx);
         }
-        if (!rctx.hasContext()) {
+        if (!rctx.has()) {
             rctx.setRaiseContainer(this.container)
         }
         await this.container.getInstance(HandleRegisterer)
@@ -223,7 +221,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         if (contextInit) {
             contextInit(ctx);
         }
-        if (!ctx.hasContext()) {
+        if (!ctx.has()) {
             ctx.setRaiseContainer(this.container);
         }
         await scope.execute(ctx);

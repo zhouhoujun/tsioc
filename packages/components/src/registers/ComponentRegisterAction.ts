@@ -14,7 +14,7 @@ const attrExp = /^\[\w+\]$/;
 export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
-        let currDecor = ctx.getContext(CTX_CURR_DECOR);
+        let currDecor = ctx.get(CTX_CURR_DECOR);
         let metas = ctx.reflects.getMetadata<ModuleConfigure>(currDecor, ctx.targetType);
         let reflects = ctx.targetReflect as IBindingTypeReflect;
         reflects.componentDecorator = currDecor;

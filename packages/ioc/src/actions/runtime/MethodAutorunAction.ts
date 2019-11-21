@@ -18,7 +18,7 @@ export class MethodAutorunAction extends IocRuntimeAction {
     }
 
     protected runAuto(ctx: RuntimeActionContext) {
-        let currDec = ctx.getContext(CTX_CURR_DECOR);
+        let currDec = ctx.get(CTX_CURR_DECOR);
         if (ctx.reflects.hasMethodMetadata(currDec, ctx.targetType)) {
             let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(currDec, ctx.targetType);
             let lastmetas: AutorunMetadata[] = [];

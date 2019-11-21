@@ -1,6 +1,6 @@
-import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, isBoolean, isTypeObject } from '@tsdi/ioc';
+import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, isBoolean, isTypeObject, createRaiseContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, createAnnoationContext, IModuleReflect } from '@tsdi/boot';
+import { BootContext, IModuleReflect } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -86,7 +86,7 @@ export class ActivityContext extends BootContext {
      */
     get body(): any {
         if (!this._body) {
-            this._body = this.getContext(EachBodyToken) || {};
+            this._body = this.get(EachBodyToken) || {};
         }
         return this._body;
     }
@@ -121,7 +121,7 @@ export class ActivityContext extends BootContext {
         } else {
             this._body = value;
         }
-        this.setContext(EachBodyToken, this._body);
+        this.set(EachBodyToken, this._body);
     }
 
     getCurrBaseURL() {
@@ -145,7 +145,7 @@ export class ActivityContext extends BootContext {
     }
 
     static parse(target: Type | ActivityOption, raiseContainer?: ContainerFactory<IContainer>): ActivityContext {
-        return createAnnoationContext(ActivityContext, target, raiseContainer);
+        return createRaiseContext(ActivityContext, target, raiseContainer);
     }
 
     private _executor: ActivityExecutor;

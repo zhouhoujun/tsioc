@@ -11,7 +11,7 @@ export class AnnoationDesignAction extends IocDesignAction {
             return next();
         }
 
-        let cuurDec = ctx.getContext(CTX_CURR_DECOR);
+        let cuurDec = ctx.get(CTX_CURR_DECOR);
         if (!tgRef.decorator) {
             tgRef.decorator = cuurDec;
         }

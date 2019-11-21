@@ -13,15 +13,15 @@ import { ActionRegisterer } from '../ActionRegisterer';
 export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext> {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
-        if (!ctx.hasContext(CTX_ARGS)) {
+        if (!ctx.has(CTX_ARGS)) {
             if (ctx.targetReflect.methodParams.has('constructor')) {
-                ctx.setContext(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
+                ctx.set(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
             } else {
                 this.container.getInstance(ActionRegisterer).get(RuntimeParamScope)
                     .execute(ctx);
-                ctx.setContext(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
+                ctx.set(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
             }
-            ctx.setContext(CTX_ARGS, this.container.createParams(ctx.getContext(CTX_PARAMS), ctx.providerMap));
+            ctx.set(CTX_ARGS, this.container.createParams(ctx.get(CTX_PARAMS), ctx.providerMap));
         }
         next();
     }

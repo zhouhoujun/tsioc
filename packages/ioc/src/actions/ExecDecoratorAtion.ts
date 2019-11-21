@@ -13,10 +13,10 @@ import { DecoratorsRegisterer } from './DecoratorsRegisterer';
 export abstract class ExecDecoratorAtion extends IocAction<RegisterActionContext> {
 
     execute(ctx: RegisterActionContext, next?: () => void): void {
-        if (ctx.hasContext(CTX_CURR_DECOR)) {
+        if (ctx.has(CTX_CURR_DECOR)) {
             let decor = this.getScopeRegisterer();
-            let currDec = ctx.getContext(CTX_CURR_DECOR);
-            let currScope = ctx.getContext(CTX_CURR_DECOR_SCOPE);
+            let currDec = ctx.get(CTX_CURR_DECOR);
+            let currScope = ctx.get(CTX_CURR_DECOR_SCOPE);
             if (decor.has(currDec, currScope)) {
                 let actions = decor.getFuncs(this.container, currDec, currScope);
                 this.execFuncs(ctx, actions, next);

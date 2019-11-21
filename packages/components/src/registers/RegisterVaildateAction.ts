@@ -7,7 +7,7 @@ export class RegisterVaildateAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
         let ref = ctx.targetReflect as IBindingTypeReflect;
-        let currDecor = ctx.getContext(CTX_CURR_DECOR);
+        let currDecor = ctx.get(CTX_CURR_DECOR);
         if (!ref.propVaildates) {
             ref.propVaildates = new Map();
         }

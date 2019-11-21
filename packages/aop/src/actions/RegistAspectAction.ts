@@ -17,7 +17,7 @@ export class RegistAspectAction extends IocDesignAction {
         let type = ctx.targetType;
         let aspectMgr = this.container.get<IAdvisor>(AdvisorToken);
         let raiseContainer = ctx.getRaiseContainer();
-        let metadata = ctx.reflects.getMetadata<ClassMetadata>(ctx.getContext(CTX_CURR_DECOR), type);
+        let metadata = ctx.reflects.getMetadata<ClassMetadata>(ctx.get(CTX_CURR_DECOR), type);
         if (isArray(metadata) && metadata.length > 0) {
             metadata.forEach(meta => {
                 if (isClass(meta.type)) {

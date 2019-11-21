@@ -3,7 +3,7 @@ import { DecoratorsRegisterer, DecoratorScopes, RuntimeRegisterer } from '../Dec
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
-import { RuntimeActionContext, CTX_PROPERTYKEY } from './RuntimeActionContext';
+import { RuntimeActionContext } from './RuntimeActionContext';
 
 const CTX_CLASS_DECORS = 'CTX_CLASS_DECORS';
 const CTX_METHOD_DECORS = 'CTX_METHOD_DECORS';
@@ -33,81 +33,81 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
     }
 
     protected getClassDecorState(ctx: RuntimeActionContext): ObjectMap<boolean> {
-        if (!ctx.hasContext(CTX_CLASS_DECORS)) {
+        if (!ctx.has(CTX_CLASS_DECORS)) {
             let classDecors = ctx.targetReflect
                 .decorators.runtime.classDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
-            ctx.setContext(CTX_CLASS_DECORS, classDecors);
+            ctx.set(CTX_CLASS_DECORS, classDecors);
         }
-        return ctx.getContext(CTX_CLASS_DECORS);
+        return ctx.get(CTX_CLASS_DECORS);
     }
 
     protected getMethodDecorState(ctx: RuntimeActionContext): ObjectMap<boolean> {
-        if (!ctx.hasContext(CTX_METHOD_DECORS)) {
+        if (!ctx.has(CTX_METHOD_DECORS)) {
             let methodDecors = ctx.targetReflect
                 .decorators.runtime.methodDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
-            ctx.setContext(CTX_METHOD_DECORS, methodDecors);
+            ctx.set(CTX_METHOD_DECORS, methodDecors);
         }
-        return ctx.getContext(CTX_METHOD_DECORS);
+        return ctx.get(CTX_METHOD_DECORS);
     }
 
     protected getPropDecorState(ctx: RuntimeActionContext): ObjectMap<boolean> {
-        if (!ctx.hasContext(CTX_PROPS_DECORS)) {
+        if (!ctx.has(CTX_PROPS_DECORS)) {
             let propsDecors = ctx.targetReflect
                 .decorators.runtime.propsDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
-            ctx.setContext(CTX_PROPS_DECORS, propsDecors);
+            ctx.set(CTX_PROPS_DECORS, propsDecors);
         }
-        return ctx.getContext(CTX_PROPS_DECORS);
+        return ctx.get(CTX_PROPS_DECORS);
     }
 
     protected getParamDecorState(ctx: RuntimeActionContext): ObjectMap<boolean> {
-        if (!ctx.hasContext(CTX_PARAM_DECORS)) {
+        if (!ctx.has(CTX_PARAM_DECORS)) {
             let paramDecors = ctx.targetReflect
-                .decorators.runtime.getParamDecors(ctx.getContext(CTX_PROPERTYKEY), ctx.target)
+                .decorators.runtime.getParamDecors(ctx.propertyKey, ctx.target)
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
-            ctx.setContext(CTX_PARAM_DECORS, paramDecors);
+            ctx.set(CTX_PARAM_DECORS, paramDecors);
         }
-        return ctx.getContext(CTX_PARAM_DECORS);
+        return ctx.get(CTX_PARAM_DECORS);
     }
 
     protected getBeforeCstrDecorsState(ctx: RuntimeActionContext): ObjectMap<boolean> {
-        if (!ctx.hasContext(CTX_BEFORE_CSTR_DECORS)) {
+        if (!ctx.has(CTX_BEFORE_CSTR_DECORS)) {
             let beforeCstrDecors = ctx.targetReflect
                 .decorators.runtime.beforeCstrDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
-            ctx.setContext(CTX_BEFORE_CSTR_DECORS, beforeCstrDecors);
+            ctx.set(CTX_BEFORE_CSTR_DECORS, beforeCstrDecors);
         }
-        return ctx.getContext(CTX_BEFORE_CSTR_DECORS);
+        return ctx.get(CTX_BEFORE_CSTR_DECORS);
     }
 
     protected getAfterCstrDecorsState(ctx: RuntimeActionContext): ObjectMap<boolean> {
-        if (!ctx.hasContext(CTX_AFTER_CSTR_DECORS)) {
+        if (!ctx.has(CTX_AFTER_CSTR_DECORS)) {
             let afterCstrDecors = ctx.targetReflect
                 .decorators.runtime.afterCstrDecors
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
                 }, {});
-            ctx.setContext(CTX_AFTER_CSTR_DECORS, afterCstrDecors);
+            ctx.set(CTX_AFTER_CSTR_DECORS, afterCstrDecors);
         }
-        return ctx.getContext(CTX_AFTER_CSTR_DECORS);
+        return ctx.get(CTX_AFTER_CSTR_DECORS);
     }
 
     protected getScopeRegisterer(): DecoratorsRegisterer {

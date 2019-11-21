@@ -34,8 +34,8 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
                 state: JoinpointState.After,
                 fullName: className + '.constructor',
                 target: target,
-                args: ctx.getContext(CTX_ARGS),
-                params: ctx.getContext(CTX_PARAMS),
+                args: ctx.get(CTX_ARGS),
+                params: ctx.get(CTX_PARAMS),
                 targetType: targetType,
                 originProvider: ctx.providerMap
             }
