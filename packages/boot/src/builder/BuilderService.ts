@@ -219,13 +219,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                 ctx.setOptions(target);
             }
         }
-
+        if (!ctx.has()) {
+            ctx.setRaiseContainer(this.container);
+        }
         ctx.set(CTX_APP_ENVARGS, args);
         if (contextInit) {
             contextInit(ctx);
-        }
-        if (!ctx.has()) {
-            ctx.setRaiseContainer(this.container);
         }
         await scope.execute(ctx);
         return ctx;

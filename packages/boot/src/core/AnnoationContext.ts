@@ -65,14 +65,16 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
 
     constructor(type?: Type) {
         super();
-        this.module = type;
+        this._options = { module: type } as T;
     }
 
     static parse(target: Type | AnnoationOption, raiseContainer?: ContainerFactory<IContainer>): AnnoationContext {
         return createRaiseContext<AnnoationContext<AnnoationOption>>(AnnoationContext, target, raiseContainer);
     }
 
-    module: Type;
+    get module(): Type {
+        return this.getOptions().module;
+    }
 
     get decorator(): string {
         if (!this.has(CTX_MODULE_DECTOR)) {
@@ -87,8 +89,12 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         return this.get(CTX_MODULE_DECTOR);
     }
 
+    private _targetReflect: IModuleReflect;
     get targetReflect(): IModuleReflect {
-        return this.reflects.get(this.module);
+        if (!this._targetReflect) {
+            this._targetReflect = this.reflects.get(this.module);
+        }
+        return this._targetReflect;
     }
 
     get regFor(): RegFor {
@@ -123,9 +129,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
             return;
         }
         super.setOptions(options);
-        if (options.module) {
-            this.module = options.module;
-        }
+
         if (options.decorator) {
             this.set(CTX_MODULE_DECTOR, options.decorator);
         }

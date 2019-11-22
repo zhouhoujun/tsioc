@@ -1,10 +1,10 @@
 import { Type } from '../../types';
 import { IParameter } from '../../IParameter';
+import { InjectToken } from '../../InjectToken';
 import { ParamProviders, ProviderMap, ProviderParser } from '../../providers';
 import { ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 import { createRaiseContext, CTX_PROVIDER_MAP } from '../Action';
-import { InjectToken } from '../../InjectToken';
 
 
 /**
@@ -22,6 +22,9 @@ export interface RuntimeActionOption extends RegisterActionOption {
      */
     args?: any[];
 
+    /**
+     * property key.
+     */
     propertyKey?: string;
     /**
      * args params types.
@@ -100,6 +103,9 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
             return;
         }
         super.setOptions(options);
+        if (options.target) {
+            this.target = options.target;
+        }
         if (options.args) {
             this.set(CTX_ARGS, options.args);
         }

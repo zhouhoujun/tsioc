@@ -127,7 +127,9 @@ export const BootTargetToken = new InjectToken('module_type');
  * @extends {HandleContext}
  */
 @Injectable
-export class BootContext<T extends BootOption = BootOption, CFG extends RunnableConfigure = RunnableConfigure> extends AnnoationContext<T, CFG> implements IComponentContext {
+export class BootContext<T extends BootOption = BootOption, CFG extends RunnableConfigure = RunnableConfigure>
+    extends AnnoationContext<T, CFG>
+    implements IComponentContext {
 
     constructor(@Inject(BootTargetToken) type: Type) {
         super(type);
@@ -146,9 +148,9 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     get baseURL(): string {
         let url = this.get(ProcessRunRootToken)
         if (!url) {
-            url = this.annoation.baseURL;
+            url = this.annoation ? this.annoation.baseURL : '';
             if (url) {
-                this.getRaiseContainer().bindProvider(ProcessRunRootToken, this.baseURL);
+                this.getRaiseContainer().bindProvider(ProcessRunRootToken, url);
             } else {
                 url = this.getRaiseContainer().get(ProcessRunRootToken);
             }
@@ -176,6 +178,10 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
 
     get data(): any {
         return this.get(CTX_APP_INITDATA) || this.getOptions().data;
+    }
+
+    get scope(): any {
+        return this.getOptions().scope;
     }
 
     /**

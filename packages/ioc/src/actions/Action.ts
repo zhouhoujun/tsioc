@@ -82,7 +82,10 @@ export const CTX_PROVIDER_MAP = new InjectToken<ProviderMap>('CTX_PROVIDER_MAP')
 export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
     get reflects(): TypeReflects {
-        return this.get(TypeReflects) || this.getRaiseContainer().getTypeReflects();
+        if (!this.has(TypeReflects)) {
+            this.set(TypeReflects, this.getRaiseContainer().getTypeReflects());
+        }
+        return this.get(TypeReflects);
     }
 
     /**
@@ -130,10 +133,10 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * set provider of this context.
      *
      * @param {Token} token context provider token.
-     * @param {*} provider context provider.
+     * @param {*} value context value.
      * @memberof BootContext
      */
-    set(token: Token, provider: any);
+    set(token: Token, value: any);
     /**
      * set context provider of boot application.
      *

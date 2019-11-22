@@ -37,12 +37,13 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
         if (!this.paramsDesc) {
             this.paramsDesc = {};
         }
-        if (!this.paramsDesc[propertyKey]) {
-            this.paramsDesc[propertyKey] = this.register.getRegisterer(DecoratorScopes.Parameter)
+        let key = propertyKey === 'constructor' ? '_constructor' : propertyKey;
+        if (!this.paramsDesc[key]) {
+            this.paramsDesc[key] = this.register.getRegisterer(DecoratorScopes.Parameter)
                 .getDecorators()
                 .filter(d => this.reflects.hasParamerterMetadata(d, target || this.type, propertyKey))
         }
-        return this.paramsDesc[propertyKey];
+        return this.paramsDesc[key];
     }
 
     reset() {

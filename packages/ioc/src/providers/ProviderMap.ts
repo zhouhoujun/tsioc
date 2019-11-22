@@ -126,7 +126,8 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
      * @memberof ProviderMap
      */
     add<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
-        return this.register(provide, provider);
+        this.map.set(this.getTokenKey(provide), () => provider);
+        return this;
     }
 
     /**

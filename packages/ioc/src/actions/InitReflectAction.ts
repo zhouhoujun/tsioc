@@ -15,6 +15,7 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
         if (!isClass(ctx.targetType)) {
             return;
         }
+        ctx.reflects.create(ctx.targetType);
         if (ctx.singleton) {
             ctx.targetReflect.singleton = ctx.singleton;
         }

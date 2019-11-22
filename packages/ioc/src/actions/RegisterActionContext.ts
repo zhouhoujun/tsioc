@@ -10,13 +10,13 @@ import { ITypeReflect } from '../services/ITypeReflect';
  * @interface RegisterActionOption
  */
 export interface RegisterActionOption extends IocProvidersOption {
-    /**
-     * target type reflect.
-     *
-     * @type {ITypeReflect}
-     * @memberof IocActionContext
-     */
-    targetReflect?: ITypeReflect;
+    // /**
+    //  * target type reflect.
+    //  *
+    //  * @type {ITypeReflect}
+    //  * @memberof IocActionContext
+    //  */
+    // targetReflect?: ITypeReflect;
     /**
      * resolve token.
      *
@@ -82,8 +82,12 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
         return this.getOptions().singleton === true;
     }
 
+    private _targetReflect: ITypeReflect;
     get targetReflect(): ITypeReflect {
-        return this.reflects.get(this.targetType);
+        if (!this._targetReflect) {
+            this._targetReflect = this.reflects.get(this.targetType);
+        }
+        return this._targetReflect;
     }
 
     constructor(targetType?: Type) {
