@@ -91,7 +91,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
 
     private _targetReflect: IModuleReflect;
     get targetReflect(): IModuleReflect {
-        if (!this._targetReflect) {
+        if (!this._targetReflect && this.module) {
             this._targetReflect = this.reflects.get(this.module);
         }
         return this._targetReflect;

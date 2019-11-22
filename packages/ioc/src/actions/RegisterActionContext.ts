@@ -10,13 +10,6 @@ import { ITypeReflect } from '../services/ITypeReflect';
  * @interface RegisterActionOption
  */
 export interface RegisterActionOption extends IocProvidersOption {
-    // /**
-    //  * target type reflect.
-    //  *
-    //  * @type {ITypeReflect}
-    //  * @memberof IocActionContext
-    //  */
-    // targetReflect?: ITypeReflect;
     /**
      * resolve token.
      *
@@ -96,5 +89,4 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
             this._options = { targetType: targetType } as T;
         }
     }
-
 }

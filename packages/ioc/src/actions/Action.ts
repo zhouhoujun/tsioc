@@ -78,10 +78,12 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ct
 export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
     get reflects(): ITypeReflects {
-        if (!this.has(TypeReflectsToken)) {
-            this.set(TypeReflectsToken, this.getRaiseContainer().getTypeReflects());
+        let reflects = this.get(TypeReflectsToken);
+        if (!reflects) {
+            reflects = this.getRaiseContainer().getTypeReflects();
+            this.set(TypeReflectsToken, reflects);
         }
-        return this.get(TypeReflectsToken);
+        return reflects;
     }
 
     /**
@@ -105,11 +107,9 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @param tokens
      */
     remove(...tokens: Token[]) {
-        if (this.contexts) {
-            tokens.forEach(tk => {
-                this.contexts.unregister(tk);
-            });
-        }
+        tokens.forEach(tk => {
+            this.contexts.unregister(tk);
+        });
     }
     /**
      * get context provider of boot application.
@@ -120,10 +120,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @memberof BootContext
      */
     get<T>(token: Token<T>): T {
-        if (this.contexts) {
-            return this.contexts.resolve<T>(token);
-        }
-        return null;
+        return this.contexts.resolve<T>(token);
     }
     /**
      * set provider of this context.
