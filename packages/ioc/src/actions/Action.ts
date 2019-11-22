@@ -142,17 +142,11 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     set(...providers: ProviderTypes[]);
     set(...providers: any[]) {
         if (providers.length === 2 && isToken(providers[0])) {
-            if (!this.contexts) {
-                this.contexts = this.getRaiseContainer().getInstance(ProviderMap);
-            }
             this.contexts.add(providers[0], providers[1]);
         } else {
             let pr = this.getRaiseContainer().getInstance(ProviderParser);
-            if (this.contexts) {
-                pr.parseTo(this.contexts, ...providers);
-            } else {
-                this.contexts = pr.parse(...providers);
-            }
+            pr.parseTo(this.contexts, ...providers);
+
         }
     }
 

@@ -77,7 +77,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     }
 
     get decorator(): string {
-        if (!this.has(CTX_MODULE_DECTOR)) {
+        if (!this.has(CTX_MODULE_DECTOR) && this.module) {
             let dec = this.getRaiseContainer().get(AnnotationServiceToken).getDecorator(this.module);
             if (!dec) {
                 dec = this.targetReflect.decorator;

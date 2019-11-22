@@ -18,10 +18,7 @@ import { RefSelector } from './RefSelector';
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
-        let ctx = TemplateContext.parse({ decorator: Component.toString(), ...options, providers: [...(options.providers || []), ...providers] });
-        if (!ctx.hasRaiseContainer()) {
-            ctx.setRaiseContainer(this.container);
-        }
+        let ctx = TemplateContext.parse({decorator: Component.toString(), ...options, providers: [...(options.providers || []), ...providers] }, this.container.getFactory());
         await this.container.getInstance(HandleRegisterer)
             .get(TemplateParseScope)
             .execute(ctx);
