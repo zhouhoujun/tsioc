@@ -1,6 +1,6 @@
-import { TypeDecorators } from './DecoratorsRegisterer';
 import { IDesignDecorators } from '../services';
 import { ObjectMap } from '../types';
+import { TypeDecorators } from './TypeDecorators';
 
 /**
  * design decorators.

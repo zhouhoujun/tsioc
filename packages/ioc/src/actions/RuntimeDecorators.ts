@@ -1,6 +1,7 @@
-import { DecoratorScopes, TypeDecorators } from './DecoratorsRegisterer';
+import { DecoratorScopes } from './DecoratorsRegisterer';
 import { IRuntimeDecorators } from '../services';
 import { ObjectMap } from '../types';
+import { TypeDecorators } from './TypeDecorators';
 
 /**
  * runtime decorators.

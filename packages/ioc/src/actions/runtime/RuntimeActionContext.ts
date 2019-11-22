@@ -4,7 +4,8 @@ import { InjectToken } from '../../InjectToken';
 import { ParamProviders, ProviderMap, ProviderParser } from '../../providers';
 import { ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
-import { createRaiseContext, CTX_PROVIDER_MAP } from '../Action';
+import { createRaiseContext } from '../Action';
+import { CTX_PROVIDER_MAP } from '../../context-tokens';
 
 
 /**

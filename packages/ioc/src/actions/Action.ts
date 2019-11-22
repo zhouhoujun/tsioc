@@ -1,12 +1,11 @@
 import { Token, Type } from '../types';
 import { lang, isFunction, isClass, isToken } from '../utils';
 import { Inject } from '../decorators';
-import { ITypeReflect, TypeReflects } from '../services';
 import { IIocContainer, IocContainerToken, ContainerFactory } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ActionRegisterer } from './ActionRegisterer';
 import { ProviderMap, ProviderTypes, ProviderParser } from '../providers';
-import { InjectToken } from '../InjectToken';
+import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 
 
 /**
@@ -43,7 +42,7 @@ export abstract class IocActionContext extends IocCoreService {
      * @type {TypeReflects}
      * @memberof IocActionContext
      */
-    abstract get reflects(): TypeReflects;
+    abstract get reflects(): ITypeReflects;
 
     /**
      * set options.
@@ -68,9 +67,6 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ct
     return ctx;
 }
 
-export const CTX_OPTIONS = new InjectToken<ActionContextOption>('CTX_OPTIONS');
-export const CTX_PROVIDER_MAP = new InjectToken<ProviderMap>('CTX_PROVIDER_MAP');
-
 
 /**
  * context with raise container.
@@ -81,11 +77,11 @@ export const CTX_PROVIDER_MAP = new InjectToken<ProviderMap>('CTX_PROVIDER_MAP')
  */
 export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
-    get reflects(): TypeReflects {
-        if (!this.has(TypeReflects)) {
-            this.set(TypeReflects, this.getRaiseContainer().getTypeReflects());
+    get reflects(): ITypeReflects {
+        if (!this.has(TypeReflectsToken)) {
+            this.set(TypeReflectsToken, this.getRaiseContainer().getTypeReflects());
         }
-        return this.get(TypeReflects);
+        return this.get(TypeReflectsToken);
     }
 
     /**

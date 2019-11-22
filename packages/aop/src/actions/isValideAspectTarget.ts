@@ -1,4 +1,4 @@
-import { isClass, isBaseType, TypeReflects, Type, IocCoreService } from '@tsdi/ioc';
+import { isClass, isBaseType, ITypeReflects, Type, IocCoreService } from '@tsdi/ioc';
 import { NonePointcut } from '../decorators';
 
 
@@ -9,7 +9,7 @@ import { NonePointcut } from '../decorators';
  * @param {Type} targetType
  * @returns {boolean}
  */
-export function isValideAspectTarget(targetType: Type, reflects: TypeReflects): boolean {
+export function isValideAspectTarget(targetType: Type, reflects: ITypeReflects): boolean {
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }

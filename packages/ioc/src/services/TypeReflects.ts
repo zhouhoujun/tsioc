@@ -7,7 +7,7 @@ import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
-import { MetadataAccess, IMetadataAccess } from './MetadataAccess';
+import { MetadataAccess } from './MetadataAccess';
 import { isUndefined } from '../utils';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
@@ -15,8 +15,9 @@ import { MethodAccessorToken } from '../IMethodAccessor';
 import { DesignDecorators } from '../actions/DesignDecorators';
 import { RuntimeDecorators } from '../actions/RuntimeDecorators';
 import { Singleton } from '../decorators';
-import { DesignRegisterer, RuntimeRegisterer } from '../actions';
 import { DecoratorProvider } from './DecoratorProvider';
+import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegisterer';
+import { ITypeReflects } from './ITypeReflects';
 
 
 /**
@@ -26,7 +27,7 @@ import { DecoratorProvider } from './DecoratorProvider';
  * @class TypeReflects
  * @extends {IocCoreService}
  */
-export class TypeReflects extends IocCoreService implements IMetadataAccess {
+export class TypeReflects extends IocCoreService implements ITypeReflects {
     protected map: Map<ClassType, ITypeReflect>;
     constructor(private container: IIocContainer) {
         super();

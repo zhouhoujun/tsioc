@@ -1,5 +1,5 @@
 import { IIocContainer, IocContainerToken, ContainerFactoryToken } from './IIocContainer';
-import { TypeReflects, DecoratorProvider } from './services';
+import { TypeReflects, DecoratorProvider, TypeReflectsToken } from './services';
 import { ProviderMap, ProviderParser } from './providers';
 import {
     MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
@@ -23,6 +23,8 @@ export function registerCores(container: IIocContainer) {
     container.registerSingleton(DesignRegisterer, () => new DesignRegisterer(container));
 
     container.registerSingleton(TypeReflects, () => new TypeReflects(container));
+    container.bindProvider(TypeReflectsToken, TypeReflects);
+
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
     container.register(ProviderMap, () => new ProviderMap(fac));
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));

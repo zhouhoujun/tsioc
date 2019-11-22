@@ -1,4 +1,4 @@
-import { Type, ActionRegisterer, isClass, TypeReflects } from '@tsdi/ioc';
+import { Type, ActionRegisterer, isClass, ITypeReflects } from '@tsdi/ioc';
 import { Handle, HandleType, IHandleContext, IHandle } from './Handle';
 import { Handles } from './Handles';
 
@@ -32,7 +32,7 @@ export interface IBuildContext extends IHandleContext {
      * @type {TypeReflects}
      * @memberof IBuildContext
      */
-    reflects?: TypeReflects;
+    reflects?: ITypeReflects;
 }
 
 /**
