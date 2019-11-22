@@ -1,4 +1,4 @@
-import { ProviderTypes, LoadType, InjectToken, Type, Injectable, Inject, ContainerFactory, createRaiseContext, Token } from '@tsdi/ioc';
+import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
@@ -118,7 +118,6 @@ export interface BootOption extends AnnoationOption {
     deps?: LoadType[];
 }
 
-export const BootTargetToken = new InjectToken('module_type');
 /**
  * application boot context.
  *
@@ -131,9 +130,6 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     extends AnnoationContext<T, CFG>
     implements IComponentContext {
 
-    constructor(@Inject(BootTargetToken) type: Type) {
-        super(type);
-    }
 
     getLogManager(): ILoggerManager {
         return this.getRaiseContainer().resolve(ConfigureLoggerManger);
@@ -241,6 +237,6 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     }
 
     static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {
-        return createRaiseContext(BootContext, target, raiseContainer);
+        return createRaiseContext(BootContext, isToken(target) ? { module: target } : target, raiseContainer);
     }
 }

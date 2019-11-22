@@ -2,6 +2,7 @@ import { Token } from '../types';
 import { ProviderTypes } from '../providers';
 import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
+import { isToken } from '../utils';
 
 /**
  * resolve life scope.
@@ -38,7 +39,7 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
             ctx = token;
             ctx.setRaiseContainer(this.container);
         } else {
-            ctx = ResolveActionContext.parse(token, this.container.getFactory());
+            ctx = ResolveActionContext.parse(isToken(token) ? { token: token } : token, this.container.getFactory());
         }
         if (!ctx) {
             return null;

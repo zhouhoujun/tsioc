@@ -82,11 +82,4 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
         }
         return this._targetReflect;
     }
-
-    constructor(targetType?: Type) {
-        super();
-        if (targetType) {
-            this._options = { targetType: targetType } as T;
-        }
-    }
 }

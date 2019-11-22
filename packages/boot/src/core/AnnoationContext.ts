@@ -1,4 +1,4 @@
-import { Type, ContainerFactory, createRaiseContext, IocProvidersOption, IocProvidersContext, lang } from '@tsdi/ioc';
+import { Type, ContainerFactory, createRaiseContext, IocProvidersOption, IocProvidersContext, lang, isToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { RegFor, IModuleReflect, ModuleConfigure } from './modules';
 import { AnnotationServiceToken } from './IAnnotationService';
@@ -63,13 +63,9 @@ export interface AnnoationOption extends IocProvidersOption<IContainer> {
  */
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, IContainer> {
 
-    constructor(type?: Type) {
-        super();
-        this._options = { module: type } as T;
-    }
 
     static parse(target: Type | AnnoationOption, raiseContainer?: ContainerFactory<IContainer>): AnnoationContext {
-        return createRaiseContext<AnnoationContext<AnnoationOption>>(AnnoationContext, target, raiseContainer);
+        return createRaiseContext<AnnoationContext<AnnoationOption>>(AnnoationContext, isToken(target) ? { module: target } : target, raiseContainer);
     }
 
     get module(): Type {

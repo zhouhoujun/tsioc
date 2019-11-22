@@ -1,4 +1,4 @@
-import { Token, ResolveActionContext, ResolveActionOption, createRaiseContext, ContainerFactory } from '@tsdi/ioc';
+import { Token, ResolveActionContext, ResolveActionOption, createRaiseContext, ContainerFactory, isToken } from '@tsdi/ioc';
 import { TargetRef } from '../TargetService';
 
 export type TargetRefType = Object | TargetRef;
@@ -65,21 +65,17 @@ export interface ServiceOption<T> extends ResolveActionOption<T> {
  * @class ResolveServiceContext
  * @extends {ResovleActionContext}
  */
-export class ResolveServiceContext<T = any> extends ResolveActionContext<T, ServiceOption<T>> {
-
-    constructor(token?: Token<T>) {
-        super(token)
-    }
+export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = ServiceOption<T>> extends ResolveActionContext<T, TOP> {
     /**
      * create resolve context via options.
      *
      * @static
-     * @param {ResolveActionOption} [options]
+     * @param {(Token | ServiceOption<T>)} target
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(target?: Token<T> | ServiceOption<T>, raiseContainer?: ContainerFactory): ResolveServiceContext<T> {
-        return createRaiseContext<ResolveServiceContext>(ResolveServiceContext, target, raiseContainer);
+    static parse<T>(target: Token<T> | ServiceOption<T>, raiseContainer?: ContainerFactory): ResolveServiceContext<T> {
+        return createRaiseContext<ResolveServiceContext>(ResolveServiceContext, isToken(target) ? { token: target } : target, raiseContainer);
     }
 
     /**

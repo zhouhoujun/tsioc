@@ -24,7 +24,7 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
 
     value?: any;
 
-    static parse(options: Type | ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
+    static parse(options: ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
         return createRaiseContext(TemplateContext, options, raiseContainer);
     }
 }

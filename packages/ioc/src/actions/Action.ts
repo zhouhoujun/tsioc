@@ -53,15 +53,8 @@ export abstract class IocActionContext extends IocCoreService {
     abstract setOptions(options: ActionContextOption);
 }
 
-export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ctx>, target: any, raiseContainer?: ContainerFactory): Ctx {
-    let ctx: Ctx;
-    let options: ActionContextOption;
-    if (isToken(target)) {
-        ctx = new CtxType(target);
-    } else if (target) {
-        options = target;
-        ctx = new CtxType();
-    }
+export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ctx>, options: ActionContextOption, raiseContainer?: ContainerFactory): Ctx {
+    let ctx = new CtxType();
     raiseContainer && ctx.setRaiseContainer(raiseContainer);
     options && ctx.setOptions(options);
     return ctx;
@@ -196,7 +189,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
                 this.set(...options.contexts);
             }
         }
-        this._options = this._options ? { ...this._options, ...options } : options;
+        this._options = this._options ? Object.assign(this._options, options) : options;
     }
 
     getOptions(): T {

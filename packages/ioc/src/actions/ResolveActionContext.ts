@@ -36,13 +36,6 @@ export interface ResolveActionOption<T> extends IocProvidersOption {
  */
 export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = ResolveActionOption<T>> extends IocProvidersContext<TOP> {
 
-    constructor(token?: Token<T>) {
-        super();
-        if (token) {
-            this._options = { token: token } as TOP;
-        }
-    }
-
     /**
      * token.
      *
@@ -70,7 +63,7 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(target?: Token<T> | ResolveActionOption<T>, raiseContainer?: ContainerFactory): ResolveActionContext<T> {
-        return createRaiseContext<ResolveActionContext>(ResolveActionContext, target, raiseContainer);
+    static parse<T>(options: ResolveActionOption<T>, raiseContainer?: ContainerFactory): ResolveActionContext<T> {
+        return createRaiseContext<ResolveActionContext>(ResolveActionContext, options, raiseContainer);
     }
 }
