@@ -76,7 +76,7 @@ export class WorkTask extends Activity<string> {
                 // WorkTask
                 {
                     activity: Activities.switch,
-                    switch: (ctx) => ctx.configures.length,
+                    switch: (ctx) => ctx.args.length,
                     cases: [
                         { case: 0, body: [] }
                     ]

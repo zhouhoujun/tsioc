@@ -1,4 +1,4 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, CTX_ARGS } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption, BootTargetToken } from '../BootContext';
 import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken } from '../core';
@@ -215,12 +215,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         } else {
             let md = isClass(target) ? target : target.module;
             ctx = this.container.getService({ token: BootContext, target: md }, { provide: BootTargetToken, useValue: md }) as T;
-            if (!isClass(target)) {
-                ctx.setOptions(target);
-            }
         }
         if (!ctx.has()) {
             ctx.setRaiseContainer(this.container);
+        }
+        if (isBaseObject(target)) {
+            ctx.setOptions(target as BootOption);
         }
         ctx.set(CTX_APP_ENVARGS, args);
         if (contextInit) {

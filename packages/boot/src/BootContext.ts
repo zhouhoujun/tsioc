@@ -148,16 +148,11 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     get baseURL(): string {
         let url = this.get(ProcessRunRootToken)
         if (!url) {
-            url = this.annoation ? this.annoation.baseURL : '';
+            url = this.getOptions().baseURL || (this.annoation ? this.annoation.baseURL : '');
             if (url) {
                 this.getRaiseContainer().bindProvider(ProcessRunRootToken, url);
-            } else {
-                url = this.getRaiseContainer().get(ProcessRunRootToken);
-            }
-            if (url) {
                 this.set(ProcessRunRootToken, url);
             }
-
         }
         return url;
     }
