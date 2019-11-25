@@ -3,7 +3,7 @@ import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
-import { CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE, CTX_CURR_TARGET_TOKEN } from '../contextTokens';
+import { CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE, CTX_CURR_TARGET_TOKEN } from '../context-tokens';
 
 export class ResolveServiceInClassChain extends IocResolveScope {
     execute(ctx: ResolveServiceContext, next?: () => void): void {

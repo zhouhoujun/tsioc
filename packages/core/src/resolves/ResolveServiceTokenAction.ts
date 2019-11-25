@@ -1,6 +1,6 @@
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
-import { CTX_CURR_TOKEN } from '../contextTokens';
+import { CTX_CURR_TOKEN } from '../context-tokens';
 
 
 export class ResolveServiceTokenAction extends IocResolveServiceAction {

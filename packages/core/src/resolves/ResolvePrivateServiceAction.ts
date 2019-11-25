@@ -1,7 +1,7 @@
 import { InjectReference, ProviderMap, Token, isClassType, isNullOrUndefined } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
-import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE } from '../contextTokens';
+import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE } from '../context-tokens';
 
 export class ResolvePrivateServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {

@@ -1,4 +1,4 @@
-export * from './contextTokens';
+export * from './context-tokens';
 export * from './IContainer';
 export * from './Container';
 export * from './TargetService';

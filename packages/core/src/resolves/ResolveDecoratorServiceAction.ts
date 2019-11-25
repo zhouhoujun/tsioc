@@ -1,7 +1,7 @@
 import { DecoratorProvider, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { CTX_CURR_TARGET_TYPE, CTX_CURR_TOKEN } from '../contextTokens';
+import { CTX_CURR_TARGET_TYPE, CTX_CURR_TOKEN } from '../context-tokens';
 
 export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {

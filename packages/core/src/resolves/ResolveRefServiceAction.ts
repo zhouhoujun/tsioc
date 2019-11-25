@@ -1,7 +1,7 @@
 import { isArray, InjectReference } from '@tsdi/ioc';
 import { ResolveServiceContext  } from './ResolveServiceContext';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
-import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TOKEN } from '../contextTokens';
+import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TOKEN } from '../context-tokens';
 
 export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
     execute(ctx: ResolveServiceContext, next?: () => void): void {

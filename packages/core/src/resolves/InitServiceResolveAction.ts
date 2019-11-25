@@ -3,7 +3,7 @@ import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
 import { ResolveServicesContext, ServicesOption } from './ResolveServicesContext';
-import { CTX_TARGET_REFS } from '../contextTokens';
+import { CTX_TARGET_REFS } from '../context-tokens';
 
 export class InitServiceResolveAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {

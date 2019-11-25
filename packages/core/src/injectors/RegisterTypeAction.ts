@@ -1,7 +1,7 @@
 import { isClass } from '@tsdi/ioc';
 import { InjectorAction } from './InjectorAction';
 import { InjectorActionContext } from './InjectorActionContext';
-import { CTX_CURR_TYPE } from '../contextTokens';
+import { CTX_CURR_TYPE } from '../context-tokens';
 
 export class RegisterTypeAction extends InjectorAction {
     execute(ctx: InjectorActionContext, next: () => void): void {
