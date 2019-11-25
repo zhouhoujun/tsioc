@@ -183,6 +183,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return this.contexts.getContainer() as TC;
     }
 
+    private _options: T;
     setOptions(options: T) {
         if (!options) {
             return;
@@ -201,16 +202,19 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
                 this.set(...options.contexts);
             }
         }
-        this.set(CTX_OPTIONS, this.has(CTX_OPTIONS) ? Object.assign(this.get(CTX_OPTIONS), options) : { ...options });
+        this._options = this._options ? Object.assign(this._options, options) : options;
+        this.set(CTX_OPTIONS, this._options);
     }
 
     getOptions(): T {
-        let options = this.get(CTX_OPTIONS) as T;
-        if (!options) {
-            options = {} as T;
-            this.set(CTX_OPTIONS, options);
+        if (!this._options) {
+            this._options = this.get(CTX_OPTIONS) as T;
+            if (!this._options) {
+                this._options = {} as T;
+                this.set(CTX_OPTIONS, this._options);
+            }
         }
-        return options;
+        return this._options;
     }
 
     clone(): ProviderMap {
