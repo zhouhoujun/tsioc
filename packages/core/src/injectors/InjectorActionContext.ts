@@ -1,4 +1,4 @@
-import { ActionContextOption, Type,  Modules, IocRaiseContext, ContainerFactory, createRaiseContext } from '@tsdi/ioc';
+import { ActionContextOption, Type,  Modules, IocRaiseContext, ContainerFactory, createRaiseContext, CTX_CURR_DECOR } from '@tsdi/ioc';
 
 
 /**
@@ -30,6 +30,9 @@ export class InjectorActionContext extends IocRaiseContext<InjectorActionOption>
         return this.getOptions().module;
     }
 
+    get currDecoractor(): string {
+        return this.get(CTX_CURR_DECOR);
+    }
     /**
      * types in  module.
      *

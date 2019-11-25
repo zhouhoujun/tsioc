@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, lang, DecoratorProvider, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, lang, DecoratorProvider } from '@tsdi/ioc';
 import { AnnotationMerger } from '../AnnotationMerger';
 import { ModuleConfigure, IModuleReflect } from '../modules';
 import { AnnotationCloner } from '../AnnotationCloner';
@@ -11,7 +11,7 @@ export class AnnoationDesignAction extends IocDesignAction {
             return next();
         }
 
-        let cuurDec = ctx.get(CTX_CURR_DECOR);
+        let cuurDec = ctx.currDecoractor;
         if (!tgRef.decorator) {
             tgRef.decorator = cuurDec;
         }

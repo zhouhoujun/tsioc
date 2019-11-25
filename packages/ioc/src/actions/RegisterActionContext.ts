@@ -1,7 +1,7 @@
 import { Type, Token } from '../types';
 import { IocProvidersContext, IocProvidersOption } from './Action';
-import { InjectToken } from '../InjectToken';
 import { ITypeReflect } from '../services/ITypeReflect';
+import { CTX_CURR_DECOR } from '../context-tokens';
 
 /**
  * register action option.
@@ -62,6 +62,10 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
      */
     get targetType(): Type {
         return this.getOptions().targetType;
+    }
+
+    get currDecoractor(): string {
+        return this.get(CTX_CURR_DECOR);
     }
 
     /**

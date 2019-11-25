@@ -2,7 +2,6 @@ import { MethodMetadata } from '../../metadatas';
 import { isArray } from '../../utils';
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
-import { CTX_CURR_DECOR } from '../../context-tokens';
 
 
 /**
@@ -17,7 +16,7 @@ export class BindMethodProviderAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void) {
         let refs = ctx.reflects;
         ctx.targetReflect.defines.extendTypes.forEach(ty => {
-            let metas = refs.getMethodMetadata<MethodMetadata>(ctx.get(CTX_CURR_DECOR), ty);
+            let metas = refs.getMethodMetadata<MethodMetadata>(ctx.currDecoractor, ty);
             Object.keys(metas).forEach(propertyKey => {
                 let metadatas = metas[propertyKey];
                 let providers = [];

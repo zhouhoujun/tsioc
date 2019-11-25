@@ -1,10 +1,10 @@
-import { Type, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { Type } from '@tsdi/ioc';
 import { InjectorActionContext } from './InjectorActionContext';
 import { InjectorRegisterScope } from './InjectorRegisterScope';
 
 export class IocExtRegisterScope extends InjectorRegisterScope {
     protected getTypes(ctx: InjectorActionContext): Type[] {
-        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.get(CTX_CURR_DECOR), ty));
+        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.currDecoractor, ty));
     }
 
     protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {

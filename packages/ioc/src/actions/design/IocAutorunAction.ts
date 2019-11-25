@@ -2,7 +2,6 @@ import { AutorunMetadata } from '../../metadatas';
 import { isFunction } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
-import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**
  * method auto run action.
@@ -20,7 +19,7 @@ export class IocAutorunAction extends IocDesignAction {
 
     protected runAuto(ctx: DesignActionContext) {
         let refs = ctx.reflects;
-        let currDec = ctx.get(CTX_CURR_DECOR);
+        let currDec = ctx.currDecoractor;
         if (!refs.hasMetadata(currDec, ctx.targetType)) {
             return;
         }
