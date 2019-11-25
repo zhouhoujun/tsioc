@@ -3,7 +3,7 @@ import { AnnoationContext } from '../AnnoationContext';
 
 export class RegModuleAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {
-        ctx.getRaiseContainer().register(ctx.module);
+        ctx.getContainer().register(ctx.module);
         next();
     }
 }

@@ -42,7 +42,7 @@ export class BootConfigureLoadHandle extends BootHandle {
         ctx.set(CTX_APP_CONFIGURE, config);
 
         if (config.deps && config.deps.length) {
-            let container = ctx.getRaiseContainer();
+            let container = ctx.getContainer();
             await container.load(...config.deps);
         }
         if (config.baseURL && !ctx.baseURL) {

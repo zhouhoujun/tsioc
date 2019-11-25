@@ -94,7 +94,7 @@ export class TranslateExpressionHandle extends ParseHandle {
                 template: ctx.bindExpression,
                 decorator: ctx.decorator,
                 providers: ctx.providers,
-                raiseContainer: ctx.getContainerFactory()
+                raiseContainer: ctx.getFactory()
             });
             await this.container.getInstance(HandleRegisterer)
                 .get(TemplateParseScope)
@@ -139,11 +139,11 @@ export class TranslateAtrrHandle extends ParseHandle {
             if (selector) {
                 let template = (!options.template || isArray(options.template)) ? {} : lang.omit(options.template, 'id', 'name');
                 template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
-                let container = ctx.getRaiseContainer();
+                let container = ctx.getContainer();
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: options.scope,
                     template: template,
-                    raiseContainer: ctx.getContainerFactory(),
+                    raiseContainer: ctx.getFactory(),
                     providers: ctx.providers
                 });
             }

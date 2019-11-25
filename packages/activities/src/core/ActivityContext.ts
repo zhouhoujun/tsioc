@@ -137,7 +137,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
     private _executor: ActivityExecutor;
     getExector(): ActivityExecutor {
         if (!this._executor) {
-            this._executor = this.getRaiseContainer().resolve(ActivityExecutor);
+            this._executor = this.getContainer().resolve(ActivityExecutor);
         }
         return this._executor;
     }

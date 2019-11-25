@@ -59,7 +59,7 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
      *
      * @static
      * @param {ResolveActionOption} [options]
-     * @param {(IIocContainer | (() => IIocContainer))} [raiseContainer]
+     * @param {ContainerFactory} [raiseContainer]
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */

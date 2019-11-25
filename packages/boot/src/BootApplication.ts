@@ -43,8 +43,8 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         if (target) {
             if (target instanceof BootContext) {
                 this.context = target;
-                if (this.context.has()) {
-                    raiseContainer = this.context.getRaiseContainer();
+                if (this.context.hasContainer()) {
+                    raiseContainer = this.context.getContainer();
                 }
             } else if (!isClass(target) && target.raiseContainer) {
                 raiseContainer = target.raiseContainer();
@@ -63,12 +63,12 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
                 });
             }
             if (this.context) {
-                this.context.setRaiseContainer(this.container);
+                this.context.setContainer(this.container);
             }
         } else {
             this.container = this.getPools().getRoot();
             if (this.context) {
-                this.context.setRaiseContainer(this.container);
+                this.context.setContainer(this.container);
             }
         }
         if (!this.container.hasRegister(BootContext)) {

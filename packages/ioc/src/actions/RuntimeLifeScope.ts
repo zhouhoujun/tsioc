@@ -18,7 +18,7 @@ import { InitReflectAction } from './InitReflectAction';
 export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     execute(ctx: RuntimeActionContext, next?: () => void): void {
-        let raiseContainer = ctx.getRaiseContainer();
+        let raiseContainer = ctx.getContainer();
         if (!ctx.target && raiseContainer === this.container) {
             super.execute(ctx, next);
         }

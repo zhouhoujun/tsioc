@@ -144,8 +144,9 @@ export class MethodAccessor implements IMethodAccessor {
         let ctx = RuntimeActionContext.parse({
             targetType: type,
             target: instance,
-            propertyKey: propertyKey
-        }, container.getFactory());
+            propertyKey: propertyKey,
+            raiseContainer: container.getFactory()
+        });
         container.getInstance(ActionRegisterer).get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];

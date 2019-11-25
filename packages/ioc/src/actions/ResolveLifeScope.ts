@@ -37,7 +37,7 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
         let ctx: ResolveActionContext<T>;
         if (token instanceof ResolveActionContext) {
             ctx = token;
-            ctx.setRaiseContainer(this.container);
+            (!ctx.hasContainer()) && ctx.setContainer(this.container);
         } else {
             ctx = ResolveActionContext.parse(isToken(token) ? { token: token } : token, this.container.getFactory());
         }

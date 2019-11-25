@@ -13,10 +13,10 @@ import { ConfigureRegister } from '../annotations';
 export class BootConfigureRegisterHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         let config = ctx.configuration;
-        let regs = ctx.getRaiseContainer().getServices(ConfigureRegister);
+        let regs = ctx.getContainer().getServices(ConfigureRegister);
         if (regs && regs.length) {
             await Promise.all(regs.map(reg => reg.register(config, ctx)));
-            if (config.logConfig && !this.container.has(LogConfigureToken) && !ctx.getRaiseContainer().has(LogConfigureToken)) {
+            if (config.logConfig && !this.container.has(LogConfigureToken) && !ctx.getContainer().has(LogConfigureToken)) {
                 this.container.bindProvider(LogConfigureToken, config.logConfig);
             }
         }

@@ -23,7 +23,7 @@ export class NodeActivityContext extends ActivityContext {
     private _platform: IPlatformService;
     get platform(): IPlatformService {
         if (!this._platform) {
-            this._platform = this.getRaiseContainer().resolve(PlatformServiceToken);
+            this._platform = this.getContainer().resolve(PlatformServiceToken);
         }
         return this._platform;
     }

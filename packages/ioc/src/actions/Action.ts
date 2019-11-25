@@ -1,11 +1,12 @@
 import { Token, Type } from '../types';
 import { lang, isFunction, isClass, isToken } from '../utils';
 import { Inject } from '../decorators';
-import { IIocContainer, IocContainerToken, ContainerFactory } from '../IIocContainer';
+import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ActionRegisterer } from './ActionRegisterer';
 import { ProviderMap, ProviderTypes, ProviderParser } from '../providers';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
+import { CTX_OPTIONS } from '../context-tokens';
 
 
 /**
@@ -54,8 +55,10 @@ export abstract class IocActionContext extends IocCoreService {
 }
 
 export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ctx>, options: ActionContextOption, raiseContainer?: ContainerFactory): Ctx {
-    let ctx = new CtxType();
-    raiseContainer && ctx.setRaiseContainer(raiseContainer);
+    if (!options.raiseContainer) {
+        options.raiseContainer = raiseContainer;
+    }
+    let ctx = new CtxType(options.raiseContainer);
     options && ctx.setOptions(options);
     return ctx;
 }
@@ -70,10 +73,15 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ct
  */
 export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
+    constructor(@Inject(ContainerFactoryToken) raiseContainer: ContainerFactory<TC>) {
+        super();
+        this.contexts = new ProviderMap(raiseContainer);
+    }
+
     get reflects(): ITypeReflects {
         let reflects = this.get(TypeReflectsToken);
         if (!reflects) {
-            reflects = this.getRaiseContainer().getTypeReflects();
+            reflects = this.getContainer().getTypeReflects();
             this.set(TypeReflectsToken, reflects);
         }
         return reflects;
@@ -85,14 +93,14 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @type {ProviderMap}
      * @memberof BootContext
      */
-    contexts: ProviderMap;
+    protected contexts: ProviderMap;
 
     /**
-     * has contxt or not.
+     * has context or not.
      * @param token
      */
-    has(token?: Token): boolean {
-        return this.contexts ? (token ? this.contexts.has(token) : true) : false;
+    has(token: Token): boolean {
+        return this.contexts ? this.contexts.has(token) : false;
     }
 
     /**
@@ -134,7 +142,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         if (providers.length === 2 && isToken(providers[0])) {
             this.contexts.add(providers[0], providers[1]);
         } else {
-            let pr = this.getRaiseContainer().getInstance(ProviderParser);
+            let pr = this.getContainer().getInstance(ProviderParser);
             pr.parseTo(this.contexts, ...providers);
 
         }
@@ -146,15 +154,28 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @returns {ContainerFactory}
      * @memberof IocRasieContext
      */
-    getContainerFactory(): ContainerFactory<TC> {
-        return this.contexts.getContainerFactory();
+    getFactory(): ContainerFactory<TC> {
+        return this.contexts.getFactory();
     }
 
-    hasRaiseContainer(): boolean {
-        return !!this.contexts;
+    hasContainer(): boolean {
+        return this.contexts.hasContainer();
     }
     /**
      * get raise container.
+     *
+     * @memberof ResovleContext
+     */
+    getContainer(): TC {
+        return this.contexts.getContainer() as TC;
+    }
+
+    setContainer(raiseContainer: TC | ContainerFactory<TC>) {
+        this.contexts.setContainer(raiseContainer);
+    }
+
+    /**
+     * get raise container. use `getContainer` instead.
      *
      * @memberof ResovleContext
      */
@@ -162,21 +183,12 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return this.contexts.getContainer() as TC;
     }
 
-    setRaiseContainer(raiseContainer: TC | ContainerFactory<TC>) {
-        if (this.contexts) {
-            this.contexts.setContainer(raiseContainer);
-        } else if (raiseContainer) {
-            this.contexts = new ProviderMap(raiseContainer);
-        }
-    }
-
-    protected _options: T;
     setOptions(options: T) {
         if (!options) {
             return;
         }
-        if (options.raiseContainer) {
-            this.setRaiseContainer(options.raiseContainer as ContainerFactory<TC>);
+        if (!this.contexts.hasContainer() && options.raiseContainer) {
+            this.setContainer(options.raiseContainer as ContainerFactory<TC>);
         }
         if (options.contexts) {
             if (options.contexts instanceof ProviderMap) {
@@ -189,14 +201,20 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
                 this.set(...options.contexts);
             }
         }
-        this._options = this._options ? Object.assign(this._options, options) : { ...options };
+        this.set(CTX_OPTIONS, this.has(CTX_OPTIONS) ? Object.assign(this.get(CTX_OPTIONS), options) : { ...options });
     }
 
     getOptions(): T {
-        if (!this._options) {
-            this._options = {} as T;
+        let options = this.get(CTX_OPTIONS) as T;
+        if (!options) {
+            options = {} as T;
+            this.set(CTX_OPTIONS, options);
         }
-        return this._options;
+        return options;
+    }
+
+    clone(): ProviderMap {
+        return this.contexts.clone();
     }
 
 }

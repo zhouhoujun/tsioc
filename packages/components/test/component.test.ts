@@ -203,7 +203,7 @@ export class CTest {
 
     @Test('can resolve component template')
     async test2() {
-        let container = this.ctx.getRaiseContainer();
+        let container = this.ctx.getContainer();
         let comp1 = await container.get(ComponentBuilder).resolveTemplate({ template: { element: 'selector1', name: 'test1' } });
         let comp11 = await container.get(BuilderService).resolve(Component1, { template: { name: 'test1' } });
         console.log('comp1:', comp1);
@@ -228,7 +228,7 @@ export class CTest {
 
     @Test('can resolve component template in sub module')
     async test3() {
-        let container = this.ctx.getRaiseContainer();
+        let container = this.ctx.getContainer();
         let service = container.resolve(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let comp3 = await service.createComponent3() as Component3;
@@ -250,7 +250,7 @@ export class CTest {
     @Test('can resolve component template in sub module by sub module')
     async test5() {
         let ctx = await BootApplication.run({ module: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getRaiseContainer();
+        let container = ctx.getContainer();
         // console.log(container);
         console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
@@ -267,7 +267,7 @@ export class CTest {
     @Test('can boot sub module component')
     async test6() {
         let ctx = await BootApplication.run({ module: ComponentTestMd3, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getRaiseContainer();
+        let container = ctx.getContainer();
         console.log(container.get(ContainerPoolToken).isRoot(container));
         // console.log(container);
         console.log(container.resolve(Component1));
@@ -279,7 +279,7 @@ export class CTest {
     @Test('can get refchild')
     async test7() {
         let ctx = await BootApplication.run({ module: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getRaiseContainer();
+        let container = ctx.getContainer();
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let comp = await container.get(ComponentBuilder)
@@ -303,7 +303,7 @@ export class CTest {
     @Test('can get refchild, two way binding name')
     async test8() {
         let ctx = await BootApplication.run({ module: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getRaiseContainer();
+        let container = ctx.getContainer();
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let comp = await container.get(ComponentBuilder)
@@ -327,7 +327,7 @@ export class CTest {
 
     @Test('can binding sub field')
     async test9() {
-        let container = this.ctx.getRaiseContainer();
+        let container = this.ctx.getContainer();
         let comp = await container.get(ComponentBuilder).resolveTemplate({
             template: {
                 element: 'obj-comp',

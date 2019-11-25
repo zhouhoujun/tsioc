@@ -21,7 +21,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     scope: options.scope,
                     parsing: true,
                     template: options.template,
-                    raiseContainer: ctx.getContainerFactory(),
+                    raiseContainer: ctx.getFactory(),
                     providers: ctx.providers
                 });
         }

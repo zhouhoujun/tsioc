@@ -12,7 +12,7 @@ export class BootDepsHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         let options = ctx.getOptions();
         if (options.deps && options.deps.length) {
-            let container = ctx.getRaiseContainer();
+            let container = ctx.getContainer();
             await container.load(...options.deps);
         }
         await next();

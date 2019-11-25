@@ -65,15 +65,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     protected async resolveModule<T>(contextInit: (ctx: BuildContext) => void, target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
-        let rctx = BuildContext.parse({ module: target, ...(options || {}) });
+        let rctx = BuildContext.parse({ module: target, raiseContainer: this.container.getFactory(), ...(options || {}) });
         if (providers.length) {
             rctx.getOptions().providers = rctx.providers.concat(providers);
         }
         if (contextInit) {
             contextInit(rctx);
-        }
-        if (!rctx.has()) {
-            rctx.setRaiseContainer(this.container)
         }
         await this.container.getInstance(HandleRegisterer)
             .get(ResolveMoudleScope)
@@ -170,7 +167,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         }
         let ctx = await this.execLifeScope(
             ctx => {
-                ctx.setRaiseContainer(this.container.get(ContainerPoolToken).create());
+                ctx.setContainer(this.container.get(ContainerPoolToken).create());
                 if (opt.contextInit) {
                     opt.contextInit(ctx as T);
                 }
@@ -217,8 +214,8 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ctx = this.container.getService({ token: BootContext, target: md }) as T;
             ctx.setModule(md);
         }
-        if (!ctx.has()) {
-            ctx.setRaiseContainer(this.container);
+        if (!ctx.hasContainer()) {
+            ctx.setContainer(this.container);
         }
         if (isBaseObject(target)) {
             ctx.setOptions(target as BootOption);

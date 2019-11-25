@@ -100,7 +100,7 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
     }
 
     getContainer(): IContainer {
-        return this.context.getRaiseContainer();
+        return this.context.getContainer();
     }
 
     getBoot(): T {

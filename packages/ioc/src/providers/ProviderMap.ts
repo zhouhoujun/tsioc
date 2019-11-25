@@ -30,7 +30,7 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         return this.map.size;
     }
 
-    getContainerFactory<T extends IIocContainer>(): ContainerFactory<T> {
+    getFactory<T extends IIocContainer>(): ContainerFactory<T> {
         return this.containerFac as ContainerFactory<T>;
     }
 
@@ -38,7 +38,14 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
         return this.containerFac();
     }
 
+    hasContainer(): boolean {
+        return isFunction(this.containerFac);
+    }
+
     setContainer(container: IIocContainer | ContainerFactory) {
+        if (!container) {
+            return;
+        }
         this.containerFac = isFunction(container) ? container : container.getFactory();
     }
 

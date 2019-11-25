@@ -53,17 +53,17 @@ export interface MessageOption {
 export class MessageContext implements IHandleContext {
 
     @Inject(ContainerFactoryToken)
-    protected raiseContainerGetter: () => IContainer;
+    protected containerFactory: () => IContainer;
 
     constructor() {
     }
 
-    getContainerFactory() {
-        return this.raiseContainerGetter;
+    getFactory() {
+        return this.containerFactory;
     }
 
-    getRaiseContainer(): IContainer {
-        return this.raiseContainerGetter();
+    getContainer(): IContainer {
+        return this.containerFactory();
     }
 
     /**

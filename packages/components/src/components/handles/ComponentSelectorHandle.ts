@@ -35,7 +35,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
     protected getComponent(ctx: TemplateContext, template: any, refSelector: RefSelector): Type {
         let selector = this.getSelector(template, refSelector);
         if (selector) {
-            let mgr = ctx.getRaiseContainer().resolve(SelectorManager);
+            let mgr = ctx.getContainer().resolve(SelectorManager);
             if (isString(selector) && mgr.has(selector)) {
                 return mgr.get(selector);
             } else if (refSelector.isComponentType(ctx.decorator, selector)) {

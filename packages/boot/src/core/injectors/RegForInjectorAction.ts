@@ -19,7 +19,7 @@ export class RegForInjectorAction extends InjectorAction {
                         pools.getRoot().register(currType);
                         break;
                     case RegFor.child:
-                        ctx.getRaiseContainer().register(currType);
+                        ctx.getContainer().register(currType);
                         break;
                     case RegFor.boot:
                     default:

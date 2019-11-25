@@ -21,7 +21,7 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
             return;
         }
         // has build module instance.
-        if (!(this.container.has(ctx.module) && ctx.getRaiseContainer().has(ctx.module))) {
+        if (!(this.container.has(ctx.module) && ctx.getContainer().has(ctx.module))) {
             await super.execute(ctx);
         }
 

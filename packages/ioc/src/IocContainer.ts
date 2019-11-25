@@ -424,8 +424,9 @@ export class IocContainer implements IIocContainer {
                 tokenKey: key,
                 targetType: ClassT,
                 singleton: singleton,
-                providers: providers
-            }, this.getFactory());
+                providers: providers,
+                raiseContainer: this.getFactory()
+            });
             this.getInstance(ActionRegisterer).get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
@@ -439,8 +440,9 @@ export class IocContainer implements IIocContainer {
             this.getInstance(ActionRegisterer).get(DesignLifeScope).register(
                 DesignActionContext.parse({
                     tokenKey: key,
-                    targetType: ClassT
-                }, this.getFactory()));
+                    targetType: ClassT,
+                    raiseContainer: this.getFactory()
+                }));
         })();
     }
 

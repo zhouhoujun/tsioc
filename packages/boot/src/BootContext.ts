@@ -132,7 +132,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
 
 
     getLogManager(): ILoggerManager {
-        return this.getRaiseContainer().resolve(ConfigureLoggerManger);
+        return this.getContainer().resolve(ConfigureLoggerManger);
     }
 
     /**
@@ -146,7 +146,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
         if (!url) {
             url = this.getOptions().baseURL || (this.annoation ? this.annoation.baseURL : '');
             if (url) {
-                this.getRaiseContainer().bindProvider(ProcessRunRootToken, url);
+                this.getContainer().bindProvider(ProcessRunRootToken, url);
                 this.set(ProcessRunRootToken, url);
             }
         }
@@ -205,7 +205,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
      * @memberof BootContext
      */
     get starupServices(): StartupServices {
-        return this.getRaiseContainer().resolve(StartupServices);
+        return this.getContainer().resolve(StartupServices);
     }
 
     getContext<T>(token: Token<T>): T {
@@ -233,7 +233,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
      * @memberof BootContext
      */
     getConfigureManager(): ConfigureManager<CFG> {
-        return this.getRaiseContainer().resolve(ConfigureManager) as ConfigureManager<CFG>;
+        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<CFG>;
     }
 
     static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {

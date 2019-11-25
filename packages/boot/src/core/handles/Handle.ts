@@ -15,7 +15,8 @@ export interface IHandleContext {
      * @returns {IContainer}
      * @memberof IHandleContext
      */
-    getRaiseContainer(): IContainer;
+    getContainer(): IContainer;
+
 }
 
 /**
@@ -76,7 +77,7 @@ export abstract class Handle<T extends IHandleContext = any> extends IocCoreServ
 
 
     protected resolve<TK>(ctx: T, token: Token<TK>, ...providers: ProviderTypes[]) {
-        let container = ctx.getRaiseContainer();
+        let container = ctx.getContainer();
         if (container && container.has(token)) {
             return container.resolve(token, ...providers);
         }

@@ -37,12 +37,13 @@ export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, Se
      * parse service resolve context.
      *
      * @static
-     * @param {(Token<T> | ServicesOption<T>)} target
+     * @param {ServicesOption<T>} target
+     * @param {ContainerFactory} raiseContainer
      * @returns {ResolveServicesContext}
      * @memberof ResolveServicesContext
      */
-    static parse<T>(target: Token<T> | ServicesOption<T>, raiseContainer?: ContainerFactory): ResolveServicesContext<T> {
-        return createRaiseContext<ResolveServicesContext>(ResolveServicesContext, isToken(target) ? { token: target } : target, raiseContainer);
+    static parse<T>(options: ServicesOption<T>, raiseContainer?: ContainerFactory): ResolveServicesContext<T> {
+        return createRaiseContext<ResolveServicesContext>(ResolveServicesContext, options, raiseContainer);
     }
 
     get types(): ClassType[] {

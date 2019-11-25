@@ -23,7 +23,7 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext>
             return super.execute(ctx, next);
         }
 
-        let container = ctx.getRaiseContainer();
+        let container = ctx.getContainer();
         let moduleContainer: IContainer;
         switch (ctx.regFor) {
             case RegFor.root:
@@ -34,7 +34,7 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext>
                 break;
         }
         if (moduleContainer) {
-            ctx.setRaiseContainer(moduleContainer);
+            ctx.setContainer(moduleContainer);
         }
 
         return super.execute(ctx, next);

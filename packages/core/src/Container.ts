@@ -113,9 +113,9 @@ export class Container extends IocContainer implements IContainer {
         let context: ResolveServiceContext<T>;
         if (target instanceof ResolveServiceContext) {
             context = target;
-            context.setRaiseContainer(this.getFactory());
+            (!context.hasContainer()) && context.setContainer(this.getFactory());
         } else {
-            context = ResolveServiceContext.parse(target, this.getFactory());
+            context = ResolveServiceContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
         }
         context.getOptions().providers = [...context.providers, ...providers];
 
@@ -156,9 +156,9 @@ export class Container extends IocContainer implements IContainer {
         let context: ResolveServicesContext<T>;
         if (target instanceof ResolveServicesContext) {
             context = target;
-            context.setRaiseContainer(this.getFactory());
+            (!context.hasContainer()) && context.setContainer(this.getFactory());
         } else {
-            context = ResolveServicesContext.parse(target, this.getFactory());
+            context = ResolveServicesContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
         }
         this.getInstance(ActionRegisterer)
             .get(ServicesResolveLifeScope)

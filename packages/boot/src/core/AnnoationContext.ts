@@ -78,7 +78,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
 
     get decorator(): string {
         if (!this.has(CTX_MODULE_DECTOR) && this.module) {
-            let dec = this.getRaiseContainer().get(AnnotationServiceToken).getDecorator(this.module);
+            let dec = this.getContainer().get(AnnotationServiceToken).getDecorator(this.module);
             if (!dec) {
                 dec = this.targetReflect.decorator;
             }
@@ -118,7 +118,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     get annoation(): TMeta {
         if (!this.has(CTX_MODULE_ANNOATION) && this.module) {
             let tgRef = this.targetReflect;
-            this.set(CTX_MODULE_ANNOATION, (tgRef && tgRef.getAnnoation) ? tgRef.getAnnoation<TMeta>() : this.getRaiseContainer().get(AnnotationServiceToken).getAnnoation(this.module, this.get(CTX_MODULE_DECTOR)));
+            this.set(CTX_MODULE_ANNOATION, (tgRef && tgRef.getAnnoation) ? tgRef.getAnnoation<TMeta>() : this.getContainer().get(AnnotationServiceToken).getAnnoation(this.module, this.get(CTX_MODULE_DECTOR)));
         }
         return this.get(CTX_MODULE_ANNOATION) as TMeta;
     }

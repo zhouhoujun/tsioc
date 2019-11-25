@@ -70,12 +70,13 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
      * create resolve context via options.
      *
      * @static
-     * @param {(Token | ServiceOption<T>)} target
+     * @param {ServiceOption<T>} options
+     * @param {ContainerFactory} raiseContainer
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(target: Token<T> | ServiceOption<T>, raiseContainer?: ContainerFactory): ResolveServiceContext<T> {
-        return createRaiseContext<ResolveServiceContext>(ResolveServiceContext, isToken(target) ? { token: target } : target, raiseContainer);
+    static parse<T>(options: ServiceOption<T>, raiseContainer?: ContainerFactory): ResolveServiceContext<T> {
+        return createRaiseContext<ResolveServiceContext>(ResolveServiceContext, options, raiseContainer);
     }
 
     /**
