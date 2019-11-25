@@ -215,7 +215,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         } else {
             let md = isClass(target) ? target : target.module;
             ctx = this.container.getService({ token: BootContext, target: md }) as T;
-            ctx.setOptions({ module: md });
+            ctx.setModule(md);
         }
         if (!ctx.has()) {
             ctx.setRaiseContainer(this.container);
