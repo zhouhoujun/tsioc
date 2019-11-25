@@ -28,7 +28,7 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
         if (!options) {
             return;
         }
-        options.providers = [...options.providers || [], { provide: TemplateOptionToken, useValue: this._options }];
+        options.providers = [...options.providers || [], { provide: TemplateOptionToken, useFactory: () => this.getOptions() }];
         super.setOptions(options);
     }
 
