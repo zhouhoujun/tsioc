@@ -186,7 +186,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return this.contexts.getContainer() as TC;
     }
 
-    private _options: T;
+    protected _options: T;
     /**
      * set options for context.
      * @param options options.

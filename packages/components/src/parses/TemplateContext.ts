@@ -24,6 +24,14 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
 
     value?: any;
 
+    setOptions(options: ITemplateOption) {
+        if (!options) {
+            return;
+        }
+        options.providers = [...options.providers || [], { provide: TemplateOptionToken, useValue: this._options }];
+        super.setOptions(options);
+    }
+
     static parse(options: ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
         return createRaiseContext(TemplateContext, options, raiseContainer);
     }
