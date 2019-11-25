@@ -44,7 +44,7 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
         if (!ctx) {
             return null;
         }
-        ctx.getOptions().providers = [...ctx.providers, ...providers];
+        ctx.providers = [...ctx.providers, ...providers];
         this.execute(ctx);
         return ctx.instance;
     }

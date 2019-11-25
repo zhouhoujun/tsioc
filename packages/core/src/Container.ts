@@ -117,7 +117,7 @@ export class Container extends IocContainer implements IContainer {
         } else {
             context = ResolveServiceContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
         }
-        context.getOptions().providers = [...context.providers, ...providers];
+        context.providers = [...context.providers, ...providers];
 
         this.getInstance(ActionRegisterer)
             .get(ServiceResolveLifeScope)

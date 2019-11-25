@@ -6,7 +6,7 @@ import { IocCoreService } from '../IocCoreService';
 import { ActionRegisterer } from './ActionRegisterer';
 import { ProviderMap, ProviderTypes, ProviderParser } from '../providers';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
-import { CTX_OPTIONS } from '../context-tokens';
+import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 
 
 /**
@@ -78,6 +78,9 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         this.contexts = new ProviderMap(raiseContainer);
     }
 
+    /**
+     * get type reflects.
+     */
     get reflects(): ITypeReflects {
         let reflects = this.get(TypeReflectsToken);
         if (!reflects) {
@@ -184,6 +187,10 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     }
 
     private _options: T;
+    /**
+     * set options for context.
+     * @param options options.
+     */
     setOptions(options: T) {
         if (!options) {
             return;
@@ -206,6 +213,12 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         this.set(CTX_OPTIONS, this._options);
     }
 
+    /**
+     * get options of context.
+     *
+     * @returns {T}
+     * @memberof IocRaiseContext
+     */
     getOptions(): T {
         if (!this._options) {
             this._options = this.get(CTX_OPTIONS) as T;
@@ -217,6 +230,9 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return this._options;
     }
 
+    /**
+     * clone contexts.
+     */
     clone(): ProviderMap {
         return this.contexts.clone();
     }
@@ -231,8 +247,22 @@ export interface IocProvidersOption<T extends IIocContainer = IIocContainer> ext
 }
 export abstract class IocProvidersContext<T extends IocProvidersOption = IocProvidersOption, TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TC> {
 
+    /**
+     * get providers of options.
+     */
     get providers(): ProviderTypes[] {
-        return this.getOptions().providers || [];
+        return this.get(CTX_PROVIDERS) || [];
+    }
+
+    set providers(providers: ProviderTypes[]) {
+        this.set(CTX_PROVIDERS, providers);
+    }
+
+    setOptions(options: T) {
+        super.setOptions(options);
+        if (options && options.providers) {
+            this.set(CTX_PROVIDERS, options.providers);
+        }
     }
 }
 
