@@ -36,7 +36,7 @@ export class DecoratorInjectorScope extends InjectorScope {
     }
 
     protected done(ctx: InjectorActionContext): boolean {
-        return this.getState(ctx)[ctx.currDecoractor] = true;
+        return this.getState(ctx)[ctx.get(CTX_CURR_DECOR)] = true;
     }
     protected isCompleted(ctx: InjectorActionContext): boolean {
         return ctx.types.length === 0 || !Object.values(this.getState(ctx)).some(inj => !inj);

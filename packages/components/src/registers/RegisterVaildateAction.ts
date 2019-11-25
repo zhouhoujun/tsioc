@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { VaildatePropertyMetadata } from '../decorators';
 import { IBindingTypeReflect } from '../bindings';
 
@@ -7,7 +7,7 @@ export class RegisterVaildateAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
         let ref = ctx.targetReflect as IBindingTypeReflect;
-        let currDecor = ctx.currDecoractor;
+        let currDecor = ctx.get(CTX_CURR_DECOR);
         if (!ref.propVaildates) {
             ref.propVaildates = new Map();
         }
