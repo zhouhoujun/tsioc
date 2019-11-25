@@ -189,7 +189,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
                 this.set(...options.contexts);
             }
         }
-        this._options = this._options ? Object.assign(this._options, options) : options;
+        this._options = this._options ? Object.assign(this._options, options) : { ...options };
     }
 
     getOptions(): T {
