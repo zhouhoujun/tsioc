@@ -1,4 +1,4 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, CTX_PROVIDERS } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken } from '../core';
@@ -67,7 +67,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     protected async resolveModule<T>(contextInit: (ctx: BuildContext) => void, target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
         let rctx = BuildContext.parse({ module: target, raiseContainer: this.container.getFactory(), ...(options || {}) });
         if (providers.length) {
-            rctx.providers = rctx.providers.concat(providers);
+            rctx.set(CTX_PROVIDERS, rctx.providers.concat(providers));
         }
         if (contextInit) {
             contextInit(rctx);

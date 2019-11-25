@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, ActionRegisterer } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, ActionRegisterer, CTX_PROVIDERS } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services';
 import { registerCores } from './registerCores';
 import {
@@ -117,7 +117,7 @@ export class Container extends IocContainer implements IContainer {
         } else {
             context = ResolveServiceContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
         }
-        context.providers = [...context.providers, ...providers];
+        context.set(CTX_PROVIDERS, [...context.providers, ...providers]);
 
         this.getInstance(ActionRegisterer)
             .get(ServiceResolveLifeScope)

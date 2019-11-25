@@ -254,10 +254,6 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
         return this.get(CTX_PROVIDERS) || [];
     }
 
-    set providers(providers: ProviderTypes[]) {
-        this.set(CTX_PROVIDERS, providers);
-    }
-
     setOptions(options: T) {
         super.setOptions(options);
         if (options && options.providers) {

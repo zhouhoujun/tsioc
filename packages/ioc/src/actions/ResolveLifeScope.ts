@@ -3,6 +3,7 @@ import { ProviderTypes } from '../providers';
 import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
 import { isToken } from '../utils';
+import { CTX_PROVIDERS } from '../context-tokens';
 
 /**
  * resolve life scope.
@@ -44,7 +45,7 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
         if (!ctx) {
             return null;
         }
-        ctx.providers = [...ctx.providers, ...providers];
+        ctx.set(CTX_PROVIDERS, [...ctx.providers, ...providers]);
         this.execute(ctx);
         return ctx.instance;
     }
