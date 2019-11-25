@@ -1,5 +1,6 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
-import { RuntimeActionContext, CTX_ARGS } from './RuntimeActionContext';
+import { RuntimeActionContext } from './RuntimeActionContext';
+import { CTX_ARGS } from '../../context-tokens';
 
 
 /**

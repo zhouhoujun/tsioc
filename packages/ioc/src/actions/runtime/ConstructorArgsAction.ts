@@ -1,7 +1,8 @@
-import { RuntimeActionContext, CTX_ARGS, CTX_PARAMS } from './RuntimeActionContext';
+import { RuntimeActionContext } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { ActionRegisterer } from '../ActionRegisterer';
+import { CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
 
 /**
  * resolve constructor args action.

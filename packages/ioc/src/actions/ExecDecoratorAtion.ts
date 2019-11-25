@@ -1,6 +1,7 @@
 import { IocAction } from './Action';
-import { RegisterActionContext, CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from './RegisterActionContext';
+import { RegisterActionContext } from './RegisterActionContext';
 import { DecoratorsRegisterer } from './DecoratorsRegisterer';
+import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
 
 
 /**

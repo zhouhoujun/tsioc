@@ -1,7 +1,7 @@
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
 import { ClassMetadata } from '../../metadatas';
-import { CTX_CURR_DECOR } from '../RegisterActionContext';
+import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**
  * bind provider action. for binding a factory to an token.

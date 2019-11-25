@@ -2,7 +2,7 @@ import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { AutorunMetadata } from '../../metadatas';
 import { lang, isNumber } from '../../utils';
-import { CTX_CURR_DECOR } from '../RegisterActionContext';
+import { CTX_CURR_DECOR } from '../../context-tokens';
 /**
  * method auto run action.
  *

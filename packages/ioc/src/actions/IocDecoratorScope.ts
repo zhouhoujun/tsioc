@@ -1,7 +1,8 @@
 import { ObjectMap } from '../types';
 import { IocCompositeAction } from './IocCompositeAction';
-import { RegisterActionContext, CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from './RegisterActionContext';
+import { RegisterActionContext } from './RegisterActionContext';
 import { DecoratorScopes, DecoratorsRegisterer } from './DecoratorsRegisterer';
+import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
 
 
 export abstract class IocDecoratorScope<T extends RegisterActionContext> extends IocCompositeAction<T> {

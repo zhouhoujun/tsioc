@@ -2,7 +2,7 @@ import { isClass, isArray, isToken } from '../../utils';
 import { ParameterMetadata } from '../../metadatas';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
-import { CTX_CURR_DECOR } from '../RegisterActionContext';
+import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**
  * bind parameter type action.

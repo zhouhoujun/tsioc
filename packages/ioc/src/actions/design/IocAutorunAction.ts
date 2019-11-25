@@ -2,7 +2,7 @@ import { AutorunMetadata } from '../../metadatas';
 import { isFunction } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
-import { CTX_CURR_DECOR } from '../RegisterActionContext';
+import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**
  * method auto run action.

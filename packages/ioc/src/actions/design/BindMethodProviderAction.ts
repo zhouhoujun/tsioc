@@ -2,7 +2,7 @@ import { MethodMetadata } from '../../metadatas';
 import { isArray } from '../../utils';
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
-import { CTX_CURR_DECOR } from '../RegisterActionContext';
+import { CTX_CURR_DECOR } from '../../context-tokens';
 
 
 /**

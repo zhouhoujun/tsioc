@@ -6,21 +6,60 @@ import { ParamProviders } from '../providers';
 import { IParameter } from '../IParameter';
 import { InjectToken } from '../InjectToken';
 
-
+/**
+ * type reflects token.
+ */
 export const TypeReflectsToken = new InjectToken<ITypeReflects>('TypeReflects');
 
+/**
+ *  type reflects interface.
+ */
 export interface ITypeReflects extends IMetadataAccess {
-
-
+    /**
+     * has register reflect or not.
+     * @param type the type
+     */
     has(type: ClassType): boolean;
+    /**
+     * register reflect info of type.
+     * @param type the type
+     * @param typeInfo reflect info.
+     */
     set(type: ClassType, typeInfo: ITypeReflect): this;
+    /**
+     * create reflect info of type.
+     * @param type type.
+     * @param info reflect info.
+     */
     create<T extends ITypeReflect>(type: ClassType, info?: T): T;
+    /**
+     * get reflect info of type.
+     * @param type the type.
+     */
     get<T extends ITypeReflect>(type: ClassType): T;
-
+    /**
+     * is the type extends of base class.
+     * @param type the token of type.
+     * @param base base class.
+     */
     isExtends(type: Token, base: ClassType): boolean;
+    /**
+     * get type base classes.
+     * @param type the class of type.
+     */
     getExtends(type: ClassType): ClassType[];
-
+    /**
+     * has class metadata of decorator or not.
+     * @param decorator metadate of decorator.
+     * @param target target class.
+     */
     hasMetadata<T = any>(decorator: string | Function, target: ClassType): boolean;
+    /**
+     * has constructor param metadate of decorator or not.
+     * @param decorator the decorator to check.
+     * @param target the target class.
+     * @param type constructor.
+     */
     hasMetadata<T = any>(decorator: string | Function, target: ClassType, type: 'constructor'): boolean;
     hasMetadata<T = any>(decorator: string | Function, target: ClassType, type: 'method' | 'property'): boolean;
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): boolean;

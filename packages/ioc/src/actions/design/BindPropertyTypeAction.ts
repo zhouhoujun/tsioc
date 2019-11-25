@@ -2,7 +2,7 @@ import { isClass } from '../../utils';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
 import { PropertyMetadata } from '../../metadatas';
-import { CTX_CURR_DECOR } from '../RegisterActionContext';
+import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**
  * bind property type action. to get the property autowride token of Type calss.

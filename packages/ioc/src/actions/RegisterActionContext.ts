@@ -35,8 +35,7 @@ export interface RegisterActionOption extends IocProvidersOption {
 
 }
 
-export const CTX_CURR_DECOR = new InjectToken<string>('CTX_CURR_DECOR');
-export const CTX_CURR_DECOR_SCOPE = new InjectToken<any>('CTX_CURR_DECOR_SCOPE');
+
 /**
  * Ioc Register action context.
  *

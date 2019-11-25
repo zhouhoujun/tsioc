@@ -1,8 +1,9 @@
 import { IocRaiseContext } from './Action';
 import { IocCompositeAction } from './IocCompositeAction';
 import { InjectToken } from '../InjectToken';
+import { CTX_ACTION_SCOPE } from '../context-tokens';
 
-export const CTX_ACTION_SCOPE = new InjectToken<any>('CTX_ACTION_SCOPE');
+
 /**
  * action scope.
  *

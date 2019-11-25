@@ -5,7 +5,7 @@ import { ParamProviders, ProviderMap, ProviderParser } from '../../providers';
 import { ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 import { createRaiseContext } from '../Action';
-import { CTX_PROVIDER_MAP } from '../../context-tokens';
+import { CTX_PROVIDER_MAP, CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
 
 
 /**
@@ -50,8 +50,6 @@ export interface RuntimeActionOption extends RegisterActionOption {
     providers?: ParamProviders[];
 }
 
-export const CTX_PARAMS = new InjectToken<IParameter[]>('CTX_PARAMS');
-export const CTX_ARGS = new InjectToken<IParameter[]>('CTX_ARGS');
 
 /**
  * Ioc Register action context.
