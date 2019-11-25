@@ -111,9 +111,7 @@ export class Container extends IocContainer implements IContainer {
      */
     getService<T>(target: Token<T> | ServiceOption<T> | ResolveServiceContext<T>, ...providers: ProviderTypes[]): T {
         let context: ResolveServiceContext<T>;
-        if (isToken(target)) {
-            context = ResolveServiceContext.parse(target, this.getFactory());
-        } else if (target instanceof ResolveServiceContext) {
+        if (target instanceof ResolveServiceContext) {
             context = target;
             context.setRaiseContainer(this.getFactory());
         } else {
@@ -156,9 +154,7 @@ export class Container extends IocContainer implements IContainer {
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap {
         let context: ResolveServicesContext<T>;
-        if (isToken(target)) {
-            context = ResolveServicesContext.parse(target, this.getFactory());
-        } else if (target instanceof ResolveServicesContext) {
+        if (target instanceof ResolveServicesContext) {
             context = target;
             context.setRaiseContainer(this.getFactory());
         } else {

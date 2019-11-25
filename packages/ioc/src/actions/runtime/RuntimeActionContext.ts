@@ -67,10 +67,6 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
      */
     target?: any;
 
-    constructor(targetType?: Type) {
-        super(targetType);
-    }
-
     get providerMap(): ProviderMap {
         let pdrm = this.get(CTX_PROVIDER_MAP);
         if (!pdrm) {
@@ -93,8 +89,8 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static parse(target: Type | RuntimeActionOption, raiseContainer?: ContainerFactory): RuntimeActionContext {
-        return createRaiseContext(RuntimeActionContext, target, raiseContainer);
+    static parse(options: RuntimeActionOption, raiseContainer?: ContainerFactory): RuntimeActionContext {
+        return createRaiseContext(RuntimeActionContext, options, raiseContainer);
     }
 
     setOptions(options: RuntimeActionOption) {

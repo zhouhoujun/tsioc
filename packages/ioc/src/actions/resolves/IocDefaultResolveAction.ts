@@ -1,6 +1,6 @@
+import { isClass } from '../../utils';
 import { IocResolveAction } from '../IocResolveAction';
 import { ResolveActionContext } from '../ResolveActionContext';
-import { isClass } from '../../utils';
 
 export class IocDefaultResolveAction extends IocResolveAction {
     execute(ctx: ResolveActionContext, next: () => void): void {

@@ -2,7 +2,7 @@ import { isToken, isArray, lang, isClassType, isClass } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
-import { ResolveServicesContext } from './ResolveServicesContext';
+import { ResolveServicesContext, ServicesOption } from './ResolveServicesContext';
 import { CTX_TARGET_REFS } from '../contextTokens';
 
 export class InitServiceResolveAction extends IocResolveServiceAction {
@@ -31,9 +31,10 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
 
         if (ctx instanceof ResolveServicesContext) {
             options.tokens = options.tokens.filter(t => isToken(t));
-            ctx.types = ctx.types || [];
-            ctx.types = ctx.tokens.map(t => isClassType(t) ? t : this.container.getTokenProvider(t))
-                .concat(ctx.types).filter(ty => isClassType(ty));
+            let ssoption = options as ServicesOption<any>;
+            ssoption.types = ssoption.types || [];
+            ssoption.types = ctx.tokens.map(t => isClassType(t) ? t : this.container.getTokenProvider(t))
+                .concat(ssoption.types).filter(ty => isClassType(ty));
             return next();
 
         } else {

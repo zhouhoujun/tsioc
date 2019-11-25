@@ -58,15 +58,4 @@ export class InjectorActionContext extends IocRaiseContext<InjectorActionOption>
     static parse(options: InjectorActionOption, raiseContainer?: ContainerFactory): InjectorActionContext {
         return createRaiseContext(InjectorActionContext, options, raiseContainer);
     }
-
-    // setOptions(options: InjectorActionOption) {
-    //     if (!options) {
-    //         return;
-    //     }
-    //     super.setOptions(options);
-    //     if (options.module) {
-    //         this.module = options.module;
-    //     }
-    // }
-
 }

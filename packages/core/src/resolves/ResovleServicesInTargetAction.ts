@@ -19,7 +19,7 @@ export class ResovleServicesInTargetAction extends IocResolveServicesAction {
                     })
                 }
             });
-            if (ctx.both) {
+            if (ctx.getOptions().both) {
                 next();
             }
         } else {

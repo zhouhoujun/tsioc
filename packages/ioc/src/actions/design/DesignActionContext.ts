@@ -27,13 +27,13 @@ export class DesignActionContext extends RegisterActionContext<DesignActionOptio
      * parse design action context.
      *
      * @static
-     * @param {(Type | DesignActionOption)} target
+     * @param {DesignActionOption} options
      * @param { ContainerFactory } [raiseContainer]
      * @returns {DesignActionContext}
      * @memberof DesignActionContext
      */
-    static parse(target: Type | DesignActionOption, raiseContainer?: ContainerFactory): DesignActionContext {
-        return createRaiseContext(DesignActionContext, target, raiseContainer);
+    static parse(options: DesignActionOption, raiseContainer?: ContainerFactory): DesignActionContext {
+        return createRaiseContext(DesignActionContext, options, raiseContainer);
     }
 
 }

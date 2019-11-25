@@ -44,7 +44,7 @@ export class BuildContext<T extends IModuleResolveOption = IModuleResolveOption>
     target?: any;
 
 
-    static parse(target: Type | IModuleResolveOption, raiseContainer?: ContainerFactory<IContainer>): BuildContext {
-        return createRaiseContext(BuildContext, target, raiseContainer);
+    static parse(options: IModuleResolveOption, raiseContainer?: ContainerFactory<IContainer>): BuildContext {
+        return createRaiseContext(BuildContext, options, raiseContainer);
     }
 }
