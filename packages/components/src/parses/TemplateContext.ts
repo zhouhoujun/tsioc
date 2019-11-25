@@ -1,13 +1,13 @@
-import { ContainerFactory, Injectable, Type, InjectToken, createRaiseContext } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, InjectToken, createRaiseContext, CTX_PROVIDERS } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { IComponentContext, AnnoationContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
 
 
-// /**
-//  * Template option token.
-//  */
-// export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
+/**
+ * Template option token.
+ */
+export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
 
 /**
  * template context.
@@ -23,6 +23,10 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
     selector?: Type;
 
     value?: any;
+
+    get providers() {
+        return (this.get(CTX_PROVIDERS) || []).concat({ provide: TemplateOptionToken, useValue: this.getOptions() })
+    }
 
     static parse(options: ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
         return createRaiseContext(TemplateContext, options, raiseContainer);

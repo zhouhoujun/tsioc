@@ -1,6 +1,6 @@
+import { lang } from '@tsdi/ioc';
 import { observe } from './onChange';
 import { ParseBinding } from './ParseBinding';
-import { lang } from '@tsdi/ioc';
 import { pathCkExp } from './DataBinding';
 
 /**
