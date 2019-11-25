@@ -1,7 +1,7 @@
-import { isNullOrUndefined, isArray } from '@tsdi/ioc';
+import { isNullOrUndefined, isArray, CTX_PROVIDERS } from '@tsdi/ioc';
 import { HandleRegisterer } from '@tsdi/boot';
 import { TemplateHandle, TemplatesHandle } from './TemplateHandle';
-import { TemplateContext } from './TemplateContext';
+import { TemplateContext, TemplateOptionToken } from './TemplateContext';
 import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
 
@@ -15,6 +15,7 @@ import { TranslateSelectorScope } from './TranslateSelectorScope';
  */
 export class TemplateParseScope extends TemplatesHandle {
     async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
+        ctx.set(CTX_PROVIDERS, [...ctx.providers, { provide: TemplateOptionToken, useValue: ctx.getOptions() }]);
         await super.execute(ctx);
         if (isNullOrUndefined(ctx.value) && next) {
             await next();

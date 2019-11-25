@@ -25,8 +25,6 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
     value?: any;
 
     static parse(options: ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
-        let ctx = createRaiseContext(TemplateContext, options, raiseContainer);
-        ctx.set(CTX_PROVIDERS, [...ctx.providers, { provide: TemplateOptionToken, useValue: ctx.getOptions() }]);
-        return ctx;
+        return createRaiseContext(TemplateContext, options, raiseContainer);
     }
 }
