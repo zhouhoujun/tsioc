@@ -1,6 +1,7 @@
-import { Injectable, Inject, ContainerFactoryToken } from '@tsdi/ioc';
+import { Injectable, IocRaiseContext, ActionContextOption, isDefined } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { IHandleContext } from '../handles';
+import { CTX_DATA } from '../../context-tokens';
 
 
 /**
@@ -9,7 +10,7 @@ import { IHandleContext } from '../handles';
  * @export
  * @interface MessageOption
  */
-export interface MessageOption {
+export interface MessageOption extends ActionContextOption {
     /**
      * message type
      *
@@ -50,21 +51,7 @@ export interface MessageOption {
  * @extends {HandleContext}
  */
 @Injectable
-export class MessageContext implements IHandleContext {
-
-    @Inject(ContainerFactoryToken)
-    protected containerFactory: () => IContainer;
-
-    constructor() {
-    }
-
-    getFactory() {
-        return this.containerFactory;
-    }
-
-    getContainer(): IContainer {
-        return this.containerFactory();
-    }
+export class MessageContext<T extends MessageOption = MessageOption> extends IocRaiseContext<T, IContainer> implements IHandleContext {
 
     /**
      * message of target.
@@ -72,7 +59,9 @@ export class MessageContext implements IHandleContext {
      * @type {*}
      * @memberof MessageContext
      */
-    target?: any;
+    get target(): any {
+        return this.getOptions().target;
+    }
 
     /**
      * message type
@@ -80,14 +69,18 @@ export class MessageContext implements IHandleContext {
      * @type {string}
      * @memberof MessageContext
      */
-    type?: string;
+    get type(): string {
+        return this.getOptions().type;
+    }
     /**
      * message event
      *
      * @type {string}
      * @memberof MessageContext
      */
-    event: string;
+    get event(): string {
+        return this.getOptions().event;
+    }
 
     /**
      * message data.
@@ -95,19 +88,24 @@ export class MessageContext implements IHandleContext {
      * @type {*}
      * @memberof MessageContext
      */
-    data?: any;
+    get data(): any {
+        return this.get(CTX_DATA);
+    }
 
-    /**
-     * set options.
-     *
-     * @param {MessageOption} options
-     * @memberof IocActionContext
-     */
-    setOptions(options: MessageOption) {
-        if (options) {
-            Object.assign(this, options);
+    set data(data: any) {
+        this.set(CTX_DATA, data);
+    }
+
+    setOptions(options: T) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        if (isDefined(options.data)) {
+            this.set(CTX_DATA, options.data);
         }
     }
+
 }
 
 

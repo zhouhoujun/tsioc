@@ -13,5 +13,5 @@ export const CTX_MODULE_ANNOATION = new InjectToken<ModuleConfigure>('CTX_MODULE
 
 export const CTX_APP_ENVARGS = new InjectToken<string[]>('CTX_APP_ENVARGS');
 export const CTX_APP_CONFIGURE = new InjectToken<RunnableConfigure>('CTX_APP_CONFIGURE');
-export const CTX_APP_INITDATA = new InjectToken<any>('CTX_APP_INITDATA');
+export const CTX_DATA = new InjectToken<any>('CTX_DATA');
 

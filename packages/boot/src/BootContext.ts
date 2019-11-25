@@ -1,4 +1,4 @@
-import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken } from '@tsdi/ioc';
+import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken, isDefined } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
@@ -6,7 +6,7 @@ import { IComponentContext } from './builder';
 import { StartupServices } from './services';
 import { AnnoationContext, AnnoationOption } from './core';
 import { RunnableConfigure, ConfigureManager, ProcessRunRootToken } from './annotations';
-import { CTX_APP_CONFIGURE, CTX_APP_INITDATA, CTX_APP_ENVARGS } from './context-tokens';
+import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS } from './context-tokens';
 
 
 
@@ -168,7 +168,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     }
 
     get data(): any {
-        return this.get(CTX_APP_INITDATA) || this.getOptions().data;
+        return this.get(CTX_DATA);
     }
 
     get scope(): any {
@@ -238,5 +238,15 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
 
     static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {
         return createRaiseContext(BootContext, isToken(target) ? { module: target } : target, raiseContainer);
+    }
+
+    setOptions(options: T) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        if (isDefined(options.data)) {
+            this.set(CTX_DATA, options.data);
+        }
     }
 }
