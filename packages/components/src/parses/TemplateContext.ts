@@ -24,15 +24,6 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
 
     value?: any;
 
-    setOptions(options: ITemplateOption) {
-        if (!options) {
-            return;
-        }
-        super.setOptions(options);
-        let extProvder = { provide: TemplateOptionToken, useFactory: () => this.getOptions() };
-        this.set(CTX_PROVIDERS, this.has(CTX_PROVIDERS) ? [...this.providers, extProvder] : [extProvder]);
-    }
-
     static parse(options: ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
         return createRaiseContext(TemplateContext, options, raiseContainer);
     }

@@ -1,6 +1,6 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { ParsersHandle } from './ParseHandle';
-import { TemplateContext } from './TemplateContext';
+import { TemplateContext, TemplateOptionToken } from './TemplateContext';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 
 
@@ -22,7 +22,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     parsing: true,
                     template: options.template,
                     raiseContainer: ctx.getFactory(),
-                    providers: ctx.providers
+                    providers: ctx.providers.concat({ provide: TemplateOptionToken, useValue: options })
                 });
         }
         if (isNullOrUndefined(ctx.value)) {
