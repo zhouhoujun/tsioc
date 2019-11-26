@@ -1,6 +1,6 @@
-import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, isBoolean, isTypeObject, createRaiseContext, isToken } from '@tsdi/ioc';
+import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, IModuleReflect } from '@tsdi/boot';
+import { BootContext, IModuleReflect, ProcessRunRootToken } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -51,6 +51,9 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      */
     runnable: WorkflowInstance;
 
+    /**
+     * workflow instane run status.
+     */
     get status(): ActivityStatus {
         return this.runnable.status;
     }
@@ -63,7 +66,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      */
     result?: any;
 
-    private _body: any;
+    // private _body: any;
     /**
      * context share body data.
      *
@@ -71,10 +74,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      * @memberof ActivityContext
      */
     get body(): any {
-        if (!this._body) {
-            this._body = this.get(CTX_EACH_BODY) || {};
-        }
-        return this._body;
+        return this.get(CTX_EACH_BODY);
     }
     /**
      * set context share body.
@@ -100,33 +100,36 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      */
     setBody(value: any, merge: boolean);
     setBody(value: any, way?: any) {
-        if (isString(way)) {
-            this.body[way] = value;
-        } else if (isBoolean(way)) {
-            this._body = isTypeObject(value) ? Object.assign(this.body, value) : value;
-        } else {
-            this._body = value;
+        let body = this.get(CTX_EACH_BODY);
+        if (isNullOrUndefined(body)) {
+            body = {};
         }
-        this.set(CTX_EACH_BODY, this._body);
+        if (isString(way)) {
+            body[way] = value;
+        } else if (way === true) {
+            body = isBaseObject(value) ? Object.assign(body, value) : value;
+        } else {
+            body = value;
+        }
+        this.set(CTX_EACH_BODY, body);
     }
 
     getCurrBaseURL() {
         let baseURL = '';
-        if (this.runnable) {
-            let mgr = this.reflects;
-            this.status.scopes.some(s => {
-                if (s.scope.$scopes && s.scope.$scopes.length) {
-                    return s.scope.$scopes.some(c => {
-                        let refl = mgr.get<IModuleReflect>(lang.getClass(c));
-                        if (refl && refl.baseURL) {
-                            baseURL = refl.baseURL;
-                        }
-                        return !!baseURL
-                    })
-                }
-                return false;
-            });
-        }
+        let mgr = this.reflects;
+        this.status.scopes.some(s => {
+            if (s.scope.$scopes && s.scope.$scopes.length) {
+                return s.scope.$scopes.some(c => {
+                    let refl = mgr.get<IModuleReflect>(lang.getClass(c));
+                    if (refl && refl.baseURL) {
+                        baseURL = refl.baseURL;
+                    }
+                    return !!baseURL
+                })
+            }
+            return false;
+        });
+
         return baseURL || this.baseURL;
     }
 

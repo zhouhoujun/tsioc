@@ -10,6 +10,7 @@ import { ValuePipe } from './ValuePipe';
 import { ActivityResult } from './ActivityResult';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
+import { IModuleReflect } from '@tsdi/boot';
 
 
 

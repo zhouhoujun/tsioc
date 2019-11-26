@@ -18,9 +18,10 @@ export class RunScopes {
         return this._state;
     }
 
-    constructor(public scope) {
+    constructor(public scope: Activity) {
         this.subs = [];
     }
+
     get<T>(key: any): T {
         if (!this._state) {
             return null;
