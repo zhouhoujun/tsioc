@@ -14,7 +14,6 @@ import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS } from './context-tokens';
  *  current application boot context token.
  */
 export const ApplicationContextToken = new InjectToken<BootContext>('app__context');
-export const ApplicationBootContextToken = ApplicationContextToken;
 
 /**
  * boot options
@@ -198,6 +197,13 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
      * @memberof BootContext
      */
     runnable?: Startup;
+
+    /**
+     * get template.
+     */
+    get template(): any {
+        return this.getOptions().template;
+    }
     /**
      * startup services
      *

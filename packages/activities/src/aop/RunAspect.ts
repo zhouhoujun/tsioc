@@ -1,6 +1,6 @@
 import { Inject } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { Aspect, Joinpoint, Before, AfterReturning } from '@tsdi/aop';
+import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
 import { RunState, ActivityContext } from '../core';
 import { Task } from '../decorators/Task';
 
@@ -15,15 +15,6 @@ import { Task } from '../decorators/Task';
     singleton: true
 })
 export class RunAspect {
-
-    /**
-     * ioc container.
-     *
-     * @type {IContainer}
-     * @memberof RunAspect
-     */
-    @Inject(ContainerToken)
-    container: IContainer;
 
     constructor() {
 
