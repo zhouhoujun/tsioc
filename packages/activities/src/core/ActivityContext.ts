@@ -66,7 +66,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      */
     result?: any;
 
-    // private _body: any;
+    private _body: any;
     /**
      * context share body data.
      *
@@ -74,7 +74,10 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      * @memberof ActivityContext
      */
     get body(): any {
-        return this.get(CTX_EACH_BODY);
+        if (!this._body) {
+            this._body = this.get(CTX_EACH_BODY);
+        }
+        return this._body;
     }
     /**
      * set context share body.
@@ -100,7 +103,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      */
     setBody(value: any, merge: boolean);
     setBody(value: any, way?: any) {
-        let body = this.get(CTX_EACH_BODY);
+        let body = this.body;
         if (isNullOrUndefined(body)) {
             body = {};
         }
@@ -111,6 +114,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
         } else {
             body = value;
         }
+        this._body = body;
         this.set(CTX_EACH_BODY, body);
     }
 
