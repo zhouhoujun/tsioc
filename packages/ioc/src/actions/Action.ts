@@ -161,6 +161,13 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return this.contexts.getFactory();
     }
 
+    /**
+     * use `getFactory` instead.
+     */
+    getContainerFactory(): ContainerFactory<TC> {
+        return this.contexts.getFactory();
+    }
+
     hasContainer(): boolean {
         return this.contexts.hasContainer();
     }
