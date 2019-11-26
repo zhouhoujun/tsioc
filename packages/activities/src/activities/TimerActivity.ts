@@ -1,7 +1,7 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { Expression, ActivityContext } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { Expression, ActivityContext, ControlActivity } from '../core';
+
 
 
 @Task('[timer]')

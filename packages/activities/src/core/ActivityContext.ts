@@ -6,6 +6,7 @@ import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityConfigure, Expression } from './ActivityConfigure';
+import { ActivityStatus } from './ActivityStatus';
 
 /**
  * workflow context token.
@@ -15,7 +16,13 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
 /**
  * each body token.
  */
-export const EachBodyToken = new InjectToken<any>('each_body');
+export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
+
+/**
+ * ctx condition cache
+ */
+export const CTX_CONDITION_RESULT = new InjectToken<boolean>('CTX_CONDITION_RESULT');
+
 /**
  * base activity execute context.
  *
@@ -46,7 +53,12 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      * @type {WorkflowInstance}
      * @memberof BootContext
      */
-    runnable?: WorkflowInstance;
+    runnable: WorkflowInstance;
+
+    get status(): ActivityStatus {
+        return this.get(ActivityStatus);
+    }
+
     /**
      * current result.
      *
@@ -54,14 +66,6 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      * @memberof ActivityContext
      */
     result?: any;
-
-    /**
-     * previous if elseif condition.
-     *
-     * @type {boolean}
-     * @memberof ActivityContext
-     */
-    preCondition: boolean;
 
     private _body: any;
     /**
@@ -72,7 +76,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      */
     get body(): any {
         if (!this._body) {
-            this._body = this.get(EachBodyToken) || {};
+            this._body = this.get(CTX_EACH_BODY) || {};
         }
         return this._body;
     }
@@ -107,14 +111,14 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
         } else {
             this._body = value;
         }
-        this.set(EachBodyToken, this._body);
+        this.set(CTX_EACH_BODY, this._body);
     }
 
     getCurrBaseURL() {
         let baseURL = '';
         if (this.runnable) {
             let mgr = this.reflects;
-            this.runnable.status.scopes.some(s => {
+            this.status.scopes.some(s => {
                 if (s.scope.$scopes && s.scope.$scopes.length) {
                     return s.scope.$scopes.some(c => {
                         let refl = mgr.get<IModuleReflect>(lang.getClass(c));

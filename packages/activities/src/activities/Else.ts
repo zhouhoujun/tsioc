@@ -1,9 +1,7 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext } from '../core';
+import { ActivityContext, ControlActivity, CTX_CONDITION_RESULT } from '../core';
 import { BodyActivity } from './BodyActivity';
-import { IfActivity } from './If';
-import { ControlActivity } from './ControlActivity';
 
 /**
  * else activity.
@@ -19,12 +17,8 @@ export class ElseActivity<T> extends ControlActivity<T> {
     @Input() body: BodyActivity<T>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        let scope = ctx.runnable.status.currentScope;
-        if (scope && scope.subs && scope.subs.length) {
-            let activity = scope.subs.find(a => a instanceof IfActivity) as IfActivity;
-            if (activity && !activity.condition.result.value) {
-                await this.body.run(ctx);
-            }
+        if (ctx.has(CTX_CONDITION_RESULT) && !ctx.get(CTX_CONDITION_RESULT)) {
+            await this.body.run(ctx);
         }
     }
 }

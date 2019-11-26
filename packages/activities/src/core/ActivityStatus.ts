@@ -1,5 +1,7 @@
 import { Injectable, lang } from '@tsdi/ioc';
+import { BootContext } from '@tsdi/boot';
 import { Activity } from './Activity';
+import { ControlActivity } from './ControlActivity';
 
 /**
  * run scopes.
@@ -23,7 +25,7 @@ export class ActivityStatus {
 
     scopes: RunScopes[];
 
-    constructor() {
+    constructor(private context: BootContext) {
         this.scopes = [];
     }
 
@@ -42,6 +44,15 @@ export class ActivityStatus {
     set current(activity: Activity) {
         this._current = activity;
         if (activity.isScope) {
+            // clean parent scope control state.
+            let cursp = this.currentScope;
+            if (cursp && cursp.subs && cursp.subs.length) {
+                cursp.subs.forEach(c => {
+                    if (c instanceof ControlActivity) {
+                        c.cleanCtrlState(this.context);
+                    }
+                });
+            }
             this.scopes.unshift({ scope: activity, subs: [] });
         } else if (this.currentScope) {
             this.currentScope.subs.unshift(activity);
@@ -50,6 +61,15 @@ export class ActivityStatus {
 
     scopeEnd() {
         this.scopes.shift();
+        // reset parent scope control state.
+        let cursp = this.currentScope;
+        if (cursp && cursp.subs && cursp.subs.length) {
+            cursp.subs.forEach(c => {
+                if (c instanceof ControlActivity) {
+                    c.setCtrlState(this.context);
+                }
+            });
+        }
     }
 
     get currentScope(): RunScopes {

@@ -1,5 +1,5 @@
 import { Task } from '../decorators';
-import { ActivityContext } from '../core';
+import { ActivityContext, CTX_CONDITION_RESULT } from '../core';
 import { IfActivity } from './If';
 
 /**
@@ -14,12 +14,8 @@ import { IfActivity } from './If';
 export class ElseIfActivity<T = any> extends IfActivity<T> {
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        let scope = ctx.runnable.status.currentScope;
-        if (scope && scope.subs && scope.subs.length) {
-            let activity = scope.subs.find(a => a !== this && a instanceof IfActivity) as IfActivity;
-            if (activity && !activity.condition.result.value) {
-                await this.tryExec(ctx);
-            }
+        if (ctx.has(CTX_CONDITION_RESULT) && !ctx.get(CTX_CONDITION_RESULT)) {
+            await this.tryExec(ctx);
         }
     }
 }

@@ -1,6 +1,5 @@
 import { Input } from '@tsdi/components';
-import { ControlActivity } from '../ControlActivity';
-import { ActivityContext } from '../../core';
+import { ActivityContext, ControlActivity } from '../../core';
 import { Task } from '../../decorators';
 
 @Task('equals')

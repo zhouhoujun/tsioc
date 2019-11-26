@@ -1,9 +1,8 @@
 import { lang, Type } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext, Activity } from '../core';
+import { ActivityContext, Activity, ControlActivity } from '../core';
 import { BodyActivity } from './BodyActivity';
-import { ControlActivity } from './ControlActivity';
 
 
 @Task('catch')
@@ -14,7 +13,7 @@ export class CatchActivity<T = any> extends ControlActivity<T> {
     @Input() body: BodyActivity;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        let runScope = ctx.runnable.status.currentScope;
+        let runScope = ctx.status.currentScope;
         if (this.error && runScope && runScope.scope
             && runScope.scope.result.error
             && lang.getClass(runScope.scope.result.error) === this.error) {

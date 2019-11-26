@@ -1,8 +1,7 @@
-import { Injectable, Refs, Inject } from '@tsdi/ioc';
-import { Service, Startup } from '@tsdi/boot';
+import { Injectable, Refs } from '@tsdi/ioc';
+import { Service, Startup, CTX_DATA, BootContext } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
-import { ActivityConfigure } from './ActivityConfigure';
 import { ActivityStatus } from './ActivityStatus';
 
 /**
@@ -52,14 +51,6 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
         return this._result;
     }
 
-    /**
-     * workflow status.
-     *
-     * @type {ActivityStatus}
-     * @memberof ActivityContext
-     */
-    @Inject() status: ActivityStatus;
-
     state: RunState;
 
 
@@ -71,7 +62,10 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
 
     async start(data?: any): Promise<TCtx> {
         let container = this.getContainer();
-        this.context.getOptions().data = data;
+        this.context.set(CTX_DATA, data);
+        let status = container.get(ActivityStatus, { provide: BootContext, useValue: this.context });
+        this.context.set(ActivityStatus, status);
+        this.context.set(WorkflowInstance, this);
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
         }

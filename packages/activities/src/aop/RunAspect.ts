@@ -31,21 +31,21 @@ export class RunAspect {
 
     @Before('execution(*.execute)')
     beforeRun(joinPoint: Joinpoint) {
-        let runner = this.getRunner(joinPoint.args[0]);
-        if (!runner) {
+        let ctx = joinPoint.args[0] as ActivityContext;
+        if (!ctx.runnable) {
             return;
         }
-        runner.status.current = joinPoint.target;
+        ctx.status.current = joinPoint.target;
     }
 
     @AfterReturning('execution(*.execute)')
     afterRun(joinPoint: Joinpoint) {
 
-        let runner = this.getRunner(joinPoint.args[0]);
-        if (!runner) {
+        let ctx = joinPoint.args[0] as ActivityContext;
+        if (!ctx.runnable) {
             return;
         }
-        switch (runner.state) {
+        switch (ctx.runnable.state) {
             case RunState.pause:
                 throw new Error('workflow paused!');
             case RunState.stop:
@@ -54,7 +54,4 @@ export class RunAspect {
 
     }
 
-    getRunner(ctx: ActivityContext) {
-        return ctx.runnable;
-    }
 }

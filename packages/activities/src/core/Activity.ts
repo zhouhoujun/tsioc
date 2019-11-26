@@ -104,7 +104,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
-        ctx.runnable.status.current = this;
+        ctx.status.current = this;
         if (this.$scope) {
             ctx.getOptions().scope = this.$scope;
         }
@@ -113,13 +113,12 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
         await this.execute(ctx);
         await this.refreshContext(ctx);
         if (this.isScope) {
-            ctx.runnable.status.scopeEnd();
+            ctx.status.scopeEnd();
         }
         if (next) {
             await next();
         }
     }
-
 
     protected abstract execute(ctx: TCtx): Promise<void>;
 

@@ -1,10 +1,9 @@
 import { PromiseUtil } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core';
+import { ActivityContext, ControlActivity } from '../core';
 import { TimerActivity } from './TimerActivity';
 import { BodyActivity } from './BodyActivity';
-import { ControlActivity } from './ControlActivity';
 
 
 

@@ -1,8 +1,8 @@
 import { isString } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext, Expression } from '../core';
-import { ControlActivity } from './ControlActivity';
+import { ActivityContext, Expression, ControlActivity } from '../core';
+
 
 
 /**

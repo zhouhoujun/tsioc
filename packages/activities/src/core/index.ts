@@ -2,6 +2,7 @@ export * from './injectors'
 export * from './ParallelExecutor';
 export * from './ValuePipe';
 export * from './Activity';
+export * from './ControlActivity';
 export * from './IActivityExecutor';
 export * from './ActivityExecutor';
 export * from './ActivityResult';
