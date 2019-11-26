@@ -18,10 +18,6 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
  */
 export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
 
-/**
- * ctx condition cache
- */
-export const CTX_CONDITION_RESULT = new InjectToken<boolean>('CTX_CONDITION_RESULT');
 
 /**
  * base activity execute context.

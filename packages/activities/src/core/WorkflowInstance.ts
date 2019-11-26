@@ -1,5 +1,5 @@
 import { Injectable, Refs } from '@tsdi/ioc';
-import { Service, Startup, CTX_DATA, BootContext } from '@tsdi/boot';
+import { Service, Startup, CTX_DATA } from '@tsdi/boot';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityStatus } from './ActivityStatus';
@@ -53,18 +53,20 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
 
     state: RunState;
 
+    get status(): ActivityStatus {
+        return this.context.get(ActivityStatus);
+    }
+
 
     async onInit(): Promise<void> {
         let mgr = this.context.getConfigureManager();
         await mgr.getConfig();
     }
 
-
     async start(data?: any): Promise<TCtx> {
         let container = this.getContainer();
         this.context.set(CTX_DATA, data);
-        let status = container.get(ActivityStatus, { provide: BootContext, useValue: this.context });
-        this.context.set(ActivityStatus, status);
+        this.context.set(ActivityStatus, container.get(ActivityStatus));
         this.context.set(WorkflowInstance, this);
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);

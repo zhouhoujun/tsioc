@@ -1,7 +1,6 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { BootContext } from '@tsdi/boot';
 import { Activity } from './Activity';
-import { ControlActivity } from './ControlActivity';
+
 
 /**
  * run scopes.
@@ -9,9 +8,34 @@ import { ControlActivity } from './ControlActivity';
  * @export
  * @interface RunScopes
  */
-export interface RunScopes {
-    scope: Activity,
-    subs: Activity[]
+export class RunScopes {
+    subs: Activity[];
+    private _state: Map<any, any>;
+    protected get state(): Map<any, any> {
+        if (!this._state) {
+            this._state = new Map();
+        }
+        return this._state;
+    }
+
+    constructor(public scope) {
+        this.subs = [];
+    }
+    get<T>(key: any): T {
+        if (!this._state) {
+            return null;
+        }
+        return this._state.get(key);
+    }
+    has(key: any) {
+        if (!this._state) {
+            return false;
+        }
+        return this._state.has(key);
+    }
+    set(key: any, value: any) {
+        return this.state.set(key, value);
+    }
 }
 
 /**
@@ -25,7 +49,7 @@ export class ActivityStatus {
 
     scopes: RunScopes[];
 
-    constructor(private context: BootContext) {
+    constructor() {
         this.scopes = [];
     }
 
@@ -45,15 +69,7 @@ export class ActivityStatus {
         this._current = activity;
         if (activity.isScope) {
             // clean parent scope control state.
-            let cursp = this.currentScope;
-            if (cursp && cursp.subs && cursp.subs.length) {
-                cursp.subs.forEach(c => {
-                    if (c instanceof ControlActivity) {
-                        c.cleanCtrlState(this.context);
-                    }
-                });
-            }
-            this.scopes.unshift({ scope: activity, subs: [] });
+            this.scopes.unshift(new RunScopes(activity));
         } else if (this.currentScope) {
             this.currentScope.subs.unshift(activity);
         }
@@ -61,15 +77,6 @@ export class ActivityStatus {
 
     scopeEnd() {
         this.scopes.shift();
-        // reset parent scope control state.
-        let cursp = this.currentScope;
-        if (cursp && cursp.subs && cursp.subs.length) {
-            cursp.subs.forEach(c => {
-                if (c instanceof ControlActivity) {
-                    c.setCtrlState(this.context);
-                }
-            });
-        }
     }
 
     get currentScope(): RunScopes {

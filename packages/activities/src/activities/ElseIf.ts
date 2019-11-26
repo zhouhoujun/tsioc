@@ -1,6 +1,6 @@
 import { Task } from '../decorators';
-import { ActivityContext, CTX_CONDITION_RESULT } from '../core';
-import { IfActivity } from './If';
+import { ActivityContext } from '../core';
+import { IfActivity, IFStateKey } from './If';
 
 /**
  * else if activity.
@@ -14,7 +14,8 @@ import { IfActivity } from './If';
 export class ElseIfActivity<T = any> extends IfActivity<T> {
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        if (ctx.has(CTX_CONDITION_RESULT) && !ctx.get(CTX_CONDITION_RESULT)) {
+        let currScope = ctx.status.currentScope;
+        if (currScope.has(IFStateKey) && !currScope.get(IFStateKey)) {
             await this.tryExec(ctx);
         }
     }

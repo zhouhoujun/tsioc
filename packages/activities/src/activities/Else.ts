@@ -1,7 +1,8 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext, ControlActivity, CTX_CONDITION_RESULT } from '../core';
+import { ActivityContext, ControlActivity } from '../core';
 import { BodyActivity } from './BodyActivity';
+import { IFStateKey } from './If';
 
 /**
  * else activity.
@@ -15,9 +16,9 @@ import { BodyActivity } from './BodyActivity';
 export class ElseActivity<T> extends ControlActivity<T> {
 
     @Input() body: BodyActivity<T>;
-
     protected async execute(ctx: ActivityContext): Promise<void> {
-        if (ctx.has(CTX_CONDITION_RESULT) && !ctx.get(CTX_CONDITION_RESULT)) {
+        let currScope = ctx.status.currentScope;
+        if (currScope.has(IFStateKey) && !currScope.get(IFStateKey)) {
             await this.body.run(ctx);
         }
     }
