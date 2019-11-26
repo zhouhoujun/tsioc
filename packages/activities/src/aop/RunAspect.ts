@@ -29,15 +29,6 @@ export class RunAspect {
 
     }
 
-    @Before('execution(*.execute)')
-    beforeRun(joinPoint: Joinpoint) {
-        let ctx = joinPoint.args[0] as ActivityContext;
-        if (!ctx.runnable) {
-            return;
-        }
-        ctx.status.current = joinPoint.target;
-    }
-
     @AfterReturning('execution(*.execute)')
     afterRun(joinPoint: Joinpoint) {
 

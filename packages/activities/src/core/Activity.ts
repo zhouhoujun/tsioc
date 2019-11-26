@@ -1,6 +1,6 @@
 import {
     isClass, Type, isFunction, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    ProviderTypes, lang, ContainerFactoryToken, ContainerFactory
+    ProviderTypes, lang, ContainerFactoryToken, ContainerFactory, CTX_CURR_SCOPE
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { Input, ComponentManager } from '@tsdi/components';
@@ -10,6 +10,7 @@ import { ValuePipe } from './ValuePipe';
 import { ActivityResult } from './ActivityResult';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
+
 
 
 
@@ -106,7 +107,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
         if (this.$scope) {
-            ctx.getOptions().scope = this.$scope;
+            ctx.set(CTX_CURR_SCOPE, this.$scope);
         }
         this._result = await this.initResult(ctx);
         await this.refreshResult(ctx);

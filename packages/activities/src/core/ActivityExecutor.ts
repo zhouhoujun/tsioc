@@ -136,7 +136,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity.toAction();
         } else if (isClass(activity) || isMetadataObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type | ControlTemplate, ctx.getOptions().scope);
+                let act = await this.buildActivity(activity as Type | ControlTemplate, ctx.scope);
                 if (act instanceof Activity) {
                     await act.run(ctx, next);
                 } else if (act) {
