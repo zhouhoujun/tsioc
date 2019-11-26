@@ -1,6 +1,6 @@
 import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, IModuleReflect, ProcessRunRootToken } from '@tsdi/boot';
+import { BootContext, IModuleReflect } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
