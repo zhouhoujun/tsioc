@@ -52,7 +52,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
     runnable: WorkflowInstance;
 
     get status(): ActivityStatus {
-        return this.get(ActivityStatus);
+        return this.runnable.status;
     }
 
     /**

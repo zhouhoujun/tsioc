@@ -53,10 +53,10 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
 
     state: RunState;
 
+    private _status: ActivityStatus
     get status(): ActivityStatus {
-        return this.context.get(ActivityStatus);
+        return this._status;
     }
-
 
     async onInit(): Promise<void> {
         let mgr = this.context.getConfigureManager();
@@ -66,7 +66,7 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
     async start(data?: any): Promise<TCtx> {
         let container = this.getContainer();
         this.context.set(CTX_DATA, data);
-        this.context.set(ActivityStatus, container.get(ActivityStatus));
+        this._status = container.get(ActivityStatus);
         this.context.set(WorkflowInstance, this);
         if (this.context.id && !container.has(this.context.id)) {
             container.bindProvider(this.context.id, this);
