@@ -1,8 +1,12 @@
 import {
-    BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction, Inject, ActionRegisterer, DecoratorProvider, DesignRegisterer, RuntimeRegisterer
+    BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction,
+    Inject, ActionRegisterer, DecoratorProvider, DesignRegisterer, RuntimeRegisterer
 } from '@tsdi/ioc';
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
-import { HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner, BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope } from '@tsdi/boot';
+import {
+    HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnoationDesignAction,
+    AnnotationCloner, BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope
+} from '@tsdi/boot';
 import { Component, Input, Output, RefChild, Vaildate } from './decorators';
 import { SelectorManager } from './SelectorManager';
 import { ComponentManager } from './ComponentManager';
