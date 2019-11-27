@@ -35,12 +35,7 @@ export class DebugLogAspect extends LoggerAspect {
                 level = Level.trace;
                 break;
         }
-        this.processLog(joinPoint, null, null, level);
+        this.processLog(joinPoint, null, level);
     }
 
-    protected formatMessage(joinPoint: Joinpoint, message?: string) {
-        let msg = super.formatMessage(joinPoint, message);
-        let now = new Date();
-        return `[${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} ${now.getMilliseconds()}] ${msg}`;
-    }
 }

@@ -55,38 +55,38 @@ class ConsoleLog implements ILogger {
 
     }
 
-    log(message: any, ...args: any[]): void {
-        console.log(message, ...args);
+    log(...args: any[]): void {
+        console.log(...args);
     }
-    trace(message: any, ...args: any[]): void {
+    trace(...args: any[]): void {
         if (!this.level || Levels[this.level] === 0) {
-            console.debug(message, ...args);
+            console.debug(...args);
         }
     }
-    debug(message: any, ...args: any[]): void {
+    debug(...args: any[]): void {
         // console.debug in nuix will not console.
         if (!this.level || Levels[this.level] <= 1) {
-            console.debug(message, ...args);
+            console.debug(...args);
         }
     }
-    info(message: any, ...args: any[]): void {
+    info(...args: any[]): void {
         if (!this.level || Levels[this.level] <= 2) {
-            console.info(message, ...args);
+            console.info(...args);
         }
     }
-    warn(message: any, ...args: any[]): void {
+    warn(...args: any[]): void {
         if (!this.level || Levels[this.level] <= 3) {
-            console.warn(message, ...args);
+            console.warn(...args);
         }
     }
-    error(message: any, ...args: any[]): void {
+    error(...args: any[]): void {
         if (!this.level || Levels[this.level] <= 4) {
-            console.error(message, ...args);
+            console.error(...args);
         }
     }
-    fatal(message: any, ...args: any[]): void {
+    fatal(...args: any[]): void {
         if (!this.level || Levels[this.level] <= 5) {
-            console.error(message, ...args);
+            console.error(...args);
         }
     }
 }

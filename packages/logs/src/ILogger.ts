@@ -17,64 +17,64 @@ export interface ILogger {
     /**
      * log, base log.
      *
-     * @param {*} message
-     * @param {...any[]} args
+     * @param {...any[]} messages
      * @memberof ILogger
      */
-    log(message: any, ...args: any[]): void;
+    log(...messages: any[]): void;
 
     /**
      * trace log.
      *
-     * @param {any} message
-     * @param {...any[]} args
+     * @param {...any[]} messages
      * @memberof ILogger
      */
-    trace(message: any, ...args: any[]): void;
+    trace(...messages: any[]): void;
 
     /**
      * debg log.
      *
-     * @param {any} message
-     * @param {...any[]} args
+     * @param {...any[]} messages
      * @memberof ILogger
      */
-    debug(message: any, ...args: any[]): void;
+    debug(...messages: any[]): void;
+    /**
+     * debg log.
+     *
+     * @param {...any[]} messages
+     * @memberof ILogger
+     */
+    debug(...messages: any[]): void;
 
     /**
      * info log.
      *
-     * @param {any} message
-     * @param {...any[]} args
+     * @param {...any[]} messages
      * @memberof ILogger
      */
-    info(message: any, ...args: any[]): void;
+    info(...messages: any[]): void;
 
     /**
      * warn log.
      *
-     * @param {any} message
-     * @param {...any[]} args
+     * @param {...any[]} messages
      * @memberof ILogger
      */
-    warn(message: any, ...args: any[]): void;
+    warn(...messages: any[]): void;
 
     /**
      * error log.
      *
-     * @param {any} message
-     * @param {...any[]} args
+     * @param {...any[]} messages
      * @memberof ILogger
      */
-    error(message: any, ...args: any[]): void;
+    error(...messages: any[]): void;
 
     /**
      * fatal error log.
      *
-     * @param {any} message
-     * @param {...any[]} args
+     * @param {...any[]} messages
      * @memberof ILogger
      */
-    fatal(message: any, ...args: any[]): void;
+    fatal(...messages: any[]): void;
 
 }

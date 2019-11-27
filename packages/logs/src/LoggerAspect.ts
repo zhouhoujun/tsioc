@@ -1,4 +1,4 @@
-import { Abstract, isFunction, Type, isToken, isString, isObject, lang, ObjectMapProvider, Inject } from '@tsdi/ioc';
+import { Abstract, isFunction, Type, isToken, isString, isObject, ObjectMapProvider, Inject } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Joinpoint, JoinpointState } from '@tsdi/aop';
 import { Level } from './Level';
@@ -39,7 +39,7 @@ export abstract class LoggerAspect {
         return this._logManger;
     }
 
-    protected processLog(joinPoint: Joinpoint, annotation?: LoggerMetadata[], message?: string, level?: Level) {
+    protected processLog(joinPoint: Joinpoint, annotation?: LoggerMetadata[], level?: Level, ...messages: any[]) {
         if (annotation && annotation.length) {
             annotation.forEach(logmeta => {
                 let canlog = false;
@@ -52,50 +52,52 @@ export abstract class LoggerAspect {
                     this.writeLog(
                         logmeta.logname ? this.logManger.getLogger(logmeta.logname) : this.logger,
                         joinPoint,
-                        this.joinMessage(message, logmeta.message),
-                        logmeta.level || level);
+                        logmeta.level || level,
+                        logmeta.message,
+                        ...messages
+                    );
                 }
             });
         } else {
-            this.writeLog(this.logger, joinPoint, message, level);
+            this.writeLog(this.logger, joinPoint, level, ...messages);
         }
     }
 
-
-    protected joinMessage(...messgs: any[]) {
-        return messgs.filter(a => a).map(a => isString(a) ? a : a.toString()).join('; ');
-    }
-
-    protected writeLog(logger: ILogger, joinPoint: Joinpoint, message?: string, level?: Level) {
+    protected writeLog(logger: ILogger, joinPoint: Joinpoint, level: Level, ...messages: any[]) {
         (async () => {
-            let formatStr = this.formatMessage(joinPoint, message);
+            let formatMsgs = this.formatMessage(joinPoint, ...messages);
             if (level) {
-                logger[level](formatStr);
+                logger[level](...formatMsgs);
             } else {
                 switch (joinPoint.state) {
                     case JoinpointState.Before:
                     case JoinpointState.After:
                     case JoinpointState.AfterReturning:
-                        logger.debug(formatStr);
+                        logger.debug(...formatMsgs);
                         break;
                     case JoinpointState.Pointcut:
-                        logger.info(formatStr);
+                        logger.info(...formatMsgs);
                         break;
 
                     case JoinpointState.AfterThrowing:
-                        logger.error(formatStr);
+                        logger.error(...formatMsgs);
                         break;
                 }
             }
         })();
     }
 
-    protected formatMessage(joinPoint: Joinpoint, message?: string) {
+    protected formatTimestamp(formater: ILogFormater): any {
+        let now = new Date();
+        return (formater && formater.timestamp) ? formater.timestamp(now) : `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} ${now.getMilliseconds()}`;
+    }
+
+    protected formatMessage(joinPoint: Joinpoint, ...messages: any[]): any[] {
         let config = this.logManger.config;
         let formater: ILogFormater;
         config.format = config.format || LogFormaterToken;
         if (isToken(config.format)) {
-            formater = this.container.getService({ token: config.format, target: lang.getClass(this) });
+            formater = this.container.getService({ token: config.format, target: this, defaultToken: LogFormaterToken });
         } else if (isFunction(config.format)) {
             formater = { format: config.format };
         } else if (isObject(config.format) && isFunction(config.format.format)) {
@@ -103,9 +105,12 @@ export abstract class LoggerAspect {
         }
 
         if (formater) {
-            return formater.format(joinPoint, message);
+            messages = formater.format(joinPoint, messages);
         }
 
-        return '';
+        let timestamp = this.formatTimestamp(formater);
+        timestamp && messages.unshift(timestamp);
+
+        return messages;
     }
 }
