@@ -1,8 +1,8 @@
 import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
-import { LoggerAspect } from '@tsdi/logs';
-import {  WorkflowInstance } from '@tsdi/activities';
+import { LogProcess } from '@tsdi/logs';
+import { WorkflowInstance } from '@tsdi/activities';
 
 /**
  * Task Log
@@ -14,7 +14,7 @@ import {  WorkflowInstance } from '@tsdi/activities';
     within: WorkflowInstance,
     singleton: true
 })
-export class RunnerLogAspect extends LoggerAspect {
+export class RunnerLogAspect extends LogProcess {
 
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
@@ -22,9 +22,13 @@ export class RunnerLogAspect extends LoggerAspect {
 
     @Around('execution(*.start)')
     logStart(joinPoint: Joinpoint) {
+        this.processLog(joinPoint);
+    }
+
+    protected processLog(joinPoint: Joinpoint) {
         let logger = this.logger;
         let runner = joinPoint.target as WorkflowInstance;
-        let uuid = runner.context.id;
+        // let uuid = runner.context.id;
         let name = runner.getBoot().name || lang.getClassName(runner.context.module);
         let start: Date, end: Date;
         let taskname = '\'' + name + '\'';
@@ -48,5 +52,4 @@ export class RunnerLogAspect extends LoggerAspect {
             logger.log('[' + end.toString() + ']', 'Finished workflow', taskname, 'errored after', end.getTime() - start.getTime());
         }
     }
-
 }

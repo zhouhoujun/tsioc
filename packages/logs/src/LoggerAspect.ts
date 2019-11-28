@@ -5,6 +5,7 @@ import { LoggerMetadata } from './decorators/Logger';
 import { ILogger } from './ILogger';
 import { ILogFormater, LogFormaterToken } from './LogFormater';
 import { LogProcess } from './LogProcess';
+import { isArray, isString } from 'util';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -15,8 +16,16 @@ import { LogProcess } from './LogProcess';
 @Abstract()
 export abstract class LoggerAspect extends LogProcess {
 
-    protected processLog(joinPoint: Joinpoint, annotation?: LoggerMetadata[], level?: Level, ...messages: any[]) {
-        if (annotation && annotation.length) {
+    protected processLog(joinPoint: Joinpoint, ...messages: any[]);
+    protected processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
+    protected processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
+    protected processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[])
+    protected processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]) {
+        if (isArray(annotation) && annotation.length) {
+            if (!(isString(level) && Level[level])) {
+                level = '';
+                messages.unshift(level);
+            }
             annotation.forEach(logmeta => {
                 let canlog = false;
                 if (logmeta.express && logmeta.express(joinPoint)) {
@@ -35,6 +44,13 @@ export abstract class LoggerAspect extends LogProcess {
                 }
             });
         } else {
+            messages.unshift(level);
+            if (isString(annotation) && Level[annotation]) {
+                level = annotation;
+            } else {
+                level = '';
+                messages.unshift(annotation);
+            }
             this.writeLog(this.logger, joinPoint, level, ...messages);
         }
     }

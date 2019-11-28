@@ -11,7 +11,7 @@ import { Task, Activity, ControlActivity } from '@tsdi/activities';
  */
 export class TaskLogProcess extends LogProcess {
 
-    processLog(joinPoint: Joinpoint) {
+    protected processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
             let target = joinPoint.target as Activity;

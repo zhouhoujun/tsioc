@@ -1,7 +1,7 @@
 import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
-import { LoggerAspect } from '@tsdi/logs';
+import { LoggerAspect, LogProcess } from '@tsdi/logs';
 import { WorkflowInstance } from '@tsdi/activities';
 import chalk from 'chalk';
 const timestamp = require('time-stamp');
@@ -17,7 +17,7 @@ const prettyTime = require('pretty-hrtime');
     within: WorkflowInstance,
     singleton: true
 })
-export class RunnerLogAspect extends LoggerAspect {
+export class RunnerLogAspect extends LogProcess {
 
     constructor(@Inject(ContainerToken) container: IContainer) {
         super(container);
@@ -25,6 +25,10 @@ export class RunnerLogAspect extends LoggerAspect {
 
     @Around('execution(*.start)')
     logStart(joinPoint: Joinpoint) {
+        this.processLog(joinPoint);
+    }
+
+    protected processLog(joinPoint: Joinpoint) {
         let logger = this.logger;
         let runner = joinPoint.target as WorkflowInstance;
         let uuid = runner.context.id;

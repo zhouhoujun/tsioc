@@ -14,8 +14,7 @@ export class TaskLogProcess extends LogProcess {
         super(container);
     }
 
-
-    processLog(joinPoint: Joinpoint) {
+    protected processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
             let target = joinPoint.target as Activity;

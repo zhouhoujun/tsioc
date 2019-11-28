@@ -36,5 +36,8 @@ export abstract class LogProcess {
         return this._logManger;
     }
 
-    protected abstract processLog(joinPoint: Joinpoint, annotation?: LoggerMetadata[], level?: Level, ...messages: any[]);
+    protected abstract processLog(joinPoint: Joinpoint, ...messages: any[]);
+    protected abstract processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
+    protected abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
+    protected abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[]);
 }
