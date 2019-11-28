@@ -21,43 +21,43 @@ export abstract class LoggerAspect extends LogProcess {
     processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
     processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[])
     processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]) {
-        if (isArray(annotation) && annotation.length) {
+        if (isArray(annotation)) {
             if (!(isString(level) && Level[level])) {
-                level = '';
-                messages.unshift(level);
+                level && messages.unshift(level);
             }
-            annotation.forEach(logmeta => {
+            annotation.forEach((logmeta: LoggerMetadata) => {
                 let canlog = false;
                 if (logmeta.express && logmeta.express(joinPoint)) {
                     canlog = true;
                 } else if (!logmeta.express) {
                     canlog = true;
                 }
-                if (canlog) {
+                if (canlog && logmeta.message) {
                     this.writeLog(
                         logmeta.logname ? this.logManger.getLogger(logmeta.logname) : this.logger,
                         joinPoint,
                         logmeta.level || level,
-                        logmeta.message,
-                        ...messages
+                        false,
+                        logmeta.message
                     );
                 }
             });
+            this.writeLog(this.logger, joinPoint, level, true, ...messages);
         } else {
-            messages.unshift(level);
+            level && messages.unshift(level);
             if (isString(annotation) && Level[annotation]) {
                 level = annotation;
             } else {
                 level = '';
-                messages.unshift(annotation);
+                annotation && messages.unshift(annotation);
             }
-            this.writeLog(this.logger, joinPoint, level, ...messages);
+            this.writeLog(this.logger, joinPoint, level, true, ...messages);
         }
     }
 
-    protected writeLog(logger: ILogger, joinPoint: Joinpoint, level: Level, ...messages: any[]) {
+    protected writeLog(logger: ILogger, joinPoint: Joinpoint, level: Level, format: boolean, ...messages: any[]) {
         (async () => {
-            let formatMsgs = this.formatMessage(joinPoint, ...messages);
+            let formatMsgs = format ? this.formatMessage(joinPoint, ...messages) : messages;
             if (level) {
                 logger[level](...formatMsgs);
             } else {

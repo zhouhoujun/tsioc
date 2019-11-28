@@ -53,7 +53,7 @@ export class LogFormater implements ILogFormater {
             case JoinpointState.Pointcut:
                 messages = [
                     `${joinPoint.state} invoke method "${joinPoint.fullName}".`,
-                    'params: ',
+                    'params:',
                     joinPoint.params,
                     ', with args: ',
                     joinPoint.args,
@@ -66,7 +66,7 @@ export class LogFormater implements ILogFormater {
             case JoinpointState.AfterReturning:
                 messages = [
                     `Invoke method "${joinPoint.fullName}".`,
-                    'returning value: ',
+                    'returning value:',
                     joinPoint.returningValue,
                     ...messages
                 ];
@@ -74,7 +74,7 @@ export class LogFormater implements ILogFormater {
             case JoinpointState.AfterThrowing:
                 messages = [
                     `Invoke method "${joinPoint.fullName}".`,
-                    'throw error: ',
+                    'throw error:',
                     joinPoint.throwing,
                     ...messages
                 ]

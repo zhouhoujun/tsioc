@@ -46,8 +46,9 @@ class MethodTest2 {
 
     }
 
-    @Logger('Hanmm')
+    @Logger('Hanmm', 'it is test mesasge.')
     sayHello(@Inject(Child) person: Person) {
+        console.log(person.say());
         return person.say();
     }
 

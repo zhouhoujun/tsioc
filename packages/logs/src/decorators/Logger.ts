@@ -54,12 +54,29 @@ export interface ILoggerDecorator<T extends LoggerMetadata> extends IClassMethod
      * define logger annotation pointcut to this class or method.
      * @Logger
      *
-     * @param {string} [logname] set the special name to get logger from logger manager.
-     * @param {Express<any, boolean>} [express] only match express condition can do logging.
-     * @param {string} [message] set special message to logging.
+     * @param {string} message set special message to logging.
      * @param {Level} [level] set log level to this message.
      */
-    (logname?: string, express?: Express<any, boolean>, message?: string, level?: Level): ClassMethodDecorator;
+    (message: string, level?: Level): ClassMethodDecorator;
+    /**
+     * define logger annotation pointcut to this class or method.
+     * @Logger
+     *
+     * @param {string} logname set the special name to get logger from logger manager.
+     * @param {string} message set special message to logging.
+     * @param {Level} [level] set log level to this message.
+     */
+    (logname: string, message: string, level?: Level): ClassMethodDecorator;
+    /**
+     * define logger annotation pointcut to this class or method.
+     * @Logger
+     *
+     * @param {string} logname set the special name to get logger from logger manager.
+     * @param {Express<any, boolean>} express only match express condition can do logging.
+     * @param {string} message set special message to logging.
+     * @param {Level} [level] set log level to this message.
+     */
+    (logname: string, express: Express<any, boolean>, message: string, level?: Level): ClassMethodDecorator;
 }
 
 /**
@@ -72,8 +89,15 @@ export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorat
         (ctx, next) => {
             let arg = ctx.currArg;
             if (isString(arg)) {
-                ctx.metadata.logname = arg;
-                ctx.next(next);
+                if (ctx.args.length === 1) {
+                    ctx.metadata.message = arg;
+                } else {
+                    ctx.metadata.logname = arg;
+                    if (ctx.args.length === 2) {
+                        ctx.metadata.message = arg;
+                    }
+                    ctx.next(next);
+                }
             }
         },
         (ctx, next) => {
@@ -81,20 +105,30 @@ export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorat
             if (isFunction(arg)) {
                 ctx.metadata.express = arg;
                 ctx.next(next);
+            } else if (isString(arg)) {
+                if (Level[arg]) {
+                    ctx.metadata.level = Level[arg];
+                } else {
+                    ctx.metadata.message = arg;
+                    ctx.next(next);
+                }
             }
         },
         (ctx, next) => {
             let arg = ctx.currArg;
             if (isString(arg)) {
-                ctx.metadata.message = arg;
-                ctx.next(next);
+                if (Level[arg]) {
+                    ctx.metadata.level = Level[arg];
+                } else {
+                    ctx.metadata.message = arg;
+                    ctx.next(next);
+                }
             }
         },
         (ctx, next) => {
             let arg = ctx.currArg;
             if (isString(arg)) {
                 ctx.metadata.level = Level[arg];
-                ctx.next(next);
             }
         },
     ]) as ILoggerDecorator<LoggerMetadata>;
