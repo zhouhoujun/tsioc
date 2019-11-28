@@ -1,4 +1,4 @@
-import { Abstract, isFunction, Type, isToken, isString, isObject, ObjectMapProvider, Inject } from '@tsdi/ioc';
+import { Abstract, isFunction, Type, isToken, isObject, ObjectMapProvider, Inject } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Joinpoint, JoinpointState } from '@tsdi/aop';
 import { Level } from './Level';
@@ -105,7 +105,7 @@ export abstract class LoggerAspect {
         }
 
         if (formater) {
-            messages = formater.format(joinPoint, messages);
+            messages = formater.format(joinPoint, ...messages);
         }
 
         let timestamp = this.formatTimestamp(formater);

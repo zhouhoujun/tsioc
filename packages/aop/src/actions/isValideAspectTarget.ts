@@ -13,8 +13,8 @@ export function isValideAspectTarget(targetType: Type, reflects: ITypeReflects):
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-    if (reflects.isExtends(targetType, IocCoreService)) {
+    if (reflects.hasMetadata(NonePointcut, targetType)) {
         return false;
     }
-    return !reflects.hasMetadata(NonePointcut, targetType);
+    return !reflects.isExtends(targetType, IocCoreService);
 }

@@ -43,7 +43,7 @@ export class LogFormater implements ILogFormater {
     }
 
     timestamp(time: Date): any {
-        return `${time.getHours()}:${time.getMinutes()}:${time.getSeconds()} ${time.getMilliseconds()}`;
+        return `[${time.getHours()}:${time.getMinutes()}:${time.getSeconds()} ${time.getMilliseconds()}]`;
     }
 
     format(joinPoint?: Joinpoint, ...messages: any[]): any[] {
@@ -52,32 +52,30 @@ export class LogFormater implements ILogFormater {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:
                 messages = [
-                    `${joinPoint.state} invoke method "${joinPoint.fullName}"\n`,
-                    ` with args: `,
-                    // joinPoint.params,
+                    `${joinPoint.state} invoke method "${joinPoint.fullName}".`,
+                    ' params: ',
+                    joinPoint.params,
+                    ' with args: ',
                     joinPoint.args,
-                    '\n',
                     ...messages
                 ];
                 break;
             case JoinpointState.After:
-                messages.unshift(`${joinPoint.state}  invoke method "${joinPoint.fullName}".\n`);
+                messages.unshift(`${joinPoint.state}  invoke method "${joinPoint.fullName}".`);
                 break;
             case JoinpointState.AfterReturning:
                 messages = [
-                    `Invoke method "${joinPoint.fullName}"\n`,
-                    ` returning value: `,
+                    `Invoke method "${joinPoint.fullName}".`,
+                    ' returning value: ',
                     joinPoint.returningValue,
-                    '\n',
                     ...messages
                 ];
                 break;
             case JoinpointState.AfterThrowing:
                 messages = [
-                    `Invoke method "${joinPoint.fullName}"\n`,
-                    ` throw error: `,
+                    `Invoke method "${joinPoint.fullName}".`,
+                    ' throw error: ',
                     joinPoint.throwing,
-                    '\n',
                     ...messages
                 ]
                 break;
