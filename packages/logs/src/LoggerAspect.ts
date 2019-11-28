@@ -16,11 +16,11 @@ import { isArray, isString } from 'util';
 @Abstract()
 export abstract class LoggerAspect extends LogProcess {
 
-    protected processLog(joinPoint: Joinpoint, ...messages: any[]);
-    protected processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
-    protected processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
-    protected processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[])
-    protected processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]) {
+    processLog(joinPoint: Joinpoint, ...messages: any[]);
+    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
+    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
+    processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[])
+    processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]) {
         if (isArray(annotation) && annotation.length) {
             if (!(isString(level) && Level[level])) {
                 level = '';

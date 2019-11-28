@@ -11,7 +11,7 @@ import { Task, Activity, ControlActivity } from '@tsdi/activities';
  */
 export class TaskLogProcess extends LogProcess {
 
-    protected processLog(joinPoint: Joinpoint) {
+    processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
             let target = joinPoint.target as Activity;
@@ -62,7 +62,7 @@ export class TaskLogProcess extends LogProcess {
 })
 export class TaskLogAspect extends TaskLogProcess {
     @Around('execution(*.execute)')
-    Logging(joinPoint: Joinpoint) {
+    logging(joinPoint: Joinpoint) {
         this.processLog(joinPoint);
     }
 }
@@ -82,7 +82,7 @@ export class TaskLogAspect extends TaskLogProcess {
 })
 export class TaskControlLogAspect extends TaskLogProcess {
     @Around('execution(*.execute)')
-    Logging(joinPoint: Joinpoint) {
+    logging(joinPoint: Joinpoint) {
         this.processLog(joinPoint);
     }
 }

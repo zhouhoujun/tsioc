@@ -21,11 +21,7 @@ export class RunnerLogAspect extends LogProcess {
     }
 
     @Around('execution(*.start)')
-    logStart(joinPoint: Joinpoint) {
-        this.processLog(joinPoint);
-    }
-
-    protected processLog(joinPoint: Joinpoint) {
+    processLog(joinPoint: Joinpoint) {
         let logger = this.logger;
         let runner = joinPoint.target as WorkflowInstance;
         // let uuid = runner.context.id;
