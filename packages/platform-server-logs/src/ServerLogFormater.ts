@@ -24,9 +24,9 @@ export class ServerLogFormater implements ILogFormater {
             case JoinpointState.Pointcut:
                 messages = [
                     `${joinPoint.state} invoke method ${chalk.cyan(joinPoint.fullName)}.`,
-                    chalk.gray(' params: '),
+                    chalk.gray('params: '),
                     joinPoint.params,
-                    chalk.gray(' with args: '),
+                    chalk.gray(', with args: '),
                     joinPoint.args,
                     ...messages
                 ];
@@ -37,7 +37,7 @@ export class ServerLogFormater implements ILogFormater {
             case JoinpointState.AfterReturning:
                 messages = [
                     `Invoke method ${chalk.cyan(joinPoint.fullName)}.`,
-                    chalk.gray(' returning value: '),
+                    chalk.gray('returning value: '),
                     joinPoint.returningValue,
                     ...messages
                 ]
@@ -45,7 +45,7 @@ export class ServerLogFormater implements ILogFormater {
             case JoinpointState.AfterThrowing:
                 messages = [
                     `Invoke method ${chalk.cyan(joinPoint.fullName)}.`,
-                    chalk.red(' throw error: '),
+                    chalk.red('throw error: '),
                     joinPoint.throwing,
                     ...messages
                 ]
