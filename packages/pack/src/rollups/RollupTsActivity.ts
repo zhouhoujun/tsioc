@@ -1,16 +1,14 @@
 import { isBoolean } from '@tsdi/ioc';
-import { rollupClassAnnotations } from '@tsdi/annotations';
 import { syncRequire } from '@tsdi/platform-server';
 import { Binding, Input } from '@tsdi/components';
 import { Task } from '@tsdi/activities';
 import { Plugin, RollupOptions } from 'rollup';
-import { CompilerOptions, nodeModuleNameResolver, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory, convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic } from 'typescript';
+import { CompilerOptions, nodeModuleNameResolver } from 'typescript';
 import * as ts from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
-import * as path from 'path';
 import { NodeExpression, NodeActivityContext } from '../core';
 import { RollupActivity, RollupOption } from './RollupActivity';
-
+import { TsComplie } from '../ts-complie';
 /**
  * rollup activity template option.
  *
@@ -129,12 +127,6 @@ export class RollupTsActivity extends RollupActivity {
         if (beforeCompile && beforeCompile.length) {
             plugins.push(...beforeCompile);
         }
-        if (this.annotation) {
-            let annotation = await this.resolveExpression(this.annotation, ctx);
-            if (annotation) {
-                plugins.push(rollupClassAnnotations());
-            }
-        }
         if (this.tscompile) {
             let compile = await this.resolveExpression(this.tscompile, ctx);
             plugins.push(compile);
@@ -152,7 +144,7 @@ export class RollupTsActivity extends RollupActivity {
 
         if (this.uglify) {
             let ugfy = await this.resolveExpression(this.uglify, ctx);
-            const uglify =  syncRequire('rollup-plugin-uglify');
+            const uglify = syncRequire('rollup-plugin-uglify');
             if (isBoolean(ugfy)) {
                 ugfy && plugins.push(uglify());
             } else {
@@ -167,9 +159,16 @@ export class RollupTsActivity extends RollupActivity {
 
         let include = await this.resolveExpression(this.include, ctx);
         let exclude = await this.resolveExpression(this.exclude, ctx)
+        let annotation = await this.resolveExpression(this.annotation, ctx);
         const filter = createFilter(include, exclude);
         const tsdexp = /.d.ts$/;
-        let compilerOptions = await this.createProject(ctx);
+        let compile = this.getContainer().get(TsComplie);
+        let projectDirectory = ctx.platform.getRootPath();
+        let settings: CompilerOptions = await this.resolveExpression(this.compileOptions, ctx);
+        let tsconfig = await this.resolveExpression(this.tsconfig, ctx);
+        tsconfig = ctx.platform.toRootPath(tsconfig);
+
+        let compilerOptions = compile.createProject(projectDirectory, tsconfig, settings);
         const allImportedFiles = new Set();
         return {
             name: 'typescript',
@@ -210,91 +209,8 @@ export class RollupTsActivity extends RollupActivity {
                     return undefined;
                 }
                 allImportedFiles.add(id.split('\\').join('/'));
-
-                const transformed = transpileModule(code, {
-                    fileName: id,
-                    reportDiagnostics: true,
-                    compilerOptions
-                });
-
-                // All errors except `Cannot compile modules into 'es6' when targeting 'ES5' or lower.`
-                const diagnostics: Diagnostic[] = transformed.diagnostics ?
-                    transformed.diagnostics.filter(diagnostic => diagnostic.code !== 1204) : [];
-
-                let fatalError = false;
-
-                diagnostics.forEach(diagnostic => {
-                    const message = flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-
-                    if (diagnostic.file) {
-                        const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-
-                        console.error(`${diagnostic.file.fileName}(${line + 1},${character + 1}): error TS${diagnostic.code}: ${message}`);
-                    } else {
-                        console.error(`Error: ${message}`);
-                    }
-
-                    if (diagnostic.category === DiagnosticCategory.Error) {
-                        fatalError = true;
-                    }
-                });
-
-                if (fatalError) {
-                    throw new Error(`There were TypeScript errors transpiling`);
-                }
-
-                return {
-                    code: transformed.outputText,
-                    // Rollup expects `map` to be an object so we must parse the string
-                    map: transformed.sourceMapText ? JSON.parse(transformed.sourceMapText) : null
-                };
+                return compile.compile(id, compilerOptions, code, annotation);
             }
-        };
-    }
-
-    protected async createProject(ctx: NodeActivityContext): Promise<CompilerOptions> {
-        let projectDirectory = ctx.platform.getRootPath();
-        let compilerOptions: CompilerOptions;
-        // let projectReferences: ReadonlyArray<ProjectReference>;
-        let settings: CompilerOptions = await this.resolveExpression(this.compileOptions, ctx);
-        let fileName = await this.resolveExpression(this.tsconfig, ctx);
-        fileName = ctx.platform.toRootPath(fileName);
-
-        const settingsResult = convertCompilerOptionsFromJson(settings || {}, projectDirectory);
-
-        // if (settingsResult.errors) {
-        //     throw settingsResult.errors;
-        // }
-        compilerOptions = settingsResult.options;
-
-        let tsConfig = readConfigFile(fileName, ts.sys.readFile);
-        if (tsConfig.error) {
-            console.log(tsConfig.error.messageText);
-        }
-
-        let parsed: ts.ParsedCommandLine =
-            parseJsonConfigFileContent(
-                tsConfig.config || {},
-                this.getTsconfigSystem(ts),
-                path.resolve(projectDirectory),
-                compilerOptions,
-                fileName);
-
-        // if (parsed.errors) {
-        //     throw parsed.errors;
-        // }
-
-        compilerOptions = parsed.options;
-        // projectReferences = parsed.projectReferences;
-        return compilerOptions;
-    }
-
-    protected getTsconfigSystem(typescript: typeof ts): ts.ParseConfigHost {
-        return {
-            useCaseSensitiveFileNames: typescript.sys.useCaseSensitiveFileNames,
-            readDirectory: () => [],
-            fileExists: typescript.sys.fileExists,
-            readFile: typescript.sys.readFile
         };
     }
 

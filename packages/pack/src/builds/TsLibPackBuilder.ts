@@ -54,28 +54,28 @@ const tsFileExp = /.ts$/;
             activity: 'each',
             each: 'binding: bundles',
             body: [
-                {
-                    activity: Activities.if,
-                    condition: ctx => {
-                        let body = ctx.body;
-                        if (!body.target) {
-                            return false;
-                        }
-                        if (body.moduleName) {
-                            return isArray(body.moduleName) ? body.moduleName.some(i => esmChkExp.test(i)) : esmChkExp.test(body.moduleName);
-                        }
-                        return true;
-                    },
-                    body: <TsBuildOption>{
-                        activity: 'ts',
-                        src: 'binding: src',
-                        dist: ctx => ctx.scope.getTargetPath(ctx.body),
-                        dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.body.dtsMain ? './' : null),
-                        annotation: 'binding: annotation',
-                        sourcemap: 'binding: sourcemap',
-                        tsconfig: ctx => ctx.scope.getCompileOptions(ctx.body.target)
-                    }
-                },
+                // {
+                //     activity: Activities.if,
+                //     condition: ctx => {
+                //         let body = ctx.body;
+                //         if (!body.target) {
+                //             return false;
+                //         }
+                //         if (body.moduleName) {
+                //             return isArray(body.moduleName) ? body.moduleName.some(i => esmChkExp.test(i)) : esmChkExp.test(body.moduleName);
+                //         }
+                //         return true;
+                //     },
+                //     body: <TsBuildOption>{
+                //         activity: 'ts',
+                //         src: 'binding: src',
+                //         dist: ctx => ctx.scope.getTargetPath(ctx.body),
+                //         dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.body.dtsMain ? './' : null),
+                //         annotation: 'binding: annotation',
+                //         sourcemap: 'binding: sourcemap',
+                //         tsconfig: ctx => ctx.scope.getCompileOptions(ctx.body.target)
+                //     }
+                // },
                 {
                     activity: Activities.if,
                     condition: ctx => {
