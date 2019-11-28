@@ -1,13 +1,10 @@
-import { Abstract, isFunction, Type, isToken, isObject, ObjectMapProvider, Inject } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { Abstract, isFunction, isToken, isObject } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState } from '@tsdi/aop';
 import { Level } from './Level';
 import { LoggerMetadata } from './decorators/Logger';
-import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { ILogFormater, LogFormaterToken } from './LogFormater';
-import { ConfigureLoggerManger } from './ConfigureLoggerManger';
+import { LogProcess } from './LogProcess';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -16,28 +13,7 @@ import { ConfigureLoggerManger } from './ConfigureLoggerManger';
  * @class LoggerAspect
  */
 @Abstract()
-export abstract class LoggerAspect {
-
-    private _logger: ILogger;
-    private _logManger: IConfigureLoggerManager;
-
-    constructor(@Inject(ContainerToken) protected container: IContainer, private config?: LogConfigure | Type<LogConfigure>) {
-
-    }
-
-    get logger(): ILogger {
-        if (!this._logger) {
-            this._logger = this.logManger.getLogger();
-        }
-        return this._logger;
-    }
-
-    get logManger(): IConfigureLoggerManager {
-        if (!this._logManger) {
-            this._logManger = this.container.resolve(ConfigureLoggerManger, ObjectMapProvider.parse({ config: this.config }));
-        }
-        return this._logManger;
-    }
+export abstract class LoggerAspect extends LogProcess {
 
     protected processLog(joinPoint: Joinpoint, annotation?: LoggerMetadata[], level?: Level, ...messages: any[]) {
         if (annotation && annotation.length) {

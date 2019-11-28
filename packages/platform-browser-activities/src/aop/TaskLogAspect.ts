@@ -1,22 +1,17 @@
-import { Inject, lang } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { lang } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
-import { LoggerAspect } from '@tsdi/logs';
+import { LogProcess } from '@tsdi/logs';
 import { Task, Activity, ControlActivity } from '@tsdi/activities';
 
 /**
- * Task Log
+ * Task Log process.
  *
  * @export
- * @class TaskLogAspect
+ * @class TaskLogProcess
  */
-export class ActionLogAspect extends LoggerAspect {
+export class TaskLogProcess extends LogProcess {
 
-    constructor(@Inject(ContainerToken) container: IContainer) {
-        super(container);
-    }
-
-    doLogging(joinPoint: Joinpoint) {
+    processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
             let target = joinPoint.target as Activity;
@@ -57,7 +52,7 @@ export class ActionLogAspect extends LoggerAspect {
  *
  * @export
  * @class TaskLogAspect
- * @extends {ActionLogAspect}
+ * @extends {TaskLogProcess}
  */
 @Aspect({
     annotation: Task,
@@ -65,10 +60,10 @@ export class ActionLogAspect extends LoggerAspect {
     without: ControlActivity,
     singleton: true
 })
-export class TaskLogAspect extends ActionLogAspect {
+export class TaskLogAspect extends TaskLogProcess {
     @Around('execution(*.execute)')
     Logging(joinPoint: Joinpoint) {
-        this.doLogging(joinPoint);
+        this.processLog(joinPoint);
     }
 }
 
@@ -78,16 +73,16 @@ export class TaskLogAspect extends ActionLogAspect {
  *
  * @export
  * @class TaskControlLogAspect
- * @extends {ActionLogAspect}
+ * @extends {TaskLogProcess}
  */
 @Aspect({
     annotation: Task,
     within: ControlActivity,
     singleton: true
 })
-export class TaskControlLogAspect extends ActionLogAspect {
+export class TaskControlLogAspect extends TaskLogProcess {
     @Around('execution(*.execute)')
     Logging(joinPoint: Joinpoint) {
-        this.doLogging(joinPoint);
+        this.processLog(joinPoint);
     }
 }
