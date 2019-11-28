@@ -1,11 +1,10 @@
-import { Abstract, isFunction, isToken, isObject } from '@tsdi/ioc';
+import { Abstract, isFunction, isToken, isObject, isArray, isString } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState } from '@tsdi/aop';
 import { Level } from './Level';
 import { LoggerMetadata } from './decorators/Logger';
 import { ILogger } from './ILogger';
 import { ILogFormater, LogFormaterToken } from './LogFormater';
 import { LogProcess } from './LogProcess';
-import { isArray, isString } from 'util';
 
 /**
  * base looger aspect. for extends your logger aspect.
