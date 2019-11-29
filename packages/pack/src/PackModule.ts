@@ -5,10 +5,12 @@ import * as tasks from './tasks';
 import * as transforms from './transforms';
 import * as rollups from './rollups';
 import * as builds from './builds';
+import { TsComplie } from './ts-complie';
 
 @DIModule({
     regFor: RegFor.boot,
     imports: [
+        TsComplie,
         ServerBootstrapModule,
         cores,
         tasks,
@@ -17,6 +19,7 @@ import * as builds from './builds';
         builds
     ],
     exports: [
+        TsComplie,
         ServerBootstrapModule,
         cores,
         tasks,
