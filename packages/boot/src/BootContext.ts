@@ -254,6 +254,9 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
         if (options.scope) {
             this.set(CTX_CURR_SCOPE, options.scope);
         }
+        if (options.target) {
+            this.target = options.target;
+        }
         if (isDefined(options.data)) {
             this.set(CTX_DATA, options.data);
         }
