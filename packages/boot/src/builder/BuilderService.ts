@@ -1,7 +1,7 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, CTX_PROVIDERS } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
-import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken } from '../core';
+import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken, AnnoationContext } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
@@ -49,18 +49,31 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     async resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
+        let ctx = await this.resolveContext(target, options, ...providers);
+        return this.getBootTarget(ctx);
+    }
+
+    protected getBootTarget(ctx: AnnoationContext): any {
+        if (ctx instanceof BootContext) {
+            return ctx.getBootTarget();
+        } else if (ctx instanceof BuildContext) {
+            return ctx.target;
+        }
+        return null;
+    }
+
+    protected async resolveContext(target: Type, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<AnnoationContext> {
         let refs = this.reflects;
         let reflect = refs.get(target);
         if (reflect) {
-            let rctx = await this.resolveModule(null, target, options, ...providers);
-            return rctx.target;
+            return await this.resolveModule(null, target, options, ...providers);
         } else {
-            return this.buildBootTarget({
+            return await this.build({
                 module: target,
                 providers: providers,
                 regFor: RegFor.boot,
                 ...options
-            })
+            });
         }
     }
 
@@ -90,11 +103,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     async buildTarget<T, Topt extends BootOption = BootOption>(target: Type<T> | Topt | BootContext, ...args: string[]): Promise<T> {
         let ctx = await this.build(target, ...args);
         return ctx.target;
-    }
-
-    async buildBootTarget(target: Type | BootOption | BootContext, ...args: string[]): Promise<any> {
-        let ctx = await this.build(target, ...args);
-        return ctx.getBootTarget();
     }
 
     build<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {

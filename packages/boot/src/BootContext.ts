@@ -1,4 +1,4 @@
-import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE } from '@tsdi/ioc';
+import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE, isTypeObject } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
@@ -253,6 +253,9 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
         super.setOptions(options);
         if (options.scope) {
             this.set(CTX_CURR_SCOPE, options.scope);
+        }
+        if (isTypeObject(options.target)) {
+            this.target = options.target;
         }
         if (isDefined(options.data)) {
             this.set(CTX_DATA, options.data);

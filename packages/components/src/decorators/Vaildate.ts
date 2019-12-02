@@ -1,8 +1,8 @@
 import { createPropDecorator, isBoolean, isFunction, PropertyMetadata, isString } from '@tsdi/ioc';
-import { IProperyVaildate } from '../bindings/IPropertyBindingReflect';
+import { IPropertyVaildate } from '../bindings/IPropertyBindingReflect';
 
 
-export interface VaildatePropertyMetadata extends PropertyMetadata, IProperyVaildate {
+export interface VaildatePropertyMetadata extends PropertyMetadata, IPropertyVaildate {
 
 }
 

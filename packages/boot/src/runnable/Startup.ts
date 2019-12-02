@@ -1,7 +1,6 @@
-import { lang, Type, Abstract, Inject, InjectReference, Token, DecoratorProvider } from '@tsdi/ioc';
+import { lang, Type, Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext } from '../BootContext';
-import { BootTargetAccessor } from '../BootTargetAccessor';
 
 
 /**
@@ -65,7 +64,7 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
 }
 
 /**
- * runnablle on init hooks
+ * statup on init hooks
  *
  * @export
  * @interface RunnableInit
@@ -111,31 +110,14 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
         return lang.getClass(this.getBoot());
     }
 
-    private _bootNode: any;
-    getBootNode(): any {
-        if (!this._bootNode) {
-            let container = this.getContainer();
-            let pdr = container.getInstance(DecoratorProvider);
-            let bootTarget = this.getBoot() as any;
-            let deckey = pdr.getKey(bootTarget);
-            if (deckey && pdr.has(deckey, BootTargetAccessor)) {
-                this._bootNode = pdr.resolve(deckey, BootTargetAccessor).getBoot(bootTarget, container);
-            } else {
-                this._bootNode = bootTarget;
-            }
-        }
-        return this._bootNode;
-    }
-
     /**
      * startup runnable.
      *
      * @abstract
-     * @param {TCtx} [ctx]
      * @returns {Promise<void|TCtx>>}
      * @memberof Runnable
      */
-    abstract startup(ctx?: TCtx): Promise<void | TCtx>;
+    abstract startup(): Promise<void | TCtx>;
 
 }
 

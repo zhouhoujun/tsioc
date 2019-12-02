@@ -1,6 +1,6 @@
 import { Abstract, InjectReference, Token } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
-import { IStartup, Startup, StartupInit } from './Startup';
+import { IStartup, Startup } from './Startup';
 
 /**
  * IService interface
@@ -26,17 +26,6 @@ export interface IService<T = any, TCtx extends BootContext = BootContext> exten
 }
 
 /**
- * service on init hooks
- *
- * @export
- * @interface ServiceInit
- * @extends {StartupInit}
- */
-export interface ServiceInit extends StartupInit {
-
-}
-
-/**
  * base service.
  *
  * @export
@@ -47,8 +36,8 @@ export interface ServiceInit extends StartupInit {
 @Abstract()
 export abstract class Service<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IService<T, TCtx> {
 
-    async startup(ctx: TCtx) {
-        await this.start(ctx.data);
+    async startup() {
+        await this.start(this.context.data);
     }
 
     /**

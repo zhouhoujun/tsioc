@@ -1,7 +1,7 @@
 import { Abstract, isFunction, isToken, isObject, isArray, isString, isDefined } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState } from '@tsdi/aop';
-import { Level } from './Level';
 import { LoggerMetadata } from './decorators/Logger';
+import { Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
 import { ILogFormater, LogFormaterToken } from './LogFormater';
@@ -43,7 +43,7 @@ export abstract class LoggerAspect extends LogProcess {
             });
             this.writeLog(this.logger, joinPoint, level, true, ...messages);
         } else {
-            level && messages.unshift(level);
+            isDefined(level) && messages.unshift(level);
             if (isString(annotation) && Level[annotation]) {
                 level = annotation;
             } else {

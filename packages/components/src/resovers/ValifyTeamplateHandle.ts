@@ -1,15 +1,14 @@
 import { BuildContext, ResolveHandle, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { ComponentManager } from '../ComponentManager';
-
+import { ViewRef } from '../ComponentRef';
 
 export class ValifyTeamplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.target && ctx.composite) {
-            let mgr = this.container.getInstance(ComponentManager);
-            let options = ctx.getOptions();
-            if (options.scope) {
-                mgr.setComposite(options.scope, ctx.target);
-            }
+        if (ctx.target && ctx.has(ViewRef)) {
+            // let refs = this.container.get(ComponentRefsToken);
+            // let options = ctx.getOptions();
+            // if (options.scope) {
+            //     compRef.hostView.$parent = refs.get(options.scope).hostView;
+            // }
 
             let startupRegr = this.container.getInstance(StartupDecoratorRegisterer);
 
@@ -18,9 +17,10 @@ export class ValifyTeamplateHandle extends ResolveHandle {
                 await this.execFuncs(ctx, validRegs.getFuncs(this.container, ctx.decorator));
             }
 
-            if (ctx.composite) {
-                mgr.setComposite(ctx.target, ctx.composite);
-            }
+            // if (ctx.has(ComponentRef)) {
+            //     let compRef = ctx.get(ComponentRef);
+            //     mgr.setComposite(ctx.target, ctx.composite);
+            // }
         }
 
         if (next) {

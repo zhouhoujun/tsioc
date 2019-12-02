@@ -51,15 +51,6 @@ export interface IBuilderService extends IocCoreService {
      * @memberof IBuilderService
      */
     buildTarget<T, Topt extends BootOption = BootOption>(target: Type<T> | Topt | BootContext, ...args: string[]): Promise<T>;
-    /**
-     * build bootstrap target instance.
-     *
-     * @param {(Type | BootOption | BootContext)} target
-     * @param {...string[]} args
-     * @returns {Promise<any>}
-     * @memberof IBuilderService
-     */
-    buildBootTarget(target: Type | BootOption | BootContext, ...args: string[]): Promise<any>;
 
     build(target: Type | BootOption | BootContext, ...args: string[]): Promise<BootContext>
     build<Topt extends BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<BootContext>;

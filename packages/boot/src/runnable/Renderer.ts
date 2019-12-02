@@ -1,4 +1,4 @@
-import { Inject, Abstract, InjectReference, Token } from '@tsdi/ioc';
+import { Abstract, InjectReference, Token } from '@tsdi/ioc';
 import { Startup, IStartup } from './Startup';
 import { BootContext } from '../BootContext';
 
@@ -16,28 +16,29 @@ export interface IRenderer<T = any, TCtx extends BootContext = BootContext> exte
     /**
      * render component instance.
      *
-     * @param {*} [data]
+     * @param {*} [host]
      * @returns {Promise<any>}
      * @memberof IRunner
      */
-    render(data?: any): Promise<void>;
+    render(host?: any): Promise<void>;
 
 }
 
 /**
- * runnablle on init hooks
+ * after on render init hooks.
  *
  * @export
  * @interface RendererInit
  */
-export interface RendererInit {
+export interface AfterRendererInit {
     /**
-     * on init hooks.
+     * after on render init hooks.
      *
      * @returns {(void | Promise<void>)}
      */
-    onInit(): void | Promise<void>;
+    afterRenderInit(): void | Promise<void>;
 }
+
 
 /**
  * renderer for composite.
@@ -50,18 +51,14 @@ export interface RendererInit {
 @Abstract()
 export abstract class Renderer<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IRenderer<T, TCtx> {
 
-    constructor(@Inject(BootContext) ctx: TCtx) {
-        super(ctx);
+    async startup() {
+        let host = this.context.getOptions().renderHost;
+        if (host) {
+            await this.render(host);
+        }
     }
 
-    async startup(ctx: TCtx) {
-        if (!this._ctx) {
-            this._ctx = ctx;
-        }
-        if (ctx.getOptions().renderHost) {
-            await this.render(ctx.getOptions().renderHost);
-        }
-    }
+    protected abstract async renderProcess(host: any): Promise<void>;
 
     /**
      * render component instance.
@@ -70,7 +67,13 @@ export abstract class Renderer<T = any, TCtx extends BootContext = BootContext> 
      * @returns {Promise<any>}
      * @memberof IRunner
      */
-    abstract render(host?: any): Promise<void>;
+    async render(host?: any): Promise<void> {
+        let node = this.getBoot() as T & AfterRendererInit;
+        await this.renderProcess(host);
+        if (node.afterRenderInit) {
+            await node.afterRenderInit();
+        }
+    }
 
 }
 

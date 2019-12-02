@@ -1,6 +1,8 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { HandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
 import { TemplateParseScope, TemplateContext } from '../parses';
+import { ViewRef } from '../ComponentRef';
+
 
 export class ResolveTemplateScope extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
@@ -20,7 +22,7 @@ export class ResolveTemplateScope extends ResolveHandle {
                 .get(TemplateParseScope)
                 .execute(pCtx);
             if (!isNullOrUndefined(pCtx.value)) {
-                ctx.composite = pCtx.value;
+                ctx.set(ViewRef, pCtx.value);
             }
         }
         await next();

@@ -4,12 +4,11 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import {
-    HandleRegisterer, ResolveMoudleScope, BootTargetAccessor, AnnoationDesignAction,
-    AnnotationCloner, BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope
+    HandleRegisterer, ResolveMoudleScope, AnnoationDesignAction,
+    AnnotationCloner, BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope, RootContainerToken
 } from '@tsdi/boot';
 import { Component, Input, Output, RefChild, Vaildate } from './decorators';
 import { SelectorManager } from './SelectorManager';
-import { ComponentManager } from './ComponentManager';
 import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory, RegisterVaildateAction } from './registers';
 import {
     BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
@@ -17,9 +16,9 @@ import {
 } from './resovers';
 import { BindingScope, TemplateParseScope } from './parses';
 import { ComponentBuilder } from './ComponentBuilder';
-import { BootComponentAccessor } from './BootComponentAccessor';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 import { AstResolver } from './AstResolver';
+import { APP_COMPONENT_REFS } from './ComponentRef';
 
 
 /**
@@ -34,11 +33,10 @@ export class ComponentsModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.register(SelectorManager)
-            .register(ComponentManager)
-            .register(BootComponentAccessor)
             .register(ComponentAnnotationCloner)
             .register(AstResolver);
 
+        container.get(RootContainerToken).bindProvider(APP_COMPONENT_REFS, new WeakMap());
         container.getInstance(ActionRegisterer)
             .register(container, ComponentRegisterAction)
             .register(container, BindingPropertyTypeAction);
@@ -72,7 +70,6 @@ export class ComponentsModule {
                 })
             })
             .bindProviders(Component,
-                { provide: BootTargetAccessor, useClass: BootComponentAccessor },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner });
 
         let hdregr = container.getInstance(HandleRegisterer);

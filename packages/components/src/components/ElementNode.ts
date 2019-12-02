@@ -1,5 +1,4 @@
 import { Component, Input } from '../decorators';
-import { CompositeNode } from './CompositeNode';
 
 /**
  * Element node.
@@ -9,14 +8,7 @@ import { CompositeNode } from './CompositeNode';
  * @extends {CompositeNode}
  */
 @Component()
-export class ElementNode extends CompositeNode  {
-    /**
-     * scope of element.
-     *
-     * @type {*}
-     * @memberof ElementNode
-     */
-    $scope: any;
+export class ElementNode {
     /**
      * element id.
      *
@@ -38,4 +30,17 @@ export class ElementNode extends CompositeNode  {
      * @memberof ElementNode
      */
     @Input() name: string;
+
+
+    /**
+     * is equals or not.
+     *
+     * @param {ElementNode} node
+     * @param {ElementNode} [node2]
+     * @returns {boolean}
+     * @memberof ElementNode
+     */
+    equals(node: ElementNode, node2?: ElementNode): boolean {
+        return node === (node2 || this);
+    }
 }

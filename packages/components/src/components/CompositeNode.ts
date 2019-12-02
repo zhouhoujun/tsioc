@@ -1,5 +1,5 @@
 import { isString } from '@tsdi/ioc';
-import { NodeSelector } from '../ComponentManager';
+import { ElementNode } from './ElementNode';
 
 
 /**
@@ -9,23 +9,25 @@ import { NodeSelector } from '../ComponentManager';
  * @class Composite
  * @template T
  */
-export class CompositeNode {
+export class CompositeNode extends ElementNode {
     /**
      * parent node.
      *
      * @type {CompositeNode}
      * @memberof CompositeNode
      */
-    parentNode: CompositeNode;
+    $parent: CompositeNode;
     /**
      * children nodes
      *
-     * @type {CompositeNode[]}
-     * @memberof CompositeNode
+     * @type {ElementNode[]}
+     * @memberof ElementNode
      */
-    children: CompositeNode[];
+    children: ElementNode[];
 
-    constructor(public selector?: string) {
+    constructor(selector?: string) {
+        super()
+        this.selector = selector;
         this.children = [];
     }
 
@@ -38,7 +40,7 @@ export class CompositeNode {
      */
     add(...nodes: CompositeNode[]): this {
         nodes.forEach(node => {
-            node.parentNode = this;
+            node.$parent = this;
             this.children.push(node);
         });
         return this;
@@ -47,40 +49,32 @@ export class CompositeNode {
     /**
      * remove composite.
      *
-     * @param {(...(string | CompositeNode)[])} nodes
+     * @param {(...(string | ElementNode)[])} nodes
      * @returns {this}
-     * @memberof CompositeNode
+     * @memberof ElementNode
      */
-    remove(...nodes: (string | CompositeNode)[]): this {
-        let components: CompositeNode[];
+    remove(...nodes: (string | ElementNode)[]): this {
+        let components: ElementNode[];
         if (nodes.length) {
             components = this.getSelector().filter(cmp => nodes.some(node => isString(node) ? cmp.selector === node : cmp.equals(node)));
         } else {
             components = [this];
         }
         components.forEach(component => {
-            if (!component.parentNode) {
-                return this;
-            } else if (this.equals(component.parentNode)) {
+            if (component instanceof CompositeNode) {
+                if (!component.$parent) {
+                    return this;
+                } else if (this.equals(component.$parent)) {
+                    this.children.splice(this.children.indexOf(component), 1);
+                    component.$parent = null;
+                } else {
+                    component.$parent.remove(component);
+                }
+            } else if (this.children.indexOf(component) >= 0) {
                 this.children.splice(this.children.indexOf(component), 1);
-                component.parentNode = null;
-            } else {
-                component.parentNode.remove(component);
             }
         });
         return this;
-    }
-
-    /**
-     * is equals or not.
-     *
-     * @param {CompositeNode} node
-     * @param {CompositeNode} [node2]
-     * @returns {boolean}
-     * @memberof CompositeNode
-     */
-    equals(node: CompositeNode, node2?: CompositeNode): boolean {
-        return node === (node2 || this);
     }
 
     /**
@@ -101,12 +95,12 @@ export class CompositeNode {
  * @export
  * @class CompositeSelector
  */
-export class CompositeSelector extends NodeSelector<CompositeNode> {
+export class CompositeSelector extends NodeSelector<ElementNode> {
     protected getParent(node: CompositeNode): CompositeNode {
-        return node.parentNode;
+        return node.$parent;
     }
 
-    protected getChildren(node: CompositeNode): CompositeNode[] {
+    protected getChildren(node: CompositeNode): ElementNode[] {
         return node.children || [];
     }
 }

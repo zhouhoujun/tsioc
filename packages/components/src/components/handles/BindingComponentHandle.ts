@@ -1,5 +1,6 @@
 import { BuildHandle, BuildContext } from '@tsdi/boot';
 import { ElementNode } from '../ElementNode';
+import { ViewRef } from '../../ComponentRef';
 
 
 /**

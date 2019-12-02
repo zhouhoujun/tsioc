@@ -17,4 +17,7 @@ export interface IBaseTypeParser {
     parse<T>(type: Token<T>, paramVal): T;
 }
 
+/**
+ * base type parser token.
+ */
 export const BaseTypeParserToken = new InjectToken<IBaseTypeParser>('BaseTypeParser');

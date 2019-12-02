@@ -1,10 +1,11 @@
 import { Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider } from '@tsdi/ioc';
-import { BuilderService, HandleRegisterer, IModuleResolveOption, BootTargetAccessor } from '@tsdi/boot';
+import { BuilderService, HandleRegisterer, IModuleResolveOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { TemplateContext, TemplateParseScope } from './parses';
 import { Component, NonSerialize } from './decorators';
 import { IBindingTypeReflect } from './bindings';
 import { RefSelector } from './RefSelector';
+import { APP_COMPONENT_REFS } from './ComponentRef';
 
 
 /**
@@ -26,14 +27,10 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
     }
 
     async resolveNode<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any> {
-        let bootTarget = this.resolve(target, options, ...providers);
-        let pdr = this.container.getInstance(DecoratorProvider);
-        let deckey = pdr.getKey(bootTarget);
-        if (deckey && pdr.has(deckey, BootTargetAccessor)) {
-            return pdr.resolve(deckey, BootTargetAccessor).getBoot(bootTarget, this.container);
-        } else {
-            return bootTarget;
-        }
+        let ctx = await this.resolveContext(target, options, ...providers);
+        let bootTarget = this.getBootTarget(ctx);
+
+        return this.container.get(APP_COMPONENT_REFS).get(bootTarget) || bootTarget;
     }
 
     serialize<T = any>(component: T): any {

@@ -28,20 +28,12 @@ export interface IModuleResolveOption extends AnnoationOption {
 @Injectable
 export class BuildContext<T extends IModuleResolveOption = IModuleResolveOption> extends AnnoationContext<T> implements IComponentContext {
     /**
-     * instance of current type annoation template
-     *
-     * @type {*}
-     * @memberof BuildContext
-     */
-    composite?: any;
-
-    /**
      * current target module
      *
      * @type {*}
      * @memberof BuildContext
      */
-    target?: any;
+    target: any;
 
 
     static parse(options: IModuleResolveOption): BuildContext {

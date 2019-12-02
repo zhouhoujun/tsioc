@@ -1,4 +1,4 @@
-import { Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
+import { Abstract, InjectReference, Token } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 import { IStartup, Startup } from './Startup';
 
@@ -50,13 +50,8 @@ export interface RunnableInit {
 @Abstract()
 export abstract class Runnable<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IRunnable<T, TCtx> {
 
-
-    constructor(@Inject(BootContext) ctx: TCtx) {
-        super(ctx);
-    }
-
-    async startup(ctx: TCtx) {
-        await this.run(ctx.data);
+    async startup() {
+        await this.run(this.context.data);
     }
 
     /**
