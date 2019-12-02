@@ -5,5 +5,5 @@ export * from './transforms';
 export * from './PackModule';
 export * from './templates';
 export * from './builds';
-
+export * from './ts-complie';
 

@@ -33,7 +33,7 @@ export function classAnnotations() {
     });
 }
 
-function iocAnnotations(contents) {
+export function iocAnnotations(contents: string): string {
     // fix typescript '$' bug when create source file.
     contents = contents.replace(repl$, '"$"');
     let sourceFile = ts.createSourceFile('cache.source.ts', contents, ts.ScriptTarget.Latest, true);
