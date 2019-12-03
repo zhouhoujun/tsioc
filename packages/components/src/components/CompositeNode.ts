@@ -1,5 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { ElementNode } from './ElementNode';
+import { NodeSelector } from '../NodeSelector';
 
 
 /**

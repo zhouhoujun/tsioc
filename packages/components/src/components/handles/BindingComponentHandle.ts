@@ -20,9 +20,9 @@ export class BindingComponentHandle extends BuildHandle<BuildContext> {
      * @memberof BindingComponentHandle
      */
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.composite instanceof ElementNode) {
-            ctx.composite.$scope = ctx.target;
-        }
+        // if (ctx.composite instanceof ElementNode) {
+        //     ctx.composite.$scope = ctx.target;
+        // }
         await next();
     }
 }

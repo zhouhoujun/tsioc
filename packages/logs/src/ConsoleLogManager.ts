@@ -58,6 +58,7 @@ class ConsoleLog implements ILogger {
     log(...args: any[]): void {
         console.log(...args);
     }
+
     trace(...args: any[]): void {
         if (!this.level || Levels[this.level] === 0) {
             console.debug(...args);

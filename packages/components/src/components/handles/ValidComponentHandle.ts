@@ -14,14 +14,14 @@ export class ValidComponentHandle extends BuildHandle<BuildContext> {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         let viewRef = ctx.get(CTX_VIEW_REF);
         if (isArray(viewRef)) {
-            if (ctx.target instanceof CompositeNode) {
-                ctx.target.add(...ctx.composite);
-                ctx.composite = null;
-            } else {
-                let content = this.container.getInstance(CompositeNode);
-                content.add(...ctx.composite);
-                ctx.composite = content;
-            }
+            // if (ctx.target instanceof CompositeNode) {
+            //     ctx.target.add(...ctx.composite);
+            //     ctx.composite = null;
+            // } else {
+            //     let content = this.container.getInstance(CompositeNode);
+            //     content.add(...ctx.composite);
+            //     ctx.composite = content;
+            // }
         }
 
         await next();
