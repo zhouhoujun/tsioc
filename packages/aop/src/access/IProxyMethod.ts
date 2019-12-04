@@ -1,5 +1,6 @@
 import { Type, InjectToken } from '@tsdi/ioc';
-import { IPointcut, Joinpoint } from '../joinpoints';
+import { IPointcut } from '../joinpoints/IPointcut';
+import { Joinpoint } from '../joinpoints/Joinpoint';
 
 /**
  * Aop proxy method interface token.

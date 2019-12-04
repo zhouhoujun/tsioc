@@ -1,7 +1,7 @@
 import { Type, Injectable, MethodMetadata, IParameter, InjectToken, Inject, ClassMetadata, ProviderMap } from '@tsdi/ioc';
 import { IJoinpoint } from './IJoinpoint';
 import { JoinpointState } from './JoinpointState';
-import { Advicer } from '../advices';
+import { Advicer } from '../advices/Advicer';
 import { NonePointcut } from '../decorators/NonePointcut';
 
 

@@ -1,5 +1,5 @@
 import { Express } from '@tsdi/ioc';
-import { Joinpoint } from '../joinpoints';
+import { Joinpoint } from '../joinpoints/Joinpoint';
 
 
 /**

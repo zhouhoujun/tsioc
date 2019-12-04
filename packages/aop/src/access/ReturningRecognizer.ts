@@ -1,6 +1,6 @@
 import { Singleton, isPromise } from '@tsdi/ioc';
 import { ReturningType } from './ReturningType';
-import { JoinpointState } from '../joinpoints';
+import { JoinpointState } from '../joinpoints/JoinpointState';
 import { NonePointcut } from '../decorators/NonePointcut';
 import { IocRecognizer } from './IocRecognizer';
 

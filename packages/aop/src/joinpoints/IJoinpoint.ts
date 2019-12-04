@@ -1,7 +1,7 @@
 import { IParameter, MethodMetadata, Type, ProviderMap } from '@tsdi/ioc';
 import { IPointcut } from './IPointcut';
 import { JoinpointState } from './JoinpointState';
-import { Advicer } from '../advices';
+import { Advicer } from '../advices/Advicer';
 
 /**
  * Joinpoint interface

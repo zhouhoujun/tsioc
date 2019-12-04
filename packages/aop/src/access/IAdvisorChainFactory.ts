@@ -1,5 +1,6 @@
-import { Joinpoint, JoinpointState } from '../joinpoints';
-import { Advicer } from '../advices';
+import { Joinpoint } from '../joinpoints/Joinpoint';
+import { JoinpointState } from '../joinpoints/JoinpointState';
+import { Advicer } from '../advices/Advicer';
 
 /**
  * advice advisor chain factory for proxy method invoke.

@@ -1,5 +1,5 @@
 import { Injectable, Inject, Express, IocContainerToken, IIocContainer } from '@tsdi/ioc';
-import { Joinpoint } from '../joinpoints';
+import { Joinpoint } from '../joinpoints/Joinpoint';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { AdvisorProceeding } from './AdvisorProceeding';
 import { NonePointcut } from '../decorators/NonePointcut';

@@ -1,5 +1,5 @@
 import { isClass, isBaseType, ITypeReflects, Type, IocCoreService } from '@tsdi/ioc';
-import { NonePointcut } from '../decorators';
+import { NonePointcut } from '../decorators/NonePointcut';
 
 
 /**

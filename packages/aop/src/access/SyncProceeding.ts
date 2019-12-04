@@ -1,7 +1,7 @@
 import { Express, Singleton } from '@tsdi/ioc';
 import { ReturningType } from './ReturningType';
 import { AdvisorProceeding } from './AdvisorProceeding';
-import { Joinpoint } from '../joinpoints';
+import { Joinpoint } from '../joinpoints/Joinpoint';
 import { NonePointcut } from '../decorators/NonePointcut';
 
 @NonePointcut()

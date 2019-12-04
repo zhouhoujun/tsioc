@@ -1,7 +1,8 @@
 import { RuntimeActionContext, lang, isUndefined, IocRuntimeAction } from '@tsdi/ioc';
-import { IPointcut } from '../joinpoints';
+import { IPointcut } from '../joinpoints/IPointcut';
 import { isValideAspectTarget } from './isValideAspectTarget';
-import { ProxyMethodToken } from '../access';
+import { ProxyMethodToken } from '../access/IProxyMethod';
+
 
 
 /**

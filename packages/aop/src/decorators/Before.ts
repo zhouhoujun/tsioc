@@ -1,4 +1,4 @@
-import { AdviceMetadata } from '../metadatas';
+import { AdviceMetadata } from '../metadatas/AdviceMetadata';
 import { IAdviceDecorator, createAdviceDecorator } from './Advice';
 
 /**
