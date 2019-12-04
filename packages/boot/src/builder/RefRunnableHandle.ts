@@ -1,7 +1,10 @@
 import { lang } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { Startup, Runnable, Service, Renderer } from '../runnable';
+import { Startup } from '../runnable/Startup';
+import { Renderer } from '../runnable/Renderer';
+import { Runnable } from '../runnable/Runnable';
+import { Service } from '../runnable/Service';
 
 
 export class RefRunnableHandle extends BootHandle {

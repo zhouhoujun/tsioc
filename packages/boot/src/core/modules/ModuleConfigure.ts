@@ -1,5 +1,5 @@
 import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
-import { Startup } from '../../runnable';
+import { Startup } from '../../runnable/Startup';
 import { RegFor } from './RegScope';
 
 /**

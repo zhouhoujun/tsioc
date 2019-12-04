@@ -1,5 +1,5 @@
-import { ResolveServiceContext, CTX_CURR_TOKEN } from '@tsdi/core';
 import { IocCompositeAction } from '@tsdi/ioc';
+import { ResolveServiceContext, CTX_CURR_TOKEN } from '@tsdi/core';
 import { ResolveModuleExportAction } from './ResolveModuleExportAction';
 import { ResolveParentServiceAction } from './ResolveParentServiceAction';
 import { ContainerPoolToken } from '../ContainerPoolToken';

@@ -1,6 +1,6 @@
 import { IocDesignAction, DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
-import { RootMessageQueueToken } from '../messages';
-import { MessageMetadata } from '../decorators';
+import { RootMessageQueueToken } from '../messages/IMessageQueue';
+import { MessageMetadata } from '../decorators/Message';
 import { RootContainerToken } from '../ContainerPoolToken';
 
 

@@ -4,7 +4,6 @@ import { IBaseTypeParser, BaseTypeParserToken } from './IBaseTypeParser';
 
 @Singleton(BaseTypeParserToken)
 export class BaseTypeParser extends IocCoreService implements IBaseTypeParser {
-
     /**
      * parse param.
      *

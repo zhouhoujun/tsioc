@@ -114,6 +114,12 @@ export interface IIocContainer extends IResolverContainer {
     resolve<T>(context: ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
 
     /**
+     * inject types.
+     * @param types types
+     */
+    inject(...types: Type[]): this;
+
+    /**
      * register type.
      *
      * @template T

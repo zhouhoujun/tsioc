@@ -1,5 +1,5 @@
 import { InjectToken, ProviderTypes, Token } from '@tsdi/ioc';
-import { HandleType, IHandle } from '../handles';
+import { HandleType, IHandle } from '../handles/Handle';
 import { MessageContext, MessageOption } from './MessageContext';
 
 

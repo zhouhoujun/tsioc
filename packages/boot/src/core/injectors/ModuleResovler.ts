@@ -3,7 +3,7 @@ import {
     IResolver, IResolverContainer, InstanceFactory, SymbolType, ContainerFactory
 } from '@tsdi/ioc';
 import { IContainer, isContainer } from '@tsdi/core';
-import { IModuleResolver } from '../modules';
+import { IModuleResolver } from '../modules/IModuleResovler';
 import { DIModuleExports } from './DIModuleExports';
 
 

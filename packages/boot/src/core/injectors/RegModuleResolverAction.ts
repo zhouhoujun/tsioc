@@ -1,6 +1,6 @@
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
-import { IDIModuleReflect } from '../modules';
+import { IDIModuleReflect } from '../modules/IDIModuleReflect';
 import { ModuleResovler } from './ModuleResovler';
 import { CTX_MODULE_RESOLVER, CTX_MODULE_EXPORTS } from '../../context-tokens';
 

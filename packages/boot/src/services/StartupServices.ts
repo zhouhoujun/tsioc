@@ -7,7 +7,7 @@ import { Singleton, IocCoreService, Token, Inject, ContainerFactoryToken, Contai
  * @class StartupServices
  * @extends {IocCoreService}
  */
-@Singleton
+@Singleton()
 export class StartupServices extends IocCoreService {
 
     startups: Token[];

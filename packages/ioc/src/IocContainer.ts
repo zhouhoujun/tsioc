@@ -151,6 +151,13 @@ export class IocContainer implements IIocContainer {
         return token;
     }
 
+    inject(...types: Type[]): this {
+        types.forEach(ty => {
+            this.registerFactory(ty);
+        });
+        return this;
+    }
+
     /**
      * register type.
      * @abstract

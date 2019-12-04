@@ -1,6 +1,6 @@
+import { Type, IocCompositeAction, lang, ActionRegisterer, CTX_CURR_SCOPE } from '@tsdi/ioc';
 import { IocResolveServiceAction, ResolveServiceContext } from '@tsdi/core';
 import { ParentContainerToken } from '../ContainerPoolToken';
-import { Type, IocCompositeAction, lang, ActionRegisterer, CTX_CURR_SCOPE } from '@tsdi/ioc';
 
 export class ResolveParentServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {

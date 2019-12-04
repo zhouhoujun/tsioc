@@ -1,6 +1,6 @@
 import { BootContext } from '../BootContext';
 import { BuildHandles } from '../core';
-import { Startup } from '../runnable';
+import { Startup } from '../runnable/Startup';
 import { RefRunnableHandle } from './RefRunnableHandle';
 
 

@@ -2,7 +2,7 @@ import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
 import { ContainerPoolToken } from '../ContainerPoolToken';
 import { DIModuleExports } from './DIModuleExports';
-import { RegFor } from '../modules';
+import { RegFor } from '../modules/RegScope';
 import { CTX_MODULE_RESOLVER } from '../../context-tokens';
 
 export class RegModuleExportsAction extends AnnoationAction {

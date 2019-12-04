@@ -2,8 +2,8 @@ import { IocCoreService, Type, ProviderTypes, InjectToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
-import { IModuleResolveOption } from './resovers';
-import { IStartup } from '../runnable';
+import { IModuleResolveOption } from './resolvers/BuildContext';
+import { IStartup } from '../runnable/Startup';
 
 export interface BootSubAppOption<T extends BootContext> {
     /**

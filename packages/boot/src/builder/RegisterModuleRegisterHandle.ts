@@ -1,6 +1,6 @@
 import { AnnoationHandle, ModuleRegister, RegFor } from '../core';
 import { BootContext } from '../BootContext';
-import { ProcessRunRootToken } from '../annotations';
+import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
 
 
 export class RegisterModuleRegisterHandle extends AnnoationHandle {

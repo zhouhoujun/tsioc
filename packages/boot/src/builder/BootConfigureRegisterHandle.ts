@@ -1,7 +1,7 @@
 import { LogConfigureToken } from '@tsdi/logs';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { ConfigureRegister } from '../annotations';
+import { ConfigureRegister } from '../annotations/ConfigureRegister';
 
 /**
  * boot configure register handle.

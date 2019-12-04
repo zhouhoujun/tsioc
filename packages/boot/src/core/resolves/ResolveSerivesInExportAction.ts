@@ -1,8 +1,8 @@
 import {
     ResolveServicesContext, IocResolveServicesAction, ResolveServicesScope
 } from '@tsdi/core';
-import { DIModuleExports } from '../injectors';
-import { IModuleResolver } from '../modules';
+import { DIModuleExports } from '../injectors/DIModuleExports';
+import { IModuleResolver } from '../modules/IModuleResovler';
 import { ActionRegisterer } from '@tsdi/ioc';
 
 

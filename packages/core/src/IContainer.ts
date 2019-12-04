@@ -2,7 +2,7 @@ import { Type, Token, Modules, LoadType, InjectToken, IIocContainer } from '@tsd
 import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
-import { IModuleLoader } from './services';
+import { IModuleLoader } from './services/ModuleLoader';
 
 /**
  * IContainer token.

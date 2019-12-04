@@ -1,5 +1,5 @@
 import { Token, MetadataExtends, ITypeDecorator, isFunction, isClass, createClassDecorator, ArgsIteratorAction } from '@tsdi/ioc';
-import { RunnableConfigure } from '../annotations';
+import { RunnableConfigure } from '../annotations/RunnableConfigure';
 
 /**
  * bootstrap metadata.

@@ -1,5 +1,5 @@
 import { InjectToken, ClassType } from '@tsdi/ioc';
-import { ModuleConfigure } from './modules';
+import { ModuleConfigure } from './modules/ModuleConfigure';
 
 /**
  * annoation metadata service

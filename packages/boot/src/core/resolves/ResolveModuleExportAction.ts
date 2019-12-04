@@ -1,5 +1,5 @@
 import { IocResolveAction, ResolveActionContext } from '@tsdi/ioc';
-import { DIModuleExports } from '../injectors';
+import { DIModuleExports } from '../injectors/DIModuleExports';
 
 /**
  * reolve module export.

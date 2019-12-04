@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { MessageContext } from './MessageContext';
-import { Handle } from '../handles';
+import { Handle } from '../handles/Handle';
 
 
 /**

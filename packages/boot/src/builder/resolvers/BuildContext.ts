@@ -1,5 +1,4 @@
 import { Injectable, createRaiseContext } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
 import { AnnoationOption, AnnoationContext } from '../../core';
 import { IComponentContext } from '../ComponentContext';
 

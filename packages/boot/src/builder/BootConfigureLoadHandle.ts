@@ -1,9 +1,10 @@
 import { DecoratorProvider, isClass } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { ConfigureManager, ProcessRunRootToken } from '../annotations';
 import { AnnotationMerger } from '../core';
 import { CTX_APP_CONFIGURE } from '../context-tokens';
+import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
+import { ConfigureManager } from '../annotations/ConfigureManager';
 
 /**
  * boot configure load handle.

@@ -1,10 +1,10 @@
 import { Type, LoadType, isArray, isString, isClass } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { ContainerPool, AnnotationServiceToken } from './core';
-import { RunnableConfigure } from './annotations';
+import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
-import { BuilderServiceToken } from './builder';
+import { BuilderServiceToken } from './builder/IBuilderService';
 import { BootSetup } from './setup';
 
 

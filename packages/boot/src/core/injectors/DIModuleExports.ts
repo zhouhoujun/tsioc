@@ -1,5 +1,5 @@
 import { IocCoreService, Singleton, Token, IResolver, ProviderTypes } from '@tsdi/ioc';
-import { IModuleResolver } from '../modules';
+import { IModuleResolver } from '../modules/IModuleResovler';
 
 /**
  * DI module exports.

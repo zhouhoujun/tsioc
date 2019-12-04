@@ -2,8 +2,10 @@ import { Token, SymbolType, Registration, IIocContainer, ProviderTypes, IocConta
 import { IContainer, IContainerBuilder, Container, ContainerToken } from '@tsdi/core';
 import { BootModule } from './BootModule';
 import { ParentContainerToken, ContainerPoolToken, RootContainerToken, IContainerPool } from './ContainerPoolToken';
-import { HandleRegisterer, StartupDecoratorRegisterer } from './handles';
-import { DIModuleExports } from './injectors';
+import { HandleRegisterer } from './handles/BuildHandles';
+import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
+import { DIModuleExports } from './injectors/DIModuleExports';
+
 
 /**
  * module container.

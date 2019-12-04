@@ -1,5 +1,6 @@
 import { ITypeDecorator, MetadataExtends, createClassDecorator, ArgsIteratorAction } from '@tsdi/ioc';
-import { IAnnotationMetadata } from '../modules';
+import { IAnnotationMetadata } from '../modules/ModuleConfigure';
+
 
 
 /**

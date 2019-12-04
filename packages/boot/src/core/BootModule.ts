@@ -10,14 +10,18 @@ import {
 } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
-import * as modules from './modules';
-import * as messages from './messages';
-
-import { RouteResolveAction, ResolveRouteServiceAction, ResolveRouteServicesAction } from './resolves';
-import { RouteDesignRegisterAction, RouteRuntimRegisterAction, MessageRegisterAction, AnnoationDesignAction } from './registers';
-import { DIModuleInjectorScope, ModuleInjectLifeScope, RegForInjectorAction } from './injectors';
-import { Message } from './decorators';
+import { Message } from './decorators/Message';
 import { AnnotationService } from './AnnotationService';
+import { MessageContext } from './messages/MessageContext';
+import { MessageQueue } from './messages/MessageQueue';
+import { ModuleInjectLifeScope, DIModuleInjectorScope } from './injectors/ModuleInjectLifeScope';
+import { RegForInjectorAction } from './injectors/RegForInjectorAction';
+import { MessageRegisterAction } from './registers/MessageRegisterAction';
+import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
+import { ResolveRouteServiceAction } from './resolves/ResolveRouteServiceAction';
+import { ResolveRouteServicesAction } from './resolves/ResolveRouteServicesAction';
+import { RouteResolveAction } from './resolves/RouteResolveAction';
+import { RouteDesignRegisterAction, RouteRuntimRegisterAction } from './registers/RouteRegisterAction';
 
 
 /**
@@ -67,7 +71,7 @@ export class BootModule {
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        container.use(modules, messages);
+        container.inject(MessageContext, MessageQueue);
 
 
         // route service

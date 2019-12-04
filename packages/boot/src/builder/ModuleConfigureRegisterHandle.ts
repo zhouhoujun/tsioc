@@ -1,6 +1,7 @@
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { ConfigureRegister, ConfigureManager } from '../annotations';
+import { ConfigureRegister } from '../annotations/ConfigureRegister';
+import { ConfigureManager } from '../annotations/ConfigureManager';
 
 
 export class ModuleConfigureRegisterHandle extends BootHandle {

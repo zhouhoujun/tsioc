@@ -4,12 +4,13 @@ import { BootContext, BootOption } from '../BootContext';
 import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken, AnnoationContext } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
-import { ResolveMoudleScope, IModuleResolveOption, BuildContext } from './resovers';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
-import { IStartup } from '../runnable';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
 import { CTX_MODULE_RESOLVER, CTX_MODULE_REGFOR, CTX_APP_ENVARGS } from '../context-tokens';
+import { ResolveMoudleScope } from './resolvers/ResolveMoudleScope';
+import { IModuleResolveOption, BuildContext } from './resolvers/BuildContext';
+import { IStartup } from '../runnable/Startup';
 
 
 

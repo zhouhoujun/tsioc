@@ -1,12 +1,13 @@
 import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE, isTypeObject } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
-import { Startup } from './runnable';
-import { IComponentContext } from './builder';
+import { Startup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
 import { AnnoationContext, AnnoationOption } from './core';
-import { RunnableConfigure, ConfigureManager, ProcessRunRootToken } from './annotations';
 import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS } from './context-tokens';
+import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
+import { IComponentContext } from './builder/ComponentContext';
+import { ConfigureManager } from './annotations/ConfigureManager';
 
 
 

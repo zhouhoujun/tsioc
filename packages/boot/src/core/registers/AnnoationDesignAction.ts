@@ -1,7 +1,8 @@
 import { IocDesignAction, DesignActionContext, lang, DecoratorProvider, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { AnnotationMerger } from '../AnnotationMerger';
-import { ModuleConfigure, IModuleReflect } from '../modules';
 import { AnnotationCloner } from '../AnnotationCloner';
+import { IModuleReflect } from '../modules/IModuleReflect';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 
 export class AnnoationDesignAction extends IocDesignAction {

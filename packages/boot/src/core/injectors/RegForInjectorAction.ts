@@ -1,7 +1,7 @@
 import { lang, isClass, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { InjectorAction, InjectorActionContext, CTX_CURR_TYPE } from '@tsdi/core';
-import { RegisterForMetadata, RegisterFor } from '../decorators';
-import { RegFor } from '../modules';
+import { RegisterForMetadata, RegisterFor } from '../decorators/RegisterFor';
+import { RegFor } from '../modules/RegScope';
 import { ContainerPoolToken } from '../ContainerPoolToken';
 
 export class RegForInjectorAction extends InjectorAction {
