@@ -1,6 +1,6 @@
 import { IocDesignAction, DesignActionContext, isClassType, DecoratorProvider, isDefined, CTX_CURR_DECOR } from '@tsdi/ioc';
-import { BindingPropertyMetadata } from '../decorators';
-import { IBindingTypeReflect } from '../bindings';
+import { BindingPropertyMetadata } from '../decorators/BindingPropertyMetadata';
+import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
 import { BindingCache } from './BindingCache';
 
 

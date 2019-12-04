@@ -1,4 +1,4 @@
-import { ClassType, ITypeReflect, Token } from '@tsdi/ioc';
+import { ClassType, Token } from '@tsdi/ioc';
 
 /**
  * binding types.
@@ -109,51 +109,4 @@ export interface IPropertyVaildate {
     required?: boolean;
     vaild?: (value: any, target?: any) => boolean | Promise<boolean>;
     errorMsg?: string;
-}
-
-/**
- * binding type reflect data.
- *
- * @export
- * @interface IBindingTypeReflect
- * @extends {ITypeReflect}
- */
-export interface IBindingTypeReflect extends ITypeReflect {
-
-    componentDecorator?: string;
-    componentSelector?: string;
-    componentSelectorId?: string;
-    attrSelector?: string;
-    /**
-     * property input binding metadata.
-     *
-     * @type {Map<string, IBinding>}
-     * @memberof IBindingTypeReflect
-     */
-    propInBindings: Map<string, IBinding>;
-
-    /**
-     * property output binding metadata.
-     *
-     * @type {Map<string, IBinding>}
-     * @memberof IBindingTypeReflect
-     */
-    propOutBindings: Map<string, IBinding>;
-
-    /**
-     * property output binding metadata.
-     *
-     * @type {Map<string, IBinding>}
-     * @memberof IBindingTypeReflect
-     */
-    propRefChildBindings: Map<string, IBinding>;
-
-    /**
-     * property vaildate metadata.
-     *
-     * @type {Map<string, IPropertyVaildate>}
-     * @memberof IBindingTypeReflect
-     */
-    propVaildates: Map<string, IPropertyVaildate[]>;
-
 }

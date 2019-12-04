@@ -4,7 +4,6 @@ import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScope
 import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
-import * as core from './core';
 import { TaskInjectorRegisterAction, ActivityContext } from './core';
 import * as activites from './activities';
 import { ActivityRefSelector } from './ActivityRefSelector';
@@ -66,8 +65,8 @@ export class ActivityModule {
             );
 
 
-        container.use(core)
-            .use(RunAspect)
+        container.inject(core)
+            .register(RunAspect)
             .use(activites);
     }
 }

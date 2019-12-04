@@ -1,7 +1,11 @@
 import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
 import { BuildContext, ResolveHandle, HandleRegisterer } from '@tsdi/boot';
-import { BindingScope, ParseContext } from '../parses';
-import { IBindingTypeReflect, BindingTypes, DataBinding, ParseBinding } from '../bindings';
+import { ParseContext } from '../parses/ParseContext';
+import { BindingScope } from '../parses/BindingScope';
+import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { BindingTypes } from '../bindings/IBinding';
+import { ParseBinding } from '../bindings/ParseBinding';
+import { DataBinding } from '../bindings/DataBinding';
 
 
 /**

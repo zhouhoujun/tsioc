@@ -1,11 +1,13 @@
 import { Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider } from '@tsdi/ioc';
 import { BuilderService, HandleRegisterer, IModuleResolveOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
-import { TemplateContext, TemplateParseScope } from './parses';
-import { Component, NonSerialize } from './decorators';
-import { IBindingTypeReflect } from './bindings';
+import { IBindingTypeReflect } from './bindings/IBindingTypeReflect';
 import { RefSelector } from './RefSelector';
 import { APP_COMPONENT_REFS } from './ComponentRef';
+import { Component } from './decorators/Component';
+import { NonSerialize } from './decorators/NonSerialize';
+import { TemplateContext } from './parses/TemplateContext';
+import { TemplateParseScope } from './parses/TemplateParseScope';
 
 
 /**

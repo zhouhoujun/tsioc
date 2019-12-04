@@ -22,7 +22,7 @@ export class RefElementSelector extends RefSelector {
     getComponentSelector(): string {
         return 'element';
     }
-    getSelectorId(): string {
+    getSelectKey(): string {
         return 'selector';
     }
 

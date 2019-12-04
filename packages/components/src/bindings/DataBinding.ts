@@ -1,5 +1,5 @@
 import { IContainer } from '@tsdi/core';
-import { IBinding } from './IPropertyBindingReflect';
+import { IBinding } from './IBinding';
 import { AstResolver } from '../AstResolver';
 import { lang, isTypeObject } from '@tsdi/ioc';
 import { observe } from './onChange';

@@ -33,9 +33,6 @@ export class LogModule {
             .register(Logger, DecoratorScopes.Class, BindMethodProviderAction)
             .register(Logger, DecoratorScopes.Method, BindMethodProviderAction);
 
-        container.register(ConfigureLoggerManger);
-        container.register(AnnotationLoggerAspect);
-        container.register(LogFormater);
-        container.register(ConsoleLogManager);
+        container.inject(ConfigureLoggerManger, AnnotationLoggerAspect, LogFormater, ConsoleLogManager);
     }
 }

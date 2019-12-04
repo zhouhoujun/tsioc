@@ -1,4 +1,5 @@
-import { Component, Input } from '../decorators';
+import { Input } from '../decorators/Input';
+import { Component } from '../decorators/Component';
 
 /**
  * Element node.

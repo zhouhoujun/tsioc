@@ -63,20 +63,6 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
 
 }
 
-/**
- * statup on init hooks
- *
- * @export
- * @interface RunnableInit
- */
-export interface StartupInit {
-    /**
-     * on init hooks.
-     *
-     * @returns {(void | Promise<void>)}
-     */
-    onInit(): void | Promise<void>;
-}
 
 /**
  * boot.

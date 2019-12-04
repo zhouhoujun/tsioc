@@ -1,7 +1,7 @@
 import { Type, Singleton } from '@tsdi/ioc';
 import { RefSelector, NodeSelector, ComponentManager } from '@tsdi/components';
 import { SequenceActivity } from './activities';
-import { Activity } from './core';
+import { Activity } from './core/Activity';
 
 
 /**
@@ -18,7 +18,7 @@ export class ActivityRefSelector extends RefSelector {
         return 'activity';
     }
 
-    getSelectorId(): string {
+    getSelectKey(): string {
         return 'refId';
     }
 

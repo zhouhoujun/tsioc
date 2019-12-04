@@ -25,21 +25,6 @@ export interface IRunnable<T = any, TCtx extends BootContext = BootContext> exte
 }
 
 /**
- * runnablle on init hooks
- *
- * @export
- * @interface RunnableInit
- */
-export interface RunnableInit {
-    /**
-     * on init hooks.
-     *
-     * @returns {(void | Promise<void>)}
-     */
-    onInit(): void | Promise<void>;
-}
-
-/**
  * boot.
  *
  * @export

@@ -42,16 +42,10 @@ export class AopModule {
      */
     setup(@Inject(IocContainerToken) container: IIocContainer) {
 
-        container.register(Joinpoint);
-        container.register(AdvisorChainFactory);
-        container.register(ReturningRecognizer);
-        container.register(SyncProceeding);
-        container.register(AsyncPromiseProceeding);
-        // container.register(AsyncObservableProceeding);
-        container.register(AdvisorChain);
-        container.register(ProxyMethod);
-        container.register(Advisor);
-        container.register(AdviceMatcher);
+        container.inject(
+            Joinpoint, AdvisorChainFactory, ReturningRecognizer,
+            SyncProceeding, AsyncPromiseProceeding, AdvisorChain,
+            ProxyMethod, Advisor, AdviceMatcher);
 
         let registerer = container.getInstance(ActionRegisterer);
 

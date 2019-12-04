@@ -1,7 +1,8 @@
 import { isString, Type, isArray, DecoratorProvider } from '@tsdi/ioc';
-import { TemplateHandle, TemplateContext } from '../../parses';
 import { SelectorManager } from '../../SelectorManager';
 import { RefSelector } from '../../RefSelector';
+import { TemplateHandle } from '../../parses/TemplateHandle';
+import { TemplateContext } from '../../parses/TemplateContext';
 
 /**
  * component selector handle.

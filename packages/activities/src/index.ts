@@ -4,7 +4,24 @@ export * from './decorators';
 export * from './handles';
 
 export * from './utils';
-export * from './core';
+// core
+export * from './core/injectors'
+export * from './core/ParallelExecutor';
+export * from './core/ValuePipe';
+export * from './core/Activity';
+export * from './core/ControlActivity';
+export * from './core/IActivityExecutor';
+export * from './core/ActivityExecutor';
+export * from './core/ActivityResult';
+export * from './core/ActivityStatus';
+export * from './core/ActivityOption';
+export * from './core/ActivityConfigure';
+export * from './core/CompoiseActivity';
+export * from './core/WorkflowInstance';
+export * from './core/ActivityContext';
+export * from './core/uuid';
+
+
 export * from './aop';
 export * from './activities';
 

@@ -1,6 +1,6 @@
 import { BootContext, BootHandle } from '@tsdi/boot';
 import { ComponentBuilderToken } from '../IComponentBuilder';
-import { Component } from '../decorators';
+import { Component } from '../decorators/Component';
 
 export class BootTemplateHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {

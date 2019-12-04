@@ -1,6 +1,6 @@
 import { Abstract, Type, isClass, isString, TypeReflects, Inject } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { NodeSelector } from './ComponentManager';
+import { NodeSelector } from './NodeSelector';
 
 
 /**
@@ -18,7 +18,7 @@ export abstract class RefSelector {
 
     abstract getComponentSelector(): string;
 
-    abstract getSelectorId(): string;
+    abstract getSelectKey(): string;
 
     abstract getDefaultCompose(): Type;
 
@@ -35,7 +35,7 @@ export abstract class RefSelector {
     select(element: any, selector: string | ((e: any) => boolean)): any {
         let selFunc: (e: any) => boolean;
         if (isString(selector)) {
-            let id = this.getSelectorId();
+            let id = this.getSelectKey();
             selFunc = e => e[id] === selector;
         } else {
             selFunc = selector;

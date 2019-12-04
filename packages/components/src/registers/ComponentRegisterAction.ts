@@ -1,7 +1,7 @@
 import { IocDesignAction, DesignActionContext, ProviderTypes, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
 import { SelectorManager } from '../SelectorManager';
-import { IBindingTypeReflect } from '../bindings';
+import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
 
 const attrExp = /^\[\w+\]$/;
 /**

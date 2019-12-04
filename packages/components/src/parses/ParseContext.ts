@@ -1,7 +1,8 @@
-import { ContainerFactory, Injectable, Type, createRaiseContext } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, createRaiseContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
-import { IBinding, DataBinding } from '../bindings';
+import { IBinding } from '../bindings/IBinding';
+import { DataBinding } from '../bindings/DataBinding';
 
 /**
  * binding parse option.

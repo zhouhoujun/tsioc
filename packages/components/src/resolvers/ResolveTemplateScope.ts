@@ -1,7 +1,8 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { HandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
-import { TemplateParseScope, TemplateContext } from '../parses';
 import { ViewRef } from '../ComponentRef';
+import { TemplateContext } from '../parses/TemplateContext';
+import { TemplateParseScope } from '../parses/TemplateParseScope';
 
 
 export class ResolveTemplateScope extends ResolveHandle {

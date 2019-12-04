@@ -6,7 +6,12 @@ import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { SelectorManager } from '../SelectorManager';
 import { ComponentBuilderToken } from '../IComponentBuilder';
-import { DataBinding, OneWayBinding, TwoWayBinding, ParseBinding, EventBinding, BindingDirection } from '../bindings';
+import { DataBinding } from '../bindings/DataBinding';
+import { BindingDirection } from '../bindings/IBinding';
+import { OneWayBinding } from '../bindings/OneWayBinding';
+import { TwoWayBinding } from '../bindings/TwoWayBinding';
+import { EventBinding } from '../bindings/EventBinding';
+import { ParseBinding } from '../bindings/ParseBinding';
 
 
 /**

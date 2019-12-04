@@ -1,7 +1,9 @@
-import { ResolveHandle, BuildContext, HandleRegisterer } from '@tsdi/boot';
-import { IBindingTypeReflect } from '../bindings';
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { ParseContext, BindingScopeHandle } from '../parses';
+import { ResolveHandle, BuildContext, HandleRegisterer } from '@tsdi/boot';
+import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { ParseContext } from '../parses/ParseContext';
+import { BindingScopeHandle } from '../parses/BindingValueScope';
+
 
 export class BindingOutputHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {

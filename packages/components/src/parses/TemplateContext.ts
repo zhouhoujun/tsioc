@@ -1,4 +1,4 @@
-import { ContainerFactory, Injectable, Type, InjectToken, createRaiseContext, CTX_PROVIDERS } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, InjectToken, createRaiseContext } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { IComponentContext, AnnoationContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';

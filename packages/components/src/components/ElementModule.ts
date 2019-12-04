@@ -1,11 +1,13 @@
 import { Inject, DecoratorProvider } from '@tsdi/ioc';
 import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
 import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { Component } from '../decorators';
+import { Component } from '../decorators/Component';
 import { ElementNode } from './ElementNode';
 import { RefSelector } from '../RefSelector';
 import { RefElementSelector } from './RefElementSelector';
-import { ComponentSelectorHandle, ValidComponentHandle, BindingComponentHandle } from './handles';
+import { ComponentSelectorHandle } from './handles/ComponentSelectorHandle';
+import { ValidComponentHandle } from './handles/ValidComponentHandle';
+import { BindingComponentHandle } from './handles/BindingComponentHandle';
 
 /**
  * component element module.

@@ -4,22 +4,38 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import {
-    HandleRegisterer, ResolveMoudleScope, AnnoationDesignAction,
-    AnnotationCloner, BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope, RootContainerToken
+    HandleRegisterer, ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner,
+    BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope, RootContainerToken
 } from '@tsdi/boot';
-import { Component, Input, Output, RefChild, Vaildate } from './decorators';
 import { SelectorManager } from './SelectorManager';
-import { ComponentRegisterAction, BindingPropertyTypeAction, BindingCache, BindingCacheFactory, RegisterVaildateAction } from './registers';
-import {
-    BindingPropertyHandle, ModuleAfterInitHandle, ResolveTemplateScope, ValifyTeamplateHandle,
-    BindingTemplateHandle, ModuleAfterContentInitHandle, ModuleBeforeInitHandle, BindingOutputHandle, BootTemplateHandle
-} from './resovers';
-import { BindingScope, TemplateParseScope } from './parses';
+import { Input } from './decorators/Input';
+import { Output } from './decorators/Output';
+import { RefChild } from './decorators/RefChild';
+import { Component } from './decorators/Component';
+import { Vaildate } from './decorators/Vaildate';
+import { BindingScope } from './parses/BindingScope';
+import { TemplateParseScope } from './parses/TemplateParseScope';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 import { AstResolver } from './AstResolver';
 import { APP_COMPONENT_REFS } from './ComponentRef';
 
+import { ComponentRegisterAction } from './registers/ComponentRegisterAction';
+import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
+import { BindingCache, BindingCacheFactory } from './registers/BindingCache';
+import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
+
+import { ModuleBeforeInitHandle } from './resolvers/ModuleBeforeInitHandle';
+import { BindingPropertyHandle } from './resolvers/BindingPropertyHandle';
+import { ModuleAfterInitHandle } from './resolvers/ModuleAfterInitHandle';
+import { ResolveTemplateScope } from './resolvers/ResolveTemplateScope';
+import { ValifyTeamplateHandle } from './resolvers/ValifyTeamplateHandle';
+import { BindingTemplateHandle } from './resolvers/BindingTemplateHandle';
+import { ModuleAfterContentInitHandle } from './resolvers/ModuleAfterContentInitHandle';
+import { BindingOutputHandle } from './resolvers/BindingOutputHandle';
+import { BootTemplateHandle } from './resolvers/BootTemplateHandle';
+import { ComponentManager } from './ComponentManager';
+import { ModuleInitHandle } from './resolvers/ModuleInitHandle';
 
 /**
  * components module.
@@ -32,9 +48,7 @@ export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.register(SelectorManager)
-            .register(ComponentAnnotationCloner)
-            .register(AstResolver);
+        container.inject(ComponentManager, SelectorManager, ComponentAnnotationCloner, AstResolver);
 
         container.get(RootContainerToken).bindProvider(APP_COMPONENT_REFS, new WeakMap());
         container.getInstance(ActionRegisterer)
@@ -78,6 +92,7 @@ export class ComponentsModule {
             .get(ResolveMoudleScope)
             .use(ModuleBeforeInitHandle)
             .use(BindingPropertyHandle)
+            .use(ModuleInitHandle)
             .use(ModuleAfterInitHandle)
             .use(ResolveTemplateScope)
             .use(ValifyTeamplateHandle)

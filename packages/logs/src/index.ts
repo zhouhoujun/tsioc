@@ -11,5 +11,5 @@ export * from './LoggerAspect';
 export * from './AnnotationLoggerAspect';
 export * from './decorators/Logger';
 export * from './LogModule';
-export * from './debugs';
+export * from './debugs/DebugLogAspect';
 
