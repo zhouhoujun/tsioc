@@ -1,4 +1,4 @@
-import { isString } from './utils';
+import { isString } from './utils/lang';
 import { Token } from './types';
 import { Registration } from './Registration';
 

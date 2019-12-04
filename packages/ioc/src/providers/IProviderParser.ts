@@ -1,5 +1,5 @@
 import { ParamProviders } from './types';
-import { ProviderMap } from '../providers';
+import { ProviderMap } from './ProviderMap';
 
 /**
  * Providers Parser interface.

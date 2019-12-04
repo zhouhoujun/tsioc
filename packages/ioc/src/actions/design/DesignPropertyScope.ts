@@ -3,7 +3,8 @@ import { DesignActionContext } from './DesignActionContext';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
 import { BindPropertyTypeAction } from './BindPropertyTypeAction';
-import { Inject, AutoWired } from '../../decorators';
+import { Inject } from '../../decorators/Inject';
+import { AutoWired } from '../../decorators/AutoWried';
 
 export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> {
 

@@ -1,6 +1,10 @@
 import { RegisterLifeScope } from './RegisterLifeScope';
-import { DesignActionContext, DesignDecoratorAction, DesignPropertyScope, DesignMethodScope, DesignAnnoationScope } from './design';
 import { InitReflectAction } from './InitReflectAction';
+import { DesignActionContext } from './design/DesignActionContext';
+import { DesignDecoratorAction } from './design/DesignDecoratorAction';
+import { DesignPropertyScope } from './design/DesignPropertyScope';
+import { DesignMethodScope } from './design/DesignMethodScope';
+import { DesignAnnoationScope } from './design/DesignAnnoationScope';
 
 
 /**

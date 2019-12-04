@@ -1,6 +1,6 @@
 import { IocRegisterAction } from './IocRegisterAction';
 import { RegisterActionContext } from './RegisterActionContext';
-import { isClass } from '../utils';
+import { isClass } from '../utils/lang';
 
 /**
  * init class reflect action.

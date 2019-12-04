@@ -2,10 +2,12 @@ import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
-import { Inject, AutoWired, Param } from '../../decorators';
 import { BindParameterTypeAction } from './BindParameterTypeAction';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 import { InitReflectAction } from '../InitReflectAction';
+import { Inject } from '../../decorators/Inject';
+import { AutoWired } from '../../decorators/AutoWried';
+import { Param } from '../../decorators/Param';
 
 /**
  * runtime param scope.

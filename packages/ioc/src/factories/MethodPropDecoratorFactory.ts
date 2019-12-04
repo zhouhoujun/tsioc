@@ -1,4 +1,4 @@
-import { MethodPropMetadata } from '../metadatas';
+import { MethodPropMetadata } from '../metadatas/MethodPropMetadata';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorAction } from './ArgsIterator';

@@ -1,7 +1,8 @@
 import { IIocContainer } from './IIocContainer';
 import { Type, Token } from './types';
+import { ParamProviders } from './providers/types';
+import { ProviderMap } from './providers/ProviderMap';
 import { IParameter } from './IParameter';
-import { ParamProviders, ProviderMap } from './providers';
 import { InjectToken } from './InjectToken';
 
 /**

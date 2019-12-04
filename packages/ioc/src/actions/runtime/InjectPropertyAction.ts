@@ -1,8 +1,9 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { InjectReference } from '../../InjectReference';
-import { ProviderMap } from '../../providers';
-import { isToken, isNullOrUndefined } from '../../utils';
+import { ProviderMap } from '../../providers/ProviderMap';
+import { isNullOrUndefined } from '../../utils/lang';
+import { isToken } from '../../utils/isToken';
 
 
 /**

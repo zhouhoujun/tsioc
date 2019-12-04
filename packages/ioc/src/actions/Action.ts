@@ -1,10 +1,13 @@
 import { Token, Type } from '../types';
-import { lang, isFunction, isClass, isToken } from '../utils';
-import { Inject } from '../decorators';
+import { lang, isFunction, isClass } from '../utils/lang';
+import { isToken } from '../utils/isToken';
+import { Inject } from '../decorators/Inject';
+import { ProviderMap } from '../providers/ProviderMap';
+import { ProviderTypes } from '../providers/types';
+import { ProviderParser } from '../providers/ProviderParser';
 import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ActionRegisterer } from './ActionRegisterer';
-import { ProviderMap, ProviderTypes, ProviderParser } from '../providers';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 

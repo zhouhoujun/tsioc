@@ -1,5 +1,5 @@
-import { IParamPropDecorator, createParamPropDecorator } from '../factories';
-import { InjectMetadata } from '../metadatas';
+import { IParamPropDecorator, createParamPropDecorator } from '../factories/ParamPropDecoratorFactory';
+import { InjectMetadata } from '../metadatas/InjectMetadata';
 
 /**
  * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.

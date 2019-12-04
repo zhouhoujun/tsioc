@@ -1,6 +1,6 @@
 import { Token, Express2, Type, ObjectMap } from '../types';
 import { IIocContainer } from '../IIocContainer';
-import { isFunction, isObject, isUndefined } from '../utils';
+import { isFunction, isObject, isUndefined } from '../utils/lang';
 import { ProviderTypes } from './types';
 
 /**

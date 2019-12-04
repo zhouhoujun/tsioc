@@ -1,12 +1,17 @@
-import {
-    IocGetCacheAction, RuntimeMethodScope, RuntimeActionContext,
-    CreateInstanceAction, ConstructorArgsAction,
-    IocBeforeConstructorScope, IocAfterConstructorScope,
-    RuntimeAnnoationScope, RuntimePropertyScope, RuntimeParamScope,
-    RuntimeDecoratorAction, GetSingletionAction
-} from './runtime';
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { InitReflectAction } from './InitReflectAction';
+import { RuntimeActionContext } from './runtime/RuntimeActionContext';
+import { RuntimeDecoratorAction } from './runtime/RuntimeDecoratorAction';
+import { RuntimeParamScope } from './runtime/RuntimeParamScope';
+import { GetSingletionAction } from './runtime/GetSingletionAction';
+import { IocGetCacheAction } from './runtime/IocGetCacheAction';
+import { ConstructorArgsAction } from './runtime/ConstructorArgsAction';
+import { IocBeforeConstructorScope } from './runtime/IocBeforeConstructorScope';
+import { CreateInstanceAction } from './runtime/CreateInstanceAction';
+import { IocAfterConstructorScope } from './runtime/IocAfterConstructorScope';
+import { RuntimePropertyScope } from './runtime/RuntimePropertyScope';
+import { RuntimeMethodScope } from './runtime/RuntimeMethodScope';
+import { RuntimeAnnoationScope } from './runtime/RuntimeAnnoationScope';
 
 /**
  * runtime life scope.

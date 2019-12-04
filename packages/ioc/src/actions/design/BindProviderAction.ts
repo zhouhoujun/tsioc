@@ -1,6 +1,6 @@
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
-import { ClassMetadata } from '../../metadatas';
+import { ClassMetadata } from '../../metadatas/ClassMetadata';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**

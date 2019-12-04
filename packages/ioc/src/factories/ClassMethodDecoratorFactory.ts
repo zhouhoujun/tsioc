@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { TypeMetadata } from '../metadatas';
+import { TypeMetadata } from '../metadatas/TypeMetadata';
 import { createDecorator, MetadataExtends } from './DecoratorFactory'
 import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorAction } from './ArgsIterator';

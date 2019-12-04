@@ -1,11 +1,13 @@
-import { TypeMetadata, MethodParamPropMetadata } from '../metadatas';
+import { TypeMetadata } from '../metadatas/TypeMetadata';
+import { MethodParamPropMetadata } from '../metadatas/MethodParamPropMetadata';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorAction } from './ArgsIterator';
-import { isToken, isArray } from '../utils';
+import { isArray } from '../utils/lang';
 import { Token } from '../types';
 import { PropParamDecorator } from './ParamPropDecoratorFactory';
-import { ProviderTypes } from '../providers';
+import { ProviderTypes } from '../providers/types';
+import { isToken } from '../utils/isToken';
 
 
 

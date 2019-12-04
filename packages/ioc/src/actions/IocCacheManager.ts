@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, isNumber } from '../utils';
+import { isFunction, isNumber } from '../utils/lang';
 import { IIocContainer } from '../IIocContainer';
 
 /**

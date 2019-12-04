@@ -1,8 +1,10 @@
 import { Token, Factory } from '../types';
-import { isFunction, lang, isString } from '../utils';
-import { ProviderMap, ProviderTypes, ProviderParser } from '../providers';
+import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
+import { ProviderMap } from '../providers/ProviderMap';
+import { ProviderTypes } from '../providers/types';
+import { ProviderParser } from '../providers/ProviderParser';
 
 /**
  * decorator default provider.

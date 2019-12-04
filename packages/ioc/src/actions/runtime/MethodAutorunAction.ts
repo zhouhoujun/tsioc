@@ -1,7 +1,7 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { AutorunMetadata } from '../../metadatas';
-import { lang, isNumber } from '../../utils';
+import { AutorunMetadata } from '../../metadatas/AutorunMetadata';
+import { lang, isNumber } from '../../utils/lang';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**

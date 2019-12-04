@@ -1,10 +1,14 @@
 import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
-import { Injectable, Singleton, Providers, Refs, Autorun } from '../../decorators';
 import { BindProviderAction } from './BindProviderAction';
 import { IocAutorunAction } from './IocAutorunAction';
 import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
+import { Injectable } from '../../decorators/Injectable';
+import { Singleton } from '../../decorators/Singleton';
+import { Providers } from '../../decorators/Providers';
+import { Refs } from '../../decorators/Refs';
+import { Autorun } from '../../decorators/AutoRun';
 
 export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> {
     setup() {

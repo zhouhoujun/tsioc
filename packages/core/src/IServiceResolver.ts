@@ -1,5 +1,5 @@
 import { Token, ProviderTypes } from '@tsdi/ioc';
-import { ResolveServiceContext, ServiceOption } from './resolves';
+import { ServiceOption, ResolveServiceContext } from './resolves/ResolveServiceContext';
 
 /**
  * service resolver.

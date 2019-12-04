@@ -1,8 +1,8 @@
 import { Token, ObjectMap, ClassType } from '../types';
 import { IParameter } from '../IParameter';
-import { ParamProviders } from '../providers';
-import { ClassMetadata } from '../metadatas';
-import { lang } from '../utils';
+import { ParamProviders } from '../providers/types';
+import { ClassMetadata } from '../metadatas/ClassMetadata';
+import { lang } from '../utils/lang';
 
 export interface ITypeDecoractors {
     classDecors: string[];

@@ -1,6 +1,6 @@
 import { ClassType } from '../types';
 import { DecoratorsRegisterer, DecoratorScopes } from './DecoratorsRegisterer';
-import { ITypeReflects } from '../services';
+import { ITypeReflects } from '../services/ITypeReflects';
 
 /**
  * type decorators.

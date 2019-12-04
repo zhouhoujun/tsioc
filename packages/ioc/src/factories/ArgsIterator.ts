@@ -1,5 +1,5 @@
-import { Metadate } from '../metadatas';
-import { lang } from '../utils';
+import { Metadate } from '../metadatas/Metadate';
+import { lang } from '../utils/lang';
 
 /**
  * args iterator context.

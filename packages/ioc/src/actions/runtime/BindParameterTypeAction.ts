@@ -1,5 +1,6 @@
-import { isClass, isArray, isToken } from '../../utils';
-import { ParameterMetadata } from '../../metadatas';
+import { isClass, isArray } from '../../utils/lang';
+import { isToken } from '../../utils/isToken';
+import { ParameterMetadata } from '../../metadatas/ParameterMetadata';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 import { CTX_CURR_DECOR } from '../../context-tokens';

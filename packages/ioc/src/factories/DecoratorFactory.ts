@@ -1,12 +1,16 @@
 import 'reflect-metadata';
-import { PropertyMetadata, MethodMetadata, ParameterMetadata, Metadate, ClassMetadata } from '../metadatas';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
     isNumber, isArray, lang, clsUglifyExp
-} from '../utils';
+} from '../utils/lang';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
+import { Metadate } from '../metadatas/Metadate';
+import { ClassMetadata } from '../metadatas/ClassMetadata';
+import { MethodMetadata } from '../metadatas/MethodMetadata';
+import { PropertyMetadata } from '../metadatas/PropertyMetadata';
+import { ParameterMetadata } from '../metadatas/ParameterMetadata';
 
 
 export const ParamerterName = 'paramerter_names';

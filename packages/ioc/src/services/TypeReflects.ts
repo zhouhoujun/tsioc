@@ -2,19 +2,19 @@ import { ClassType, ObjectMap, Type, Token } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
-import { MetadataTypes, DefineClassTypes } from '../factories';
+import { MetadataTypes, DefineClassTypes } from '../factories/DecoratorType';
 import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess } from './MetadataAccess';
-import { isUndefined } from '../utils';
+import { isUndefined } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
 import { DesignDecorators } from '../actions/DesignDecorators';
 import { RuntimeDecorators } from '../actions/RuntimeDecorators';
-import { Singleton } from '../decorators';
+import { Singleton } from '../decorators/Singleton';
 import { DecoratorProvider } from './DecoratorProvider';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegisterer';
 import { ITypeReflects } from './ITypeReflects';

@@ -1,19 +1,27 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
-import { isClass, isFunction, isSymbol, isToken, isString, isDefined } from './utils';
+import { isClass, isFunction, isSymbol, isString, isDefined } from './utils/lang';
 import { Registration } from './Registration';
-
+import { isToken } from './utils/isToken';
 import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
-import { ParamProviders, ProviderMap, ProviderTypes, ProviderParser } from './providers';
+import { ParamProviders, ProviderTypes } from './providers/types';
 import { IResolver } from './IResolver';
-import { TypeReflects } from './services';
+import { TypeReflects } from './services/TypeReflects';
 import { IParameter } from './IParameter';
-import {
-    RuntimeActionContext, DesignActionContext, ResolveActionContext, ActionRegisterer, ResolveLifeScope,
-    IocCacheManager, MethodAccessor, RuntimeLifeScope, DesignLifeScope, IocSingletonManager, ResolveActionOption
-} from './actions';
+import { ProviderParser } from './providers/ProviderParser';
+import { ProviderMap } from './providers/ProviderMap';
+import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
+import { ActionRegisterer } from './actions/ActionRegisterer';
+import { ResolveLifeScope } from './actions/ResolveLifeScope';
+import { IocCacheManager } from './actions/IocCacheManager';
+import { IocSingletonManager } from './actions/IocSingletonManager';
+import { RuntimeActionContext } from './actions/runtime/RuntimeActionContext';
+import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
+import { DesignActionContext } from './actions/design/DesignActionContext';
+import { DesignLifeScope } from './actions/DesignLifeScope';
+import { MethodAccessor } from './actions/MethodAccessor';
 
 
 const factoryToken = ContainerFactoryToken.toString();

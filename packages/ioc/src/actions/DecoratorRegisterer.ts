@@ -1,4 +1,4 @@
-import { isString, isClass, lang, isFunction } from '../utils';
+import { isString, isClass, lang, isFunction } from '../utils/lang';
 import { IIocContainer } from '../IIocContainer';
 import { IocAction, IocActionType } from './Action';
 import { IocCoreService } from '../IocCoreService';

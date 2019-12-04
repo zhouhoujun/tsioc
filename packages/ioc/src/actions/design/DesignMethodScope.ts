@@ -3,7 +3,9 @@ import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
 import { BindMethodProviderAction } from './BindMethodProviderAction';
 import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
-import { AutoWired, Providers } from '../../decorators';
+import { AutoWired } from '../../decorators/AutoWried';
+import { Providers } from '../../decorators/Providers';
+
 
 export class DesignMethodScope extends IocRegisterScope<DesignActionContext> {
     setup() {

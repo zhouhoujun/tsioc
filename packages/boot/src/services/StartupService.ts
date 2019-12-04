@@ -4,7 +4,7 @@ import { BootContext } from '../BootContext';
 
 
 /**
- * core service confige startup.
+ * startup and configure service.
  *
  * @export
  * @abstract

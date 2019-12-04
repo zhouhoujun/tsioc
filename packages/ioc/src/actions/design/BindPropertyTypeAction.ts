@@ -1,7 +1,7 @@
-import { isClass } from '../../utils';
+import { isClass } from '../../utils/lang';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
-import { PropertyMetadata } from '../../metadatas';
+import { PropertyMetadata } from '../../metadatas/PropertyMetadata';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 
 /**

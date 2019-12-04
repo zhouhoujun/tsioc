@@ -2,9 +2,10 @@ import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
-import { Singleton, Injectable } from '../../decorators';
 import { RegisterSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';
+import { Singleton } from '../../decorators/Singleton';
+import { Injectable } from '../../decorators/Injectable';
 
 /**
  * runtime annoation action scope.

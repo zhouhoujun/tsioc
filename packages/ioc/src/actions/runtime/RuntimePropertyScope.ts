@@ -2,8 +2,9 @@ import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
-import { Inject, AutoWired } from '../../decorators';
 import { InjectPropertyAction } from './InjectPropertyAction';
+import { Inject } from '../../decorators/Inject';
+import { AutoWired } from '../../decorators/AutoWried';
 
 
 export class RuntimePropertyScope extends IocRegisterScope<RuntimeActionContext> {

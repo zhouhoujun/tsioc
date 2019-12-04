@@ -1,8 +1,8 @@
 import { Token } from '../types';
-import { ProviderTypes } from '../providers';
+import { isToken } from '../utils/isToken';
+import { ProviderTypes } from '../providers/types';
 import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
-import { isToken } from '../utils';
 import { CTX_PROVIDERS } from '../context-tokens';
 
 /**

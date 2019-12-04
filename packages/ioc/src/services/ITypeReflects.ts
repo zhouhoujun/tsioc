@@ -1,8 +1,8 @@
 import { IMetadataAccess } from './MetadataAccess';
 import { ClassType, Token, ObjectMap, Type } from '../types';
 import { ITypeReflect } from './ITypeReflect';
-import { DefineClassTypes } from '../factories';
-import { ParamProviders } from '../providers';
+import { DefineClassTypes } from '../factories/DecoratorType';
+import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { InjectToken } from '../InjectToken';
 

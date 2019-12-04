@@ -1,6 +1,5 @@
-import { RegisterActionContext, RegisterActionOption } from '../RegisterActionContext';
-import { ContainerFactory } from '../../IIocContainer';
 import { createRaiseContext } from '../Action';
+import { RegisterActionContext, RegisterActionOption } from '../RegisterActionContext';
 
 /**
  * design action option.

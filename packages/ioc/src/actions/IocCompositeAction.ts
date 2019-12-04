@@ -1,5 +1,5 @@
-import { lang, isBoolean, isClass } from '../utils';
-import { IocAction, IocActionType, IocActionContext, IocRaiseContext } from './Action';
+import { lang, isBoolean, isClass } from '../utils/lang';
+import { IocAction, IocActionType, IocRaiseContext } from './Action';
 import { IIocContainer } from '../IIocContainer';
 import { ActionRegisterer } from './ActionRegisterer';
 

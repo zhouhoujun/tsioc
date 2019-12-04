@@ -1,11 +1,15 @@
 import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
-import { ParamProviders, ProviderParser, ProviderMap } from '../providers';
-import { isToken, lang, isFunction, isBaseType } from '../utils';
+import { lang, isFunction, isBaseType } from '../utils/lang';
+import { isToken } from '../utils/isToken';
 import { IIocContainer } from '../IIocContainer';
-import { RuntimeActionContext, RuntimeParamScope } from './runtime';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { ActionRegisterer } from './ActionRegisterer';
+import { ParamProviders } from '../providers/types';
+import { ProviderParser } from '../providers/ProviderParser';
+import { ProviderMap } from '../providers/ProviderMap';
+import { RuntimeActionContext } from './runtime/RuntimeActionContext';
+import { RuntimeParamScope } from './runtime/RuntimeParamScope';
 
 
 

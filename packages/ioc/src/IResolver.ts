@@ -1,4 +1,4 @@
-import { ProviderTypes } from './providers';
+import { ProviderTypes } from './providers/types';
 import { Token, Type, InstanceFactory, SymbolType } from './types';
 
 /**

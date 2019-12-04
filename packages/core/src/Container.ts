@@ -2,13 +2,14 @@ import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, ActionRegisterer, CTX_PROVIDERS } from '@tsdi/ioc';
-import { ModuleLoader, IModuleLoader } from './services';
+import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
 import { registerCores } from './registerCores';
-import {
-    ResolveServiceContext, ResolveServicesContext, ServiceOption,
-    ServicesOption, ServiceResolveLifeScope, ServicesResolveLifeScope
-} from './resolves';
-import { InjectorLifeScope } from './injectors';
+import { InjectorLifeScope } from './injectors/InjectorLifeScope';
+import { ServiceOption, ResolveServiceContext } from './resolves/ResolveServiceContext';
+import { ServiceResolveLifeScope } from './resolves/ServiceResolveLifeScope';
+import { ServicesOption, ResolveServicesContext } from './resolves/ResolveServicesContext';
+import { ServicesResolveLifeScope } from './resolves/ServicesResolveLifeScope';
+
 
 
 /**

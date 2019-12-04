@@ -1,8 +1,9 @@
 import { ParamProviders, ProviderTypes } from './types';
 import {
-    isClass, isArray, isFunction, isNumber, isString, isDefined,
-    isUndefined, isNull, isToken, isBaseObject, lang, isMetadataObject
-} from '../utils';
+    isClass, isArray, isFunction, isString, isDefined,
+    isUndefined, isNull, isBaseObject, lang, isMetadataObject
+} from '../utils/lang';
+import { isToken } from '../utils/isToken';
 import { IProviderParser } from './IProviderParser';
 import { IIocContainer } from '../IIocContainer';
 import { ProviderMap, isProviderMap } from './ProviderMap';

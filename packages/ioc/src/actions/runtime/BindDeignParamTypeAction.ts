@@ -1,5 +1,5 @@
 import { Token, Type } from '../../types';
-import { isClass } from '../../utils';
+import { isClass } from '../../utils/lang';
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { IParameter } from '../../IParameter';

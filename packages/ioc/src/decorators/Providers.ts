@@ -1,7 +1,9 @@
-import { createDecorator, ClassMethodDecorator, DecoratorType } from '../factories';
-import { ProvidersMetadata } from '../metadatas';
-import { isArray } from '../utils';
-import { ProviderTypes } from '../providers';
+import { ClassMethodDecorator } from '../factories/ClassMethodDecoratorFactory';
+import { ProvidersMetadata } from '../metadatas/ProvidersMetadata';
+import { isArray } from '../utils/lang';
+import { ProviderTypes } from '../providers/types';
+import { DecoratorType } from '../factories/DecoratorType';
+import { createDecorator } from '../factories/DecoratorFactory';
 
 /**
  * @Providers decorator, for class. use to define the class as service of target.

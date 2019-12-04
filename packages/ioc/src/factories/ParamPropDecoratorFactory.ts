@@ -1,10 +1,10 @@
 import 'reflect-metadata';
-import { ParamPropMetadata } from '../metadatas';
+import { ParamPropMetadata } from '../metadatas/ParamPropMetadata';
+import { Token } from '../types';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
-import { isToken } from '../utils';
+import { isToken } from '../utils/isToken';
 import { ArgsIteratorAction } from './ArgsIterator';
-import { Token } from '../types';
 
 
 /**

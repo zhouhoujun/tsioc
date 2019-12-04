@@ -1,5 +1,6 @@
-import { isToken, isFunction, isUndefined, isObject } from '../utils';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
+import { isFunction, isUndefined, isObject } from '../utils/lang';
+import { isToken } from '../utils/isToken';
 import { IIocContainer, ContainerFactory } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
 import { ProviderTypes } from './types';

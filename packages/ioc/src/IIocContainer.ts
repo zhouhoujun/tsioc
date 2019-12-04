@@ -1,10 +1,11 @@
 import { Type, Token, Factory, SymbolType } from './types';
 import { InjectToken } from './InjectToken';
 import { IResolverContainer } from './IResolver';
-import { ParamProviders, ProviderTypes, ProviderMap } from './providers';
+import { ParamProviders, ProviderTypes } from './providers/types';
+import { ProviderMap } from './providers/ProviderMap';
 import { IParameter } from './IParameter';
-import { TypeReflects } from './services';
-import { ResolveActionContext, ResolveActionOption } from './actions';
+import { TypeReflects } from './services/TypeReflects';
+import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
 
 /**
  * IContainer token.

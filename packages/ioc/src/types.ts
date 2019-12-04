@@ -1,6 +1,6 @@
 import { Registration } from './Registration';
 import { IIocContainer } from './IIocContainer';
-import { ProviderTypes } from './providers';
+import { ProviderTypes } from './providers/types';
 
 /**
  * module types.

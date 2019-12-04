@@ -1,5 +1,5 @@
-import { AutorunMetadata } from '../../metadatas';
-import { isFunction } from '../../utils';
+import { AutorunMetadata } from '../../metadatas/AutorunMetadata';
+import { isFunction } from '../../utils/lang';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
 import { CTX_CURR_DECOR } from '../../context-tokens';

@@ -1,4 +1,4 @@
-import { isClass } from '../../utils';
+import { isClass } from '../../utils/lang';
 import { IocResolveAction } from '../IocResolveAction';
 import { ResolveActionContext } from '../ResolveActionContext';
 

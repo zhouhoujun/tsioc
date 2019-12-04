@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { IIocContainer } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
-import { isFunction } from '../utils';
+import { isFunction } from '../utils/lang';
 
 /**
  * action registerer.

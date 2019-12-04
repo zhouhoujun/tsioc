@@ -1,4 +1,4 @@
-import { isString, lang } from '../utils';
+import { isString, lang } from '../utils/lang';
 import { IocDecoratorRegisterer, DecoratorRegisterer } from './DecoratorRegisterer';
 import { Registration } from '../Registration';
 import { IIocContainer } from '../IIocContainer';

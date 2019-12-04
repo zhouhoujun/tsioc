@@ -1,11 +1,10 @@
-import { Type } from '../../types';
 import { IParameter } from '../../IParameter';
-import { InjectToken } from '../../InjectToken';
-import { ParamProviders, ProviderMap, ProviderParser } from '../../providers';
-import { ContainerFactory } from '../../IIocContainer';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 import { createRaiseContext } from '../Action';
 import { CTX_PROVIDER_MAP, CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
+import { ParamProviders } from '../../providers/types';
+import { ProviderMap } from '../../providers/ProviderMap';
+import { ProviderParser } from '../../providers/ProviderParser';
 
 
 /**

@@ -1,11 +1,12 @@
 import { IContainer, ContainerToken } from './IContainer';
-import { ModuleLoader } from './services';
-import { IocExt } from './decorators';
+import { ModuleLoader } from './services/ModuleLoader';
+import { IocExt } from './decorators/IocExt';
 import {
     IocAutorunAction, DecoratorScopes, RegisterSingletionAction, ActionRegisterer, RuntimeRegisterer, DesignRegisterer
 } from '@tsdi/ioc';
-import { InjectorLifeScope } from './injectors';
-import { ServiceResolveLifeScope, ServicesResolveLifeScope } from './resolves';
+import { InjectorLifeScope } from './injectors/InjectorLifeScope';
+import { ServiceResolveLifeScope } from './resolves/ServiceResolveLifeScope';
+import { ServicesResolveLifeScope } from './resolves/ServicesResolveLifeScope';
 
 
 

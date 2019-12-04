@@ -3,7 +3,7 @@ import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable';
 import { IComponentContext } from './builder';
-import { StartupServices } from './services';
+import { StartupServices } from './services/StartupServices';
 import { AnnoationContext, AnnoationOption } from './core';
 import { RunnableConfigure, ConfigureManager, ProcessRunRootToken } from './annotations';
 import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS } from './context-tokens';

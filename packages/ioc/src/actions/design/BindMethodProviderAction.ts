@@ -1,5 +1,5 @@
-import { MethodMetadata } from '../../metadatas';
-import { isArray } from '../../utils';
+import { MethodMetadata } from '../../metadatas/MethodMetadata';
+import { isArray } from '../../utils/lang';
 import { DesignActionContext } from './DesignActionContext';
 import { IocDesignAction } from './IocDesignAction';
 import { CTX_CURR_DECOR } from '../../context-tokens';

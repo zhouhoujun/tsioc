@@ -1,6 +1,8 @@
-import { createDecorator, DecoratorType } from '../factories';
-import { RefMetadata } from '../metadatas';
-import { isToken, isString } from '../utils';
+import { DecoratorType } from '../factories/DecoratorType';
+import { createDecorator } from '../factories/DecoratorFactory';
+import { RefMetadata } from '../metadatas/RefMetadata';
+import { isString } from '../utils/lang';
+import { isToken } from '../utils/isToken';
 import { Token } from '../types';
 
 /**

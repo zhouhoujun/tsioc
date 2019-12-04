@@ -1,11 +1,18 @@
 import { IIocContainer, IocContainerToken, ContainerFactoryToken } from './IIocContainer';
-import { TypeReflects, DecoratorProvider, TypeReflectsToken } from './services';
-import { ProviderMap, ProviderParser } from './providers';
-import {
-    MethodAccessor, DesignLifeScope, RuntimeLifeScope, IocCacheManager,
-    IocSingletonManager, ResolveLifeScope, ActionRegisterer, RuntimeRegisterer, DesignRegisterer
-} from './actions';
+import { TypeReflects } from './services/TypeReflects';
+import { TypeReflectsToken } from './services/ITypeReflects';
 import { MethodAccessorToken } from './IMethodAccessor';
+import { IocSingletonManager } from './actions/IocSingletonManager';
+import { ActionRegisterer } from './actions/ActionRegisterer';
+import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
+import { IocCacheManager } from './actions/IocCacheManager';
+import { ProviderMap } from './providers/ProviderMap';
+import { ProviderParser } from './providers/ProviderParser';
+import { DecoratorProvider } from './services/DecoratorProvider';
+import { MethodAccessor } from './actions/MethodAccessor';
+import { DesignLifeScope } from './actions/DesignLifeScope';
+import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
+import { ResolveLifeScope } from './actions/ResolveLifeScope';
 
 /**
  * register core for container.

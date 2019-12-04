@@ -2,7 +2,7 @@ import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
-import { Autorun } from '../../decorators';
+import { Autorun } from '../../decorators/AutoRun';
 import { MethodAutorunAction } from './MethodAutorunAction';
 
 export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> {

@@ -1,7 +1,7 @@
 import { isToken, isArray } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { StartupService } from '../annotations';
+import { StartupService } from '../services/StartupService';
 
 export class ConfigureServiceHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
