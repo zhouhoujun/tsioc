@@ -3,6 +3,7 @@ import { ResolveHandle, BuildContext, StartupDecoratorRegisterer, StartupScopes 
 import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
 import { ComponentManager } from '../ComponentManager';
 import { RefSelector } from '../RefSelector';
+import { ComponentRef } from '../ComponentRef';
 
 /**
  * binding temlpate handle.
@@ -13,7 +14,7 @@ import { RefSelector } from '../RefSelector';
  */
 export class BindingTemplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.target && ctx.composite) {
+        if (ctx.target && ctx.has(ComponentRef)) {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propRefChildBindings) {
                 let dpr = this.container.getInstance(DecoratorProvider);
