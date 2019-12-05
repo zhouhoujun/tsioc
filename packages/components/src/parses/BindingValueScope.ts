@@ -130,14 +130,16 @@ export class TranslateAtrrHandle extends ParseHandle {
             let selector: ClassType;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
                 selector = mgr.getAttr(pdr);
-            } else if (isClassType(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
-                selector = ctx.binding.provider;
-            } else if (isClassType(ctx.binding.type) && mgr.has(ctx.binding.type)) {
-                selector = ctx.binding.type;
+            } else if (ctx.binding.type !== Array) {
+                if (isClassType(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
+                    selector = ctx.binding.provider;
+                } else if (isClassType(ctx.binding.type) && mgr.has(ctx.binding.type)) {
+                    selector = ctx.binding.type;
+                }
             }
 
             if (selector) {
-                let template = (!options.template || isArray(options.template)) ? {} : lang.omit(options.template, 'id', 'name');
+                let template = {};
                 template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
                 let container = ctx.getContainer();
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {

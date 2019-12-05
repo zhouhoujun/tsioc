@@ -2,7 +2,19 @@ import { ITypeReflect } from '@tsdi/ioc';
 import { ModuleConfigure } from './ModuleConfigure';
 
 export interface IModuleReflect extends ITypeReflect {
+    /**
+     * anno decorator.
+     *
+     * @type {string}
+     * @memberof IModuleReflect
+     */
     annoDecoractor?: string;
+    /**
+     * baseurl.
+     *
+     * @type {string}
+     * @memberof IModuleReflect
+     */
     baseURL?: string;
     /**
      * get annoation.

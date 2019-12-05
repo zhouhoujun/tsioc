@@ -46,7 +46,7 @@ export class BindingArrayHandle extends ParseHandle {
                     scope: options.scope,
                     binding: ctx.binding,
                     bindExpression: tp,
-                    template: options.template,
+                    template: tp,
                     decorator: ctx.decorator,
                     raiseContainer: ctx.getFactory()
                 });

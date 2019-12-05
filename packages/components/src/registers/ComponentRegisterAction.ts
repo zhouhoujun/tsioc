@@ -22,22 +22,21 @@ export class ComponentRegisterAction extends IocDesignAction {
             if (!meta.selector) {
                 return;
             }
-            reflects.componentSelector = meta.selector;
             if (meta.selector.indexOf(',') > 0) {
                 meta.selector.split(',').forEach(sel => {
                     sel = sel.trim();
                     if (attrExp.test(sel)) {
-                        reflects.componentSelector = sel;
-                    } else {
                         reflects.attrSelector = sel;
+                    } else {
+                        reflects.componentSelector = sel;
                     }
                     mgr.set(sel, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
                 })
             } else {
                 if (attrExp.test(meta.selector)) {
-                    reflects.componentSelector = meta.selector;
-                } else {
                     reflects.attrSelector = meta.selector;
+                } else {
+                    reflects.componentSelector = meta.selector;
                 }
                 mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
             }
