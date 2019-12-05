@@ -126,6 +126,18 @@ export namespace lang {
     }
 
     /**
+     * remove element.
+     * @param list list
+     * @param el remove item.
+     */
+    export function remove<T>(list: T[], el: T): void {
+        const index = list.indexOf(el);
+        if (index > -1) {
+            list.splice(index, 1);
+        }
+    }
+
+    /**
      * last.
      *
      * @export

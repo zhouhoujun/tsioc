@@ -1,24 +1,22 @@
-import { Type, Inject, InjectToken } from '@tsdi/ioc';
+import { Type, Inject, InjectToken, Abstract } from '@tsdi/ioc';
 import { BootApplication } from '@tsdi/boot';
 
 
-export const CTX_VIEW_REF = new InjectToken<ViewRef|ViewRef[]>('CTX_VIEW_REF')
+export const CTX_VIEW_REF = new InjectToken<ViewRef | ViewRef[]>('CTX_VIEW_REF')
 
-export class ViewRef {
-    @Inject()
-    private _app: BootApplication;
+@Abstract()
+export abstract class ViewRef {
 
     $parent: ViewRef;
+    destroyed: boolean;
 
     constructor(public _lView) {
 
     }
 
+    abstract destroy(): void;
 }
 
-export class RootViewRef extends ViewRef {
-
-}
 
 export class ElementRef<T extends any = any> {
     constructor(public nativeElement: T) {
@@ -37,20 +35,32 @@ export const APP_COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef<any>
 
 
 export class ComponentRef<T> implements IComponentRef<T> {
-
+    private destroyCbs: (() => void)[] = [];
     private _hostView: ViewRef;
+
     get hostView(): ViewRef {
         return this._hostView;
-    }
-
-    get location(): ElementRef {
-        return this.hostView._lView;
     }
 
     constructor(
         public readonly componentType: Type<T>,
         public readonly instance: T,
-        view: any) {
-        this._hostView = new RootViewRef(view);
+        public readonly location: ElementRef,
+        lview: any) {
+        this._hostView = new RootViewRef(lview);
+    }
+
+    destroy(): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.forEach(fn => fn());
+            this.destroyCbs = null;
+            !this.hostView.destroyed && this.hostView.destroy();
+        }
+    }
+
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
+        }
     }
 }
