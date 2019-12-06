@@ -1,13 +1,13 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, CTX_PROVIDERS } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
-import { BuildHandles, HandleRegisterer, RegFor, ContainerPoolToken, AnnoationContext } from '../core';
+import { BuildHandles, HandleRegisterer, AnnoationContext } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
-import { CTX_MODULE_RESOLVER, CTX_MODULE_REGFOR, CTX_APP_ENVARGS } from '../context-tokens';
+import { CTX_MODULE_RESOLVER, CTX_APP_ENVARGS } from '../context-tokens';
 import { ResolveMoudleScope } from './resolvers/ResolveMoudleScope';
 import { IModuleResolveOption, BuildContext } from './resolvers/BuildContext';
 import { IStartup } from '../runnable/Startup';
@@ -72,7 +72,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             return await this.build({
                 module: target,
                 providers: providers,
-                regFor: RegFor.boot,
                 ...options
             });
         }
@@ -176,7 +175,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         }
         let ctx = await this.execLifeScope(
             ctx => {
-                ctx.setContainer(this.container.get(ContainerPoolToken).create());
+                ctx.setContainer(this.container);
                 if (opt.contextInit) {
                     opt.contextInit(ctx as T);
                 }
@@ -204,7 +203,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     async bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext> {
         return await this.execLifeScope(
             (ctx) => {
-                ctx.set(CTX_MODULE_REGFOR, RegFor.boot);
                 if (isFunction(application.onContextInit)) {
                     application.onContextInit(ctx);
                 }

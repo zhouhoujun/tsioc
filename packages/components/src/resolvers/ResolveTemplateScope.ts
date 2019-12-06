@@ -1,6 +1,6 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { HandleRegisterer, ResolveHandle, BuildContext } from '@tsdi/boot';
-import { ViewRef } from '../ComponentRef';
+import { ViewRef, ComponentRef, RootViewRef } from '../ComponentRef';
 import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 
@@ -23,7 +23,8 @@ export class ResolveTemplateScope extends ResolveHandle {
                 .get(TemplateParseScope)
                 .execute(pCtx);
             if (!isNullOrUndefined(pCtx.value)) {
-                ctx.set(ViewRef, pCtx.value);
+                ctx.set(ViewRef,  new RootViewRef(pCtx));
+                ctx.set(ComponentRef, new ComponentRef(ctx.module, ctx.target, ctx))
             }
         }
         await next();

@@ -5,7 +5,7 @@ import { ResolveActionContext } from '../ResolveActionContext';
 export class IocDefaultResolveAction extends IocResolveAction {
     execute(ctx: ResolveActionContext, next: () => void): void {
         if (!ctx.instance && this.container.has(ctx.token)) {
-            ctx.instance = this.container.get(ctx.token, ...ctx.providers);
+            ctx.instance = this.container.get(ctx.token, ctx.providers);
         }
 
         if (!ctx.instance) {
@@ -14,7 +14,7 @@ export class IocDefaultResolveAction extends IocResolveAction {
 
         if (!ctx.instance && ctx.getOptions().regify && isClass(ctx.token) && !this.container.has(ctx.token)) {
             this.container.register(ctx.token);
-            ctx.instance = this.container.get(ctx.token, ...ctx.providers);
+            ctx.instance = this.container.get(ctx.token, ctx.providers);
         }
     }
 }

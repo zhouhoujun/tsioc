@@ -1,4 +1,4 @@
-import { ProviderMap } from './ProviderMap';
+import { Injector } from './ProviderMap';
 import { ProviderType, ParamProvider } from './Provider';
 
 
@@ -6,7 +6,7 @@ import { ProviderType, ParamProvider } from './Provider';
  * providers.
  * note: ObjectMap provider can not resolve token.
  */
-export type ProviderTypes = ProviderMap | ProviderType;
+export type ProviderTypes = Injector | ProviderType;
 
 /**
  * params providers.

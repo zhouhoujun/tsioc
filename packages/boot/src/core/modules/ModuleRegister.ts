@@ -3,7 +3,7 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 import { ModuleConfigure } from './ModuleConfigure';
 
 /**
- * register module.
+ * register module hook service.
  *
  * @export
  * @abstract

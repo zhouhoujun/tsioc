@@ -1,5 +1,5 @@
 import { LifeScope, Type, Modules, DecoratorScopes, DesignRegisterer } from '@tsdi/ioc';
-import { IocExt } from '../decorators';
+import { IocExt } from '../decorators/IocExt';
 import { InjectorDecoratorRegisterer } from './InjectorDecoratorRegisterer';
 import { InjectorActionContext } from './InjectorActionContext';
 import { IocExtRegisterScope } from './IocExtRegisterScope';

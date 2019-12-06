@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, ProviderMap, isToken, ActionRegisterer, CTX_PROVIDERS } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, Injector, isToken, ActionRegisterer } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
 import { registerCores } from './registerCores';
 import { InjectorLifeScope } from './injectors/InjectorLifeScope';
@@ -118,7 +118,7 @@ export class Container extends IocContainer implements IContainer {
         } else {
             context = ResolveServiceContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
         }
-        context.set(CTX_PROVIDERS, [...context.providers, ...providers]);
+        providers.length && context.providers.parse(...providers);
 
         this.getInstance(ActionRegisterer)
             .get(ServiceResolveLifeScope)
@@ -150,10 +150,10 @@ export class Container extends IocContainer implements IContainer {
      * @template T
      * @param {Token<T>} target
      * @param {ResolveServicesContext} [ctx]
-     * @returns {ProviderMap}
+     * @returns {Injector}
      * @memberof Container
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap {
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): Injector {
         let context: ResolveServicesContext<T>;
         if (target instanceof ResolveServicesContext) {
             context = target;

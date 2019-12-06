@@ -6,7 +6,7 @@ import { IocSingletonManager } from './actions/IocSingletonManager';
 import { ActionRegisterer } from './actions/ActionRegisterer';
 import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
 import { IocCacheManager } from './actions/IocCacheManager';
-import { ProviderMap } from './providers/ProviderMap';
+import { Injector } from './providers/ProviderMap';
 import { ProviderParser } from './providers/ProviderParser';
 import { DecoratorProvider } from './services/DecoratorProvider';
 import { MethodAccessor } from './actions/MethodAccessor';
@@ -33,7 +33,7 @@ export function registerCores(container: IIocContainer) {
     container.bindProvider(TypeReflectsToken, TypeReflects);
 
     container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
-    container.register(ProviderMap, () => new ProviderMap(fac));
+    container.register(Injector, () => new Injector(fac));
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));
     container.registerSingleton(DecoratorProvider, () => new DecoratorProvider(container));
     container.registerSingleton(MethodAccessor, () => new MethodAccessor());

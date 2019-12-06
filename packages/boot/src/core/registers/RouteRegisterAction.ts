@@ -2,7 +2,6 @@ import {
     IocDesignAction, IocRuntimeAction, lang, Type, RuntimeActionContext,
     DesignActionContext, IocCompositeAction, ActionRegisterer, CTX_CURR_SCOPE
 } from '@tsdi/ioc';
-import { ParentContainerToken } from '../ContainerPoolToken';
 
 export class RouteRuntimRegisterAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void): void {

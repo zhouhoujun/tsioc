@@ -1,6 +1,6 @@
 import { LoadType, Type } from '@tsdi/ioc';
-import { IContainerPool } from './core';
 import { BootContext, BootOption } from './BootContext';
+import { IContainer } from '@tsdi/core';
 
 
 /**
@@ -56,11 +56,11 @@ export interface IBootApplication<T extends BootContext = BootContext> extends C
     run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T>;
 
     /**
-     * get container pools of application.
+     * get container of application.
      *
      * @returns {IContainerPool}
      * @memberof IBootApplication
      */
-    getPools(): IContainerPool;
+    getContainer(): IContainer;
 
 }

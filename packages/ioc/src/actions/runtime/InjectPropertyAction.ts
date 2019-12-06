@@ -1,7 +1,7 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { InjectReference } from '../../InjectReference';
-import { ProviderMap } from '../../providers/ProviderMap';
+import { Injector } from '../../providers/ProviderMap';
 import { isNullOrUndefined } from '../../utils/lang';
 import { isToken } from '../../utils/isToken';
 
@@ -16,7 +16,7 @@ import { isToken } from '../../utils/isToken';
 export class InjectPropertyAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
-        let providerMap = ctx.providerMap;
+        let providerMap = ctx.providers;
         let container = this.container;
 
         let props = ctx.targetReflect.propProviders;
@@ -24,7 +24,7 @@ export class InjectPropertyAction extends IocRuntimeAction {
         props.forEach((token, propertyKey) => {
             let key = `${propertyKey}_INJECTED`
             if (isToken(token) && !ctx.has(key)) {
-                let pdrMap = container.get(new InjectReference(ProviderMap, ctx.targetType));
+                let pdrMap = container.get(new InjectReference(Injector, ctx.targetType));
                 if (pdrMap && pdrMap.has(token)) {
                     ctx.target[propertyKey] = pdrMap.resolve(token, providerMap);
                     ctx.set(key, true);

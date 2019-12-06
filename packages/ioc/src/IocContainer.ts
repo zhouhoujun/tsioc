@@ -11,7 +11,7 @@ import { IResolver } from './IResolver';
 import { TypeReflects } from './services/TypeReflects';
 import { IParameter } from './IParameter';
 import { ProviderParser } from './providers/ProviderParser';
-import { ProviderMap } from './providers/ProviderMap';
+import { Injector } from './providers/ProviderMap';
 import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
 import { ActionRegisterer } from './actions/ActionRegisterer';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
@@ -275,7 +275,7 @@ export class IocContainer implements IIocContainer {
 
         let maps = this.getInstance(ProviderParser).parse(...prods);
         if (tgt) {
-            let refKey = new InjectReference(ProviderMap, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
+            let refKey = new InjectReference(Injector, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
             if (this.has(refKey)) {
                 this.resolve(refKey).copy(maps);
             } else {
@@ -476,7 +476,7 @@ export class IocContainer implements IIocContainer {
         return this.getInstance(MethodAccessor).invoke(this, target, propertyKey, ...providers);
     }
 
-    invokedProvider(target: any, propertyKey: string): ProviderMap {
+    invokedProvider(target: any, propertyKey: string): Injector {
         return this.getInstance(MethodAccessor).invokedProvider(target, propertyKey);
     }
 

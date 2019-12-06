@@ -1,10 +1,11 @@
 import { Token, InstanceFactory, SymbolType, Factory, Type } from '../types';
-import { isFunction, isUndefined, isObject } from '../utils/lang';
+import { isFunction, isUndefined, isObject, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { IIocContainer, ContainerFactory } from '../IIocContainer';
 import { IResolver, IResolverContainer } from '../IResolver';
-import { ProviderTypes } from './types';
+import { ProviderTypes, ParamProviders } from './types';
 import { IocCoreService } from '../IocCoreService';
+import { Provider, ParamProvider, ObjectMapProvider } from './Provider';
 
 // use core-js in browser.
 
@@ -16,7 +17,7 @@ import { IocCoreService } from '../IocCoreService';
  * @export
  * @class Providers
  */
-export class ProviderMap extends IocCoreService implements IResolverContainer {
+export class Injector extends IocCoreService implements IResolverContainer {
 
     private containerFac: ContainerFactory;
 
@@ -202,11 +203,11 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
     /**
      * copy provider map.
      *
-     * @param {ProviderMap} map
+     * @param {Injector} map
      * @returns
      * @memberof ProviderMap
      */
-    copy(map: ProviderMap): this {
+    copy(map: Injector): this {
         if (!map) {
             return this;
         }
@@ -217,26 +218,97 @@ export class ProviderMap extends IocCoreService implements IResolverContainer {
     }
 
     clone() {
-        let newpdr = new ProviderMap(this.getContainer());
+        let newpdr = new Injector(this.getContainer());
         this.map.forEach((fac, key) => {
             newpdr.map.set(key, fac);
         });
         return newpdr;
     }
+
+    parse(...providers: ProviderTypes[]): this {
+        let container = this.getContainer();
+        providers.forEach((p, index) => {
+            if (isUndefined(p) || isNull(p)) {
+                return;
+            }
+            if (isInjector(p)) {
+                this.copy(p);
+            } else if (p instanceof Provider) {
+                if (p instanceof ParamProvider) {
+                    this.register(p.getToken(), (...providers: ParamProviders[]) => p.resolve(container, ...providers));
+                } else {
+                    this.register(p.type, (...providers: ParamProviders[]) => p.resolve(container, ...providers));
+                }
+            } else if (isClass(p)) {
+                if (!container.has(p)) {
+                    container.register(p);
+                }
+                this.register(p, p);
+            } else if (p instanceof ObjectMapProvider) {
+                let pr = p.get();
+                lang.forIn(pr, (val, name) => {
+                    if (name && isString(name)) {
+                        // object this can not resolve token. set all fileld as value factory.
+                        this.register(name, () => val);
+                    }
+                });
+
+            } else if (isBaseObject(p)) {
+                let pr: any = p;
+                if (isToken(pr.provide)) {
+                    if (isArray(pr.deps) && pr.deps.length) {
+                        pr.deps.forEach(d => {
+                            if (isClass(d) && !container.has(d)) {
+                                container.register(d);
+                            }
+                        });
+                    }
+                    if (isDefined(pr.useValue)) {
+                        this.register(pr.provide, () => pr.useValue);
+                    } else if (isClass(pr.useClass)) {
+                        if (!container.has(pr.useClass)) {
+                            container.register(pr.useClass);
+                        }
+                        this.register(pr.provide, pr.useClass);
+                    } else if (isFunction(pr.useFactory)) {
+                        this.register(pr.provide, (...providers: ProviderTypes[]) => {
+                            let args = [];
+                            if (isArray(pr.deps) && pr.deps.length) {
+                                args = pr.deps.map(d => {
+                                    if (isToken(d)) {
+                                        return container.resolve(d, ...providers);
+                                    } else {
+                                        return d;
+                                    }
+                                });
+                            }
+                            return pr.useFactory.apply(pr, args.concat(providers));
+                        });
+                    } else if (isToken(pr.useExisting)) {
+                        this.register(pr.provide, (...providers: ProviderTypes[]) => container.resolve(pr.useExisting, ...providers));
+                    }
+                }
+            }
+        });
+
+        return this;
+    }
 }
 
-
+export const ProviderMap = Injector;
 
 /**
  * object is provider map or not.
  *
  * @export
  * @param {object} target
- * @returns {target is ProviderMap}
+ * @returns {target is Injector}
  */
-export function isProviderMap(target: object): target is ProviderMap {
+export function isInjector(target: object): target is Injector {
     if (!isObject(target)) {
         return false;
     }
-    return target instanceof ProviderMap;
+    return target instanceof Injector;
 }
+
+export const isProvoderMap = isInjector;

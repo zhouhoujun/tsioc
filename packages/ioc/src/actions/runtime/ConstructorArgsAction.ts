@@ -22,7 +22,7 @@ export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext
                     .execute(ctx);
                 ctx.set(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
             }
-            ctx.set(CTX_ARGS, this.container.createParams(ctx.get(CTX_PARAMS), ctx.providerMap));
+            ctx.set(CTX_ARGS, this.container.createParams(ctx.get(CTX_PARAMS), ctx.providers));
         }
         next();
     }

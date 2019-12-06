@@ -1,5 +1,5 @@
 import { ParamProviders } from './types';
-import { ProviderMap } from './ProviderMap';
+import { Injector } from './ProviderMap';
 
 /**
  * Providers Parser interface.
@@ -12,18 +12,8 @@ export interface IProviderParser {
      * convert to provider map.
      *
      * @param {...ParamProviders[]} providers
-     * @returns {ProviderMap}
+     * @returns {Injector}
      * @memberof IProviderParser
      */
-    parse(...providers: ParamProviders[]): ProviderMap;
-
-    /**
-     * parse providers to map.
-     *
-     * @param {ProviderMap} map
-     * @param {...ParamProviders[]} providers
-     * @returns {ProviderMap}
-     * @memberof IProviderParser
-     */
-    parseTo(map: ProviderMap, ...providers: ParamProviders[]): ProviderMap;
+    parse(...providers: ParamProviders[]): Injector;
 }

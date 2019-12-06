@@ -22,7 +22,7 @@ export * from './injectors/RegModuleResolverAction';
 export * from './injectors/RegModuleExportsAction';
 export * from './injectors/RegForInjectorAction';
 export * from './injectors/ModuleResovler';
-export * from './injectors/DIModuleExports';
+// export * from './injectors/DIModuleExports';
 export * from './injectors/ModuleInjectLifeScope';
 
 // resolve actions
@@ -37,7 +37,6 @@ export * from './resolves/ResolveParentServicesAction'
 
 
 // modules
-export * from './modules/RegScope';
 export * from './modules/IModuleReflect';
 export * from './modules/IModuleResovler';
 export * from './modules/ModuleRegister';
@@ -57,8 +56,6 @@ export * from './messages/MessageContext';
 export * from './messages/MessageHandle';
 export * from './messages/MessageQueue';
 
-export * from './ContainerPool';
-export * from './ContainerPoolToken';
 export * from './AnnotationMerger';
 export * from './AnnotationCloner';
 export * from './IAnnotationService';

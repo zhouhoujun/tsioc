@@ -10,7 +10,7 @@ export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
             ctx.reflects.getDecorators(ctx.get(CTX_CURR_TARGET_TYPE), 'class')
                 .some(dec => {
                     if (dprvoider.has(dec)) {
-                        ctx.instance = dprvoider.resolve(dec, ctx.get(CTX_CURR_TOKEN) || ctx.token, ...ctx.providers || []);
+                        ctx.instance = dprvoider.resolve(dec, ctx.get(CTX_CURR_TOKEN) || ctx.token, ctx.providers);
                         return !!ctx.instance;
                     } else {
                         return false;

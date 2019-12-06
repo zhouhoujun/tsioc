@@ -1,7 +1,7 @@
 import { IIocContainer } from './IIocContainer';
 import { Type, Token } from './types';
 import { ParamProviders } from './providers/types';
-import { ProviderMap } from './providers/ProviderMap';
+import { Injector } from './providers/ProviderMap';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
 
@@ -63,10 +63,10 @@ export interface IMethodAccessor {
      *
      * @param {*} target
      * @param {string} propertyKey
-     * @returns {ProviderMap}
+     * @returns {Injector}
      * @memberof IMethodAccessor
      */
-    invokedProvider(target: any, propertyKey: string): ProviderMap;
+    invokedProvider(target: any, propertyKey: string): Injector;
 }
 
 /**

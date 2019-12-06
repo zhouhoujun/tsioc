@@ -49,7 +49,7 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
 
             if (!ctx.instance && options.regify && isClass(ctx.token) && !this.container.has(ctx.token)) {
                 this.container.register(ctx.token);
-                ctx.instance = this.container.get(ctx.token, ...ctx.providers);
+                ctx.instance = this.container.get(ctx.token, ctx.providers);
             }
             // resolve default.
             if (!ctx.instance && ctx.defaultToken) {

@@ -1,9 +1,8 @@
 import { Type, ContainerFactory, createRaiseContext, IocProvidersOption, IocProvidersContext, lang, isToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { RegFor } from './modules/RegScope';
 import { AnnotationServiceToken } from './IAnnotationService';
 import { RegisterForMetadata, RegisterFor } from './decorators/RegisterFor';
-import { CTX_MODULE_DECTOR, CTX_MODULE_REGFOR, CTX_MODULE_ANNOATION } from '../context-tokens';
+import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION, CTX_TYPE_REGFOR } from '../context-tokens';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { IModuleReflect } from './modules/IModuleReflect';
 
@@ -39,12 +38,12 @@ export interface AnnoationOption extends IocProvidersOption<IContainer> {
     annoation?: ModuleConfigure;
 
     /**
-     * set where this module to register. default as child module.
+     * set where this module to register. default current module.
      *
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regFor?: RegFor;
+    regFor?: 'root';
 
     /**
      * raise contianer.
@@ -99,16 +98,16 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         return this._targetReflect;
     }
 
-    get regFor(): RegFor {
-        if (!this.has(CTX_MODULE_REGFOR)) {
+    get regFor(): string {
+        if (!this.has(CTX_TYPE_REGFOR)) {
             let regFor = this.annoation.regFor;
             if (!regFor) {
                 let meta = lang.first(this.reflects.getMetadata<RegisterForMetadata>(RegisterFor, this.module));
-                regFor = meta ? meta.regFor : RegFor.child;
+                regFor = meta ? meta.regFor : '';
             }
-            this.set(CTX_MODULE_REGFOR, regFor);
+            this.set(CTX_TYPE_REGFOR, regFor);
         }
-        return this.get(CTX_MODULE_REGFOR);
+        return this.get(CTX_TYPE_REGFOR);
     }
 
     /**
@@ -140,7 +139,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         }
 
         if (options.regFor) {
-            this.set(CTX_MODULE_REGFOR, options.regFor);
+            this.set(CTX_TYPE_REGFOR, options.regFor);
         }
     }
 }

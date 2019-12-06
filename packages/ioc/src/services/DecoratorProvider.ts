@@ -2,9 +2,8 @@ import { Token, Factory } from '../types';
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
-import { ProviderMap } from '../providers/ProviderMap';
+import { Injector } from '../providers/ProviderMap';
 import { ProviderTypes } from '../providers/types';
-import { ProviderParser } from '../providers/ProviderParser';
 
 /**
  * decorator default provider.
@@ -14,7 +13,7 @@ import { ProviderParser } from '../providers/ProviderParser';
  * @extends {IocCoreService}
  */
 export class DecoratorProvider extends IocCoreService {
-    protected map: Map<string, ProviderMap>;
+    protected map: Map<string, Injector>;
 
     constructor(private container: IIocContainer) {
         super()
@@ -89,14 +88,14 @@ export class DecoratorProvider extends IocCoreService {
     }
 
     bindProviders(decorator: string | Function, ...providers: ProviderTypes[]): this {
-        this.container.getInstance(ProviderParser).parseTo(this.existify(decorator), ...providers);
+        this.existify(decorator).parse(...providers);
         return this;
     }
 
-    existify(decorator: string | Function): ProviderMap {
+    existify(decorator: string | Function): Injector {
         decorator = this.getKey(decorator);
         if (!this.map.has(decorator)) {
-            this.map.set(decorator, this.container.resolve(ProviderMap));
+            this.map.set(decorator, this.container.resolve(Injector));
         }
         return this.map.get(decorator);
     }

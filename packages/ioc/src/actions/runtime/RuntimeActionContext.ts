@@ -1,9 +1,9 @@
 import { IParameter } from '../../IParameter';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 import { createRaiseContext } from '../Action';
-import { CTX_PROVIDER_MAP, CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
+import { CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
 import { ParamProviders } from '../../providers/types';
-import { ProviderMap } from '../../providers/ProviderMap';
+import { Injector } from '../../providers/ProviderMap';
 import { ProviderParser } from '../../providers/ProviderParser';
 
 
@@ -65,15 +65,6 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
      * @memberof RuntimeActionContext
      */
     target?: any;
-
-    get providerMap(): ProviderMap {
-        let pdrm = this.get(CTX_PROVIDER_MAP);
-        if (!pdrm) {
-            pdrm = this.getContainer().getInstance(ProviderParser).parse(...this.providers);
-            this.set(CTX_PROVIDER_MAP, pdrm);
-        }
-        return pdrm;
-    }
 
     get propertyKey() {
         return this.getOptions().propertyKey || 'constructor';

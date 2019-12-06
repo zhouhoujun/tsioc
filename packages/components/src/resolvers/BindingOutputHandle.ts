@@ -3,7 +3,6 @@ import { ResolveHandle, BuildContext, HandleRegisterer } from '@tsdi/boot';
 import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScopeHandle } from '../parses/BindingValueScope';
-import { ComponentRef } from '../ComponentRef';
 
 
 export class BindingOutputHandle extends ResolveHandle {

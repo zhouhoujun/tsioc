@@ -1,4 +1,4 @@
-import { Token, ProviderTypes, ProviderMap } from '@tsdi/ioc';
+import { Token, ProviderTypes, Injector } from '@tsdi/ioc';
 import { ServicesOption, ResolveServicesContext } from './resolves/ResolveServicesContext';
 
 /**
@@ -26,8 +26,8 @@ export interface IServicesResolver {
      * @template T
      * @param {(Token<T> | ServicesOption<T> | ResolveServicesContext<T>)} target
      * @param {ResolveServicesContext<T>} [ctx]
-     * @returns {ProviderMap}
+     * @returns {Injector}
      * @memberof IServicesResolver
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap;
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): Injector;
 }

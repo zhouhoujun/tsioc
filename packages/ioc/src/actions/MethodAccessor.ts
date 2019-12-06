@@ -7,7 +7,7 @@ import { IMethodAccessor } from '../IMethodAccessor';
 import { ActionRegisterer } from './ActionRegisterer';
 import { ParamProviders } from '../providers/types';
 import { ProviderParser } from '../providers/ProviderParser';
-import { ProviderMap } from '../providers/ProviderMap';
+import { Injector } from '../providers/ProviderMap';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
 
@@ -80,10 +80,10 @@ export class MethodAccessor implements IMethodAccessor {
      *
      * @param {*} target
      * @param {string} propertyKey
-     * @returns {ProviderMap}
+     * @returns {Injector}
      * @memberof IMethodAccessor
      */
-    invokedProvider(target: any, propertyKey: string): ProviderMap {
+    invokedProvider(target: any, propertyKey: string): Injector {
         return target ? target[invokedPdrKey + propertyKey] : null;
     }
 
@@ -100,7 +100,7 @@ export class MethodAccessor implements IMethodAccessor {
         return this.resolveParams(container, params, container.getInstance(ProviderParser).parse(...providers));
     }
 
-    protected resolveParams(container: IIocContainer, params: IParameter[], providerMap: ProviderMap): any[] {
+    protected resolveParams(container: IIocContainer, params: IParameter[], providerMap: Injector): any[] {
         return params.map((param, index) => {
             if (param.provider && providerMap.has(param.provider)) {
                 return providerMap.resolve(param.provider);

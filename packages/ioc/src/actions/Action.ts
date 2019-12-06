@@ -2,9 +2,8 @@ import { Token, Type } from '../types';
 import { lang, isFunction, isClass } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
-import { ProviderMap } from '../providers/ProviderMap';
+import { Injector } from '../providers/ProviderMap';
 import { ProviderTypes } from '../providers/types';
-import { ProviderParser } from '../providers/ProviderParser';
 import { IIocContainer, IocContainerToken, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ActionRegisterer } from './ActionRegisterer';
@@ -22,10 +21,10 @@ export interface ActionContextOption<T extends IIocContainer = IIocContainer> {
     /**
      * providers for contexts.
      *
-     * @type {(ProviderTypes[] | ProviderMap)}
+     * @type {(ProviderTypes[] | Injector)}
      * @memberof BootOption
      */
-    contexts?: ProviderTypes[] | ProviderMap;
+    contexts?: ProviderTypes[] | Injector;
     /**
      * raise contianer.
      */
@@ -78,7 +77,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
 
     constructor(@Inject(ContainerFactoryToken) raiseContainer: ContainerFactory<TC>) {
         super();
-        this.contexts = new ProviderMap(raiseContainer);
+        this.contexts = new Injector(raiseContainer);
     }
 
     /**
@@ -96,10 +95,10 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     /**
      * context providers of boot.
      *
-     * @type {ProviderMap}
+     * @type {Injector}
      * @memberof BootContext
      */
-    protected contexts: ProviderMap;
+    protected contexts: Injector;
 
     /**
      * has context or not.
@@ -148,9 +147,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         if (providers.length === 2 && isToken(providers[0])) {
             this.contexts.add(providers[0], providers[1]);
         } else {
-            let pr = this.getContainer().getInstance(ProviderParser);
-            pr.parseTo(this.contexts, ...providers);
-
+            this.contexts.parse(...providers);
         }
     }
 
@@ -209,7 +206,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
             this.setContainer(options.raiseContainer as ContainerFactory<TC>);
         }
         if (options.contexts) {
-            if (options.contexts instanceof ProviderMap) {
+            if (options.contexts instanceof Injector) {
                 if (this.contexts) {
                     this.contexts.copy(options.contexts);
                 } else {
@@ -243,7 +240,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     /**
      * clone contexts.
      */
-    clone(): ProviderMap {
+    clone(): Injector {
         return this.contexts.clone();
     }
 
@@ -260,14 +257,17 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
     /**
      * get providers of options.
      */
-    get providers(): ProviderTypes[] {
-        return this.get(CTX_PROVIDERS) || [];
+    get providers(): Injector {
+        if (!this.has(CTX_PROVIDERS)) {
+            this.set(CTX_PROVIDERS, new Injector(this.getFactory()));
+        }
+        return this.get(CTX_PROVIDERS);
     }
 
     setOptions(options: T) {
         super.setOptions(options);
         if (options && options.providers) {
-            this.set(CTX_PROVIDERS, options.providers);
+            this.providers.parse(...options.providers);
         }
     }
 }
