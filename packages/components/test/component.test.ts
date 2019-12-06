@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext, BuilderService, HandleRegisterer, ParentContainerToken, ContainerPoolToken } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ComponentSelectorHandle, RefChild, NonSerialize } from '../src';
+import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, ComponentSelectorHandle, RefChild, NonSerialize, ElementNode } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, Autorun } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
@@ -183,6 +183,37 @@ class ComponentTestMd3 {
 
 
 
+@Component('list')
+class ListBox {
+    @Input(ElementNode) items: ElementNode[];
+}
+
+@Component('columnDef')
+class ColumnDef {
+    @Input() name: string;
+    @Input() field: string;
+    @Input() type: string;
+}
+
+@Component('columns')
+class Columns {
+    @Input(ColumnDef) defs: ColumnDef[];
+}
+
+@DIModule({
+    imports: [
+        ComponentsModule,
+        ElementModule,
+        ListBox,
+        Columns,
+        ColumnDef
+    ]
+})
+class ListModule {
+
+}
+
+
 @Suite('component test')
 export class CTest {
 
@@ -349,5 +380,47 @@ export class CTest {
         comp.cmp2.name = 'oneway-bind';
         expect(comp.options.name).toEqual('twoway-bind');
         expect(comp.cmp2.name).toEqual('oneway-bind');
+    }
+
+
+    //     @Component('columnDef')
+    // class ColumnDef {
+    //     @Input() name: string;
+    //     @Input() field: string;
+    //     @Input() type: string;
+    // }
+    @Test('can run component template deep arr')
+    async test_deep_arr() {
+
+        let ctx = await BootApplication.run({
+            deps: [ListModule],
+            template: {
+                element: 'list',
+                items: [
+                    {
+                        element: 'columns',
+                        defs: [
+                            {
+                                element: 'columnDef',
+                                name: 'name',
+                                field: 'name',
+                                type: 'string'
+                            },
+                            {
+                                element: 'columnDef',
+                                name: 'phone',
+                                field: 'phone',
+                                type: 'string'
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+
+        let comp1 = ctx.getBootTarget() as ListBox;
+        expect(comp1 instanceof ListBox).toBeTruthy();
+        expect(comp1.items.length).toEqual(1);
+        console.log(comp1.items[0]);
     }
 }

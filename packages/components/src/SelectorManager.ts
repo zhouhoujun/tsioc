@@ -1,4 +1,5 @@
-import { Singleton, InstanceFactory, Type, ProviderTypes, isString, ClassType } from '@tsdi/ioc';
+import { Singleton, InstanceFactory, Type, ProviderTypes, isString, ClassType, Inject, TypeReflects } from '@tsdi/ioc';
+import { IBindingTypeReflect } from './bindings';
 
 const attrChkExp = /^\[\w*\]$/;
 /**
@@ -12,6 +13,8 @@ export class SelectorManager {
     protected factories: Map<string, InstanceFactory>;
     protected selectors: Map<string, Type>;
 
+    @Inject() protected reflects: TypeReflects;
+
     constructor() {
         this.factories = new Map();
         this.selectors = new Map();
@@ -21,7 +24,9 @@ export class SelectorManager {
         if (isString(selector)) {
             return this.selectors.has(selector);
         } else {
-            return Array.from(this.selectors.values()).some(it => it === selector);
+            let refl = this.reflects.get<IBindingTypeReflect>(selector);
+            return refl ? !!(refl.componentSelector || refl.attrSelector) : false;
+            // return Array.from(this.selectors.values()).some(it => it === selector);
         }
     }
 
@@ -42,8 +47,13 @@ export class SelectorManager {
         return this.selectors.get(selector);
     }
 
-    hasAttr(name: string) {
-        return this.has(this.getAttrName(name));
+    hasAttr(selector: string | ClassType) {
+        if (isString(selector)) {
+            return this.selectors.has(this.getAttrName(selector));
+        } else {
+            let refl = this.reflects.get<IBindingTypeReflect>(selector);
+            return refl ? !!refl.attrSelector : false;
+        }
     }
 
     getAttr(name: string): Type {
