@@ -126,7 +126,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @memberof BootContext
      */
     get<T>(token: Token<T>): T {
-        return this.contexts.resolve<T>(token);
+        return this.contexts.get<T>(token);
     }
     /**
      * set provider of this context.
@@ -147,7 +147,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         if (providers.length === 2 && isToken(providers[0])) {
             this.contexts.add(providers[0], providers[1]);
         } else {
-            this.contexts.parse(...providers);
+            this.contexts.inject(...providers);
         }
     }
 
@@ -250,7 +250,7 @@ export interface IocProvidersOption<T extends IIocContainer = IIocContainer> ext
     /**
      *  providers.
      */
-    providers?: ProviderTypes[];
+    providers?: ProviderTypes[] | Injector;
 }
 export abstract class IocProvidersContext<T extends IocProvidersOption = IocProvidersOption, TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TC> {
 
@@ -267,7 +267,11 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
     setOptions(options: T) {
         super.setOptions(options);
         if (options && options.providers) {
-            this.providers.parse(...options.providers);
+            if (options.providers instanceof Injector) {
+                this.set(CTX_PROVIDERS, options.providers)
+            } else {
+                this.providers.inject(...options.providers);
+            }
         }
     }
 }

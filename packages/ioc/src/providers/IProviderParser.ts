@@ -1,5 +1,5 @@
 import { ParamProviders } from './types';
-import { Injector } from './ProviderMap';
+import { IInjector } from '../IInjector';
 
 /**
  * Providers Parser interface.
@@ -15,5 +15,5 @@ export interface IProviderParser {
      * @returns {Injector}
      * @memberof IProviderParser
      */
-    parse(...providers: ParamProviders[]): Injector;
+    parse(...providers: ParamProviders[]): IInjector;
 }

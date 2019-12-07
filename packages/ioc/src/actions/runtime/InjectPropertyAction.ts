@@ -16,7 +16,7 @@ import { isToken } from '../../utils/isToken';
 export class InjectPropertyAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
-        let providerMap = ctx.providers;
+        let providers = ctx.providers;
         let container = this.container;
 
         let props = ctx.targetReflect.propProviders;
@@ -26,13 +26,13 @@ export class InjectPropertyAction extends IocRuntimeAction {
             if (isToken(token) && !ctx.has(key)) {
                 let pdrMap = container.get(new InjectReference(Injector, ctx.targetType));
                 if (pdrMap && pdrMap.has(token)) {
-                    ctx.target[propertyKey] = pdrMap.resolve(token, providerMap);
+                    ctx.target[propertyKey] = pdrMap.get(token, providers);
                     ctx.set(key, true);
-                } else if (providerMap && providerMap.has(token)) {
-                    ctx.target[propertyKey] = providerMap.resolve(token, providerMap);
+                } else if (providers && providers.has(token)) {
+                    ctx.target[propertyKey] = providers.get(token, providers);
                     ctx.set(key, true);
                 } else {
-                    let val = container.resolve(token, providerMap);
+                    let val = container.resolve(token, providers);
                     if (!isNullOrUndefined(val)) {
                         ctx.target[propertyKey] = val;
                         ctx.set(key, true);

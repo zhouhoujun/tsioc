@@ -2,8 +2,9 @@ import { Token, Factory } from '../types';
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
-import { Injector } from '../providers/ProviderMap';
 import { ProviderTypes } from '../providers/types';
+import { IInjector } from '../IInjector';
+import { Injector } from '../providers/ProviderMap';
 
 /**
  * decorator default provider.
@@ -69,7 +70,7 @@ export class DecoratorProvider extends IocCoreService {
     resolve<T>(decorator: string | Function | object, provide: Token<T>, ...providers: ProviderTypes[]): T {
         decorator = this.getKey(decorator);
         if (decorator && this.map.has(decorator)) {
-            return this.map.get(decorator).resolve(provide, ...providers);
+            return this.map.get(decorator).get(provide, ...providers);
         }
         return null;
     }
@@ -88,14 +89,14 @@ export class DecoratorProvider extends IocCoreService {
     }
 
     bindProviders(decorator: string | Function, ...providers: ProviderTypes[]): this {
-        this.existify(decorator).parse(...providers);
+        this.existify(decorator).inject(...providers);
         return this;
     }
 
-    existify(decorator: string | Function): Injector {
+    existify(decorator: string | Function): IInjector {
         decorator = this.getKey(decorator);
         if (!this.map.has(decorator)) {
-            this.map.set(decorator, this.container.resolve(Injector));
+            this.map.set(decorator, this.container.getInstance(Injector));
         }
         return this.map.get(decorator);
     }

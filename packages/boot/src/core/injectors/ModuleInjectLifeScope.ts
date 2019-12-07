@@ -4,7 +4,6 @@ import { AnnoationContext } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
 import { AnnoationRegisterScope } from './AnnoationRegisterScope';
 import { RegModuleExportsAction } from './RegModuleExportsAction';
-import { ModuleResovler } from './ModuleResovler';
 import { CTX_MODULE_RESOLVER } from '../../context-tokens';
 
 

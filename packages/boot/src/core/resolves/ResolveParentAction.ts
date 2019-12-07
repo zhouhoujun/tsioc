@@ -16,7 +16,7 @@ export class ResolveParentAction extends IocResolveAction {
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
                 if (parent.has(ctx.token)) {
-                    ctx.instance = parent.get(ctx.token, ...ctx.providers);
+                    ctx.instance = parent.get(ctx.token, ctx.providers);
                 }
                 if (!ctx.instance) {
                     parent.getInstance(ActionRegisterer).get(scopeType).execute(ctx, next);

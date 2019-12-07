@@ -1,9 +1,8 @@
-import { IIocContainer } from './IIocContainer';
 import { Type, Token } from './types';
 import { ParamProviders } from './providers/types';
-import { Injector } from './providers/ProviderMap';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
+import { IInjector } from './IInjector';
 
 /**
  * execution, invoke some type method.
@@ -17,56 +16,58 @@ export interface IMethodAccessor {
      * get type class constructor parameters.
      *
      * @template T
-     * @param {IIocContainer} container
+     * @param { IInjector } injector
      * @param {Type<T>} type
      * @returns {IParameter[]}
      * @memberof MethodAccessor
      */
-    getParameters<T>(container: IIocContainer, type: Type<T>): IParameter[];
+    getParameters<T>(injector: IInjector, type: Type<T>): IParameter[];
     /**
      * get method parameters of type.
      *
      * @template T
-     * @param {IIocContainer} container
+     * @param { IInjector } injector
      * @param {Type<T>} type
      * @param {T} instance
      * @param {string} propertyKey
      * @returns {IParameter[]}
      * @memberof MethodAccessor
      */
-    getParameters<T>(container: IIocContainer, type: Type<T>, instance: T, propertyKey: string): IParameter[];
+    getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): IParameter[];
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
      *
      * @template T
+     * @param { IInjector } injector
      * @param {(Token<T> | T)} target
      * @param {(string | ((tag: T) => Function))} propertyKey
      * @param {...ParamProviders[]} providers
      * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(container: IIocContainer, target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
 
     /**
      * create params instances with IParameter and provider
      *
+     * @param { IInjector } injector
      * @param {IParameter[]} params
      * @param {...AsyncParamProvider[]} providers
      * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createParams(container: IIocContainer, params: IParameter[], ...providers: ParamProviders[]): any[];
+    createParams(injector: IInjector, params: IParameter[], ...providers: ParamProviders[]): any[];
 
     /**
      * get target invoked provider.
      *
      * @param {*} target
      * @param {string} propertyKey
-     * @returns {Injector}
+     * @returns {IInjector}
      * @memberof IMethodAccessor
      */
-    invokedProvider(target: any, propertyKey: string): Injector;
+    invokedProvider(target: any, propertyKey: string): IInjector;
 }
 
 /**

@@ -260,7 +260,7 @@ export class CTest {
     @Test('can resolve component template in sub module')
     async test3() {
         let container = this.ctx.getContainer();
-        let service = container.resolve(CustomeService);
+        let service = container.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let comp3 = await service.createComponent3() as Component3;
         console.log('comp3:', comp3);
@@ -286,7 +286,7 @@ export class CTest {
         console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
-        let service = container.resolve(CustomeService);
+        let service = container.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let comp3 = await service.createComponent3() as Component3;
         console.log('comp3 :', comp3);
@@ -301,7 +301,7 @@ export class CTest {
         let container = ctx.getContainer();
         console.log(container.get(ContainerPoolToken).isRoot(container));
         // console.log(container);
-        console.log(container.resolve(Component1));
+        console.log(container.get(Component1));
         // console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component1).toBeTruthy();
         expect(ctx.getBootTarget().name).toEqual('test');

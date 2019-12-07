@@ -1,5 +1,5 @@
-import { ITypeDecorator, ClassMetadata, createClassDecorator, TypeMetadata, isNumber } from '@tsdi/ioc';
-import { isString } from 'util';
+import { ITypeDecorator, ClassMetadata, createClassDecorator, TypeMetadata, isString } from '@tsdi/ioc';
+
 
 
 /**

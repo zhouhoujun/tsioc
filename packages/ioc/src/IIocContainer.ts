@@ -1,11 +1,11 @@
 import { Type, Token, Factory, SymbolType } from './types';
+import { IInjector } from './IInjector';
 import { InjectToken } from './InjectToken';
-import { IResolverContainer } from './IResolver';
 import { ParamProviders, ProviderTypes } from './providers/types';
-import { Injector } from './providers/ProviderMap';
 import { IParameter } from './IParameter';
 import { TypeReflects } from './services/TypeReflects';
 import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
+
 
 /**
  * IContainer token.
@@ -27,7 +27,7 @@ export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_Conta
  * @export
  * @interface IIocContainer
  */
-export interface IIocContainer extends IResolverContainer {
+export interface IIocContainer extends IInjector {
 
     /**
      * get container factory.
@@ -45,29 +45,6 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     getTypeReflects(): TypeReflects;
-
-    /**
-     * get token factory resolve instace in current container.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IIocContainer
-     */
-    get<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * get token factory resolve instace in current container.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} alias
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
 
     /**
      * get instace in current container.
@@ -90,7 +67,6 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
     /**
      * resolve instance with token and param provider.
      *
@@ -101,7 +77,6 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     resolve<T>(option: ResolveActionOption<T>, ...providers: ProviderTypes[]): T;
-
     /**
      * resolve instance with context.
      *
@@ -112,23 +87,6 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IIocContainer
      */
     resolve<T>(context: ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
-
-    /**
-     * inject types.
-     * @param types types
-     */
-    inject(...types: Type[]): this;
-
-    /**
-     * register type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} [value]
-     * @returns {this}
-     * @memberof IContainer
-     */
-    register<T>(token: Token<T>, value?: Factory<T>): this;
 
     /**
      * register stingleton type.
@@ -151,6 +109,8 @@ export interface IIocContainer extends IResolverContainer {
      * @memberof IContainer
      */
     registerValue<T>(token: Token<T>, value: T): this;
+
+    registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this;
 
     /**
      * bind provider
@@ -243,10 +203,10 @@ export interface IIocContainer extends IResolverContainer {
      *
      * @param {*} target
      * @param {string} propertyKey
-     * @returns {Injector}
+     * @returns {IInjector}
      * @memberof IIocContainer
      */
-    invokedProvider(target: any, propertyKey: string): Injector;
+    invokedProvider(target: any, propertyKey: string): IInjector;
     /**
      * create params instances with IParameter and provider
      *

@@ -1,8 +1,6 @@
-import { IocCompositeAction, lang } from '@tsdi/ioc';
+import { IocCompositeAction } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
-import { ContainerPoolToken } from '../ContainerPoolToken';
-import { RegFor } from '../modules/RegScope';
 import { RegModuleAction } from './RegModuleAction';
 import { RegModuleImportsAction } from './RegModuleImportsAction';
 import { RegModuleProvidersAction } from './RegModuleProvidersAction';
@@ -17,7 +15,10 @@ import { RegModuleResolverAction } from './RegModuleResolverAction';
  */
 export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext> {
     execute(ctx: AnnoationContext, next?: () => void): void {
-        let pools = this.container.get(ContainerPoolToken);
+
+        if (ctx.regFor === 'root') {
+            this.container
+        }
 
         if (ctx.regFor === RegFor.boot) {
             return super.execute(ctx, next);

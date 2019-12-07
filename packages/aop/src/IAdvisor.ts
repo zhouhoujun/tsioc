@@ -2,6 +2,8 @@ import { Type, ObjectMap, InjectToken, IIocContainer, ParamProviders } from '@ts
 import { Advices } from './advices/Advices';
 import { AdviceMetadata } from './metadatas/AdviceMetadata';
 
+
+export const AOP_EXTEND_TARGET_TOKEN = new InjectToken<(target: any) => void>('AOP_EXTEND_TARGET_TOKEN')
 /**
  * Aop IAdvisor interface token.
  * it is a token id, you can register yourself IAdvisor for this.

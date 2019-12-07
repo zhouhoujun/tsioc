@@ -103,7 +103,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
             let regFor = this.annoation.regFor;
             if (!regFor) {
                 let meta = lang.first(this.reflects.getMetadata<RegisterForMetadata>(RegisterFor, this.module));
-                regFor = meta ? meta.regFor : '';
+                regFor = meta ? meta.regFor : null;
             }
             this.set(CTX_TYPE_REGFOR, regFor);
         }

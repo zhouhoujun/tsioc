@@ -1,7 +1,8 @@
-import { Token, Express2, Type, ObjectMap } from '../types';
-import { IIocContainer } from '../IIocContainer';
-import { isFunction, isObject, isUndefined } from '../utils/lang';
+import { Token, Type, ObjectMap } from '../types';
+import { isUndefined } from '../utils/lang';
 import { ProviderTypes } from './types';
+import { IInjector } from '../IInjector';
+import { MethodAccessorToken } from '../IMethodAccessor';
 
 /**
  * Provider interface.
@@ -194,14 +195,14 @@ export class Provider {
      * resolve provider value.
      *
      * @template T
-     * @param {IIocContainer} container
+     * @param {IInjector} injector
      * @param {ProviderTypes[]} providers
      * @returns {T}
      * @memberof Provider
      */
-    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
+    resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
         if (isUndefined(this.value)) {
-            return container.has(this.type) ? container.resolve(this.type, ...providers) : null;
+            return injector.has(this.type) ? injector.get(this.type, ...providers) : null;
         } else {
             return this.value;
         }
@@ -218,20 +219,6 @@ export class Provider {
      */
     static create(type: Token, value: any): Provider {
         return new Provider(type, value);
-    }
-
-    /**
-     * create extends provider.
-     *
-     * @static
-     * @param {Token} token
-     * @param {(any)} value
-     * @param {Express2<any, ExtendsProvider, void>} [extendsTarget]
-     * @returns {ExtendsProvider}
-     * @memberof Provider
-     */
-    static createExtends(token: Token, value: any, extendsTarget?: Express2<any, ExtendsProvider, void>): ExtendsProvider {
-        return new ExtendsProvider(token, value, extendsTarget);
     }
 
     /**
@@ -286,11 +273,11 @@ export class InvokeProvider extends Provider {
         this.method = method;
     }
 
-    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
+    resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
         if (this.method) {
-            return container.invoke<T>(this.type, this.method, ...providers);
+            return injector.get(MethodAccessorToken).invoke<T>(injector, this.type, this.method, ...providers);
         }
-        return super.resolve(container, ...providers);
+        return super.resolve(injector, ...providers);
     }
 }
 
@@ -323,37 +310,12 @@ export class ParamProvider extends InvokeProvider {
      * resolve param
      *
      * @template T
-     * @param {IIocContainer} container
+     * @param {IInjector} injector
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof ParamProvider
      */
-    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
-        return super.resolve(container, ...providers);
-    }
-}
-
-/**
- * Provider enable exntends target with provider in dynamic.
- *
- * @export
- * @class ExtendsProvider
- * @extends {Provider}
- */
-export class ExtendsProvider extends Provider {
-
-
-    constructor(token: Token, value?: any, private extendsTarget?: Express2<any, ExtendsProvider, void>) {
-        super(token, value);
-    }
-
-    resolve<T>(container: IIocContainer, ...providers: ProviderTypes[]): T {
-        return super.resolve(container, ...providers);
-    }
-
-    extends(target: any) {
-        if (isObject(target) && isFunction(this.extendsTarget)) {
-            this.extendsTarget(target, this);
-        }
+    resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
+        return super.resolve(injector, ...providers);
     }
 }

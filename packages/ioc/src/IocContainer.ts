@@ -7,11 +7,9 @@ import { isToken } from './utils/isToken';
 import { registerCores } from './registerCores';
 import { InjectReference } from './InjectReference';
 import { ParamProviders, ProviderTypes } from './providers/types';
-import { IResolver } from './IResolver';
 import { TypeReflects } from './services/TypeReflects';
 import { IParameter } from './IParameter';
 import { ProviderParser } from './providers/ProviderParser';
-import { Injector } from './providers/ProviderMap';
 import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
 import { ActionRegisterer } from './actions/ActionRegisterer';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
@@ -22,6 +20,9 @@ import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { MethodAccessor } from './actions/MethodAccessor';
+import { BaseInjector } from './Injector';
+import { Injector } from './providers/ProviderMap';
+import { IInjector } from './IInjector';
 
 
 const factoryToken = ContainerFactoryToken.toString();
@@ -32,27 +33,10 @@ const factoryToken = ContainerFactoryToken.toString();
  * @class IocContainer
  * @implements {IIocContainer}
  */
-export class IocContainer implements IIocContainer {
-    /**
-     * provide types.
-     *
-     * @protected
-     * @type {Map<Token, Type>}
-     * @memberof Container
-     */
-    protected provideTypes: Map<Token, Type>;
-    /**
-     * factories.
-     *
-     * @protected
-     * @type {Map<Token, Function>}
-     * @memberof Container
-     */
-    protected factories: Map<Token, InstanceFactory>;
+export class IocContainer extends BaseInjector implements IIocContainer {
 
     constructor() {
-        this.factories = new Map();
-        this.provideTypes = new Map();
+        super();
         this.init();
     }
 
@@ -69,48 +53,6 @@ export class IocContainer implements IIocContainer {
     }
 
     /**
-     * has register the token or not.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {boolean}
-     * @memberof Container
-     */
-    has<T>(token: Token<T>, alias?: string): boolean {
-        return this.factories.has(this.getTokenKey(token, alias));
-    }
-
-
-    /**
-     * get token factory resolve instace in current container.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {(string | ProviderTypes)} [alias]
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof Container
-     */
-    get<T>(token: Token<T>, alias?: string | ProviderTypes, ...providers: ProviderTypes[]): T {
-        let key;
-        if (isString(alias)) {
-            key = this.getTokenKey(token, alias);
-        } else {
-            key = this.getTokenKey(token);
-            if (alias) {
-                providers.unshift(alias);
-            }
-        }
-        return this.getInstance(key, ...providers);
-    }
-
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
-        let factory = this.factories.get(key);
-        return factory ? factory(...providers) : null;
-    }
-
-    /**
      * resolve instance with token and param provider via resolve scope.
      *
      * @template T
@@ -124,41 +66,6 @@ export class IocContainer implements IIocContainer {
     }
 
     /**
-     * iterator.
-     *
-     * @param {(tk: Token, fac: InstanceFactory) => void | boolean} callbackfn
-     * @memberof IExports
-     */
-    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IResolver) => void | boolean): void | boolean {
-        return !Array.from(this.factories.keys()).some(tk => callbackfn(this.factories.get(tk), tk, this) === false);
-    }
-
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     * @memberof Container
-     */
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-        if (alias) {
-            return new Registration(token, alias).toString();
-        } else if (token instanceof Registration) {
-            return token.toString();
-        }
-        return token;
-    }
-
-    inject(...types: Type[]): this {
-        types.forEach(ty => {
-            this.registerFactory(ty);
-        });
-        return this;
-    }
-
-    /**
      * register type.
      * @abstract
      * @template T
@@ -168,7 +75,7 @@ export class IocContainer implements IIocContainer {
      * @memberOf Container
      */
     register<T>(token: Token<T>, value?: Factory<T>): this {
-        this.registerFactory(token, value);
+        this.registerFactory(this, token, value);
         return this;
     }
 
@@ -182,7 +89,7 @@ export class IocContainer implements IIocContainer {
      * @memberOf Container
      */
     registerSingleton<T>(token: Token<T>, value?: Factory<T>): this {
-        this.registerFactory(token, value, true);
+        this.registerFactory(this, token, value, true);
         return this;
     }
 
@@ -203,48 +110,6 @@ export class IocContainer implements IIocContainer {
         return this;
     }
 
-    /**
-     * bind provider.
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Token<T>} provider
-     * @returns {this}
-     * @memberof Container
-     */
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
-        let provideKey = this.getTokenKey(provide);
-        let factory;
-        if (isToken(provider)) {
-            factory = (...providers: ParamProviders[]) => {
-                return this.get(provider, ...providers);
-            };
-        } else {
-            if (isFunction(provider)) {
-                factory = (...providers: ParamProviders[]) => {
-                    return (<ToInstance>provider)(this, ...providers);
-                };
-            } else {
-                factory = () => {
-                    return provider
-                };
-            }
-        }
-        if (isClass(provider)) {
-            if (!this.has(provider)) {
-                this.register(provider);
-            }
-            this.provideTypes.set(provideKey, provider);
-        } else if (isToken(provider)) {
-            let token = this.provideTypes.get(provider);
-            if (isClass(token)) {
-                this.provideTypes.set(provideKey, token);
-            }
-        }
-
-        this.factories.set(provideKey, factory);
-        return this;
-    }
 
     /**
      * bind providers for only target class.
@@ -275,16 +140,16 @@ export class IocContainer implements IIocContainer {
 
         let maps = this.getInstance(ProviderParser).parse(...prods);
         if (tgt) {
-            let refKey = new InjectReference(Injector, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
+            let refKey = new InjectReference<IInjector>(Injector, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
             if (this.has(refKey)) {
-                this.resolve(refKey).copy(maps);
+                this.get(refKey).copy(maps);
             } else {
                 this.bindProvider(refKey, maps);
                 complete && complete(refKey);
             }
         } else {
             maps.iterator((fac, key) => {
-                isToken(key) && this.factories.set(key, (...prods) => maps.resolve(key, ...prods));
+                isToken(key) && this.factories.set(key, (...prods) => maps.get(key, ...prods));
             });
         }
         return this;
@@ -319,15 +184,9 @@ export class IocContainer implements IIocContainer {
      * @memberof Container
      */
     unregister<T>(token: Token<T>): this {
-        let key = this.getTokenKey(token);
-        if (this.has(key)) {
-            this.factories.delete(key);
-            if (this.provideTypes.has(key)) {
-                this.provideTypes.delete(key);
-            }
-            if (isClass(key)) {
-                this.clearCache(key);
-            }
+        super.unregister(token);
+        if (isClass(token)) {
+            this.clearCache(token);
         }
         return this;
     }
@@ -358,86 +217,80 @@ export class IocContainer implements IIocContainer {
         return token;
     }
 
-    /**
-     * get token provider class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     * @memberof Container
-     */
-    getTokenProvider<T>(token: Token<T>): Type<T> {
-        if (isClass(token)) {
-            return token;
-        }
-        let tokenKey = this.getTokenKey(token);
-        if (this.provideTypes.has(tokenKey)) {
-            return this.provideTypes.get(tokenKey);
-        }
-        return null;
-    }
-
     protected init() {
         this.bindProvider(IocContainerToken, () => this);
         registerCores(this);
     }
 
-    protected registerFactory<T>(token: Token<T>, value?: Factory<T>, singleton?: boolean) {
+    registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this {
         (async () => {
-            let key = this.getTokenKey(token);
-            if (this.factories.has(key)) {
-                return;
-            }
-
+            let key = injector.getTokenKey(token);
+            // if (injector.hasTokenKey(key)) {
+            //     return;
+            // }
             let classFactory;
             if (isDefined(value)) {
                 if (isFunction(value)) {
                     if (isClass(value)) {
-                        this.bindTypeFactory(key, value as Type<T>, singleton);
+                        this.injectType(injector, value, singleton, key);
                     } else {
-                        classFactory = this.createCustomFactory(key, value as ToInstance<T>, singleton);
+                        classFactory = this.createCustomFactory(injector, key, value as ToInstance<T>, singleton);
                     }
                 } else if (singleton && value !== undefined) {
-                    classFactory = this.createCustomFactory(key, () => value, singleton);
+                    classFactory = this.createCustomFactory(injector, key, () => value, singleton);
                 }
 
             } else if (!isString(token) && !isSymbol(token)) {
                 let ClassT = (token instanceof Registration) ? token.getClass() : token;
                 if (isClass(ClassT)) {
-                    this.bindTypeFactory(key, ClassT as Type<T>, singleton);
+                    this.injectType(injector, ClassT, singleton, key);
                 }
             }
 
             if (classFactory) {
-                this.factories.set(key, classFactory);
+                injector.set(key, classFactory);
             }
         })();
+        return this;
     }
 
-    protected createCustomFactory<T>(key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
+    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ParamProviders[]) => {
-                let mgr = this.getInstance(IocSingletonManager);
+                let mgr = injector.getInstance(IocSingletonManager);
                 if (mgr.has(key)) {
                     return mgr.get(key);
                 }
-                let instance = factory(this, ...providers);
+                let instance = factory(injector, ...providers);
                 mgr.set(key, instance);
                 return instance;
             }
-            : (...providers: ParamProviders[]) => factory(this, ...providers);
+            : (...providers: ParamProviders[]) => factory(injector, ...providers);
     }
 
-    protected bindTypeFactory<T>(key: SymbolType<T>, ClassT?: Type<T>, singleton?: boolean) {
-
+    /**
+     * inject type.
+     *
+     * @template T
+     * @param {IInjector} injector
+     * @param {Type<T>} type
+     * @param {boolean} [singleton]
+     * @param {SymbolType<T>} [provide]
+     * @returns {this}
+     * @memberof IIocContainer
+     */
+    protected injectType<T>(injector: IInjector, type: Type<T>, singleton?: boolean, provide?: SymbolType<T>) {
+        if (!provide) {
+            provide = type;
+        }
         let factory = (...providers: ParamProviders[]) => {
-            let mgr = this.getInstance(IocSingletonManager);
-            if (mgr.has(key)) {
-                return mgr.get(key);
+            let mgr = injector.getInstance(IocSingletonManager);
+            if (mgr.has(provide)) {
+                return mgr.get(provide);
             }
             let ctx = RuntimeActionContext.parse({
-                tokenKey: key,
-                targetType: ClassT,
+                tokenKey: provide,
+                targetType: type,
                 singleton: singleton,
                 providers: providers,
                 raiseContainer: this.getFactory()
@@ -446,16 +299,16 @@ export class IocContainer implements IIocContainer {
             return ctx.target;
         };
 
-        this.factories.set(ClassT, factory);
-        if (key !== ClassT) {
-            this.bindProvider(key, ClassT);
+        injector.set(type, factory);
+        if (provide !== type) {
+            injector.set(provide, factory, type);
         }
 
         (async () => {
             this.getInstance(ActionRegisterer).get(DesignLifeScope).register(
                 DesignActionContext.parse({
-                    tokenKey: key,
-                    targetType: ClassT,
+                    tokenKey: provide,
+                    targetType: type,
                     raiseContainer: this.getFactory()
                 }));
         })();
@@ -476,7 +329,7 @@ export class IocContainer implements IIocContainer {
         return this.getInstance(MethodAccessor).invoke(this, target, propertyKey, ...providers);
     }
 
-    invokedProvider(target: any, propertyKey: string): Injector {
+    invokedProvider(target: any, propertyKey: string): IInjector {
         return this.getInstance(MethodAccessor).invokedProvider(target, propertyKey);
     }
 

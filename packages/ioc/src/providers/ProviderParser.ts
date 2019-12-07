@@ -3,9 +3,11 @@ import { isMetadataObject } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { IProviderParser } from './IProviderParser';
 import { IIocContainer } from '../IIocContainer';
-import { Injector, isInjector } from './ProviderMap';
 import { Provider, ObjectMapProvider } from './Provider';
 import { IocCoreService } from '../IocCoreService';
+import { isInjector } from '../Injector';
+import { Injector } from './ProviderMap';
+import { IInjector } from '../IInjector';
 
 /**
  * provider matcher. use to find custome providers in resolve.
@@ -22,12 +24,12 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
         super()
     }
 
-    parse(...providers: ParamProviders[]): Injector {
+    parse(...providers: ParamProviders[]): IInjector {
         if (providers.length === 1 && isInjector(providers[0])) {
-            return providers[0] as Injector;
+            return providers[0] as IInjector;
         }
         let map = this.container.getInstance(Injector);
-        return map.parse(map, ...providers);
+        return map.inject(map, ...providers);
     }
 }
 

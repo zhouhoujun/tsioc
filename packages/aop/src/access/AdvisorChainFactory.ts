@@ -7,7 +7,7 @@ import { Advices } from '../advices/Advices';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators/NonePointcut';
-import { IAdvisor, AdvisorToken } from '../IAdvisor';
+import { IAdvisor, AdvisorToken, AOP_EXTEND_TARGET_TOKEN } from '../IAdvisor';
 
 const AnnoDecorExp = /^@/;
 /**
@@ -172,9 +172,13 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             providers.push(joinPoint.currProvider);
         }
 
-        providers.push(Provider.createExtends(Joinpoint, joinPoint, (inst, provider) => {
-            inst._cache_JoinPoint = provider.resolve(this.container);
-        }));
+        providers.push(
+            { provide: Joinpoint, useValue: joinPoint },
+            {
+                provide: AOP_EXTEND_TARGET_TOKEN, useValue: (inst) => {
+                    inst._cache_JoinPoint = joinPoint;
+                }
+            });
 
         let metadata: any = advicer.advice;
 

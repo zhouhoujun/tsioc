@@ -1,6 +1,6 @@
 import { Registration } from './Registration';
-import { IIocContainer } from './IIocContainer';
 import { ProviderTypes } from './providers/types';
+import { IInjector } from './IInjector';
 
 /**
  * module types.
@@ -74,7 +74,7 @@ export type InstanceFactory<T = any> = (...providers: ProviderTypes[]) => T;
 /**
  * to instance via container.
  */
-export type ToInstance<T = any> = (container?: IIocContainer, ...providers: ProviderTypes[]) => T;
+export type ToInstance<T = any> = (injector?: IInjector, ...providers: ProviderTypes[]) => T;
 
 /**
  * Factory of Token
