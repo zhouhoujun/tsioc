@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "5.3.11",
+  "version": "5.3.12",
   "description": "AOP,  Ioc container, Boot framework, unit testing framework , activities workflow framework.",
   "scripts": {
     "postinstall": "npm prune",

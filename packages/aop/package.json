@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/aop",
-  "version": "5.3.11",
+  "version": "5.3.12",
   "description": "AOP base on Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -31,7 +31,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "~5.3.11",
+    "@tsdi/ioc": "~5.3.12",
     "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0"
   },

@@ -72,6 +72,9 @@ export class TsBuildActivity extends AssetActivity implements AfterInit {
             this.dist.pipe = this.dist.pipe || this.jsPipe;
         }
         if (this.dts) {
+            if (!this.dts.dist) {
+                this.dts.dist = this.dist.dist;
+            }
             this.dts.pipe = this.dts.pipe || this.tdsPipe;
         }
         if (this.sourcemapWrite) {
