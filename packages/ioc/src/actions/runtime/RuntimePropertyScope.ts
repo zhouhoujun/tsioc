@@ -5,17 +5,18 @@ import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
 import { InjectPropertyAction } from './InjectPropertyAction';
 import { Inject } from '../../decorators/Inject';
 import { AutoWired } from '../../decorators/AutoWried';
+import { IActionSetup } from '../Action';
 
 
-export class RuntimePropertyScope extends IocRegisterScope<RuntimeActionContext> {
+export class RuntimePropertyScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        this.registerAction(InjectPropertyAction);
+        this.injector.register(InjectPropertyAction);
 
-        this.container.getInstance(RuntimeRegisterer)
+        this.injector.getInstance(RuntimeRegisterer)
             .register(Inject, DecoratorScopes.Property, InjectPropertyAction)
             .register(AutoWired, DecoratorScopes.Property, InjectPropertyAction);
 
-        this.use(RuntimePropertyDecorScope, true);
+        this.use(RuntimePropertyDecorScope);
     }
 }
 

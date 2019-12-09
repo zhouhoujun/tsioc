@@ -1,8 +1,8 @@
-import { isString, isClass, lang, isFunction } from '../utils/lang';
-import { IIocContainer } from '../IIocContainer';
-import { IocAction, IocActionType } from './Action';
+import { isString, lang } from '../utils/lang';
+import { Action } from './Action';
 import { IocCoreService } from '../IocCoreService';
 import { ActionRegisterer } from './ActionRegisterer';
+import { Type } from '../types';
 
 /**
  * decorator action registerer.
@@ -11,8 +11,8 @@ import { ActionRegisterer } from './ActionRegisterer';
  * @class IocDecoratorRegisterer
  * @extends {IocCoreService}
  */
-export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction> extends IocCoreService {
-    protected actionMap: Map<string, IocActionType<T, TAction>[]>;
+export abstract class DecoratorRegisterer<TAction extends Function = lang.Action> extends IocCoreService {
+    protected actionMap: Map<string, Type<Action>[]>;
     protected funcs: Map<string, TAction[]>;
     constructor() {
         super();
@@ -24,7 +24,7 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
         return this.actionMap.size;
     }
 
-    getActions(): Map<string, IocActionType<T, TAction>[]> {
+    getActions(): Map<string, Type<Action>[]> {
         return this.actionMap;
     }
 
@@ -36,10 +36,10 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
      * register decorator actions.
      *
      * @param {(string | Function)} decorator
-     * @param {...T[]} actions
+     * @param {...Type<Action>[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, ...actions: IocActionType<T, TAction>[]): this {
+    register(decorator: string | Function, ...actions: Type<Action>[]): this {
         this.registing(decorator, actions, (regs, dec) => {
             regs.push(...actions);
             this.actionMap.set(dec, regs);
@@ -51,12 +51,12 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
      * register decorator actions before the action.
      *
      * @param {(string | Function)} decorator
-     * @param {(IocActionType<T, TAction> | boolean)} before
-     * @param {...T[]} actions
+     * @param {Type<Action>} before
+     * @param {...Type<Action>[]} actions
      * @returns {this}
      * @memberof DecoratorRegisterer
      */
-    registerBefore(decorator: string | Function, before: IocActionType<T, TAction>, ...actions: IocActionType<T, TAction>[]): this {
+    registerBefore(decorator: string | Function, before: Type<Action>, ...actions: Type<Action>[]): this {
         this.registing(decorator, actions, (regs, dec) => {
             if (before && regs.indexOf(before) > 0) {
                 regs.splice(regs.indexOf(before), 0, ...actions);
@@ -72,12 +72,12 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
      * register decorator actions after the action.
      *
      * @param {(string | Function)} decorator
-     * @param {(T | boolean)} after
-     * @param {...T[]} actions
+     * @param {Type<Action>} after
+     * @param {...Type<Action>[]} actions
      * @returns {this}
      * @memberof DecoratorRegisterer
      */
-    registerAfter(decorator: string | Function, after: IocActionType<T, TAction>, ...actions: IocActionType<T, TAction>[]): this {
+    registerAfter(decorator: string | Function, after: Type<Action>, ...actions: Type<Action>[]): this {
         this.registing(decorator, actions, (regs, dec) => {
             if (after && regs.indexOf(after) >= 0) {
                 regs.splice(regs.indexOf(after) + 1, 0, ...actions);
@@ -89,7 +89,7 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
         return this;
     }
 
-    protected registing(decorator: string | Function, actions: IocActionType<T, TAction>[], reg: (regs: IocActionType<T, TAction>[], dec: string) => void) {
+    protected registing(decorator: string | Function, actions: Type<Action>[], reg: (regs: Type<Action>[], dec: string) => void) {
         let dec = this.getKey(decorator);
         this.funcs.delete(dec);
         if (this.actionMap.has(dec)) {
@@ -99,7 +99,7 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
         }
     }
 
-    has(decorator: string | Function, action?: IocActionType<T, TAction>): boolean {
+    has(decorator: string | Function, action?: Type<Action>): boolean {
         let dec = this.getKey(decorator);
         let has = this.actionMap.has(dec);
         if (has && action) {
@@ -112,20 +112,18 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
         return isString(decorator) ? decorator : decorator.toString();
     }
 
-    get<Type extends T>(decorator: string | Function): IocActionType<Type, TAction>[] {
-        return this.actionMap.get(this.getKey(decorator)) as Type[] || [];
+    get<T extends Action>(decorator: string | Function): Type<T>[] {
+        return this.actionMap.get(this.getKey(decorator)) as Type<T>[] || [];
     }
 
 
-    getFuncs(container: IIocContainer, decorator: string | Function): TAction[] {
+    getFuncs(register: ActionRegisterer, decorator: string | Function): TAction[] {
         let dec = this.getKey(decorator);
         if (!this.funcs.has(dec)) {
-            this.funcs.set(dec, this.get(dec).map(a => a && this.toFunc(container, a)).filter(c => c));
+            this.funcs.set(dec, this.get(dec).map(a => register.getAction<TAction>(a)).filter(c => c));
         }
         return this.funcs.get(dec) || [];
     }
-
-    abstract toFunc(container: IIocContainer, action: IocActionType<T, TAction>): TAction;
 
 }
 
@@ -137,15 +135,6 @@ export abstract class DecoratorRegisterer<T = IocAction, TAction = lang.IAction>
  * @extends {DecoratorRegisterer<T>}
  * @template T
  */
-export class IocDecoratorRegisterer<T = IocAction> extends DecoratorRegisterer<T, lang.IAction> {
+export class IocDecoratorRegisterer<T extends Function = lang.Action> extends DecoratorRegisterer<T> {
 
-    toFunc(container: IIocContainer, ac: T): lang.IAction {
-        if (isClass(ac)) {
-            let action = container.getInstance(ActionRegisterer).get(ac);
-            return action instanceof IocAction ? action.toAction() : null;
-        } if (ac instanceof IocAction) {
-            return ac.toAction()
-        }
-        return isFunction(ac) ? <any>ac : null;
-    }
 }

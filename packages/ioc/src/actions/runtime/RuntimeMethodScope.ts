@@ -4,14 +4,16 @@ import { RuntimeActionContext } from './RuntimeActionContext';
 import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
 import { Autorun } from '../../decorators/AutoRun';
 import { MethodAutorunAction } from './MethodAutorunAction';
+import { IActionSetup } from '../Action';
 
-export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> {
+export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        this.registerAction(MethodAutorunAction);
+        this.injector.register(MethodAutorunAction);
 
-        this.container.getInstance(RuntimeRegisterer)
+        this.injector.getInstance(RuntimeRegisterer)
             .register(Autorun, DecoratorScopes.Method, MethodAutorunAction);
-        this.use(RuntimeMethodDecorScope, true);
+
+        this.use(RuntimeMethodDecorScope);
     }
 }
 

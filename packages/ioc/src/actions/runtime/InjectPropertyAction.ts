@@ -1,7 +1,7 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { InjectReference } from '../../InjectReference';
-import { Injector } from '../../providers/ProviderMap';
+import { Injector } from '../../Injector';
 import { isNullOrUndefined } from '../../utils/lang';
 import { isToken } from '../../utils/isToken';
 

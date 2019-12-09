@@ -1,6 +1,5 @@
 import { lang, isBoolean, isClass } from '../utils/lang';
-import { IocAction, IocActionType, IocRaiseContext } from './Action';
-import { IIocContainer } from '../IIocContainer';
+import { IocAction, IocActionType, IocRaiseContext, IActionInjector } from './Action';
 import { ActionRegisterer } from './ActionRegisterer';
 
 
@@ -17,11 +16,10 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
     protected actions: IocActionType[];
     protected befores: IocActionType[];
     protected afters: IocActionType[];
+    private actionFuncs: lang.Action[];
 
-    private actionFuncs: lang.IAction[];
-    constructor(container?: IIocContainer) {
-        super(container);
-
+    constructor(protected injector: IActionInjector) {
+        super();
         this.befores = [];
         this.actions = [];
         this.afters = [];
@@ -39,12 +37,12 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
      * @returns {this}
      * @memberof LifeScope
      */
-    use(action: IocActionType, setup?: boolean): this {
+    use(action: IocActionType): this {
         if (this.has(action)) {
             return this;
         }
         this.actions.push(action);
-        this.registerAction(action, setup);
+        this.regAction(action);
         this.resetFuncs();
         return this;
     }
@@ -53,24 +51,20 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
      * use action before
      *
      * @param {IocActionType} action
-     * @param {(IocActionType | boolean)} [before]
-     * @param {boolean} [setup]
+     * @param {IocActionType} [before]
      * @returns {this}
      * @memberof IocCompositeAction
      */
-    useBefore(action: IocActionType, before?: IocActionType | boolean, setup?: boolean): this {
+    useBefore(action: IocActionType, before?: IocActionType): this {
         if (this.has(action)) {
             return this;
         }
-        if (before && !isBoolean(before)) {
+        if (before) {
             this.actions.splice(this.actions.indexOf(before), 0, action);
         } else {
             this.actions.unshift(action);
-            if (isBoolean(before)) {
-                setup = before;
-            }
         }
-        this.registerAction(action, setup);
+        this.regAction(action);
         this.resetFuncs();
         return this;
     }
@@ -79,12 +73,11 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
      * use action after.
      *
      * @param {IocActionType} action
-     * @param {(IocActionType | boolean)} [after]
-     * @param {boolean} [setup]
+     * @param {IocActionType} [after]
      * @returns {this}
      * @memberof IocCompositeAction
      */
-    useAfter(action: IocActionType, after?: IocActionType | boolean, setup?: boolean): this {
+    useAfter(action: IocActionType, after?: IocActionType): this {
         if (this.has(action)) {
             return this;
         }
@@ -92,11 +85,8 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
             this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
         } else {
             this.actions.push(action);
-            if (isBoolean(after)) {
-                setup = after;
-            }
         }
-        this.registerAction(action, setup);
+        this.regAction(action);
         this.resetFuncs();
         return this;
     }
@@ -107,10 +97,10 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
      * @param {IocActionType} action
      * @memberof IocCompositeAction
      */
-    before(action: IocActionType, setup?: boolean): this {
+    before(action: IocActionType): this {
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
-            this.registerAction(action, setup);
+            this.regAction(action);
             this.resetFuncs();
         }
         return this;
@@ -122,10 +112,10 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
      * @param {IocActionType} action
      * @memberof IocCompositeAction
      */
-    after(action: IocActionType, setup?: boolean): this {
+    after(action: IocActionType): this {
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
-            this.registerAction(action, setup);
+            this.regAction(action);
             this.resetFuncs();
         }
         return this;
@@ -133,24 +123,20 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
 
     execute(ctx: T, next?: () => void): void {
         if (!this.actionFuncs) {
-            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.parseAction(ac)).filter(f => f);
+            let register = ctx.getContainer().getInstance(ActionRegisterer);
+            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => register.getAction<lang.Action<T>>(ac)).filter(f => f);
         }
         this.execFuncs(ctx, this.actionFuncs, next);
     }
 
-    protected registerAction(action: IocActionType, setup?: boolean): this {
-        if (isClass(action)) {
-            this.container.getInstance(ActionRegisterer).register(this.container, action, setup);
+    protected regAction(ac: any) {
+        if (isClass(ac)) {
+            this.injector.register(ac);
         }
-        return this;
     }
 
     protected resetFuncs() {
         this.actionFuncs = null;
-    }
-
-    setup() {
-
     }
 
 }

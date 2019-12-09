@@ -3,8 +3,9 @@ import { DesignActionContext } from './DesignActionContext';
 import { DecoratorsRegisterer, DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
+import { IActionSetup } from '../Action';
 
-export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActionContext> {
+export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActionContext> implements IActionSetup {
 
     protected getState(ctx: DesignActionContext, dtype: DecoratorScopes): ObjectMap<boolean> {
         switch (dtype) {
@@ -18,7 +19,7 @@ export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActio
         return null;
     }
     protected getScopeRegisterer(): DecoratorsRegisterer {
-        return this.container.getInstance(DesignRegisterer);
+        return this.injector.getInstance(DesignRegisterer);
     }
 
     setup() {

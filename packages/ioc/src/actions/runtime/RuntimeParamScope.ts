@@ -8,6 +8,7 @@ import { InitReflectAction } from '../InitReflectAction';
 import { Inject } from '../../decorators/Inject';
 import { AutoWired } from '../../decorators/AutoWried';
 import { Param } from '../../decorators/Param';
+import { IActionSetup } from '../Action';
 
 /**
  * runtime param scope.
@@ -16,7 +17,7 @@ import { Param } from '../../decorators/Param';
  * @class RuntimeParamScope
  * @extends {IocRegisterScope<RuntimeActionContext>}
  */
-export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
+export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     execute(ctx: RuntimeActionContext, next?: () => void): void {
         if (!ctx.targetReflect) {
             this.container.get(InitReflectAction).execute(ctx, () => 0);
@@ -25,14 +26,14 @@ export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> {
     }
 
     setup() {
-        this.registerAction(BindParameterTypeAction);
+        this.injector.register(BindParameterTypeAction);
 
-        this.container.getInstance(RuntimeRegisterer)
+        this.injector.getInstance(RuntimeRegisterer)
             .register(Inject, DecoratorScopes.Parameter, BindParameterTypeAction)
             .register(AutoWired, DecoratorScopes.Parameter, BindParameterTypeAction)
             .register(Param, DecoratorScopes.Parameter, BindParameterTypeAction);
 
-        this.use(RuntimeParamDecorScope, true)
+        this.use(RuntimeParamDecorScope)
             .use(BindDeignParamTypeAction);
     }
 }

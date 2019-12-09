@@ -2,6 +2,7 @@ import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { DecoratorScopes } from '../DecoratorsRegisterer';
+import { IActionSetup } from '../Action';
 
 /**
  * ioc register actions scope run after constructor.
@@ -10,9 +11,9 @@ import { DecoratorScopes } from '../DecoratorsRegisterer';
  * @class IocAfterConstructorScope
  * @extends {IocRuntimeScopeAction}
  */
-export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionContext> {
+export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        this.use(IocAfterConstructorDecorScope, true);
+        this.use(IocAfterConstructorDecorScope);
     }
 }
 

@@ -9,7 +9,7 @@ import { ModuleInjectorScope } from './ModuleInjectorScope';
 export class InjectorLifeScope extends LifeScope<InjectorActionContext> {
     setup() {
         let ijdr = new InjectorDecoratorRegisterer();
-        this.registerAction(IocExtRegisterScope, true);
+        this.register(IocExtRegisterScope, true);
         this.container.getInstance(DesignRegisterer)
             .setRegisterer(DecoratorScopes.Injector, ijdr);
         this.container.bindProvider(InjectorDecoratorRegisterer, ijdr);

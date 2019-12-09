@@ -1,6 +1,6 @@
 import { InjectToken } from './InjectToken';
 import { ActionContextOption } from './actions/Action';
-import { Injector } from './providers/ProviderMap';
+import { Injector } from './Injector';
 import { IParameter } from './IParameter';
 
 export const CTX_OPTIONS = new InjectToken<ActionContextOption>('CTX_OPTIONS');

@@ -44,4 +44,4 @@ export class ArgsIteratorContext<T extends Metadate = Metadate> {
 /**
  * args iterator action.
  */
-export type ArgsIteratorAction<T extends Metadate = Metadate> = lang.IAction<ArgsIteratorContext<T>>;
+export type ArgsIteratorAction<T extends Metadate = Metadate> = lang.Action<ArgsIteratorContext<T>>;

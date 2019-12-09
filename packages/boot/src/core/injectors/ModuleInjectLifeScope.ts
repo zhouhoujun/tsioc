@@ -21,7 +21,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
     container: IContainer;
 
     setup() {
-        this.registerAction(DIModuleInjectorScope, true)
+        this.register(DIModuleInjectorScope, true)
             .registerAction(CheckAnnoationAction)
             .registerAction(AnnoationRegisterScope, true)
             .registerAction(RegModuleExportsAction);

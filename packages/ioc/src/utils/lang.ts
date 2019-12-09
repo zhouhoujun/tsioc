@@ -265,7 +265,7 @@ export namespace lang {
      * @param {(ClassType | ((type: ClassType) => boolean))} baseClass
      * @returns {boolean}
      */
-    export function isExtendsClass(target: Token, baseClass: ClassType | ((type: ClassType) => boolean)): boolean {
+    export function isExtendsClass<T extends ClassType>(target: Token, baseClass: T | ((type: T) => boolean)): target is T {
         let isExtnds = false;
         if (isClassType(target) && baseClass) {
             let isCls = isClassType(baseClass);
@@ -281,12 +281,10 @@ export namespace lang {
         return isExtnds;
     }
 
-
-
     /**
     *  action handle.
     */
-    export type IAction<T = any> = (ctx: T, next?: () => void) => any;
+    export type Action<T = any> = (ctx: T, next?: () => void) => any;
 
     /**
      * execute action in chain.
@@ -297,7 +295,7 @@ export namespace lang {
      * @param {T} ctx
      * @param {() => void} [next]
      */
-    export function execAction<T>(handles: IAction<T>[], ctx: T, next?: () => void): void {
+    export function execAction<T>(handles: Action<T>[], ctx: T, next?: () => void): void {
         let index = -1;
         function dispatch(idx: number): any {
             if (idx <= index) {

@@ -1,7 +1,8 @@
-import { IocAction } from './Action';
+import { IocAction, IActionInjector } from './Action';
 import { RegisterActionContext } from './RegisterActionContext';
 import { DecoratorsRegisterer } from './DecoratorsRegisterer';
 import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
+import { ActionRegisterer } from './ActionRegisterer';
 
 
 /**
@@ -13,13 +14,17 @@ import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
  */
 export abstract class ExecDecoratorAtion extends IocAction<RegisterActionContext> {
 
+    constructor(protected injector: IActionInjector) {
+        super();
+    }
+
     execute(ctx: RegisterActionContext, next?: () => void): void {
         if (ctx.has(CTX_CURR_DECOR)) {
             let decor = this.getScopeRegisterer();
             let currDec = ctx.get(CTX_CURR_DECOR);
             let currScope = ctx.get(CTX_CURR_DECOR_SCOPE);
             if (decor.has(currDec, currScope)) {
-                let actions = decor.getFuncs(this.container, currDec, currScope);
+                let actions = decor.getFuncs(ctx.getContainer().getInstance(ActionRegisterer), currDec, currScope);
                 this.execFuncs(ctx, actions, next);
             } else {
                 next && next();

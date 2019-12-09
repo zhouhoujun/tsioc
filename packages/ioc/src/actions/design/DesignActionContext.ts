@@ -1,5 +1,6 @@
 import { createRaiseContext } from '../Action';
 import { RegisterActionContext, RegisterActionOption } from '../RegisterActionContext';
+import { ContainerFactory } from '../../IIocContainer';
 
 /**
  * design action option.
@@ -30,8 +31,8 @@ export class DesignActionContext extends RegisterActionContext<DesignActionOptio
      * @returns {DesignActionContext}
      * @memberof DesignActionContext
      */
-    static parse(options: DesignActionOption): DesignActionContext {
-        return createRaiseContext(DesignActionContext, options);
+    static parse(options: DesignActionOption, containerFactory: ContainerFactory): DesignActionContext {
+        return createRaiseContext(DesignActionContext, options, containerFactory);
     }
 
 }

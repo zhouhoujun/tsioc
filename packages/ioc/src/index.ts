@@ -69,7 +69,6 @@ export * from './factories/MethodPropParamDecoratorFactory';
 
 // providers
 export * from './providers/Provider';
-export * from './providers/ProviderMap';
 export * from './providers/IProviderParser';
 export * from './providers/ProviderParser';
 export * from './providers/types';

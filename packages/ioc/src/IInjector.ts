@@ -1,20 +1,36 @@
-import { ProviderTypes, InjectTypes } from './providers/types';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
+import { InjectToken } from './InjectToken';
+import { ProviderTypes, InjectTypes } from './providers/types';
+import { ContainerFactory, IIocContainer } from './IIocContainer';
 
 /**
- * resolver.
+ * injector interface.
  *
  * @export
- * @interface IResolver
+ * @interface IInjector
  */
 export interface IInjector {
     /**
      * resolver size.
      *
      * @type {number}
-     * @memberof IResolverContainer
+     * @memberof IInjector
      */
     readonly size: number;
+    /**
+     * get factory.
+     */
+    getFactory<T extends IIocContainer>(): ContainerFactory<T>;
+    /**
+     * get token.
+     *
+     * @template T
+     * @param {Token<T>} target
+     * @param {string} [alias]
+     * @returns {Token<T>}
+     * @memberof IInjector
+     */
+    getToken<T>(target: Token<T>, alias?: string): Token<T>;
     /**
      * has token key.
      *
@@ -31,7 +47,7 @@ export interface IInjector {
      * @param {Token<T>} token
      * @param {string} [alias]
      * @returns {SymbolType<T>}
-     * @memberof IContainer
+     * @memberof IInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
     /**
@@ -40,7 +56,7 @@ export interface IInjector {
      * @template T
      * @param {Token<T>} key
      * @returns {boolean}
-     * @memberof IResolver
+     * @memberof IInjector
      */
     has<T>(key: Token<T>): boolean;
 
@@ -51,7 +67,7 @@ export interface IInjector {
      * @param {Token<T>} key
      * @param {string} alias
      * @returns {boolean}
-     * @memberof IResolver
+     * @memberof IInjector
      */
     has<T>(key: Token<T>, alias: string): boolean;
 
@@ -74,7 +90,7 @@ export interface IInjector {
      * @param {string} alias
      * @param {...ProviderTypes[]} providers
      * @returns {T}
-     * @memberof IContainer
+     * @memberof IInjector
      */
     get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
 
@@ -85,7 +101,7 @@ export interface IInjector {
      * @param {SymbolType<T>} key
      * @param {...ProviderTypes[]} providers
      * @returns {T}
-     * @memberof IResolver
+     * @memberof IInjector
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
      /**
@@ -95,7 +111,7 @@ export interface IInjector {
      * @param {Token<T>} token
      * @param {ResoveWay} [resway]
      * @returns {Type<T>}
-     * @memberof IResolver
+     * @memberof IInjector
      */
     getTokenProvider<T>(token: Token<T>): Type<T>;
 
@@ -117,7 +133,7 @@ export interface IInjector {
      * @param {Token<T>} token
      * @param {Factory<T>} [value]
      * @returns {this}
-     * @memberof IContainer
+     * @memberof IInjector
      */
     register<T>(token: Token<T>, value?: Factory<T>): this;
     /**
@@ -134,7 +150,7 @@ export interface IInjector {
      * @template T
      * @param {Token<T>} token
      * @returns {this}
-     * @memberof IResolver
+     * @memberof IInjector
      */
     unregister<T>(token: Token<T>): this;
 
@@ -143,7 +159,7 @@ export interface IInjector {
      *
      * @param {((fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void|boolean)} callbackfn
      * @returns {(void|boolean)}
-     * @memberof IResolverContainer
+     * @memberof IInjector
      */
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean): void | boolean;
 
@@ -166,3 +182,7 @@ export interface IInjector {
     clone(to?: IInjector): IInjector
 }
 
+/**
+ *  injector token.
+ */
+export const InjectorToken =  new InjectToken<IInjector>('DI_Injector');

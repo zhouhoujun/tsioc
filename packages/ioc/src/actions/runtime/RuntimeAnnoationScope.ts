@@ -6,6 +6,7 @@ import { RegisterSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';
 import { Singleton } from '../../decorators/Singleton';
 import { Injectable } from '../../decorators/Injectable';
+import { IActionSetup } from '../Action';
 
 /**
  * runtime annoation action scope.
@@ -14,17 +15,17 @@ import { Injectable } from '../../decorators/Injectable';
  * @class RuntimeAnnoationScope
  * @extends {IocRegisterScope<RuntimeActionContext>}
  */
-export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> {
+export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        this.registerAction(RegisterSingletionAction)
-            .registerAction(IocSetCacheAction);
+        this.injector.register(RegisterSingletionAction)
+            .register(IocSetCacheAction);
 
-        this.container.getInstance(RuntimeRegisterer)
+        this.injector.getInstance(RuntimeRegisterer)
             .register(Singleton, DecoratorScopes.Class, RegisterSingletionAction)
             .register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
 
-        this.use(RuntimeAnnoationDecorScope, true);
+        this.use(RuntimeAnnoationDecorScope);
     }
 }
 

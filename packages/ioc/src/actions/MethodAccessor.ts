@@ -14,7 +14,7 @@ import { ContainerFactoryToken } from '../IIocContainer';
 
 
 
-const invokedPdrKey = '__invoked_prds_'
+const invokedPdrKey = '__invoked_prds_';
 /**
  * method accessor
  *
@@ -150,8 +150,7 @@ export class MethodAccessor implements IMethodAccessor {
             targetType: type,
             target: instance,
             propertyKey: propertyKey,
-            raiseContainer: injector.get(ContainerFactoryToken)
-        });
+        }, injector.getFactory());
         injector.getInstance(ActionRegisterer).get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];

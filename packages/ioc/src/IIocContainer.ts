@@ -176,17 +176,6 @@ export interface IIocContainer extends IInjector {
     clearCache(targetType: Type);
 
     /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} target
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof IContainer
-     */
-    getToken<T>(target: Token<T>, alias?: string): Token<T>;
-
-    /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
      * @template T

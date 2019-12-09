@@ -5,17 +5,18 @@ import { BindMethodProviderAction } from './BindMethodProviderAction';
 import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
 import { AutoWired } from '../../decorators/AutoWried';
 import { Providers } from '../../decorators/Providers';
+import { IActionSetup } from '../Action';
 
 
-export class DesignMethodScope extends IocRegisterScope<DesignActionContext> {
+export class DesignMethodScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
     setup() {
-        this.registerAction(BindMethodProviderAction);
+        this.injector.register(BindMethodProviderAction);
 
-        this.container.getInstance(DesignRegisterer)
+        this.injector.getInstance(DesignRegisterer)
             .register(AutoWired, DecoratorScopes.Method, BindMethodProviderAction)
             .register(Providers, DecoratorScopes.Method, BindMethodProviderAction);
 
-        this.use(DesignMethodDecoratorScope, true);
+        this.use(DesignMethodDecoratorScope);
     }
 }
 

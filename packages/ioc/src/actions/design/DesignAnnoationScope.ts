@@ -9,20 +9,22 @@ import { Singleton } from '../../decorators/Singleton';
 import { Providers } from '../../decorators/Providers';
 import { Refs } from '../../decorators/Refs';
 import { Autorun } from '../../decorators/AutoRun';
+import { IActionSetup } from '../Action';
 
-export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> {
+export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
+
     setup() {
-        this.registerAction(BindProviderAction)
-            .registerAction(IocAutorunAction);
+        this.injector.register(BindProviderAction)
+            .register(IocAutorunAction);
 
-        this.container.getInstance(DesignRegisterer)
+        this.injector.getInstance(DesignRegisterer)
             .register(Injectable, DecoratorScopes.Class, BindProviderAction)
             .register(Singleton, DecoratorScopes.Class, BindProviderAction)
             .register(Providers, DecoratorScopes.Class, BindProviderAction)
             .register(Refs, DecoratorScopes.Class, BindProviderAction)
             .register(Autorun, DecoratorScopes.Class, IocAutorunAction);
 
-        this.use(DesignClassDecoratorScope, true);
+        this.use(DesignClassDecoratorScope);
     }
 }
 

@@ -22,27 +22,27 @@ import { RuntimeAnnoationScope } from './runtime/RuntimeAnnoationScope';
  */
 export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
-    execute(ctx: RuntimeActionContext, next?: () => void): void {
-        let raiseContainer = ctx.getContainer();
-        if (!ctx.target && raiseContainer === this.container) {
-            super.execute(ctx, next);
-        }
-    }
+    // execute(ctx: RuntimeActionContext, next?: () => void): void {
+    //     let raiseContainer = ctx.getContainer();
+    //     if (!ctx.target && raiseContainer === this.container) {
+    //         super.execute(ctx, next);
+    //     }
+    // }
 
     setup() {
-        this.registerAction(RuntimeDecoratorAction)
-            .registerAction(RuntimeParamScope, true);
+        this.injector.register(RuntimeDecoratorAction)
+            .register(RuntimeParamScope);
 
         this.use(InitReflectAction)
             .use(GetSingletionAction)
             .use(IocGetCacheAction)
             .use(ConstructorArgsAction)
-            .use(IocBeforeConstructorScope, true)
+            .use(IocBeforeConstructorScope)
             .use(CreateInstanceAction)
-            .use(IocAfterConstructorScope, true)
-            .use(RuntimePropertyScope, true)
-            .use(RuntimeMethodScope, true)
-            .use(RuntimeAnnoationScope, true);
+            .use(IocAfterConstructorScope)
+            .use(RuntimePropertyScope)
+            .use(RuntimeMethodScope)
+            .use(RuntimeAnnoationScope);
 
     }
 

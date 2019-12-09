@@ -5,6 +5,7 @@ import { DesignDecoratorAction } from './design/DesignDecoratorAction';
 import { DesignPropertyScope } from './design/DesignPropertyScope';
 import { DesignMethodScope } from './design/DesignMethodScope';
 import { DesignAnnoationScope } from './design/DesignAnnoationScope';
+import { IActionSetup } from './Action';
 
 
 /**
@@ -14,14 +15,13 @@ import { DesignAnnoationScope } from './design/DesignAnnoationScope';
  * @class DesignLifeScope
  * @extends {LifeScope}
  */
-export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> {
-
+export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> implements IActionSetup {
     setup() {
-        this.registerAction(DesignDecoratorAction);
+        this.injector.register(DesignDecoratorAction);
 
         this.use(InitReflectAction)
-            .use(DesignPropertyScope, true)
-            .use(DesignMethodScope, true)
-            .use(DesignAnnoationScope, true);
+            .use(DesignPropertyScope)
+            .use(DesignMethodScope)
+            .use(DesignAnnoationScope);
     }
 }

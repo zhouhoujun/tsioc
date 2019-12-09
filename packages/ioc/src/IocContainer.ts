@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
-import { Type, Token, Factory, SymbolType, ToInstance, InstanceFactory } from './types';
+import { Type, Token, Factory, SymbolType, ToInstance } from './types';
 import { isClass, isFunction, isSymbol, isString, isDefined } from './utils/lang';
 import { Registration } from './Registration';
 import { isToken } from './utils/isToken';
@@ -20,9 +20,9 @@ import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { MethodAccessor } from './actions/MethodAccessor';
-import { BaseInjector } from './Injector';
-import { Injector } from './providers/ProviderMap';
 import { IInjector } from './IInjector';
+import { BaseInjector } from './BaseInjector';
+import { Injector } from './Injector';
 
 
 const factoryToken = ContainerFactoryToken.toString();
@@ -201,22 +201,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         this.getInstance(IocCacheManager).destroy(targetType);
     }
 
-    /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof Container
-     */
-    getToken<T>(token: Token<T>, alias?: string): Token<T> {
-        if (alias) {
-            return new Registration(token, alias);
-        }
-        return token;
-    }
-
     protected init() {
         this.bindProvider(IocContainerToken, () => this);
         registerCores(this);
@@ -293,8 +277,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 targetType: type,
                 singleton: singleton,
                 providers: providers,
-                raiseContainer: this.getFactory()
-            });
+                injector: injector
+            }, this.getFactory());
             this.getInstance(ActionRegisterer).get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
@@ -309,8 +293,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 DesignActionContext.parse({
                     tokenKey: provide,
                     targetType: type,
-                    raiseContainer: this.getFactory()
-                }));
+                    injector: injector
+                }, this.getFactory()));
         })();
     }
 
