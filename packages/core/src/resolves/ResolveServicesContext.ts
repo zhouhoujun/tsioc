@@ -1,4 +1,4 @@
-import { ClassType, Injector, Token, createRaiseContext, ContainerFactory, isToken } from '@tsdi/ioc';
+import { ClassType, createRaiseContext, ContainerFactory, IInjector } from '@tsdi/ioc';
 import { ServiceOption, ResolveServiceContext } from './ResolveServiceContext';
 
 /**
@@ -56,6 +56,6 @@ export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, Se
      * @type {Injector}
      * @memberof ResolveServicesContext
      */
-    services?: Injector;
+    services?: IInjector;
 
 }

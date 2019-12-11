@@ -27,11 +27,12 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
         if (!ctx.target || !isValideAspectTarget(ctx.targetType, ctx.reflects)) {
             return next();
         }
-        if (!this.container.has(ProxyMethodToken)) {
+        let injector = ctx.injector;
+        if (!injector.has(ProxyMethodToken)) {
             return next();
         }
 
-        let proxy = this.container.get(ProxyMethodToken);
+        let proxy = injector.get(ProxyMethodToken);
 
         let target = ctx.target;
         let targetType = ctx.targetType;

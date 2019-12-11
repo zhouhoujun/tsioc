@@ -58,7 +58,7 @@ export class InjectorActionContext extends IocRaiseContext<InjectorActionOption>
      * @returns {InjectorActionContext}
      * @memberof InjectorActionContext
      */
-    static parse(options: InjectorActionOption): InjectorActionContext {
-        return createRaiseContext(InjectorActionContext, options);
+    static parse(options: InjectorActionOption, containerFactory: ContainerFactory): InjectorActionContext {
+        return createRaiseContext(InjectorActionContext, options, containerFactory);
     }
 }

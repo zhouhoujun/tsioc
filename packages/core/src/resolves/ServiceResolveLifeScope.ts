@@ -14,6 +14,6 @@ export class ServiceResolveLifeScope<T> extends LifeScope<ResolveServiceContext<
 
     setup() {
         this.use(InitServiceResolveAction)
-            .use(ResolveServiceScope, true);
+            .use(ResolveServiceScope);
     }
 }

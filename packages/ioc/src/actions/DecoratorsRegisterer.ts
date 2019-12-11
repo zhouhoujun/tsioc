@@ -1,10 +1,8 @@
 import { isString, lang } from '../utils/lang';
 import { Registration } from '../Registration';
 import { IocCoreService } from '../IocCoreService';
-import { IIocContainer } from '../IIocContainer';
-import { Action } from './Action';
+import { Action, IActionInjector } from './Action';
 import { Token, Type } from '../types';
-import { ActionRegisterer } from './ActionRegisterer';
 import { IocDecoratorRegisterer, DecoratorRegisterer } from './DecoratorRegisterer';
 
 /**
@@ -34,7 +32,7 @@ export enum DecoratorScopes {
  */
 export abstract class DecoratorsRegisterer<TAction extends Function = lang.Action> extends IocCoreService {
     protected map: Map<Token, any>;
-    constructor(protected registerer: ActionRegisterer) {
+    constructor(protected registerer: IActionInjector) {
         super()
         this.map = new Map();
     }
@@ -64,7 +62,7 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
         return this.getRegisterer(scope).get<T>(decorator) || [];
     }
 
-    getFuncs(register: ActionRegisterer, decorator: string | Function, scope: string | DecoratorScopes): TAction[] {
+    getFuncs(register: IActionInjector, decorator: string | Function, scope: string | DecoratorScopes): TAction[] {
         return this.getRegisterer(scope).getFuncs(register, decorator);
     }
 

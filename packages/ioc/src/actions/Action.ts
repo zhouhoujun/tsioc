@@ -1,4 +1,4 @@
-import { Token, Type } from '../types';
+import { Token, Type, Factory } from '../types';
 import { lang, isArray } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
@@ -9,6 +9,7 @@ import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, InjectorToken } from '../IInjector';
 import { isInjector } from '../BaseInjector';
+import { InjectToken } from '../InjectToken';
 
 
 /**
@@ -35,8 +36,17 @@ export interface ActionContextOption {
  * action injector.
  */
 export interface IActionInjector extends IInjector {
+    /**
+     * register action, simple create instance via `new type(this)`.
+     * @param type
+     */
+    regAction<T extends Action>(type: Type<T>): this;
     getAction<T extends Function>(target: Token<Action> | Action | Function): T;
+    register<T>(token: Token<T>, fac: Factory<T>);
 }
+
+export const ActionInjectorToken = new InjectToken<IActionInjector>('_IOC_ActionInjector');
+
 
 /**
  * ioc action context.

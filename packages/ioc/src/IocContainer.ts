@@ -3,27 +3,17 @@ import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFacto
 import { Type, Token, Factory, SymbolType, ToInstance } from './types';
 import { isClass, isFunction, isSymbol, isString, isDefined } from './utils/lang';
 import { Registration } from './Registration';
-import { isToken } from './utils/isToken';
 import { registerCores } from './registerCores';
-import { InjectReference } from './InjectReference';
-import { ParamProviders, ProviderTypes } from './providers/types';
+import { ParamProviders } from './providers/types';
 import { TypeReflects } from './services/TypeReflects';
-import { IParameter } from './IParameter';
-import { ProviderParser } from './providers/ProviderParser';
-import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
 import { ActionRegisterer } from './actions/ActionRegisterer';
-import { ResolveLifeScope } from './actions/ResolveLifeScope';
-import { IocCacheManager } from './actions/IocCacheManager';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { RuntimeActionContext } from './actions/runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
-import { MethodAccessor } from './actions/MethodAccessor';
 import { IInjector } from './IInjector';
 import { BaseInjector } from './BaseInjector';
-import { Injector } from './Injector';
-
 
 const factoryToken = ContainerFactoryToken.toString();
 /**
@@ -34,7 +24,6 @@ const factoryToken = ContainerFactoryToken.toString();
  * @implements {IIocContainer}
  */
 export class IocContainer extends BaseInjector implements IIocContainer {
-
     constructor() {
         super();
         this.init();
@@ -52,17 +41,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this.getInstance(factoryToken) as ContainerFactory<T>;
     }
 
-    /**
-     * resolve instance with token and param provider via resolve scope.
-     *
-     * @template T
-     * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IocContainer
-     */
-    resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
-        return this.getInstance(ActionRegisterer).get(ResolveLifeScope).resolve(token, ...providers);
+    getContainer<T extends IIocContainer>(): T {
+        return  this as IIocContainer as T;
     }
 
     /**
@@ -70,12 +50,12 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * @abstract
      * @template T
      * @param {Token<T>} token
-     * @param {T} [value]
+     * @param {T} [fac]
      * @returns {this}
      * @memberOf Container
      */
-    register<T>(token: Token<T>, value?: Factory<T>): this {
-        this.registerFactory(this, token, value);
+    register<T>(token: Token<T>, fac?: Factory<T>): this {
+        this.registerFactory(this, token, fac);
         return this;
     }
 
@@ -84,124 +64,81 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * @abstract
      * @template T
      * @param {Token<T>} token
-     * @param {Factory<T>} [value]
+     * @param {Factory<T>} [fac]
      * @returns {this}
      * @memberOf Container
      */
-    registerSingleton<T>(token: Token<T>, value?: Factory<T>): this {
-        this.registerFactory(this, token, value, true);
+    registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this {
+        this.registerFactory(this, token, fac, true);
         return this;
     }
 
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof Container
-     */
-    registerValue<T>(token: Token<T>, value: T): this {
-        let key = this.getTokenKey(token);
-        if (!this.factories.has(key)) {
-            this.factories.set(key, () => value);
-        }
-        return this;
-    }
+    // /**
+    //  * bind providers for only target class.
+    //  *
+    //  * @param {Token} target
+    //  * @param {ParamProviders[]} providers
+    //  * @param {(mapTokenKey: Token) => void} [onceBinded]
+    //  * @returns {this}
+    //  * @memberof Container
+    //  */
+    // bindProviders(target?: Token | ProviderTypes, onceBinded?: ProviderTypes | ((mapTokenKey: Token) => void), ...providers: ProviderTypes[]): this {
+    //     let tgt: Token;
+    //     let complete: (mapTokenKey: Token) => void;
+    //     let prods: ProviderTypes[] = providers;
 
+    //     if (isFunction(onceBinded)) {
+    //         complete = onceBinded as (mapTokenKey: Token) => void;
+    //     } else if (onceBinded) {
+    //         prods.unshift(onceBinded);
+    //     }
 
-    /**
-     * bind providers for only target class.
-     *
-     * @param {Token} target
-     * @param {ParamProviders[]} providers
-     * @param {(mapTokenKey: Token) => void} [onceBinded]
-     * @returns {this}
-     * @memberof Container
-     */
-    bindProviders(target?: Token | ProviderTypes, onceBinded?: ProviderTypes | ((mapTokenKey: Token) => void), ...providers: ProviderTypes[]): this {
-        let tgt: Token;
-        let complete: (mapTokenKey: Token) => void;
-        let prods: ProviderTypes[] = providers;
+    //     if (isToken(target)) {
+    //         tgt = target;
+    //     } else if (target) {
+    //         tgt = null;
+    //         prods.unshift(target);
+    //     }
 
-        if (isFunction(onceBinded)) {
-            complete = onceBinded as (mapTokenKey: Token) => void;
-        } else if (onceBinded) {
-            prods.unshift(onceBinded);
-        }
+    //     let maps = this.getInstance(ProviderParser).parse(...prods);
+    //     if (tgt) {
+    //         let refKey = new InjectReference<IInjector>(Injector, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
+    //         if (this.has(refKey)) {
+    //             this.get(refKey).copy(maps);
+    //         } else {
+    //             this.bindProvider(refKey, maps);
+    //             complete && complete(refKey);
+    //         }
+    //     } else {
+    //         maps.iterator((fac, key) => {
+    //             isToken(key) && this.factories.set(key, (...prods) => maps.get(key, ...prods));
+    //         });
+    //     }
+    //     return this;
+    // }
 
-        if (isToken(target)) {
-            tgt = target;
-        } else if (target) {
-            tgt = null;
-            prods.unshift(target);
-        }
+    // /**
+    //  * bind provider ref to target.
+    //  *
+    //  * @template T
+    //  * @param {Token} target
+    //  * @param {Token<T>} provide
+    //  * @param {(Token<T> | Factory<T>)} provider
+    //  * @param {string} [alias]
+    //  * @param {(refToken: Token<T>) => void} [onceBinded]
+    //  * @returns {this}
+    //  * @memberof Container
+    //  */
+    // bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this {
+    //     let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
+    //     this.bindProvider(refToken, provider);
+    //     onceBinded && onceBinded(refToken);
+    //     return this;
+    // }
 
-        let maps = this.getInstance(ProviderParser).parse(...prods);
-        if (tgt) {
-            let refKey = new InjectReference<IInjector>(Injector, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
-            if (this.has(refKey)) {
-                this.get(refKey).copy(maps);
-            } else {
-                this.bindProvider(refKey, maps);
-                complete && complete(refKey);
-            }
-        } else {
-            maps.iterator((fac, key) => {
-                isToken(key) && this.factories.set(key, (...prods) => maps.get(key, ...prods));
-            });
-        }
-        return this;
-    }
-
-    /**
-     * bind provider ref to target.
-     *
-     * @template T
-     * @param {Token} target
-     * @param {Token<T>} provide
-     * @param {(Token<T> | Factory<T>)} provider
-     * @param {string} [alias]
-     * @param {(refToken: Token<T>) => void} [onceBinded]
-     * @returns {this}
-     * @memberof Container
-     */
-    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this {
-        let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
-        this.bindProvider(refToken, provider);
-        onceBinded && onceBinded(refToken);
-        return this;
-    }
-
-    /**
-     * unregister the token
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {ResoveWay} [resway]
-     * @returns {this}
-     * @memberof Container
-     */
-    unregister<T>(token: Token<T>): this {
-        super.unregister(token);
-        if (isClass(token)) {
-            this.clearCache(token);
-        }
-        return this;
-    }
-
-    /**
-     * clear cache.
-     *
-     * @param {Type} targetType
-     * @memberof IContainer
-     */
-    clearCache(targetType: Type) {
-        this.getInstance(IocCacheManager).destroy(targetType);
-    }
 
     protected init() {
+        super.init();
         this.bindProvider(IocContainerToken, () => this);
         registerCores(this);
     }
@@ -296,28 +233,5 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                     injector: injector
                 }, this.getFactory()));
         })();
-    }
-
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T>)} target type of class or instance
-     * @param {string} propertyKey
-     * @param {T} [instance] instance of target type.
-     * @param {...ParamProviders[]} providers
-     * @returns {TR}
-     * @memberof Container
-     */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
-        return this.getInstance(MethodAccessor).invoke(this, target, propertyKey, ...providers);
-    }
-
-    invokedProvider(target: any, propertyKey: string): IInjector {
-        return this.getInstance(MethodAccessor).invokedProvider(target, propertyKey);
-    }
-
-    createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.getInstance(MethodAccessor).createParams(this, params, ...providers);
     }
 }

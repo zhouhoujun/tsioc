@@ -27,20 +27,8 @@ export class Injector extends BaseInjector implements IInjector {
         return this.containerFac as ContainerFactory<T>;
     }
 
-    getContainer(): IIocContainer {
-        return this.containerFac();
-    }
-
-    keys(): Token[] {
-        return Array.from(this.factories.keys());
-    }
-
-    values(): InstanceFactory[] {
-        return Array.from(this.factories.values());
-    }
-
-    provides(): Token[] {
-        return this.keys()
+    getContainer<T extends IIocContainer>(): T {
+        return this.containerFac() as T;
     }
 
     /**
@@ -48,12 +36,26 @@ export class Injector extends BaseInjector implements IInjector {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param { Factory<T>} provider
+     * @param { Factory<T>} fac
      * @returns {this}
      * @memberof ProviderMap
      */
-    register<T>(provide: Token<T>, provider?: Factory<T>): this {
-        this.getContainer().registerFactory(this, provide, provider);
+    register<T>(provide: Token<T>, fac?: Factory<T>): this {
+        this.getContainer().registerFactory(this, provide, fac);
+        return this;
+    }
+
+    /**
+     * register provider.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param { Factory<T>} fac
+     * @returns {this}
+     * @memberof ProviderMap
+     */
+    registerSingleton<T>(provide: Token<T>, fac?: Factory<T>): this {
+        this.getContainer().registerFactory(this, provide, fac, true);
         return this;
     }
 

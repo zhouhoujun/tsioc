@@ -17,10 +17,11 @@ import { IActionSetup } from '../Action';
  */
 export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        this.injector.register(RegisterSingletionAction)
-            .register(IocSetCacheAction);
+        this.actInjector
+            .regAction(RegisterSingletionAction)
+            .regAction(IocSetCacheAction);
 
-        this.injector.getInstance(RuntimeRegisterer)
+        this.actInjector.getInstance(RuntimeRegisterer)
             .register(Singleton, DecoratorScopes.Class, RegisterSingletionAction)
             .register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 

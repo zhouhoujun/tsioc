@@ -10,7 +10,6 @@ import { ProviderParser } from '../providers/ProviderParser';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
 import { TypeReflects } from '../services/TypeReflects';
-import { ContainerFactoryToken } from '../IIocContainer';
 
 
 
@@ -149,9 +148,10 @@ export class MethodAccessor implements IMethodAccessor {
         let ctx = RuntimeActionContext.parse({
             targetType: type,
             target: instance,
+            injector: injector,
             propertyKey: propertyKey,
         }, injector.getFactory());
-        injector.getInstance(ActionRegisterer).get(RuntimeParamScope).execute(ctx);
+        injector.getContainer().getInstance(ActionRegisterer).get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
     }

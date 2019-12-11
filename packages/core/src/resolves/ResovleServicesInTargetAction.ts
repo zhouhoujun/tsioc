@@ -1,5 +1,5 @@
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { isToken, InjectReference, Injector, isClassType, ProviderTypes } from '@tsdi/ioc';
+import { isToken, InjectReference, Injector, isClassType, ProviderTypes, InjectorToken } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 import { CTX_TARGET_REFS } from '../context-tokens';
 
@@ -7,10 +7,11 @@ import { CTX_TARGET_REFS } from '../context-tokens';
 export class ResovleServicesInTargetAction extends IocResolveServicesAction {
     execute(ctx: ResolveServicesContext, next: () => void): void {
         let targetRefs = ctx.get(CTX_TARGET_REFS);
+        let injector = ctx.injector;
         if (targetRefs && targetRefs.length) {
             targetRefs.forEach(t => {
                 let tk = isToken(t) ? t : t.getToken();
-                let maps = this.container.get(new InjectReference(Injector, tk));
+                let maps = injector.get(new InjectReference(InjectorToken, tk));
                 if (maps && maps.size) {
                     maps.iterator((fac, tk) => {
                         if (isClassType(tk) && ctx.types.some(ty => ctx.reflects.isExtends(tk, ty))) {

@@ -4,7 +4,6 @@ import { TypeReflectsToken } from './services/ITypeReflects';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionRegisterer } from './actions/ActionRegisterer';
 import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
-import { IocCacheManager } from './actions/IocCacheManager';
 import { Injector } from './Injector';
 import { ProviderParser } from './providers/ProviderParser';
 import { DecoratorProvider } from './services/DecoratorProvider';
@@ -13,6 +12,7 @@ import { DesignLifeScope } from './actions/DesignLifeScope';
 import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { InjectorToken } from './IInjector';
+import { ActionInjectorToken } from './actions/Action';
 
 /**
  * register core for container.
@@ -27,13 +27,13 @@ export function registerCores(container: IIocContainer) {
 
     let register = new ActionRegisterer(fac);
     container.registerSingleton(ActionRegisterer, register);
+    container.bindProvider(ActionInjectorToken, ActionRegisterer);
     register.bindProvider(RuntimeRegisterer, new RuntimeRegisterer(register));
     register.bindProvider(DesignRegisterer, new DesignRegisterer(register));
 
     container.registerSingleton(TypeReflects, () => new TypeReflects(container));
     container.bindProvider(TypeReflectsToken, TypeReflects);
 
-    container.registerSingleton(IocCacheManager, () => new IocCacheManager(container));
     container.register(Injector, () => new Injector(fac));
     container.bindProvider(InjectorToken, Injector);
     container.registerSingleton(ProviderParser, () => new ProviderParser(container));

@@ -14,10 +14,11 @@ import { IActionSetup } from '../Action';
 export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
     setup() {
-        this.injector.register(BindProviderAction)
-            .register(IocAutorunAction);
+        this.actInjector
+            .regAction(BindProviderAction)
+            .regAction(IocAutorunAction);
 
-        this.injector.getInstance(DesignRegisterer)
+        this.actInjector.getInstance(DesignRegisterer)
             .register(Injectable, DecoratorScopes.Class, BindProviderAction)
             .register(Singleton, DecoratorScopes.Class, BindProviderAction)
             .register(Providers, DecoratorScopes.Class, BindProviderAction)

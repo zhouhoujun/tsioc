@@ -17,7 +17,7 @@ import { IActionSetup } from './Action';
  */
 export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> implements IActionSetup {
     setup() {
-        this.injector.register(DesignDecoratorAction);
+        this.actInjector.regAction(DesignDecoratorAction);
 
         this.use(InitReflectAction)
             .use(DesignPropertyScope)

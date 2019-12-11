@@ -18,7 +18,7 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
     protected afters: IocActionType[];
     private actionFuncs: lang.Action[];
 
-    constructor(protected injector: IActionInjector) {
+    constructor(protected actInjector: IActionInjector) {
         super();
         this.befores = [];
         this.actions = [];
@@ -131,7 +131,7 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
 
     protected regAction(ac: any) {
         if (isClass(ac)) {
-            this.injector.register(ac);
+            this.actInjector.regAction(ac);
         }
     }
 

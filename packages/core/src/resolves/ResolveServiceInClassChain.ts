@@ -11,11 +11,12 @@ export class ResolveServiceInClassChain extends IocResolveScope {
             let currTgRef = ctx.get(CTX_CURR_TARGET_REF);
             let classType = ctx.get(CTX_CURR_TARGET_TYPE);
             let currTagTk = ctx.get(CTX_CURR_TARGET_TOKEN);
+            let injector = ctx.injector;
             if (isClassType(classType)) {
                 ctx.reflects.getExtends(classType).some(ty => {
                     let tgRef = currTgRef instanceof TargetService ? currTgRef.clone(ty) : ty;
                     let tk = isToken(tgRef) ? tgRef : tgRef.getToken();
-                    let ctype = isClassType(tk) ? tk : this.container.getTokenProvider(tk);
+                    let ctype = isClassType(tk) ? tk : injector.getTokenProvider(tk);
                     ctx.set(CTX_CURR_TARGET_REF, tgRef);
                     ctx.set(CTX_CURR_TARGET_TOKEN, tk);
                     isClassType(ctype) ? ctx.set(CTX_CURR_TARGET_TYPE, ctype) : ctx.remove(CTX_CURR_TARGET_TYPE);

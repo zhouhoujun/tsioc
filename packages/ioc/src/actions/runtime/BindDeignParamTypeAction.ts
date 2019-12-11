@@ -31,10 +31,11 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
             paramTokens = Reflect.getMetadata('design:paramtypes', type) || [];
         }
 
+        let injector = ctx.injector;
         paramTokens = paramTokens.slice(0);
         paramTokens.forEach(dtype => {
-            if (isClass(dtype) && !this.container.has(dtype)) {
-                this.container.register(dtype);
+            if (isClass(dtype) && !injector.has(dtype)) {
+                injector.register(dtype);
             }
         });
         let names = ctx.reflects.getParamerterNames(type, propertyKey);

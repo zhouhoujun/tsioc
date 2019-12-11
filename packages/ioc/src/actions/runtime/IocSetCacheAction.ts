@@ -16,7 +16,7 @@ export class IocSetCacheAction extends IocRuntimeAction {
         if (ctx.targetReflect.singleton || !ctx.targetReflect.expires || ctx.targetReflect.expires <= 0) {
             return next();
         }
-        let cacheManager = this.container.getInstance(IocCacheManager);
+        let cacheManager = ctx.injector.getInstance(IocCacheManager);
         if (!cacheManager.hasCache(ctx.targetType)) {
             cacheManager.cache(ctx.targetType, ctx.target, ctx.targetReflect.expires);
         }

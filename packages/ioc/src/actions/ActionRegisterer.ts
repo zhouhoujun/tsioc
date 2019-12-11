@@ -2,10 +2,11 @@ import { Token, Factory, Type } from '../types';
 import { IIocContainer, ContainerFactory } from '../IIocContainer';
 import { IActionSetup, Action, IActionInjector } from './Action';
 import { BaseInjector } from '../BaseInjector';
-import { isFunction, isUndefined, lang } from '../utils/lang';
+import { isFunction, lang } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 
 export class ActionRegisterer extends BaseInjector implements IActionInjector {
+
     constructor(private factory: ContainerFactory) {
         super();
     }
@@ -14,22 +15,32 @@ export class ActionRegisterer extends BaseInjector implements IActionInjector {
         return this.factory as ContainerFactory<T>;
     }
 
-    register<T>(token: Token<T>, value?: Factory<T>): this {
-        let key = this.getTokenKey(token);
-        if (this.hasTokenKey(key)) {
+    getContainer<T extends IIocContainer>(): T {
+        return this.factory() as T;
+    }
+
+    regAction<T extends Action>(type: Type<T>): this {
+        if (this.hasTokenKey(type)) {
             return;
         }
 
-        if (isUndefined(value) && lang.isExtendsClass(token, Action)) {
-            this.registerAction(token as Type);
-        } else {
-            this.factory().registerFactory(this, token, value);
+        if (lang.isExtendsClass(type, Action)) {
+            this.registerAction(type);
+            let instance = this.getInstance(type) as T & IActionSetup;
+            if (instance instanceof Action && isFunction(instance.setup)) {
+                instance.setup();
+            }
         }
+        return this;
+    }
 
-        let instance = this.getInstance(key) as T & IActionSetup;
-        if (instance instanceof Action && isFunction(instance.setup)) {
-            instance.setup();
-        }
+    register<T>(token: Token<T>, fac?: Factory<T>): this {
+        this.factory().registerFactory(this, token, fac);
+        return this;
+    }
+
+    registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this {
+        this.factory().registerFactory(this, token, fac, true);
         return this;
     }
 

@@ -15,7 +15,7 @@ export class RegistAspectAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void): void {
         let type = ctx.targetType;
-        let aspectMgr = this.container.get<IAdvisor>(AdvisorToken);
+        let aspectMgr = ctx.injector.get<IAdvisor>(AdvisorToken);
         let raiseContainer = ctx.getContainer();
         let metadata = ctx.reflects.getMetadata<ClassMetadata>(ctx.currDecoractor, type);
         if (isArray(metadata) && metadata.length > 0) {

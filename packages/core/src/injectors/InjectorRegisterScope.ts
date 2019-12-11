@@ -17,7 +17,7 @@ export abstract class InjectorRegisterScope extends InjectorScope {
     protected registerTypes(ctx: InjectorActionContext, types: Type[]) {
         if (isArray(types) && types.length) {
             types.forEach(ty => {
-                if (!this.container.has(ty)) {
+                if (!ctx.injector.has(ty)) {
                     ctx.set(CTX_CURR_TYPE, ty);
                     super.execute(ctx);
                 }

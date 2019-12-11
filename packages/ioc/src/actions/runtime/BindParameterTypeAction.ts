@@ -27,6 +27,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         let designParams = this.createDesignParams(ctx, type, target, propertyKey);
 
         let refs = ctx.reflects;
+        let injector = ctx.injector;
         let currDecoractor = ctx.get(CTX_CURR_DECOR);
         let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
         if (isArray(parameters) && parameters.length) {
@@ -34,17 +35,17 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                 let parm = (isArray(params) && params.length > 0) ? params[0] : null;
                 if (parm && parm.index >= 0) {
                     if (isClass(parm.provider)) {
-                        if (!this.container.has(parm.provider)) {
-                            this.container.register(parm.provider);
+                        if (!injector.has(parm.provider)) {
+                            injector.register(parm.provider);
                         }
                     }
                     if (isClass(parm.type)) {
-                        if (!this.container.has(parm.type)) {
-                            this.container.register(parm.type);
+                        if (!injector.has(parm.type)) {
+                            injector.register(parm.type);
                         }
                     }
                     if (isToken(parm.provider)) {
-                        designParams[parm.index].provider = this.container.getTokenKey(parm.provider, parm.alias);
+                        designParams[parm.index].provider = injector.getTokenKey(parm.provider, parm.alias);
                     }
                 }
             });
@@ -75,7 +76,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
                         }
                         return {
                             name: n,
-                            provider: this.container.getTokenKey(parm.provider, parm.alias)
+                            provider: injector.getTokenKey(parm.provider, parm.alias)
                         }
                     }).forEach(parm => {
                         if (parm.provider) {

@@ -3,7 +3,6 @@ import { isFunction } from '../../utils/lang';
 import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
 import { CTX_CURR_DECOR } from '../../context-tokens';
-import { MethodAccessorToken } from '../../IMethodAccessor';
 
 /**
  * method auto run action.
@@ -31,7 +30,7 @@ export class IocAutorunAction extends IocDesignAction {
             if (meta && meta.autorun) {
                 let instance = injector.get(ctx.tokenKey || ctx.targetType);
                 if (instance && isFunction(instance[meta.autorun])) {
-                    injector.get(MethodAccessorToken).invoke(injector, instance, meta.autorun);
+                    injector.invoke(instance, meta.autorun);
                 }
             }
         });

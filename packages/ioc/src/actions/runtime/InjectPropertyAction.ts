@@ -17,7 +17,7 @@ export class InjectPropertyAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void) {
         let providers = ctx.providers;
-        let container = this.container;
+        let container = ctx.injector;
 
         let props = ctx.targetReflect.propProviders;
 

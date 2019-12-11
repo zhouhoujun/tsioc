@@ -12,6 +12,6 @@ import { DecoratorsRegisterer, RuntimeRegisterer } from '../DecoratorsRegisterer
  */
 export class RuntimeDecoratorAction extends ExecDecoratorAtion {
     protected getScopeRegisterer(): DecoratorsRegisterer {
-        return this.container.getInstance(RuntimeRegisterer);
+        return this.actInjector.getInstance(RuntimeRegisterer);
     }
 }

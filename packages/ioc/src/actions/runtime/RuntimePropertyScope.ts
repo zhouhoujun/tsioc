@@ -10,9 +10,9 @@ import { IActionSetup } from '../Action';
 
 export class RuntimePropertyScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        this.injector.register(InjectPropertyAction);
+        this.actInjector.regAction(InjectPropertyAction);
 
-        this.injector.getInstance(RuntimeRegisterer)
+        this.actInjector.getInstance(RuntimeRegisterer)
             .register(Inject, DecoratorScopes.Property, InjectPropertyAction)
             .register(AutoWired, DecoratorScopes.Property, InjectPropertyAction);
 

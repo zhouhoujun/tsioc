@@ -222,6 +222,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
 
-        return this.advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
+        return this.advisor.getInjector(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
     }
 }

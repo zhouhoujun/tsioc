@@ -21,6 +21,7 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
                 .filter(t => t));
         }
         options.tokens = options.tokens || [];
+        let injector = ctx.injector;
         if (ctx.token) {
             if (options.serviceTokenFactory) {
                 options.tokens = (options.serviceTokenFactory(ctx.token) || []).concat(options.tokens);
@@ -33,13 +34,13 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
             options.tokens = options.tokens.filter(t => isToken(t));
             let ssoption = options as ServicesOption<any>;
             ssoption.types = ssoption.types || [];
-            ssoption.types = ctx.tokens.map(t => isClassType(t) ? t : this.container.getTokenProvider(t))
+            ssoption.types = ctx.tokens.map(t => isClassType(t) ? t : injector.getTokenProvider(t))
                 .concat(ssoption.types).filter(ty => isClassType(ty));
             return next();
 
         } else {
             if (!isClassType(ctx.token)) {
-                let pdType = this.container.getTokenProvider(ctx.token);
+                let pdType = injector.getTokenProvider(ctx.token);
                 if (pdType) {
                     options.tokens.push(pdType);
                 }
@@ -47,9 +48,9 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
             options.tokens = options.tokens.filter(t => isToken(t));
             next();
 
-            if (!ctx.instance && options.regify && isClass(ctx.token) && !this.container.has(ctx.token)) {
-                this.container.register(ctx.token);
-                ctx.instance = this.container.get(ctx.token, ctx.providers);
+            if (!ctx.instance && options.regify && isClass(ctx.token) && !injector.has(ctx.token)) {
+                injector.register(ctx.token);
+                ctx.instance = injector.get(ctx.token, ctx.providers);
             }
             // resolve default.
             if (!ctx.instance && ctx.defaultToken) {

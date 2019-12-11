@@ -19,7 +19,8 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
             return next();
         }
 
-        let advisor = this.container.get(AdvisorToken);
+        let injector = ctx.injector;
+        let advisor = injector.get(AdvisorToken);
         let className = lang.getClassName(ctx.targetType);
         let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
@@ -28,7 +29,7 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
         let targetType = ctx.targetType;
         let target = ctx.target;
 
-        let joinPoint = this.container.getInstance(Joinpoint, {
+        let joinPoint = injector.getInstance(Joinpoint, {
             provide: JoinpointOptionToken,
             useValue: <JoinpointOption>{
                 name: 'constructor',
@@ -48,11 +49,11 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
         providers.push({ provide: Joinpoint, useValue: joinPoint });
 
         advices.After.forEach(advicer => {
-            advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
+            advisor.getInjector(advicer.aspectType, injector).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
 
         advices.Around.forEach(advicer => {
-            advisor.getContainer(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
+            advisor.getInjector(advicer.aspectType, injector).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
         next();
     }

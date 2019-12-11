@@ -1,4 +1,4 @@
-import { IInjector } from './IInjector';
+import { IInjector, InjectorToken } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, ToInstance, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
@@ -8,15 +8,22 @@ import { IocCoreService } from './IocCoreService';
 import { Provider, ParamProvider, ObjectMapProvider } from './providers/Provider';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { IocSingletonManager } from './actions/IocSingletonManager';
+import { MethodAccessorToken } from './IMethodAccessor';
+import { IParameter } from './IParameter';
+import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
+import { ActionRegisterer } from './actions/ActionRegisterer';
+import { ResolveLifeScope } from './actions/ResolveLifeScope';
+import { IocCacheManager } from './actions/IocCacheManager';
+import { InjectReference } from './InjectReference';
 
 
 /**
- * resolver.
+ * Base Injector.
  *
  * @export
  * @abstract
- * @class Resolver
- * @implements {IResolver}
+ * @class BaseInjector
+ * @implements {IInjector}
  */
 export abstract class BaseInjector extends IocCoreService implements IInjector {
     /**
@@ -24,16 +31,16 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      *
      * @protected
      * @type {Map<Token, Function>}
-     * @memberof Container
+     * @memberof BaseInjector
      */
-    protected factories: Map<Token, InstanceFactory>;
+    protected factories: Map<SymbolType, InstanceFactory>;
 
     /**
      * provide types.
      *
      * @protected
      * @type {Map<Token, Type>}
-     * @memberof Container
+     * @memberof BaseInjector
      */
     protected provideTypes: Map<Token, Type>;
 
@@ -47,16 +54,30 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
 
     protected init() {
         this.bindProvider(IocSingletonManager, new IocSingletonManager(this));
+        this.bindProvider(IocCacheManager, new IocCacheManager(this))
     }
 
     get size(): number {
         return this.factories.size;
     }
 
+    keys(): SymbolType[] {
+        return Array.from(this.factories.keys());
+    }
+
+    values(): InstanceFactory[] {
+        return Array.from(this.factories.values());
+    }
+
+
     /**
-     *  get factory.
+     *  get container factory.
      */
     abstract getFactory<T extends IIocContainer>(): ContainerFactory<T>;
+    /**
+     * get container.
+     */
+    abstract getContainer<T extends IIocContainer>(): T;
     /**
      * register type.
      * @abstract
@@ -64,9 +85,33 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @param {Token<T>} token
      * @param {T} [value]
      * @returns {this}
-     * @memberOf Container
+     * @memberOf BaseInjector
      */
-    abstract register<T>(token: Token<T>, value?: Factory<T>): this;
+    abstract register<T>(token: Token<T>, fac?: Factory<T>): this;
+
+    /**
+     * register as singleton.
+     * @param token token
+     * @param value factory
+     */
+    abstract registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
+    /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @returns {this}
+     * @memberof BaseInjector
+     */
+    registerValue<T>(token: Token<T>, value: T): this {
+        let key = this.getTokenKey(token);
+        // if (!this.factories.has(key)) {
+            this.factories.set(key, () => value);
+        // }
+        return this;
+    }
+
 
     set<T>(provide: SymbolType<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this {
         this.factories.set(provide, fac);
@@ -80,7 +125,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @param {Token<T>} provide
      * @param {Token<T>} provider
      * @returns {this}
-     * @memberof Container
+     * @memberof BaseInjector
      */
     bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
         let provideKey = this.getTokenKey(provide);
@@ -116,6 +161,29 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this;
     }
 
+    /**
+     *  bind provider ref to target.
+     * @param target the target, provide ref to.
+     * @param provide provide token.
+     * @param provider provider factory or token.
+     * @param alias alias.
+     */
+    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string): InjectReference<T> {
+        let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
+        this.bindProvider(refToken, provider);
+        return refToken;
+    }
+
+    bindTagProvider<T>(target: Token, ...providers: ProviderTypes[]): InjectReference<IInjector> {
+        let refToken = new InjectReference(InjectorToken, target);
+        if (this.has(refToken)) {
+            this.get(refToken).inject(...providers);
+        } else {
+            this.bindProvider(refToken, this.getContainer().get(InjectorToken).inject(...providers));
+        }
+        return refToken;
+    }
+
     inject(...providers: InjectTypes[]): this {
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
@@ -125,9 +193,9 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                 this.copy(p);
             } else if (p instanceof Provider) {
                 if (p instanceof ParamProvider) {
-                    this.factories.set(p.getToken(), (...providers: ParamProviders[]) => p.resolve(this, ...providers));
+                    this.factories.set(this.getTokenKey(p.getToken()), (...providers: ParamProviders[]) => p.resolve(this, ...providers));
                 } else {
-                    this.factories.set(p.type, (...providers: ParamProviders[]) => p.resolve(this, ...providers));
+                    this.factories.set(this.getTokenKey(p.type), (...providers: ParamProviders[]) => p.resolve(this, ...providers));
                 }
             } else if (isClass(p)) {
                 if (!this.has(p)) {
@@ -194,21 +262,21 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @param {Token<T>} token
      * @param {string} [alias]
      * @returns {boolean}
-     * @memberof Container
+     * @memberof BaseInjector
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         return this.factories.has(this.getTokenKey(token, alias));
     }
 
     /**
-     * get token factory resolve instace in current container.
+     * get token factory resolve instace in current BaseInjector.
      *
      * @template T
      * @param {Token<T>} token
      * @param {(string | ProviderTypes)} [alias]
      * @param {...ProviderTypes[]} providers
      * @returns {T}
-     * @memberof Container
+     * @memberof BaseInjector
      */
     get<T>(token: Token<T>, alias?: string | ProviderTypes, ...providers: ProviderTypes[]): T {
         let key;
@@ -226,6 +294,19 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
         let factory = this.factories.get(key);
         return factory ? factory(...providers) : null;
+    }
+
+    /**
+     * resolve instance with token and param provider via resolve scope.
+     *
+     * @template T
+     * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IocContainer
+     */
+    resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
+        return this.getInstance(ActionRegisterer).get(ResolveLifeScope).resolve(token, ...providers);
     }
 
     /**
@@ -255,7 +336,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @param {Token<T>} token
      * @param {ResoveWay} [resway]
      * @returns {this}
-     * @memberof Container
+     * @memberof BaseInjector
      */
     unregister<T>(token: Token<T>): this {
         let key = this.getTokenKey(token);
@@ -264,7 +345,21 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
             if (this.provideTypes.has(key)) {
                 this.provideTypes.delete(key);
             }
+            if (isClass(key)) {
+                this.clearCache(key);
+            }
         }
+        return this;
+    }
+
+    /**
+     * clear cache.
+     *
+     * @param {Type} targetType
+     * @memberof BaseInjector
+     */
+    clearCache(targetType: Type) {
+        this.getInstance(IocCacheManager).destroy(targetType);
         return this;
     }
 
@@ -275,7 +370,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @param {Token<T>} token
      * @param {string} [alias]
      * @returns {Token<T>}
-     * @memberof Container
+     * @memberof BaseInjector
      */
     getToken<T>(token: Token<T>, alias?: string): Token<T> {
         if (alias) {
@@ -292,7 +387,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @param {Token<T>} token
      * @param {string} [alias]
      * @returns {SymbolType<T>}
-     * @memberof Container
+     * @memberof BaseInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         if (alias) {
@@ -310,6 +405,29 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
             }
             return false;
         });
+    }
+
+    /**
+     * invoke method.
+     *
+     * @template T
+     * @param {(T | Type<T>)} target type of class or instance
+     * @param {string} propertyKey
+     * @param {T} [instance] instance of target type.
+     * @param {...ParamProviders[]} providers
+     * @returns {TR}
+     * @memberof BaseInjector
+     */
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
+        return this.get(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
+    }
+
+    invokedProvider(target: any, propertyKey: string): IInjector {
+        return this.get(MethodAccessorToken).invokedProvider(target, propertyKey);
+    }
+
+    createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
+        return this.get(MethodAccessorToken).createParams(this, params, ...providers);
     }
 
     /**
@@ -349,7 +467,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
  * @param {object} target
  * @returns {target is Injector}
  */
-export function isInjector(target: object): target is BaseInjector {
+export function isInjector(target: any): target is BaseInjector {
     if (!isObject(target)) {
         return false;
     }

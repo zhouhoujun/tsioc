@@ -20,15 +20,15 @@ import { IActionSetup } from '../Action';
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     execute(ctx: RuntimeActionContext, next?: () => void): void {
         if (!ctx.targetReflect) {
-            this.container.get(InitReflectAction).execute(ctx, () => 0);
+            this.actInjector.get(InitReflectAction).execute(ctx, () => 0);
         }
         super.execute(ctx, next);
     }
 
     setup() {
-        this.injector.register(BindParameterTypeAction);
+        this.actInjector.regAction(BindParameterTypeAction);
 
-        this.injector.getInstance(RuntimeRegisterer)
+        this.actInjector.getInstance(RuntimeRegisterer)
             .register(Inject, DecoratorScopes.Parameter, BindParameterTypeAction)
             .register(AutoWired, DecoratorScopes.Parameter, BindParameterTypeAction)
             .register(Param, DecoratorScopes.Parameter, BindParameterTypeAction);

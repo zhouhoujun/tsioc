@@ -1,7 +1,6 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
 import { IocRegisterScope } from '../IocRegisterScope';
-import { ActionRegisterer } from '../ActionRegisterer';
 import { CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
 
 /**
@@ -15,14 +14,15 @@ export class ConstructorArgsAction extends IocRegisterScope<RuntimeActionContext
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (!ctx.has(CTX_ARGS)) {
+            let injector = ctx.injector;
             if (ctx.targetReflect.methodParams.has('constructor')) {
                 ctx.set(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
             } else {
-                this.container.getInstance(ActionRegisterer).get(RuntimeParamScope)
+                this.actInjector.get(RuntimeParamScope)
                     .execute(ctx);
                 ctx.set(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
             }
-            ctx.set(CTX_ARGS, this.container.createParams(ctx.get(CTX_PARAMS), ctx.providers));
+            ctx.set(CTX_ARGS, injector.createParams(ctx.get(CTX_PARAMS), ctx.providers));
         }
         next();
     }

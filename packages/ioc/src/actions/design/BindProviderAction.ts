@@ -14,7 +14,7 @@ export class BindProviderAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void) {
         let tgReflect = ctx.targetReflect;
-        let raiseContainer = ctx.getContainer();
+        let injector = ctx.injector;
         let currDecoractor = ctx.get(CTX_CURR_DECOR);
         if (!tgReflect.decorator) {
             tgReflect.decorator = currDecoractor;
@@ -34,23 +34,23 @@ export class BindProviderAction extends IocDesignAction {
                 }
             }
             if (anno.provide) {
-                let provide = raiseContainer.getToken(anno.provide, anno.alias);
+                let provide = injector.getToken(anno.provide, anno.alias);
                 tgReflect.provides.push(provide);
-                raiseContainer.bindProvider(provide, anno.type);
+                injector.bindProvider(provide, anno.type);
             }
             if (anno.refs && anno.refs.target) {
-                raiseContainer.bindRefProvider(anno.refs.target,
+                let tk = injector.bindRefProvider(anno.refs.target,
                     anno.refs.provide ? anno.refs.provide : anno.type,
                     anno.type,
-                    anno.refs.provide ? anno.refs.alias : '',
-                    tk => tgReflect.provides.push(tk));
+                    anno.refs.provide ? anno.refs.alias : '');
+                tgReflect.provides.push(tk);
             }
             // class private provider.
             if (anno.providers && anno.providers.length) {
-                raiseContainer.bindProviders(
+                let refKey = injector.bindTagProvider(
                     anno.type,
-                    refKey => tgReflect.provides.push(refKey),
                     ...anno.providers);
+                tgReflect.provides.push(refKey);
             }
         });
 

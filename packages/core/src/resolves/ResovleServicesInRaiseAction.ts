@@ -4,7 +4,7 @@ import { ResolveServicesContext } from './ResolveServicesContext';
 
 export class ResovleServicesInRaiseAction extends IocResolveServicesAction {
     execute(ctx: ResolveServicesContext, next: () => void): void {
-        this.container.iterator((fac, tk) => {
+        ctx.injector.iterator((fac, tk) => {
             if (isClassType(tk) && ctx.types.some(ty => ctx.reflects.isExtends(tk, ty))) {
                 ctx.services.register(tk, (...providers: ProviderTypes[]) => fac(...providers));
             }

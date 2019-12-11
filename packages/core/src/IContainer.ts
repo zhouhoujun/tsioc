@@ -1,4 +1,4 @@
-import { Type, Token, Modules, LoadType, InjectToken, IIocContainer } from '@tsdi/ioc';
+import { Type, Token, Modules, LoadType, InjectToken, IIocContainer, IInjector } from '@tsdi/ioc';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
@@ -35,27 +35,6 @@ export interface IContainer extends IIocContainer, IServiceResolver, IServicesRe
      */
     getLoader(): IModuleLoader;
 
-
-    /**
-     * get token implements.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     * @memberof IContainer
-     */
-    getTokenImpl<T>(token: Token<T>): Type<T>;
-
-    /**
-     * current container has register.
-     *
-     * @template T
-     * @param {Token<T>} key
-     * @returns {boolean}
-     * @memberof IContainer
-     */
-    hasRegister<T>(key: Token<T>): boolean;
-
     /**
      * use modules.
      *
@@ -64,6 +43,15 @@ export interface IContainer extends IIocContainer, IServiceResolver, IServicesRe
      * @memberof IContainer
      */
     use(...modules: Modules[]): this;
+    /**
+     * use modules.
+     *
+     * @param {IInjector} injector
+     * @param {...Modules[]} modules
+     * @returns {this}
+     * @memberof IContainer
+     */
+    use(injector: IInjector, ...modules: Modules[]): this;
 
     /**
      * load modules.
@@ -73,5 +61,15 @@ export interface IContainer extends IIocContainer, IServiceResolver, IServicesRe
      * @memberof IContainer
      */
     load(...modules: LoadType[]): Promise<Type[]>;
+
+    /**
+     * load modules.
+     *
+     * @param {IInjector} injector
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type[]>}  types loaded.
+     * @memberof IContainer
+     */
+    load(injector: IInjector, ...modules: LoadType[]): Promise<Type[]>;
 
 }

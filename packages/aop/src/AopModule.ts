@@ -49,7 +49,7 @@ export class AopModule {
 
         let registerer = container.getInstance(ActionRegisterer);
 
-        registerer.register(container, RegistAspectAction);
+        registerer.register(RegistAspectAction);
 
         registerer.get(IocBeforeConstructorScope)
             .useBefore(InvokeBeforeConstructorAction);

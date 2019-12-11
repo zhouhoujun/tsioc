@@ -1,7 +1,6 @@
 import { isString, lang } from '../utils/lang';
-import { Action } from './Action';
+import { Action, IActionInjector } from './Action';
 import { IocCoreService } from '../IocCoreService';
-import { ActionRegisterer } from './ActionRegisterer';
 import { Type } from '../types';
 
 /**
@@ -117,7 +116,7 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
     }
 
 
-    getFuncs(register: ActionRegisterer, decorator: string | Function): TAction[] {
+    getFuncs(register: IActionInjector, decorator: string | Function): TAction[] {
         let dec = this.getKey(decorator);
         if (!this.funcs.has(dec)) {
             this.funcs.set(dec, this.get(dec).map(a => register.getAction<TAction>(a)).filter(c => c));

@@ -20,6 +20,7 @@ export class MethodAutorunAction extends IocRuntimeAction {
 
     protected runAuto(ctx: RuntimeActionContext) {
         let currDec = ctx.get(CTX_CURR_DECOR);
+        let injector = ctx.injector;
         if (ctx.reflects.hasMethodMetadata(currDec, ctx.targetType)) {
             let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(currDec, ctx.targetType);
             let lastmetas: AutorunMetadata[] = [];
@@ -39,7 +40,7 @@ export class MethodAutorunAction extends IocRuntimeAction {
             lastmetas.sort((au1, au2) => {
                 return au1.order - au2.order;
             }).forEach(aut => {
-                this.container.invoke(ctx.target || ctx.targetType, aut.autorun, ctx.target);
+                injector.invoke(ctx.target || ctx.targetType, aut.autorun, ctx.target);
             });
         }
     }

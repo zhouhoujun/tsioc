@@ -20,8 +20,10 @@ export class MatchPointcutAction extends IocRuntimeAction {
             return next();
         }
 
-        let advisor = this.container.get(AdvisorToken);
-        let matcher = this.container.get(AdviceMatcherToken);
+        let injector = ctx.injector;
+        let advisor = injector.get(AdvisorToken);
+        let matcher = injector.get(AdviceMatcherToken);
+
         advisor.aspects.forEach((adviceMetas, type) => {
             let matchpoints = matcher.match(type, ctx.targetType, adviceMetas, ctx.target);
             matchpoints.forEach(mpt => {

@@ -1,7 +1,10 @@
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { InjectToken } from './InjectToken';
-import { ProviderTypes, InjectTypes } from './providers/types';
+import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
 import { ContainerFactory, IIocContainer } from './IIocContainer';
+import { IParameter } from './IParameter';
+import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
+import { InjectReference } from './InjectReference';
 
 /**
  * injector interface.
@@ -17,10 +20,18 @@ export interface IInjector {
      * @memberof IInjector
      */
     readonly size: number;
+
+    keys(): SymbolType[];
+
+    values(): InstanceFactory[];
     /**
      * get factory.
      */
     getFactory<T extends IIocContainer>(): ContainerFactory<T>;
+    /**
+     * get container.
+     */
+    getContainer<T extends IIocContainer>(): T;
     /**
      * get token.
      *
@@ -104,6 +115,37 @@ export interface IInjector {
      * @memberof IInjector
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * resolve instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+    /**
+     * resolve instance with token and param provider.
+     *
+     * @template T
+     * @param {ResolveActionOption<T>} option  resolve option
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    resolve<T>(option: ResolveActionOption<T>, ...providers: ProviderTypes[]): T;
+    /**
+     * resolve instance with context.
+     *
+     * @template T
+     * @param {ResolveActionContext<T>} context resolve context.
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof IIocContainer
+     */
+    resolve<T>(context: ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
      /**
      * get token implement class type.
      *
@@ -131,11 +173,56 @@ export interface IInjector {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {Factory<T>} [value]
+     * @param {Factory<T>} [fac]
      * @returns {this}
      * @memberof IInjector
      */
-    register<T>(token: Token<T>, value?: Factory<T>): this;
+    register<T>(token: Token<T>, fac?: Factory<T>): this;
+    /**
+     * register stingleton type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {Factory<T>} fac
+     * @returns {this}
+     * @memberOf IInjector
+     */
+    registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
+
+    /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @returns {this}
+     * @memberof IInjector
+     */
+    registerValue<T>(token: Token<T>, value: T): this;
+    /**
+     * bind provider
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Token<T> | Factory<T>} provider
+     * @returns {this}
+     * @memberof IInjector
+     */
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
+    /**
+     * bind provider ref to target.
+     * @param target the target, provide ref to.
+     * @param provide provide token.
+     * @param provider provider factory or token.
+     * @param alias alias.
+     */
+    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string): InjectReference<T>;
+    /**
+     * bind target providers.
+     * @param target
+     * @param providers
+     */
+    bindTagProvider<T>(target: Token, ...providers: ProviderTypes[]): InjectReference<IInjector>;
     /**
      * inject providers.
      *
@@ -153,6 +240,14 @@ export interface IInjector {
      * @memberof IInjector
      */
     unregister<T>(token: Token<T>): this;
+
+    /**
+     * clear cache.
+     *
+     * @param {Type} targetType
+     * @memberof IContainer
+     */
+    clearCache(targetType: Type): this;
 
     /**
      * iterator current resolver.
@@ -179,7 +274,38 @@ export interface IInjector {
      * @returns {IInjector}
      * @memberof IInjector
      */
-    clone(to?: IInjector): IInjector
+    clone(to?: IInjector): IInjector;
+
+    /**
+     * try to invoke the method of intance, if is token will create instance to invoke.
+     *
+     * @template T
+     * @param {(Token<T> | T)} target type class
+     * @param {(string | ((tag: T) => Function))} propertyKey
+     * @param {...ParamProviders[]} providers
+     * @returns {TR}
+     * @memberof IMethodAccessor
+     */
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
+
+    /**
+     * try get target invoked providers.
+     *
+     * @param {*} target
+     * @param {string} propertyKey
+     * @returns {IInjector}
+     * @memberof IIocContainer
+     */
+    invokedProvider(target: any, propertyKey: string): IInjector;
+    /**
+     * create params instances with IParameter and provider
+     *
+     * @param {IParameter[]} params
+     * @param {...AsyncParamProvider[]} providers
+     * @returns {Promise<any[]>}
+     * @memberof IMethodAccessor
+     */
+    createParams(params: IParameter[], ...providers: ParamProviders[]): any[];
 }
 
 /**

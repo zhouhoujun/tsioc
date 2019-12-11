@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { isFunction, isNumber } from '../utils/lang';
-import { IIocContainer } from '../IIocContainer';
+import { IInjector } from '../IInjector';
 
 /**
  * cache manager inteface.
@@ -82,7 +82,7 @@ export interface CacheTarget {
 export class IocCacheManager implements IIocCacheManager {
 
     cacheTokens: WeakMap<Type, CacheTarget>;
-    constructor(protected container: IIocContainer) {
+    constructor(protected injector: IInjector) {
         this.cacheTokens = new WeakMap();
     }
 
@@ -135,7 +135,7 @@ export class IocCacheManager implements IIocCacheManager {
         try {
             let component = target as OnDestroy;
             if (isFunction(component.onDestroy)) {
-                this.container.invoke(target || targetType, 'onDestroy', target);
+                this.injector.invoke(target || targetType, 'onDestroy', target);
             }
             this.cacheTokens.delete(targetType);
         } catch (err) {
