@@ -1,4 +1,4 @@
-import { IocAction } from './Action';
+import { IocAction } from './IocAction';
 import { RegisterActionContext } from './RegisterActionContext';
 
 /**

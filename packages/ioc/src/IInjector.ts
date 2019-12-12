@@ -1,8 +1,8 @@
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
+import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
 import { ContainerFactory, IIocContainer } from './IIocContainer';
-import { IParameter } from './IParameter';
 import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
 import { InjectReference } from './InjectReference';
 
@@ -20,16 +20,20 @@ export interface IInjector {
      * @memberof IInjector
      */
     readonly size: number;
-
+    /**
+     * keys.
+     */
     keys(): SymbolType[];
-
+    /**
+     * values.
+     */
     values(): InstanceFactory[];
     /**
-     * get factory.
+     * get root container factory.
      */
     getFactory<T extends IIocContainer>(): ContainerFactory<T>;
     /**
-     * get container.
+     * get root container.
      */
     getContainer<T extends IIocContainer>(): T;
     /**
@@ -70,7 +74,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     has<T>(key: Token<T>): boolean;
-
     /**
      *  has register.
      *
@@ -81,7 +84,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     has<T>(key: Token<T>, alias: string): boolean;
-
     /**
      * get token factory resolve instace in current container.
      *
@@ -92,7 +94,6 @@ export interface IInjector {
      * @memberof IIocContainer
      */
     get<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-
     /**
      * get token factory resolve instace in current container.
      *
@@ -104,7 +105,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
-
     /**
      * get instance
      *
@@ -115,7 +115,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
-
     /**
      * resolve instance with token and param provider.
      *
@@ -156,18 +155,17 @@ export interface IInjector {
      * @memberof IInjector
      */
     getTokenProvider<T>(token: Token<T>): Type<T>;
-
     /**
      * set provide.
      *
      * @template T
-     * @param {SymbolType<T>} provide
+     * @param {Token<T>} provide
      * @param {InstanceFactory<T>} fac
      * @param {Type<T>} [providerType]
      * @returns {this}
      * @memberof IInjector
      */
-    set<T>(provide: SymbolType<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this;
+    set<T>(provide: Token<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this;
     /**
      * register type.
      *
@@ -188,7 +186,6 @@ export interface IInjector {
      * @memberOf IInjector
      */
     registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
-
     /**
      * register value.
      *
@@ -198,7 +195,7 @@ export interface IInjector {
      * @returns {this}
      * @memberof IInjector
      */
-    registerValue<T>(token: Token<T>, value: T): this;
+    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     /**
      * bind provider
      *
@@ -240,7 +237,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     unregister<T>(token: Token<T>): this;
-
     /**
      * clear cache.
      *
@@ -248,7 +244,6 @@ export interface IInjector {
      * @memberof IContainer
      */
     clearCache(targetType: Type): this;
-
     /**
      * iterator current resolver.
      *
@@ -257,7 +252,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean): void | boolean;
-
     /**
      * copy injector.
      *
@@ -266,7 +260,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     copy(injector: IInjector): this;
-
     /**
      * clone this injector to.
      *
@@ -275,7 +268,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     clone(to?: IInjector): IInjector;
-
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
@@ -287,7 +279,6 @@ export interface IInjector {
      * @memberof IMethodAccessor
      */
     invoke<T, TR = any>(target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
-
     /**
      * try get target invoked providers.
      *
@@ -312,3 +303,8 @@ export interface IInjector {
  *  injector token.
  */
 export const InjectorToken =  new InjectToken<IInjector>('DI_Injector');
+
+/**
+ *  injector factory token.
+ */
+export const InjectorFactory =  new InjectToken<IInjector>('DI_INJECTOR_FACTORY');

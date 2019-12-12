@@ -1,4 +1,4 @@
-import { createRaiseContext } from '../Action';
+import { createRaiseContext } from '../IocAction';
 import { RegisterActionContext, RegisterActionOption } from '../RegisterActionContext';
 import { ContainerFactory } from '../../IIocContainer';
 

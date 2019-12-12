@@ -1,10 +1,8 @@
-
 import { DecoratorsRegisterer, DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { ObjectMap } from '../../types';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { ActionRegisterer } from '../ActionRegisterer';
 
 const CTX_CLASS_DECORS = 'CTX_CLASS_DECORS';
 const CTX_METHOD_DECORS = 'CTX_METHOD_DECORS';
@@ -112,7 +110,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
     }
 
     protected getScopeRegisterer(): DecoratorsRegisterer {
-        return this.actInjector.getInstance(ActionRegisterer).get(RuntimeRegisterer);
+        return this.actInjector.get(RuntimeRegisterer);
     }
 
     setup() {

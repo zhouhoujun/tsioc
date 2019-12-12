@@ -4,9 +4,8 @@ import { Type, Token, Factory, SymbolType, ToInstance } from './types';
 import { isClass, isFunction, isSymbol, isString, isDefined } from './utils/lang';
 import { Registration } from './Registration';
 import { registerCores } from './registerCores';
-import { ParamProviders } from './providers/types';
+import { ParamProviders, ProviderTypes } from './providers/types';
 import { TypeReflects } from './services/TypeReflects';
-import { ActionRegisterer } from './actions/ActionRegisterer';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { RuntimeActionContext } from './actions/runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
@@ -14,8 +13,11 @@ import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector } from './IInjector';
 import { BaseInjector } from './BaseInjector';
+import { ActionInjectorToken, IActionInjector } from './actions/Action';
+
 
 const factoryToken = ContainerFactoryToken.toString();
+const actionInjectorKey = ActionInjectorToken.toString();
 /**
  * Container
  *
@@ -43,6 +45,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
 
     getContainer<T extends IIocContainer>(): T {
         return  this as IIocContainer as T;
+    }
+
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
+        let factory = this.factories.get(key);
+        return factory ? factory(...providers) : null;
     }
 
     /**
@@ -73,73 +80,9 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this;
     }
 
-    // /**
-    //  * bind providers for only target class.
-    //  *
-    //  * @param {Token} target
-    //  * @param {ParamProviders[]} providers
-    //  * @param {(mapTokenKey: Token) => void} [onceBinded]
-    //  * @returns {this}
-    //  * @memberof Container
-    //  */
-    // bindProviders(target?: Token | ProviderTypes, onceBinded?: ProviderTypes | ((mapTokenKey: Token) => void), ...providers: ProviderTypes[]): this {
-    //     let tgt: Token;
-    //     let complete: (mapTokenKey: Token) => void;
-    //     let prods: ProviderTypes[] = providers;
-
-    //     if (isFunction(onceBinded)) {
-    //         complete = onceBinded as (mapTokenKey: Token) => void;
-    //     } else if (onceBinded) {
-    //         prods.unshift(onceBinded);
-    //     }
-
-    //     if (isToken(target)) {
-    //         tgt = target;
-    //     } else if (target) {
-    //         tgt = null;
-    //         prods.unshift(target);
-    //     }
-
-    //     let maps = this.getInstance(ProviderParser).parse(...prods);
-    //     if (tgt) {
-    //         let refKey = new InjectReference<IInjector>(Injector, isClass(tgt) ? tgt : this.getTokenProvider(tgt));
-    //         if (this.has(refKey)) {
-    //             this.get(refKey).copy(maps);
-    //         } else {
-    //             this.bindProvider(refKey, maps);
-    //             complete && complete(refKey);
-    //         }
-    //     } else {
-    //         maps.iterator((fac, key) => {
-    //             isToken(key) && this.factories.set(key, (...prods) => maps.get(key, ...prods));
-    //         });
-    //     }
-    //     return this;
-    // }
-
-    // /**
-    //  * bind provider ref to target.
-    //  *
-    //  * @template T
-    //  * @param {Token} target
-    //  * @param {Token<T>} provide
-    //  * @param {(Token<T> | Factory<T>)} provider
-    //  * @param {string} [alias]
-    //  * @param {(refToken: Token<T>) => void} [onceBinded]
-    //  * @returns {this}
-    //  * @memberof Container
-    //  */
-    // bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string, onceBinded?: (refToken: Token<T>) => void): this {
-    //     let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
-    //     this.bindProvider(refToken, provider);
-    //     onceBinded && onceBinded(refToken);
-    //     return this;
-    // }
-
-
     protected init() {
         super.init();
-        this.bindProvider(IocContainerToken, () => this);
+        this.registerValue(IocContainerToken, this);
         registerCores(this);
     }
 
@@ -216,7 +159,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 providers: providers,
                 injector: injector
             }, this.getFactory());
-            this.getInstance(ActionRegisterer).get(RuntimeLifeScope).register(ctx);
+            this.getInstance<IActionInjector>(actionInjectorKey).get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
 
@@ -226,7 +169,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         }
 
         (async () => {
-            this.getInstance(ActionRegisterer).get(DesignLifeScope).register(
+            this.getInstance<IActionInjector>(actionInjectorKey).get(DesignLifeScope).register(
                 DesignActionContext.parse({
                     tokenKey: provide,
                     targetType: type,

@@ -1,4 +1,4 @@
-import { isClass, LifeScope, Type, Inject, ActionRegisterer, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { isClass, LifeScope, Type, Inject, ActionInjector, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { IContainer, ContainerToken, InjectorAction, InjectorActionContext, InjectorRegisterScope, CTX_CURR_TYPE } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
@@ -17,14 +17,12 @@ import { CTX_MODULE_RESOLVER } from '../../context-tokens';
  */
 export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
 
-    @Inject(ContainerToken)
-    container: IContainer;
-
     setup() {
-        this.register(DIModuleInjectorScope, true)
-            .registerAction(CheckAnnoationAction)
-            .registerAction(AnnoationRegisterScope, true)
-            .registerAction(RegModuleExportsAction);
+        this.actInjector
+            .regAction(DIModuleInjectorScope)
+            .regAction(CheckAnnoationAction)
+            .regAction(AnnoationRegisterScope)
+            .regAction(RegModuleExportsAction);
 
         this.use(CheckAnnoationAction)
             .use(AnnoationRegisterScope)
@@ -35,7 +33,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
         let ctx = AnnoationContext.parse({
             module: type,
             decorator: decorator
-        }, this.container.getFactory());
+        }, this.actInjector.getFactory());
         this.execute(ctx);
         return ctx.get(CTX_MODULE_RESOLVER) as ModuleResovler<T>;
     }
@@ -75,7 +73,7 @@ export class RegisterDIModuleAction extends InjectorAction {
         let currType = ctx.get(CTX_CURR_TYPE);
         let currDecor = ctx.get(CTX_CURR_DECOR);
         if (isClass(currType) && currDecor) {
-            this.container.getInstance(ActionRegisterer)
+            this.container.getInstance(ActionInjector)
                 .get(ModuleInjectLifeScope)
                 .register(currType, currDecor);
             ctx.registered.push(currType);

@@ -13,7 +13,7 @@ import { IModuleReflect } from './modules/IModuleReflect';
  * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationOption extends IocProvidersOption<IContainer> {
+export interface AnnoationOption extends IocProvidersOption {
     /**
      * target module type.
      *

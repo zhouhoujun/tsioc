@@ -1,6 +1,6 @@
 import { IParameter } from '../../IParameter';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
-import { createRaiseContext } from '../Action';
+import { createRaiseContext } from '../IocAction';
 import { CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
 import { ParamProviders } from '../../providers/types';
 import { ContainerFactory } from '../../IIocContainer';

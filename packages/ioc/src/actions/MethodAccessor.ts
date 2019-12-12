@@ -4,16 +4,18 @@ import { lang, isFunction, isBaseType } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { IInjector } from '../IInjector';
 import { IMethodAccessor } from '../IMethodAccessor';
-import { ActionRegisterer } from './ActionRegisterer';
 import { ParamProviders } from '../providers/types';
 import { ProviderParser } from '../providers/ProviderParser';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
 import { TypeReflects } from '../services/TypeReflects';
+import { ActionInjectorToken, IActionInjector } from './Action';
+import { IIocContainer } from '../IIocContainer';
 
 
 
 const invokedPdrKey = '__invoked_prds_';
+const ActionInjectorKey = ActionInjectorToken.toString();
 /**
  * method accessor
  *
@@ -23,7 +25,7 @@ const invokedPdrKey = '__invoked_prds_';
  */
 export class MethodAccessor implements IMethodAccessor {
 
-    constructor() {
+    constructor(private container: IIocContainer) {
 
     }
 
@@ -151,7 +153,7 @@ export class MethodAccessor implements IMethodAccessor {
             injector: injector,
             propertyKey: propertyKey,
         }, injector.getFactory());
-        injector.getContainer().getInstance(ActionRegisterer).get(RuntimeParamScope).execute(ctx);
+        injector.getContainer().getInstance<IActionInjector>(ActionInjectorKey).get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
     }

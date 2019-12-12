@@ -1,5 +1,5 @@
 import { Type, Token } from '../types';
-import { IocProvidersContext, IocProvidersOption } from './Action';
+import { IocProvidersContext, IocProvidersOption } from './IocAction';
 import { ITypeReflect } from '../services/ITypeReflect';
 import { CTX_CURR_DECOR } from '../context-tokens';
 

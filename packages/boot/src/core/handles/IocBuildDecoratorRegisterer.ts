@@ -1,18 +1,6 @@
-import { DecoratorRegisterer, IIocContainer, isFunction, isClass, PromiseUtil } from '@tsdi/ioc';
-import { BuildHandle, HandleRegisterer } from './BuildHandles';
-import { IHandle } from './Handle';
+import { DecoratorRegisterer, PromiseUtil } from '@tsdi/ioc';
 
 
-export class IocBuildDecoratorRegisterer<T extends IHandle> extends DecoratorRegisterer<T, PromiseUtil.ActionHandle> {
+export class IocBuildDecoratorRegisterer extends DecoratorRegisterer<PromiseUtil.ActionHandle> {
 
-    toFunc(container: IIocContainer, ac: T): PromiseUtil.ActionHandle {
-        if (isClass(ac)) {
-            let action = container.getInstance(HandleRegisterer).get(ac);
-            return action instanceof BuildHandle ? action.toAction() : null;
-
-        } else if (ac instanceof BuildHandle) {
-            return ac.toAction();
-        }
-        return isFunction(ac) ? <any>ac : null;
-    }
 }

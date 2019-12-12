@@ -1,22 +1,7 @@
-import { Type, ActionRegisterer, isClass, ITypeReflects } from '@tsdi/ioc';
-import { Handle, HandleType, IHandleContext, IHandle } from './Handle';
+import { Type, isClass, ITypeReflects } from '@tsdi/ioc';
+import { Handle, HandleType, IHandleContext } from './Handle';
 import { Handles } from './Handles';
 
-/**
- * handle registerer.
- *
- * @export
- * @class HandleRegisterer
- * @extends {ActionRegisterer<IHandle>}
- * @template T
- */
-export class HandleRegisterer<T extends IHandle = IHandle> extends ActionRegisterer {
-    protected setup(handle: T) {
-        if (handle instanceof BuildHandles) {
-            handle.setup();
-        }
-    }
-}
 
 /**
  * build context.
@@ -45,13 +30,7 @@ export interface IBuildContext extends IHandleContext {
  * @template T
  */
 export abstract class BuildHandle<T extends IBuildContext = IBuildContext> extends Handle<T> {
-    protected registerHandle(handle: HandleType<T>, setup?: boolean): this {
-        if (isClass(handle)) {
-            this.container.getInstance(HandleRegisterer)
-                .register(this.container, handle, setup);
-        }
-        return this;
-    }
+
 }
 
 /**
@@ -64,18 +43,10 @@ export abstract class BuildHandle<T extends IBuildContext = IBuildContext> exten
  */
 export class BuildHandles<T extends IBuildContext = IBuildContext> extends Handles<T> {
 
-    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
-        if (isClass(HandleType)) {
-            this.container.getInstance(HandleRegisterer)
-                .register(this.container, HandleType, setup);
+    protected registerHandle(handleType: HandleType<T>): this {
+        if (isClass(handleType)) {
+            this.actInjector.regAction(handleType);
         }
         return this;
-    }
-
-    protected resolveHanlde(ac: Type<BuildHandle<T>>): BuildHandle<T> {
-        return this.container.getInstance(HandleRegisterer).get(ac)
-    }
-
-    setup() {
     }
 }

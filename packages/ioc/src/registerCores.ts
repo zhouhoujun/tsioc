@@ -2,7 +2,7 @@ import { IIocContainer, IocContainerToken, ContainerFactoryToken } from './IIocC
 import { TypeReflects } from './services/TypeReflects';
 import { TypeReflectsToken } from './services/ITypeReflects';
 import { MethodAccessorToken } from './IMethodAccessor';
-import { ActionRegisterer } from './actions/ActionRegisterer';
+import { ActionInjector } from './actions/ActionInjector';
 import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
 import { Injector } from './Injector';
 import { ProviderParser } from './providers/ProviderParser';
@@ -11,7 +11,7 @@ import { MethodAccessor } from './actions/MethodAccessor';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
-import { InjectorToken } from './IInjector';
+import { InjectorFactory } from './IInjector';
 import { ActionInjectorToken } from './actions/Action';
 
 /**
@@ -22,27 +22,26 @@ import { ActionInjectorToken } from './actions/Action';
  */
 export function registerCores(container: IIocContainer) {
     let fac = () => container;
-    container.bindProvider(IocContainerToken, fac);
-    container.bindProvider(ContainerFactoryToken, () => fac);
+    container.set(IocContainerToken, fac);
+    container.set(ContainerFactoryToken, () => fac);
 
-    let register = new ActionRegisterer(fac);
-    container.registerSingleton(ActionRegisterer, register);
-    container.bindProvider(ActionInjectorToken, ActionRegisterer);
-    register.bindProvider(RuntimeRegisterer, new RuntimeRegisterer(register));
-    register.bindProvider(DesignRegisterer, new DesignRegisterer(register));
+    let register = new ActionInjector(fac);
+    container.registerValue(ActionInjectorToken, register, ActionInjector);
 
-    container.registerSingleton(TypeReflects, () => new TypeReflects(container));
-    container.bindProvider(TypeReflectsToken, TypeReflects);
+    register.registerValue(RuntimeRegisterer, new RuntimeRegisterer(register));
+    register.registerValue(DesignRegisterer, new DesignRegisterer(register));
 
-    container.register(Injector, () => new Injector(fac));
-    container.bindProvider(InjectorToken, Injector);
-    container.registerSingleton(ProviderParser, () => new ProviderParser(container));
-    container.registerSingleton(DecoratorProvider, () => new DecoratorProvider(container));
-    container.registerSingleton(MethodAccessor, () => new MethodAccessor());
-    container.bindProvider(MethodAccessorToken, MethodAccessor);
+    container.registerValue(TypeReflectsToken, new TypeReflects(container), TypeReflects);
+
+    let injFactory = () => new Injector(fac);
+    container.set(Injector, injFactory);
+    container.set(InjectorFactory, injFactory);
+    container.registerValue(ProviderParser, new ProviderParser(container));
+    container.registerValue(DecoratorProvider, new DecoratorProvider(container));
+    container.registerValue(MethodAccessorToken, new MethodAccessor(container), MethodAccessor);
 
     // bing action.
-    container.getInstance(ActionRegisterer)
+    container.getInstance(ActionInjector)
         .register(DesignLifeScope)
         .register(RuntimeLifeScope)
         .register(ResolveLifeScope);

@@ -1,6 +1,6 @@
 import {
     IocDesignAction, IocRuntimeAction, lang, Type, RuntimeActionContext,
-    DesignActionContext, IocCompositeAction, ActionRegisterer, CTX_CURR_SCOPE
+    DesignActionContext, IocCompositeAction, ActionInjector, CTX_CURR_SCOPE
 } from '@tsdi/ioc';
 
 export class RouteRuntimRegisterAction extends IocRuntimeAction {
@@ -9,7 +9,7 @@ export class RouteRuntimRegisterAction extends IocRuntimeAction {
             let scopeType: Type<IocCompositeAction> = lang.getClass(ctx.get(CTX_CURR_SCOPE));
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.getInstance(ActionRegisterer).get(scopeType).execute(ctx, next);
+                parent.getInstance(ActionInjector).get(scopeType).execute(ctx, next);
             }
         } else {
             next();
@@ -23,7 +23,7 @@ export class RouteDesignRegisterAction extends IocDesignAction {
             let scopeType: Type<IocCompositeAction> = lang.getClass(ctx.get(CTX_CURR_SCOPE));
             let parent = this.container.get(ParentContainerToken);
             if (parent && parent !== this.container) {
-                parent.getInstance(ActionRegisterer).get(scopeType).execute(ctx, next);
+                parent.getInstance(ActionInjector).get(scopeType).execute(ctx, next);
             }
         } else {
             next();

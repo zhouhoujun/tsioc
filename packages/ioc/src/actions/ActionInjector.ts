@@ -5,7 +5,7 @@ import { BaseInjector } from '../BaseInjector';
 import { isFunction, lang } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 
-export class ActionRegisterer extends BaseInjector implements IActionInjector {
+export class ActionInjector extends BaseInjector implements IActionInjector {
 
     constructor(private factory: ContainerFactory) {
         super();
@@ -13,10 +13,6 @@ export class ActionRegisterer extends BaseInjector implements IActionInjector {
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
         return this.factory as ContainerFactory<T>;
-    }
-
-    getContainer<T extends IIocContainer>(): T {
-        return this.factory() as T;
     }
 
     regAction<T extends Action>(type: Type<T>): this {

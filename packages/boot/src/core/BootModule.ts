@@ -2,7 +2,7 @@ import {
     Inject, BindProviderAction, IocSetCacheAction, DesignLifeScope, IocBeforeConstructorScope,
     IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope, RuntimePropertyScope,
     RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction, IocResolveScope,
-    ActionRegisterer, DesignRegisterer, RuntimeRegisterer
+    ActionInjector, DesignRegisterer, RuntimeRegisterer
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt, ResolvePrivateServiceAction, ResolveServiceInClassChain,
@@ -45,14 +45,14 @@ export class BootModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.register(AnnotationService);
-        let registerer = container.getInstance(ActionRegisterer);
+        let registerer = container.getInstance(ActionInjector);
 
         registerer
-            .register(container, ModuleInjectLifeScope, true)
-            .register(container, DIModuleInjectorScope, true)
-            .register(container, RegForInjectorAction)
-            .register(container, MessageRegisterAction)
-            .register(container, AnnoationDesignAction);
+            .register(ModuleInjectLifeScope)
+            .register(DIModuleInjectorScope)
+            .register(RegForInjectorAction)
+            .register(MessageRegisterAction)
+            .register(AnnoationDesignAction);
 
         // inject module
         registerer.get(TypesRegisterScope)
@@ -76,14 +76,14 @@ export class BootModule {
 
         // route service
         registerer.get(ResolveServiceInClassChain)
-            .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction, true);
+            .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
 
         // route services
         registerer.get(ServicesResolveLifeScope)
-            .use(ResolveRouteServicesAction, true);
+            .use(ResolveRouteServicesAction);
 
         registerer.get(IocResolveScope)
-            .use(RouteResolveAction, true);
+            .use(RouteResolveAction);
 
         // design register route.
         registerer.get(DesignLifeScope)

@@ -1,6 +1,6 @@
 import { lang, isBoolean, isClass } from '../utils/lang';
-import { IocAction, IocActionType, IocRaiseContext, IActionInjector } from './Action';
-import { ActionRegisterer } from './ActionRegisterer';
+import { ActionType, IActionInjector } from './Action';
+import { IocRaiseContext, IocAction } from './IocAction';
 
 
 /**
@@ -13,9 +13,9 @@ import { ActionRegisterer } from './ActionRegisterer';
  */
 export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> extends IocAction<T> {
 
-    protected actions: IocActionType[];
-    protected befores: IocActionType[];
-    protected afters: IocActionType[];
+    protected actions: ActionType[];
+    protected befores: ActionType[];
+    protected afters: ActionType[];
     private actionFuncs: lang.Action[];
 
     constructor(protected actInjector: IActionInjector) {
@@ -25,19 +25,19 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
         this.afters = [];
     }
 
-    has(action: IocActionType) {
+    has(action: ActionType) {
         return this.actions.indexOf(action) >= 0;
     }
 
     /**
      * use action.
      *
-     * @param {IocActionType} action
+     * @param {ActionType} action
      * @param {boolean} [setup]  register action type or not.
      * @returns {this}
      * @memberof LifeScope
      */
-    use(action: IocActionType): this {
+    use(action: ActionType): this {
         if (this.has(action)) {
             return this;
         }
@@ -50,12 +50,12 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
     /**
      * use action before
      *
-     * @param {IocActionType} action
-     * @param {IocActionType} [before]
+     * @param {ActionType} action
+     * @param {ActionType} [before]
      * @returns {this}
      * @memberof IocCompositeAction
      */
-    useBefore(action: IocActionType, before?: IocActionType): this {
+    useBefore(action: ActionType, before?: ActionType): this {
         if (this.has(action)) {
             return this;
         }
@@ -72,12 +72,12 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
     /**
      * use action after.
      *
-     * @param {IocActionType} action
-     * @param {IocActionType} [after]
+     * @param {ActionType} action
+     * @param {ActionType} [after]
      * @returns {this}
      * @memberof IocCompositeAction
      */
-    useAfter(action: IocActionType, after?: IocActionType): this {
+    useAfter(action: ActionType, after?: ActionType): this {
         if (this.has(action)) {
             return this;
         }
@@ -94,10 +94,10 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
     /**
      * register actions before run this scope.
      *
-     * @param {IocActionType} action
+     * @param {ActionType} action
      * @memberof IocCompositeAction
      */
-    before(action: IocActionType): this {
+    before(action: ActionType): this {
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
             this.regAction(action);
@@ -109,10 +109,10 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
     /**
      * register actions after run this scope.
      *
-     * @param {IocActionType} action
+     * @param {ActionType} action
      * @memberof IocCompositeAction
      */
-    after(action: IocActionType): this {
+    after(action: ActionType): this {
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
             this.regAction(action);
@@ -123,8 +123,7 @@ export class IocCompositeAction<T extends IocRaiseContext = IocRaiseContext> ext
 
     execute(ctx: T, next?: () => void): void {
         if (!this.actionFuncs) {
-            let register = ctx.getContainer().getInstance(ActionRegisterer);
-            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => register.getAction<lang.Action<T>>(ac)).filter(f => f);
+            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.actInjector.getAction<lang.Action<T>>(ac)).filter(f => f);
         }
         this.execFuncs(ctx, this.actionFuncs, next);
     }

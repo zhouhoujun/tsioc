@@ -1,4 +1,4 @@
-import { IInjector, InjectorToken } from './IInjector';
+import { IInjector, InjectorToken, InjectorFactory } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, ToInstance, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
@@ -8,15 +8,17 @@ import { IocCoreService } from './IocCoreService';
 import { Provider, ParamProvider, ObjectMapProvider } from './providers/Provider';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { IocSingletonManager } from './actions/IocSingletonManager';
-import { MethodAccessorToken } from './IMethodAccessor';
+import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';
 import { IParameter } from './IParameter';
 import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
-import { ActionRegisterer } from './actions/ActionRegisterer';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
+import { ActionInjectorToken, IActionInjector } from './actions/Action';
 
 
+const MethodAccessorKey = MethodAccessorToken.toString();
+const ActionInjectorKey = ActionInjectorToken.toString();
 /**
  * Base Injector.
  *
@@ -53,8 +55,9 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     protected init() {
-        this.bindProvider(IocSingletonManager, new IocSingletonManager(this));
-        this.bindProvider(IocCacheManager, new IocCacheManager(this))
+        this.registerValue(InjectorToken, this);
+        this.registerValue(IocSingletonManager, new IocSingletonManager(this));
+        this.registerValue(IocCacheManager, new IocCacheManager(this))
     }
 
     get size(): number {
@@ -74,10 +77,13 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      *  get container factory.
      */
     abstract getFactory<T extends IIocContainer>(): ContainerFactory<T>;
+
     /**
      * get container.
      */
-    abstract getContainer<T extends IIocContainer>(): T;
+    getContainer<T extends IIocContainer>(): T {
+        return this.getFactory()() as T;
+    }
     /**
      * register type.
      * @abstract
@@ -104,18 +110,21 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @returns {this}
      * @memberof BaseInjector
      */
-    registerValue<T>(token: Token<T>, value: T): this {
-        let key = this.getTokenKey(token);
-        // if (!this.factories.has(key)) {
-            this.factories.set(key, () => value);
-        // }
+    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
+        this.set(token, () => value, provider);
         return this;
     }
 
 
-    set<T>(provide: SymbolType<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this {
-        this.factories.set(provide, fac);
-        providerType && this.provideTypes.set(provide, providerType);
+    set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
+        let key = this.getTokenKey(provide);
+        this.factories.set(key, fac);
+        if (provider) {
+            if (!this.factories.has(provider)) {
+                this.factories.set(provider, fac);
+            }
+            this.provideTypes.set(key, provider);
+        }
         return this;
     }
     /**
@@ -179,7 +188,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {
-            this.bindProvider(refToken, this.getContainer().get(InjectorToken).inject(...providers));
+            this.registerValue(refToken, this.getContainer().get(InjectorFactory).inject(...providers));
         }
         return refToken;
     }
@@ -293,7 +302,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
         let factory = this.factories.get(key);
-        return factory ? factory(...providers) : null;
+        return factory ? factory(...providers) : this.getContainer().getInstance(key);
     }
 
     /**
@@ -306,7 +315,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
-        return this.getInstance(ActionRegisterer).get(ResolveLifeScope).resolve(token, ...providers);
+        return this.getContainer().getInstance<IActionInjector>(ActionInjectorKey).get(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**
@@ -419,15 +428,15 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @memberof BaseInjector
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
-        return this.get(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
+        return this.getInstance<IMethodAccessor>(MethodAccessorKey).invoke(this, target, propertyKey, ...providers);
     }
 
     invokedProvider(target: any, propertyKey: string): IInjector {
-        return this.get(MethodAccessorToken).invokedProvider(target, propertyKey);
+        return this.getInstance<IMethodAccessor>(MethodAccessorKey).invokedProvider(target, propertyKey);
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.get(MethodAccessorToken).createParams(this, params, ...providers);
+        return this.getInstance<IMethodAccessor>(MethodAccessorKey).createParams(this, params, ...providers);
     }
 
     /**
@@ -437,16 +446,17 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @returns
      * @memberof ProviderMap
      */
-    copy(injector: BaseInjector): this {
+    copy(injector: IInjector): this {
         if (!injector) {
             return this;
         }
-        this.mergeTo(injector, this);
+        this.mergeTo(injector as BaseInjector, this);
         return this;
     }
 
-    clone(to: BaseInjector): BaseInjector {
-        this.mergeTo(this, to);
+    clone(to?: IInjector): IInjector {
+        to = to || new (lang.getClass(this))(this.getFactory());
+        this.mergeTo(this, to as BaseInjector);
         return to;
     }
 

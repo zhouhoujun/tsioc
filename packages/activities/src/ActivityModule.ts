@@ -1,4 +1,4 @@
-import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, ActionRegisterer, DecoratorProvider, DesignRegisterer } from '@tsdi/ioc';
+import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, ActionInjector, DecoratorProvider, DesignRegisterer, ActionInjectorToken } from '@tsdi/ioc';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
 import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';
@@ -23,19 +23,19 @@ export class ActivityModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.getInstance(ActionRegisterer)
-            .register(container, TaskInjectorRegisterAction, true);
+        let actInjector = container.get(ActionInjectorToken);
 
-        container.getInstance(HandleRegisterer)
-            .register(container, ValidTaskComponentHandle)
-            .register(container, BindingTaskComponentHandle)
-            .register(container, TaskDecorSelectorHandle);
+        actInjector
+            .regAction(TaskInjectorRegisterAction)
+            .regAction(ValidTaskComponentHandle)
+            .regAction(BindingTaskComponentHandle)
+            .regAction(TaskDecorSelectorHandle);
 
-        container.getInstance(DecoratorProvider)
+        actInjector.getInstance(DecoratorProvider)
             .bindProviders(Task, { provide: BootTargetAccessor, useClass: BootComponentAccessor })
 
 
-        container.getInstance(DesignRegisterer)
+        actInjector.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Task, DecoratorScopes.Injector, TaskInjectorRegisterAction);
 

@@ -1,5 +1,4 @@
-import { PromiseUtil, isBoolean } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { PromiseUtil } from '@tsdi/ioc';
 import { IHandleContext, HandleType, Handle } from './Handle';
 
 /**
@@ -12,27 +11,21 @@ import { IHandleContext, HandleType, Handle } from './Handle';
  */
 export abstract class Handles<T extends IHandleContext> extends Handle<T> {
 
-    protected handles: HandleType<T>[];
+    protected handles: HandleType<T>[] = [];
     private funcs: PromiseUtil.ActionHandle<T>[];
 
-
-    constructor(container?: IContainer) {
-        super(container)
-        this.handles = [];
-    }
 
     /**
      * use handle.
      *
      * @param {HandleType} handle
-     * @param {boolean} [setup]  setup handle type or not.
      * @returns {this}
      * @memberof LifeScope
      */
-    use(handle: HandleType<T>, setup?: boolean): this {
+    use(handle: HandleType<T>): this {
         if (!this.has(handle)) {
             this.handles.push(handle);
-            this.registerHandle(handle, setup);
+            this.registerHandle(handle);
             this.resetFuncs();
         }
         return this;
@@ -59,19 +52,16 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    useBefore(handle: HandleType<T>, before: HandleType<T> | boolean, setup?: boolean): this {
+    useBefore(handle: HandleType<T>, before: HandleType<T>): this {
         if (this.has(handle)) {
             return this;
         }
-        if (before && !isBoolean(before)) {
+        if (before) {
             this.handles.splice(this.handles.indexOf(before), 0, handle);
         } else {
             this.handles.unshift(handle);
-            if (isBoolean(before)) {
-                setup = before;
-            }
         }
-        this.registerHandle(handle, setup);
+        this.registerHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -83,26 +73,23 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
      * @returns {this}
      * @memberof LifeScope
      */
-    useAfter(handle: HandleType<T>, after?: HandleType<T> | boolean, setup?: boolean): this {
+    useAfter(handle: HandleType<T>, after?: HandleType<T>): this {
         if (this.has(handle)) {
             return this;
         }
-        if (after && !isBoolean(after)) {
+        if (after) {
             this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
         } else {
             this.handles.push(handle);
-            if (isBoolean(after)) {
-                setup = after;
-            }
         }
-        this.registerHandle(handle, setup);
+        this.registerHandle(handle);
         this.resetFuncs();
         return this;
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            this.funcs = this.handles.map(ac => this.parseAction(ac)).filter(f => f);
+            this.funcs = this.handles.map(ac => this.actInjector.getAction<PromiseUtil.ActionHandle<T>>(ac)).filter(f => f);
         }
         await this.execFuncs(ctx, this.funcs, next);
     }
@@ -111,6 +98,6 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
         this.funcs = null;
     }
 
-    protected abstract registerHandle(handle: HandleType<T>, setup?: boolean): this;
+    protected abstract registerHandle(handleType: HandleType<T>): this;
 
 }

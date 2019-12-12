@@ -3,6 +3,7 @@ export * from './IIocContainer';
 export * from './IocContainer';
 export * from './IMethodAccessor';
 export * from './IocCoreService';
+export * from './BaseInjector';
 export * from './Injector';
 export * from './Registration';
 export * from './types';
@@ -77,7 +78,8 @@ export * from './providers/types';
 export * from './context-tokens';
 
 export * from './actions/Action';
-export * from './actions/ActionRegisterer';
+export * from './actions/IocAction';
+export * from './actions/ActionInjector';
 export * from './actions/IocCompositeAction';
 export * from './actions/ActionScope';
 export * from './actions/IocCacheManager';

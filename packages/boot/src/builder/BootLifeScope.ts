@@ -17,12 +17,12 @@ export class BootLifeScope extends BuildHandles<AnnoationContext> {
         this.use(BootProvidersHandle)
             .use(BootDepsHandle)
             .use(BootConfigureLoadHandle)
-            .use(RegisterModuleScope, true)
+            .use(RegisterModuleScope)
             .use(BootConfigureRegisterHandle)
-            .use(ModuleBuildScope, true)
+            .use(ModuleBuildScope)
             .use(ModuleConfigureRegisterHandle)
             .use(ConfigureServiceHandle)
-            .use(ResolveRunnableScope, true)
+            .use(ResolveRunnableScope)
             .use(RunBootHandle);
     }
 }

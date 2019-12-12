@@ -1,4 +1,4 @@
-import { IocRaiseContext } from './Action';
+import { IocRaiseContext } from './IocAction';
 import { IocCompositeAction } from './IocCompositeAction';
 import { CTX_CURR_SCOPE } from '../context-tokens';
 
