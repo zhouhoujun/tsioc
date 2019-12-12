@@ -20,12 +20,12 @@ export class EachActicity<T> extends ControlActivity<T> {
             if (this.parallel) {
                 if (this.getContainer().has(ParallelExecutor)) {
                     await this.getContainer().getInstance(ParallelExecutor).run(v => {
-                        ctx.setBody(v);
+                        ctx.clone().setBody(v);
                         return this.runWorkflow(ctx, this.body);
                     }, items);
                 } else {
                     await Promise.all(items.map(v => {
-                        ctx.setBody(v);
+                        ctx.clone().setBody(v);
                         return this.runWorkflow(ctx, this.body);
                     }));
                 }

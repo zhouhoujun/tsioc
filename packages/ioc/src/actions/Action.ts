@@ -240,8 +240,8 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     /**
      * clone contexts.
      */
-    clone(): ProviderMap {
-        return this.contexts.clone();
+    clone(options?: T): this {
+        return createRaiseContext(lang.getClass(this), { ...this.getOptions(), contexts: this.contexts.clone(), ...options || {} }, this.getFactory());
     }
 
 }
