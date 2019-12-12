@@ -116,6 +116,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
         }
         this._body = body;
         this.set(CTX_EACH_BODY, body);
+        return this;
     }
 
     getCurrBaseURL() {

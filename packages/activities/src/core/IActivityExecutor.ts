@@ -36,7 +36,7 @@ export interface IActivityExecutor {
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    runWorkflow<T extends ActivityContext>(ctx: T, activities: ActivityType): Promise<T>;
+    runWorkflow<T extends ActivityContext>(ctx: T, activities: ActivityType, body?: any): Promise<T>;
     /**
      * resolve expression.
      *

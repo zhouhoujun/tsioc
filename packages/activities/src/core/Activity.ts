@@ -173,8 +173,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
         }
     }
 
-    protected runWorkflow(ctx: TCtx, activity: ActivityType): Promise<TCtx> {
-        return this.getExector().runWorkflow(ctx, activity);
+    protected runWorkflow(ctx: TCtx, activity: ActivityType, body?: any): Promise<TCtx> {
+        return this.getExector().runWorkflow(ctx, activity, body);
     }
 
     private _actionFunc: PromiseUtil.ActionHandle;

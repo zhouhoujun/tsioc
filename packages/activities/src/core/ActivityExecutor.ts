@@ -55,14 +55,14 @@ export class ActivityExecutor implements IActivityExecutor {
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType): Promise<T> {
+    runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType, body?: any): Promise<T> {
         let container = this.getContainer();
         if (activity instanceof Activity) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>(ctx.clone({ module: lang.getClass(activity), target: activity}));
+            return container.get(BuilderServiceToken).run<T, ActivityOption>(ctx.clone({ module: lang.getClass(activity), target: activity}).setBody(body));
         } else if (isClass(activity)) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>(ctx.clone({ module: activity }));
+            return container.get(BuilderServiceToken).run<T, ActivityOption>(ctx.clone({ module: activity }).setBody(body));
         } else if (isFunction(activity)) {
-            return activity(ctx.clone()).then(() => ctx);
+            return activity(ctx.clone().setBody(body)).then(() => ctx);
         } else {
             let md: Type;
             let mgr = container.getInstance(SelectorManager);
@@ -77,7 +77,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 template: activity
             };
 
-            return container.get(BuilderServiceToken).run<T>(ctx.clone(option));
+            return container.get(BuilderServiceToken).run<T>(ctx.clone(option).setBody(body));
         }
     }
 
