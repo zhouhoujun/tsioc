@@ -240,8 +240,8 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     /**
      * clone contexts.
      */
-    clone(options?: T, merge?: boolean): this {
-        return createRaiseContext(lang.getClass(this), { ...(merge ? this.getOptions() : {}), contexts: this.contexts.clone(), ...options || {} }, this.getFactory());
+    clone(options?: T): this {
+        return createRaiseContext(lang.getClass(this), { ...this.getOptions(), contexts: this.contexts.clone(k => !k.toString().startsWith('CTX_')), ...options || {} }, this.getFactory());
     }
 
 }

@@ -1,6 +1,6 @@
 import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, IModuleReflect } from '@tsdi/boot';
+import { BootContext, IModuleReflect, CTX_DATA } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -75,7 +75,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
      */
     get body(): any {
         if (!this._body) {
-            this._body = this.get(CTX_EACH_BODY);
+            this._body = this.get(CTX_EACH_BODY) || this.get(CTX_DATA);
         }
         return this._body;
     }

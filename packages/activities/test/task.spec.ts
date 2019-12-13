@@ -1,7 +1,7 @@
 import expect = require('expect');
-import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities, ExecuteActivity } from '../src';
+import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
-import { BootApplication, ContainerPool } from '@tsdi/boot';
+import { BootApplication } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
 
 
@@ -117,12 +117,42 @@ describe('activity test', () => {
                     action: `ctx => ctx.getContext('data')`
                 },
                 contexts: [
-                    {provide: 'data', useValue: 'test data'}
+                    { provide: 'data', useValue: 'test data' }
                 ]
             });
             expect(ctx.runnable instanceof WorkflowInstance).toBeTruthy();
             // console.log(result);
             expect(ctx.result).toEqual('test data');
+        });
+
+
+        it('should get context by execute action in parallel.', async () => {
+            let ctx = await Workflow.run({
+                template: {
+                    activity: Activities.each,
+                    each: ctx => ['t0', 't1', 't2', 't3'],
+                    parallel: true,
+                    body: {
+                        activity: Activities.execute,
+                        action: ctx => {
+                            // console.log(ctx.body);
+                            return `${ctx.getContext('data')}: ${ctx.body}`
+                        }
+                    }
+                },
+                contexts: [
+                    { provide: 'data', useValue: 'test data' }
+                ]
+            });
+            expect(ctx.runnable instanceof WorkflowInstance).toBeTruthy();
+            expect(Array.isArray(ctx.result)).toBeTruthy();
+            console.log(ctx.result);
+            expect(ctx.result).toEqual([
+                'test data: t0',
+                'test data: t1',
+                'test data: t2',
+                'test data: t3'
+            ]);
         });
 
     });
