@@ -256,18 +256,22 @@ export interface IInjector {
      * copy injector.
      *
      * @param {IInjector} injector
+     * @param {(key: Token) => boolean} filter token key filter
      * @returns {this}
      * @memberof IInjector
      */
-    copy(injector: IInjector): this;
+    copy(injector: IInjector, filter?: (key: Token) => boolean): this;
     /**
      * clone this injector to.
-     *
-     * @param {IInjector} [to] clone to.
-     * @returns {IInjector}
-     * @memberof IInjector
+     * @param to
      */
     clone(to?: IInjector): IInjector;
+    /**
+     * clone this injector to.
+     * @param {(key: Token) => boolean} filter token key filter
+     * @param to
+     */
+    clone(filter: (key: Token) => boolean, to?: IInjector): IInjector;
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *

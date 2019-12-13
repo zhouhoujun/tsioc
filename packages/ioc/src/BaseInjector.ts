@@ -446,25 +446,37 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @returns
      * @memberof ProviderMap
      */
-    copy(injector: IInjector): this {
+    copy(injector: IInjector, filter?: (key: Token) => boolean): this {
         if (!injector) {
             return this;
         }
-        this.mergeTo(injector as BaseInjector, this);
+        this.mergeTo(injector as BaseInjector, this, filter);
         return this;
     }
 
-    clone(to?: IInjector): IInjector {
+    clone(to?: IInjector): IInjector;
+    clone(filter: (key: Token) => boolean, to?: IInjector): IInjector;
+    clone(filter?: any, to?: IInjector): IInjector {
+        if (!isFunction(filter)) {
+            to = filter;
+            filter = undefined;
+        }
         to = to || new (lang.getClass(this))(this.getFactory());
-        this.mergeTo(this, to as BaseInjector);
+        this.mergeTo(this, to as BaseInjector, filter);
         return to;
     }
 
-    protected mergeTo(from: BaseInjector, to: BaseInjector) {
+    protected mergeTo(from: BaseInjector, to: BaseInjector, filter?: (key: Token) => boolean) {
         from.factories.forEach((fac, key) => {
+            if (filter && !filter(key)) {
+                return;
+            }
             to.factories.set(key, fac);
         });
         from.provideTypes.forEach((fac, key) => {
+            if (filter && !filter(key)) {
+                return;
+            }
             to.provideTypes.set(key, fac);
         });
     }
