@@ -58,9 +58,9 @@ export class ActivityExecutor implements IActivityExecutor {
     runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType, data?: any): Promise<T> {
         let container = this.getContainer();
         if (activity instanceof Activity) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>(ctx.clone({ module: lang.getClass(activity), target: activity, data: data }));
+            return container.get(BuilderServiceToken).run<T, ActivityOption>({ module: lang.getClass(activity), target: activity, contexts: ctx.cloneContext(), data: data });
         } else if (isClass(activity)) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>(ctx.clone({ module: activity, data: data}));
+            return container.get(BuilderServiceToken).run<T, ActivityOption>({ module: activity, contexts: ctx.cloneContext(), data: data });
         } else if (isFunction(activity)) {
             return activity(ctx.clone().setBody(data)).then(() => ctx);
         } else {
@@ -75,10 +75,11 @@ export class ActivityExecutor implements IActivityExecutor {
             let option = {
                 module: md,
                 template: activity,
+                contexts: ctx.cloneContext(),
                 data: data
             };
 
-            return container.get(BuilderServiceToken).run<T>(ctx.clone(option));
+            return container.get(BuilderServiceToken).run<T>(option);
         }
     }
 

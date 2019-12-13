@@ -237,11 +237,15 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return this._options;
     }
 
+    cloneContext(filter?: (key: Token) => boolean) {
+        return this.contexts.clone(filter || (k => !k.toString().startsWith('CTX_')));
+    }
+
     /**
      * clone contexts.
      */
-    clone(options?: T): this {
-        return createRaiseContext(lang.getClass(this), { ...this.getOptions(), contexts: this.contexts.clone(k => !k.toString().startsWith('CTX_')), ...options || {} }, this.getFactory());
+    clone(options?: T, filter?: (key: Token) => boolean): this {
+        return createRaiseContext(lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} }, this.getFactory());
     }
 
 }
