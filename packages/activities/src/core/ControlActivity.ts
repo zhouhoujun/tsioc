@@ -1,5 +1,4 @@
 import { Activity } from './Activity';
-import { ActivityContext } from './ActivityContext';
 
 
 /**
@@ -12,13 +11,6 @@ import { ActivityContext } from './ActivityContext';
  * @template T
  */
 export abstract class ControlActivity<T = any> extends Activity<T> {
-
-    protected setActivityResult(ctx: ActivityContext) {
-
-    }
-
-    protected setContextResult(ctx: ActivityContext) {
-
-    }
+    protected _eableDefaultSetResult = false;
 }
 

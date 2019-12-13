@@ -42,6 +42,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     $scope?: any;
 
     private _scopes: any[];
+    protected _eableDefaultSetResult = true;
     /**
      * components of this activity.
      *
@@ -131,7 +132,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
         if (!isNullOrUndefined(ret)) {
             if (this.pipe) {
                 this.result.value = await this.pipe.transform(ret);
-            } else {
+            } else if (this._eableDefaultSetResult) {
                 this.setActivityResult(ctx, ret);
             }
         }
@@ -147,7 +148,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
                 if (isFunction(this.pipe.refresh)) {
                     await this.pipe.refresh(ctx, this.result.value);
                 }
-            } else {
+            } else if (this._eableDefaultSetResult) {
                 this.setContextResult(ctx);
             }
         }
@@ -173,8 +174,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
         }
     }
 
-    protected runWorkflow(ctx: TCtx, activity: ActivityType): Promise<TCtx> {
-        return this.getExector().runWorkflow(ctx, activity);
+    protected runWorkflow(ctx: TCtx, activity: ActivityType, body?: any): Promise<TCtx> {
+        return this.getExector().runWorkflow(ctx, activity, body);
     }
 
     private _actionFunc: PromiseUtil.ActionHandle;

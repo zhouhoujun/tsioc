@@ -5,7 +5,7 @@ import { ActivityContext, Expression, ParallelExecutor, ActivityType, ControlAct
 
 
 @Task('each')
-export class EachActicity<T> extends ControlActivity<T> {
+export class EachActicity<T> extends ControlActivity {
 
     @Input() each: Expression<any[]>;
 
@@ -18,18 +18,18 @@ export class EachActicity<T> extends ControlActivity<T> {
         items = items.filter(i => !isNullOrUndefined(i));
         if (items && items.length) {
             if (this.parallel) {
+                this._eableDefaultSetResult = true;
                 if (this.getContainer().has(ParallelExecutor)) {
-                    await this.getContainer().getInstance(ParallelExecutor).run(v => {
-                        ctx.setBody(v);
-                        return this.runWorkflow(ctx, this.body);
+                    this.result.value = await this.getContainer().getInstance(ParallelExecutor).run(v => {
+                        return this.runWorkflow(ctx, this.body, v).then(c => c.result);
                     }, items);
                 } else {
-                    await Promise.all(items.map(v => {
-                        ctx.setBody(v);
-                        return this.runWorkflow(ctx, this.body);
+                    this.result.value = await Promise.all(items.map(v => {
+                        return this.runWorkflow(ctx, this.body, v).then(c => c.result);
                     }));
                 }
             } else {
+                this._eableDefaultSetResult = false;
                 let actions = await this.getExector().parseActions(this.body);
                 await this.getExector().execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
                     ctx.setBody(v);
