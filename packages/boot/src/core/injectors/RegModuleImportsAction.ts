@@ -4,7 +4,7 @@ import { AnnoationContext } from '../AnnoationContext';
 export class RegModuleImportsAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {
         if (ctx.annoation.imports) {
-            ctx.getContainer().use(...ctx.annoation.imports);
+            ctx.getContainer().use(ctx.injector, ...ctx.annoation.imports);
         }
         next();
     }

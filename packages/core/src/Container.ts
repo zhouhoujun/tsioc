@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isToken, ActionInjector, IInjector, isInjector, InjectorToken } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isToken, ActionInjector, IInjector, isInjector } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
 import { registerCores } from './registerCores';
 import { InjectorLifeScope } from './injectors/InjectorLifeScope';

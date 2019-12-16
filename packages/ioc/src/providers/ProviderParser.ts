@@ -1,4 +1,4 @@
-import { ParamProviders, ProviderTypes } from './types';
+import { ProviderTypes, InjectTypes } from './types';
 import { isMetadataObject } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { IProviderParser } from './IProviderParser';
@@ -23,7 +23,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
         super()
     }
 
-    parse(...providers: ParamProviders[]): IInjector {
+    parse(...providers: InjectTypes[]): IInjector {
         if (providers.length === 1 && isInjector(providers[0])) {
             return providers[0] as IInjector;
         }

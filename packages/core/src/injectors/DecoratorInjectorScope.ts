@@ -3,7 +3,7 @@ import { InjectorActionContext } from './InjectorActionContext';
 import { InjectorScope } from './InjectorAction';
 import { DecoratorInjectAction } from './DecoratorInjectAction';
 
-const DECOR_STATE = `CTX_DECOR_STATE`;
+const DECOR_STATE = 'CTX_DECOR_STATE';
 
 export class DecoratorInjectorScope extends InjectorScope {
     execute(ctx: InjectorActionContext, next?: () => void): void {

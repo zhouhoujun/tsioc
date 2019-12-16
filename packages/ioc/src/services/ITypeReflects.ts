@@ -5,6 +5,7 @@ import { DefineClassTypes } from '../factories/DecoratorType';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { InjectToken } from '../InjectToken';
+import { IInjector } from '../IInjector';
 
 /**
  * type reflects token.
@@ -37,6 +38,11 @@ export interface ITypeReflects extends IMetadataAccess {
      * @param type the type.
      */
     get<T extends ITypeReflect>(type: ClassType): T;
+    /**
+     * get injector of type injected.
+     * @param type
+     */
+    getInjector(type: Type): IInjector;
     /**
      * is the type extends of base class.
      * @param type the token of type.

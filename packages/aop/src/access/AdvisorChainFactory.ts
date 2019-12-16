@@ -3,11 +3,11 @@ import { JoinpointState } from '../joinpoints/JoinpointState';
 import { IJoinpoint } from '../joinpoints/IJoinpoint';
 import { Joinpoint } from '../joinpoints/Joinpoint';
 import { Advicer } from '../advices/Advicer';
-import { Advices } from '../advices/Advices';
+import { Advices, AdvicesToken } from '../advices/Advices';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
 import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators/NonePointcut';
-import { IAdvisor, AdvisorToken, AOP_EXTEND_TARGET_TOKEN } from '../IAdvisor';
+import { AOP_EXTEND_TARGET_TOKEN } from '../IAdvisor';
 
 const AnnoDecorExp = /^@/;
 /**
@@ -21,7 +21,7 @@ const AnnoDecorExp = /^@/;
 @Injectable
 export class AdvisorChainFactory implements IAdvisorChainFactory {
 
-    constructor(@Inject(IocContainerToken) private container: IIocContainer, @Inject(AdvisorToken) private advisor: IAdvisor, private advices: Advices) {
+    constructor(@Inject(IocContainerToken) private container: IIocContainer, @Inject(AdvicesToken) private advices: Advices) {
 
     }
 
@@ -222,6 +222,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
             providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
 
-        return this.advisor.getInjector(advicer.aspectType, this.container).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
+        return this.container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
     }
 }

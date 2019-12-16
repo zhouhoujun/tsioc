@@ -13,7 +13,7 @@ export class BootDepsHandle extends BootHandle {
         let options = ctx.getOptions();
         if (options.deps && options.deps.length) {
             let container = ctx.getContainer();
-            await container.load(...options.deps);
+            await container.load(ctx.injector, ...options.deps);
         }
         await next();
     }

@@ -1,5 +1,5 @@
 import {
-    IInjector, Singleton, Type, ObjectMap, lang, ParamProviders, TypeReflects, Inject
+    Singleton, Type, ObjectMap, lang, ParamProviders, TypeReflects, Inject
 } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { Advice } from './decorators/Advice';
@@ -23,15 +23,6 @@ export class Advisor implements IAdvisor {
      * @memberof AspectManager
      */
     aspects: Map<Type, ObjectMap<AdviceMetadata[]>>;
-
-    /**
-     * aspect ioc containers.
-     *
-     * @protected
-     * @type {Map<Type, IInjector>}
-     * @memberof Advisor
-     */
-    protected aspectIocs: Map<Type, IInjector>;
     /**
      * method advices.
      *
@@ -44,7 +35,6 @@ export class Advisor implements IAdvisor {
 
     constructor() {
         this.aspects = new Map();
-        this.aspectIocs = new Map();
         this.advices = new Map();
     }
 
@@ -92,16 +82,11 @@ export class Advisor implements IAdvisor {
      * @param {IInjector} injector
      * @memberof Advisor
      */
-    add(aspect: Type, injector: IInjector) {
+    add(aspect: Type) {
         if (!this.aspects.has(aspect)) {
             let metas = this.reflects.getMethodMetadata<AdviceMetadata>(Advice, aspect);
             this.aspects.set(aspect, metas);
-            this.aspectIocs.set(aspect, injector);
         }
-    }
-
-    getInjector(aspect: Type, defaultInjector?: IInjector): IInjector {
-        return this.aspectIocs.get(aspect) || defaultInjector;
     }
 
     /**
@@ -114,9 +99,6 @@ export class Advisor implements IAdvisor {
      * @memberof Advisor
      */
     resolve<T>(aspect: Type<T>, ...providers: ParamProviders[]): T {
-        if (this.aspectIocs.has(aspect)) {
-            return this.aspectIocs.get(aspect).get(aspect, ...providers);
-        }
-        return null;
+        return this.reflects.getInjector(aspect).resolve(aspect, ...providers);
     }
 }

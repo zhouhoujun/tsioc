@@ -1,6 +1,6 @@
-import { Type, LoadType, isArray, isString, isClass } from '@tsdi/ioc';
+import { Type, LoadType, isArray, isString, isClass, ActionInjectorToken } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
-import { AnnotationServiceToken, HandleRegisterer, StartupDecoratorRegisterer } from './core';
+import { AnnotationServiceToken, StartupDecoratorRegisterer } from './core';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
@@ -31,36 +31,35 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
 
     protected onInit(target: Type | BootOption | T) {
         this.deps = this.deps || [];
-        let raiseContainer: IContainer;
+        let container: IContainer;
         if (target) {
             if (target instanceof BootContext) {
                 this.context = target;
-                if (this.context.hasContainer()) {
-                    raiseContainer = this.context.getContainer();
+                container = this.context.getContainer();
+            } else if (!isClass(target)) {
+                if (target.containerFactory) {
+                    container = target.containerFactory();
+                } else if (target.injector) {
+                    container = target.injector.getContainer();
                 }
-            } else if (!isClass(target) && target.raiseContainer) {
-                raiseContainer = target.raiseContainer();
             }
         }
-        if (raiseContainer) {
-            this.container = raiseContainer;
+        if (container) {
+            this.container = container;
         } else {
-            raiseContainer = this.getContainer();
-        }
-        if (this.context) {
-            this.context.setContainer(raiseContainer);
-        }
-        raiseContainer.registerSingleton(HandleRegisterer, () => new HandleRegisterer());
-        raiseContainer.registerSingleton(StartupDecoratorRegisterer, () => new StartupDecoratorRegisterer(raiseContainer));
-        raiseContainer.register(BootModule);
-
-        if (!raiseContainer.hasRegister(BootContext)) {
-            raiseContainer.register(BootContext);
+            container = this.getContainer();
         }
 
-        raiseContainer.bindProvider(BootApplication, this);
-        if (!raiseContainer.has(BootSetup)) {
-            raiseContainer.register(BootSetup);
+        container.registerSingleton(StartupDecoratorRegisterer, () => new StartupDecoratorRegisterer(container.get(ActionInjectorToken)));
+        container.register(BootModule);
+
+        if (!container.has(BootContext)) {
+            container.register(BootContext);
+        }
+
+        container.bindProvider(BootApplication, this);
+        if (!container.has(BootSetup)) {
+            container.register(BootSetup);
         }
 
     }

@@ -19,8 +19,8 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
             return next();
         }
 
-        let injector = ctx.injector;
-        let advisor = injector.get(AdvisorToken);
+        let container = ctx.getContainer();
+        let advisor = container.get(AdvisorToken);
         let className = lang.getClassName(ctx.targetType);
         let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
@@ -29,7 +29,7 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
         let targetType = ctx.targetType;
         let target = ctx.target;
 
-        let joinPoint = injector.getInstance(Joinpoint, {
+        let joinPoint = container.getInstance(Joinpoint, {
             provide: JoinpointOptionToken,
             useValue: <JoinpointOption>{
                 name: 'constructor',
@@ -49,11 +49,11 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
         providers.push({ provide: Joinpoint, useValue: joinPoint });
 
         advices.After.forEach(advicer => {
-            advisor.getInjector(advicer.aspectType, injector).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
+            container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
 
         advices.Around.forEach(advicer => {
-            advisor.getInjector(advicer.aspectType, injector).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
+            container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
         });
         next();
     }

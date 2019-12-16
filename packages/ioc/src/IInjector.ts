@@ -253,11 +253,11 @@ export interface IInjector {
      */
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean): void | boolean;
     /**
-     * copy injector.
+     * copy injector to current injector.
      *
-     * @param {IInjector} injector
+     * @param {IInjector} injector copy from
      * @param {(key: Token) => boolean} filter token key filter
-     * @returns {this}
+     * @returns {this} current injector.
      * @memberof IInjector
      */
     copy(injector: IInjector, filter?: (key: Token) => boolean): this;
@@ -283,15 +283,6 @@ export interface IInjector {
      * @memberof IMethodAccessor
      */
     invoke<T, TR = any>(target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
-    /**
-     * try get target invoked providers.
-     *
-     * @param {*} target
-     * @param {string} propertyKey
-     * @returns {IInjector}
-     * @memberof IIocContainer
-     */
-    invokedProvider(target: any, propertyKey: string): IInjector;
     /**
      * create params instances with IParameter and provider
      *

@@ -39,12 +39,20 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this.getInstance(TypeReflects);
     }
 
+    /**
+     * get injector
+     * @param type
+     */
+    getInjector(type: Type): IInjector {
+        return this.getTypeReflects().getInjector(type);
+    }
+
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
         return this.getInstance(factoryToken) as ContainerFactory<T>;
     }
 
     getContainer<T extends IIocContainer>(): T {
-        return  this as IIocContainer as T;
+        return this as IIocContainer as T;
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {

@@ -1,10 +1,9 @@
-import { isClass, LifeScope, Type, Inject, ActionInjector, CTX_CURR_DECOR } from '@tsdi/ioc';
-import { IContainer, ContainerToken, InjectorAction, InjectorActionContext, InjectorRegisterScope, CTX_CURR_TYPE } from '@tsdi/core';
+import { isClass, LifeScope, Type, ActionInjector, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { InjectorAction, InjectorActionContext, InjectorRegisterScope, CTX_CURR_TYPE } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
 import { AnnoationRegisterScope } from './AnnoationRegisterScope';
 import { RegModuleExportsAction } from './RegModuleExportsAction';
-import { CTX_MODULE_RESOLVER } from '../../context-tokens';
 
 
 
@@ -73,7 +72,7 @@ export class RegisterDIModuleAction extends InjectorAction {
         let currType = ctx.get(CTX_CURR_TYPE);
         let currDecor = ctx.get(CTX_CURR_DECOR);
         if (isClass(currType) && currDecor) {
-            this.container.getInstance(ActionInjector)
+            ctx.get(ActionInjector)
                 .get(ModuleInjectLifeScope)
                 .register(currType, currDecor);
             ctx.registered.push(currType);

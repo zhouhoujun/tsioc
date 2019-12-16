@@ -1,4 +1,5 @@
 import { Advicer } from './Advicer';
+import { InjectToken } from '@tsdi/ioc';
 
 /**
  * advices of target.
@@ -14,3 +15,6 @@ export interface Advices {
     AfterThrowing: Advicer[];
     AfterReturning: Advicer[];
 }
+
+
+export const AdvicesToken = new InjectToken<Advices>('AOP_ADVICES');

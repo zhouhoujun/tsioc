@@ -1,13 +1,13 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, CTX_PROVIDERS } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, CTX_PROVIDERS, ActionInjectorToken, IActionInjector } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
-import { BuildHandles, HandleRegisterer, AnnoationContext } from '../core';
+import { BuildHandles, AnnoationContext } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
-import { CTX_MODULE_RESOLVER, CTX_APP_ENVARGS } from '../context-tokens';
+import { CTX_APP_ENVARGS } from '../context-tokens';
 import { ResolveMoudleScope } from './resolvers/ResolveMoudleScope';
 import { IModuleResolveOption, BuildContext } from './resolvers/BuildContext';
 import { IStartup } from '../runnable/Startup';
@@ -28,15 +28,18 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     @Inject(ContainerToken)
     protected container: IContainer;
 
+    @Inject(ActionInjectorToken)
+    protected actInjector: IActionInjector;
+
     @Inject()
     protected reflects: TypeReflects;
 
     setup() {
-        this.container.getInstance(HandleRegisterer)
-            .register(this.container, ResolveMoudleScope, true)
-            .register(this.container, ModuleBuilderLifeScope, true)
-            .register(this.container, RunnableBuildLifeScope, true)
-            .register(this.container, BootLifeScope, true);
+        this.actInjector
+            .register(ResolveMoudleScope)
+            .register(ModuleBuilderLifeScope)
+            .register(RunnableBuildLifeScope)
+            .register(BootLifeScope);
     }
 
     /**
@@ -78,15 +81,14 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     protected async resolveModule<T>(contextInit: (ctx: BuildContext) => void, target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
-        let rctx = BuildContext.parse({ module: target, raiseContainer: this.container.getFactory(), ...(options || {}) });
+        let rctx = BuildContext.parse({ module: target, ...(options || {}) }, this.container.getFactory());
         if (providers.length) {
-            rctx.set(CTX_PROVIDERS, rctx.providers.concat(providers));
+            rctx.providers.inject(...providers);
         }
         if (contextInit) {
             contextInit(rctx);
         }
-        await this.container.getInstance(HandleRegisterer)
-            .get(ResolveMoudleScope)
+        await this.actInjector.get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
     }
@@ -106,7 +108,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     build<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope<T>(null, this.container.getInstance(HandleRegisterer).get(ModuleBuilderLifeScope), target, ...args);
+        return this.execLifeScope<T>(null, this.actInjector.get(ModuleBuilderLifeScope), target, ...args);
     }
 
     /**
@@ -121,7 +123,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     async buildStartup<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>> {
         let ctx = await this.execLifeScope(ctx => {
             ctx.getOptions().autorun = false
-        }, this.container.getInstance(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        }, this.actInjector.get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }
 
@@ -149,7 +151,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     run<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope<T, Topt>(null, this.container.getInstance(HandleRegisterer).get(RunnableBuildLifeScope), target, ...args);
+        return this.execLifeScope<T, Topt>(null, this.actInjector.get(RunnableBuildLifeScope), target, ...args);
     }
 
 
@@ -175,12 +177,11 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         }
         let ctx = await this.execLifeScope(
             ctx => {
-                ctx.setContainer(this.container);
                 if (opt.contextInit) {
                     opt.contextInit(ctx as T);
                 }
             },
-            this.container.getInstance(HandleRegisterer).get(BootLifeScope),
+            this.actInjector.get(BootLifeScope),
             target,
             ...args);
 
@@ -207,7 +208,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                     application.onContextInit(ctx);
                 }
             },
-            this.container.getInstance(HandleRegisterer).get(BootLifeScope),
+            this.actInjector.get(BootLifeScope),
             application.target,
             ...args);
     }
@@ -220,9 +221,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             let md = isClass(target) ? target : target.module;
             ctx = this.container.getService({ token: BootContext, target: md }) as T;
             ctx.setModule(md);
-        }
-        if (!ctx.hasContainer()) {
-            ctx.setContainer(this.container);
         }
         if (isBaseObject(target)) {
             ctx.setOptions(target as BootOption);

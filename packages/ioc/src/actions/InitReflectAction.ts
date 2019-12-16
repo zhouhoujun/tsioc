@@ -16,8 +16,16 @@ export class InitReflectAction extends IocRegisterAction<RegisterActionContext> 
             return;
         }
         ctx.reflects.create(ctx.targetType);
+
+        let targetReflect = ctx.targetReflect;
+        if (!targetReflect.getInjector) {
+            let injector = ctx.injector;
+            targetReflect.getInjector = () => {
+                return injector;
+            }
+        }
         if (ctx.singleton) {
-            ctx.targetReflect.singleton = ctx.singleton;
+            targetReflect.singleton = ctx.singleton;
         }
 
         if (next) {

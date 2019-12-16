@@ -1,4 +1,4 @@
-import { Type, ObjectMap, InjectToken, IIocContainer, ParamProviders, IInjector } from '@tsdi/ioc';
+import { Type, ObjectMap, InjectToken, ParamProviders, IInjector } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { AdviceMetadata } from './metadatas/AdviceMetadata';
 
@@ -64,17 +64,7 @@ export interface IAdvisor {
      * @param {IIocContainer} raiseContainer
      * @memberof IAdvisor
      */
-    add(aspect: Type, raiseContainer: IIocContainer);
-
-    /**
-     * get aspect registered injector.
-     *
-     * @param {Type} aspect
-     * @param {IInjector} [defaultInjector]
-     * @returns {IInjector}
-     * @memberof IAdvisor
-     */
-    getInjector(aspect: Type, defaultInjector?: IInjector): IInjector;
+    add(aspect: Type);
 
     /**
      * resolve aspect.

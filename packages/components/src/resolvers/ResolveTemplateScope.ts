@@ -17,7 +17,7 @@ export class ResolveTemplateScope extends ResolveHandle {
                 template: ctx.annoation.template,
                 annoation: ctx.annoation,
                 decorator: ctx.decorator,
-                raiseContainer: ctx.getFactory()
+                containerFactory: ctx.getFactory()
             });
             await this.container.getInstance(HandleRegisterer)
                 .get(TemplateParseScope)

@@ -1,6 +1,7 @@
-import { Injectable, createRaiseContext } from '@tsdi/ioc';
+import { Injectable, createRaiseContext, ContainerFactory } from '@tsdi/ioc';
 import { AnnoationOption, AnnoationContext } from '../../core';
 import { IComponentContext } from '../ComponentContext';
+import { IContainer } from '@tsdi/core';
 
 /**
  * module resolve option.
@@ -35,7 +36,7 @@ export class BuildContext<T extends IModuleResolveOption = IModuleResolveOption>
     target: any;
 
 
-    static parse(options: IModuleResolveOption): BuildContext {
-        return createRaiseContext(BuildContext, options);
+    static parse(options: IModuleResolveOption, containerFactory: ContainerFactory<IContainer>): BuildContext {
+        return createRaiseContext(BuildContext, options, containerFactory);
     }
 }

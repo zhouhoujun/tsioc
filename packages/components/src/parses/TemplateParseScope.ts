@@ -46,7 +46,7 @@ export class ElementsTemplateHandle extends TemplateHandle {
                     scope: options.scope,
                     template: tp,
                     decorator: ctx.decorator,
-                    raiseContainer: ctx.getFactory()
+                    containerFactory: ctx.getFactory()
                 });
                 await registerer.get(TemplateParseScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;

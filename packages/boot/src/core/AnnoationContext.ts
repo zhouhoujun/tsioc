@@ -51,9 +51,9 @@ export interface AnnoationOption extends IocProvidersOption {
      * @type {ContainerFactory}
      * @memberof IModuleResolveOption
      */
-    raiseContainer?: ContainerFactory<IContainer>;
-}
+    containerFactory?: ContainerFactory<IContainer>;
 
+}
 
 /**
  * annoation context.
@@ -63,7 +63,6 @@ export interface AnnoationOption extends IocProvidersOption {
  * @extends {HandleContext}
  */
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, IContainer> {
-
 
     static parse(target: Type | AnnoationOption, raiseContainer?: ContainerFactory<IContainer>): AnnoationContext {
         return createRaiseContext<AnnoationContext<AnnoationOption>>(AnnoationContext, isToken(target) ? { module: target } : target, raiseContainer);

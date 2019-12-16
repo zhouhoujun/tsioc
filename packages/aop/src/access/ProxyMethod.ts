@@ -1,8 +1,8 @@
 import {
-    Singleton, Inject, Type, isFunction, RuntimeLifeScope,
-    ObjectMapProvider, IocContainerToken, IIocContainer, TypeReflects, ActionInjectorToken
+    Singleton, Inject, Type, isFunction, RuntimeLifeScope, IocContainerToken, IIocContainer,
+    TypeReflects, ActionInjectorToken, MethodAccessorToken
 } from '@tsdi/ioc';
-import { Advices } from '../advices/Advices';
+import { Advices, AdvicesToken } from '../advices/Advices';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { NonePointcut } from '../decorators/NonePointcut';
@@ -89,7 +89,7 @@ export class ProxyMethod implements IProxyMethod {
         let methodName = pointcut.name;
         let container = this.container;
         return (...args: any[]) => {
-            let cuurPrd = container.invokedProvider(target, methodName);
+            let cuurPrd = container.getInjector(targetType).get(MethodAccessorToken).invokedProvider(target, methodName);
             let joinPoint = container.getInstance(Joinpoint, {
                 provide: JoinpointOptionToken,
                 useValue: <JoinpointOption>{
@@ -106,7 +106,7 @@ export class ProxyMethod implements IProxyMethod {
                 }
             });
 
-            let adChain = container.getInstance(AdvisorChainFactory, { provide: IocContainerToken, useValue: container }, { provide: AdvisorToken, useValue: this.advisor }, ObjectMapProvider.parse({ container: container, advisor: this.advisor, advices: advices }));
+            let adChain = container.getInstance(AdvisorChainFactory, { provide: IocContainerToken, useValue: container }, { provide: AdvicesToken, useValue: advices });
 
             let val, exeErr;
             try {

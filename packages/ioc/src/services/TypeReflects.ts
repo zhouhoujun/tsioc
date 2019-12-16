@@ -34,6 +34,15 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         this.map = new Map();
     }
 
+    getContainer() {
+        return this.container;
+    }
+
+    getInjector(type: Type) {
+        let refl = this.get(type);
+        return (refl && refl.getInjector) ? refl.getInjector() : this.container;
+    }
+
     has(type: ClassType): boolean {
         return this.map.has(type);
     }

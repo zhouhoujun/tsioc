@@ -2,7 +2,7 @@ import {
     Inject, BindProviderAction, IocSetCacheAction, DesignLifeScope, IocBeforeConstructorScope,
     IocAfterConstructorScope, DecoratorScopes, RuntimeMethodScope, RuntimePropertyScope,
     RuntimeAnnoationScope, IocAutorunAction, RegisterSingletionAction, IocResolveScope,
-    ActionInjector, DesignRegisterer, RuntimeRegisterer
+    DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
 } from '@tsdi/ioc';
 import {
     IContainer, ContainerToken, IocExt, ResolvePrivateServiceAction, ResolveServiceInClassChain,
@@ -45,9 +45,9 @@ export class BootModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.register(AnnotationService);
-        let registerer = container.getInstance(ActionInjector);
+        let actInjector = container.get(ActionInjectorToken);
 
-        registerer
+        actInjector
             .register(ModuleInjectLifeScope)
             .register(DIModuleInjectorScope)
             .register(RegForInjectorAction)
@@ -55,9 +55,9 @@ export class BootModule {
             .register(AnnoationDesignAction);
 
         // inject module
-        registerer.get(TypesRegisterScope)
+        actInjector.get(TypesRegisterScope)
             .useBefore(RegForInjectorAction);
-        registerer.get(IocExtRegisterScope)
+        actInjector.get(IocExtRegisterScope)
             .useBefore(RegForInjectorAction);
 
         container.getInstance(DesignRegisterer)
@@ -75,34 +75,34 @@ export class BootModule {
 
 
         // route service
-        registerer.get(ResolveServiceInClassChain)
+        actInjector.get(ResolveServiceInClassChain)
             .useAfter(ResolveRouteServiceAction, ResolvePrivateServiceAction);
 
         // route services
-        registerer.get(ServicesResolveLifeScope)
+        actInjector.get(ServicesResolveLifeScope)
             .use(ResolveRouteServicesAction);
 
-        registerer.get(IocResolveScope)
+        actInjector.get(IocResolveScope)
             .use(RouteResolveAction);
 
         // design register route.
-        registerer.get(DesignLifeScope)
+        actInjector.get(DesignLifeScope)
             .use(RouteDesignRegisterAction);
 
         // runtime register route.
-        registerer.get(IocBeforeConstructorScope)
+        actInjector.get(IocBeforeConstructorScope)
             .use(RouteRuntimRegisterAction);
 
-        registerer.get(IocAfterConstructorScope)
+        actInjector.get(IocAfterConstructorScope)
             .use(RouteRuntimRegisterAction);
 
-        registerer.get(RuntimePropertyScope)
+        actInjector.get(RuntimePropertyScope)
             .use(RouteRuntimRegisterAction);
 
-        registerer.get(RuntimeMethodScope)
+        actInjector.get(RuntimeMethodScope)
             .use(RouteRuntimRegisterAction);
 
-        registerer.get(RuntimeAnnoationScope)
+        actInjector.get(RuntimeAnnoationScope)
             .use(RouteRuntimRegisterAction);
 
     }

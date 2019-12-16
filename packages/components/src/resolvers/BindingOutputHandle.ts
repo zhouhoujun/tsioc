@@ -24,7 +24,7 @@ export class BindingOutputHandle extends ResolveHandle {
                             template: options.template,
                             binding: binding,
                             decorator: ctx.decorator,
-                            raiseContainer: ctx.getFactory()
+                            containerFactory: ctx.getFactory()
                         })
                         await registerer.get(BindingScopeHandle).execute(pctx);
                         pctx.dataBinding.bind(ctx.target);

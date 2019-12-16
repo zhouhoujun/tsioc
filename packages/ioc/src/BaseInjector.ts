@@ -301,8 +301,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
-        let factory = this.factories.get(key);
-        return factory ? factory(...providers) : this.getContainer().getInstance(key);
+        return this.factories.has(key) ? this.factories.get(key)(...providers) : this.getContainer().getInstance(key);
     }
 
     /**
@@ -431,10 +430,6 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this.getInstance<IMethodAccessor>(MethodAccessorKey).invoke(this, target, propertyKey, ...providers);
     }
 
-    invokedProvider(target: any, propertyKey: string): IInjector {
-        return this.getInstance<IMethodAccessor>(MethodAccessorKey).invokedProvider(target, propertyKey);
-    }
-
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
         return this.getInstance<IMethodAccessor>(MethodAccessorKey).createParams(this, params, ...providers);
     }
@@ -450,7 +445,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         if (!injector) {
             return this;
         }
-        this.mergeTo(injector as BaseInjector, this, filter);
+        this.mergeInjector(injector as BaseInjector, this, filter);
         return this;
     }
 
@@ -462,11 +457,11 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
             filter = undefined;
         }
         to = to || new (lang.getClass(this))(this.getFactory());
-        this.mergeTo(this, to as BaseInjector, filter);
+        this.mergeInjector(this, to as BaseInjector, filter);
         return to;
     }
 
-    protected mergeTo(from: BaseInjector, to: BaseInjector, filter?: (key: Token) => boolean) {
+    protected mergeInjector(from: BaseInjector, to: BaseInjector, filter?: (key: Token) => boolean) {
         from.factories.forEach((fac, key) => {
             if (filter && !filter(key)) {
                 return;

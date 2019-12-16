@@ -18,7 +18,7 @@ export class ResolveBootHandle extends BootHandle {
                     scope: options.scope,
                     template: options.template,
                     providers: ctx.providers,
-                    raiseContainer: ctx.getFactory()
+                    containerFactory: ctx.getFactory()
                 });
             } else if (bootModule) {
                 let container = ctx.getContainer();

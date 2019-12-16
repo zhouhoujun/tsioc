@@ -3,6 +3,7 @@ import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers/types';
 import { ClassMetadata } from '../metadatas/ClassMetadata';
 import { lang } from '../utils/lang';
+import { IInjector } from '../IInjector';
 
 export interface ITypeDecoractors {
     classDecors: string[];
@@ -120,6 +121,8 @@ export class TypeDefine {
 export interface ITypeReflect extends ClassMetadata {
 
     type: ClassType;
+
+    getInjector?(): IInjector;
 
     /**
      * main module decorator.

@@ -1,4 +1,4 @@
-import { ITypeReflect } from '@tsdi/ioc';
+import { ITypeReflect, IInjector } from '@tsdi/ioc';
 import { ModuleConfigure } from './ModuleConfigure';
 
 export interface IModuleReflect extends ITypeReflect {
@@ -25,4 +25,9 @@ export interface IModuleReflect extends ITypeReflect {
      * @memberof IModuleReflect
      */
     getAnnoation?<T extends ModuleConfigure>(clone?: boolean): T;
+
+    /**
+     * get module exports.
+     */
+    getModuleExports?(): IInjector;
 }

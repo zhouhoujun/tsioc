@@ -19,13 +19,14 @@ export class BootConfigureLoadHandle extends BootHandle {
             return;
         }
         let options = ctx.getOptions();
+        let injector = ctx.injector;
         if (isClass(ctx.module)) {
             let baseURL = ctx.baseURL;
             if (baseURL) {
-                this.container.bindProvider(ProcessRunRootToken, ctx.baseURL)
+                injector.bindProvider(ProcessRunRootToken, ctx.baseURL)
             }
         }
-        let mgr = this.resolve(ctx, ConfigureManager);
+        let mgr = injector.get(ConfigureManager);
         if (options.configures && options.configures.length) {
             options.configures.forEach(config => {
                 mgr.useConfiguration(config);
@@ -36,7 +37,7 @@ export class BootConfigureLoadHandle extends BootHandle {
         }
         let config = await mgr.getConfig();
         if (ctx.annoation) {
-            let merger = this.container.getInstance(DecoratorProvider).resolve(ctx.decorator, AnnotationMerger);
+            let merger = this.actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, AnnotationMerger);
             config = merger ? merger.merge([config, ctx.annoation]) : Object.assign({}, config, ctx.annoation);
         }
 
@@ -44,11 +45,11 @@ export class BootConfigureLoadHandle extends BootHandle {
 
         if (config.deps && config.deps.length) {
             let container = ctx.getContainer();
-            await container.load(...config.deps);
+            await container.load(injector, ...config.deps);
         }
         if (config.baseURL && !ctx.baseURL) {
             ctx.setContext(ProcessRunRootToken, config.baseURL);
-            this.container.bindProvider(ProcessRunRootToken, ctx.baseURL);
+            injector.bindProvider(ProcessRunRootToken, ctx.baseURL);
         }
 
         await next();

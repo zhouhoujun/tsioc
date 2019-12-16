@@ -1,5 +1,6 @@
 import {
-    BindProviderAction, IocSetCacheAction, Inject, DecoratorScopes, RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer
+    BindProviderAction, IocSetCacheAction, Inject, DecoratorScopes, RegisterSingletionAction,
+    DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Bootstrap } from './decorators/Bootstrap';
@@ -16,11 +17,12 @@ export class BootSetup {
 
     setup(@Inject(ContainerToken) container: IContainer) {
         container.inject(BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices);
-        container.getInstance(DesignRegisterer)
+        let actInjector = container.get(ActionInjectorToken);
+        actInjector.getInstance(DesignRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, BindProviderAction)
             .register(Bootstrap, DecoratorScopes.Injector, DIModuleInjectorScope);
 
-        container.getInstance(RuntimeRegisterer)
+        actInjector.getInstance(RuntimeRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
     }

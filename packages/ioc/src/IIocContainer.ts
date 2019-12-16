@@ -1,4 +1,4 @@
-import { Token, Factory } from './types';
+import { Token, Factory, Type } from './types';
 import { IInjector } from './IInjector';
 import { InjectToken } from './InjectToken';
 import { TypeReflects } from './services/TypeReflects';
@@ -36,6 +36,12 @@ export interface IIocContainer extends IInjector {
     getFactory<T extends IIocContainer>(): ContainerFactory<T>;
 
     /**
+     * get injector the type injected.
+     * @param type
+     */
+    getInjector(type: Type): IInjector;
+
+    /**
      * get type reflects manager in current container.
      *
      * @returns {TypeReflects}
@@ -43,6 +49,13 @@ export interface IIocContainer extends IInjector {
      */
     getTypeReflects(): TypeReflects;
 
-    registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this;
+    /**
+     * register factory to injector.
+     * @param injector the injector to register.
+     * @param token register token
+     * @param fac factory of token.
+     * @param singleton singlteon or not.
+     */
+    registerFactory<T>(injector: IInjector, token: Token<T>, fac?: Factory<T>, singleton?: boolean): this;
 
 }

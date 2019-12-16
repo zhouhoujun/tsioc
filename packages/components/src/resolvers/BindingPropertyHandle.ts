@@ -37,7 +37,7 @@ export class BindingPropertyHandle extends ResolveHandle {
                                 template: options.template,
                                 binding: binding,
                                 decorator: ctx.decorator,
-                                raiseContainer: ctx.getFactory()
+                                containerFactory: ctx.getFactory()
                             })
                             await registerer.get(BindingScope).execute(pctx);
 

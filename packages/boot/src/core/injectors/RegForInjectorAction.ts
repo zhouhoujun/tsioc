@@ -14,10 +14,10 @@ export class RegForInjectorAction extends InjectorAction {
             if (meta && meta.regFor) {
                 switch (meta.regFor) {
                     case 'root':
-                        this.container.register(currType);
+                        ctx.getContainer().register(currType);
                         break;
                     default:
-                        this.container.register(currType);
+                        ctx.injector.register(currType);
                         break;
                 }
             }

@@ -39,9 +39,9 @@ export enum StartupScopes {
  * @extends {DecoratorsRegisterer<T, PromiseUtil.ActionHandle>}
  * @template T
  */
-export class StartupDecoratorRegisterer<T extends IHandle = IHandle> extends DecoratorsRegisterer<T, PromiseUtil.ActionHandle> {
+export class StartupDecoratorRegisterer<T extends IHandle = IHandle> extends DecoratorsRegisterer<PromiseUtil.ActionHandle> {
 
-    protected createRegister(): IocBuildDecoratorRegisterer<T> {
+    protected createRegister(): IocBuildDecoratorRegisterer {
         return new IocBuildDecoratorRegisterer();
     }
 }
