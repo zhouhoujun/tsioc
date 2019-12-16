@@ -1,9 +1,10 @@
-import { isClass, LifeScope, Type, ActionInjector, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { isClass, LifeScope, Type, ActionInjector, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
 import { InjectorAction, InjectorActionContext, InjectorRegisterScope, CTX_CURR_TYPE } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
 import { AnnoationRegisterScope } from './AnnoationRegisterScope';
-import { RegModuleExportsAction } from './RegModuleExportsAction';
+import { RegModuleRefAction } from './RegModuleRefAction';
+import { ModuleRef } from '../modules/ModuleRef';
 
 
 
@@ -21,20 +22,20 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> {
             .regAction(DIModuleInjectorScope)
             .regAction(CheckAnnoationAction)
             .regAction(AnnoationRegisterScope)
-            .regAction(RegModuleExportsAction);
+            .regAction(RegModuleRefAction);
 
         this.use(CheckAnnoationAction)
             .use(AnnoationRegisterScope)
-            .use(RegModuleExportsAction);
+            .use(RegModuleRefAction);
     }
 
-    register<T>(type: Type<T>, decorator: string): ModuleResovler<T> {
+    register<T>(type: Type<T>, decorator: string): ModuleRef<T> {
         let ctx = AnnoationContext.parse({
             module: type,
             decorator: decorator
         }, this.actInjector.getFactory());
         this.execute(ctx);
-        return ctx.get(CTX_MODULE_RESOLVER) as ModuleResovler<T>;
+        return ctx.has(ModuleRef) ? ctx.get(ModuleRef) as ModuleRef<T> : null;
     }
 }
 

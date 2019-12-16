@@ -1,6 +1,7 @@
-import { lang, isClass, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { lang, isClass, CTX_CURR_DECOR, InjectorFactory, InjectorToken } from '@tsdi/ioc';
 import { InjectorAction, InjectorActionContext, CTX_CURR_TYPE } from '@tsdi/core';
 import { RegisterForMetadata, RegisterFor } from '../decorators/RegisterFor';
+import { ParentInjectorToken } from '../modules/IModuleReflect';
 
 
 export class RegForInjectorAction extends InjectorAction {
@@ -14,12 +15,15 @@ export class RegForInjectorAction extends InjectorAction {
             if (meta && meta.regFor) {
                 switch (meta.regFor) {
                     case 'root':
-                        ctx.getContainer().register(currType);
+                        ctx.set(InjectorToken, ctx.getContainer());
                         break;
                     default:
-                        ctx.injector.register(currType);
+                        let subInj = ctx.getContainer().get(InjectorFactory);
+                        subInj.registerValue(ParentInjectorToken, ctx.injector);
+                        ctx.set(InjectorToken, subInj);
                         break;
                 }
+                ctx.injector.register(currType);
             }
         } else {
             next();

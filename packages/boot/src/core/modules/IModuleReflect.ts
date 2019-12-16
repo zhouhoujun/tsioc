@@ -1,5 +1,8 @@
-import { ITypeReflect, IInjector } from '@tsdi/ioc';
+import { ITypeReflect, InjectToken, IInjector } from '@tsdi/ioc';
 import { ModuleConfigure } from './ModuleConfigure';
+import { ModuleRef } from './ModuleRef';
+
+export const ParentInjectorToken = new InjectToken<IInjector>('IOC_PARENT_INJECTOR')
 
 export interface IModuleReflect extends ITypeReflect {
     /**
@@ -29,5 +32,5 @@ export interface IModuleReflect extends ITypeReflect {
     /**
      * get module exports.
      */
-    getModuleExports?(): IInjector;
+    getModuleRef?<T>(): ModuleRef<T>;
 }
