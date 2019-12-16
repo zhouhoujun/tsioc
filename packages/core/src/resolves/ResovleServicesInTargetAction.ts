@@ -1,5 +1,5 @@
 import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { isToken, InjectReference, Injector, isClassType, ProviderTypes, InjectorToken } from '@tsdi/ioc';
+import { isToken, InjectReference, isClassType, ProviderTypes, InjectorToken } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 import { CTX_TARGET_REFS } from '../context-tokens';
 

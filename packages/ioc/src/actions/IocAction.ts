@@ -229,7 +229,7 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
      */
     get providers(): IInjector {
         if (!this.has(CTX_PROVIDERS)) {
-            this.set(CTX_PROVIDERS, this.getContainer().get(InjectorToken));
+            this.set(CTX_PROVIDERS, this.getContainer().get(InjectorFactory));
         }
         return this.get(CTX_PROVIDERS);
     }
