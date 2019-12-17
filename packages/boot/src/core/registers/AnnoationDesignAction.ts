@@ -20,7 +20,7 @@ export class AnnoationDesignAction extends IocDesignAction {
         let decorator = cuurDec || tgRef.decorator;
         let metas = ctx.reflects.getMetadata(decorator, ctx.targetType);
         if (metas.length) {
-            let proder = ctx.getContainer().get(ActionInjectorToken).getInstance(DecoratorProvider);
+            let proder = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
             let merger = proder.resolve(decorator, AnnotationMerger);
             let merged = merger ? merger.merge(metas) : lang.first(metas);
             if (!tgRef.baseURL) {

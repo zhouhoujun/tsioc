@@ -7,7 +7,6 @@ import {
     ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner,
     BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope
 } from '@tsdi/boot';
-import { SelectorManager } from './SelectorManager';
 import { Input } from './decorators/Input';
 import { Output } from './decorators/Output';
 import { RefChild } from './decorators/RefChild';
@@ -47,7 +46,7 @@ export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.inject(SelectorManager, ComponentAnnotationCloner, AstResolver);
+        container.inject(ComponentAnnotationCloner, AstResolver);
 
         container.registerValue(APP_COMPONENT_REFS, new WeakMap());
         let actInjector = container.getInstance(ActionInjector);

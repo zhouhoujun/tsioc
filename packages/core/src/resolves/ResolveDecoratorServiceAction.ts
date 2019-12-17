@@ -6,7 +6,7 @@ import { CTX_CURR_TARGET_TYPE, CTX_CURR_TOKEN } from '../context-tokens';
 export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
         if (ctx.has(CTX_CURR_TARGET_TYPE)) {
-            let dprvoider = ctx.injector.getInstance(DecoratorProvider);
+            let dprvoider = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
             ctx.reflects.getDecorators(ctx.get(CTX_CURR_TARGET_TYPE), 'class')
                 .some(dec => {
                     if (dprvoider.has(dec)) {

@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, isClassType, DecoratorProvider, isDefined, CTX_CURR_DECOR, ActionInjectorToken } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, isClassType, DecoratorProvider, isDefined, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from '../decorators/BindingPropertyMetadata';
 import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
 import { BindingCache } from './BindingCache';
@@ -16,7 +16,7 @@ export class BindingPropertyTypeAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void) {
         let ref = ctx.targetReflect as IBindingTypeReflect;
         let currDecor = ctx.get(CTX_CURR_DECOR);
-        let propBindings = ctx.getContainer().get(ActionInjectorToken).getInstance(DecoratorProvider)
+        let propBindings = ctx.reflects.getActionInjector().getInstance(DecoratorProvider)
             .resolve(currDecor, BindingCache)
             .getCache(ref);
 

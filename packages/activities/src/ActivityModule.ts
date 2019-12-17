@@ -1,4 +1,4 @@
-import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, ActionInjector, DecoratorProvider, DesignRegisterer, ActionInjectorToken } from '@tsdi/ioc';
+import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, DecoratorProvider, DesignRegisterer, ActionInjectorToken } from '@tsdi/ioc';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
 import { ComponentRegisterAction, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';

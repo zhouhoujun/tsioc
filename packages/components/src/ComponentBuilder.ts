@@ -1,5 +1,5 @@
 import { Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider } from '@tsdi/ioc';
-import { BuilderService, HandleRegisterer, IModuleResolveOption } from '@tsdi/boot';
+import { BuilderService, IModuleResolveOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IBindingTypeReflect } from './bindings/IBindingTypeReflect';
 import { RefSelector } from './RefSelector';
@@ -21,9 +21,9 @@ import { TemplateParseScope } from './parses/TemplateParseScope';
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
-        let ctx = TemplateContext.parse({decorator: Component.toString(), ...options, providers: [...(options.providers || []), ...providers] }, this.container.getFactory());
-        await this.container.getInstance(HandleRegisterer)
-            .get(TemplateParseScope)
+        let ctx = TemplateContext.parse({decorator: Component.toString(), ...options }, this.container.getFactory());
+        providers.length && ctx.providers.inject(...providers);
+        await this.actInjector.get(TemplateParseScope)
             .execute(ctx);
         return ctx.value;
     }
@@ -52,7 +52,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
             let refs = reflects.get(compClass) as IBindingTypeReflect;
             if (refs && refs.componentSelector) {
                 let json = {};
-                let refselector = this.container.getInstance(DecoratorProvider).resolve(refs.componentDecorator, RefSelector);
+                let refselector = this.actInjector.getInstance(DecoratorProvider).resolve(refs.componentDecorator, RefSelector);
                 json[refselector.getComponentSelector()] = refs.componentSelector;
                 refs.propInBindings.forEach((v, key) => {
                     if (reflects.hasMetadata(NonSerialize, compClass, key, 'property')) {

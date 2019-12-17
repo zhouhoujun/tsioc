@@ -6,6 +6,7 @@ import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { InjectToken } from '../InjectToken';
 import { IInjector } from '../IInjector';
+import { IActionInjector } from '../actions/Action';
 
 /**
  * type reflects token.
@@ -43,6 +44,10 @@ export interface ITypeReflects extends IMetadataAccess {
      * @param type
      */
     getInjector(type: Type): IInjector;
+    /**
+     * get action injector.
+     */
+    getActionInjector(): IActionInjector;
     /**
      * is the type extends of base class.
      * @param type the token of type.

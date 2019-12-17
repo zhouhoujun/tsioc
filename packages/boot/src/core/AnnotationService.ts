@@ -21,8 +21,23 @@ import { AnnotationCloner } from './AnnotationCloner';
 export class AnnotationService implements IAnnotationService {
 
     @Inject() reflects: TypeReflects;
-    @Inject() decProvider: DecoratorProvider;
-    @Inject() register: DesignRegisterer;
+
+
+    private _depdr: DecoratorProvider;
+    get decProvider(): DecoratorProvider {
+        if (!this._depdr) {
+            this._depdr = this.reflects.getActionInjector().getInstance(DecoratorProvider);
+        }
+        return this._depdr;
+    }
+
+    private _desgReg: DesignRegisterer;
+    get register(): DesignRegisterer {
+        if (!this._desgReg) {
+            this._desgReg = this.reflects.getActionInjector().getInstance(DesignRegisterer);
+        }
+        return this._desgReg;
+    }
 
 
     getDecorator(type: ClassType) {

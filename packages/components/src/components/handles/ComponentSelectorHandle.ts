@@ -1,5 +1,4 @@
 import { isString, Type, isArray, DecoratorProvider } from '@tsdi/ioc';
-import { SelectorManager } from '../../SelectorManager';
 import { RefSelector } from '../../RefSelector';
 import { TemplateHandle } from '../../parses/TemplateHandle';
 import { TemplateContext } from '../../parses/TemplateContext';
@@ -13,7 +12,7 @@ import { TemplateContext } from '../../parses/TemplateContext';
  */
 export class ComponentSelectorHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let refSelector = this.container.getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector);
+        let refSelector = this.actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector);
         let options = ctx.getOptions();
         if (isArray(options.template) && ctx.annoation.template === options.template) {
             ctx.selector = refSelector.getDefaultCompose();

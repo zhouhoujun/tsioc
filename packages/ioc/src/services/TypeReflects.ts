@@ -18,6 +18,7 @@ import { Singleton } from '../decorators/Singleton';
 import { DecoratorProvider } from './DecoratorProvider';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegisterer';
 import { ITypeReflects } from './ITypeReflects';
+import { ActionInjectorToken, IActionInjector } from '../actions/Action';
 
 
 /**
@@ -36,6 +37,14 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
 
     getContainer() {
         return this.container;
+    }
+
+    private _actInj: IActionInjector;
+    getActionInjector(): IActionInjector {
+        if (!this._actInj) {
+            this._actInj = this.container.get(ActionInjectorToken);
+        }
+        return this._actInj;
     }
 
     getInjector(type: Type) {
@@ -99,7 +108,7 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): boolean;
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): boolean;
     hasMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): boolean {
-        let access = this.container.getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
+        let access = this.getActionInjector().getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }
@@ -163,7 +172,7 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): T[];
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): T[][];
     getMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): any {
-        let access = this.container.getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
+        let access = this.getActionInjector().getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }

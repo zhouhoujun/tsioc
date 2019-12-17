@@ -25,11 +25,12 @@ export function registerCores(container: IIocContainer) {
     container.set(IocContainerToken, fac);
     container.registerValue(ContainerFactoryToken, fac);
 
-    let register = new ActionInjector(fac);
-    container.registerValue(ActionInjectorToken, register, ActionInjector);
+    let actInjector = new ActionInjector(fac);
+    container.registerValue(ActionInjectorToken, actInjector, ActionInjector);
 
-    register.registerValue(RuntimeRegisterer, new RuntimeRegisterer(register));
-    register.registerValue(DesignRegisterer, new DesignRegisterer(register));
+    actInjector.registerValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
+    actInjector.registerValue(DesignRegisterer, new DesignRegisterer(actInjector));
+    actInjector.registerValue(DecoratorProvider, new DecoratorProvider(container));
 
     container.registerValue(TypeReflectsToken, new TypeReflects(container), TypeReflects);
 
@@ -37,7 +38,6 @@ export function registerCores(container: IIocContainer) {
     container.set(Injector, injFactory);
     container.set(InjectorFactory, injFactory);
     container.registerValue(ProviderParser, new ProviderParser(container));
-    container.registerValue(DecoratorProvider, new DecoratorProvider(container));
     container.registerValue(MethodAccessorToken, new MethodAccessor(container), MethodAccessor);
 
     // bing action.
