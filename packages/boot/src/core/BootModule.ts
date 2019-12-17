@@ -2,7 +2,7 @@ import {
     Inject, BindProviderAction, IocSetCacheAction, DecoratorScopes, IocAutorunAction,
     RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
 } from '@tsdi/ioc';
-import {  IContainer, ContainerToken, IocExt, TypesRegisterScope, IocExtRegisterScope } from '@tsdi/core';
+import { IContainer, ContainerToken, IocExt, TypesRegisterScope, IocExtRegisterScope } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import { Message } from './decorators/Message';
@@ -52,13 +52,13 @@ export class BootModule {
         actInjector.get(IocExtRegisterScope)
             .useBefore(InjectForAction);
 
-        container.getInstance(DesignRegisterer)
+        actInjector.getInstance(DesignRegisterer)
             .register(DIModule, DecoratorScopes.Injector, DIModuleInjectScope)
             .register(Annotation, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
             .register(DIModule, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
             .register(Message, DecoratorScopes.Class, BindProviderAction, IocAutorunAction, MessageRegisterAction);
 
-        container.getInstance(RuntimeRegisterer)
+        actInjector.getInstance(RuntimeRegisterer)
             .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

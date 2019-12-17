@@ -44,15 +44,6 @@ export interface AnnoationOption extends IocProvidersOption {
      * @memberof ModuleConfig
      */
     regFor?: 'root';
-
-    /**
-     * raise contianer.
-     *
-     * @type {ContainerFactory}
-     * @memberof IModuleResolveOption
-     */
-    containerFactory?: ContainerFactory<IContainer>;
-
 }
 
 /**

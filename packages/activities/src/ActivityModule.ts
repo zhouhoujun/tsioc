@@ -1,13 +1,19 @@
 import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, ActionInjector, DecoratorProvider, DesignRegisterer, ActionInjectorToken } from '@tsdi/ioc';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
-import { HandleRegisterer, BootContext, StartupDecoratorRegisterer, StartupScopes, BootTargetAccessor, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
-import { ComponentRegisterAction, BootComponentAccessor, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';
+import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
+import { ComponentRegisterAction, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
-import { TaskInjectorRegisterAction, ActivityContext } from './core';
 import * as activites from './activities';
 import { ActivityRefSelector } from './ActivityRefSelector';
 import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
+import { TaskInjectorRegisterAction } from './core/injectors';
+import { ActivityContext } from './core/ActivityContext';
+import { ActivityExecutor } from './core/ActivityExecutor';
+import { ActivityResult } from './core/ActivityResult';
+import { ActivityStatus } from './core/ActivityStatus';
+import { CompoiseActivity } from './core/CompoiseActivity';
+import { WorkflowInstance } from './core/WorkflowInstance';
 
 
 /**
@@ -31,8 +37,8 @@ export class ActivityModule {
             .regAction(BindingTaskComponentHandle)
             .regAction(TaskDecorSelectorHandle);
 
-        actInjector.getInstance(DecoratorProvider)
-            .bindProviders(Task, { provide: BootTargetAccessor, useClass: BootComponentAccessor })
+        // actInjector.getInstance(DecoratorProvider)
+        //     .bindProviders(Task, { provide: BootTargetAccessor, useClass: BootComponentAccessor })
 
 
         actInjector.getInstance(DesignRegisterer)
@@ -46,7 +52,7 @@ export class ActivityModule {
 
 
         container.register(ActivityRefSelector);
-        container.getInstance(DecoratorProvider)
+        actInjector.getInstance(DecoratorProvider)
             .bindProviders(Task,
                 {
                     provide: BootContext,
@@ -65,7 +71,7 @@ export class ActivityModule {
             );
 
 
-        container.inject(core)
+        container.inject(ActivityContext, ActivityExecutor, ActivityResult, ActivityStatus, CompoiseActivity, WorkflowInstance)
             .register(RunAspect)
             .use(activites);
     }

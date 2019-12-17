@@ -47,27 +47,27 @@ export class AopModule {
             SyncProceeding, AsyncPromiseProceeding, AdvisorChain,
             ProxyMethod, Advisor, AdviceMatcher);
 
-        let registerer = container.getInstance(ActionInjector);
+        let actInjector = container.getInstance(ActionInjector);
 
-        registerer.register(RegistAspectAction);
+        actInjector.register(RegistAspectAction);
 
-        registerer.get(IocBeforeConstructorScope)
+        actInjector.get(IocBeforeConstructorScope)
             .useBefore(InvokeBeforeConstructorAction);
 
-        registerer.get(IocAfterConstructorScope)
+        actInjector.get(IocAfterConstructorScope)
             .use(ExetndsInstanceAction)
             .use(InvokeAfterConstructorAction);
 
-        registerer.get(RuntimeMethodScope)
+        actInjector.get(RuntimeMethodScope)
             .useBefore(BindMethodPointcutAction);
 
-        registerer.get(RuntimeLifeScope)
+        actInjector.get(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, ConstructorArgsAction);
 
-        container.getInstance(DesignRegisterer)
+        actInjector.getInstance(DesignRegisterer)
             .register(Aspect, DecoratorScopes.Class, BindProviderAction, RegistAspectAction);
 
-        container.getInstance(RuntimeRegisterer)
+        actInjector.getInstance(RuntimeRegisterer)
             .register(Aspect, DecoratorScopes.Class, RegisterSingletionAction);
 
     }

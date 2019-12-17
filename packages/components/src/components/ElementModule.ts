@@ -1,6 +1,6 @@
-import { Inject, DecoratorProvider } from '@tsdi/ioc';
+import { Inject, DecoratorProvider, ActionInjectorToken } from '@tsdi/ioc';
 import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
-import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { Component } from '../decorators/Component';
 import { ElementNode } from './ElementNode';
 import { RefSelector } from '../RefSelector';
@@ -23,18 +23,20 @@ export class ElementModule {
     }
 
     setup(@Inject(ContainerToken) container: IContainer) {
+        ;
         container.register(RefElementSelector);
-        container.getInstance(StartupDecoratorRegisterer)
+
+        let actInjector = container.get(ActionInjectorToken)
+        actInjector.getInstance(StartupDecoratorRegisterer)
             .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle)
             .register(Component, StartupScopes.ValifyComponent, ValidComponentHandle)
             .register(Component, StartupScopes.Binding, BindingComponentHandle);
 
-        container.getInstance(HandleRegisterer)
-            .register(container, ComponentSelectorHandle)
-            .register(container, ValidComponentHandle)
-            .register(container, BindingComponentHandle);
+        actInjector.register(ComponentSelectorHandle)
+            .register(ValidComponentHandle)
+            .register(BindingComponentHandle);
 
-        container.getInstance(DecoratorProvider)
+        actInjector.getInstance(DecoratorProvider)
             .bindProviders(Component, { provide: RefSelector, useClass: RefElementSelector })
 
         container.register(ElementNode);

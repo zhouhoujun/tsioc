@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { IIocContainer, IocContainerToken, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
+import { IIocContainer, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance } from './types';
 import { isClass, isFunction, isSymbol, isString, isDefined } from './utils/lang';
 import { Registration } from './Registration';
@@ -90,7 +90,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
 
     protected init() {
         super.init();
-        this.registerValue(IocContainerToken, this);
         registerCores(this);
     }
 

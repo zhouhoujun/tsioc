@@ -20,9 +20,9 @@ export class ContainerBuilder implements IContainerBuilder {
 
     create(): IContainer {
         let container = new Container();
-        container.bindProvider(ContainerBuilderToken, () => this);
+        container.set(ContainerBuilderToken, () => this);
         if (this._loader) {
-            container.bindProvider(ModuleLoader, () => this._loader);
+            container.set(ModuleLoader, () => this._loader);
         }
         return container;
     }

@@ -3,13 +3,13 @@ import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
-import {
-    UUIDToken, RandomUUIDFactory, WorkflowInstance, ActivityContext,
-    ActivityType, ActivityOption, WorkflowContextToken
-} from './core';
-
 import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';
+import { ActivityContext, WorkflowContextToken } from './core/ActivityContext';
+import { ActivityOption } from './core/ActivityOption';
+import { WorkflowInstance } from './core/WorkflowInstance';
+import { ActivityType } from './core/ActivityConfigure';
+import { UUIDToken, RandomUUIDFactory } from './core/uuid';
 
 /**
  * workflow builder.
@@ -33,7 +33,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
 
 
     getWorkflow(workflowId: string): WorkflowInstance {
-        return this.getPools().getRoot().get(workflowId);
+        return this.getContainer().get(workflowId);
     }
 
     /**
@@ -104,7 +104,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
     }
 
     protected bindContextToken(ctx: T) {
-        this.container.bindProvider(WorkflowContextToken, ctx);
+        ctx.injector.registerValue(WorkflowContextToken, ctx);
     }
 
     protected getBootDeps() {
@@ -116,14 +116,14 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
                 deps.push(... this.getTargetDeps(t));
             });
         }
-        if (this.container.has(ActivityModule)) {
+        if (this.getContainer().has(ActivityModule)) {
             return deps;
         }
         return [AopModule, LogModule, ComponentsModule, ActivityModule, ...deps];
     }
 
     protected createUUID() {
-        let container = this.getPools().getRoot();
+        let container = this.getContainer();
         if (!container.has(UUIDToken)) {
             container.register(RandomUUIDFactory);
         }

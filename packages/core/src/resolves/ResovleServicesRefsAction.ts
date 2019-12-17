@@ -13,8 +13,8 @@ export class ResovleServicesRefsAction extends IocResolveServicesAction {
                 let tk = isToken(t) ? t : t.getToken();
                 ctx.types.forEach(ty => {
                     let reftk = new InjectReference(ty, tk);
-                    if (injector.has(reftk)) {
-                        ctx.services.register(reftk, (...providers: ProviderTypes[]) => injector.get(reftk, ...providers))
+                    if (!ctx.services.has(reftk) && injector.has(reftk)) {
+                        ctx.services.set(reftk, (...providers: ProviderTypes[]) => injector.get(reftk, ...providers))
                     }
                 });
             })

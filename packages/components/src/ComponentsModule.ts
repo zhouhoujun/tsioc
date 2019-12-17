@@ -4,8 +4,8 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import {
-    HandleRegisterer, ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner,
-    BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope, RootContainerToken
+    ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner,
+    BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope
 } from '@tsdi/boot';
 import { SelectorManager } from './SelectorManager';
 import { Input } from './decorators/Input';
@@ -34,7 +34,6 @@ import { BindingTemplateHandle } from './resolvers/BindingTemplateHandle';
 import { ModuleAfterContentInitHandle } from './resolvers/ModuleAfterContentInitHandle';
 import { BindingOutputHandle } from './resolvers/BindingOutputHandle';
 import { BootTemplateHandle } from './resolvers/BootTemplateHandle';
-import { ComponentManager } from './ComponentManager';
 import { ModuleInitHandle } from './resolvers/ModuleInitHandle';
 
 /**
@@ -48,14 +47,15 @@ export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.inject(ComponentManager, SelectorManager, ComponentAnnotationCloner, AstResolver);
+        container.inject(SelectorManager, ComponentAnnotationCloner, AstResolver);
 
-        container.get(RootContainerToken).bindProvider(APP_COMPONENT_REFS, new WeakMap());
-        container.getInstance(ActionInjector)
-            .register(container, ComponentRegisterAction)
-            .register(container, BindingPropertyTypeAction);
+        container.registerValue(APP_COMPONENT_REFS, new WeakMap());
+        let actInjector = container.getInstance(ActionInjector);
 
-        container.getInstance(DecoratorProvider)
+        actInjector.register(ComponentRegisterAction)
+            .register(BindingPropertyTypeAction);
+
+        actInjector.getInstance(DecoratorProvider)
             .bindProviders(Input, {
                 provide: BindingCache,
                 useFactory: () => new BindingCacheFactory(ref => {
@@ -86,9 +86,8 @@ export class ComponentsModule {
             .bindProviders(Component,
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner });
 
-        let hdregr = container.getInstance(HandleRegisterer);
-        hdregr.register(container, BindingScope, true)
-            .register(container, TemplateParseScope, true)
+        actInjector.register(BindingScope)
+            .register(TemplateParseScope)
             .get(ResolveMoudleScope)
             .use(ModuleBeforeInitHandle)
             .use(BindingPropertyHandle)
@@ -100,23 +99,23 @@ export class ComponentsModule {
             .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
 
-        hdregr.get(BootLifeScope)
+        actInjector.get(BootLifeScope)
             .useBefore(BootTemplateHandle, ModuleBuildScope);
-        hdregr.get(RunnableBuildLifeScope)
+        actInjector.get(RunnableBuildLifeScope)
             .useBefore(BootTemplateHandle, ModuleBuildScope);
 
 
-        container.getInstance(DesignRegisterer)
+        actInjector.getInstance(DesignRegisterer)
             .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Vaildate, DecoratorScopes.Property, RegisterVaildateAction);
 
-        container.getInstance(RuntimeRegisterer)
+        actInjector.getInstance(RuntimeRegisterer)
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        container.register(ComponentBuilder);
+        actInjector.register(ComponentBuilder);
     }
 
 }

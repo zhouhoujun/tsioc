@@ -13,21 +13,20 @@ export interface IServicesResolver {
      * get all service extends type.
      *
      * @template T
-     * @param {(Token<T> | ServicesOption<T> | ResolveServicesContext<T>)} target servive token or express match token.
+     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
      * @param {...ProviderTypes[]} providers
      * @returns {T[]} all service instance type of token type.
      * @memberof IContainer
      */
-    getServices<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ...providers: ProviderTypes[]): T[];
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[];
 
     /**
      * get all provider service.
      *
      * @template T
-     * @param {(Token<T> | ServicesOption<T> | ResolveServicesContext<T>)} target
-     * @param {ResolveServicesContext<T>} [ctx]
+     * @param {(Token<T> | ServicesOption<T>)} target
      * @returns {IInjector}
      * @memberof IServicesResolver
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): IInjector;
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IInjector;
 }

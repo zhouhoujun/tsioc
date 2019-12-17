@@ -13,11 +13,11 @@ export interface IServiceResolver {
      * get service or target reference service.
      *
      * @template T
-     * @param {(Token<T> | ServiceOption<T> | ResolveServiceContext<T>)} target servive token.
+     * @param {(Token<T> | ServiceOption<T>)} target servive token.
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(target: Token<T> | ServiceOption<T> | ResolveServiceContext<T>, ...providers: ProviderTypes[]): T;
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T;
 
 }

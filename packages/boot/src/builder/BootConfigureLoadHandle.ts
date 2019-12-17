@@ -23,7 +23,7 @@ export class BootConfigureLoadHandle extends BootHandle {
         if (isClass(ctx.module)) {
             let baseURL = ctx.baseURL;
             if (baseURL) {
-                injector.bindProvider(ProcessRunRootToken, ctx.baseURL)
+                injector.registerValue(ProcessRunRootToken, ctx.baseURL)
             }
         }
         let mgr = injector.get(ConfigureManager);
@@ -49,7 +49,7 @@ export class BootConfigureLoadHandle extends BootHandle {
         }
         if (config.baseURL && !ctx.baseURL) {
             ctx.setContext(ProcessRunRootToken, config.baseURL);
-            injector.bindProvider(ProcessRunRootToken, ctx.baseURL);
+            injector.registerValue(ProcessRunRootToken, ctx.baseURL);
         }
 
         await next();

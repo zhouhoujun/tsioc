@@ -21,6 +21,6 @@ export class ServerModule {
      * @memberof AopModule
      */
     setup(@Inject(ContainerToken) container: IContainer) {
-        container.bindProvider(ModuleLoader, new NodeModuleLoader());
+        container.registerValue(ModuleLoader, new NodeModuleLoader(), NodeModuleLoader);
     }
 }

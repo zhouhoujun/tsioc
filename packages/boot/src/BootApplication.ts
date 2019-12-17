@@ -50,14 +50,16 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
             container = this.getContainer();
         }
 
-        container.registerSingleton(StartupDecoratorRegisterer, () => new StartupDecoratorRegisterer(container.get(ActionInjectorToken)));
+        let actInjector = container.get(ActionInjectorToken);
+        actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector));
+
         container.register(BootModule);
 
         if (!container.has(BootContext)) {
             container.register(BootContext);
         }
 
-        container.bindProvider(BootApplication, this);
+        container.registerValue(BootApplication, this);
         if (!container.has(BootSetup)) {
             container.register(BootSetup);
         }
@@ -80,7 +82,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     }
 
     protected bindContextToken(ctx: T) {
-        this.container.bindProvider(ApplicationContextToken, ctx);
+        this.container.registerValue(ApplicationContextToken, ctx);
     }
 
     /**

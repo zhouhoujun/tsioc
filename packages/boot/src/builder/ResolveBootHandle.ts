@@ -14,15 +14,13 @@ export class ResolveBootHandle extends BootHandle {
             )
             if (isClass(bootModule)) {
                 let options = ctx.getOptions();
-                ctx.bootstrap = await ctx.getContainer().get(BuilderServiceToken).resolve(bootModule, {
+                ctx.bootstrap = await ctx.injector.get(BuilderServiceToken).resolve(bootModule, {
                     scope: options.scope,
                     template: options.template,
-                    providers: ctx.providers,
-                    containerFactory: ctx.getFactory()
+                    providers: ctx.providers
                 });
             } else if (bootModule) {
-                let container = ctx.getContainer();
-                ctx.bootstrap = container.get(bootModule, ctx.providers);
+                ctx.bootstrap = ctx.injector.get(bootModule, ctx.providers);
             }
         }
         await next();

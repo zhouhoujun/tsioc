@@ -23,10 +23,10 @@ export class UnitTestConfigureRegister extends ConfigureRegister {
             this.container.register(DebugLogAspect);
         }
         if (!this.container.has(Assert)) {
-            this.container.bindProvider(Assert, () => assert);
+            this.container.set(Assert, () => assert);
         }
         if (!this.container.has(ExpectToken)) {
-            this.container.bindProvider(ExpectToken, () => expect);
+            this.container.set(ExpectToken, () => expect);
         }
         if (isArray(config.reporters) && config.reporters.length) {
             this.container.use(...config.reporters);

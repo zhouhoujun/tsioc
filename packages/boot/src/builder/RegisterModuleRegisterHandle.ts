@@ -10,7 +10,7 @@ export class RegisterModuleRegisterHandle extends AnnoationHandle {
         if (isFunction(ctx.targetReflect.getModuleRef)) {
             let injector = ctx.injector;
             if (ctx.annoation.baseURL) {
-                injector.bindProvider(ProcessRunRootToken, ctx.annoation.baseURL);
+                injector.registerValue(ProcessRunRootToken, ctx.annoation.baseURL);
             }
             let regs = ctx.getContainer().getServices({ token: ModuleRegister, target: ctx.module, injector: injector });
             if (regs && regs.length) {

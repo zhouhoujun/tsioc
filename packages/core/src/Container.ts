@@ -111,20 +111,14 @@ export class Container extends IocContainer implements IContainer {
      *  get service or target reference service.
      *
      * @template T
-     * @param {(Token<T> | ServiceOption<T> | ResolveServiceContext<T>)} target
+     * @param {(Token<T> | ServiceOption<T>)} target
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(target: Token<T> | ServiceOption<T> | ResolveServiceContext<T>, ...providers: ProviderTypes[]): T {
-        let context: ResolveServiceContext<T>;
-        if (target instanceof ResolveServiceContext) {
-            context = target;
-        } else {
-            context = ResolveServiceContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
-        }
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
+        let context = ResolveServiceContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
         providers.length && context.providers.inject(...providers);
-
         this.getInstance(ActionInjector)
             .get(ServiceResolveLifeScope)
             .execute(context);
@@ -135,12 +129,12 @@ export class Container extends IocContainer implements IContainer {
      * get all service extends type and reference target.
      *
      * @template T
-     * @param {(Token<T> | ServicesOption<T> | ResolveServicesContext<T>)} target
+     * @param {(Token<T> | ServicesOption<T>)} target
      * @param {...ProviderTypes[]} providers
      * @returns {T[]}
      * @memberof Container
      */
-    getServices<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ...providers: ProviderTypes[]): T[] {
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[] {
         let maps = this.getServiceProviders(target);
         let services = [];
         maps.iterator((fac) => {
@@ -158,13 +152,8 @@ export class Container extends IocContainer implements IContainer {
      * @returns {Injector}
      * @memberof Container
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): IInjector {
-        let context: ResolveServicesContext<T>;
-        if (target instanceof ResolveServicesContext) {
-            context = target;
-        } else {
-            context = ResolveServicesContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
-        }
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IInjector {
+        let context = ResolveServicesContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
         this.getInstance(ActionInjector)
             .get(ServicesResolveLifeScope)
             .execute(context);

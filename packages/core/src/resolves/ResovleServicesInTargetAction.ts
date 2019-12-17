@@ -14,8 +14,8 @@ export class ResovleServicesInTargetAction extends IocResolveServicesAction {
                 let maps = injector.get(new InjectReference(InjectorToken, tk));
                 if (maps && maps.size) {
                     maps.iterator((fac, tk) => {
-                        if (isClassType(tk) && ctx.types.some(ty => ctx.reflects.isExtends(tk, ty))) {
-                            ctx.services.register(tk, (...providers: ProviderTypes[]) => fac(...providers));
+                        if (!ctx.services.has(tk) && isClassType(tk) && ctx.types.some(ty => ctx.reflects.isExtends(tk, ty))) {
+                            ctx.services.set(tk, (...providers: ProviderTypes[]) => fac(...providers));
                         }
                     })
                 }

@@ -23,7 +23,7 @@ import { ActionInjectorToken } from './actions/Action';
 export function registerCores(container: IIocContainer) {
     let fac = () => container;
     container.set(IocContainerToken, fac);
-    container.set(ContainerFactoryToken, () => fac);
+    container.registerValue(ContainerFactoryToken, fac);
 
     let register = new ActionInjector(fac);
     container.registerValue(ActionInjectorToken, register, ActionInjector);

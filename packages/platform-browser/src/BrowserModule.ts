@@ -23,6 +23,6 @@ export class BrowserModule {
      * @memberof AopModule
      */
     setup(@Inject(ContainerToken) container: IContainer) {
-        container.bindProvider(ModuleLoader,  new BrowserModuleLoader());
+        container.registerValue(ModuleLoader,  new BrowserModuleLoader(), BrowserModuleLoader);
     }
 }

@@ -22,11 +22,11 @@ export class RegModuleProvidersAction extends AnnoationAction {
 
         exptypes.forEach(ty => {
             let reflect = tRef.get(ty);
-            map.register(ty, (...pds: ProviderTypes[]) => injector.resolve(ty, ...pds));
+            map.set(ty, (...pds: ProviderTypes[]) => injector.resolve(ty, ...pds));
             if (reflect && isArray(reflect.provides) && reflect.provides.length) {
                 reflect.provides.forEach(p => {
                     if (!map.has(p)) {
-                        map.register(p, (...pds: ProviderTypes[]) => injector.resolve(p, ...pds));
+                        map.set(p, (...pds: ProviderTypes[]) => injector.resolve(p, ...pds));
                     }
                 });
             }

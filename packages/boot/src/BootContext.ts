@@ -116,6 +116,14 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     deps?: LoadType[];
+
+    /**
+     * raise contianer.
+     *
+     * @type {ContainerFactory}
+     * @memberof IModuleResolveOption
+     */
+    containerFactory?: ContainerFactory<IContainer>;
 }
 
 /**
@@ -146,8 +154,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
         if (!url) {
             url = this.getOptions().baseURL || (this.annoation ? this.annoation.baseURL : '');
             if (url) {
-                this.getContainer().bindProvider(ProcessRunRootToken, url);
-                this.set(ProcessRunRootToken, url);
+                this.getContainer().registerValue(ProcessRunRootToken, url);
             }
         }
         return url;

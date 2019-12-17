@@ -1,8 +1,6 @@
 import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject, isBaseObject } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
-import {
-    ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken
-} from './IConfigureManager';
+import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken } from './IConfigureManager';
 import { RunnableConfigure, ProcessRunRootToken } from './RunnableConfigure';
 
 
