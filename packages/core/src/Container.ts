@@ -4,7 +4,7 @@ import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isToken, ActionInjector, IInjector, isInjector } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
 import { registerCores } from './registerCores';
-import { InjectorLifeScope } from './injectors/InjectorLifeScope';
+import { InjectLifeScope } from './injectors/InjectLifeScope';
 import { ServiceOption, ResolveServiceContext } from './resolves/ResolveServiceContext';
 import { ServiceResolveLifeScope } from './resolves/ServiceResolveLifeScope';
 import { ServicesOption, ResolveServicesContext } from './resolves/ResolveServicesContext';
@@ -36,7 +36,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.getInstance(ContainerBuilderToken.toString());
+        return this.get(ContainerBuilderToken);
     }
 
     /**
@@ -74,7 +74,7 @@ export class Container extends IocContainer implements IContainer {
             injector = this;
         }
         (async () => {
-            this.getInstance(ActionInjector).get(InjectorLifeScope).register(injector, ...modules);
+            this.getInstance(ActionInjector).get(InjectLifeScope).register(injector, ...modules);
         })();
         return this;
     }
@@ -104,7 +104,7 @@ export class Container extends IocContainer implements IContainer {
             injector = this;
         }
         let mdls = await this.getLoader().load(...modules);
-        return this.getInstance(ActionInjector).get(InjectorLifeScope).register(injector, ...mdls);
+        return this.getInstance(ActionInjector).get(InjectLifeScope).register(injector, ...mdls);
     }
 
     /**

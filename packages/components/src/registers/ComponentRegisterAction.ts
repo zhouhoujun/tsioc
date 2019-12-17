@@ -28,7 +28,7 @@ export class ComponentRegisterAction extends IocDesignAction {
                     } else {
                         reflects.componentSelector = sel;
                     }
-                    mgr.set(sel, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
+                    // mgr.set(sel, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
                 })
             } else {
                 if (attrExp.test(meta.selector)) {
@@ -36,7 +36,7 @@ export class ComponentRegisterAction extends IocDesignAction {
                 } else {
                     reflects.componentSelector = meta.selector;
                 }
-                mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
+                // mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
             }
         });
 

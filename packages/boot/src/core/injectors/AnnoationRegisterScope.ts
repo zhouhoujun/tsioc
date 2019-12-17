@@ -1,9 +1,9 @@
-import { IocCompositeAction, InjectorToken } from '@tsdi/ioc';
+import { IocCompositeAction, InjectorToken, IActionSetup } from '@tsdi/ioc';
 import { AnnoationContext } from '../AnnoationContext';
 import { RegModuleAction } from './RegModuleAction';
 import { RegModuleImportsAction } from './RegModuleImportsAction';
 import { RegModuleProvidersAction } from './RegModuleProvidersAction';
-import { RegModuleExportsAction } from './RegModuleExportsAction';
+import { RegModuleRefAction } from './RegModuleRefAction';
 
 /**
  * annoation register scope.
@@ -12,7 +12,7 @@ import { RegModuleExportsAction } from './RegModuleExportsAction';
  * @class AnnoationRegisterScope
  * @extends {IocCompositeAction<AnnoationContext>}
  */
-export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext> {
+export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext> implements IActionSetup {
     execute(ctx: AnnoationContext, next?: () => void): void {
 
         if (ctx.regFor === 'root') {
@@ -27,6 +27,6 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext>
         this.use(RegModuleAction)
             .use(RegModuleImportsAction)
             .use(RegModuleProvidersAction)
-            .use(RegModuleExportsAction);
+            .use(RegModuleRefAction);
     }
 }

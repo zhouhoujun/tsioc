@@ -7,11 +7,11 @@ export class BootTemplateHandle extends BootHandle {
         if (!ctx.module) {
             let options = ctx.getOptions();
             if (options.template) {
-                ctx.target = await this.container.get(ComponentBuilderToken).resolveTemplate({
+                ctx.target = await ctx.getContainer().get(ComponentBuilderToken).resolveTemplate({
                     decorator: ctx.decorator || Component.toString(),
                     scope: options.scope,
                     template: options.template,
-                    raiseContainer: ctx.getFactory()
+                    containerFactory: ctx.getFactory()
                 });
             }
             if (ctx.target) {

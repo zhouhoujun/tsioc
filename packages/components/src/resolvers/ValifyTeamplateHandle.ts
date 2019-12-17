@@ -10,11 +10,11 @@ export class ValifyTeamplateHandle extends ResolveHandle {
             //     compRef.hostView.$parent = refs.get(options.scope).hostView;
             // }
 
-            let startupRegr = this.container.getInstance(StartupDecoratorRegisterer);
+            let startupRegr = this.actInjector.getInstance(StartupDecoratorRegisterer);
 
             let validRegs = startupRegr.getRegisterer(StartupScopes.ValifyComponent);
             if (validRegs.has(ctx.decorator)) {
-                await this.execFuncs(ctx, validRegs.getFuncs(this.container, ctx.decorator));
+                await this.execFuncs(ctx, validRegs.getFuncs(this.actInjector, ctx.decorator));
             }
 
             // if (ctx.has(ComponentRef)) {

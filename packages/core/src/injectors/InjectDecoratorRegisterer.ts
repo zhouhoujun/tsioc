@@ -7,6 +7,6 @@ import { IocDecoratorRegisterer } from '@tsdi/ioc';
  * @class ModuleDecoratorRegisterer
  * @extends {IocDecoratorRegisterer}
  */
-export class InjectorDecoratorRegisterer extends IocDecoratorRegisterer {
+export class InjectDecoratorRegisterer extends IocDecoratorRegisterer {
 
 }

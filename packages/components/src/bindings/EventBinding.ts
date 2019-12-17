@@ -1,13 +1,12 @@
-import { isObservable, isFunction } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { isObservable, isFunction, IInjector } from '@tsdi/ioc';
 import { DataBinding } from './DataBinding';
 import { IBinding } from './IBinding';
 
 
 export class EventBinding<T = any> extends DataBinding<T> {
 
-    constructor(protected container: IContainer, source: any, binding: IBinding,  expression: string) {
-        super(container, source, binding, expression)
+    constructor(injector: IInjector, source: any, binding: IBinding,  expression: string) {
+        super(injector, source, binding, expression)
     }
 
     bind(target: any): void {

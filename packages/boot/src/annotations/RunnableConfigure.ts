@@ -4,7 +4,7 @@ import { ModuleConfigure } from '../core';
 /**
  *  process run root.
  */
-export const ProcessRunRootToken = new InjectToken<string>('__boot_process_root');
+export const ProcessRunRootToken = new InjectToken<string>('BOOT_PROCESS_ROOT');
 
 /**
  * runnable configure.

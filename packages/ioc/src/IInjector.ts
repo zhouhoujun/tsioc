@@ -297,7 +297,7 @@ export interface IInjector {
 /**
  *  injector token.
  */
-export const InjectorToken =  new InjectToken<IInjector>('DI_Injector');
+export const InjectorToken =  new InjectToken<IInjector>('DI_INJECTOR');
 
 /**
  *  injector factory token.

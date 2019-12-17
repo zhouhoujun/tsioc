@@ -1,7 +1,7 @@
 import { Injectable, createRaiseContext, ContainerFactory } from '@tsdi/ioc';
+import { IContainer } from '@tsdi/core';
 import { AnnoationOption, AnnoationContext } from '../../core';
 import { IComponentContext } from '../ComponentContext';
-import { IContainer } from '@tsdi/core';
 
 /**
  * module resolve option.

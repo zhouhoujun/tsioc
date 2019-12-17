@@ -40,7 +40,7 @@ export interface IActionInjector extends IInjector {
     getAction<T extends Function>(target: Token<Action> | Action | Function): T;
 }
 
-export const ActionInjectorToken = new InjectToken<IActionInjector>('_IOC_ActionInjector');
+export const ActionInjectorToken = new InjectToken<IActionInjector>('ACTION_INJECTOR');
 
 
 /**

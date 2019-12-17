@@ -16,7 +16,7 @@ export class BindingTemplateHandle extends ResolveHandle {
         if (ctx.target && ctx.has(ComponentRef)) {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propRefChildBindings) {
-                let dpr = this.container.getInstance(DecoratorProvider);
+                let dpr = this.actInjector.getInstance(DecoratorProvider);
                 if (dpr.has(ctx.decorator, RefSelector)) {
                     // todo ref chile view
                     let refSelector = dpr.resolve(ctx.decorator, RefSelector);
@@ -30,11 +30,11 @@ export class BindingTemplateHandle extends ResolveHandle {
                 }
             }
 
-            let startupRegr = this.container.getInstance(StartupDecoratorRegisterer);
+            let startupRegr = this.actInjector.getInstance(StartupDecoratorRegisterer);
 
             let bindRegs = startupRegr.getRegisterer(StartupScopes.Binding);
             if (bindRegs.has(ctx.decorator)) {
-                await this.execFuncs(ctx, bindRegs.getFuncs(this.container, ctx.decorator));
+                await this.execFuncs(ctx, bindRegs.getFuncs(this.actInjector, ctx.decorator));
             }
 
         }

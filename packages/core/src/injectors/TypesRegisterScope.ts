@@ -1,9 +1,9 @@
 import { Type } from '@tsdi/ioc';
-import { InjectorRegisterScope } from './InjectorRegisterScope';
-import { InjectorActionContext } from './InjectorActionContext';
+import { InjectorRegisterScope } from './InjectRegisterScope';
+import { InjectActionContext } from './InjectActionContext';
 
 export class TypesRegisterScope extends InjectorRegisterScope {
-    protected getTypes(ctx: InjectorActionContext): Type[] {
+    protected getTypes(ctx: InjectActionContext): Type[] {
         return ctx.types;
     }
 }

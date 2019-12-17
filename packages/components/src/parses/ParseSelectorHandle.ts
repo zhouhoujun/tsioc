@@ -16,13 +16,13 @@ export class ParseSelectorHandle extends ParsersHandle {
         if (ctx.selector) {
             let selector = ctx.selector;
             let options = ctx.getOptions();
-            ctx.value = await this.container.resolve(ComponentBuilderToken)
+            ctx.value = await ctx.getContainer().get(ComponentBuilderToken)
                 .resolve(selector, {
                     scope: options.scope,
                     parsing: true,
                     template: options.template,
-                    raiseContainer: ctx.getFactory(),
-                    providers: ctx.providers.concat({ provide: TemplateOptionToken, useValue: options })
+                    containerFactory: ctx.getFactory(),
+                    providers: ctx.providers.clone().inject({ provide: TemplateOptionToken, useValue: options })
                 });
         }
         if (isNullOrUndefined(ctx.value)) {

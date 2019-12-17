@@ -1,10 +1,10 @@
 import { isClass } from '@tsdi/ioc';
-import { InjectorAction } from './InjectorAction';
-import { InjectorActionContext } from './InjectorActionContext';
+import { InjectAction } from './InjectAction';
+import { InjectActionContext } from './InjectActionContext';
 import { CTX_CURR_TYPE } from '../context-tokens';
 
-export class RegisterTypeAction extends InjectorAction {
-    execute(ctx: InjectorActionContext, next: () => void): void {
+export class RegisterTypeAction extends InjectAction {
+    execute(ctx: InjectActionContext, next: () => void): void {
         let currType = ctx.get(CTX_CURR_TYPE);
         if (isClass(currType)) {
             ctx.injector.register(currType);

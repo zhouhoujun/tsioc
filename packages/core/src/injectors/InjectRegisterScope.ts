@@ -1,20 +1,20 @@
-import { Type, isArray } from '@tsdi/ioc';
-import { InjectorScope } from './InjectorAction';
-import { InjectorActionContext } from './InjectorActionContext';
+import { Type, isArray, IActionSetup } from '@tsdi/ioc';
+import { InjectScope } from './InjectAction';
+import { InjectActionContext } from './InjectActionContext';
 import { RegisterTypeAction } from './RegisterTypeAction';
 import { CTX_CURR_TYPE } from '../context-tokens';
 
-export abstract class InjectorRegisterScope extends InjectorScope {
+export abstract class InjectorRegisterScope extends InjectScope  implements IActionSetup {
 
-    execute(ctx: InjectorActionContext, next?: () => void): void {
+    execute(ctx: InjectActionContext, next?: () => void): void {
         let types = this.getTypes(ctx);
         this.registerTypes(ctx, types);
         next && next();
     }
 
-    protected abstract getTypes(ctx: InjectorActionContext): Type[];
+    protected abstract getTypes(ctx: InjectActionContext): Type[];
 
-    protected registerTypes(ctx: InjectorActionContext, types: Type[]) {
+    protected registerTypes(ctx: InjectActionContext, types: Type[]) {
         if (isArray(types) && types.length) {
             types.forEach(ty => {
                 if (!ctx.injector.has(ty)) {
@@ -26,7 +26,7 @@ export abstract class InjectorRegisterScope extends InjectorScope {
         }
     }
 
-    protected setNextRegTypes(ctx: InjectorActionContext, registered: Type[]) {
+    protected setNextRegTypes(ctx: InjectActionContext, registered: Type[]) {
         ctx.types = ctx.types.filter(ty => registered.indexOf(ty) < 0);
     }
 

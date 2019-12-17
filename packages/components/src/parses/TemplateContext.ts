@@ -7,7 +7,7 @@ import { ITemplateOption } from '../IComponentBuilder';
 /**
  * Template option token.
  */
-export const TemplateOptionToken = new InjectToken<ITemplateOption>('Component_TemplateOption');
+export const TemplateOptionToken = new InjectToken<ITemplateOption>('COMPONENT_TEMPLATE_OPTION');
 
 /**
  * template context.
@@ -24,7 +24,7 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
 
     value?: any;
 
-    static parse(options: ITemplateOption, raiseContainer?: ContainerFactory<IContainer>): TemplateContext {
+    static parse(options: ITemplateOption, raiseContainer: ContainerFactory<IContainer>): TemplateContext {
         return createRaiseContext(TemplateContext, options, raiseContainer);
     }
 }

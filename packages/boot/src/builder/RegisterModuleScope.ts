@@ -1,11 +1,11 @@
-import { isBaseType } from '@tsdi/ioc';
+import { isBaseType, IActionSetup } from '@tsdi/ioc';
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
 import { AnnoationContext, BuildHandles } from '../core';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
 
 
-export class RegisterModuleScope extends BuildHandles<AnnoationContext> {
+export class RegisterModuleScope extends BuildHandles<AnnoationContext> implements IActionSetup {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         if (!(ctx instanceof BootContext)) {

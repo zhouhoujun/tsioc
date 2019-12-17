@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, lang, DecoratorProvider, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, lang, DecoratorProvider, CTX_CURR_DECOR, ActionInjectorToken } from '@tsdi/ioc';
 import { AnnotationMerger } from '../AnnotationMerger';
 import { AnnotationCloner } from '../AnnotationCloner';
 import { IModuleReflect } from '../modules/IModuleReflect';
@@ -20,7 +20,7 @@ export class AnnoationDesignAction extends IocDesignAction {
         let decorator = cuurDec || tgRef.decorator;
         let metas = ctx.reflects.getMetadata(decorator, ctx.targetType);
         if (metas.length) {
-            let proder = this.container.getInstance(DecoratorProvider);
+            let proder = ctx.getContainer().get(ActionInjectorToken).getInstance(DecoratorProvider);
             let merger = proder.resolve(decorator, AnnotationMerger);
             let merged = merger ? merger.merge(metas) : lang.first(metas);
             if (!tgRef.baseURL) {

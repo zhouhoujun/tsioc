@@ -1,7 +1,9 @@
+import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../../core';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';
+
 
 /**
  * resolve module scope.
@@ -10,7 +12,7 @@ import { BuildContext } from './BuildContext';
  * @class ResolveMoudleScope
  * @extends {BuildHandles<BuildContext>}
  */
-export class ResolveMoudleScope extends BuildHandles<BuildContext> {
+export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IActionSetup {
 
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.target) {

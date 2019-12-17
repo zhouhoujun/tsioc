@@ -1,5 +1,4 @@
-import { isArray, isNullOrUndefined } from '@tsdi/ioc';
-import { HandleRegisterer } from '@tsdi/boot';
+import { isArray, isNullOrUndefined, IActionSetup } from '@tsdi/ioc';
 import { ParsersHandle, ParseHandle } from './ParseHandle';
 import { BindingValueScope } from './BindingValueScope';
 import { ParseContext } from './ParseContext';
@@ -11,7 +10,7 @@ import { ParseContext } from './ParseContext';
  * @class BindingScope
  * @extends {ParsersHandle}
  */
-export class BindingScope extends ParsersHandle {
+export class BindingScope extends ParsersHandle implements IActionSetup {
 
     async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.binding) {
@@ -24,7 +23,7 @@ export class BindingScope extends ParsersHandle {
 
     setup() {
         this.use(BindingArrayHandle)
-            .use(BindingValueScope, true)
+            .use(BindingValueScope)
     }
 }
 
@@ -37,7 +36,6 @@ export class BindingScope extends ParsersHandle {
  */
 export class BindingArrayHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-        let registerer = this.container.getInstance(HandleRegisterer);
         if (ctx.binding.type === Array && isArray(ctx.bindExpression)) {
             let options = ctx.getOptions();
             ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
@@ -47,10 +45,9 @@ export class BindingArrayHandle extends ParseHandle {
                     binding: ctx.binding,
                     bindExpression: tp,
                     template: tp,
-                    decorator: ctx.decorator,
-                    containerFactory: ctx.getFactory()
-                });
-                await registerer.get(BindingScope).execute(subCtx);
+                    decorator: ctx.decorator
+                }, ctx.getFactory());
+                await this.actInjector.get(BindingScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
             }));
         }

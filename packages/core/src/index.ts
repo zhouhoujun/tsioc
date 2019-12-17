@@ -14,19 +14,19 @@ export * from './decorators/IocExt';
 export * from './services/ModuleLoader';
 
 // injector actions
-export * from './injectors/DecoratorInjectorScope';
+export * from './injectors/DecoratorInjectScope';
 export * from './injectors/DecoratorInjectAction';
 export * from './injectors/InjectCompleteCheckAction';
-export * from './injectors/InjectorAction';
-export * from './injectors/InjectorActionContext';
+export * from './injectors/InjectAction';
+export * from './injectors/InjectActionContext';
 export * from './injectors/ModuleToTypesAction';
 export * from './injectors/RegisterTypeAction';
-export * from './injectors/ModuleInjectorScope';
-export * from './injectors/InjectorRegisterScope';
+export * from './injectors/ModuleInjectScope';
+export * from './injectors/InjectRegisterScope';
 export * from './injectors/TypesRegisterScope';
 export * from './injectors/IocExtRegisterScope';
-export * from './injectors/InjectorLifeScope';
-export * from './injectors/InjectorDecoratorRegisterer';
+export * from './injectors/InjectLifeScope';
+export * from './injectors/InjectDecoratorRegisterer';
 
 // resolves actions
 export * from './resolves/ResolveServiceContext';

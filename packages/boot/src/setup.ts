@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { Bootstrap } from './decorators/Bootstrap';
-import { DIModuleInjectorScope } from './core';
+import { DIModuleInjectScope } from './core';
 import { BuilderService } from './builder/BuilderService';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
@@ -20,7 +20,7 @@ export class BootSetup {
         let actInjector = container.get(ActionInjectorToken);
         actInjector.getInstance(DesignRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, BindProviderAction)
-            .register(Bootstrap, DecoratorScopes.Injector, DIModuleInjectorScope);
+            .register(Bootstrap, DecoratorScopes.Injector, DIModuleInjectScope);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

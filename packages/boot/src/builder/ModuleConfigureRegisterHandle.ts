@@ -10,7 +10,7 @@ export class ModuleConfigureRegisterHandle extends BootHandle {
         if (regs && regs.length) {
             let config = ctx.configuration;
             if (!config) {
-                let mgr = this.resolve(ctx, ConfigureManager);
+                let mgr = ctx.injector.resolve(ConfigureManager);
                 config = await mgr.getConfig();
             }
             await Promise.all(regs.map(reg => reg.register(config, ctx)));

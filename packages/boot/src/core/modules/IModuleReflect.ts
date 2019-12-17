@@ -2,6 +2,9 @@ import { ITypeReflect, InjectToken, IInjector } from '@tsdi/ioc';
 import { ModuleConfigure } from './ModuleConfigure';
 import { ModuleRef } from './ModuleRef';
 
+/**
+ * parent injector token.
+ */
 export const ParentInjectorToken = new InjectToken<IInjector>('IOC_PARENT_INJECTOR')
 
 export interface IModuleReflect extends ITypeReflect {

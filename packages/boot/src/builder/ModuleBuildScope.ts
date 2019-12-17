@@ -1,9 +1,11 @@
+import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../core';
 import { BootContext } from '../BootContext';
 import { ResolveBootHandle } from './ResolveBootHandle';
 import { ResolveTypeHandle } from './ResolveTypeHandle';
 
-export class ModuleBuildScope extends BuildHandles<BootContext> {
+
+export class ModuleBuildScope extends BuildHandles<BootContext> implements IActionSetup {
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         // has build module instance.

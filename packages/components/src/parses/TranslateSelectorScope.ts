@@ -1,6 +1,8 @@
+import { IActionSetup } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplatesHandle, TemplateHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
+
 
 
 /**
@@ -10,7 +12,7 @@ import { TemplateContext } from './TemplateContext';
  * @class TranslateSelectorScope
  * @extends {TemplatesHandle}
  */
-export class TranslateSelectorScope extends TemplatesHandle {
+export class TranslateSelectorScope extends TemplatesHandle implements IActionSetup {
     async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         if (next) {
@@ -31,9 +33,9 @@ export class TranslateSelectorScope extends TemplatesHandle {
  */
 export class TranslateElementHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let reg = this.container.getInstance(StartupDecoratorRegisterer).getRegisterer(StartupScopes.TranslateTemplate);
+        let reg = this.actInjector.getInstance(StartupDecoratorRegisterer).getRegisterer(StartupScopes.TranslateTemplate);
         if (reg.has(ctx.decorator)) {
-            await this.execFuncs(ctx, reg.getFuncs(this.container, ctx.decorator));
+            await this.execFuncs(ctx, reg.getFuncs(this.actInjector, ctx.decorator));
         }
 
         if (!ctx.selector) {

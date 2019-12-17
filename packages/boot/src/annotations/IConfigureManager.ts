@@ -4,12 +4,12 @@ import { RunnableConfigure } from './RunnableConfigure';
 /**
  * configure manager token.
  */
-export const ConfigureMgrToken = new InjectToken<IConfigureManager>('config-mgr');
+export const ConfigureMgrToken = new InjectToken<IConfigureManager>('CONFIG-MGR');
 
 /**
  * default configuration token.
  */
-export const DefaultConfigureToken = new InjectToken<RunnableConfigure>('DI_Default_Configuration');
+export const DefaultConfigureToken = new InjectToken<RunnableConfigure>('BOOT_DEFAULT_CONFIG');
 
 
 /**

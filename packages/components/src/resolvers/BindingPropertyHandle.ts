@@ -1,5 +1,5 @@
 import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
-import { BuildContext, ResolveHandle, HandleRegisterer } from '@tsdi/boot';
+import { BuildContext, ResolveHandle } from '@tsdi/boot';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
 import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
@@ -20,7 +20,6 @@ export class BindingPropertyHandle extends ResolveHandle {
         if (ctx.target) {
             let ref = ctx.targetReflect as IBindingTypeReflect;
             if (ref && ref.propInBindings) {
-                let registerer = this.container.getInstance(HandleRegisterer);
                 let options = ctx.getOptions();
                 await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {
                     let binding = ref.propInBindings.get(n);
@@ -36,10 +35,9 @@ export class BindingPropertyHandle extends ResolveHandle {
                                 bindExpression: expression,
                                 template: options.template,
                                 binding: binding,
-                                decorator: ctx.decorator,
-                                containerFactory: ctx.getFactory()
-                            })
-                            await registerer.get(BindingScope).execute(pctx);
+                                decorator: ctx.decorator
+                            }, ctx.getFactory())
+                            await this.actInjector.get(BindingScope).execute(pctx);
 
                             if (pctx.dataBinding instanceof ParseBinding) {
                                 if (pctx.dataBinding.resolveExression() === pctx.value || isBaseValue(pctx.value)) {

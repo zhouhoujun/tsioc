@@ -7,7 +7,7 @@ import { ActionContextOption, Type, Modules, IocRaiseContext, ContainerFactory, 
  * @export
  * @interface InjectorActionOption
  */
-export interface InjectorActionOption extends ActionContextOption {
+export interface InjectActionOption extends ActionContextOption {
     module: Modules;
 }
 
@@ -18,7 +18,7 @@ export interface InjectorActionOption extends ActionContextOption {
  * @class InjectorActionContext
  * @extends {IocActionContext}
  */
-export class InjectorActionContext extends IocRaiseContext<InjectorActionOption> {
+export class InjectActionContext extends IocRaiseContext<InjectActionOption> {
 
     /**
      * the module to injector to container.
@@ -54,11 +54,11 @@ export class InjectorActionContext extends IocRaiseContext<InjectorActionOption>
      * injector action context.
      *
      * @static
-     * @param {InjectorActionOption} options
-     * @returns {InjectorActionContext}
+     * @param {InjectActionOption} options
+     * @returns {InjectActionContext}
      * @memberof InjectorActionContext
      */
-    static parse(options: InjectorActionOption, containerFactory: ContainerFactory): InjectorActionContext {
-        return createRaiseContext(InjectorActionContext, options, containerFactory);
+    static parse(options: InjectActionOption, containerFactory: ContainerFactory): InjectActionContext {
+        return createRaiseContext(InjectActionContext, options, containerFactory);
     }
 }

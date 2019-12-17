@@ -1,18 +1,15 @@
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
 import { CTX_MODULE_EXPORTS } from '../../context-tokens';
-import { ModuleRef } from '../modules/ModuleRef';
+import { ParentInjectorToken } from '../modules/IModuleReflect';
 
 export class RegModuleExportsAction extends AnnoationAction {
     execute(ctx: AnnoationContext, next: () => void): void {
-        let reflect = ctx.targetReflect;
-        if (reflect) {
-            let mdRef = new ModuleRef(ctx.module, reflect, ctx.get(CTX_MODULE_EXPORTS));
-            ctx.set(ModuleRef, mdRef);
-            reflect.getModuleRef = () => {
-                return mdRef;
+        if (ctx.has(CTX_MODULE_EXPORTS) && !ctx.regFor) {
+            let parent = ctx.injector.get(ParentInjectorToken);
+            if (parent) {
+                parent.copy(ctx.get(CTX_MODULE_EXPORTS));
             }
-
         }
         next();
     }

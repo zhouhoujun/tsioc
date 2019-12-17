@@ -1,4 +1,4 @@
-import { IocResolveScope } from '@tsdi/ioc';
+import { IocResolveScope, IActionSetup } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveTargetServiceAction } from './ResolveTargetServiceAction';
 import { ResolveServiceTokenAction } from './ResolveServiceTokenAction';
@@ -11,7 +11,7 @@ import { ResolveServiceTokenAction } from './ResolveServiceTokenAction';
  * @class ResolveServiceAction
  * @extends {IocResolveScope}
  */
-export class ResolveServiceScope extends IocResolveScope {
+export class ResolveServiceScope extends IocResolveScope implements IActionSetup {
 
     execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (!ctx.instance) {

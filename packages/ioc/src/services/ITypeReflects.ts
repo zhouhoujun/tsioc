@@ -10,7 +10,7 @@ import { IInjector } from '../IInjector';
 /**
  * type reflects token.
  */
-export const TypeReflectsToken = new InjectToken<ITypeReflects>('TypeReflects');
+export const TypeReflectsToken = new InjectToken<ITypeReflects>('IOC_TYPEREFLECTS');
 
 /**
  *  type reflects interface.

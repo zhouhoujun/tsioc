@@ -1,8 +1,8 @@
-import { InjectorAction } from './InjectorAction';
-import { InjectorActionContext } from './InjectorActionContext';
+import { InjectAction } from './InjectAction';
+import { InjectActionContext } from './InjectActionContext';
 
-export class InjectCompleteCheckAction extends InjectorAction {
-    execute(ctx: InjectorActionContext, next: () => void): void {
+export class InjectCompleteCheckAction extends InjectAction {
+    execute(ctx: InjectActionContext, next: () => void): void {
         if (ctx.types.length > 0) {
             next();
         }

@@ -1,4 +1,4 @@
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined } from '@tsdi/ioc';
+import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, InjectorToken, IInjector, Inject } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
@@ -16,6 +16,9 @@ import { Handles } from '../handles/Handles';
  */
 @Injectable
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
+
+    @Inject(InjectorToken)
+    injector: IInjector;
 
     /**
      * send message
@@ -67,7 +70,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 fac = data;
                 data = undefined;
             }
-            let ctx = fac ? fac() : this.container.resolve(MessageContext) as T;
+            let ctx = fac ? fac() : this.injector.resolve(MessageContext) as T;
             if (isString(event)) {
                 if (!isString(type)) {
                     data = type;
@@ -108,9 +111,9 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param {IHandle} handle
      * @memberof IMessageQueue
      */
-    subscribe(handle: Token<IHandle>, setup?: boolean);
-    subscribe(haddle: HandleType<T>, setup?: boolean) {
-        this.use(haddle, setup);
+    subscribe(handle: Token<IHandle>);
+    subscribe(haddle: HandleType<T>) {
+        this.use(haddle);
     }
 
     /**
@@ -138,9 +141,9 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         this.unuse(haddle);
     }
 
-    protected registerHandle(HandleType: HandleType<T>, setup?: boolean): this {
+    protected registerHandle(HandleType: HandleType<T>): this {
         if (isClass(HandleType)) {
-            this.container.register(HandleType);
+            this.injector.register(HandleType);
         }
         return this;
     }

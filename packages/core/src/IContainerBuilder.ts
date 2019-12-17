@@ -5,7 +5,7 @@ import { IContainer } from './IContainer';
  * ContainerBuilder interface token.
  * it is a token id, you can register yourself IContainerBuilder for this.
  */
-export const ContainerBuilderToken = new InjectToken<IContainerBuilder>('DI_IContainerBuilder');
+export const ContainerBuilderToken = new InjectToken<IContainerBuilder>('CONTAINER_BUILDER');
 
 /**
  * container builder.

@@ -1,5 +1,5 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, isArray } from '@tsdi/ioc';
-import { HandleRegisterer, StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType } from '@tsdi/ioc';
+import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { TemplateParseScope } from './TemplateParseScope';
@@ -50,27 +50,26 @@ export class BindingScopeHandle extends ParseHandle {
         }
         let options = ctx.getOptions();
         if (!ctx.dataBinding && isString(ctx.bindExpression)) {
-            let regs = this.container.getInstance(StartupDecoratorRegisterer)
+            let regs = this.actInjector.getInstance(StartupDecoratorRegisterer)
                 .getRegisterer(StartupScopes.BindExpression);
             // translate binding expression via current decorator.
             if (regs.has(ctx.decorator)) {
-                await this.execFuncs(ctx, regs.getFuncs(this.container, ctx.decorator));
+                await this.execFuncs(ctx, regs.getFuncs(this.actInjector, ctx.decorator));
             } else {
                 let exp = ctx.bindExpression.trim();
                 if (ctx.binding.direction === BindingDirection.input) {
                     if (exp.startsWith(bindPref)) {
-                        ctx.dataBinding = new OneWayBinding(this.container, options.scope, ctx.binding, exp.replace(bindPref, '').trim());
+                        ctx.dataBinding = new OneWayBinding(ctx.injector, options.scope, ctx.binding, exp.replace(bindPref, '').trim());
                     } else if (exp.startsWith(twobindPref)) {
-                        ctx.dataBinding = new TwoWayBinding(this.container, options.scope, ctx.binding, exp.replace(twobindPref, '').trim());
+                        ctx.dataBinding = new TwoWayBinding(ctx.injector, options.scope, ctx.binding, exp.replace(twobindPref, '').trim());
                     } else if (exp.startsWith(two2bindPref)) {
-                        ctx.dataBinding = new TwoWayBinding(this.container, options.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
+                        ctx.dataBinding = new TwoWayBinding(ctx.injector, options.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
                     }
                 } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                    ctx.dataBinding = new EventBinding(this.container, options.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
+                    ctx.dataBinding = new EventBinding(ctx.injector, options.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
                 }
             }
         }
-
 
         if (ctx.dataBinding instanceof ParseBinding) {
             if (!ctx.dataBinding.source) {
@@ -101,7 +100,7 @@ export class TranslateExpressionHandle extends ParseHandle {
                 providers: ctx.providers,
                 containerFactory: ctx.getFactory()
             });
-            await this.container.getInstance(HandleRegisterer)
+            await this.actInjector
                 .get(TemplateParseScope)
                 .execute(tpCtx);
 
@@ -129,8 +128,9 @@ export class TranslateExpressionHandle extends ParseHandle {
 export class TranslateAtrrHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
         let options = ctx.getOptions();
+        let container = ctx.getContainer();
         if (!isNullOrUndefined(ctx.bindExpression)) {
-            let mgr = this.container.get(SelectorManager);
+            let mgr = container.get(SelectorManager);
             let pdr = ctx.binding.provider;
             let selector: ClassType;
             if (isString(pdr) && mgr.hasAttr(pdr)) {
@@ -146,7 +146,6 @@ export class TranslateAtrrHandle extends ParseHandle {
             if (selector) {
                 let template = {};
                 template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
-                let container = ctx.getContainer();
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: options.scope,
                     template: template,

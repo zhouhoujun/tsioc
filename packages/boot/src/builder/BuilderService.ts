@@ -1,4 +1,4 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, CTX_PROVIDERS, ActionInjectorToken, IActionInjector } from '@tsdi/ioc';
+import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, ActionInjectorToken, IActionInjector } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { BuildHandles, AnnoationContext } from '../core';
@@ -7,7 +7,7 @@ import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
 import { BootLifeScope } from './BootLifeScope';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
-import { CTX_APP_ENVARGS } from '../context-tokens';
+import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ResolveMoudleScope } from './resolvers/ResolveMoudleScope';
 import { IModuleResolveOption, BuildContext } from './resolvers/BuildContext';
 import { IStartup } from '../runnable/Startup';
@@ -185,7 +185,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             target,
             ...args);
 
-        if (isFunction(opt.regExports) && ctx.has(CTX_MODULE_RESOLVER)) {
+        if (isFunction(opt.regExports) && ctx.has(CTX_MODULE_EXPORTS)) {
             opt.regExports(ctx as T, this.container);
         }
         return ctx as T;

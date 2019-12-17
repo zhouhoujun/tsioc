@@ -1,10 +1,10 @@
-import { IocResolveScope, isToken, isClassType } from '@tsdi/ioc';
+import { IocResolveScope, isToken, isClassType, IActionSetup } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { ResolveServiceInClassChain } from './ResolveServiceInClassChain';
 import { ResolveDecoratorServiceAction } from './ResolveDecoratorServiceAction';
 import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE, CTX_CURR_TARGET_TOKEN, CTX_TARGET_REFS } from '../context-tokens';
 
-export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceContext> {
+export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceContext> implements IActionSetup {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
         if (!ctx.instance && ctx.has(CTX_TARGET_REFS)) {
             let injector = ctx.injector;

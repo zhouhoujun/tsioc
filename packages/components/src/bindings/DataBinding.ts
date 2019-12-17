@@ -1,7 +1,6 @@
-import { IContainer } from '@tsdi/core';
+import { lang, isTypeObject, IInjector } from '@tsdi/ioc';
 import { IBinding } from './IBinding';
 import { AstResolver } from '../AstResolver';
-import { lang, isTypeObject } from '@tsdi/ioc';
 import { observe } from './onChange';
 import { BindEventType } from './Events';
 
@@ -22,12 +21,12 @@ export const pathCkExp = /\./;
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(protected container: IContainer, public source: any, public binding: IBinding, public expression: string) {
+    constructor(protected injector: IInjector, public source: any, public binding: IBinding, public expression: string) {
 
     }
 
     getAstResolver() {
-        return this.container.getInstance(AstResolver);
+        return this.injector.getInstance(AstResolver);
     }
 
     resolveExression(resolver?: AstResolver): T {

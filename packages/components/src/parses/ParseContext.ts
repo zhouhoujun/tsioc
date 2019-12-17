@@ -40,7 +40,7 @@ export class ParseContext extends BuildContext<IBindingParseOption> implements I
 
     value?: any;
 
-    static parse(options: IBindingParseOption, raiseContainer?: ContainerFactory<IContainer>): ParseContext {
+    static parse(options: IBindingParseOption, raiseContainer: ContainerFactory<IContainer>): ParseContext {
         return createRaiseContext(ParseContext, options, raiseContainer);
     }
 }
