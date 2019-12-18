@@ -1,5 +1,6 @@
 import { IActionSetup } from '@tsdi/ioc';
-import { BuildHandles, AnnoationContext } from '../core';
+import { BuildHandles } from './BuildHandles';
+import { AnnoationContext } from '../AnnoationContext';
 import { RegisterModuleScope } from './RegisterModuleScope';
 import { ModuleBuildScope } from './ModuleBuildScope';
 import { ResolveRunnableScope } from './ResolveRunnableScope';

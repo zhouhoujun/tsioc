@@ -1,4 +1,6 @@
-import { IHandleContext, ModuleConfigure } from '../core';
+import { IHandleContext } from '../handles/Handle';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
+
 
 /**
  * component context.

@@ -7,6 +7,8 @@ export * from './services/RootMessageQueue';
 export * from './services/ModuleBuilder';
 export * from './services/StartupService';
 export * from './services/StartupServices';
+export * from './services/IAnnotationService';
+export * from './services/AnnotationService';
 
 // annotations
 export * from './annotations/RunnableConfigure';
@@ -55,8 +57,7 @@ export * from './modules/ModuleConfigure';
 // handles
 export * from './handles/Handle';
 export * from './handles/Handles';
-export * from './handles/BuildHandles';
-export * from './handles/AnnoationHandle';
+
 export * from './handles/IocBuildDecoratorRegisterer';
 export * from './handles/StartupDecoratorRegisterer';
 
@@ -68,10 +69,11 @@ export * from './messages/MessageQueue';
 
 export * from './AnnotationMerger';
 export * from './AnnotationCloner';
-export * from './IAnnotationService';
-export * from './AnnotationService';
 
 // builders
+
+export * from './builder/BuildHandles';
+export * from './builder/AnnoationHandle';
 export * from './builder/ComponentContext';
 export * from './builder/RegisterAnnoationHandle';
 export * from './builder/RegisterModuleRegisterHandle';

@@ -2,12 +2,12 @@ import {
     Singleton, Inject, lang, DecoratorProvider, ClassType,
     TypeReflects, DesignRegisterer, DecoratorScopes
 } from '@tsdi/ioc';
-import { IModuleReflect } from './modules/IModuleReflect';
-import { ModuleConfigure } from './modules/ModuleConfigure';
+import { IModuleReflect } from '../modules/IModuleReflect';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { AnnotationServiceToken, IAnnotationService } from './IAnnotationService';
-import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
-import { AnnotationMerger } from './AnnotationMerger';
-import { AnnotationCloner } from './AnnotationCloner';
+import { AnnoationDesignAction } from '../registers/AnnoationDesignAction';
+import { AnnotationMerger } from '../AnnotationMerger';
+import { AnnotationCloner } from '../AnnotationCloner';
 
 
 /**

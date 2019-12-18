@@ -1,6 +1,6 @@
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
-import { CTX_MODULE_EXPORTS } from '../../context-tokens';
+import { CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ModuleRef } from '../modules/ModuleRef';
 
 export class RegModuleRefAction extends AnnoationAction {

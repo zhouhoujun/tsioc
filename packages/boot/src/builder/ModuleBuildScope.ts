@@ -1,5 +1,5 @@
 import { IActionSetup } from '@tsdi/ioc';
-import { BuildHandles } from '../core';
+import { BuildHandles } from './BuildHandles';
 import { BootContext } from '../BootContext';
 import { ResolveBootHandle } from './ResolveBootHandle';
 import { ResolveTypeHandle } from './ResolveTypeHandle';

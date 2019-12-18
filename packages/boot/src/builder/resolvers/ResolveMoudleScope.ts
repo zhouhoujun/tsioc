@@ -1,5 +1,5 @@
 import { IActionSetup } from '@tsdi/ioc';
-import { BuildHandles } from '../../core';
+import { BuildHandles } from '../BuildHandles';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { BuildContext } from './BuildContext';

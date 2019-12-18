@@ -6,7 +6,7 @@ import { IContainer, ContainerToken, IocExt, TypesRegisterScope, IocExtRegisterS
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import { Message } from './decorators/Message';
-import { AnnotationService } from './AnnotationService';
+import { AnnotationService } from './services/AnnotationService';
 import { MessageContext } from './messages/MessageContext';
 import { MessageQueue } from './messages/MessageQueue';
 import { ModuleInjectLifeScope, DIModuleInjectScope } from './injectors/ModuleInjectLifeScope';

@@ -1,6 +1,7 @@
 import { isBaseType, IActionSetup } from '@tsdi/ioc';
 import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
-import { AnnoationContext, BuildHandles } from '../core';
+import { BuildHandles } from './BuildHandles';
+import { AnnoationContext } from '../AnnoationContext';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
 

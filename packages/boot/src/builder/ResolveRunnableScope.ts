@@ -1,6 +1,6 @@
 import { IActionSetup } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
-import { BuildHandles } from '../core';
+import { BuildHandles } from './BuildHandles';
 import { Startup } from '../runnable/Startup';
 import { RefRunnableHandle } from './RefRunnableHandle';
 

@@ -1,7 +1,7 @@
 import { Injectable, IocRaiseContext, ActionContextOption, isDefined } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { IHandleContext } from '../handles/Handle';
-import { CTX_DATA } from '../../context-tokens';
+import { CTX_DATA } from '../context-tokens';
 
 
 /**

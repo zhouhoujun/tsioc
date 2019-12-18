@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
-import { BuildHandle } from '../core';
+import { BuildHandle } from './BuildHandles';
 
 /**
  * annoation handle.

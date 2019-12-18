@@ -1,7 +1,9 @@
-import { AnnoationHandle, ModuleRegister } from '../core';
+import { isFunction } from '@tsdi/ioc';
+import { AnnoationHandle } from './AnnoationHandle';
+import { ModuleRegister } from '../modules/ModuleRegister';
 import { BootContext } from '../BootContext';
 import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
-import { isFunction } from '@tsdi/ioc';
+
 
 
 export class RegisterModuleRegisterHandle extends AnnoationHandle {

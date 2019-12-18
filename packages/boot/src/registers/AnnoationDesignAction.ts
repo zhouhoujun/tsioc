@@ -1,4 +1,4 @@
-import { IocDesignAction, DesignActionContext, lang, DecoratorProvider, CTX_CURR_DECOR, ActionInjectorToken } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, lang, DecoratorProvider, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { AnnotationMerger } from '../AnnotationMerger';
 import { AnnotationCloner } from '../AnnotationCloner';
 import { IModuleReflect } from '../modules/IModuleReflect';

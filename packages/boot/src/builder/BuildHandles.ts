@@ -1,6 +1,6 @@
 import { isClass, ITypeReflects } from '@tsdi/ioc';
-import { Handle, HandleType, IHandleContext } from './Handle';
-import { Handles } from './Handles';
+import { Handle, HandleType, IHandleContext } from '../handles/Handle';
+import { Handles } from '../handles/Handles';
 
 
 /**

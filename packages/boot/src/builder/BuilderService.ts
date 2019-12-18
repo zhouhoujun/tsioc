@@ -1,7 +1,6 @@
 import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, ActionInjectorToken, IActionInjector } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
-import { BuildHandles, AnnoationContext } from '../core';
 import { IBootApplication } from '../IBootApplication';
 import { ModuleBuilderLifeScope } from './ModuleBuilderLifeScope';
 import { RunnableBuildLifeScope } from './RunnableBuildLifeScope';
@@ -11,6 +10,8 @@ import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ResolveMoudleScope } from './resolvers/ResolveMoudleScope';
 import { IModuleResolveOption, BuildContext } from './resolvers/BuildContext';
 import { IStartup } from '../runnable/Startup';
+import { AnnoationContext } from '../AnnoationContext';
+import { BuildHandles } from './BuildHandles';
 
 
 
