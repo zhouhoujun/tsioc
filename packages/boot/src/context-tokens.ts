@@ -1,5 +1,5 @@
 import { InjectToken, Injector } from '@tsdi/ioc';
-import { ModuleConfigure } from './core/modules/ModuleConfigure';
+import { ModuleConfigure } from './modules/ModuleConfigure';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 
 
