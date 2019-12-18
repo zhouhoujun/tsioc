@@ -21,7 +21,7 @@ import { TemplateParseScope } from './parses/TemplateParseScope';
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
-        let ctx = TemplateContext.parse({decorator: Component.toString(), ...options }, this.container.getFactory());
+        let ctx = TemplateContext.parse(options.injector || this.container, {decorator: Component.toString(), ...options });
         providers.length && ctx.providers.inject(...providers);
         await this.actInjector.get(TemplateParseScope)
             .execute(ctx);

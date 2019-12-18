@@ -14,7 +14,7 @@ export class RegisterModuleRegisterHandle extends AnnoationHandle {
             if (ctx.annoation.baseURL) {
                 injector.registerValue(ProcessRunRootToken, ctx.annoation.baseURL);
             }
-            let regs = ctx.getContainer().getServices({ token: ModuleRegister, target: ctx.module, injector: injector });
+            let regs = ctx.getContainer().getServices(injector, { token: ModuleRegister, target: ctx.module });
             if (regs && regs.length) {
                 await Promise.all(regs.map(reg => reg.register(ctx.annoation)));
             }

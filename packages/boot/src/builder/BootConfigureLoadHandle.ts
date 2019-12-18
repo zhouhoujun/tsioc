@@ -1,7 +1,7 @@
 import { DecoratorProvider, isClass } from '@tsdi/ioc';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
-import { AnnotationMerger } from '../AnnotationMerger';
+import { AnnotationMerger } from '../services/AnnotationMerger';
 import { CTX_APP_CONFIGURE } from '../context-tokens';
 import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
 import { ConfigureManager } from '../annotations/ConfigureManager';

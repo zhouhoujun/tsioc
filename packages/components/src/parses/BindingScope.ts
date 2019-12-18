@@ -39,14 +39,14 @@ export class BindingArrayHandle extends ParseHandle {
         if (ctx.binding.type === Array && isArray(ctx.bindExpression)) {
             let options = ctx.getOptions();
             ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
-                let subCtx = ParseContext.parse({
+                let subCtx = ParseContext.parse(ctx.injector, {
                     module: ctx.module,
                     scope: options.scope,
                     binding: ctx.binding,
                     bindExpression: tp,
                     template: tp,
                     decorator: ctx.decorator
-                }, ctx.getFactory());
+                });
                 await this.actInjector.get(BindingScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
             }));

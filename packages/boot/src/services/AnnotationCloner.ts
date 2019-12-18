@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ModuleConfigure } from './modules/ModuleConfigure';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**
  * annotation cloner.

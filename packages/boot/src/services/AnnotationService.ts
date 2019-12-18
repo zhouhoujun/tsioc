@@ -6,8 +6,8 @@ import { IModuleReflect } from '../modules/IModuleReflect';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { AnnotationServiceToken, IAnnotationService } from './IAnnotationService';
 import { AnnoationDesignAction } from '../registers/AnnoationDesignAction';
-import { AnnotationMerger } from '../AnnotationMerger';
-import { AnnotationCloner } from '../AnnotationCloner';
+import { AnnotationMerger } from './AnnotationMerger';
+import { AnnotationCloner } from './AnnotationCloner';
 
 
 /**

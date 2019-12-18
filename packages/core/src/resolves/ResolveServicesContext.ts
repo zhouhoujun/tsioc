@@ -1,4 +1,4 @@
-import { ClassType, createRaiseContext, ContainerFactory, IInjector } from '@tsdi/ioc';
+import { ClassType, createRaiseContext, IInjector } from '@tsdi/ioc';
 import { ServiceOption, ResolveServiceContext } from './ResolveServiceContext';
 
 /**
@@ -37,13 +37,13 @@ export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, Se
      * parse service resolve context.
      *
      * @static
+     * @param { IInjector } injecor
      * @param {ServicesOption<T>} target
-     * @param {ContainerFactory} raiseContainer
      * @returns {ResolveServicesContext}
      * @memberof ResolveServicesContext
      */
-    static parse<T>(options: ServicesOption<T>, raiseContainer?: ContainerFactory): ResolveServicesContext<T> {
-        return createRaiseContext<ResolveServicesContext>(ResolveServicesContext, options, raiseContainer);
+    static parse<T>(injecor: IInjector, options: ServicesOption<T>): ResolveServicesContext<T> {
+        return createRaiseContext<ResolveServicesContext>(ResolveServicesContext, options, injecor);
     }
 
     get types(): ClassType[] {

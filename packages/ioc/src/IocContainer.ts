@@ -159,13 +159,12 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             if (mgr.has(provide)) {
                 return mgr.get(provide);
             }
-            let ctx = RuntimeActionContext.parse({
+            let ctx = RuntimeActionContext.parse(injector, {
                 tokenKey: provide,
                 targetType: type,
                 singleton: singleton,
-                providers: providers,
-                injector: injector
-            }, this.getFactory());
+                providers: providers
+            });
             this.getInstance<IActionInjector>(actionInjectorKey).get(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
@@ -177,11 +176,10 @@ export class IocContainer extends BaseInjector implements IIocContainer {
 
         (async () => {
             this.getInstance<IActionInjector>(actionInjectorKey).get(DesignLifeScope).register(
-                DesignActionContext.parse({
+                DesignActionContext.parse(injector, {
                     tokenKey: provide,
-                    targetType: type,
-                    injector: injector
-                }, this.getFactory()));
+                    targetType: type
+                }));
         })();
     }
 }

@@ -1,4 +1,4 @@
-import { ContainerFactory, Injectable, Type, InjectToken, createRaiseContext } from '@tsdi/ioc';
+import { ContainerFactory, Injectable, Type, InjectToken, createRaiseContext, IInjector } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { IComponentContext, AnnoationContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
@@ -24,7 +24,7 @@ export class TemplateContext extends AnnoationContext<ITemplateOption> implement
 
     value?: any;
 
-    static parse(options: ITemplateOption, raiseContainer: ContainerFactory<IContainer>): TemplateContext {
-        return createRaiseContext(TemplateContext, options, raiseContainer);
+    static parse(injector: IInjector, options: ITemplateOption): TemplateContext {
+        return createRaiseContext(TemplateContext, options, injector);
     }
 }

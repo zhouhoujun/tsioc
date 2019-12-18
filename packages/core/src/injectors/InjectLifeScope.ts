@@ -23,7 +23,7 @@ export class InjectLifeScope extends LifeScope<InjectActionContext> {
     register(injector: IInjector, ...modules: Modules[]): Type[] {
         let types: Type[] = [];
         modules.forEach(md => {
-            let ctx = InjectActionContext.parse({ module: md, injector: injector }, injector.getFactory());
+            let ctx = InjectActionContext.parse(injector, { module: md });
             this.execute(ctx);
             if (ctx.registered) {
                 types.push(...ctx.registered);

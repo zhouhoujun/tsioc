@@ -1,6 +1,6 @@
 import { Token } from '../types';
-import { ContainerFactory } from '../IIocContainer';
 import { createRaiseContext, IocProvidersContext, IocProvidersOption } from './IocAction';
+import { IInjector } from '../IInjector';
 
 /**
  * resovle action option.
@@ -58,12 +58,12 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
      * create resolve context via options.
      *
      * @static
-     * @param {ResolveActionOption} [options]
-     * @param {ContainerFactory} [raiseContainer]
+     * @param {IInjector} injector
+     * @param {ResolveActionOption} options
      * @returns {ResolveActionContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(options: ResolveActionOption<T>, raiseContainer?: ContainerFactory): ResolveActionContext<T> {
-        return createRaiseContext<ResolveActionContext>(ResolveActionContext, options, raiseContainer);
+    static parse<T>(injector: IInjector, options: ResolveActionOption<T>): ResolveActionContext<T> {
+        return createRaiseContext<ResolveActionContext>(ResolveActionContext, options, injector);
     }
 }

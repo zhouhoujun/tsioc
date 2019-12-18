@@ -29,14 +29,14 @@ export class BindingPropertyHandle extends ResolveHandle {
                         if (binding.bindingType === BindingTypes.dynamic) {
                             ctx.target[binding.name] = expression;
                         } else {
-                            let pctx = ParseContext.parse({
+                            let pctx = ParseContext.parse(ctx.injector, {
                                 module: ctx.module,
                                 scope: options.scope || ctx.target,
                                 bindExpression: expression,
                                 template: options.template,
                                 binding: binding,
                                 decorator: ctx.decorator
-                            }, ctx.getFactory())
+                            });
                             await this.actInjector.get(BindingScope).execute(pctx);
 
                             if (pctx.dataBinding instanceof ParseBinding) {

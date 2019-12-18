@@ -12,7 +12,8 @@ export class ResolveTypeHandle extends BootHandle {
                 template: options.template,
                 annoation: ctx.annoation,
                 decorator: ctx.targetReflect.decorator,
-                providers: ctx.providers
+                providers: ctx.providers,
+                injector: ctx.injector
             });
         }
         if (ctx.target) {

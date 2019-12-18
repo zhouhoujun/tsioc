@@ -1,4 +1,4 @@
-import { isClass, LifeScope, Type, ActionInjector, CTX_CURR_DECOR, IActionSetup } from '@tsdi/ioc';
+import { isClass, LifeScope, Type, ActionInjector, CTX_CURR_DECOR, IActionSetup, IInjector } from '@tsdi/ioc';
 import { InjectAction, InjectActionContext, InjectorRegisterScope, CTX_CURR_TYPE } from '@tsdi/core';
 import { AnnoationContext } from '../AnnoationContext';
 import { CheckAnnoationAction } from './CheckAnnoationAction';
@@ -29,11 +29,11 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> implement
             .use(RegModuleExportsAction);
     }
 
-    register<T>(type: Type<T>, decorator: string): ModuleRef<T> {
-        let ctx = AnnoationContext.parse({
+    register<T>(injector: IInjector, type: Type<T>, decorator: string): ModuleRef<T> {
+        let ctx = AnnoationContext.parse(injector, {
             module: type,
             decorator: decorator
-        }, this.actInjector.getFactory());
+        });
         this.execute(ctx);
         return ctx.has(ModuleRef) ? ctx.get(ModuleRef) as ModuleRef<T> : null;
     }
@@ -75,7 +75,7 @@ export class RegisterDIModuleAction extends InjectAction {
         if (isClass(currType) && currDecor) {
             ctx.get(ActionInjector)
                 .get(ModuleInjectLifeScope)
-                .register(currType, currDecor);
+                .register(ctx.injector, currType, currDecor);
             ctx.registered.push(currType);
         }
         next();

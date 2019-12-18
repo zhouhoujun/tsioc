@@ -16,14 +16,14 @@ export class BindingOutputHandle extends ResolveHandle {
                     let filed = binding.bindingName || binding.name;
                     let expression = options.template ? options.template[filed] : null;
                     if (!isNullOrUndefined(expression)) {
-                        let pctx = ParseContext.parse({
+                        let pctx = ParseContext.parse(ctx.injector, {
                             module: ctx.module,
                             scope: options.scope || ctx.target,
                             bindExpression: expression,
                             template: options.template,
                             binding: binding,
                             decorator: ctx.decorator
-                        }, ctx.getFactory());
+                        });
                         await this.actInjector.get(BindingScopeHandle).execute(pctx);
                         pctx.dataBinding.bind(ctx.target);
                     }

@@ -116,8 +116,29 @@ export class Container extends IocContainer implements IContainer {
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
-        let context = ResolveServiceContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T;
+    /**
+     *  get service or target reference service.
+     *
+     * @template T
+     * @param {(Token<T> | ServiceOption<T>)} target
+     * @param {...ProviderTypes[]} providers
+     * @returns {T}
+     * @memberof Container
+     */
+    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T;
+    getService<T>(injector: any, target: any, ...providers: ProviderTypes[]): T {
+        let injt: IInjector;
+        let tag: Token<T> | ServiceOption<T>;
+        if (isInjector(injector)) {
+            injt = injector;
+            tag = target;
+        } else {
+            injt = this;
+            providers.unshift(target);
+            tag = injector;
+        }
+        let context = ResolveServiceContext.parse(injt, isToken(tag) ? { token: tag } : tag);
         providers.length && context.providers.inject(...providers);
         this.getInstance(ActionInjector)
             .get(ServiceResolveLifeScope)
@@ -134,8 +155,32 @@ export class Container extends IocContainer implements IContainer {
      * @returns {T[]}
      * @memberof Container
      */
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[] {
-        let maps = this.getServiceProviders(target);
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[];
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {...ProviderTypes[]} providers
+     * @returns {T[]} all service instance type of token type.
+     * @memberof IContainer
+     */
+    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[];
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {...ProviderTypes[]} providers
+     * @returns {T[]} all service instance type of token type.
+     * @memberof IContainer
+     */
+    getServices<T>(injector: any, target: any, ...providers: ProviderTypes[]): T[] {
+        if (!isInjector(injector)) {
+            providers.unshift(target);
+        }
+        let maps = this.getServiceProviders(injector, target);
+
         let services = [];
         maps.iterator((fac) => {
             services.push(fac(...providers));
@@ -152,8 +197,27 @@ export class Container extends IocContainer implements IContainer {
      * @returns {Injector}
      * @memberof Container
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IInjector {
-        let context = ResolveServicesContext.parse(isToken(target) ? { token: target } : target, this.getFactory());
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IInjector;
+    /**
+     * get service providers.
+     *
+     * @template T
+     * @param {Token<T>} target
+     * @param {ResolveServicesContext} [ctx]
+     * @returns {Injector}
+     * @memberof Container
+     */
+    getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IInjector;
+    getServiceProviders<T>(arg1: any, arg2?: any): IInjector {
+        let injector: IInjector;
+        let target: Token<T> | ServicesOption<T>;
+        if (isInjector(arg1)) {
+            injector = arg1;
+            target = arg2;
+        } else {
+            target = arg1;
+        }
+        let context = ResolveServicesContext.parse(injector, isToken(target) ? { token: target } : target);
         this.getInstance(ActionInjector)
             .get(ServicesResolveLifeScope)
             .execute(context);

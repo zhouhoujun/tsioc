@@ -7,6 +7,9 @@ export * from './services/RootMessageQueue';
 export * from './services/ModuleBuilder';
 export * from './services/StartupService';
 export * from './services/StartupServices';
+
+export * from './services/AnnotationMerger';
+export * from './services/AnnotationCloner';
 export * from './services/IAnnotationService';
 export * from './services/AnnotationService';
 
@@ -67,11 +70,7 @@ export * from './messages/MessageContext';
 export * from './messages/MessageHandle';
 export * from './messages/MessageQueue';
 
-export * from './AnnotationMerger';
-export * from './AnnotationCloner';
-
 // builders
-
 export * from './builder/BuildHandles';
 export * from './builder/AnnoationHandle';
 export * from './builder/ComponentContext';

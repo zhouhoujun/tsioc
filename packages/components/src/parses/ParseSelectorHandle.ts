@@ -21,7 +21,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     scope: options.scope,
                     parsing: true,
                     template: options.template,
-                    containerFactory: ctx.getFactory(),
+                    injector: ctx.injector,
                     providers: ctx.providers.clone().inject({ provide: TemplateOptionToken, useValue: options })
                 });
         }

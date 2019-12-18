@@ -1,4 +1,4 @@
-import { ActionContextOption, Type, Modules, IocRaiseContext, ContainerFactory, createRaiseContext, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { ActionContextOption, Type, Modules, IocRaiseContext, ContainerFactory, createRaiseContext, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
 
 
 /**
@@ -54,11 +54,12 @@ export class InjectActionContext extends IocRaiseContext<InjectActionOption> {
      * injector action context.
      *
      * @static
+     * @param { IInjector } injecor
      * @param {InjectActionOption} options
      * @returns {InjectActionContext}
      * @memberof InjectorActionContext
      */
-    static parse(options: InjectActionOption, containerFactory: ContainerFactory): InjectActionContext {
-        return createRaiseContext(InjectActionContext, options, containerFactory);
+    static parse(injector: IInjector, options: InjectActionOption): InjectActionContext {
+        return createRaiseContext(InjectActionContext, options, injector);
     }
 }

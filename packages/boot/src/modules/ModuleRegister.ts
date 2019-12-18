@@ -1,6 +1,6 @@
-import { Inject, IocCoreService, Abstract } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
+import { IocCoreService, Abstract } from '@tsdi/ioc';
 import { ModuleConfigure } from './ModuleConfigure';
+import { BootContext } from '../BootContext';
 
 /**
  * register module hook service.
@@ -11,10 +11,7 @@ import { ModuleConfigure } from './ModuleConfigure';
  * @extends {IocCoreService}
  */
 @Abstract()
-export abstract class ModuleRegister extends IocCoreService {
-
-    @Inject(ContainerToken)
-    protected container: IContainer;
+export abstract class ModuleRegister<T extends BootContext = BootContext> extends IocCoreService {
 
     /**
      * register config setting.
@@ -24,6 +21,6 @@ export abstract class ModuleRegister extends IocCoreService {
      * @returns {Promise<void>}
      * @memberof ConfigureRegister
      */
-    abstract register(config: ModuleConfigure): Promise<void>;
+    abstract register(config: ModuleConfigure, ctx?: T): Promise<void>;
 
 }

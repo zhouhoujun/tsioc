@@ -4,7 +4,6 @@ import { ParseHandle, ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
-import { SelectorManager } from '../SelectorManager';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 import { DataBinding } from '../bindings/DataBinding';
 import { BindingDirection } from '../bindings/IBinding';
@@ -93,12 +92,11 @@ export class TranslateExpressionHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
         let options = ctx.getOptions();
         if (!isNullOrUndefined(ctx.bindExpression)) {
-            let tpCtx = TemplateContext.parse({
+            let tpCtx = TemplateContext.parse(ctx.injector, {
                 scope: options.scope,
                 template: ctx.bindExpression,
                 decorator: ctx.decorator,
-                providers: ctx.providers,
-                containerFactory: ctx.getFactory()
+                providers: ctx.providers
             });
             await this.actInjector
                 .get(TemplateParseScope)
@@ -149,8 +147,8 @@ export class TranslateAtrrHandle extends ParseHandle {
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode(selector, {
                     scope: options.scope,
                     template: template,
-                    containerFactory: ctx.getFactory(),
-                    providers: ctx.providers
+                    providers: ctx.providers,
+                    injector: ctx.injector
                 });
             }
         }
@@ -168,7 +166,7 @@ export class AssignBindValueHandle extends ParseHandle {
         if (!isNullOrUndefined(ctx.bindExpression)) {
             let type = ctx.binding.type;
             if (isBaseType(type)) {
-                ctx.value = this.container.getInstance(BaseTypeParser).parse(type, ctx.bindExpression);
+                ctx.value = ctx.get(BaseTypeParser).parse(type, ctx.bindExpression);
             } else if (isClassType(type)) {
                 let ttype = lang.getClass(ctx.bindExpression);
                 if (ctx.reflects.isExtends(ttype, type)) {

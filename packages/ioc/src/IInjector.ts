@@ -136,16 +136,6 @@ export interface IInjector {
      */
     resolve<T>(option: ResolveActionOption<T>, ...providers: ProviderTypes[]): T;
     /**
-     * resolve instance with context.
-     *
-     * @template T
-     * @param {ResolveActionContext<T>} context resolve context.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IIocContainer
-     */
-    resolve<T>(context: ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
-    /**
     * get token implement class type.
     *
     * @template T

@@ -18,10 +18,6 @@ export interface ActionContextOption {
      * @memberof BootOption
      */
     contexts?: ProviderTypes[] | IInjector;
-    /**
-     * injector.
-     */
-    injector?: IInjector;
 }
 
 /**

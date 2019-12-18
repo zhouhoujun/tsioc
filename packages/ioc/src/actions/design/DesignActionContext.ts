@@ -1,6 +1,7 @@
+import { IInjector } from '../../IInjector';
 import { createRaiseContext } from '../IocAction';
 import { RegisterActionContext, RegisterActionOption } from '../RegisterActionContext';
-import { ContainerFactory } from '../../IIocContainer';
+
 
 /**
  * design action option.
@@ -26,13 +27,14 @@ export class DesignActionContext extends RegisterActionContext<DesignActionOptio
      * parse design action context.
      *
      * @static
+     *
+     * @param { IInjector } injecor
      * @param {DesignActionOption} options
-     * @param { ContainerFactory } [raiseContainer]
      * @returns {DesignActionContext}
      * @memberof DesignActionContext
      */
-    static parse(options: DesignActionOption, containerFactory: ContainerFactory): DesignActionContext {
-        return createRaiseContext(DesignActionContext, options, containerFactory);
+    static parse(injecor: IInjector, options: DesignActionOption): DesignActionContext {
+        return createRaiseContext(DesignActionContext, options, injecor);
     }
 
 }

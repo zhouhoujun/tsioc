@@ -81,8 +81,9 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         }
     }
 
-    protected async resolveModule<T>(contextInit: (ctx: BuildContext) => void, target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
-        let rctx = BuildContext.parse({ module: target, ...(options || {}) }, this.container.getFactory());
+    protected async resolveModule<T>(contextInit: (ctx: BuildContext) => void, target: Type<T>, options?: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
+        options = options || {};
+        let rctx = BuildContext.parse(options.injector || this.container, { module: target, ...options });
         providers.length && rctx.providers.inject(...providers);
         if (contextInit) {
             contextInit(rctx);

@@ -10,7 +10,7 @@ import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';
 import { IParameter } from './IParameter';
-import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
+import { ResolveActionOption } from './actions/ResolveActionContext';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
@@ -308,12 +308,12 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * resolve instance with token and param provider via resolve scope.
      *
      * @template T
-     * @param {(Token<T> | ResolveActionOption<T> | ResolveActionContext<T>)} token
+     * @param {(Token<T> | ResolveActionOption<T>)} token
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IocContainer
      */
-    resolve<T>(token: Token<T> | ResolveActionOption<T> | ResolveActionContext<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
         return this.getContainer().getInstance<IActionInjector>(ActionInjectorKey).get(ResolveLifeScope).resolve(this, token, ...providers);
     }
 

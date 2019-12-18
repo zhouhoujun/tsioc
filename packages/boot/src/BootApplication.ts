@@ -38,8 +38,6 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
             } else if (!isClass(target)) {
                 if (target.containerFactory) {
                     container = target.containerFactory();
-                } else if (target.injector) {
-                    container = target.injector.getContainer();
                 }
             }
         }

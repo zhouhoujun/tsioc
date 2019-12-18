@@ -19,7 +19,7 @@ export * from './decorators/NonSerialize';
 export * from './decorators/Vaildate';
 
 
-export * from './components';
+export * from './elements';
 
 // parses
 export * from './parses/ParseContext';
@@ -54,7 +54,6 @@ export * from './registers/RegisterVaildateAction';
 export * from './ComponentLifecycle';
 export * from './RefSelector';
 export * from './NodeSelector';
-export * from './SelectorManager';
 export * from './ComponentAnnotationCloner';
 export * from './IComponentBuilder';
 export * from './ComponentBuilder';

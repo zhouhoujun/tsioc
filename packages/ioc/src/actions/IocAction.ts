@@ -36,8 +36,9 @@ export abstract class IocActionContext extends IocCoreService {
     abstract setOptions(options: ActionContextOption);
 }
 
-export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ctx>, options: ActionContextOption, containerFactory: ContainerFactory): Ctx {
-    let ctx = new CtxType(containerFactory);
+export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ctx>, options: ActionContextOption, injector: IInjector): Ctx {
+    let ctx = new CtxType(injector.getFactory());
+    ctx.set(InjectorToken, injector);
     options && ctx.setOptions(options);
     return ctx;
 }
@@ -78,6 +79,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     get contexts(): IInjector {
         if (!this._context) {
             this._context = this.get(INJECTOR);
+            this._context.unregister(InjectorToken)
         }
         return this._context;
     }
@@ -175,11 +177,6 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
                 this.contexts.inject(...options.contexts);
             }
         }
-        if (isInjector(options.injector)) {
-            this.contexts.registerValue(InjectorToken, options.injector);
-        } else {
-            this.contexts.unregister(InjectorToken);
-        }
         this._options = this._options ? Object.assign(this._options, options) : options;
         this.contexts.registerValue(CTX_OPTIONS, this._options);
     }
@@ -209,7 +206,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * clone contexts.
      */
     clone(options?: T, filter?: (key: Token) => boolean): this {
-        return createRaiseContext(lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} }, this.getFactory());
+        return createRaiseContext(lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} }, this.injector);
     }
 
 }

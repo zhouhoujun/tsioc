@@ -17,7 +17,8 @@ export class ResolveBootHandle extends BootHandle {
                 ctx.bootstrap = await ctx.injector.get(BuilderServiceToken).resolve(bootModule, {
                     scope: options.scope,
                     template: options.template,
-                    providers: ctx.providers
+                    providers: ctx.providers,
+                    injector: ctx.injector
                 });
             } else if (bootModule) {
                 ctx.bootstrap = ctx.injector.get(bootModule, ctx.providers);

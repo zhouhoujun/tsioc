@@ -3,7 +3,7 @@ import { RegisterActionOption, RegisterActionContext } from '../RegisterActionCo
 import { createRaiseContext } from '../IocAction';
 import { CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
 import { ParamProviders } from '../../providers/types';
-import { ContainerFactory } from '../../IIocContainer';
+import { IInjector } from '../../IInjector';
 
 
 /**
@@ -73,12 +73,13 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
      * create register context.
      *
      * @static
+     * @param {IInjector} injector
      * @param {RuntimeActionOption} options
      * @returns {RegisterActionContext}
      * @memberof RegisterActionContext
      */
-    static parse(options: RuntimeActionOption, containerFactory: ContainerFactory): RuntimeActionContext {
-        return createRaiseContext(RuntimeActionContext, options, containerFactory);
+    static parse(injector: IInjector, options: RuntimeActionOption): RuntimeActionContext {
+        return createRaiseContext(RuntimeActionContext, options, injector);
     }
 
     setOptions(options: RuntimeActionOption) {

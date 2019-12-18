@@ -40,11 +40,11 @@ export class ElementsTemplateHandle extends TemplateHandle {
         let options = ctx.getOptions();
         if (isArray(options.template)) {
             ctx.value = await Promise.all(options.template.map(async tp => {
-                let subCtx = TemplateContext.parse({
+                let subCtx = TemplateContext.parse(ctx.injector, {
                     scope: options.scope,
                     template: tp,
                     decorator: ctx.decorator
-                }, ctx.getFactory());
+                });
                 await this.actInjector.get(TemplateParseScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
             }));

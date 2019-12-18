@@ -1,4 +1,4 @@
-import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE, isTypeObject } from '@tsdi/ioc';
+import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE, isTypeObject, IInjector } from '@tsdi/ioc';
 import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';
@@ -250,8 +250,8 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
         return this.getContainer().resolve(ConfigureManager) as ConfigureManager<CFG>;
     }
 
-    static parse(target: Type | BootOption, raiseContainer?: ContainerFactory<IContainer>): BootContext {
-        return createRaiseContext(BootContext, isToken(target) ? { module: target } : target, raiseContainer);
+    static parse(injector: IInjector, target: Type | BootOption): BootContext {
+        return createRaiseContext(BootContext, isToken(target) ? { module: target } : target, injector);
     }
 
     setOptions(options: T) {
