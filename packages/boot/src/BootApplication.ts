@@ -1,12 +1,11 @@
-import { Type, LoadType, isArray, isString, isClass, ActionInjectorToken } from '@tsdi/ioc';
+import { Type, LoadType, isArray, isString, isClass } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
-import { AnnotationServiceToken, StartupDecoratorRegisterer } from './core';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
+import { AnnotationServiceToken } from './IAnnotationService';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BuilderServiceToken } from './builder/IBuilderService';
-import { BootSetup } from './setup';
-import { BootModule } from './core/BootModule';
+import { BootModule } from './BootModule';
 
 
 /**
@@ -50,9 +49,6 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
             container = this.getContainer();
         }
 
-        let actInjector = container.get(ActionInjectorToken);
-        actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector));
-
         container.register(BootModule);
 
         if (!container.has(BootContext)) {
@@ -60,9 +56,6 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         }
 
         container.registerValue(BootApplication, this);
-        if (!container.has(BootSetup)) {
-            container.register(BootSetup);
-        }
 
     }
 

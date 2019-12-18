@@ -1,5 +1,4 @@
-import { Abstract, Inject } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { Abstract, Inject, IInjector, InjectorToken } from '@tsdi/ioc';
 import { RunnableConfigure } from './RunnableConfigure';
 import { BootContext } from '../BootContext';
 
@@ -36,9 +35,6 @@ export abstract class ConfigureRegister<T extends BootContext = BootContext> imp
 
     constructor() {
     }
-
-    @Inject(ContainerToken)
-    protected container: IContainer;
 
     /**
      * register config setting.

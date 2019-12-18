@@ -12,7 +12,7 @@ export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
 
 
 /**
- * container interface.
+ * root container interface.
  *
  * @export
  * @interface IContainer

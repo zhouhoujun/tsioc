@@ -1,7 +1,7 @@
 import { Type, ProviderTypes, isArray, ProviderParser } from '@tsdi/ioc';
 import { AnnoationAction } from './AnnoationAction';
 import { AnnoationContext } from '../AnnoationContext';
-import { CTX_MODULE_EXPORTS } from '../../context-tokens';
+import { CTX_MODULE_EXPORTS } from '../context-tokens';
 
 
 export class RegModuleProvidersAction extends AnnoationAction {

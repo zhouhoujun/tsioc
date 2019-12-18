@@ -5,6 +5,7 @@ import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert, ExpectToken } from './assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
+import { UnitTestContext } from './UnitTestContext';
 
 /**
  * unit test configure register.
@@ -18,18 +19,18 @@ export class UnitTestConfigureRegister extends ConfigureRegister {
     constructor() {
         super();
     }
-    async register(config: UnitTestConfigure): Promise<void> {
+    async register(config: UnitTestConfigure, ctx: UnitTestContext): Promise<void> {
         if (config.debug) {
-            this.container.register(DebugLogAspect);
+            ctx.injector.register(DebugLogAspect);
         }
-        if (!this.container.has(Assert)) {
-            this.container.set(Assert, () => assert);
+        if (!ctx.injector.has(Assert)) {
+            ctx.injector.set(Assert, () => assert);
         }
-        if (!this.container.has(ExpectToken)) {
-            this.container.set(ExpectToken, () => expect);
+        if (!ctx.injector.has(ExpectToken)) {
+            ctx.injector.set(ExpectToken, () => expect);
         }
         if (isArray(config.reporters) && config.reporters.length) {
-            this.container.use(...config.reporters);
+            ctx.getContainer().use(ctx.injector, ...config.reporters);
         }
     }
 }

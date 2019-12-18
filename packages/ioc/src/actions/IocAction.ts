@@ -7,7 +7,7 @@ import { IIocContainer, ContainerFactory, ContainerFactoryToken } from '../IIocC
 import { IocCoreService } from '../IocCoreService';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
-import { IInjector, InjectorToken, InjectorFactory } from '../IInjector';
+import { IInjector, InjectorToken, INJECTOR } from '../IInjector';
 import { isInjector } from '../BaseInjector';
 import { ActionContextOption, Action } from './Action';
 
@@ -77,7 +77,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      */
     get contexts(): IInjector {
         if (!this._context) {
-            this._context = this.get(InjectorFactory);
+            this._context = this.get(INJECTOR);
         }
         return this._context;
     }
@@ -229,7 +229,7 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
      */
     get providers(): IInjector {
         if (!this.has(CTX_PROVIDERS)) {
-            this.set(CTX_PROVIDERS, this.getContainer().get(InjectorFactory));
+            this.set(CTX_PROVIDERS, this.getContainer().get(INJECTOR));
         }
         return this.get(CTX_PROVIDERS);
     }

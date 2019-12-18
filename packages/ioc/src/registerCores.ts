@@ -11,7 +11,7 @@ import { MethodAccessor } from './actions/MethodAccessor';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
-import { InjectorFactory } from './IInjector';
+import { INJECTOR } from './IInjector';
 import { ActionInjectorToken } from './actions/Action';
 
 /**
@@ -24,6 +24,10 @@ export function registerCores(container: IIocContainer) {
     let fac = () => container;
     container.set(IocContainerToken, fac);
     container.registerValue(ContainerFactoryToken, fac);
+    container.registerValue(TypeReflectsToken, new TypeReflects(container), TypeReflects);
+    container.set(INJECTOR, () => new Injector(fac), Injector);
+    container.registerValue(ProviderParser, new ProviderParser(container));
+    container.registerValue(MethodAccessorToken, new MethodAccessor(container), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);
     container.registerValue(ActionInjectorToken, actInjector, ActionInjector);
@@ -32,16 +36,8 @@ export function registerCores(container: IIocContainer) {
     actInjector.registerValue(DesignRegisterer, new DesignRegisterer(actInjector));
     actInjector.registerValue(DecoratorProvider, new DecoratorProvider(container));
 
-    container.registerValue(TypeReflectsToken, new TypeReflects(container), TypeReflects);
-
-    let injFactory = () => new Injector(fac);
-    container.set(Injector, injFactory);
-    container.set(InjectorFactory, injFactory);
-    container.registerValue(ProviderParser, new ProviderParser(container));
-    container.registerValue(MethodAccessorToken, new MethodAccessor(container), MethodAccessor);
-
     // bing action.
-    container.getInstance(ActionInjector)
+    actInjector
         .register(DesignLifeScope)
         .register(RuntimeLifeScope)
         .register(ResolveLifeScope);

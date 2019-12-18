@@ -1,12 +1,11 @@
-import { Singleton, Inject } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
+import { Singleton, Inject, InjectorToken, IInjector } from '@tsdi/ioc';
 import { AstParserToken } from './AstParser';
 
 
 @Singleton()
 export class AstResolver {
 
-    @Inject(ContainerToken) protected container;
+    @Inject(InjectorToken) protected injector: IInjector;
 
     constructor() {
     }
@@ -20,13 +19,13 @@ export class AstResolver {
      * @returns {*}
      * @memberof AstResolver
      */
-    resolve(expression: string, envOptions?: any, container?: IContainer): any {
+    resolve(expression: string, envOptions?: any, injector?: IInjector): any {
         if (!expression) {
             return expression;
         }
-        container = container || this.container;
-        if (container.has(AstParserToken)) {
-            return container.get(AstParserToken).parse(expression).execute(envOptions);
+        injector = injector || this.injector;
+        if (injector.has(AstParserToken)) {
+            return injector.get(AstParserToken).parse(expression).execute(envOptions);
         }
 
         try {

@@ -10,16 +10,16 @@ import { TypeReflects } from './services/TypeReflects';
  */
 export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer');
 /**
- *  container factory.
+ * root container factory.
  */
 export type ContainerFactory<T extends IIocContainer = IIocContainer> = () => T;
 /**
- * container factory token.
+ * root container factory token.
  */
 export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_ContainerFactory');
 
 /**
- * container interface.
+ * root container interface.
  *
  * @export
  * @interface IIocContainer

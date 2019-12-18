@@ -1,5 +1,5 @@
 import { ObjectMap, LoadType, InjectToken } from '@tsdi/ioc';
-import { ModuleConfigure } from '../core';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**
  *  process run root.

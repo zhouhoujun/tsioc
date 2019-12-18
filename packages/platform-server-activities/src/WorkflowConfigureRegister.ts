@@ -8,7 +8,7 @@ export class WorkflowConfigureRegister extends ConfigureRegister {
 
     async register(config: RunnableConfigure): Promise<void> {
         if (config.debug) {
-            this.container.register(DebugLogAspect);
+            this.injector.register(DebugLogAspect);
         }
     }
 }

@@ -1,4 +1,4 @@
-import { IInjector, InjectorToken, InjectorFactory } from './IInjector';
+import { IInjector, InjectorToken, INJECTOR } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, ToInstance, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
@@ -188,7 +188,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {
-            this.registerValue(refToken, this.getContainer().get(InjectorFactory).inject(...providers));
+            this.registerValue(refToken, this.getContainer().get(INJECTOR).inject(...providers));
         }
         return refToken;
     }

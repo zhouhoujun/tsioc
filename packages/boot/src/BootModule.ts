@@ -13,7 +13,13 @@ import { ModuleInjectLifeScope, DIModuleInjectScope } from './injectors/ModuleIn
 import { InjectForAction } from './injectors/InjectForAction';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
 import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
-
+import { Bootstrap } from './decorators/Bootstrap';
+import { BuilderService } from './builder/BuilderService';
+import { ConfigureManager } from './annotations/ConfigureManager';
+import { BaseTypeParser } from './services/BaseTypeParser';
+import { RootMessageQueue } from './services/RootMessageQueue';
+import { StartupServices } from './services/StartupServices';
+import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
 
 
 /**
@@ -39,7 +45,7 @@ export class BootModule {
         container.register(AnnotationService);
         let actInjector = container.get(ActionInjectorToken);
 
-        actInjector
+        actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .register(ModuleInjectLifeScope)
             .register(DIModuleInjectScope)
             .register(InjectForAction)
@@ -64,6 +70,15 @@ export class BootModule {
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.inject(MessageContext, MessageQueue);
+
+
+        container.inject(BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices);
+        actInjector.getInstance(DesignRegisterer)
+            .register(Bootstrap, DecoratorScopes.Class, BindProviderAction)
+            .register(Bootstrap, DecoratorScopes.Injector, DIModuleInjectScope);
+
+        actInjector.getInstance(RuntimeRegisterer)
+            .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
     }
 }

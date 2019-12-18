@@ -3,18 +3,18 @@ import { IModuleLoader, IContainer } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
-import { AnnoationContext, AnnoationOption } from './core';
 import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS } from './context-tokens';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
 import { IComponentContext } from './builder/ComponentContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
+import { AnnoationOption, AnnoationContext } from './AnnoationContext';
 
 
 
 /**
  *  current application boot context token.
  */
-export const ApplicationContextToken = new InjectToken<BootContext>('app__context');
+export const ApplicationContextToken = new InjectToken<BootContext>('APP__CONTEXT');
 
 /**
  * boot options

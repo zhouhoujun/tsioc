@@ -1,4 +1,4 @@
-import { lang, isClass, CTX_CURR_DECOR, InjectorFactory, InjectorToken } from '@tsdi/ioc';
+import { lang, isClass, CTX_CURR_DECOR, INJECTOR, InjectorToken } from '@tsdi/ioc';
 import { InjectAction, InjectActionContext, CTX_CURR_TYPE } from '@tsdi/core';
 import { RegisterForMetadata, RegisterFor } from '../decorators/RegisterFor';
 import { ParentInjectorToken } from '../modules/IModuleReflect';
@@ -18,7 +18,7 @@ export class InjectForAction extends InjectAction {
                         ctx.set(InjectorToken, ctx.getContainer());
                         break;
                     default:
-                        let subInj = ctx.getContainer().get(InjectorFactory);
+                        let subInj = ctx.getContainer().get(INJECTOR);
                         subInj.registerValue(ParentInjectorToken, ctx.injector);
                         ctx.set(InjectorToken, subInj);
                         break;

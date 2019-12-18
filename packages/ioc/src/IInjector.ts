@@ -145,15 +145,15 @@ export interface IInjector {
      * @memberof IIocContainer
      */
     resolve<T>(context: ResolveActionContext<T>, ...providers: ProviderTypes[]): T;
-     /**
-     * get token implement class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {ResoveWay} [resway]
-     * @returns {Type<T>}
-     * @memberof IInjector
-     */
+    /**
+    * get token implement class type.
+    *
+    * @template T
+    * @param {Token<T>} token
+    * @param {ResoveWay} [resway]
+    * @returns {Type<T>}
+    * @memberof IInjector
+    */
     getTokenProvider<T>(token: Token<T>): Type<T>;
     /**
      * set provide.
@@ -295,11 +295,11 @@ export interface IInjector {
 }
 
 /**
- *  injector token.
+ * injector instance token of self.
  */
-export const InjectorToken =  new InjectToken<IInjector>('DI_INJECTOR');
+export const InjectorToken = new InjectToken<IInjector>('DI_INJECTOR');
 
 /**
- *  injector factory token.
+ *  injector token. create new injector.
  */
-export const InjectorFactory =  new InjectToken<IInjector>('DI_INJECTOR_FACTORY');
+export const INJECTOR = new InjectToken<IInjector>('DI_INJECTOR_FACTORY');

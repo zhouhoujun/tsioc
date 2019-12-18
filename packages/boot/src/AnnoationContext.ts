@@ -2,7 +2,7 @@ import { Type, ContainerFactory, createRaiseContext, IocProvidersOption, IocProv
 import { IContainer } from '@tsdi/core';
 import { AnnotationServiceToken } from './IAnnotationService';
 import { RegisterForMetadata, RegisterFor } from './decorators/RegisterFor';
-import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION, CTX_TYPE_REGFOR } from '../context-tokens';
+import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION, CTX_TYPE_REGFOR } from './context-tokens';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { IModuleReflect } from './modules/IModuleReflect';
 
