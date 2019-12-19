@@ -1,5 +1,5 @@
-import { Type, LoadType, isArray, isString, isClass } from '@tsdi/ioc';
-import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
+import { Type, LoadType, isArray, isString, isClass, isInjector } from '@tsdi/ioc';
+import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ContainerToken } from '@tsdi/core';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { AnnotationServiceToken } from './services/IAnnotationService';
@@ -36,8 +36,8 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
                 this.context = target;
                 container = this.context.getContainer();
             } else if (!isClass(target)) {
-                if (target.containerFactory) {
-                    container = target.containerFactory();
+                if (isInjector(target.injector)) {
+                    container = target.injector.get(ContainerToken);
                 }
             }
         }

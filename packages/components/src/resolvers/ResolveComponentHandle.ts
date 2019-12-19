@@ -1,5 +1,5 @@
 import { ResolveHandle, BuildContext } from '@tsdi/boot';
-import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { IComponentReflect } from '../bindings/IComponentReflect';
 
 /**
  * resolve component handle.
@@ -12,6 +12,6 @@ import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
 export abstract class ResolveComponentHandle extends ResolveHandle {
 
     isComponent(ctx: BuildContext): boolean {
-        return !!(<IBindingTypeReflect>ctx.targetReflect).componentDecorator;
+        return (<IComponentReflect>ctx.targetReflect).component;
     }
 }

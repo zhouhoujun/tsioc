@@ -20,7 +20,7 @@ export class DecoratorInjectScope extends InjectScope implements IActionSetup {
     }
 
     getRegisterer(): IocDecoratorRegisterer {
-        return this.actInjector.getInstance(DesignRegisterer).getRegisterer(DecoratorScopes.Injector);
+        return this.actInjector.getInstance(DesignRegisterer).getRegisterer(DecoratorScopes.Inject);
     }
 
     protected getState(ctx: InjectActionContext): ObjectMap<boolean> {

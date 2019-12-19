@@ -104,7 +104,8 @@ export * from './actions/IocRegisterScope';
 export * from './actions/TypeDecorators';
 export * from './actions/ResolveActionContext';
 export * from './actions/IocResolveAction';
-export * from './actions/resolves/IocDefaultResolveAction';
+export * from './actions/resolves/ResolveInInjectorAction';
+export * from './actions/resolves/ResolveInRootAction';
 export * from './actions/IocResolveScope';
 
 // runtime actions

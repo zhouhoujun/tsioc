@@ -50,6 +50,9 @@ export abstract class Action {
  * action setup.
  */
 export interface IActionSetup {
+    /**
+     * setup action.
+     */
     setup();
 }
 

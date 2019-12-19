@@ -12,12 +12,12 @@ export class ResolveTemplateScope extends ResolveHandle {
             ctx.annoation.template = options.template;
         }
         if (ctx.target && ctx.annoation.template) {
-            let pCtx = TemplateContext.parse({
+            let pCtx = TemplateContext.parse(ctx.injector, {
                 scope: ctx.target,
                 template: ctx.annoation.template,
                 annoation: ctx.annoation,
                 decorator: ctx.decorator
-            }, ctx.getFactory());
+            });
             await this.actInjector.get(TemplateParseScope)
                 .execute(pCtx);
             if (!isNullOrUndefined(pCtx.value)) {

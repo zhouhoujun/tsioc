@@ -1,4 +1,4 @@
-import { DIModule, RegFor } from '@tsdi/boot';
+import { DIModule } from '@tsdi/boot';
 import { ParallelExecutor } from '@tsdi/activities';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLogsModule } from '@tsdi/platform-server-logs';
@@ -10,7 +10,7 @@ import { ServerParallelExecutor } from './ServerParallelExecutor';
 
 
 @DIModule({
-    regFor: RegFor.boot,
+    regFor: 'root',
     imports: [
         ServerModule,
         ServerLogsModule,

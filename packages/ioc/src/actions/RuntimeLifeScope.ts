@@ -23,7 +23,6 @@ import { RuntimeAnnoationScope } from './runtime/RuntimeAnnoationScope';
 export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     execute(ctx: RuntimeActionContext, next?: () => void): void {
-        // let raiseContainer = ctx.getContainer();
         if (!ctx.target) {
             super.execute(ctx, next);
         }

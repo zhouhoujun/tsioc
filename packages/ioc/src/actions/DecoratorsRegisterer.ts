@@ -19,9 +19,9 @@ export enum DecoratorScopes {
     BeforeConstructor = 'BeforeConstructor',
     AfterConstructor = 'AfterConstructor',
     /**
-     *  for design injector.
+     *  for inject.
      */
-    Injector = 'Injector'
+    Inject = 'Inject'
 }
 
 /**

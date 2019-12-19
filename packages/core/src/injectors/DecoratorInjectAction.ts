@@ -6,7 +6,7 @@ export class DecoratorInjectAction extends InjectAction {
     execute(ctx: InjectActionContext, next?: () => void): void {
         if (ctx.has(CTX_CURR_DECOR)) {
             let register = ctx.get(ActionInjectorToken);
-            let decRgr = register.getInstance(DesignRegisterer).getRegisterer(DecoratorScopes.Injector);
+            let decRgr = register.getInstance(DesignRegisterer).getRegisterer(DecoratorScopes.Inject);
             let actions = decRgr.getFuncs(register, ctx.get(CTX_CURR_DECOR));
             this.execFuncs(ctx, actions, next);
         } else {

@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { IBinding } from '../bindings/IBinding';
-import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { IComponentReflect } from '../bindings/IComponentReflect';
 
 /**
  * binding cache.
@@ -11,7 +11,7 @@ import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
  */
 @Abstract()
 export abstract class BindingCache {
-    abstract getCache(ref: IBindingTypeReflect): Map<string, IBinding>;
+    abstract getCache(ref: IComponentReflect): Map<string, IBinding>;
 }
 
 /**
@@ -23,11 +23,11 @@ export abstract class BindingCache {
  */
 export class BindingCacheFactory extends BindingCache {
 
-    constructor(private mapGetter: (ref: IBindingTypeReflect) => Map<string, IBinding>) {
+    constructor(private mapGetter: (ref: IComponentReflect) => Map<string, IBinding>) {
         super();
     }
 
-    getCache(ref: IBindingTypeReflect): Map<string, IBinding> {
+    getCache(ref: IComponentReflect): Map<string, IBinding> {
         return this.mapGetter(ref);
     }
 }

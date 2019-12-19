@@ -29,7 +29,7 @@ import { BindingPropertyHandle } from './resolvers/BindingPropertyHandle';
 import { ModuleAfterInitHandle } from './resolvers/ModuleAfterInitHandle';
 import { ResolveTemplateScope } from './resolvers/ResolveTemplateScope';
 import { ValifyTeamplateHandle } from './resolvers/ValifyTeamplateHandle';
-import { BindingTemplateHandle } from './resolvers/BindingTemplateHandle';
+import { BindingTemplateRefHandle } from './resolvers/BindingTemplateRefHandle';
 import { ModuleAfterContentInitHandle } from './resolvers/ModuleAfterContentInitHandle';
 import { BindingOutputHandle } from './resolvers/BindingOutputHandle';
 import { BootTemplateHandle } from './resolvers/BootTemplateHandle';
@@ -94,7 +94,7 @@ export class ComponentsModule {
             .use(ModuleAfterInitHandle)
             .use(ResolveTemplateScope)
             .use(ValifyTeamplateHandle)
-            .use(BindingTemplateHandle)
+            .use(BindingTemplateRefHandle)
             .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
 

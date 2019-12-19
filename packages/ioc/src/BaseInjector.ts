@@ -79,12 +79,6 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     abstract getFactory<T extends IIocContainer>(): ContainerFactory<T>;
 
     /**
-     * get container.
-     */
-    getContainer<T extends IIocContainer>(): T {
-        return this.getFactory()() as T;
-    }
-    /**
      * register type.
      * @abstract
      * @template T
@@ -188,7 +182,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {
-            this.registerValue(refToken, this.getContainer().get(INJECTOR).inject(...providers));
+            this.registerValue(refToken, this.get(INJECTOR).inject(...providers));
         }
         return refToken;
     }
@@ -301,7 +295,11 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
-        return this.factories.has(key) ? this.factories.get(key)(...providers) : this.getContainer().getInstance(key);
+        return this.factories.has(key) ? this.factories.get(key)(...providers) : this.tryGetInRoot(key, providers);
+    }
+
+    protected tryGetInRoot<T>(key: SymbolType<T>, providers: ProviderTypes[]): T {
+        return null;
     }
 
     /**
@@ -314,7 +312,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
-        return this.getContainer().getInstance<IActionInjector>(ActionInjectorKey).get(ResolveLifeScope).resolve(this, token, ...providers);
+        return this.getInstance<IActionInjector>(ActionInjectorKey).get(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**

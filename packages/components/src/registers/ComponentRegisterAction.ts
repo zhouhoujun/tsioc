@@ -1,6 +1,6 @@
-import { IocDesignAction, DesignActionContext, ProviderTypes, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
-import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { IComponentReflect } from '../bindings/IComponentReflect';
 
 const attrExp = /^\[\w+\]$/;
 /**
@@ -14,8 +14,9 @@ export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let currDecor = ctx.get(CTX_CURR_DECOR);
         let metas = ctx.reflects.getMetadata<ModuleConfigure>(currDecor, ctx.targetType);
-        let reflects = ctx.targetReflect as IBindingTypeReflect;
-        reflects.componentDecorator = currDecor;
+        let reflects = ctx.targetReflect as IComponentReflect;
+        reflects.decorator = currDecor;
+        reflects.component = true;
         metas.forEach(meta => {
             if (!meta.selector) {
                 return;
@@ -26,7 +27,7 @@ export class ComponentRegisterAction extends IocDesignAction {
                     if (attrExp.test(sel)) {
                         reflects.attrSelector = sel;
                     } else {
-                        reflects.componentSelector = sel;
+                        reflects.selector = sel;
                     }
                     // mgr.set(sel, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
                 })
@@ -34,7 +35,7 @@ export class ComponentRegisterAction extends IocDesignAction {
                 if (attrExp.test(meta.selector)) {
                     reflects.attrSelector = meta.selector;
                 } else {
-                    reflects.componentSelector = meta.selector;
+                    reflects.selector = meta.selector;
                 }
                 // mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
             }

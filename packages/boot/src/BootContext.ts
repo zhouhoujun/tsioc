@@ -1,5 +1,5 @@
-import { LoadType, InjectToken, Type, Injectable, ContainerFactory, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE, isTypeObject, IInjector } from '@tsdi/ioc';
-import { IModuleLoader, IContainer } from '@tsdi/core';
+import { LoadType, InjectToken, Type, Injectable, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE, isTypeObject, IInjector } from '@tsdi/ioc';
+import { IModuleLoader } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
@@ -30,7 +30,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     baseURL?: string;
-
     /**
      * module loader
      *
@@ -38,7 +37,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     loader?: IModuleLoader;
-
     /**
      * custom configures
      *
@@ -54,7 +52,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     target?: any;
-
     /**
      * bootstrap instance.
      *
@@ -62,7 +59,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     bootstrap?: any;
-
     /**
      * render host container.
      *
@@ -84,7 +80,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOption
      */
     template?: any;
-
     /**
      * boot run env args.
      *
@@ -92,7 +87,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     args?: string[];
-
     /**
      *  custom boot data of `BuildOptions`
      *
@@ -100,7 +94,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     data?: any;
-
     /**
      * auto run runnable or not.
      *
@@ -108,7 +101,6 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     autorun?: boolean;
-
     /**
      * boot dependencies.
      *
@@ -116,14 +108,10 @@ export interface BootOption extends AnnoationOption {
      * @memberof BootOptions
      */
     deps?: LoadType[];
-
     /**
-     * raise contianer.
-     *
-     * @type {ContainerFactory}
-     * @memberof IModuleResolveOption
+     * injector.
      */
-    containerFactory?: ContainerFactory<IContainer>;
+    injector?: IInjector;
 }
 
 /**

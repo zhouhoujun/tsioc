@@ -15,11 +15,11 @@ export class BindProviderAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void) {
         let tgReflect = ctx.targetReflect;
         let injector = ctx.injector;
-        let currDecoractor = ctx.get(CTX_CURR_DECOR);
+        let currDecor = ctx.get(CTX_CURR_DECOR);
         if (!tgReflect.decorator) {
-            tgReflect.decorator = currDecoractor;
+            tgReflect.decorator = currDecor;
         }
-        let metadatas = ctx.reflects.getMetadata<ClassMetadata>(currDecoractor, ctx.targetType);
+        let metadatas = ctx.reflects.getMetadata<ClassMetadata>(currDecor, ctx.targetType);
         metadatas.forEach(anno => {
             // bind all provider.
             if (!anno) {

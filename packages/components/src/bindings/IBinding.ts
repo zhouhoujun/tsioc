@@ -24,7 +24,13 @@ export enum BindingTypes {
  * @enum {number}
  */
 export enum BindingDirection {
+    /**
+     * input binding.
+     */
     input = 1,
+    /**
+     * output binding.
+     */
     output
 }
 

@@ -1,11 +1,11 @@
-import { DIModule, RegFor } from '@tsdi/boot';
+import { DIModule } from '@tsdi/boot';
 import { BrowserModule } from '@tsdi/platform-browser';
 import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 import { TaskLogAspect } from './aop/TaskLogAspect';
 import { RunnerLogAspect } from './aop/RunnerLogAspect';
 
 @DIModule({
-    regFor: RegFor.boot,
+    regFor: 'root',
     imports: [
         BrowserModule,
         TaskLogAspect,

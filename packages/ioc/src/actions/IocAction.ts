@@ -3,14 +3,13 @@ import { lang, isArray } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
 import { ProviderTypes } from '../providers/types';
-import { IIocContainer, ContainerFactory } from '../IIocContainer';
+import { IIocContainer, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, InjectorToken, INJECTOR } from '../IInjector';
 import { isInjector } from '../BaseInjector';
 import { ActionContextOption, Action } from './Action';
-import { InjectToken } from '../InjectToken';
 
 /**
  * ioc action context.
@@ -53,9 +52,11 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
 export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
     private _injector: IInjector;
+    private containerFactory: ContainerFactory<any>;
     constructor(@Inject(InjectorToken) injector: IInjector) {
         super();
         this._injector = injector;
+        this.containerFactory = injector.get(ContainerFactoryToken);
     }
 
     get injector(): IInjector {
@@ -148,7 +149,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @memberof IocRasieContext
      */
     getFactory(): ContainerFactory<TC> {
-        return this.injector.getFactory();
+        return this.containerFactory;
     }
 
     /**
@@ -157,7 +158,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @memberof ResovleContext
      */
     getContainer(): TC {
-        return this.injector.getContainer() as TC;
+        return this.containerFactory();
     }
 
     protected _options: T;

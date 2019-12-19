@@ -3,7 +3,9 @@ import { Task, TemplateOption, Src } from '@tsdi/activities';
 import { NodeExpression, NodeActivity, NodeActivityContext } from '../core';
 import { CompilerOptions } from 'typescript';
 
-
+/**
+ * tsc build option.
+ */
 export interface TscBuilderOption extends TemplateOption {
     /**
      * tsconfig.

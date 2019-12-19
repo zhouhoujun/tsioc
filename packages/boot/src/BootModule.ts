@@ -59,7 +59,7 @@ export class BootModule {
             .useBefore(InjectForAction);
 
         actInjector.getInstance(DesignRegisterer)
-            .register(DIModule, DecoratorScopes.Injector, DIModuleInjectScope)
+            .register(DIModule, DecoratorScopes.Inject, DIModuleInjectScope)
             .register(Annotation, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
             .register(DIModule, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
             .register(Message, DecoratorScopes.Class, BindProviderAction, IocAutorunAction, MessageRegisterAction);
@@ -75,7 +75,7 @@ export class BootModule {
         container.inject(BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices);
         actInjector.getInstance(DesignRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, BindProviderAction)
-            .register(Bootstrap, DecoratorScopes.Injector, DIModuleInjectScope);
+            .register(Bootstrap, DecoratorScopes.Inject, DIModuleInjectScope);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

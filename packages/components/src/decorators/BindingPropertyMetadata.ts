@@ -9,9 +9,8 @@ import { BindingTypes, BindingDirection } from '../bindings/IBinding';
  * @extends {ParamPropMetadata}
  */
 export interface BindingPropertyMetadata extends ParamPropMetadata {
-
     /**
-     * binding name.s
+     * binding name.
      *
      * @type {string}
      * @memberof BindingPropertyMetadata

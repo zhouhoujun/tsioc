@@ -51,7 +51,7 @@ export class RootViewRef<T> extends ViewRef {
 
 
 
-export class ElementRef<T extends any = any> {
+export class ElementRef<T = any> {
     constructor(public nativeElement: T) {
 
     }
@@ -64,10 +64,10 @@ export class IComponentRef<T> {
     readonly componentType: Type<T>;
 }
 
-export const APP_COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef<any>>>('APP_COMPONENT_REFS');
+export const APP_COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef>>('APP_COMPONENT_REFS');
 
 
-export class ComponentRef<T> implements IComponentRef<T> {
+export class ComponentRef<T = any> implements IComponentRef<T> {
     private destroyCbs: (() => void)[] = [];
     get hostView(): ViewRef {
         return this.context.get(ViewRef);

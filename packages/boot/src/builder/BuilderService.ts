@@ -1,4 +1,7 @@
-import { IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes, isFunction, isString, TypeReflects, isBaseObject, ActionInjectorToken, IActionInjector } from '@tsdi/ioc';
+import {
+    IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes,
+    isFunction, isString, TypeReflects, isBaseObject, ActionInjectorToken, IActionInjector
+} from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
@@ -29,14 +32,11 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     @Inject(ContainerToken)
     protected container: IContainer;
 
-    @Inject(ActionInjectorToken)
-    protected actInjector: IActionInjector;
-
     @Inject()
     protected reflects: TypeReflects;
 
     setup() {
-        this.actInjector
+        this.reflects.getActionInjector()
             .register(ResolveMoudleScope)
             .register(ModuleBuilderLifeScope)
             .register(RunnableBuildLifeScope)
@@ -88,7 +88,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         if (contextInit) {
             contextInit(rctx);
         }
-        await this.actInjector.get(ResolveMoudleScope)
+        await this.reflects.getActionInjector().get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
     }
@@ -108,7 +108,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     build<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope<T>(null, this.actInjector.get(ModuleBuilderLifeScope), target, ...args);
+        return this.execLifeScope<T>(null, this.reflects.getActionInjector().get(ModuleBuilderLifeScope), target, ...args);
     }
 
     /**
@@ -123,7 +123,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     async buildStartup<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>> {
         let ctx = await this.execLifeScope(ctx => {
             ctx.getOptions().autorun = false
-        }, this.actInjector.get(RunnableBuildLifeScope), target, ...args);
+        }, this.reflects.getActionInjector().get(RunnableBuildLifeScope), target, ...args);
         return ctx.runnable;
     }
 
@@ -151,7 +151,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     run<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope<T, Topt>(null, this.actInjector.get(RunnableBuildLifeScope), target, ...args);
+        return this.execLifeScope<T, Topt>(null, this.reflects.getActionInjector().get(RunnableBuildLifeScope), target, ...args);
     }
 
 
@@ -181,7 +181,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                     opt.contextInit(ctx as T);
                 }
             },
-            this.actInjector.get(BootLifeScope),
+            this.reflects.getActionInjector().get(BootLifeScope),
             target,
             ...args);
 
@@ -208,7 +208,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                     application.onContextInit(ctx);
                 }
             },
-            this.actInjector.get(BootLifeScope),
+            this.reflects.getActionInjector().get(BootLifeScope),
             application.target,
             ...args);
     }

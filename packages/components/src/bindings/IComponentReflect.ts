@@ -8,21 +8,20 @@ import { IBinding, IPropertyVaildate } from './IBinding';
  * @interface IBindingTypeReflect
  * @extends {ITypeReflect}
  */
-export interface IBindingTypeReflect extends ITypeReflect {
-
+export interface IComponentReflect extends ITypeReflect {
     /**
-     * component decorator.
+     * the type is component or not.
      */
-    componentDecorator?: string;
+    component?: boolean;
     /**
      * component selector.
      */
-    componentSelector?: string;
+    selector?: string;
+    attrSelector?: string;
     /**
      * component select key.
      */
     selectKey?: string;
-    attrSelector?: string;
     /**
      * property input binding metadata.
      *

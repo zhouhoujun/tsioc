@@ -1,15 +1,15 @@
-import { isClass } from '../../utils/lang';
+import { isClass, isNullOrUndefined } from '../../utils/lang';
 import { IocResolveAction } from '../IocResolveAction';
 import { ResolveActionContext } from '../ResolveActionContext';
 
-export class IocDefaultResolveAction extends IocResolveAction {
+export class ResolveInInjectorAction extends IocResolveAction {
     execute(ctx: ResolveActionContext, next: () => void): void {
         let injector = ctx.injector;
-        if (!ctx.instance && injector.has(ctx.token)) {
+        if (!isNullOrUndefined(ctx.instance) && injector.has(ctx.token)) {
             ctx.instance = injector.get(ctx.token, ctx.providers);
         }
 
-        if (!ctx.instance) {
+        if (isNullOrUndefined(ctx.instance)) {
             next();
         }
 

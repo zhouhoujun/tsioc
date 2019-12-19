@@ -1,7 +1,10 @@
-import { Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString, isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider } from '@tsdi/ioc';
+import {
+    Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString,
+    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider
+} from '@tsdi/ioc';
 import { BuilderService, IModuleResolveOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
-import { IBindingTypeReflect } from './bindings/IBindingTypeReflect';
+import { IComponentReflect } from './bindings/IComponentReflect';
 import { RefSelector } from './RefSelector';
 import { APP_COMPONENT_REFS } from './ComponentRef';
 import { Component } from './decorators/Component';
@@ -21,9 +24,9 @@ import { TemplateParseScope } from './parses/TemplateParseScope';
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
-        let ctx = TemplateContext.parse(options.injector || this.container, {decorator: Component.toString(), ...options });
+        let ctx = TemplateContext.parse(options.injector || this.container, { decorator: Component.toString(), ...options });
         providers.length && ctx.providers.inject(...providers);
-        await this.actInjector.get(TemplateParseScope)
+        await this.reflects.getActionInjector().get(TemplateParseScope)
             .execute(ctx);
         return ctx.value;
     }
@@ -49,11 +52,11 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         } else if (isObject(component)) {
             let reflects = this.reflects;
             let compClass = lang.getClass(component);
-            let refs = reflects.get(compClass) as IBindingTypeReflect;
-            if (refs && refs.componentSelector) {
+            let refs = reflects.get(compClass) as IComponentReflect;
+            if (refs && refs.selector) {
                 let json = {};
-                let refselector = this.actInjector.getInstance(DecoratorProvider).resolve(refs.componentDecorator, RefSelector);
-                json[refselector.getComponentSelector()] = refs.componentSelector;
+                let refselector = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(refs.decorator, RefSelector);
+                json[refselector.getComponentSelector()] = refs.selector;
                 refs.propInBindings.forEach((v, key) => {
                     if (reflects.hasMetadata(NonSerialize, compClass, key, 'property')) {
                         return;

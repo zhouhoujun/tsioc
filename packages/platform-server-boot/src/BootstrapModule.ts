@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RegFor, RunnableConfigure } from '@tsdi/boot';
+import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, RunnableConfigure } from '@tsdi/boot';
 import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 
@@ -50,7 +50,7 @@ export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> 
  * @class ServerBootstrapModule
  */
 @DIModule({
-    regFor: RegFor.boot,
+    regFor: 'root',
     imports: [
         ServerModule,
         ConfigureFileLoader

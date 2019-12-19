@@ -1,6 +1,6 @@
 import { DecoratorProvider } from '@tsdi/ioc';
 import { ResolveHandle, BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { IComponentReflect } from '../bindings/IComponentReflect';
 import { RefSelector } from '../RefSelector';
 import { ComponentRef } from '../ComponentRef';
 
@@ -11,10 +11,10 @@ import { ComponentRef } from '../ComponentRef';
  * @class BindingTemplateHandle
  * @extends {ResolveHandle}
  */
-export class BindingTemplateHandle extends ResolveHandle {
+export class BindingTemplateRefHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.target && ctx.has(ComponentRef)) {
-            let ref = ctx.targetReflect as IBindingTypeReflect;
+            let ref = ctx.targetReflect as IComponentReflect;
             if (ref && ref.propRefChildBindings) {
                 let dpr = this.actInjector.getInstance(DecoratorProvider);
                 if (dpr.has(ctx.decorator, RefSelector)) {

@@ -2,7 +2,7 @@
 export * from './bindings/IBinding';
 export * from './bindings/onChange';
 export * from './bindings/DataBinding';
-export * from './bindings/IBindingTypeReflect';
+export * from './bindings/IComponentReflect';
 export * from './bindings/EventBinding';
 export * from './bindings/OneWayBinding';
 export * from './bindings/TwoWayBinding';
@@ -36,7 +36,7 @@ export * from './parses/TranslateSelectorScope';
 export * from './resolvers/BindingPropertyHandle';
 export * from './resolvers/BindingOutputHandle';
 export * from './resolvers/ValifyTeamplateHandle';
-export * from './resolvers/BindingTemplateHandle';
+export * from './resolvers/BindingTemplateRefHandle';
 export * from './resolvers/ModuleInitHandle';
 export * from './resolvers/ModuleAfterInitHandle';
 export * from './resolvers/ModuleBeforeInitHandle';

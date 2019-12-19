@@ -1,6 +1,6 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { ResolveHandle, BuildContext } from '@tsdi/boot';
-import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { IComponentReflect } from '../bindings/IComponentReflect';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScopeHandle } from '../parses/BindingValueScope';
 
@@ -8,7 +8,7 @@ import { BindingScopeHandle } from '../parses/BindingValueScope';
 export class BindingOutputHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.target) {
-            let ref = ctx.targetReflect as IBindingTypeReflect;
+            let ref = ctx.targetReflect as IComponentReflect;
             if (ref && ref.propOutBindings) {
                 let options = ctx.getOptions();
                 await Promise.all(Array.from(ref.propOutBindings.keys()).map(async n => {

@@ -1,5 +1,6 @@
 import { ResolveActionContext } from './ResolveActionContext';
-import { IocDefaultResolveAction } from './resolves/IocDefaultResolveAction';
+import { ResolveInInjectorAction } from './resolves/ResolveInInjectorAction';
+import { ResolveInRootAction } from './resolves/ResolveInRootAction';
 import { ActionScope } from './ActionScope';
 
 
@@ -23,6 +24,7 @@ export class IocResolveScope<T extends ResolveActionContext = ResolveActionConte
     }
 
     setup() {
-        this.use(IocDefaultResolveAction);
+        this.use(ResolveInInjectorAction)
+            .use(ResolveInRootAction);
     }
 }

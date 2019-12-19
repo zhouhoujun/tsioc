@@ -147,13 +147,12 @@ export class MethodAccessor implements IMethodAccessor {
      */
     getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): IParameter[];
     getParameters<T>(injector: IInjector, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
-        let ctx = RuntimeActionContext.parse({
+        let ctx = RuntimeActionContext.parse(injector, {
             targetType: type,
             target: instance,
-            injector: injector,
             propertyKey: propertyKey,
-        }, injector.getFactory());
-        injector.getContainer().getInstance<IActionInjector>(ActionInjectorKey).get(RuntimeParamScope).execute(ctx);
+        });
+        injector.getInstance<IActionInjector>(ActionInjectorKey).get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
     }

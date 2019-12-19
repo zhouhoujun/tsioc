@@ -39,6 +39,5 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
         }
 
         target[field] = this.resolveExression();
-
     }
 }

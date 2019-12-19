@@ -1,5 +1,5 @@
 import { Token, ObjectMap, lang } from '@tsdi/ioc';
-import { DIModule, RegFor } from '@tsdi/boot';
+import { DIModule } from '@tsdi/boot';
 import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLogsModule } from '@tsdi/platform-server-logs';
@@ -7,7 +7,6 @@ import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import chalk from 'chalk';
 
 @DIModule({
-    regFor: RegFor.boot,
     imports: [
         ServerModule,
         ServerBootstrapModule,

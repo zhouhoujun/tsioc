@@ -65,7 +65,6 @@ export namespace observe {
             propName = property;
         }
 
-
         if (!defines.has(target) || !defines.get(target)[propName]) {
             let descriptor = descriptors[propName];
             let value = Reflect.get(target, propName);

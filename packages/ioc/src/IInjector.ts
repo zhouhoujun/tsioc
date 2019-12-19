@@ -2,8 +2,7 @@ import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
-import { ContainerFactory, IIocContainer } from './IIocContainer';
-import { ResolveActionOption, ResolveActionContext } from './actions/ResolveActionContext';
+import { ResolveActionOption } from './actions/ResolveActionContext';
 import { InjectReference } from './InjectReference';
 
 /**
@@ -28,14 +27,6 @@ export interface IInjector {
      * values.
      */
     values(): InstanceFactory[];
-    /**
-     * get root container factory.
-     */
-    getFactory<T extends IIocContainer>(): ContainerFactory<T>;
-    /**
-     * get root container.
-     */
-    getContainer<T extends IIocContainer>(): T;
     /**
      * get token.
      *
@@ -85,7 +76,7 @@ export interface IInjector {
      */
     has<T>(key: Token<T>, alias: string): boolean;
     /**
-     * get token factory resolve instace in current container.
+     * get token instace in current injector or root container.
      *
      * @template T
      * @param {Token<T>} token
@@ -95,7 +86,7 @@ export interface IInjector {
      */
     get<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
     /**
-     * get token factory resolve instace in current container.
+     * get token instace in current injector or root container.
      *
      * @template T
      * @param {Token<T>} token
@@ -106,7 +97,7 @@ export interface IInjector {
      */
     get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
     /**
-     * get instance
+     * get token instance in current injector or root container.
      *
      * @template T
      * @param {SymbolType<T>} key
@@ -116,7 +107,7 @@ export interface IInjector {
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
     /**
-     * resolve instance with token and param provider.
+     * resolve token instance with token and param provider.
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
@@ -126,7 +117,7 @@ export interface IInjector {
      */
     resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
     /**
-     * resolve instance with token and param provider.
+     * resolve token instance with token and param provider.
      *
      * @template T
      * @param {ResolveActionOption<T>} option  resolve option

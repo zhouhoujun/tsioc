@@ -2,7 +2,7 @@ import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
 import { BuildContext, ResolveHandle } from '@tsdi/boot';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
-import { IBindingTypeReflect } from '../bindings/IBindingTypeReflect';
+import { IComponentReflect } from '../bindings/IComponentReflect';
 import { BindingTypes } from '../bindings/IBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { DataBinding } from '../bindings/DataBinding';
@@ -18,7 +18,7 @@ import { DataBinding } from '../bindings/DataBinding';
 export class BindingPropertyHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         if (ctx.target) {
-            let ref = ctx.targetReflect as IBindingTypeReflect;
+            let ref = ctx.targetReflect as IComponentReflect;
             if (ref && ref.propInBindings) {
                 let options = ctx.getOptions();
                 await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {

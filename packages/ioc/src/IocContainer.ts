@@ -4,7 +4,7 @@ import { Type, Token, Factory, SymbolType, ToInstance } from './types';
 import { isClass, isFunction, isSymbol, isString, isDefined } from './utils/lang';
 import { Registration } from './Registration';
 import { registerCores } from './registerCores';
-import { ParamProviders, ProviderTypes } from './providers/types';
+import { ParamProviders } from './providers/types';
 import { TypeReflects } from './services/TypeReflects';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { RuntimeActionContext } from './actions/runtime/RuntimeActionContext';
@@ -49,15 +49,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
         return this.getInstance(factoryToken) as ContainerFactory<T>;
-    }
-
-    getContainer<T extends IIocContainer>(): T {
-        return this as IIocContainer as T;
-    }
-
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
-        let factory = this.factories.get(key);
-        return factory ? factory(...providers) : null;
     }
 
     /**
