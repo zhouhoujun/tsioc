@@ -79,7 +79,7 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
      * @memberof RegisterActionContext
      */
     static parse(injector: IInjector, options: RuntimeActionOption): RuntimeActionContext {
-        return createRaiseContext(RuntimeActionContext, options, injector);
+        return createRaiseContext(injector, RuntimeActionContext, options);
     }
 
     setOptions(options: RuntimeActionOption) {

@@ -3,13 +3,14 @@ import { lang, isArray } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
 import { ProviderTypes } from '../providers/types';
-import { IIocContainer, ContainerFactory, ContainerFactoryToken } from '../IIocContainer';
+import { IIocContainer, ContainerFactory } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, InjectorToken, INJECTOR } from '../IInjector';
 import { isInjector } from '../BaseInjector';
 import { ActionContextOption, Action } from './Action';
+import { InjectToken } from '../InjectToken';
 
 /**
  * ioc action context.
@@ -36,13 +37,11 @@ export abstract class IocActionContext extends IocCoreService {
     abstract setOptions(options: ActionContextOption);
 }
 
-export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ctx>, options: ActionContextOption, injector: IInjector): Ctx {
-    let ctx = new CtxType(injector.getFactory());
-    ctx.set(InjectorToken, injector);
+export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjector, CtxType: Type<Ctx>, options: ActionContextOption): Ctx {
+    let ctx = new CtxType(injector);
     options && ctx.setOptions(options);
     return ctx;
 }
-
 
 /**
  * context with raise container.
@@ -53,20 +52,21 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(CtxType: Type<Ct
  */
 export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
-    constructor(@Inject(ContainerFactoryToken) private containerFactory: ContainerFactory<TC>) {
+    private _injector: IInjector;
+    constructor(@Inject(InjectorToken) injector: IInjector) {
         super();
-
+        this._injector = injector;
     }
 
     get injector(): IInjector {
-        return this.get(InjectorToken) || this.getContainer();
+        return this._injector;
     }
 
     /**
      * get type reflects.
      */
     get reflects(): ITypeReflects {
-        return this.get(TypeReflectsToken);
+        return this.injector.get(TypeReflectsToken);
     }
 
     private _context: IInjector;
@@ -78,8 +78,8 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      */
     get contexts(): IInjector {
         if (!this._context) {
-            this._context = this.get(INJECTOR);
-            this._context.unregister(InjectorToken)
+            this._context = this.injector.get(INJECTOR);
+            this._context.registerValue(InjectorToken, this._injector);
         }
         return this._context;
     }
@@ -132,6 +132,9 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         if (providers.length === 2 && isToken(providers[0])) {
             let provde = providers[0];
             let value = providers[1];
+            if (provde === InjectorToken) {
+                this._injector = value;
+            }
             this.contexts.registerValue(provde, value);
         } else {
             this.contexts.inject(...providers);
@@ -145,7 +148,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @memberof IocRasieContext
      */
     getFactory(): ContainerFactory<TC> {
-        return this.containerFactory;
+        return this.injector.getFactory();
     }
 
     /**
@@ -154,7 +157,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @memberof ResovleContext
      */
     getContainer(): TC {
-        return this.containerFactory() as TC;
+        return this.injector.getContainer() as TC;
     }
 
     protected _options: T;
@@ -173,6 +176,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
                 } else {
                     this._context = options.contexts;
                 }
+                this._context.registerValue(InjectorToken, this._injector);
             } else if (isArray(options.contexts)) {
                 this.contexts.inject(...options.contexts);
             }
@@ -206,7 +210,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * clone contexts.
      */
     clone(options?: T, filter?: (key: Token) => boolean): this {
-        return createRaiseContext(lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} }, this.injector);
+        return createRaiseContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} });
     }
 
 }

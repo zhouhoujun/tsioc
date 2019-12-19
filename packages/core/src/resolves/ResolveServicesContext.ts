@@ -43,7 +43,7 @@ export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, Se
      * @memberof ResolveServicesContext
      */
     static parse<T>(injecor: IInjector, options: ServicesOption<T>): ResolveServicesContext<T> {
-        return createRaiseContext<ResolveServicesContext>(ResolveServicesContext, options, injecor);
+        return createRaiseContext<ResolveServicesContext>(injecor, ResolveServicesContext, options);
     }
 
     get types(): ClassType[] {

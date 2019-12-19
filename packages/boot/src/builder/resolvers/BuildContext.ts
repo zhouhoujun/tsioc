@@ -41,6 +41,6 @@ export class BuildContext<T extends IModuleResolveOption = IModuleResolveOption>
 
 
     static parse(injector: IInjector, options: IModuleResolveOption): BuildContext {
-        return createRaiseContext(BuildContext, options, injector);
+        return createRaiseContext(injector, BuildContext, options);
     }
 }

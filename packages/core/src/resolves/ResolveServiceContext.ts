@@ -76,7 +76,7 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
      * @memberof ResolveActionContext
      */
     static parse<T>(injecor: IInjector, options: ServiceOption<T>): ResolveServiceContext<T> {
-        return createRaiseContext<ResolveServiceContext>(ResolveServiceContext, options, injecor);
+        return createRaiseContext<ResolveServiceContext>(injecor, ResolveServiceContext, options);
     }
 
     /**

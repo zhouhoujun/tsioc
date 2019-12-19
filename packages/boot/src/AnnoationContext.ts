@@ -56,7 +56,7 @@ export interface AnnoationOption extends IocProvidersOption {
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, IContainer> {
 
     static parse(injector: IInjector, target: Type | AnnoationOption): AnnoationContext {
-        return createRaiseContext<AnnoationContext<AnnoationOption>>(AnnoationContext, isToken(target) ? { module: target } : target, injector);
+        return createRaiseContext(injector, AnnoationContext, isToken(target) ? { module: target } : target);
     }
 
     get module(): Type {

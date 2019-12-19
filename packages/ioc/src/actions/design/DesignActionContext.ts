@@ -34,7 +34,7 @@ export class DesignActionContext extends RegisterActionContext<DesignActionOptio
      * @memberof DesignActionContext
      */
     static parse(injecor: IInjector, options: DesignActionOption): DesignActionContext {
-        return createRaiseContext(DesignActionContext, options, injecor);
+        return createRaiseContext(injecor, DesignActionContext, options);
     }
 
 }

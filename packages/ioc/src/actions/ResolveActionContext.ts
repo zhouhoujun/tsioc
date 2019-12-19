@@ -64,6 +64,6 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
      * @memberof ResolveActionContext
      */
     static parse<T>(injector: IInjector, options: ResolveActionOption<T>): ResolveActionContext<T> {
-        return createRaiseContext<ResolveActionContext>(ResolveActionContext, options, injector);
+        return createRaiseContext<ResolveActionContext>(injector, ResolveActionContext, options);
     }
 }

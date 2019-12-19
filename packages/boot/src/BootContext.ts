@@ -251,7 +251,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     }
 
     static parse(injector: IInjector, target: Type | BootOption): BootContext {
-        return createRaiseContext(BootContext, isToken(target) ? { module: target } : target, injector);
+        return createRaiseContext(injector, BootContext, isToken(target) ? { module: target } : target);
     }
 
     setOptions(options: T) {

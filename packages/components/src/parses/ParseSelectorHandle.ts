@@ -22,7 +22,7 @@ export class ParseSelectorHandle extends ParsersHandle {
                     parsing: true,
                     template: options.template,
                     injector: ctx.injector,
-                    providers: ctx.providers.clone().inject({ provide: TemplateOptionToken, useValue: options })
+                    providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: options })
                 });
         }
         if (isNullOrUndefined(ctx.value)) {

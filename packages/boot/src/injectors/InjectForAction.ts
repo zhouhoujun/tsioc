@@ -18,7 +18,7 @@ export class InjectForAction extends InjectAction {
                         ctx.set(InjectorToken, ctx.getContainer());
                         break;
                     default:
-                        let subInj = ctx.getContainer().get(INJECTOR);
+                        let subInj = ctx.get(INJECTOR);
                         subInj.registerValue(ParentInjectorToken, ctx.injector);
                         ctx.set(InjectorToken, subInj);
                         break;
