@@ -6,7 +6,7 @@ import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TYPE, CTX_CURR_TAR
 
 export class ResolveTargetServiceAction extends IocResolveScope<ResolveServiceContext> implements IActionSetup {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
-        if (!ctx.instance && ctx.has(CTX_TARGET_REFS)) {
+        if (ctx.has(CTX_TARGET_REFS)) {
             let injector = ctx.injector;
             let has = ctx.get(CTX_TARGET_REFS).some(t => {
                 ctx.set(CTX_CURR_TARGET_REF, t);

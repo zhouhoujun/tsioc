@@ -1,4 +1,4 @@
-import { IocResolveScope, isClassType, isToken, IActionSetup } from '@tsdi/ioc';
+import { IocResolveScope, isClassType, isToken, IActionSetup, isNullOrUndefined } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { TargetService } from '../TargetService';
 import { ResolveRefServiceAction } from './ResolveRefServiceAction';
@@ -26,7 +26,7 @@ export class ResolveServiceInClassChain extends IocResolveScope implements IActi
             } else {
                 super.execute(ctx);
             }
-            if (!ctx.instance) {
+            if (isNullOrUndefined(ctx.instance)) {
                 ctx.set(CTX_CURR_TARGET_REF, currTgRef);
                 ctx.set(CTX_CURR_TARGET_TOKEN, currTagTk);
                 isClassType(classType) ? ctx.set(CTX_CURR_TARGET_TYPE, classType) : ctx.remove(CTX_CURR_TARGET_TYPE);

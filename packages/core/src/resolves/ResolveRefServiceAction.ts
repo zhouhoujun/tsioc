@@ -1,4 +1,4 @@
-import { isArray, InjectReference } from '@tsdi/ioc';
+import { isArray, InjectReference, isNullOrUndefined } from '@tsdi/ioc';
 import { ResolveServiceContext  } from './ResolveServiceContext';
 import { ResolvePrivateServiceAction } from './ResolvePrivateServiceAction';
 import { CTX_CURR_TOKEN, CTX_CURR_TARGET_REF, CTX_CURR_TARGET_TOKEN } from '../context-tokens';
@@ -14,7 +14,7 @@ export class ResolveRefServiceAction extends ResolvePrivateServiceAction {
             let refTks = isArray(refTk) ? refTk : [refTk];
             if (!refTks.some(tk => {
                 this.resolvePrivate(ctx, tk);
-                if (!ctx.instance) {
+                if (isNullOrUndefined(ctx.instance)) {
                     this.get(ctx, tk);
                 }
                 return !!ctx.instance;

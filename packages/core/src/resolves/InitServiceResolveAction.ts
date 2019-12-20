@@ -1,4 +1,4 @@
-import { isToken, isArray, lang, isClassType, isClass } from '@tsdi/ioc';
+import { isToken, isArray, lang, isClassType, isClass, isNullOrUndefined } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { TargetService } from '../TargetService';
@@ -48,12 +48,12 @@ export class InitServiceResolveAction extends IocResolveServiceAction {
             options.tokens = options.tokens.filter(t => isToken(t));
             next();
 
-            if (!ctx.instance && options.regify && isClass(ctx.token) && !injector.has(ctx.token)) {
+            if (isNullOrUndefined(ctx.instance) && options.regify && isClass(ctx.token) && !injector.has(ctx.token)) {
                 injector.register(ctx.token);
                 ctx.instance = injector.get(ctx.token, ctx.providers);
             }
             // resolve default.
-            if (!ctx.instance && ctx.defaultToken) {
+            if (isNullOrUndefined(ctx.instance) && ctx.defaultToken) {
                 this.resolve(ctx, ctx.defaultToken);
             }
         }

@@ -7,7 +7,7 @@ export class ResolvePrivateServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
         // resolve private service.
         this.resolvePrivate(ctx, ctx.get(CTX_CURR_TOKEN) || ctx.token);
-        if (!ctx.instance) {
+        if (isNullOrUndefined(ctx.instance)) {
             next();
         }
     }
