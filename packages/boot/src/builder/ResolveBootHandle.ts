@@ -6,15 +6,16 @@ import { BootContext } from '../BootContext';
 
 export class ResolveBootHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.annoation.bootstrap && !ctx.bootstrap) {
-            let bootModule = ctx.annoation.bootstrap;
+        let bootModule = ctx.getOptions().bootstrap || ctx.annoation.bootstrap;
+        if (bootModule && !ctx.bootstrap) {
             ctx.providers.inject(
                 { provide: BootContext, useValue: ctx },
                 { provide: lang.getClass(ctx), useValue: ctx }
             )
             if (isClass(bootModule)) {
                 let options = ctx.getOptions();
-                ctx.bootstrap = await ctx.injector.get(BuilderServiceToken).resolve(bootModule, {
+                ctx.bootstrap = await ctx.injector.get(BuilderServiceToken).resolve({
+                    module: bootModule,
                     scope: options.scope,
                     template: options.template,
                     providers: ctx.providers,

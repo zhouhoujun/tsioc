@@ -4,6 +4,7 @@ import { ProviderTypes } from '../providers/types';
 import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
 import { IInjector } from '../IInjector';
+import { isNullOrUndefined } from '../utils/lang';
 
 /**
  * resolve life scope.
@@ -16,7 +17,7 @@ import { IInjector } from '../IInjector';
 export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>> {
 
     execute(ctx: ResolveActionContext, next?: () => void): void {
-        if (!ctx.instance) {
+        if (isNullOrUndefined(ctx.instance)) {
             super.execute(ctx, next);
         }
     }

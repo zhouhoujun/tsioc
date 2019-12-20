@@ -22,7 +22,7 @@ export const ApplicationContextToken = new InjectToken<BootContext>('APP__CONTEX
  * @export
  * @interface BootOptions
  */
-export interface BootOption extends AnnoationOption {
+export interface BootOption<T = any> extends AnnoationOption<T> {
     /**
      * boot base url.
      *
@@ -58,7 +58,7 @@ export interface BootOption extends AnnoationOption {
      * @type {T}
      * @memberof BootOptions
      */
-    bootstrap?: any;
+    bootstrap?: Token;
     /**
      * render host container.
      *

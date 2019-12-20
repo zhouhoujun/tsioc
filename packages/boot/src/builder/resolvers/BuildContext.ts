@@ -8,8 +8,7 @@ import { AnnoationOption, AnnoationContext } from '../../AnnoationContext';
  * @export
  * @interface IModuleResolveOption
  */
-export interface IModuleResolveOption extends AnnoationOption {
-
+export interface IModuleBuildOption<T = any> extends AnnoationOption<T> {
     /**
      * component scope.
      *
@@ -30,7 +29,7 @@ export interface IModuleResolveOption extends AnnoationOption {
 }
 
 @Injectable
-export class BuildContext<T extends IModuleResolveOption = IModuleResolveOption> extends AnnoationContext<T> implements IComponentContext {
+export class BuildContext<T extends IModuleBuildOption = IModuleBuildOption> extends AnnoationContext<T> implements IComponentContext {
     /**
      * current target module
      *
@@ -39,8 +38,7 @@ export class BuildContext<T extends IModuleResolveOption = IModuleResolveOption>
      */
     target: any;
 
-
-    static parse(injector: IInjector, options: IModuleResolveOption): BuildContext {
+    static parse(injector: IInjector, options: IModuleBuildOption): BuildContext {
         return createRaiseContext(injector, BuildContext, options);
     }
 }

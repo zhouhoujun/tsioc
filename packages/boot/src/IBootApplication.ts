@@ -1,4 +1,4 @@
-import { LoadType, Type } from '@tsdi/ioc';
+import { LoadType, ClassType } from '@tsdi/ioc';
 import { BootContext, BootOption } from './BootContext';
 import { IContainer } from '@tsdi/core';
 
@@ -32,10 +32,10 @@ export interface IBootApplication<T extends BootContext = BootContext> extends C
     /**
      * boot target.
      *
-     * @type {(Type | BootOption | T)}
+     * @type {(ClassType | BootOption | T)}
      * @memberof IBootApplication
      */
-    target?: Type | BootOption | T;
+    target?: ClassType | BootOption | T;
 
     /**
      * get boot application context.

@@ -1,6 +1,6 @@
 import {
-    IocCoreService, Type, Inject, Singleton, isClass, Autorun, ProviderTypes,
-    isFunction, isString, TypeReflects, isBaseObject, ActionInjectorToken, IActionInjector
+    IocCoreService, Inject, Singleton, Autorun, TypeReflects,
+    isFunction, isString, isBaseObject, isClassType, ClassType
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
@@ -11,7 +11,7 @@ import { BootLifeScope } from './BootLifeScope';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
 import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ResolveMoudleScope } from './resolvers/ResolveMoudleScope';
-import { IModuleResolveOption, BuildContext } from './resolvers/BuildContext';
+import { IModuleBuildOption, BuildContext } from './resolvers/BuildContext';
 import { IStartup } from '../runnable/Startup';
 import { AnnoationContext } from '../AnnoationContext';
 import { BuildHandles } from './BuildHandles';
@@ -47,14 +47,14 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * resolve binding module.
      *
      * @template T
-     * @param {Type<T>} target
-     * @param {IModuleResolveOption} options
+     * @param {ClassType<T> | IModuleBuildOption} target
+     * @param {IModuleBuildOption} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async resolve<T>(target: Type<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<T> {
-        let ctx = await this.resolveContext(target, options, ...providers);
+    async resolve<T>(target: ClassType<T> | IModuleBuildOption<T>): Promise<T> {
+        let ctx = await this.resolveContext(target);
         return this.getBootTarget(ctx);
     }
 
@@ -67,47 +67,27 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         return null;
     }
 
-    protected async resolveContext(target: Type, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<AnnoationContext> {
+    protected async resolveContext(target: ClassType | IModuleBuildOption): Promise<AnnoationContext> {
         let refs = this.reflects;
-        let reflect = refs.get(target);
+        let options = isClassType(target) ? { module: target } : target;
+        let reflect = refs.get(options.module);
         if (reflect) {
-            return await this.resolveModule(null, target, options, ...providers);
+            return await this.resolveModule(options);
         } else {
-            return await this.build({
-                module: target,
-                providers: providers,
-                ...options
-            });
+            return await this.build(options);
         }
     }
 
-    protected async resolveModule<T>(contextInit: (ctx: BuildContext) => void, target: Type<T>, options?: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<BuildContext> {
-        options = options || {};
-        let rctx = BuildContext.parse(options.injector || this.container, { module: target, ...options });
-        providers.length && rctx.providers.inject(...providers);
-        if (contextInit) {
-            contextInit(rctx);
-        }
+    protected async resolveModule<T>(options: IModuleBuildOption): Promise<BuildContext> {
+        let rctx = BuildContext.parse(options.injector || this.container, options);
         await this.reflects.getActionInjector().get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
     }
 
-    /**
-     * build module instace.
-     *
-     * @template T
-     * @param {(Type | BootOption | T)} target
-     * @param {...string[]} args
-     * @returns {Promise<T>}
-     * @memberof BuilderService
-     */
-    async buildTarget<T, Topt extends BootOption = BootOption>(target: Type<T> | Topt | BootContext, ...args: string[]): Promise<T> {
-        let ctx = await this.build(target, ...args);
-        return ctx.target;
-    }
-
-    build<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
+    build(target: ClassType | BootOption | BootContext, ...args: string[]): Promise<BootContext>
+    build<Topt extends BootOption>(target: ClassType | Topt | BootContext, ...args: string[]): Promise<BootContext>;
+    build<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T> {
         return this.execLifeScope<T>(null, this.reflects.getActionInjector().get(ModuleBuilderLifeScope), target, ...args);
     }
 
@@ -115,12 +95,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * build startup instance.
      *
      * @template T
-     * @param {(Type | BootOption | BootContext)} target
+     * @param {(ClassType | BootOption | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<IStartup<T>>}
      * @memberof BuilderService
      */
-    async buildStartup<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>> {
+    async buildStartup<T, Topt extends BootOption = BootOption>(target: ClassType | Topt | BootContext, ...args: string[]): Promise<IStartup<T>> {
         let ctx = await this.execLifeScope(ctx => {
             ctx.getOptions().autorun = false
         }, this.reflects.getActionInjector().get(RunnableBuildLifeScope), target, ...args);
@@ -131,12 +111,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * build startup instance.
      *
      * @template T
-     * @param {(Type | BootOption | BootContext)} target
+     * @param {(ClassType | BootOption | BootContext)} target
      * @param {...string[]} args
      * @returns {Promise<IStartup<T>>}
      * @memberof BuilderService
      */
-    buildRunnable<T, Topt extends BootOption = BootOption>(target: Type | Topt | BootContext, ...args: string[]): Promise<IStartup<T>> {
+    buildRunnable<T, Topt extends BootOption = BootOption>(target: ClassType | Topt | BootContext, ...args: string[]): Promise<IStartup<T>> {
         return this.buildStartup(target, ...args);
     }
 
@@ -145,12 +125,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      *
      * @template T
      * @template Topt
-     * @param {(Type | Topt | T)} target
+     * @param {(ClassType | Topt | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    run<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, ...args: string[]): Promise<T> {
+    run<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T> {
         return this.execLifeScope<T, Topt>(null, this.reflects.getActionInjector().get(RunnableBuildLifeScope), target, ...args);
     }
 
@@ -159,13 +139,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * boot application.
      *
      * @template T
-     * @param {(Type | BootOption | T)} target
+     * @param {(ClassType | BootOption | T)} target
      * @param {(BootSubAppOption<T> | string)} [options]
      * @param {...string[]} args
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async boot<T extends BootContext, Topt extends BootOption = BootOption>(target: Type | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
+    async boot<T extends BootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
         let opt: BootSubAppOption<T>;
         if (isFunction(options)) {
             opt = { contextInit: options };
@@ -213,12 +193,12 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ...args);
     }
 
-    protected async execLifeScope<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(contextInit: (ctx: T) => void, scope: BuildHandles<T>, target: Type | Topt | T, ...args: string[]): Promise<T> {
+    protected async execLifeScope<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(contextInit: (ctx: T) => void, scope: BuildHandles<T>, target: ClassType | Topt | T, ...args: string[]): Promise<T> {
         let ctx: T;
         if (target instanceof BootContext) {
             ctx = target as T;
         } else {
-            let md = isClass(target) ? target : target.module;
+            let md = isClassType(target) ? target : target.module;
             ctx = this.container.getService({ token: BootContext, target: md }) as T;
             ctx.setModule(md);
         }

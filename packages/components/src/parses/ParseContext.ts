@@ -1,5 +1,5 @@
 import { Injectable, createRaiseContext, IInjector } from '@tsdi/ioc';
-import { BuildContext, IModuleResolveOption, IComponentContext } from '@tsdi/boot';
+import { BuildContext, IModuleBuildOption, IComponentContext } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
 
@@ -8,9 +8,9 @@ import { DataBinding } from '../bindings/DataBinding';
  *
  * @export
  * @interface IBindingParseOption
- * @extends {IModuleResolveOption}
+ * @extends {IModuleBuildOption}
  */
-export interface IBindingParseOption extends IModuleResolveOption  {
+export interface IBindingParseOption extends IModuleBuildOption  {
     scope?: any;
     bindExpression?: any;
     binding: IBinding;

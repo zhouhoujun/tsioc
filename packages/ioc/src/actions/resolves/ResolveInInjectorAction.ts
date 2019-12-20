@@ -5,7 +5,7 @@ import { ResolveActionContext } from '../ResolveActionContext';
 export class ResolveInInjectorAction extends IocResolveAction {
     execute(ctx: ResolveActionContext, next: () => void): void {
         let injector = ctx.injector;
-        if (!isNullOrUndefined(ctx.instance) && injector.has(ctx.token)) {
+        if (injector.has(ctx.token)) {
             ctx.instance = injector.get(ctx.token, ctx.providers);
         }
 
@@ -13,7 +13,7 @@ export class ResolveInInjectorAction extends IocResolveAction {
             next();
         }
 
-        if (!ctx.instance && ctx.getOptions().regify && isClass(ctx.token) && !injector.has(ctx.token)) {
+        if (isNullOrUndefined(ctx.instance) && ctx.getOptions().regify && isClass(ctx.token) && !injector.has(ctx.token)) {
             injector.register(ctx.token);
             ctx.instance = injector.get(ctx.token, ctx.providers);
         }

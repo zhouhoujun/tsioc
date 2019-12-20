@@ -1,4 +1,4 @@
-import { Type, LoadType, isArray, isString, isClass, isInjector } from '@tsdi/ioc';
+import { LoadType, isArray, isString, isInjector, ClassType, isClassType } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ContainerToken } from '@tsdi/core';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
@@ -24,18 +24,18 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
      */
     protected context: T;
 
-    constructor(public target?: Type | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(public target?: ClassType | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 
-    protected onInit(target: Type | BootOption | T) {
+    protected onInit(target: ClassType | BootOption | T) {
         this.deps = this.deps || [];
         let container: IContainer;
         if (target) {
             if (target instanceof BootContext) {
                 this.context = target;
                 container = this.context.getContainer();
-            } else if (!isClass(target)) {
+            } else if (!isClassType(target)) {
                 if (isInjector(target.injector)) {
                     container = target.injector.get(ContainerToken);
                 }
@@ -81,13 +81,13 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
      *
      * @static
      * @template T
-     * @param {(Type<T> | BootOption | BootContext)} target
+     * @param {(ClassType<T> | BootOption | BootContext)} target
      * @param {(LoadType[] | LoadType | string)} [deps]  application run depdences.
      * @param {...string[]} args
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    static run<T>(target: Type<T> | BootOption | BootContext, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
+    static run<T>(target: ClassType<T> | BootOption | BootContext, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
         let { deps: dep, args: arg } = checkBootArgs(deps, ...args);
         return new BootApplication(target, dep).run(...arg);
     }
@@ -114,9 +114,9 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
         return this.container;
     }
 
-    protected getTargetDeps(target: Type | BootOption | T) {
+    protected getTargetDeps(target: ClassType | BootOption | T) {
         let dependences = [];
-        if (isClass(target)) {
+        if (isClassType(target)) {
             let meta = this.container.get(AnnotationServiceToken).getAnnoation(target) as RunnableConfigure;
             if (meta && meta.deps) {
                 dependences.push(...meta.deps);

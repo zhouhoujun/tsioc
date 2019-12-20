@@ -1,14 +1,14 @@
 import { ProviderTypes, Type, InjectToken, ClassType } from '@tsdi/ioc';
-import { IBuilderService, IModuleResolveOption } from '@tsdi/boot';
+import { IBuilderService, IModuleBuildOption } from '@tsdi/boot';
 
 /**
  * template option.
  *
  * @export
  * @interface ITemplateOption
- * @extends {IModuleResolveOption}
+ * @extends {IModuleBuildOption}
  */
-export interface ITemplateOption extends IModuleResolveOption {
+export interface ITemplateOption extends IModuleBuildOption {
     selector?: Type;
 }
 
@@ -36,15 +36,9 @@ export interface IComponentBuilder extends IBuilderService {
     resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any>;
     /**
      * resolve node componsite of component.
-     *
-     * @template T
-     * @param {ClassType<T>} target
-     * @param {IModuleResolveOption} options
-     * @param {...ProviderTypes[]} providers
-     * @returns {Promise<any>}
-     * @memberof IComponentBuilder
+     * @param target
      */
-    resolveNode<T>(target: ClassType<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any>;
+    resolveNode<T>(target: Type<T> | IModuleBuildOption<T>): Promise<any>;
     /**
      * serialize component as template json.
      *

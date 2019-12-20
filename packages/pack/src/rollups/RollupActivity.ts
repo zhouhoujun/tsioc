@@ -57,7 +57,9 @@ export interface RollupOption extends TemplateOption {
      * @memberof RollupOption
      */
     plugins?: Binding<NodeExpression<Plugin[]>>;
-
+    /**
+     * cache.
+     */
     cache?: Binding<NodeExpression<RollupCache>>;
     watch?: Binding<NodeExpression<WatcherOptions>>;
 

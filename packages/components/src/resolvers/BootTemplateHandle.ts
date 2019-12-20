@@ -11,7 +11,8 @@ export class BootTemplateHandle extends BootHandle {
                     decorator: ctx.decorator || Component.toString(),
                     scope: options.scope,
                     template: options.template,
-                    containerFactory: ctx.getFactory()
+                    injector: ctx.injector,
+                    providers: ctx.providers
                 });
             }
             if (ctx.target) {

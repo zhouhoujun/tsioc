@@ -1,4 +1,4 @@
-import { Type, createRaiseContext, IocProvidersOption, IocProvidersContext, lang, isToken, IInjector } from '@tsdi/ioc';
+import { Type, createRaiseContext, IocProvidersOption, IocProvidersContext, lang, isToken, IInjector, ClassType } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { AnnotationServiceToken } from './services/IAnnotationService';
 import { RegisterForMetadata, RegisterFor } from './decorators/RegisterFor';
@@ -13,14 +13,14 @@ import { IModuleReflect } from './modules/IModuleReflect';
  * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationOption extends IocProvidersOption {
+export interface AnnoationOption<T = any> extends IocProvidersOption {
     /**
      * target module type.
      *
-     * @type {Type}
+     * @type {ClassType}
      * @memberof AnnoationActionOption
      */
-    module?: Type;
+    module?: ClassType<T>;
     /**
      * module decorator.
      *
@@ -28,7 +28,6 @@ export interface AnnoationOption extends IocProvidersOption {
      * @memberof AnnoationActionOption
      */
     decorator?: string;
-
     /**
      * annoation metadata config.
      *
@@ -55,15 +54,15 @@ export interface AnnoationOption extends IocProvidersOption {
  */
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, IContainer> {
 
-    static parse(injector: IInjector, target: Type | AnnoationOption): AnnoationContext {
+    static parse(injector: IInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createRaiseContext(injector, AnnoationContext, isToken(target) ? { module: target } : target);
     }
 
-    get module(): Type {
+    get module(): ClassType {
         return this.getOptions().module;
     }
 
-    setModule(module: Type) {
+    setModule(module: ClassType) {
         this.getOptions().module = module;
     }
 
