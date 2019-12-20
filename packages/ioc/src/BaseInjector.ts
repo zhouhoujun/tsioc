@@ -259,18 +259,49 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this.factories.has(key);
     }
     /**
-     * has register the token or not.
+     * has register.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
+     * @param {Token<T>} token the token.
      * @returns {boolean}
-     * @memberof BaseInjector
+     * @memberof IInjector
+     */
+    has<T>(token: Token<T>): boolean;
+    /**
+     *  has register.
+     *
+     * @template T
+     * @param {Token<T>} token the token.
+     * @param {string} alias addtion alias.
+     * @returns {boolean}
+     * @memberof IInjector
+     */
+    has<T>(token: Token<T>, alias: string): boolean;
+    /**
+     *  has register.
+     *
+     * @template T
+     * @param {Token<T>} token the token.
+     * @param {string} alias addtion alias.
+     * @returns {boolean}
+     * @memberof IInjector
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         return this.factories.has(this.getTokenKey(token, alias));
     }
+    /**
+     * has register.
+     * @param token the token
+     * @param alias addtion alias
+     */
+    hasRegister<T>(token: Token<T>, alias?: string): boolean {
+        let key = this.getTokenKey(token, alias);
+        return this.factories.has(key) || this.hasInRoot(key);
+    }
 
+    protected hasInRoot(key: SymbolType): boolean {
+        return false;
+    }
     /**
      * get token factory resolve instace in current BaseInjector.
      *

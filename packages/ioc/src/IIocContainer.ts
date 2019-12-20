@@ -25,7 +25,6 @@ export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_Conta
  * @interface IIocContainer
  */
 export interface IIocContainer extends IInjector {
-
     /**
      * get container factory.
      *
@@ -34,13 +33,11 @@ export interface IIocContainer extends IInjector {
      * @memberof IIocContainer
      */
     getFactory<T extends IIocContainer>(): ContainerFactory<T>;
-
     /**
      * get injector the type injected.
      * @param type
      */
     getInjector(type: Type): IInjector;
-
     /**
      * get type reflects manager in current container.
      *
@@ -48,7 +45,6 @@ export interface IIocContainer extends IInjector {
      * @memberof IIocContainer
      */
     getTypeReflects(): TypeReflects;
-
     /**
      * register factory to injector.
      * @param injector the injector to register.
@@ -57,5 +53,4 @@ export interface IIocContainer extends IInjector {
      * @param singleton singlteon or not.
      */
     registerFactory<T>(injector: IInjector, token: Token<T>, fac?: Factory<T>, singleton?: boolean): this;
-
 }

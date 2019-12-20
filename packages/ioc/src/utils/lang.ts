@@ -1,12 +1,11 @@
 // use core-js in browser.
 import { ObjectMap, Type, AbstractType, Token, ClassType } from '../types';
+import { clsUglifyExp, clsStartExp } from './exps';
 
 
 declare let process: any;
 
 
-const clsStartExp = /^[A-Z@]/;
-export const clsUglifyExp = /^[a-z0-9]$/;
 
 const toString = Object.prototype.toString;
 /**

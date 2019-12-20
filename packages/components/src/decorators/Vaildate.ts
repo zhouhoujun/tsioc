@@ -22,7 +22,6 @@ export interface VaildatePropertyDecorator {
      * @param {string} message error message of required.
      */
     (required: boolean, message?: string): PropertyDecorator;
-
     /**
      * define Vaildate property decorator.
      *

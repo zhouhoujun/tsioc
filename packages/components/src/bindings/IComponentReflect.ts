@@ -17,6 +17,9 @@ export interface IComponentReflect extends ITypeReflect {
      * component selector.
      */
     selector?: string;
+    /**
+     * attr selector.
+     */
     attrSelector?: string;
     /**
      * component select key.

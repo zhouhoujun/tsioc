@@ -42,7 +42,6 @@ export enum BindingDirection {
  * @template T
  */
 export interface IBinding<T = any> {
-
     /**
      * binding property name.
      *

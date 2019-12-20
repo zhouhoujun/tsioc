@@ -10,27 +10,17 @@ import { MatchPointcut } from './joinpoints/MatchPointcut';
 import { Advice } from './decorators/Advice';
 import { Aspect } from './decorators/Aspect';
 import { NonePointcut } from './decorators/NonePointcut';
+import {
+    annPreChkExp, executionChkExp, preParam, endParam, annContentExp, aExp, execContentExp, mthNameExp,
+    tgMthChkExp, replAny, replAny1, replDot, replNav, withInChkExp, targetChkExp
+} from './regexps';
 
 /**
  * match express.
  */
 export type MatchExpress = (method: string, fullName: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
 
-const aExp = /^@/;
-const annPreChkExp = /^\^?@\w+/;
-const annContentExp = /^@annotation\(.*\)$/;
-const executionChkExp = /^execution\(\S+\)$/;
-const execContentExp = /^execution\(.*\)$/;
-const mthNameExp = /^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/;
-const tgMthChkExp = /^([\w\*]+\.)+[\w\*]+(\((\s*\w+\s*,)*\s*\w*\))?$/;
-const preParam = /^\(/;
-const endParam = /\)$/;
-const withInChkExp = /^@within\(\s*\w+/;
-const targetChkExp = /^@target\(\s*\w+/;
-const replAny = /\*\*/gi;
-const replAny1 = /\*/gi;
-const replDot = /\./gi;
-const replNav = /\//gi;
+
 
 /**
  * advice matcher, use to match advice when a registered create instance.

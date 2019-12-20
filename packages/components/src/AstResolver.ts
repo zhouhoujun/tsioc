@@ -24,7 +24,7 @@ export class AstResolver {
             return expression;
         }
         injector = injector || this.injector;
-        if (injector.has(AstParserToken)) {
+        if (injector.hasRegister(AstParserToken)) {
             return injector.get(AstParserToken).parse(expression).execute(envOptions);
         }
 

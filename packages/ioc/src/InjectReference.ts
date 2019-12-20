@@ -1,6 +1,7 @@
 import { isString } from './utils/lang';
 import { Token } from './types';
 import { Registration } from './Registration';
+import { refInjExp } from './utils/exps';
 
 
 /**
@@ -33,7 +34,6 @@ export class InjectReference<T> extends Registration<T> {
     }
 }
 
-const refInjExp = /^Ref\s+[\w\{\}]+\sfor/;
 /**
  * is inject reference token or not.
  *

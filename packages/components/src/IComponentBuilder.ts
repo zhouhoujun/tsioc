@@ -34,7 +34,6 @@ export interface IComponentBuilder extends IBuilderService {
      * @memberof IComponentBuilder
      */
     resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any>;
-
     /**
      * resolve node componsite of component.
      *
@@ -46,7 +45,6 @@ export interface IComponentBuilder extends IBuilderService {
      * @memberof IComponentBuilder
      */
     resolveNode<T>(target: ClassType<T>, options: IModuleResolveOption, ...providers: ProviderTypes[]): Promise<any>;
-
     /**
      * serialize component as template json.
      *
@@ -55,5 +53,4 @@ export interface IComponentBuilder extends IBuilderService {
      * @memberof IComponentBuilder
      */
     serialize(component: any): any;
-
 }

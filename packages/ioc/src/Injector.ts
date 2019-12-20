@@ -28,6 +28,10 @@ export class Injector extends BaseInjector implements IInjector {
         return this.factory() as T;
     }
 
+    protected hasInRoot(key: SymbolType): boolean {
+        return this.getContainer().hasTokenKey(key);
+    }
+
     protected tryGetInRoot<T>(key: SymbolType<T>, providers: ProviderTypes[]): T {
         return this.getContainer().getInstance(key, ...providers);
     }

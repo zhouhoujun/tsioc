@@ -29,7 +29,6 @@ export interface IRefChildDecorator {
      * @param {*} defaultVal default value.
      */
     (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
-
     /**
      * define RefChild property decorator with binding property name and provider.
      *
@@ -37,7 +36,6 @@ export interface IRefChildDecorator {
      * @param {*} defaultVal default value.
      */
     (bindingName: string, defaultVal: any): PropertyDecorator;
-
     /**
      * define RefChild property decorator with binding property name and provider.
      *

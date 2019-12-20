@@ -41,7 +41,7 @@ export interface IInjector {
      * has token key.
      *
      * @template T
-     * @param {SymbolType<T>} key
+     * @param {SymbolType<T>} key the token key.
      * @returns {boolean}
      * @memberof IInjector
      */
@@ -50,8 +50,8 @@ export interface IInjector {
      * get tocken key.
      *
      * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
+     * @param {Token<T>} token the token.
+     * @param {string} [alias] addtion alias
      * @returns {SymbolType<T>}
      * @memberof IInjector
      */
@@ -60,21 +60,32 @@ export interface IInjector {
      * has register.
      *
      * @template T
-     * @param {Token<T>} key
+     * @param {Token<T>} token the token.
      * @returns {boolean}
      * @memberof IInjector
      */
-    has<T>(key: Token<T>): boolean;
+    has<T>(token: Token<T>): boolean;
     /**
      *  has register.
      *
      * @template T
-     * @param {Token<T>} key
-     * @param {string} alias
+     * @param {Token<T>} token the token.
+     * @param {string} alias addtion alias
      * @returns {boolean}
      * @memberof IInjector
      */
-    has<T>(key: Token<T>, alias: string): boolean;
+    has<T>(token: Token<T>, alias: string): boolean;
+    /**
+     * has register in the injector or root container.
+     * @param token the token.
+     */
+    hasRegister<T>(token: Token<T>): boolean;
+    /**
+     * has register in the injector or root container.
+     * @param {Token<T>} token the token.
+     * @param {string} alias addtion alias.
+     */
+    hasRegister<T>(token: Token<T>, alias: string): boolean;
     /**
      * get token instace in current injector or root container.
      *

@@ -1,6 +1,6 @@
 import {
     BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction,
-    Inject, ActionInjector, DecoratorProvider, DesignRegisterer, RuntimeRegisterer
+    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
 } from '@tsdi/ioc';
 import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
 import {
@@ -49,7 +49,7 @@ export class ComponentsModule {
         container.inject(ComponentAnnotationCloner, AstResolver);
 
         container.registerValue(APP_COMPONENT_REFS, new WeakMap());
-        let actInjector = container.getInstance(ActionInjector);
+        let actInjector = container.get(ActionInjectorToken);
 
         actInjector.register(ComponentRegisterAction)
             .register(BindingPropertyTypeAction);

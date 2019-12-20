@@ -150,7 +150,7 @@ export interface AbstractType<T = any> extends Function {
  * @template TResult
  */
 export interface Express<T, TResult> {
-    (item: T): TResult
+    (item: T): TResult;
 }
 
 /**

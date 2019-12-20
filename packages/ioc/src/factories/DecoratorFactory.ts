@@ -2,8 +2,8 @@ import 'reflect-metadata';
 import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
-    isClass, isAbstractClass, isMetadataObject, isUndefined, isFunction,
-    isNumber, isArray, lang, clsUglifyExp
+    isClass, isAbstractClass, isMetadataObject, isUndefined,
+    isFunction, isNumber, isArray, lang
 } from '../utils/lang';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
 import { Metadate } from '../metadatas/Metadate';
@@ -11,6 +11,7 @@ import { ClassMetadata } from '../metadatas/ClassMetadata';
 import { MethodMetadata } from '../metadatas/MethodMetadata';
 import { PropertyMetadata } from '../metadatas/PropertyMetadata';
 import { ParameterMetadata } from '../metadatas/ParameterMetadata';
+import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES } from '../utils/exps';
 
 
 export const ParamerterName = 'paramerter_names';
@@ -544,11 +545,10 @@ export function getParamerterNames(target: ClassType<any>, propertyKey?: string)
     }
 }
 
-
 export function setParamerterNames(target: ClassType) {
     let meta = { ...getParamerterNames(target) };
     let descriptors = Object.getOwnPropertyDescriptors(target.prototype);
-    let isUglify =  clsUglifyExp.test(target.name);
+    let isUglify = clsUglifyExp.test(target.name);
     let anName = '';
     let classAnnations = lang.getClassAnnations(target);
 
@@ -584,8 +584,6 @@ export function setParamerterNames(target: ClassType) {
     Reflect.defineMetadata(ParamerterName, meta, target);
 }
 
-const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-const ARGUMENT_NAMES = /([^\s,]+)/g;
 function getParamNames(func) {
     if (!isFunction(func)) {
         return [];

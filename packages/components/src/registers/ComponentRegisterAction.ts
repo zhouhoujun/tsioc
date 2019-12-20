@@ -1,8 +1,9 @@
 import { IocDesignAction, DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { ModuleConfigure } from '@tsdi/boot';
 import { IComponentReflect } from '../bindings/IComponentReflect';
+import { attrExp } from '../bindings/exps';
 
-const attrExp = /^\[\w+\]$/;
+
 /**
  * component register action.
  *
