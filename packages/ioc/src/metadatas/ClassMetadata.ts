@@ -1,7 +1,6 @@
 import { ProviderMetadata } from './ProviderMetadata';
 import { ProvidersMetadata } from './ProvidersMetadata';
 
-
 /**
  * class metadata.
  *

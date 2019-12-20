@@ -2,7 +2,7 @@ import {
     Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString,
     isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider
 } from '@tsdi/ioc';
-import { BuilderService, IModuleBuildOption } from '@tsdi/boot';
+import { BuilderService, IBuildOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './bindings/IComponentReflect';
 import { RefSelector } from './RefSelector';
@@ -31,7 +31,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.value;
     }
 
-    async resolveNode<T>(target: Type<T> | IModuleBuildOption<T>): Promise<any> {
+    async resolveNode<T>(target: Type<T> | IBuildOption<T>): Promise<any> {
         let ctx = await this.resolveContext(target);
         let bootTarget = this.getBootTarget(ctx);
 

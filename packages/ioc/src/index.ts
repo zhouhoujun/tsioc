@@ -38,7 +38,6 @@ export * from './metadatas/AutorunMetadata';
 export * from './metadatas/InjectMetadata';
 export * from './metadatas/InjectableMetadata';
 export * from './metadatas/ClassMetadata';
-export * from './metadatas/ComponentMetadata';
 export * from './metadatas/MethodPropMetadata';
 export * from './metadatas/MethodParamPropMetadata';
 

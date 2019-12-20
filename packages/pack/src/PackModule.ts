@@ -8,7 +8,7 @@ import * as builds from './builds';
 import { TsComplie } from './ts-complie';
 
 @DIModule({
-    regFor: 'root',
+    regIn: 'root',
     imports: [
         TsComplie,
         ServerBootstrapModule,

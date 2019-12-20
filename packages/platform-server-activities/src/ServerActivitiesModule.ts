@@ -10,7 +10,7 @@ import { ServerParallelExecutor } from './ServerParallelExecutor';
 
 
 @DIModule({
-    regFor: 'root',
+    regIn: 'root',
     imports: [
         ServerModule,
         ServerLogsModule,

@@ -30,7 +30,6 @@ export * from './runnable/Renderer';
 // decorators
 export * from './decorators/Annotation';
 export * from './decorators/DIModule';
-export * from './decorators/RegisterFor';
 export * from './decorators/Message';
 
 export * from './AnnoationContext';
@@ -47,7 +46,6 @@ export * from './injectors/RegModuleImportsAction';
 export * from './injectors/RegModuleProvidersAction';
 export * from './injectors/RegModuleRefAction';
 export * from './injectors/RegModuleExportsAction';
-export * from './injectors/InjectForAction';
 export * from './injectors/ModuleInjectLifeScope';
 
 
@@ -74,6 +72,8 @@ export * from './messages/MessageQueue';
 export * from './builder/BuildHandles';
 export * from './builder/AnnoationHandle';
 export * from './builder/ComponentContext';
+export * from './builder/IBuildOption';
+export * from './builder/BuildContext';
 export * from './builder/RegisterAnnoationHandle';
 export * from './builder/RegisterModuleRegisterHandle';
 export * from './builder/RegisterModuleScope';
@@ -102,7 +102,6 @@ export * from './builder/IBuilderService';
 export * from './builder/BuilderService';
 
 // build resolvers
-export * from './builder/resolvers/BuildContext';
 export * from './builder/resolvers/ResolveHandle';
 export * from './builder/resolvers/BuildModuleHandle';
 export * from './builder/resolvers/DecoratorBuildHandle';

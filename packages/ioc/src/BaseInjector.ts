@@ -154,9 +154,9 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
             }
             this.provideTypes.set(provideKey, provider);
         } else if (isToken(provider)) {
-            let token = this.provideTypes.get(provider);
-            if (isClass(token)) {
-                this.provideTypes.set(provideKey, token);
+            let type = this.provideTypes.get(provider);
+            if (isClass(type)) {
+                this.provideTypes.set(provideKey, type);
             }
         }
 
@@ -177,7 +177,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return refToken;
     }
 
-    bindTagProvider<T>(target: Token, ...providers: ProviderTypes[]): InjectReference<IInjector> {
+    bindTagProvider<T>(target: Token, ...providers: InjectTypes[]): InjectReference<IInjector> {
         let refToken = new InjectReference(InjectorToken, target);
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
@@ -379,10 +379,18 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let key = this.getTokenKey(token);
         if (this.has(key)) {
             this.factories.delete(key);
-            if (this.provideTypes.has(key)) {
-                this.provideTypes.delete(key);
-            }
+            this.provideTypes.delete(key);
             if (isClass(key)) {
+                let keys = [];
+                this.provideTypes.forEach((v, k) => {
+                    if (v === key) {
+                        keys.push(k);
+                    }
+                });
+                keys.forEach(k => {
+                    this.provideTypes.delete(k);
+                    this.factories.delete(k);
+                });
                 this.clearCache(key);
             }
         }

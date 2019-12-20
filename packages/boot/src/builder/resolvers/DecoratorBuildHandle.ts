@@ -1,4 +1,4 @@
-import { BuildContext } from './BuildContext';
+import { BuildContext } from '../BuildContext';
 import { ResolveHandle } from './ResolveHandle';
 import { StartupDecoratorRegisterer, StartupScopes } from '../../handles/StartupDecoratorRegisterer';
 

@@ -2,7 +2,7 @@ import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../BuildHandles';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
-import { BuildContext } from './BuildContext';
+import { BuildContext } from '../BuildContext';
 
 
 /**

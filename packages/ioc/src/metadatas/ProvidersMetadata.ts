@@ -1,4 +1,4 @@
-import { ProviderTypes } from '../providers/types';
+import { InjectTypes } from '../providers/types';
 import { TypeMetadata } from './TypeMetadata';
 
 /**
@@ -15,5 +15,5 @@ export interface ProvidersMetadata  extends TypeMetadata {
      * @type {KeyValue<Token, Token>}
      * @memberof ProvidersMetadata
      */
-    providers?: ProviderTypes[];
+    providers?: InjectTypes[];
 }

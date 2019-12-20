@@ -70,7 +70,7 @@ export function createTaskDecorator<T extends ActivityConfigure>(
                 metadataExtends(metadata as T);
             }
 
-            metadata.regFor = metadata.regFor || RegFor.boot;
+            metadata.regIn = metadata.regIn || RegFor.boot;
 
             if (!metadata.name && isClass(metadata.type)) {
                 metadata.name = lang.getClassName(metadata.type);

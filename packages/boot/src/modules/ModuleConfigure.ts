@@ -1,4 +1,4 @@
-import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
+import { Token, Modules, Type, ClassMetadata, RegInMetadata } from '@tsdi/ioc';
 
 /**
  * annotation metadata.
@@ -8,20 +8,7 @@ import { Token, Modules, ComponentMetadata, Type } from '@tsdi/ioc';
  * @extends {ClassMetadata}
  * @template T
  */
-export interface IAnnotationMetadata<T = any> extends ComponentMetadata {
-    /**
-     * selector for binding property.
-     *
-     * @type {string}
-     * @memberof ActivityConfigure
-     */
-    selector?: string;
-
-    /**
-     * template data for target to binding property.
-     */
-    template?: any;
-
+export interface IAnnotationMetadata<T = any> extends ClassMetadata, RegInMetadata {
     /**
      * annotation for the type.
      *
@@ -47,7 +34,6 @@ export interface IAnnotationMetadata<T = any> extends ComponentMetadata {
  * @extends {IAnnotationMetadata<T>}
  */
 export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
-
     /**
      * module base url.
      *
@@ -55,15 +41,6 @@ export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
      * @memberof ModuleConfig
      */
     baseURL?: string;
-
-    /**
-     * set where this module to register. default none.
-     *
-     * @type {boolean}
-     * @memberof ModuleConfig
-     */
-    regFor?: 'root';
-
     /**
      * module name.
      *
@@ -71,7 +48,6 @@ export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
      * @memberof AppConfiguration
      */
     name?: string;
-
     /**
      * bootstrap.
      *
@@ -79,7 +55,6 @@ export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
      * @memberof IAnnotationMetadata
      */
     bootstrap?: Token<T>;
-
     /**
      * imports dependens modules
      *
@@ -94,6 +69,14 @@ export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
      * @memberof ModuleConfiguration
      */
     exports?: Modules[];
+    /**
+     * components the module providers.
+     */
+    components?: Modules[];
+    /**
+     * services the module providers.
+     */
+    services?: Modules[];
 
 }
 

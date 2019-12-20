@@ -2,7 +2,7 @@ import {
     Inject, BindProviderAction, IocSetCacheAction, DecoratorScopes, IocAutorunAction,
     RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken, IocExt, TypesRegisterScope, IocExtRegisterScope } from '@tsdi/core';
+import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import { Message } from './decorators/Message';
@@ -10,7 +10,6 @@ import { AnnotationService } from './services/AnnotationService';
 import { MessageContext } from './messages/MessageContext';
 import { MessageQueue } from './messages/MessageQueue';
 import { ModuleInjectLifeScope, DIModuleInjectScope } from './injectors/ModuleInjectLifeScope';
-import { InjectForAction } from './injectors/InjectForAction';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
 import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { Bootstrap } from './decorators/Bootstrap';
@@ -48,15 +47,8 @@ export class BootModule {
         actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .register(ModuleInjectLifeScope)
             .register(DIModuleInjectScope)
-            .register(InjectForAction)
             .register(MessageRegisterAction)
             .register(AnnoationDesignAction);
-
-        // inject module
-        actInjector.get(TypesRegisterScope)
-            .useBefore(InjectForAction);
-        actInjector.get(IocExtRegisterScope)
-            .useBefore(InjectForAction);
 
         actInjector.getInstance(DesignRegisterer)
             .register(DIModule, DecoratorScopes.Inject, DIModuleInjectScope)

@@ -11,10 +11,11 @@ import { BootLifeScope } from './BootLifeScope';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
 import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ResolveMoudleScope } from './resolvers/ResolveMoudleScope';
-import { IModuleBuildOption, BuildContext } from './resolvers/BuildContext';
+import { BuildContext } from './BuildContext';
 import { IStartup } from '../runnable/Startup';
 import { AnnoationContext } from '../AnnoationContext';
 import { BuildHandles } from './BuildHandles';
+import { IBuildOption } from './IBuildOption';
 
 
 
@@ -47,13 +48,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * resolve binding module.
      *
      * @template T
-     * @param {ClassType<T> | IModuleBuildOption} target
-     * @param {IModuleBuildOption} options
+     * @param {ClassType<T> | IBuildOption} target
+     * @param {IBuildOption} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async resolve<T>(target: ClassType<T> | IModuleBuildOption<T>): Promise<T> {
+    async resolve<T>(target: ClassType<T> | IBuildOption<T>): Promise<T> {
         let ctx = await this.resolveContext(target);
         return this.getBootTarget(ctx);
     }
@@ -67,7 +68,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         return null;
     }
 
-    protected async resolveContext(target: ClassType | IModuleBuildOption): Promise<AnnoationContext> {
+    protected async resolveContext(target: ClassType | IBuildOption): Promise<AnnoationContext> {
         let refs = this.reflects;
         let options = isClassType(target) ? { module: target } : target;
         let reflect = refs.get(options.module);
@@ -78,7 +79,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         }
     }
 
-    protected async resolveModule<T>(options: IModuleBuildOption): Promise<BuildContext> {
+    protected async resolveModule<T>(options: IBuildOption): Promise<BuildContext> {
         let rctx = BuildContext.parse(options.injector || this.container, options);
         await this.reflects.getActionInjector().get(ResolveMoudleScope)
             .execute(rctx);

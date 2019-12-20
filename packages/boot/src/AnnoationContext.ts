@@ -1,8 +1,7 @@
-import { Type, createRaiseContext, IocProvidersOption, IocProvidersContext, lang, isToken, IInjector, ClassType } from '@tsdi/ioc';
+import { Type, createRaiseContext, IocProvidersOption, IocProvidersContext, lang, isToken, IInjector, ClassType, RegInMetadata } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { AnnotationServiceToken } from './services/IAnnotationService';
-import { RegisterForMetadata, RegisterFor } from './decorators/RegisterFor';
-import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION, CTX_TYPE_REGFOR } from './context-tokens';
+import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION, CTX_TYPE_REGIN } from './context-tokens';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { IModuleReflect } from './modules/IModuleReflect';
 
@@ -13,7 +12,7 @@ import { IModuleReflect } from './modules/IModuleReflect';
  * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationOption<T = any> extends IocProvidersOption {
+export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetadata {
     /**
      * target module type.
      *
@@ -58,12 +57,12 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         return createRaiseContext(injector, AnnoationContext, isToken(target) ? { module: target } : target);
     }
 
-    get module(): ClassType {
-        return this.getOptions().module;
+    get module(): Type {
+        return this.injector.getTokenProvider(this.getOptions().module);
     }
 
-    setModule(module: ClassType) {
-        this.getOptions().module = module;
+    setModule(type: ClassType) {
+        this.getOptions().module = this.injector.getTokenProvider(type);
     }
 
     get decorator(): string {
@@ -88,15 +87,10 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     }
 
     get regFor(): string {
-        if (!this.has(CTX_TYPE_REGFOR)) {
-            let regFor = this.annoation.regFor;
-            if (!regFor) {
-                let meta = lang.first(this.reflects.getMetadata<RegisterForMetadata>(RegisterFor, this.module));
-                regFor = meta ? meta.regFor : null;
-            }
-            this.set(CTX_TYPE_REGFOR, regFor);
+        if (!this.has(CTX_TYPE_REGIN)) {
+            this.set(CTX_TYPE_REGIN, this.annoation.regIn);
         }
-        return this.get(CTX_TYPE_REGFOR);
+        return this.get(CTX_TYPE_REGIN);
     }
 
     /**
@@ -128,7 +122,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         }
 
         if (options.regFor) {
-            this.set(CTX_TYPE_REGFOR, options.regFor);
+            this.set(CTX_TYPE_REGIN, options.regFor);
         }
     }
 }

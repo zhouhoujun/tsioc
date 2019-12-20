@@ -3,8 +3,8 @@ import { ActionContextOption } from './actions/Action';
 import { Injector } from './Injector';
 import { IParameter } from './IParameter';
 
+export const CTX_PROVIDERS = new InjectToken<Injector>('DI_PROVIDERS');
 export const CTX_OPTIONS = new InjectToken<ActionContextOption>('CTX_OPTIONS');
-export const CTX_PROVIDERS = new InjectToken<Injector>('CTX_PROVIDERS');
 export const CTX_PARAMS = new InjectToken<IParameter[]>('CTX_PARAMS');
 export const CTX_ARGS = new InjectToken<any[]>('CTX_ARGS');
 

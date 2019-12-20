@@ -211,7 +211,7 @@ export interface IInjector {
      * @param target
      * @param providers
      */
-    bindTagProvider<T>(target: Token, ...providers: ProviderTypes[]): InjectReference<IInjector>;
+    bindTagProvider<T>(target: Token, ...providers: InjectTypes[]): InjectReference<IInjector>;
     /**
      * inject providers.
      *

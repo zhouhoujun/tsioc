@@ -2,7 +2,7 @@ import { IocCoreService, InjectToken, ClassType } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
-import { IModuleBuildOption } from './resolvers/BuildContext';
+import { IBuildOption } from './IBuildOption';
 import { IStartup } from '../runnable/Startup';
 
 export interface BootSubAppOption<T extends BootContext> {
@@ -34,12 +34,12 @@ export interface IBuilderService extends IocCoreService {
      *
      * @template T
      * @param {Type} target
-     * @param {IModuleBuildOption<T>} options
+     * @param {IBuildOption<T>} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    resolve<T>(target: ClassType<T> | IModuleBuildOption<T>): Promise<T>;
+    resolve<T>(target: ClassType<T> | IBuildOption<T>): Promise<T>;
 
     build(target: ClassType | BootOption | BootContext, ...args: string[]): Promise<BootContext>
     build<Topt extends BootOption>(target: ClassType | Topt | BootContext, ...args: string[]): Promise<BootContext>;

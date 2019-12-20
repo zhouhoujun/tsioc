@@ -50,7 +50,7 @@ export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> 
  * @class ServerBootstrapModule
  */
 @DIModule({
-    regFor: 'root',
+    regIn: 'root',
     imports: [
         ServerModule,
         ConfigureFileLoader
