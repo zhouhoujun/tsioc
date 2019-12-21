@@ -87,9 +87,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this {
         (async () => {
             let key = injector.getTokenKey(token);
-            // if (injector.hasTokenKey(key)) {
-            //     return;
-            // }
             let classFactory;
             if (isDefined(value)) {
                 if (isFunction(value)) {
@@ -102,11 +99,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                     classFactory = this.createCustomFactory(injector, key, () => value, singleton);
                 }
 
-            } else if (!isString(token) && !isSymbol(token)) {
-                let ClassT = (token instanceof Registration) ? token.getClass() : token;
-                if (isClass(ClassT)) {
-                    this.injectType(injector, ClassT, singleton, key);
-                }
+            } else if (isClass(key)) {
+                this.injectType(injector, key, singleton);
             }
 
             if (classFactory) {
