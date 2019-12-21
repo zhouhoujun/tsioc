@@ -1,10 +1,12 @@
 import 'reflect-metadata';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isToken, ActionInjector, IInjector, isInjector } from '@tsdi/ioc';
+import {
+    ProviderTypes, IocContainer, Type, Token, Modules, LoadType, isToken,
+    IInjector, isInjector, InjectService, ActionInjectorToken
+} from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
 import { registerCores } from './registerCores';
-import { InjectLifeScope } from './injectors/InjectLifeScope';
 import { ServiceOption, ResolveServiceContext } from './resolves/ResolveServiceContext';
 import { ServiceResolveLifeScope } from './resolves/ServiceResolveLifeScope';
 import { ServicesOption, ResolveServicesContext } from './resolves/ResolveServicesContext';
@@ -74,7 +76,7 @@ export class Container extends IocContainer implements IContainer {
             injector = this;
         }
         (async () => {
-            this.getInstance(ActionInjector).get(InjectLifeScope).register(injector, ...modules);
+            this.getInstance(InjectService).inject(injector, ...modules);
         })();
         return this;
     }
@@ -104,7 +106,7 @@ export class Container extends IocContainer implements IContainer {
             injector = this;
         }
         let mdls = await this.getLoader().load(...modules);
-        return this.getInstance(ActionInjector).get(InjectLifeScope).register(injector, ...mdls);
+        return this.getInstance(InjectService).inject(injector, ...mdls);
     }
 
     /**
@@ -140,7 +142,7 @@ export class Container extends IocContainer implements IContainer {
         }
         let context = ResolveServiceContext.parse(injt, isToken(tag) ? { token: tag } : tag);
         providers.length && context.providers.inject(...providers);
-        this.getInstance(ActionInjector)
+        this.get(ActionInjectorToken)
             .get(ServiceResolveLifeScope)
             .execute(context);
         return context.instance || null;
@@ -218,7 +220,7 @@ export class Container extends IocContainer implements IContainer {
             target = arg1;
         }
         let context = ResolveServicesContext.parse(injector, isToken(target) ? { token: target } : target);
-        this.getInstance(ActionInjector)
+        this.get(ActionInjectorToken)
             .get(ServicesResolveLifeScope)
             .execute(context);
 

@@ -17,6 +17,7 @@ export * from './utils/lang';
 export * from './utils/PromiseUtil';
 
 // services
+export * from './services/InjectService';
 export * from './services/ITypeReflect';
 export * from './services/ITypeReflects';
 export * from './services/TypeReflects';

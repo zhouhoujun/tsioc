@@ -15,6 +15,7 @@ import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
+import { InjectService } from './services/InjectService';
 
 
 const MethodAccessorKey = MethodAccessorToken.toString();
@@ -188,6 +189,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     inject(...providers: InjectTypes[]): this {
+        let injser = this.getInstance(InjectService);
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
@@ -202,7 +204,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                 }
             } else if (isClass(p)) {
                 if (!this.has(p)) {
-                    this.register(p);
+                    injser ? injser.inject(this, p) : this.register(p);
                 }
             } else if (p instanceof ObjectMapProvider) {
                 let pr = p.get();
