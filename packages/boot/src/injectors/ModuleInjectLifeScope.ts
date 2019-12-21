@@ -19,10 +19,7 @@ export class ModuleInjectLifeScope extends LifeScope<AnnoationContext> implement
 
     setup() {
         this.actInjector
-            .regAction(DIModuleInjectScope)
-            .regAction(CheckAnnoationAction)
-            .regAction(AnnoationRegisterScope)
-            .regAction(RegModuleExportsAction);
+            .regAction(DIModuleInjectScope);
 
         this.use(CheckAnnoationAction)
             .use(AnnoationRegisterScope)

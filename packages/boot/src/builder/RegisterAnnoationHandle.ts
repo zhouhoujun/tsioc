@@ -10,8 +10,8 @@ export class RegisterAnnoationHandle extends AnnoationHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
         let dec = ctx.getContainer().get(AnnotationServiceToken).getDecorator(ctx.module);
         if (dec) {
+            // ctx.getContainer().use(ctx.injector, ctx.module);
             this.actInjector.get(ModuleInjectLifeScope).register(ctx.injector, ctx.module, dec);
-
             await next();
         } else {
             console.log(ctx.module);

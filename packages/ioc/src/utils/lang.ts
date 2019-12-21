@@ -129,11 +129,13 @@ export namespace lang {
      * @param list list
      * @param el remove item.
      */
-    export function remove<T>(list: T[], el: T): void {
-        const index = list.indexOf(el);
+    export function remove<T>(list: T[], el: T | ((el: T) => boolean)) {
+        let elm = isFunction(el) ? list.find(el) : el;
+        const index = list.indexOf(elm);
         if (index > -1) {
-            list.splice(index, 1);
+           return list.splice(index, 1);
         }
+        return null;
     }
 
     /**

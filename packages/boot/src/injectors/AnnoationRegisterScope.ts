@@ -4,6 +4,8 @@ import { RegModuleAction } from './RegModuleAction';
 import { RegModuleImportsAction } from './RegModuleImportsAction';
 import { RegModuleProvidersAction } from './RegModuleProvidersAction';
 import { RegModuleRefAction } from './RegModuleRefAction';
+import { ModuleInjector } from '../modules/ModuleInjector';
+import { ParentInjectorToken } from '../modules/IModuleReflect';
 
 /**
  * annoation register scope.
@@ -17,6 +19,10 @@ export class AnnoationRegisterScope extends IocCompositeAction<AnnoationContext>
 
         if (ctx.regFor === 'root') {
             ctx.set(InjectorToken, ctx.getContainer());
+        } else {
+            let injector = ctx.injector.get(ModuleInjector);
+            injector.registerValue(ParentInjectorToken, ctx.injector);
+            ctx.set(InjectorToken, injector);
         }
 
         return super.execute(ctx, next);

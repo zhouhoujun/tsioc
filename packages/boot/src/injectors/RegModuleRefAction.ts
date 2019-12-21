@@ -10,6 +10,7 @@ export class RegModuleRefAction extends AnnoationAction {
             let mdRef = new ModuleRef(ctx.module, reflect, ctx.get(CTX_MODULE_EXPORTS));
             let fac = () => mdRef;
             ctx.injector.set(ModuleRef, fac);
+            ctx.set(ModuleRef, mdRef);
             reflect.getModuleRef = fac;
         }
         next();

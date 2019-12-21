@@ -1,4 +1,4 @@
-import { isString } from '@tsdi/ioc';
+import { isString, lang } from '@tsdi/ioc';
 import { ElementNode } from './ElementNode';
 import { NodeSelector } from '../NodeSelector';
 
@@ -66,13 +66,13 @@ export class CompositeNode extends ElementNode {
                 if (!component.$parent) {
                     return this;
                 } else if (this.equals(component.$parent)) {
-                    this.children.splice(this.children.indexOf(component), 1);
+                    lang.remove(this.children, component);
                     component.$parent = null;
                 } else {
                     component.$parent.remove(component);
                 }
-            } else if (this.children.indexOf(component) >= 0) {
-                this.children.splice(this.children.indexOf(component), 1);
+            } else {
+                lang.remove(this.children, component);
             }
         });
         return this;

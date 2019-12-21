@@ -287,7 +287,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @memberof IInjector
      */
     has<T>(token: Token<T>, alias?: string): boolean {
-        return this.factories.has(this.getTokenKey(token, alias));
+        return this.hasTokenKey(this.getTokenKey(token, alias));
     }
     /**
      * has register.
@@ -296,7 +296,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     hasRegister<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        return this.factories.has(key) || this.hasInRoot(key);
+        return this.hasTokenKey(key) || this.hasInRoot(key);
     }
 
     protected hasInRoot(key: SymbolType): boolean {

@@ -1,0 +1,88 @@
+import { Injector, ContainerFactory, Token, lang, SymbolType, ProviderTypes, Type } from '@tsdi/ioc';
+import { ModuleRef } from './ModuleRef';
+
+
+
+/**
+ * DI module exports.
+ *
+ * @export
+ * @class DIModuleExports
+ * @extends {IocCoreService}
+ * @implements {IResolver}
+ */
+export class ModuleInjector extends Injector {
+
+
+    protected exports: ModuleRef[];
+
+    constructor(factory: ContainerFactory) {
+        super(factory);
+        this.exports = [];
+    }
+
+    hasTokenKey<T>(key: SymbolType<T>): boolean {
+        return this.factories.has(key) || this.exports.some(r => r.exports.hasTokenKey(key))
+    }
+
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
+        if (this.hasTokenKey(key)) {
+            if (this.factories.has(key)) {
+                return this.factories.get(key)(...providers);
+            }
+            let mref = this.exports.find(r => r.exports.hasTokenKey(key));
+            if (mref) {
+                return mref.exports.getInstance(key, ...providers);
+            }
+        }
+        return this.tryGetInRoot(key, providers);
+    }
+
+    getTokenProvider<T>(token: Token<T>): Type<T> {
+        let type = super.getTokenProvider(token);
+        if (!type) {
+            this.exports.some(r => {
+                type = r.exports.getTokenProvider(token);
+                return type;
+            });
+        }
+        return type;
+    }
+
+    clearCache(targetType: Type) {
+        super.clearCache(targetType);
+        this.exports.forEach(r => {
+            r.exports.clearCache(targetType);
+        })
+        return this;
+    }
+
+    unregister<T>(token: Token<T>): this {
+        super.unregister(token);
+        this.exports.forEach(r => {
+            r.exports.unregister(token);
+        });
+        lang.remove(this.exports, el => el.moduleType === token)
+        return this;
+    }
+
+    export(ref: ModuleRef, first?: boolean): this {
+        if (this.hasExport(ref)) {
+            return this;
+        }
+        if (first) {
+            this.exports.unshift(ref);
+        } else {
+            this.exports.push(ref);
+        }
+        return this;
+    }
+
+    hasExport(ref: ModuleRef): boolean {
+        return this.exports.indexOf(ref) >= 0;
+    }
+
+    unexport(ref: ModuleRef) {
+        return lang.remove(this.exports, ref);
+    }
+}

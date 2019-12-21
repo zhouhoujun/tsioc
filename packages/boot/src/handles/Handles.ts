@@ -1,4 +1,4 @@
-import { PromiseUtil } from '@tsdi/ioc';
+import { PromiseUtil, lang } from '@tsdi/ioc';
 import { IHandleContext, HandleType, Handle } from './Handle';
 
 /**
@@ -32,9 +32,7 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
     }
 
     unuse(handle: HandleType<T>) {
-        let idx = this.handles.indexOf(handle);
-        if (idx >= 0) {
-            this.handles.splice(idx, 1);
+        if (lang.remove(this.handles, handle)) {
             this.resetFuncs();
         }
         return this;

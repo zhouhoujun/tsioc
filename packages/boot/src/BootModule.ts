@@ -19,6 +19,7 @@ import { BaseTypeParser } from './services/BaseTypeParser';
 import { RootMessageQueue } from './services/RootMessageQueue';
 import { StartupServices } from './services/StartupServices';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
+import { ModuleInjector } from './modules/ModuleInjector';
 
 
 /**
@@ -41,6 +42,7 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
+        container.register(ModuleInjector, () => new ModuleInjector(container.getFactory()));
         container.register(AnnotationService);
         let actInjector = container.get(ActionInjectorToken);
 
