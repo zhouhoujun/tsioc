@@ -154,7 +154,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
             }
             this.provideTypes.set(provideKey, provider);
         } else if (isToken(provider)) {
-            let type = this.provideTypes.get(provider);
+            let type = this.getTokenProvider(provider);
             if (isClass(type)) {
                 this.provideTypes.set(provideKey, type);
             }
