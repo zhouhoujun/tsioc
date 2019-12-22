@@ -188,6 +188,11 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return refToken;
     }
 
+
+    protected registerType( type: Type, injser?: InjectService) {
+        injser ? injser.inject(this, type) : this.register(type);
+    }
+
     inject(...providers: InjectTypes[]): this {
         let injser = this.getInstance(InjectService);
         providers.forEach((p, index) => {
@@ -204,7 +209,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                 }
             } else if (isClass(p)) {
                 if (!this.has(p)) {
-                    injser ? injser.inject(this, p) : this.register(p);
+                    this.registerType(p, injser);
                 }
             } else if (p instanceof ObjectMapProvider) {
                 let pr = p.get();
@@ -229,7 +234,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                         this.factories.set(pr.provide, () => pr.useValue);
                     } else if (isClass(pr.useClass)) {
                         if (!this.has(pr.useClass)) {
-                            this.register(pr.useClass);
+                            this.registerType(pr.useClass, injser);
                         }
                         this.factories.set(pr.provide, pr.useClass);
                         this.provideTypes.set(pr.provideKey, pr.useClass);
