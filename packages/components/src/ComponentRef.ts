@@ -73,17 +73,13 @@ export class ComponentRef<T = any> implements IComponentRef<T> {
         return this.context.get(ViewRef);
     }
 
-    private _ctx: AnnoationContext;
-    get context(): AnnoationContext {
-        return this._ctx;
-    }
 
     constructor(
         public readonly componentType: Type<T>,
         public readonly instance: T,
-        context: AnnoationContext
+        public readonly context: TemplateContext
     ) {
-        this._ctx = context;
+
     }
 
     destroy(): void {
@@ -91,7 +87,7 @@ export class ComponentRef<T = any> implements IComponentRef<T> {
             this.destroyCbs.forEach(fn => fn());
             this.destroyCbs = null;
             !this.hostView.destroyed && this.hostView.destroy();
-            delete this._ctx;
+            this.context.clear();
         }
     }
 

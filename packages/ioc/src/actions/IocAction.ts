@@ -28,6 +28,11 @@ export abstract class IocActionContext extends IocCoreService {
     abstract get reflects(): ITypeReflects;
 
     /**
+     * clear.
+     */
+    abstract clear(): void;
+
+    /**
      * set options.
      *
      * @param {ActionContextOption} options
@@ -212,6 +217,10 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      */
     clone(options?: T, filter?: (key: Token) => boolean): this {
         return createRaiseContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} });
+    }
+
+    clear() {
+        this.contexts.clear();
     }
 
 }

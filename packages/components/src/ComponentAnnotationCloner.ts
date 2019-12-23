@@ -1,5 +1,5 @@
 import { Singleton, isArray, isFunction, isMetadataObject, lang, isBaseValue } from '@tsdi/ioc';
-import { ModuleConfigure, AnnotationCloner } from '@tsdi/boot';
+import { AnnotationCloner } from '@tsdi/boot';
 import { IComponentMetadata } from './decorators/IComponentMetadata';
 
 /**

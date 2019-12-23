@@ -29,6 +29,6 @@ export function registerCores(container: IContainer) {
         .register(IocExt, DecoratorScopes.Class, RegisterSingletionAction);
 
     actInjector.getInstance(DesignRegisterer)
-        .register(IocExt, DecoratorScopes.Class, IocAutorunAction);
+        .register(IocExt, DecoratorScopes.AfterAnnoation, IocAutorunAction);
 
 }

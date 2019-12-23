@@ -9,7 +9,7 @@ import { IComponentMetadata } from '../decorators/IComponentMetadata';
 export class ResolveTemplateScope extends ResolveHandle {
     async execute(ctx: BuildContext, next: () => Promise<void>): Promise<void> {
         let options = ctx.getOptions();
-        let annoation = ctx.annoation  as IComponentMetadata;
+        let annoation = ctx.annoation as IComponentMetadata;
         if (!options.scope && !options.parsing && options.template && !annoation.template) {
             annoation.template = options.template;
         }
@@ -20,11 +20,13 @@ export class ResolveTemplateScope extends ResolveHandle {
                 annoation: annoation,
                 decorator: ctx.decorator
             });
+
             await this.actInjector.get(TemplateParseScope)
                 .execute(pCtx);
+
             if (!isNullOrUndefined(pCtx.value)) {
-                ctx.set(ViewRef,  new RootViewRef(pCtx));
-                ctx.set(ComponentRef, new ComponentRef(ctx.module, ctx.target, ctx))
+                pCtx.set(ViewRef, new RootViewRef(pCtx));
+                ctx.set(ComponentRef, new ComponentRef(ctx.module, ctx.target, pCtx));
             }
         }
         await next();

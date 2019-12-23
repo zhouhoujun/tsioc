@@ -19,7 +19,13 @@ export enum DecoratorScopes {
     Method = 'Method',
     BeforeConstructor = 'BeforeConstructor',
     AfterConstructor = 'AfterConstructor',
+    /**
+     * annoation actions for design time.
+     */
     Annoation = 'Annoation',
+    /**
+     * after annoation actions for design time.
+     */
     AfterAnnoation = 'AfterAnnoation',
 
     Inject = 'Inject'

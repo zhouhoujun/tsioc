@@ -17,7 +17,6 @@ import { TemplateParseScope } from './parses/TemplateParseScope';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 import { AstResolver } from './AstResolver';
-import { APP_COMPONENT_REFS } from './ComponentRef';
 
 import { ComponentRegisterAction } from './registers/ComponentRegisterAction';
 import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
@@ -47,8 +46,6 @@ export class ComponentsModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.inject(ComponentAnnotationCloner, AstResolver);
-
-        container.registerValue(APP_COMPONENT_REFS, new WeakMap());
         let actInjector = container.get(ActionInjectorToken);
 
         actInjector.register(ComponentRegisterAction)

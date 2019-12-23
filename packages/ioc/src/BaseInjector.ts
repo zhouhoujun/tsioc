@@ -416,6 +416,11 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this;
     }
 
+    clear() {
+        this.factories.clear();
+        this.provideTypes.clear();
+    }
+
     /**
      * get token.
      *

@@ -237,6 +237,10 @@ export interface IInjector {
      */
     unregister<T>(token: Token<T>): this;
     /**
+     * clear injector.
+     */
+    clear(): void;
+    /**
      * clear cache.
      *
      * @param {Type} targetType
