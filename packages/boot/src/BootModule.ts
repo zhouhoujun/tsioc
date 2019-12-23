@@ -52,8 +52,8 @@ export class BootModule {
             .register(AnnoationDesignAction);
 
         let desgReger = actInjector.getInstance(DesignRegisterer);
-        registerAnnoation(DIModule, desgReger);
-        registerAnnoation(Bootstrap, desgReger);
+        registerModule(DIModule, desgReger);
+        registerModule(Bootstrap, desgReger);
         desgReger.register(Annotation,
             { scope: DecoratorScopes.Class, action: [BindProviderAction, AnnoationDesignAction] },
             { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }
@@ -80,7 +80,12 @@ export class BootModule {
     }
 }
 
-export function registerAnnoation(decorator: string | Function, registerer: DesignRegisterer): DesignRegisterer {
+/**
+ * register decorator as module.
+ * @param decorator decorator.
+ * @param registerer design registerer.
+ */
+export function registerModule(decorator: string | Function, registerer: DesignRegisterer): DesignRegisterer {
     return registerer.register(decorator,
         { scope: DecoratorScopes.Inject, action: DIModuleInjectScope },
         { scope: DecoratorScopes.BeforeAnnoation, action: AnnoationInjectorCheck },
