@@ -1,6 +1,6 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { ResolveHandle, BuildContext } from '@tsdi/boot';
-import { IComponentReflect } from '../bindings/IComponentReflect';
+import { IComponentReflect } from '../IComponentReflect';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScopeHandle } from '../parses/BindingValueScope';
 

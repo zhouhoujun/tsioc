@@ -1,5 +1,6 @@
 import { Singleton, isArray, isFunction, isMetadataObject, lang, isBaseValue } from '@tsdi/ioc';
 import { ModuleConfigure, AnnotationCloner } from '@tsdi/boot';
+import { IComponentMetadata } from './decorators/IComponentMetadata';
 
 /**
  * Component annotation metadata cloner
@@ -9,9 +10,9 @@ import { ModuleConfigure, AnnotationCloner } from '@tsdi/boot';
  * @extends {AnnotationCloner}
  */
 @Singleton()
-export class ComponentAnnotationCloner extends AnnotationCloner {
+export class ComponentAnnotationCloner extends AnnotationCloner<IComponentMetadata> {
 
-    clone(ann: ModuleConfigure): ModuleConfigure {
+    clone(ann: IComponentMetadata): IComponentMetadata {
         if (ann.template) {
             ann.template = this.cloneTemplate(ann.template);
         }

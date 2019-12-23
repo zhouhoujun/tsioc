@@ -2,7 +2,7 @@ import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
 import { BuildContext, ResolveHandle } from '@tsdi/boot';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
-import { IComponentReflect } from '../bindings/IComponentReflect';
+import { IComponentReflect } from '../IComponentReflect';
 import { BindingTypes } from '../bindings/IBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { DataBinding } from '../bindings/DataBinding';

@@ -1,5 +1,5 @@
 import { ITypeReflect } from '@tsdi/ioc';
-import { IBinding, IPropertyVaildate } from './IBinding';
+import { IBinding, IPropertyVaildate } from './bindings/IBinding';
 
 /**
  * binding type reflect data.

@@ -1,24 +1,20 @@
-import { Type, ProviderTypes, isArray, ProviderParser } from '@tsdi/ioc';
-import { ModuleLoader } from '@tsdi/core';
-import { AnnoationAction } from './AnnoationAction';
-import { AnnoationContext } from '../AnnoationContext';
-import { CTX_MODULE_EXPORTS } from '../context-tokens';
+import { Type, ProviderTypes, isArray, ProviderParser, IocDesignAction, DesignActionContext } from '@tsdi/ioc';
+import { ModuleLoader, IContainer } from '@tsdi/core';
+import { CTX_MODULE_EXPORTS, CTX_MODULE_ANNOATION } from '../context-tokens';
 
 
-export class RegModuleProvidersAction extends AnnoationAction {
-    execute(ctx: AnnoationContext, next: () => void): void {
+export class RegModuleProvidersAction extends IocDesignAction {
+    execute(ctx: DesignActionContext, next: () => void): void {
         let tRef = ctx.reflects;
-        let annoation = ctx.annoation;
+        let annoation = ctx.get(CTX_MODULE_ANNOATION);
 
         let injector = ctx.injector;
+        let continer = ctx.getContainer<IContainer>()
         let map = injector.getInstance(ProviderParser)
             .parse(...annoation.providers || []);
         // inject module providers
         if (annoation.components) {
-            ctx.getContainer().use(map, ...annoation.components);
-        }
-        if (annoation.services) {
-            ctx.getContainer().use(map, ...annoation.services);
+            continer.use(map, ...annoation.components);
         }
 
         if (map.size) {

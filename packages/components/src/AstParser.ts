@@ -8,4 +8,4 @@ export interface AstParser {
     parse(expression: string): Ast;
 }
 
-export const AstParserToken = new InjectToken<AstParser>('ast_parser');
+export const AstParserToken = new InjectToken<AstParser>('AST_PARSER');

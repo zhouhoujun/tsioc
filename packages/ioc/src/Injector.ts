@@ -1,4 +1,4 @@
-import { Token, Factory, SymbolType } from './types';
+import { Token, Factory, SymbolType, Type } from './types';
 import { IInjector } from './IInjector';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
@@ -47,6 +47,11 @@ export class Injector extends BaseInjector implements IInjector {
      */
     register<T>(provide: Token<T>, fac?: Factory<T>): this {
         this.getContainer().registerFactory(this, provide, fac);
+        return this;
+    }
+
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
+        this.getContainer().registerType(this, type, provide, singleton);
         return this;
     }
 

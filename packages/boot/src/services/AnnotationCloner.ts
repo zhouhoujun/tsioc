@@ -1,6 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
-import { ModuleConfigure } from '../modules/ModuleConfigure';
-
+import { Abstract, ClassMetadata } from '@tsdi/ioc';
 /**
  * annotation cloner.
  *
@@ -10,6 +8,6 @@ import { ModuleConfigure } from '../modules/ModuleConfigure';
  * @template T
  */
 @Abstract()
-export abstract class AnnotationCloner<T extends ModuleConfigure = ModuleConfigure>  {
+export abstract class AnnotationCloner<T extends ClassMetadata = ClassMetadata>  {
     abstract clone(annotation: T): T;
 }

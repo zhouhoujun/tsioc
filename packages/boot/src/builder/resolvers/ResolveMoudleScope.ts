@@ -18,7 +18,6 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
         if (ctx.target) {
             return;
         }
-
         if (ctx.targetReflect) {
             // has build module instance.
             await super.execute(ctx);
@@ -26,7 +25,6 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
         if (ctx.annoation && next) {
             await next();
         }
-
     }
 
     setup() {

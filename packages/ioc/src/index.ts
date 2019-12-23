@@ -17,7 +17,6 @@ export * from './utils/lang';
 export * from './utils/PromiseUtil';
 
 // services
-export * from './services/InjectService';
 export * from './services/ITypeReflect';
 export * from './services/ITypeReflects';
 export * from './services/TypeReflects';
@@ -140,4 +139,5 @@ export * from './actions/design/IocDesignAction';
 export * from './actions/design/BindProviderAction';
 export * from './actions/design/BindMethodProviderAction';
 export * from './actions/design/BindPropertyTypeAction';
+export * from './actions/design/AnnoationScope';
 export * from './actions/design/IocAutorunAction';

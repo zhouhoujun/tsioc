@@ -1,7 +1,6 @@
-import { Type, createRaiseContext, IocProvidersOption, IocProvidersContext, lang, isToken, IInjector, ClassType, RegInMetadata } from '@tsdi/ioc';
+import { Type, createRaiseContext, IocProvidersOption, IocProvidersContext, isToken, IInjector, ClassType, RegInMetadata, ClassMetadata } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { AnnotationServiceToken } from './services/IAnnotationService';
-import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION, CTX_TYPE_REGIN } from './context-tokens';
+import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION } from './context-tokens';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { IModuleReflect } from './modules/IModuleReflect';
 
@@ -33,15 +32,8 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
      * @type {IAnnotationMetadata}
      * @memberof AnnoationOption
      */
-    annoation?: ModuleConfigure;
+    annoation?: ClassMetadata;
 
-    /**
-     * set where this module to register. default current module.
-     *
-     * @type {boolean}
-     * @memberof ModuleConfig
-     */
-    regFor?: 'root';
 }
 
 /**
@@ -67,10 +59,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
 
     get decorator(): string {
         if (!this.has(CTX_MODULE_DECTOR) && this.module) {
-            let dec = this.getContainer().get(AnnotationServiceToken).getDecorator(this.module);
-            if (!dec) {
-                dec = this.targetReflect.decorator;
-            }
+            let dec = this.targetReflect.decorator;
             if (dec) {
                 this.set(CTX_MODULE_DECTOR, dec);
             }
@@ -86,13 +75,6 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         return this._targetReflect;
     }
 
-    get regFor(): string {
-        if (!this.has(CTX_TYPE_REGIN)) {
-            this.set(CTX_TYPE_REGIN, this.annoation.regIn);
-        }
-        return this.get(CTX_TYPE_REGIN);
-    }
-
     /**
      * annoation metadata.
      *
@@ -102,7 +84,9 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     get annoation(): TMeta {
         if (!this.has(CTX_MODULE_ANNOATION) && this.module) {
             let tgRef = this.targetReflect;
-            this.set(CTX_MODULE_ANNOATION, (tgRef && tgRef.getAnnoation) ? tgRef.getAnnoation<TMeta>() : this.getContainer().get(AnnotationServiceToken).getAnnoation(this.module, this.get(CTX_MODULE_DECTOR)));
+            if ((tgRef && tgRef.getAnnoation)) {
+                this.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation<TMeta>())
+            }
         }
         return this.get(CTX_MODULE_ANNOATION) as TMeta;
     }
@@ -119,10 +103,6 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         }
         if (options.annoation) {
             this.set(CTX_MODULE_ANNOATION, options.annoation);
-        }
-
-        if (options.regFor) {
-            this.set(CTX_TYPE_REGIN, options.regFor);
         }
     }
 }

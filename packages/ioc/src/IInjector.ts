@@ -189,6 +189,13 @@ export interface IInjector {
      */
     registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     /**
+     * register type class.
+     * @param Type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     */
+    registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    /**
      * bind provider
      *
      * @template T

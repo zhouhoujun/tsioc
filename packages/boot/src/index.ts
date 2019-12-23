@@ -3,15 +3,12 @@ export * from './decorators/Bootstrap';
 // services
 export * from './services/IBaseTypeParser';
 export * from './services/BaseTypeParser';
-export * from './services/RootMessageQueue';
 export * from './services/ModuleBuilder';
 export * from './services/StartupService';
 export * from './services/StartupServices';
 
 export * from './services/AnnotationMerger';
 export * from './services/AnnotationCloner';
-export * from './services/IAnnotationService';
-export * from './services/AnnotationService';
 
 // annotations
 export * from './annotations/RunnableConfigure';
@@ -32,21 +29,21 @@ export * from './decorators/Annotation';
 export * from './decorators/DIModule';
 export * from './decorators/Message';
 
+
 export * from './AnnoationContext';
 // registers
 export * from './registers/MessageRegisterAction';
 export * from './registers/AnnoationDesignAction';
+export * from './registers/RegModuleImportsAction';
+export * from './registers/RegModuleProvidersAction';
+export * from './registers/RegModuleRefAction';
+export * from './registers/RegModuleExportsAction';
+export * from './registers/AnnoationInjectorCheck';
+export * from './registers/AnnoationRegisterAction';
+
 
 // injectors
-export * from './injectors/AnnoationAction';
-export * from './injectors/AnnoationRegisterScope';
-export * from './injectors/CheckAnnoationAction';
-export * from './injectors/RegModuleAction';
-export * from './injectors/RegModuleImportsAction';
-export * from './injectors/RegModuleProvidersAction';
-export * from './injectors/RegModuleRefAction';
-export * from './injectors/RegModuleExportsAction';
-export * from './injectors/ModuleInjectLifeScope';
+export * from './injectors/DIModuleInjectScope';
 
 
 // modules
@@ -67,6 +64,7 @@ export * from './messages/IMessageQueue';
 export * from './messages/MessageContext';
 export * from './messages/MessageHandle';
 export * from './messages/MessageQueue';
+export * from './messages/RootMessageQueue';
 
 // builders
 export * from './builder/BuildHandles';

@@ -1,6 +1,6 @@
 import { IocDesignAction, DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { VaildatePropertyMetadata } from '../decorators/Vaildate';
-import { IComponentReflect } from '../bindings/IComponentReflect';
+import { IComponentReflect } from '../IComponentReflect';
 
 
 export class RegisterVaildateAction extends IocDesignAction {

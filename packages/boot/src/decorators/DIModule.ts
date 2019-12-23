@@ -1,4 +1,4 @@
-import { createClassDecorator, MetadataExtends, ITypeDecorator, isClass, lang, ArgsIteratorAction, clsUglifyExp } from '@tsdi/ioc';
+import { createClassDecorator, MetadataExtends, ITypeDecorator, isClass, lang, ArgsIteratorAction } from '@tsdi/ioc';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**
@@ -62,13 +62,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(
             }
 
             if (!metadata.name && isClass(metadata.token)) {
-                let isuglify = clsUglifyExp.test(metadata.token.name);
-                let classAnnations = lang.getClassAnnations(metadata.token);
-                if (isuglify && classAnnations) {
-                    metadata.name = classAnnations.name;
-                } else {
-                    metadata.name = metadata.token.name;
-                }
+                metadata.name = lang.getClassName(metadata.token);
             }
             metadata.decorType = name;
         }) as IDIModuleDecorator<T>;

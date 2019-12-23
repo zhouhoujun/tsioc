@@ -1,4 +1,7 @@
-import { LoadType, InjectToken, Type, Injectable, createRaiseContext, Token, isToken, isDefined, CTX_CURR_SCOPE, isTypeObject, IInjector } from '@tsdi/ioc';
+import {
+    LoadType, InjectToken, Type, Injectable, createRaiseContext, Token,
+    isToken, isDefined, CTX_CURR_SCOPE, isTypeObject, IInjector
+} from '@tsdi/ioc';
 import { IModuleLoader } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';

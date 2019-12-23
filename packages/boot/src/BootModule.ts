@@ -6,20 +6,21 @@ import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import { Message } from './decorators/Message';
-import { AnnotationService } from './services/AnnotationService';
 import { MessageContext } from './messages/MessageContext';
 import { MessageQueue } from './messages/MessageQueue';
-import { ModuleInjectLifeScope, DIModuleInjectScope } from './injectors/ModuleInjectLifeScope';
+import { RootMessageQueue } from './messages/RootMessageQueue';
+import { DIModuleInjectScope } from './injectors/DIModuleInjectScope';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
 import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { Bootstrap } from './decorators/Bootstrap';
 import { BuilderService } from './builder/BuilderService';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
-import { RootMessageQueue } from './services/RootMessageQueue';
 import { StartupServices } from './services/StartupServices';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
 import { ModuleInjector } from './modules/ModuleInjector';
+import { AnnoationInjectorCheck } from './registers/AnnoationInjectorCheck';
+import { AnnoationRegisterAction } from './registers/AnnoationRegisterAction';
 
 
 /**
@@ -43,20 +44,29 @@ export class BootModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.register(ModuleInjector, () => new ModuleInjector(container.getFactory()));
-        container.register(AnnotationService);
         let actInjector = container.get(ActionInjectorToken);
 
         actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
-            .register(ModuleInjectLifeScope)
             .register(DIModuleInjectScope)
             .register(MessageRegisterAction)
             .register(AnnoationDesignAction);
 
         actInjector.getInstance(DesignRegisterer)
-            .register(DIModule, DecoratorScopes.Inject, DIModuleInjectScope)
-            .register(Annotation, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
-            .register(DIModule, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, IocAutorunAction)
-            .register(Message, DecoratorScopes.Class, BindProviderAction, IocAutorunAction, MessageRegisterAction);
+            .register(DIModule,
+                { scope: DecoratorScopes.Inject, action: DIModuleInjectScope },
+                { scope: DecoratorScopes.BeforeAnnoation, action: AnnoationInjectorCheck },
+                { scope: DecoratorScopes.Class, action: [BindProviderAction, AnnoationDesignAction] },
+                { scope: DecoratorScopes.Annoation, action: AnnoationRegisterAction },
+                { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }
+            )
+            .register(Annotation,
+                { scope: DecoratorScopes.Class, action: [BindProviderAction, AnnoationDesignAction] },
+                { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }
+            )
+            .register(Message,
+                { scope: DecoratorScopes.Class, action: BindProviderAction },
+                { scope: DecoratorScopes.AfterAnnoation, action: [IocAutorunAction, MessageRegisterAction] }
+            );
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)

@@ -1,13 +1,13 @@
-import { AnnoationAction } from './AnnoationAction';
-import { AnnoationContext } from '../AnnoationContext';
+
+import { IocDesignAction, DesignActionContext } from '@tsdi/ioc';
 import { CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ParentInjectorToken } from '../modules/IModuleReflect';
 import { ModuleInjector } from '../modules/ModuleInjector';
 import { ModuleRef } from '../modules/ModuleRef';
 
-export class RegModuleExportsAction extends AnnoationAction {
-    execute(ctx: AnnoationContext, next: () => void): void {
-        if (ctx.has(CTX_MODULE_EXPORTS) && ctx.regFor !== 'root') {
+export class RegModuleExportsAction extends IocDesignAction {
+    execute(ctx: DesignActionContext, next: () => void): void {
+        if (ctx.has(CTX_MODULE_EXPORTS) && ctx.targetReflect.regIn !== 'root') {
             let parent = ctx.injector.get(ParentInjectorToken);
             if (parent) {
                 if (parent instanceof ModuleInjector) {

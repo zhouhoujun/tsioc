@@ -15,7 +15,6 @@ import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
-import { InjectService } from './services/InjectService';
 
 
 const MethodAccessorKey = MethodAccessorToken.toString();
@@ -110,6 +109,14 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this;
     }
 
+    /**
+     * register type class.
+     * @param Type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     */
+    abstract registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+
 
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
@@ -188,13 +195,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return refToken;
     }
 
-
-    protected registerType( type: Type, injser?: InjectService) {
-        injser ? injser.inject(this, type) : this.register(type);
-    }
-
     inject(...providers: InjectTypes[]): this {
-        let injser = this.getInstance(InjectService);
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
@@ -209,7 +210,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                 }
             } else if (isClass(p)) {
                 if (!this.has(p)) {
-                    this.registerType(p, injser);
+                    this.registerType(p);
                 }
             } else if (p instanceof ObjectMapProvider) {
                 let pr = p.get();
@@ -234,7 +235,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                         this.factories.set(pr.provide, () => pr.useValue);
                     } else if (isClass(pr.useClass)) {
                         if (!this.has(pr.useClass)) {
-                            this.registerType(pr.useClass, injser);
+                            this.registerType(pr.useClass);
                         }
                         this.factories.set(pr.provide, pr.useClass);
                         this.provideTypes.set(pr.provideKey, pr.useClass);

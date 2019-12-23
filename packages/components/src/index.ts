@@ -2,7 +2,6 @@
 export * from './bindings/IBinding';
 export * from './bindings/onChange';
 export * from './bindings/DataBinding';
-export * from './bindings/IComponentReflect';
 export * from './bindings/EventBinding';
 export * from './bindings/OneWayBinding';
 export * from './bindings/TwoWayBinding';
@@ -55,6 +54,7 @@ export * from './ComponentLifecycle';
 export * from './RefSelector';
 export * from './NodeSelector';
 export * from './ComponentAnnotationCloner';
+export * from './IComponentReflect';
 export * from './IComponentBuilder';
 export * from './ComponentBuilder';
 export * from './ComponentsModule';

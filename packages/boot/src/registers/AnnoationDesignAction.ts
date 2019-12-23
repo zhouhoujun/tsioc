@@ -3,6 +3,7 @@ import { AnnotationMerger } from '../services/AnnotationMerger';
 import { AnnotationCloner } from '../services/AnnotationCloner';
 import { IModuleReflect } from '../modules/IModuleReflect';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
+import { CTX_MODULE_ANNOATION } from '../context-tokens';
 
 
 export class AnnoationDesignAction extends IocDesignAction {
@@ -37,6 +38,8 @@ export class AnnoationDesignAction extends IocDesignAction {
                 }
                 return annon as T;
             };
+
+            ctx.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
         }
         next();
     }

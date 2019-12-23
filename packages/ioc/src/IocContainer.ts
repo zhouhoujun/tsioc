@@ -1,18 +1,15 @@
 import 'reflect-metadata';
 import { IIocContainer, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, ToInstance } from './types';
-import { isClass, isFunction, isSymbol, isString, isDefined } from './utils/lang';
-import { Registration } from './Registration';
+import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
 import { ParamProviders } from './providers/types';
 import { TypeReflects } from './services/TypeReflects';
 import { IocSingletonManager } from './actions/IocSingletonManager';
-import { RuntimeActionContext } from './actions/runtime/RuntimeActionContext';
-import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector } from './IInjector';
-import { BaseInjector } from './BaseInjector';
+import { BaseInjector, isInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 
 
@@ -91,7 +88,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             if (isDefined(value)) {
                 if (isFunction(value)) {
                     if (isClass(value)) {
-                        this.injectType(injector, value, singleton, key);
+                        this.registerType(injector, value, key, singleton);
                     } else {
                         classFactory = this.createCustomFactory(injector, key, value as ToInstance<T>, singleton);
                     }
@@ -100,7 +97,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 }
 
             } else if (isClass(key)) {
-                this.injectType(injector, key, singleton);
+                this.registerType(injector, key, key, singleton);
             }
 
             if (classFactory) {
@@ -125,46 +122,43 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     }
 
     /**
-     * inject type.
-     *
-     * @template T
-     * @param {IInjector} injector
-     * @param {Type<T>} type
-     * @param {boolean} [singleton]
-     * @param {SymbolType<T>} [provide]
-     * @returns {this}
-     * @memberof IIocContainer
+     * register type class.
+     * @param type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
      */
-    protected injectType<T>(injector: IInjector, type: Type<T>, singleton?: boolean, provide?: SymbolType<T>) {
-        if (!provide) {
-            provide = type;
-        }
-        let factory = (...providers: ParamProviders[]) => {
-            let mgr = injector.getInstance(IocSingletonManager);
-            if (mgr.has(provide)) {
-                return mgr.get(provide);
-            }
-            let ctx = RuntimeActionContext.parse(injector, {
-                tokenKey: provide,
-                targetType: type,
-                singleton: singleton,
-                providers: providers
-            });
-            this.getInstance<IActionInjector>(actionInjectorKey).get(RuntimeLifeScope).register(ctx);
-            return ctx.target;
-        };
-
-        injector.set(type, factory);
-        if (provide !== type) {
-            injector.set(provide, factory, type);
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    /**
+     * register type class.
+     * @param injector register in the injector.
+     * @param type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     */
+    registerType<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    registerType<T>(arg1: any, arg2: any, arg3?: any, singleton?: boolean): this {
+        let injector: IInjector;
+        let type: Type<T>;
+        let provide: Token<T>;
+        if (isInjector(arg1)) {
+            injector = arg1;
+            type = arg2;
+            provide = arg3 || arg2;
+        } else {
+            injector = this;
+            type = arg1;
+            provide = arg2 || arg1;
+            singleton = arg3;
         }
 
         (async () => {
             this.getInstance<IActionInjector>(actionInjectorKey).get(DesignLifeScope).register(
                 DesignActionContext.parse(injector, {
                     tokenKey: provide,
-                    targetType: type
+                    targetType: type,
+                    singleton: singleton
                 }));
         })();
+        return this;
     }
 }

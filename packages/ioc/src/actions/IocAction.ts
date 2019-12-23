@@ -157,8 +157,8 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      *
      * @memberof ResovleContext
      */
-    getContainer(): TC {
-        return this.containerFactory();
+    getContainer<T extends TC>(): T {
+        return this.containerFactory() as T;
     }
 
     protected _options: T;

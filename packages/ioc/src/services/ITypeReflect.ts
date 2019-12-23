@@ -1,7 +1,7 @@
 import { Token, ObjectMap, ClassType } from '../types';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers/types';
-import { ClassMetadata } from '../metadatas/ClassMetadata';
+import { InjectableMetadata } from '../metadatas/InjectableMetadata';
 import { lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
 
@@ -118,7 +118,7 @@ export class TypeDefine {
  * @export
  * @interface ITypeReflect
  */
-export interface ITypeReflect extends ClassMetadata {
+export interface ITypeReflect extends InjectableMetadata {
 
     type: ClassType;
 

@@ -73,11 +73,6 @@ export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
      * components the module providers.
      */
     components?: Modules[];
-    /**
-     * services the module providers.
-     */
-    services?: Modules[];
-
 }
 
 /**

@@ -1,5 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
-import { ModuleConfigure } from '../modules/ModuleConfigure';
+import { Abstract, ClassMetadata } from '@tsdi/ioc';
 
 /**
  * annotation merger.
@@ -10,6 +9,6 @@ import { ModuleConfigure } from '../modules/ModuleConfigure';
  * @template T
  */
 @Abstract()
-export abstract class AnnotationMerger<T extends ModuleConfigure = ModuleConfigure> {
+export abstract class AnnotationMerger<T extends ClassMetadata = ClassMetadata> {
     abstract merge(configs: T[]): T;
 }

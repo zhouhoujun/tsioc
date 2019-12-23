@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { IBinding } from '../bindings/IBinding';
-import { IComponentReflect } from '../bindings/IComponentReflect';
+import { IComponentReflect } from '../IComponentReflect';
 
 /**
  * binding cache.

@@ -46,6 +46,21 @@ export interface IIocContainer extends IInjector {
      */
     getTypeReflects(): TypeReflects;
     /**
+     * register type class.
+     * @param Type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     */
+    registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    /**
+     * register type class.
+     * @param injector register in the injector.
+     * @param type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     */
+    registerType<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    /**
      * register factory to injector.
      * @param injector the injector to register.
      * @param token register token

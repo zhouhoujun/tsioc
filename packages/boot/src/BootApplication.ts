@@ -1,8 +1,6 @@
 import { LoadType, isArray, isString, isInjector, ClassType, isClassType } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ContainerToken } from '@tsdi/core';
-import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
-import { AnnotationServiceToken } from './services/IAnnotationService';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BuilderServiceToken } from './builder/IBuilderService';
 import { BootModule } from './BootModule';
@@ -117,10 +115,14 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     protected getTargetDeps(target: ClassType | BootOption | T) {
         let dependences = [];
         if (isClassType(target)) {
-            let meta = this.container.get(AnnotationServiceToken).getAnnoation(target) as RunnableConfigure;
-            if (meta && meta.deps) {
-                dependences.push(...meta.deps);
-            }
+            this.context.reflects.create(target);
+            this.context.targetReflect.decorators.classDecors.forEach(d => {
+                this.context.reflects.getMetadata(d, target).forEach(meta => {
+                    if (meta && meta.deps) {
+                        dependences.push(...meta.deps);
+                    }
+                });
+            });
         } else if (target) {
             let options = target instanceof BootContext ? target.getOptions() : target;
             options.deps && dependences.push(...options.deps);

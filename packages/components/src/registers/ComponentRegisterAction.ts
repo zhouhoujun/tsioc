@@ -1,7 +1,7 @@
 import { IocDesignAction, DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
-import { ModuleConfigure } from '@tsdi/boot';
-import { IComponentReflect } from '../bindings/IComponentReflect';
+import { IComponentReflect } from '../IComponentReflect';
 import { attrExp } from '../bindings/exps';
+import { IComponentMetadata } from '../decorators/IComponentMetadata';
 
 
 /**
@@ -14,7 +14,7 @@ import { attrExp } from '../bindings/exps';
 export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let currDecor = ctx.get(CTX_CURR_DECOR);
-        let metas = ctx.reflects.getMetadata<ModuleConfigure>(currDecor, ctx.targetType);
+        let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.targetType);
         let reflects = ctx.targetReflect as IComponentReflect;
         reflects.decorator = currDecor;
         reflects.component = true;

@@ -1,5 +1,5 @@
 import { ResolveHandle, BuildContext } from '@tsdi/boot';
-import { IComponentReflect } from '../bindings/IComponentReflect';
+import { IComponentReflect } from '../IComponentReflect';
 
 /**
  * resolve component handle.

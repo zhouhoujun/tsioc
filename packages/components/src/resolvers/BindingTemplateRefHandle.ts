@@ -1,6 +1,6 @@
 import { DecoratorProvider } from '@tsdi/ioc';
 import { ResolveHandle, BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { IComponentReflect } from '../bindings/IComponentReflect';
+import { IComponentReflect } from '../IComponentReflect';
 import { RefSelector } from '../RefSelector';
 import { ComponentRef } from '../ComponentRef';
 
