@@ -12,10 +12,10 @@ import { IocSingletonManager } from '../IocSingletonManager';
 export class GetSingletionAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
-        if (ctx.targetType && ctx.targetReflect.singleton) {
+        if (ctx.type && ctx.targetReflect.singleton) {
             let mgr = ctx.injector.getInstance(IocSingletonManager);
-            if (mgr.has(ctx.targetType)) {
-                ctx.target = mgr.get(ctx.targetType);
+            if (mgr.has(ctx.type)) {
+                ctx.target = mgr.get(ctx.type);
                 return;
             }
         }

@@ -12,10 +12,10 @@ import { isClass } from '../utils/lang';
 export class InitReflectAction extends IocRegisterAction<RegisterActionContext> {
 
     execute(ctx: RegisterActionContext, next?: () => void): void {
-        if (!isClass(ctx.targetType)) {
+        if (!isClass(ctx.type)) {
             return;
         }
-        ctx.reflects.create(ctx.targetType);
+        ctx.reflects.create(ctx.type);
 
         let targetReflect = ctx.targetReflect;
         if (ctx.singleton) {

@@ -7,7 +7,7 @@ export class MessageRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let container = ctx.getContainer();
         let msgQueue = container.get(RootMessageQueueToken);
-        let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.get(CTX_CURR_DECOR), ctx.targetType);
+        let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.get(CTX_CURR_DECOR), ctx.type);
         let { regIn, before, after } = metas.find(meta => !!meta.before || !!meta.after) || <MessageMetadata>{};
         if (regIn) {
             if (!container.has(regIn)) {
@@ -16,11 +16,11 @@ export class MessageRegisterAction extends IocDesignAction {
             msgQueue = container.get(regIn);
         }
         if (before) {
-            msgQueue.useBefore(ctx.targetType, before);
+            msgQueue.useBefore(ctx.type, before);
         } else if (after) {
-            msgQueue.useAfter(ctx.targetType, after);
+            msgQueue.useAfter(ctx.type, after);
         } else {
-            msgQueue.use(ctx.targetType);
+            msgQueue.use(ctx.type);
         }
 
         next();

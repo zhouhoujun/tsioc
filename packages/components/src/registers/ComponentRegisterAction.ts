@@ -14,7 +14,7 @@ import { IComponentMetadata } from '../decorators/IComponentMetadata';
 export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let currDecor = ctx.get(CTX_CURR_DECOR);
-        let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.targetType);
+        let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
         let reflects = ctx.targetReflect as IComponentReflect;
         reflects.decorator = currDecor;
         reflects.component = true;

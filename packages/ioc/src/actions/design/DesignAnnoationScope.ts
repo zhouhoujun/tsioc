@@ -40,8 +40,8 @@ export class AnnoationRegInAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let regIn: string;
         ctx.targetReflect.decorators.classDecors.some(d => {
-            if (ctx.reflects.hasMetadata(d, ctx.targetType)) {
-                let meta = ctx.reflects.getMetadata<InjectableMetadata>(d, ctx.targetType).find(m => m.regIn);
+            if (ctx.reflects.hasMetadata(d, ctx.type)) {
+                let meta = ctx.reflects.getMetadata<InjectableMetadata>(d, ctx.type).find(m => m.regIn);
                 if (meta) {
                     regIn = meta.regIn;
                 }
@@ -64,8 +64,8 @@ export class RegAnnoationAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void): void {
         let injector = ctx.injector;
-        let provide = injector.getTokenKey(ctx.tokenKey);
-        let type = ctx.targetType;
+        let provide = injector.getTokenKey(ctx.token);
+        let type = ctx.type;
         let singleton = ctx.targetReflect.singleton;
         let actInjector = this.actInjector;
         let factory = (...providers: ParamProviders[]) => {
@@ -74,8 +74,8 @@ export class RegAnnoationAction extends IocDesignAction {
                 return mgr.get(provide);
             }
             let ctx = RuntimeActionContext.parse(injector, {
-                tokenKey: provide,
-                targetType: type,
+                token: provide,
+                type: type,
                 singleton: singleton,
                 providers: providers
             });

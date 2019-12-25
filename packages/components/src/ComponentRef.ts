@@ -27,7 +27,7 @@ export class RootViewRef<T> extends ViewRef {
         return this.context.value;
     }
 
-    constructor(private context: TemplateContext) {
+    constructor(private context: AnnoationContext) {
         super();
     }
 
@@ -37,6 +37,7 @@ export class RootViewRef<T> extends ViewRef {
             if (node && isFunction(node.destroy)) {
                 node.destroy();
             }
+            this.context.clear();
             delete this.context;
             this._destroyed = true;
         }
@@ -72,7 +73,6 @@ export class ComponentRef<T = any> implements IComponentRef<T> {
     get hostView(): ViewRef {
         return this.context.get(ViewRef);
     }
-
 
     constructor(
         public readonly componentType: Type<T>,

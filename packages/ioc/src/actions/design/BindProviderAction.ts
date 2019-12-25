@@ -19,7 +19,7 @@ export class BindProviderAction extends IocDesignAction {
         if (!tgReflect.decorator) {
             tgReflect.decorator = currDecor;
         }
-        let targetType = ctx.targetType;
+        let targetType = ctx.type;
         let metadatas = ctx.reflects.getMetadata<InjectableMetadata>(currDecor, targetType);
         metadatas.forEach(anno => {
             // bind all provider.

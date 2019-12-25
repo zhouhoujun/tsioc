@@ -17,7 +17,7 @@ export class BindingOutputHandle extends ResolveHandle {
                     let expression = options.template ? options.template[filed] : null;
                     if (!isNullOrUndefined(expression)) {
                         let pctx = ParseContext.parse(ctx.injector, {
-                            module: ctx.module,
+                            type: ctx.type,
                             scope: options.scope || ctx.target,
                             bindExpression: expression,
                             template: options.template,

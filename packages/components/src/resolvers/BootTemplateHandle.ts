@@ -4,7 +4,7 @@ import { Component } from '../decorators/Component';
 
 export class BootTemplateHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (!ctx.module) {
+        if (!ctx.type) {
             let options = ctx.getOptions();
             if (options.template) {
                 ctx.target = await ctx.getContainer().get(ComponentBuilderToken).resolveTemplate({

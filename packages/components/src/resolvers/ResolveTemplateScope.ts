@@ -26,7 +26,7 @@ export class ResolveTemplateScope extends ResolveHandle {
 
             if (!isNullOrUndefined(pCtx.value)) {
                 pCtx.set(ViewRef, new RootViewRef(pCtx));
-                ctx.set(ComponentRef, new ComponentRef(ctx.module, ctx.target, pCtx));
+                ctx.set(ComponentRef, new ComponentRef(ctx.type, ctx.target, pCtx));
             }
         }
         await next();

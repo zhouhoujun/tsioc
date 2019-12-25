@@ -14,7 +14,7 @@ import { IAdvisor, AdvisorToken } from '../IAdvisor';
 export class RegistAspectAction extends IocDesignAction {
 
     execute(ctx: DesignActionContext, next: () => void): void {
-        let type = ctx.targetType;
+        let type = ctx.type;
         let aspectMgr = ctx.injector.get<IAdvisor>(AdvisorToken);
         let metadata = ctx.reflects.getMetadata<ClassMetadata>(ctx.currDecoractor, type);
         if (isArray(metadata) && metadata.length > 0) {

@@ -40,7 +40,7 @@ export class BindingArrayHandle extends ParseHandle {
             let options = ctx.getOptions();
             ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
                 let subCtx = ParseContext.parse(ctx.injector, {
-                    module: ctx.module,
+                    type: ctx.type,
                     scope: options.scope,
                     binding: ctx.binding,
                     bindExpression: tp,

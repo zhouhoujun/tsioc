@@ -5,10 +5,10 @@ import { BuilderServiceToken } from './IBuilderService';
 
 export class ResolveTypeHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.module && !ctx.target) {
+        if (ctx.type && !ctx.target) {
             let options = ctx.getOptions();
             ctx.target = await ctx.injector.get(BuilderServiceToken).resolve({
-                module: ctx.module,
+                type: ctx.type,
                 scope: options.scope,
                 template: options.template,
                 annoation: ctx.annoation,

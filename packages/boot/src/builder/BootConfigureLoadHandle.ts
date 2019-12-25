@@ -20,7 +20,7 @@ export class BootConfigureLoadHandle extends BootHandle {
         }
         let options = ctx.getOptions();
         let injector = ctx.injector;
-        if (isClass(ctx.module)) {
+        if (isClass(ctx.type)) {
             let baseURL = ctx.baseURL;
             if (baseURL) {
                 injector.registerValue(ProcessRunRootToken, ctx.baseURL)

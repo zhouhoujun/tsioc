@@ -16,14 +16,14 @@ export interface RegisterActionOption extends IocProvidersOption {
      * @type {Token}
      * @memberof RegisterActionOption
      */
-    tokenKey?: Token;
+    token?: Token;
     /**
      * target type.
      *
      * @type {Type}
      * @memberof RegisterActionOption
      */
-    targetType: Type;
+    type: Type;
 
     /**
      * custom set singleton or not.
@@ -50,8 +50,8 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
      * @type {Token}
      * @memberof RegisterActionContext
      */
-    get tokenKey(): Token {
-        return this.getOptions().tokenKey;
+    get token(): Token {
+        return this.getOptions().token;
     }
 
     /**
@@ -60,8 +60,8 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
      * @type {Type}
      * @memberof RegisterActionContext
      */
-    get targetType(): Type {
-        return this.getOptions().targetType;
+    get type(): Type {
+        return this.getOptions().type;
     }
 
     get currDecoractor(): string {
@@ -81,7 +81,7 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
     private _targetReflect: ITypeReflect;
     get targetReflect(): ITypeReflect {
         if (!this._targetReflect) {
-            this._targetReflect = this.reflects.get(this.targetType);
+            this._targetReflect = this.reflects.get(this.type);
         }
         return this._targetReflect;
     }

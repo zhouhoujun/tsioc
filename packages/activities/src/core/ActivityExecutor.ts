@@ -58,9 +58,9 @@ export class ActivityExecutor implements IActivityExecutor {
     runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType, data?: any): Promise<T> {
         let container = this.getContainer();
         if (activity instanceof Activity) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>({ module: lang.getClass(activity), target: activity, contexts: ctx.cloneContext(), data: data });
+            return container.get(BuilderServiceToken).run<T, ActivityOption>({ type: lang.getClass(activity), target: activity, contexts: ctx.cloneContext(), data: data });
         } else if (isClass(activity)) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>({ module: activity, contexts: ctx.cloneContext(), data: data });
+            return container.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, contexts: ctx.cloneContext(), data: data });
         } else if (isFunction(activity)) {
             return activity(ctx.clone().setBody(data)).then(() => ctx);
         } else {
@@ -97,7 +97,7 @@ export class ActivityExecutor implements IActivityExecutor {
     async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {
         if (isClass(express)) {
             let options = ctx.getOptions();
-            let bctx = await (container || this.getContainer()).getInstance(BuilderService).run({ module: express, scope: options.scope });
+            let bctx = await (container || this.getContainer()).getInstance(BuilderService).run({ type: express, scope: options.scope });
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);

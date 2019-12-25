@@ -18,7 +18,7 @@ export class ParseSelectorHandle extends ParsersHandle {
             let options = ctx.getOptions();
             ctx.value = await ctx.getContainer().get(ComponentBuilderToken)
                 .resolve({
-                    module: selector,
+                    type: selector,
                     scope: options.scope,
                     parsing: true,
                     template: options.template,

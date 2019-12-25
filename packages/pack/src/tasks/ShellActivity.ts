@@ -122,7 +122,7 @@ export class ShellActivity extends Activity<void> {
 
     protected formatArgs(args: ObjectMap): string[] {
         let strArgs = [];
-        lang.forIn(args, (val, k: string) => {
+        lang.forIn(args, (val, k) => {
             if (k === 'root' || !preWordExp.test(k)) {
                 return;
             }

@@ -1,5 +1,5 @@
 import { Metadate } from './Metadate';
-import { SymbolType } from '../types';
+import { ClassType } from '../types';
 
 /**
  * type metadata
@@ -14,5 +14,5 @@ export interface TypeMetadata extends Metadate {
      * @type {SymbolType}
      * @memberof TypeMetadata
      */
-    type?: SymbolType;
+    type?: ClassType;
 }

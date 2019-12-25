@@ -66,7 +66,7 @@ export class ConsoleReporter extends RealtimeReporter {
 
         reportStr += '\n';
 
-        lang.forIn(fails, (errors: string[], describe: string) => {
+        lang.forIn(fails, (errors, describe) => {
             reportStr = reportStr + '\n\n  ' + describe;
             errors.forEach(stack => {
                 reportStr = reportStr + '\n' + stack;

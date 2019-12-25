@@ -145,7 +145,7 @@ export class TranslateAtrrHandle extends ParseHandle {
                 let template = {};
                 template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
                 ctx.value = await container.get(ComponentBuilderToken).resolveNode({
-                    module: selector,
+                    type: selector,
                     scope: options.scope,
                     template: template,
                     providers: ctx.providers,

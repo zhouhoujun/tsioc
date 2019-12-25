@@ -24,7 +24,7 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
      */
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!ctx.target || !isValideAspectTarget(ctx.targetType, ctx.reflects)) {
+        if (!ctx.target || !isValideAspectTarget(ctx.type, ctx.reflects)) {
             return next();
         }
         let injector = ctx.injector;
@@ -35,13 +35,13 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
         let proxy = injector.get(ProxyMethodToken);
 
         let target = ctx.target;
-        let targetType = ctx.targetType;
+        let targetType = ctx.type;
 
         let className = lang.getClassName(targetType);
         let methods: IPointcut[] = [];
         let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
 
-        lang.forIn(decorators, (item, name: string) => {
+        lang.forIn(decorators, (item, name) => {
             if (name === 'constructor') {
                 return;
             }
@@ -53,7 +53,7 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
         });
 
         let allmethods = ctx.reflects.getParamerterNames(targetType);
-        lang.forIn(allmethods, (item, name: string) => {
+        lang.forIn(allmethods, (item, name) => {
             if (name === 'constructor') {
                 return;
             }

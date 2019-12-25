@@ -15,18 +15,18 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!ctx.target || !isValideAspectTarget(ctx.targetType, ctx.reflects)) {
+        if (!ctx.target || !isValideAspectTarget(ctx.type, ctx.reflects)) {
             return next();
         }
 
         let container = ctx.getContainer();
         let advisor = container.get(AdvisorToken);
-        let className = lang.getClassName(ctx.targetType);
+        let className = lang.getClassName(ctx.type);
         let advices = advisor.getAdvices(className + '.constructor');
         if (!advices) {
             return next();
         }
-        let targetType = ctx.targetType;
+        let targetType = ctx.type;
         let target = ctx.target;
 
         let joinPoint = container.getInstance(Joinpoint, {

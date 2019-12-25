@@ -8,7 +8,7 @@ export class RegModuleRefAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let reflect = ctx.targetReflect as IModuleReflect;
         if (reflect) {
-            let mdRef = new ModuleRef(ctx.targetType, reflect, ctx.get(CTX_MODULE_EXPORTS));
+            let mdRef = new ModuleRef(ctx.type, reflect, ctx.get(CTX_MODULE_EXPORTS));
             let fac = () => mdRef;
             ctx.injector.set(ModuleRef, fac);
             ctx.set(ModuleRef, mdRef);

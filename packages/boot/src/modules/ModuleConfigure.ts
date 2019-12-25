@@ -1,4 +1,4 @@
-import { Token, Modules, Type, ClassMetadata, RegInMetadata } from '@tsdi/ioc';
+import { Token, Modules, ClassMetadata, RegInMetadata, ClassType } from '@tsdi/ioc';
 
 /**
  * annotation metadata.
@@ -22,7 +22,7 @@ export interface IAnnotationMetadata<T = any> extends ClassMetadata, RegInMetada
      * @type {Type<T>}
      * @memberof IAnnotationMetadata
      */
-    type?: Type<T>;
+    type?: ClassType<T>;
 
 }
 

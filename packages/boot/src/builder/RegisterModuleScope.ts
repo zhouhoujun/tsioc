@@ -12,17 +12,17 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
         if (!(ctx instanceof BootContext)) {
             return;
         }
-        if (!ctx.module) {
+        if (!ctx.type) {
             if (ctx.getOptions().template && next) {
                 return await next();
             }
             return;
         }
-        if (isBaseType(ctx.module)) {
+        if (isBaseType(ctx.type)) {
             return;
         }
         // has build module instance.
-        if (!(ctx.injector.has(ctx.module) && ctx.getContainer().has(ctx.module))) {
+        if (!(ctx.injector.has(ctx.type) && ctx.getContainer().has(ctx.type))) {
             await super.execute(ctx);
         }
 

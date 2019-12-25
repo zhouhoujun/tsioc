@@ -18,6 +18,13 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
      * @type {ClassType}
      * @memberof AnnoationActionOption
      */
+    type?: ClassType<T>;
+    /**
+     * target module type.
+     *
+     * @type {ClassType}
+     * @memberof AnnoationActionOption
+     */
     module?: ClassType<T>;
     /**
      * module decorator.
@@ -46,19 +53,15 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, IContainer> {
 
     static parse(injector: IInjector, target: ClassType | AnnoationOption): AnnoationContext {
-        return createRaiseContext(injector, AnnoationContext, isToken(target) ? { module: target } : target);
+        return createRaiseContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
     }
 
-    get module(): Type {
-        return this.injector.getTokenProvider(this.getOptions().module);
-    }
-
-    setModule(type: ClassType) {
-        this.getOptions().module = this.injector.getTokenProvider(type);
+    get type(): Type {
+        return this.injector.getTokenProvider(this.getOptions().type);
     }
 
     get decorator(): string {
-        if (!this.has(CTX_MODULE_DECTOR) && this.module) {
+        if (!this.has(CTX_MODULE_DECTOR) && this.type) {
             let dec = this.targetReflect.decorator;
             if (dec) {
                 this.set(CTX_MODULE_DECTOR, dec);
@@ -69,8 +72,8 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
 
     private _targetReflect: IModuleReflect;
     get targetReflect(): IModuleReflect {
-        if (!this._targetReflect && this.module) {
-            this._targetReflect = this.reflects.get(this.module);
+        if (!this._targetReflect && this.type) {
+            this._targetReflect = this.reflects.get(this.type);
         }
         return this._targetReflect;
     }
@@ -82,7 +85,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
      * @memberof AnnoationContext
      */
     get annoation(): TMeta {
-        if (!this.has(CTX_MODULE_ANNOATION) && this.module) {
+        if (!this.has(CTX_MODULE_ANNOATION) && this.type) {
             let tgRef = this.targetReflect;
             if ((tgRef && tgRef.getAnnoation)) {
                 this.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation<TMeta>())
@@ -96,6 +99,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         if (!options) {
             return;
         }
+        options.type = options.type || options.module;
         super.setOptions(options);
 
         if (options.decorator) {

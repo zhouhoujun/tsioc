@@ -22,7 +22,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         }
 
         let target = ctx.target
-        let type = ctx.targetType;
+        let type = ctx.type;
 
         let designParams = this.createDesignParams(ctx, type, target, propertyKey);
 
@@ -54,7 +54,7 @@ export class BindParameterTypeAction extends BindDeignParamTypeAction {
         if (propertyKey === 'constructor') {
             if (designParams.some(pa => !pa.type && !pa.provider)) {
                 ctx.targetReflect.defines.extendTypes.forEach(ty => {
-                    if (ty === ctx.targetType) {
+                    if (ty === ctx.type) {
                         return true;
                     }
 

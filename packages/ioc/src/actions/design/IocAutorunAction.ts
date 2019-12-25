@@ -21,14 +21,14 @@ export class IocAutorunAction extends IocDesignAction {
     protected runAuto(ctx: DesignActionContext) {
         let refs = ctx.reflects;
         let currDec = ctx.get(CTX_CURR_DECOR);
-        if (!refs.hasMetadata(currDec, ctx.targetType)) {
+        if (!refs.hasMetadata(currDec, ctx.type)) {
             return;
         }
         let injector = ctx.injector;
-        let metadatas = refs.getMetadata<AutorunMetadata>(currDec, ctx.targetType);
+        let metadatas = refs.getMetadata<AutorunMetadata>(currDec, ctx.type);
         metadatas.forEach(meta => {
             if (meta && meta.autorun) {
-                let instance = injector.get(ctx.tokenKey || ctx.targetType);
+                let instance = injector.get(ctx.token || ctx.type);
                 if (instance && isFunction(instance[meta.autorun])) {
                     injector.invoke(instance, meta.autorun);
                 }

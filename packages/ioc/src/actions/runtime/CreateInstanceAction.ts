@@ -13,7 +13,7 @@ import { CTX_ARGS } from '../../context-tokens';
 export class CreateInstanceAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (!ctx.target) {
-            ctx.target = new ctx.targetType(...ctx.get(CTX_ARGS));
+            ctx.target = new ctx.type(...ctx.get(CTX_ARGS));
         }
         next();
     }

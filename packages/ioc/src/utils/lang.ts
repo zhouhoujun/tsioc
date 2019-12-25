@@ -78,7 +78,9 @@ export namespace lang {
      * @param {(ObjectMap<T> | T[])} target
      * @param {(item: T, idx?: number|string) => void|boolean} iterator
      */
-    export function forIn<T = any>(target: ObjectMap<T> | T[], iterator: (item: T, idx?: number | string) => void | boolean) {
+    export function forIn<T = any>(target: ObjectMap<T>, iterator: (item: T, idx?: string) => void | boolean)
+    export function forIn<T = any>(target: T[], iterator: (item: T, idx?: number) => void | boolean);
+    export function forIn(target: any, iterator: (item: any, idx?: any) => void | boolean) {
         if (isArray(target)) {
             target.some((it, idx) => iterator(it, idx) === false);
         } else if (isObject(target)) {
@@ -95,7 +97,7 @@ export namespace lang {
      */
     export function find<T>(target: ObjectMap<T> | T[], express: (item: T, idx?: number | string) => boolean) {
         let item: T;
-        forIn(target, (it, idx) => {
+        forIn(target as any, (it, idx) => {
             if (!item) {
                 if (express(it, idx)) {
                     item = it;

@@ -1,5 +1,6 @@
 // bindings
 export * from './bindings/IBinding';
+export * from './bindings/IPipeTransform';
 export * from './bindings/onChange';
 export * from './bindings/DataBinding';
 export * from './bindings/EventBinding';
@@ -16,6 +17,7 @@ export * from './decorators/Output';
 export * from './decorators/RefChild';
 export * from './decorators/NonSerialize';
 export * from './decorators/Vaildate';
+export * from './decorators/Pipe';
 
 
 export * from './elements';

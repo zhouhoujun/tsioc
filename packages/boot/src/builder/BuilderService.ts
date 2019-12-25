@@ -71,7 +71,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     protected async resolveContext(target: ClassType | IBuildOption): Promise<AnnoationContext> {
         let refs = this.reflects;
         let options = isClassType(target) ? { module: target } : target;
-        let reflect = refs.get(options.module);
+        let reflect = refs.get(options.type);
         if (reflect) {
             return await this.resolveModule(options);
         } else {
@@ -199,9 +199,9 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         if (target instanceof BootContext) {
             ctx = target as T;
         } else {
-            let md = isClassType(target) ? target : target.module;
+            let md = isClassType(target) ? target : target.type;
             ctx = this.container.getService({ token: BootContext, target: md }) as T;
-            ctx.setModule(md);
+            ctx.getOptions().type = md;
         }
         if (isBaseObject(target)) {
             ctx.setOptions(target as BootOption);

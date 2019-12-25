@@ -109,7 +109,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
 
             let allmethods = refs.getParamerterNames(targetType);
-            lang.forIn(allmethods, (item, name: string) => {
+            lang.forIn(allmethods, (item, name) => {
                 if (name === 'constructor') {
                     return;
                 }

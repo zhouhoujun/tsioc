@@ -154,8 +154,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         (async () => {
             this.getInstance<IActionInjector>(actionInjectorKey).get(DesignLifeScope).register(
                 DesignActionContext.parse(injector, {
-                    tokenKey: provide,
-                    targetType: type,
+                    token: provide,
+                    type: type,
                     singleton: singleton
                 }));
         })();

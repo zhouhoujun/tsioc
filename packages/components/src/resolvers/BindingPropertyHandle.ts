@@ -30,7 +30,7 @@ export class BindingPropertyHandle extends ResolveHandle {
                             ctx.target[binding.name] = expression;
                         } else {
                             let pctx = ParseContext.parse(ctx.injector, {
-                                module: ctx.module,
+                                type: ctx.type,
                                 scope: options.scope || ctx.target,
                                 bindExpression: expression,
                                 template: options.template,

@@ -22,9 +22,9 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
 
     protected onInit(target: Type | ActivityOption<T> | T) {
         if (!isClass(target)) {
-            if (!target.module) {
+            if (!target.type) {
                 let options = target instanceof ActivityContext ? target.getOptions() : target;
-                options.module = SequenceActivity;
+                options.type = SequenceActivity;
                 options.template = isArray(options.template) ? options.template : [options.template];
             }
         }
@@ -77,7 +77,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
                 return await Workflow.run<T>((actType && actType.template) ? actType : { template: actType });
             }
         } else if (activities.length > 1) {
-            let option = { template: activities, module: SequenceActivity, staticSeq: true } as ActivityOption<T>;
+            let option = { template: activities, type: SequenceActivity, staticSeq: true } as ActivityOption<T>;
             return await Workflow.run<T>(option);
         }
     }

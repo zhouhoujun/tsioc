@@ -16,7 +16,7 @@ export class MatchPointcutAction extends IocRuntimeAction {
 
     execute(ctx: RuntimeActionContext, next: () => void): void {
         // aspect class do nothing.
-        if (!isValideAspectTarget(ctx.targetType, ctx.reflects)) {
+        if (!isValideAspectTarget(ctx.type, ctx.reflects)) {
             return next();
         }
 
@@ -25,7 +25,7 @@ export class MatchPointcutAction extends IocRuntimeAction {
         let matcher = injector.get(AdviceMatcherToken);
 
         advisor.aspects.forEach((adviceMetas, type) => {
-            let matchpoints = matcher.match(type, ctx.targetType, adviceMetas, ctx.target);
+            let matchpoints = matcher.match(type, ctx.type, adviceMetas, ctx.target);
             matchpoints.forEach(mpt => {
                 let fullName = mpt.fullName;
                 let advice = mpt.advice;

@@ -17,7 +17,7 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
         if (!ctx.targetReflect.methodParams.has(propertyKey)) {
             ctx.targetReflect.methodParams.set(
                 propertyKey,
-                this.createDesignParams(ctx, ctx.targetType, ctx.target, propertyKey));
+                this.createDesignParams(ctx, ctx.type, ctx.target, propertyKey));
         }
         next();
     }

@@ -35,7 +35,6 @@ export interface VaildatePropertyDecorator {
      * @param {string} bindingName binding property name
      */
     (metadata: VaildatePropertyMetadata): PropertyDecorator;
-
 }
 
 /**
