@@ -1,5 +1,4 @@
 import { Token } from '../types';
-import { TypeMetadata } from './TypeMetadata';
 
 /**
  * provide type from.
@@ -8,7 +7,7 @@ import { TypeMetadata } from './TypeMetadata';
  * @interface Provide
  * @extends {MetaType}
  */
-export interface ProvideMetadata extends TypeMetadata {
+export interface ProvideMetadata {
     /**
      * this type provide from.
      *

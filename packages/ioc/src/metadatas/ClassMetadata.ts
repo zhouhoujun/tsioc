@@ -1,5 +1,6 @@
 import { ProviderMetadata } from './ProviderMetadata';
 import { ProvidersMetadata } from './ProvidersMetadata';
+import { RefMetadata } from './RefMetadata';
 
 /**
  * class metadata.
@@ -7,7 +8,7 @@ import { ProvidersMetadata } from './ProvidersMetadata';
  * @export
  * @interface ClassMetadata
  */
-export interface ClassMetadata extends ProviderMetadata, ProvidersMetadata {
+export interface ClassMetadata extends ProviderMetadata, ProvidersMetadata, RefMetadata {
     /**
      * is singleton or not.
      *

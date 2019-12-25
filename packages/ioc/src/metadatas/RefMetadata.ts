@@ -1,5 +1,4 @@
 import { Token } from '../types';
-import { TypeMetadata } from './TypeMetadata';
 
 /**
  * ref provider.
@@ -40,7 +39,7 @@ export interface RefProvider {
  * @interface RefMetadata
  * @extends {TypeMetadata}
  */
-export interface RefMetadata extends TypeMetadata {
+export interface RefMetadata {
     /**
      * define the class as service reference to target.
      *

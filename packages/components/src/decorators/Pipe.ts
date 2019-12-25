@@ -1,6 +1,5 @@
-import { Type, TypeMetadata, isBoolean } from '@tsdi/ioc';
+import { Type, TypeMetadata, createClassDecorator, isString, ITypeDecorator, isBoolean, Token, SymbolType } from '@tsdi/ioc';
 import { IPipeTransform } from '../bindings/IPipeTransform';
-import { createClassDecorator, isString, ITypeDecorator } from '@tsdi/ioc';
 
 /**
  * pipe decorator.
@@ -69,5 +68,13 @@ export const Pipe: IPipeDecorator = createClassDecorator<IPipeMetadata>('Pipe', 
             ctx.metadata.prue = ctx.currArg;
         }
     },
-]);
+], meta=>{
+    if(meta.name){
+        meta.pr
+    }
+});
 
+const pipePrefix = /^PIPE_/;
+export function getPipeToken<T>(name: string): SymbolType<T> {
+    return pipePrefix.test(name) ? name : `PIPE_${name}`;
+}

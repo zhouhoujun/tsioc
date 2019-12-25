@@ -1,6 +1,4 @@
 import { Token } from '../types';
-import { TypeMetadata } from './TypeMetadata';
-import { RefMetadata } from './RefMetadata';
 
 /**
  * provider type to.
@@ -9,19 +7,19 @@ import { RefMetadata } from './RefMetadata';
  * @interface Provider
  * @extends {MetaType}
  */
-export interface ProviderMetadata extends TypeMetadata, RefMetadata  {
-    /**
+export interface ProviderMetadata {
+/**
      * this type provider to.
      *
      * @type {SymbolType}
-     * @memberof Provider
+     * @memberof IProviderMetadata
      */
     provide?:  Token;
     /**
      * provide alias.
      *
      * @type {string}
-     * @memberof ProviderMetadata
+     * @memberof IProviderMetadata
      */
     alias?: string;
 }

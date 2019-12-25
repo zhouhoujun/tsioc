@@ -1,4 +1,5 @@
 import { ProvideMetadata } from './ProvideMetadata';
+import { TypeMetadata } from './TypeMetadata';
 
 
 /**
@@ -7,7 +8,7 @@ import { ProvideMetadata } from './ProvideMetadata';
  * @export
  * @interface PropMetadata
  */
-export interface PropertyMetadata extends ProvideMetadata {
+export interface PropertyMetadata extends ProvideMetadata, TypeMetadata {
     /**
      * property name
      *

@@ -1,5 +1,4 @@
 import { InjectTypes } from '../providers/types';
-import { TypeMetadata } from './TypeMetadata';
 
 /**
  * add reference metadata. add ref service to the class.
@@ -8,7 +7,7 @@ import { TypeMetadata } from './TypeMetadata';
  * @interface ProvidersMetadata
  * @extends {TypeMetadata}
  */
-export interface ProvidersMetadata  extends TypeMetadata {
+export interface ProvidersMetadata {
     /**
      * add ref service to the class.
      *
