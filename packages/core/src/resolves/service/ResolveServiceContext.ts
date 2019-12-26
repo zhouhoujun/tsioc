@@ -1,7 +1,4 @@
 import { Token, ResolveActionContext, ResolveActionOption, createRaiseContext, IInjector } from '@tsdi/ioc';
-import { TargetRef } from '../TargetService';
-
-export type TargetRefType = Object | TargetRef;
 
 /**
  * service context option.
@@ -26,36 +23,6 @@ export interface ServiceOption<T> extends ResolveActionOption<T> {
      * @memberof ServiceOption
      */
     extend?: boolean;
-
-    /**
-     * service reference target.
-     *
-     * @type {(TargetRefType | TargetRefType[])}
-     * @memberof ServiceActionOption
-     */
-    target?: TargetRefType | TargetRefType[];
-
-    /**
-     * reolve this defualt service, if not found any service.
-     *
-     * @type {Token<T>}
-     * @memberof ServiceActionOption
-     */
-    defaultToken?: Token<T>;
-
-    /**
-    * ref target factory.
-    *
-    * @memberof ResolveServiceContext
-    */
-    refTargetFactory?: (targetToken: Token, token?: Token) => Token | Token[];
-
-    /**
-     * service token factory.
-     *
-     * @memberof ResolveServiceContext
-     */
-    serviceTokenFactory?: (token: Token) => Token[];
 }
 
 /**
@@ -87,26 +54,6 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
      */
     get tokens(): Token[] {
         return this.getOptions().tokens;
-    }
-
-    /**
-     * service reference target.
-     *
-     * @type {*}
-     * @memberof ResolveServiceContext
-     */
-    get target(): any {
-        return this.getOptions().target;
-    }
-
-    /**
-     * reolve this defualt service, if not found any service.
-     *
-     * @type {Token}
-     * @memberof ResolveServiceContext
-     */
-    get defaultToken(): Token {
-        return this.getOptions().defaultToken;
     }
 
 }

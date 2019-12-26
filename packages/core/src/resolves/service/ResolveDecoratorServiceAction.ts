@@ -1,7 +1,7 @@
-import { DecoratorProvider, CTX_CURR_DECOR, isNullOrUndefined } from '@tsdi/ioc';
+import { DecoratorProvider, isNullOrUndefined } from '@tsdi/ioc';
 import { IocResolveServiceAction } from './IocResolveServiceAction';
 import { ResolveServiceContext } from './ResolveServiceContext';
-import { CTX_CURR_TARGET_TYPE, CTX_CURR_TOKEN } from '../context-tokens';
+import { CTX_CURR_TARGET_TYPE, CTX_CURR_TOKEN } from '../../context-tokens';
 
 export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
     execute(ctx: ResolveServiceContext, next: () => void): void {
@@ -19,7 +19,6 @@ export class ResolveDecoratorServiceAction extends IocResolveServiceAction {
         }
 
         if (isNullOrUndefined(ctx.instance)) {
-            ctx.remove(CTX_CURR_DECOR);
             return next();
         }
     }

@@ -1,5 +1,19 @@
-import { createClassDecorator, ITypeDecorator, AutorunMetadata, isString } from '@tsdi/ioc';
+import { createClassDecorator, ITypeDecorator } from '../factories/ClassDecoratorFactory';
+import { AutorunMetadata } from '../metadatas/AutorunMetadata';
+import { IIocContainer } from '../IIocContainer';
+import { Type } from '../types';
 
+/**
+ *  ioc extend inteface.
+ */
+export interface IocExtentd {
+    setup(container: IIocContainer);
+}
+
+/**
+ * Ioc Extentd decorator.
+ */
+export type IocExtentdDecorator = <TFunction extends Type<IocExtentd>>(target: TFunction) => TFunction | void;
 
 /**
  * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
@@ -14,16 +28,7 @@ export interface IocExtDecorator extends ITypeDecorator<AutorunMetadata> {
      *
      * @param {string} [autorun] auto run special method.
      */
-    (autorun?: string): ClassDecorator;
-
-    /**
-     * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
-     *
-     * @IocExt
-     *
-     * @param {AutorunMetadata} [metadata] metadata map.
-     */
-    (metadata?: AutorunMetadata): ClassDecorator;
+    (): IocExtentdDecorator;
 }
 
 /**
@@ -31,17 +36,9 @@ export interface IocExtDecorator extends ITypeDecorator<AutorunMetadata> {
  *
  * @IocExt
  */
-export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('IocExt',
-    [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.autorun = arg;
-                ctx.next(next);
-            }
-        }
-    ],
+export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('IocExt', null,
     (metadata) => {
+        metadata.autorun = 'setup';
         metadata.singleton = true;
         return metadata;
     }) as IocExtDecorator;

@@ -1,4 +1,4 @@
-import { Token } from '../types';
+import { Token, ClassType } from '../types';
 import { createRaiseContext, IocProvidersContext, IocProvidersOption } from './IocAction';
 import { IInjector } from '../IInjector';
 
@@ -16,7 +16,14 @@ export interface ResolveActionOption<T> extends IocProvidersOption {
      * @memberof ResolveActionOption
      */
     token?: Token<T>;
-
+    /**
+     * resolve token in target context.
+     */
+    target?: ClassType | Object;
+    /**
+     * all faild use the default token to get instance.
+     */
+    default?: Token<T>;
     /**
      * register token if has not register.
      *

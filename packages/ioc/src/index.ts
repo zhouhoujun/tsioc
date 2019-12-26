@@ -51,6 +51,7 @@ export * from './decorators/Param';
 export * from './decorators/Singleton';
 export * from './decorators/Abstract';
 export * from './decorators/AutoRun';
+export * from './decorators/IocExt';
 
 
 // factories
@@ -103,6 +104,9 @@ export * from './actions/IocRegisterScope';
 export * from './actions/TypeDecorators';
 export * from './actions/ResolveActionContext';
 export * from './actions/IocResolveAction';
+
+export * from './actions/resolves/ResolvePrivateAction';
+export * from './actions/resolves/ResolveRefAction';
 export * from './actions/resolves/ResolveInInjectorAction';
 export * from './actions/resolves/ResolveInRootAction';
 export * from './actions/IocResolveScope';

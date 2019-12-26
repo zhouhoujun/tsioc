@@ -8,8 +8,6 @@ export * from './ContainerBuilder';
 export * from './IServiceResolver';
 export * from './IServicesResolver';
 
-// decorators
-export * from './decorators/IocExt';
 
 export * from './services/ModuleLoader';
 

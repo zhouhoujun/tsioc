@@ -1,7 +1,10 @@
 import { ResolveActionContext } from './ResolveActionContext';
 import { ResolveInInjectorAction } from './resolves/ResolveInInjectorAction';
 import { ResolveInRootAction } from './resolves/ResolveInRootAction';
+import { ResolvePrivateAction } from './resolves/ResolvePrivateAction';
 import { ActionScope } from './ActionScope';
+import { ResolveRefAction } from './resolves/ResolveRefAction';
+import { isNullOrUndefined, isClass } from '../utils/lang';
 
 
 /**
@@ -21,10 +24,17 @@ export class IocResolveScope<T extends ResolveActionContext = ResolveActionConte
         if (!ctx.instance) {
             super.execute(ctx, next);
         }
+
+        if (isNullOrUndefined(ctx.instance) && ctx.getOptions().regify && isClass(ctx.token) && !ctx.injector.has(ctx.token)) {
+            ctx.injector.register(ctx.token);
+            ctx.instance = ctx.injector.get(ctx.token, ctx.providers);
+        }
     }
 
     setup() {
-        this.use(ResolveInInjectorAction)
+        this.use(ResolvePrivateAction)
+            .use(ResolveRefAction)
+            .use(ResolveInInjectorAction)
             .use(ResolveInRootAction);
     }
 }

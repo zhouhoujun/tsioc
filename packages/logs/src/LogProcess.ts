@@ -1,5 +1,4 @@
-import { Abstract, Type, ObjectMapProvider, Inject } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { Abstract, Type, ObjectMapProvider, Inject, IocContainerToken, IIocContainer } from '@tsdi/ioc';
 import { Joinpoint } from '@tsdi/aop';
 import { Level } from './Level';
 import { LoggerMetadata } from './decorators/Logger';
@@ -18,7 +17,7 @@ export abstract class LogProcess {
     private _logger: ILogger;
     private _logManger: IConfigureLoggerManager;
 
-    constructor(@Inject(ContainerToken) protected container: IContainer, private config?: LogConfigure | Type<LogConfigure>) {
+    constructor(@Inject(IocContainerToken) protected container: IIocContainer, private config?: LogConfigure | Type<LogConfigure>) {
 
     }
 

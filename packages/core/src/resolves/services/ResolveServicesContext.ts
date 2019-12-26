@@ -1,5 +1,4 @@
-import { ClassType, createRaiseContext, IInjector } from '@tsdi/ioc';
-import { ServiceOption, ResolveServiceContext } from './ResolveServiceContext';
+import { ClassType, createRaiseContext, IInjector, ResolveActionContext } from '@tsdi/ioc';
 
 /**
  * services context options
@@ -32,7 +31,7 @@ export interface ServicesOption<T> extends ServiceOption<T> {
  * @class ResolveServicesContext
  * @extends {ResolveServiceContext}
  */
-export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, ServicesOption<T>> {
+export class ResolveServicesContext<T = any> extends ResolveActionContext<T, ServicesOption<T>> {
     /**
      * parse service resolve context.
      *
