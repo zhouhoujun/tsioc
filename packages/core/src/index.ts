@@ -1,7 +1,6 @@
 export * from './context-tokens';
 export * from './IContainer';
 export * from './Container';
-export * from './TargetService';
 
 export * from './IContainerBuilder';
 export * from './ContainerBuilder';
@@ -27,24 +26,19 @@ export * from './injectors/InjectLifeScope';
 export * from './injectors/InjectDecoratorRegisterer';
 
 // resolves actions
-export * from './resolves/ResolveServiceContext';
-export * from './resolves/IocResolveServiceAction';
-export * from './resolves/ResolveTargetServiceAction';
-export * from './resolves/InitServiceResolveAction';
-export * from './resolves/ResolvePrivateServiceAction';
-export * from './resolves/ResolveRefServiceAction';
-export * from './resolves/ResolveServiceScope';
-export * from './resolves/ResolveServiceInClassChain';
-export * from './resolves/ResolveServiceTokenAction';
-export * from './resolves/ResolveDecoratorServiceAction';
+// service
+export * from './resolves/service/ResolveServiceContext';
+export * from './resolves/service/InitServiceResolveAction';
+export * from './resolves/service/ResolveDecoratorServiceAction';
+export * from './resolves/service/ResolveServiceInClassChain';
+export * from './resolves/service/ResolveServiceScope';
+export * from './resolves/service/ServiceResolveLifeScope';
+// services
+export * from './resolves/services/ResolveServicesContext';
+export * from './resolves/services//InitServicesResolveAction';
+export * from './resolves/services/ResolveServicesScope';
+export * from './resolves/services/ResovleServicesInClassAction';
+export * from './resolves/services/ResovleServicesAction';
+export * from './resolves/services/ServicesResolveLifeScope';
 
-export * from './resolves/IocResolveServicesAction';
-export * from './resolves/ResolveServicesContext';
-export * from './resolves/ResolveServicesScope';
-export * from './resolves/ResovleServicesRefsAction';
-export * from './resolves/ResovleServicesInTargetAction';
-export * from './resolves/ResovleServicesInRaiseAction';
-
-export * from './resolves/ServiceResolveLifeScope';
-export * from './resolves/ServicesResolveLifeScope';
 

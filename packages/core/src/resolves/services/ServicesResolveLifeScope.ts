@@ -1,6 +1,6 @@
 import { LifeScope, INJECTOR, IActionSetup } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
-import { InitServiceResolveAction } from './InitServiceResolveAction';
+import { InitServicesResolveAction } from './InitServicesResolveAction';
 import { ResolveServicesScope } from './ResolveServicesScope';
 
 
@@ -12,7 +12,7 @@ export class ServicesResolveLifeScope<T> extends LifeScope<ResolveServicesContex
     }
 
     setup() {
-        this.use(InitServiceResolveAction)
+        this.use(InitServicesResolveAction)
             .use(ResolveServicesScope)
     }
 }

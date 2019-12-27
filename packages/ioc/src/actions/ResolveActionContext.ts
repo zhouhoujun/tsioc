@@ -19,7 +19,7 @@ export interface ResolveActionOption<T> extends IocProvidersOption {
     /**
      * resolve token in target context.
      */
-    target?: ClassType | Object;
+    target?: Token | Object;
     /**
      * all faild use the default token to get instance.
      */

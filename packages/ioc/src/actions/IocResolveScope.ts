@@ -4,7 +4,9 @@ import { ResolveInRootAction } from './resolves/ResolveInRootAction';
 import { ResolvePrivateAction } from './resolves/ResolvePrivateAction';
 import { ActionScope } from './ActionScope';
 import { ResolveRefAction } from './resolves/ResolveRefAction';
-import { isNullOrUndefined, isClass } from '../utils/lang';
+import { isNullOrUndefined, isClass, lang } from '../utils/lang';
+import { isToken } from '../utils/isToken';
+import { CTX_TARGET_TOKEN } from '../context-tokens';
 
 
 /**
@@ -22,6 +24,10 @@ export class IocResolveScope<T extends ResolveActionContext = ResolveActionConte
 
     execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {
+            let target = ctx.getOptions().target;
+            if (target) {
+                ctx.set(CTX_TARGET_TOKEN, isToken(target) ? target : lang.getClass(target));
+            }
             super.execute(ctx, next);
         }
 

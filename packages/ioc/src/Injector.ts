@@ -1,4 +1,4 @@
-import { Token, Factory, SymbolType, Type } from './types';
+import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
 import { IInjector } from './IInjector';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
@@ -69,6 +69,14 @@ export class Injector extends BaseInjector implements IInjector {
         return this;
     }
 
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
+        if (super.iterator(callbackfn) === false) {
+            return false;
+        }
+        if (deep) {
+            return this.getContainer().iterator(callbackfn);
+        }
+    }
 }
 
 export const ProviderMap = Injector;

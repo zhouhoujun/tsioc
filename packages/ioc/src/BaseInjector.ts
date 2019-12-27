@@ -456,7 +456,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return token;
     }
 
-    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean): void | boolean {
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
         return !Array.from(this.factories.keys()).some(tk => {
             if (isToken(tk)) {
                 return callbackfn(this.factories.get(tk), tk, this) === false;

@@ -1,4 +1,5 @@
 import { ClassType, createRaiseContext, IInjector, ResolveActionContext } from '@tsdi/ioc';
+import { ServiceOption } from '../service/ResolveServiceContext';
 
 /**
  * services context options
