@@ -1,5 +1,6 @@
 import { Registration } from './Registration';
 import { ProviderTypes } from './providers/types';
+import { IInjector } from './IInjector';
 
 /**
  * module types.
@@ -74,7 +75,7 @@ export type InstanceFactory<T = any> = (...providers: ProviderTypes[]) => T;
 /**
  * Factory of Token
  */
-export type Factory<T> = T | Type<T> | InstanceFactory<T>;
+export type Factory<T> = T | Type<T> | ((injector?: IInjector) => T);
 
 /**
  * object map.

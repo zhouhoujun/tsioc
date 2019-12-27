@@ -121,11 +121,12 @@ export interface ExistingProvider extends IProvider {
     useExisting: Token
 }
 
+export type StaticProviders = ClassProvider & ValueProvider & ExistingProvider & FactoryProvider;
+
 /**
  * provider type.
  */
-export type ProviderType = ObjectMapProvider | Provider | ValueProvider
-    | ClassProvider | ExistingProvider | FactoryProvider;
+export type ProviderType = ObjectMapProvider | Provider | ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
 
 
 /**

@@ -5,7 +5,7 @@ import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { IocCoreService } from './IocCoreService';
-import { Provider, ParamProvider, ObjectMapProvider } from './providers/Provider';
+import { Provider, ParamProvider, ObjectMapProvider, ProviderType, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';
@@ -139,10 +139,16 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @returns {this}
      * @memberof BaseInjector
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this {
+    bindProvider<T>(provide: Token<T>, provider: Token<T> | T): this {
         let provideKey = this.getTokenKey(provide);
         let factory;
-        if (isToken(provider)) {
+        if (isClass(provider)) {
+            if (!this.has(provider)) {
+                this.register(provider);
+            }
+            this.provideTypes.set(provideKey, provider);
+            factory = this.getTokenFactory(provider);
+        } else if (isToken(provider)) {
             let key = this.getTokenKey(provider);
             factory = this.getTokenFactory(key);
             if (!factory) {
@@ -150,27 +156,14 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                     return this.getInstance(key, ...providers);
                 };
             }
-        } else {
-            if (isFunction(provider)) {
-                factory = (...providers: ParamProviders[]) => {
-                    return provider(this.parse(...providers));
-                };
-            } else {
-                factory = () => {
-                    return provider
-                };
-            }
-        }
-        if (isClass(provider)) {
-            if (!this.has(provider)) {
-                this.register(provider);
-            }
-            this.provideTypes.set(provideKey, provider);
-        } else if (isToken(provider)) {
             let type = this.getTokenProvider(provider);
             if (isClass(type)) {
                 this.provideTypes.set(provideKey, type);
             }
+        } else {
+            factory = () => {
+                return provider
+            };
         }
 
         this.factories.set(provideKey, factory);
@@ -233,25 +226,23 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                 });
 
             } else if (isBaseObject(p)) {
-                let pr: any = p;
+                let pr = p as StaticProviders;
                 if (isToken(pr.provide)) {
+                    let provide = this.getTokenKey(pr.provide);
                     if (isArray(pr.deps) && pr.deps.length) {
                         pr.deps.forEach(d => {
                             if (isClass(d) && !this.has(d)) {
-                                this.register(d);
+                                this.registerType(d);
                             }
                         });
                     }
                     if (isDefined(pr.useValue)) {
-                        this.factories.set(pr.provide, () => pr.useValue);
+                        let val = pr.useValue;
+                        this.factories.set(provide, () => val);
                     } else if (isClass(pr.useClass)) {
-                        if (!this.has(pr.useClass)) {
-                            this.registerType(pr.useClass);
-                        }
-                        this.factories.set(pr.provide, pr.useClass);
-                        this.provideTypes.set(pr.provideKey, pr.useClass);
+                        this.bindProvider(provide, pr.useClass);
                     } else if (isFunction(pr.useFactory)) {
-                        this.factories.set(pr.provide, (...providers: ProviderTypes[]) => {
+                        this.factories.set(provide, (...providers: ProviderTypes[]) => {
                             let args = [];
                             if (isArray(pr.deps) && pr.deps.length) {
                                 args = pr.deps.map(d => {
@@ -265,7 +256,8 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                             return pr.useFactory.apply(pr, args.concat(providers));
                         });
                     } else if (isToken(pr.useExisting)) {
-                        this.factories.set(pr.provide, (...providers: ProviderTypes[]) => this.get(pr.useExisting, ...providers));
+                        let fac = this.getTokenFactory(this.getTokenKey(pr.useExisting));
+                        this.factories.set(provide, fac);
                     }
                 }
             }
