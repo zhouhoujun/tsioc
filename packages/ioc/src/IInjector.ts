@@ -148,6 +148,15 @@ export interface IInjector {
     */
     getTokenProvider<T>(token: Token<T>): Type<T>;
     /**
+     * get token factory.
+     *
+     * @template T
+     * @param {SymbolType<T>} key
+     * @returns {InstanceFactory<T>}
+     * @memberof IInjector
+     */
+    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T>;
+    /**
      * set provide.
      *
      * @template T

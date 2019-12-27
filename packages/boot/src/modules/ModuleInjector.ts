@@ -1,4 +1,4 @@
-import { Injector, ContainerFactory, Token, lang, SymbolType, ProviderTypes, Type, InstanceFactory, IInjector } from '@tsdi/ioc';
+import { Injector, ContainerFactory, Token, lang, SymbolType, Type, InstanceFactory, IInjector } from '@tsdi/ioc';
 import { ModuleRef } from './ModuleRef';
 
 
@@ -25,17 +25,17 @@ export class ModuleInjector extends Injector {
         return this.factories.has(key) || this.exports.some(r => r.exports.hasTokenKey(key))
     }
 
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
+    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
         if (this.hasTokenKey(key)) {
             if (this.factories.has(key)) {
-                return this.factories.get(key)(...providers);
+                return this.factories.get(key);
             }
             let mref = this.exports.find(r => r.exports.hasTokenKey(key));
             if (mref) {
-                return mref.exports.getInstance(key, ...providers);
+                return mref.exports.getTokenFactory(key);
             }
         }
-        return this.tryGetInRoot(key, providers);
+        return this.tryGetInRoot(key);
     }
 
     getTokenProvider<T>(token: Token<T>): Type<T> {

@@ -1,5 +1,5 @@
 import { IInjector, InjectorToken, INJECTOR, InjectorFactoryToken } from './IInjector';
-import { Token, InstanceFactory, SymbolType, Factory, ToInstance, Type } from './types';
+import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject } from './utils/lang';
@@ -119,7 +119,6 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     abstract registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
 
-
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
         this.factories.set(key, fac);
@@ -144,13 +143,17 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let provideKey = this.getTokenKey(provide);
         let factory;
         if (isToken(provider)) {
-            factory = (...providers: ParamProviders[]) => {
-                return this.getInstance(this.getTokenKey(provider), ...providers);
-            };
+            let key = this.getTokenKey(provider);
+            factory = this.getTokenFactory(key);
+            if (!factory) {
+                factory = (...providers: ParamProviders[]) => {
+                    return this.getInstance(key, ...providers);
+                };
+            }
         } else {
             if (isFunction(provider)) {
                 factory = (...providers: ParamProviders[]) => {
-                    return (<ToInstance>provider)(this, ...providers);
+                    return provider(this.parse(...providers));
                 };
             } else {
                 factory = () => {
@@ -196,6 +199,12 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         }
         return refToken;
     }
+
+    /**
+     * parse providers to new injector.
+     * @param providers
+     */
+    protected abstract parse(...providers: InjectTypes[]): IInjector;
 
     inject(...providers: InjectTypes[]): this {
         providers.forEach((p, index) => {
@@ -336,10 +345,15 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
-        return this.factories.has(key) ? this.factories.get(key)(...providers) : this.tryGetInRoot(key, providers);
+        let fac = this.getTokenFactory(key);
+        return fac ? fac(...providers) : null;
     }
 
-    protected tryGetInRoot<T>(key: SymbolType<T>, providers: ProviderTypes[]): T {
+    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.factories.has(key) ? this.factories.get(key) : this.tryGetInRoot(key);
+    }
+
+    protected tryGetInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
         return null;
     }
 

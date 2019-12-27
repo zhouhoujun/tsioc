@@ -2,7 +2,8 @@ import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
 import { IInjector } from './IInjector';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
-import { ProviderTypes } from './providers/types';
+import { ProviderTypes, InjectTypes } from './providers/types';
+import { lang } from './utils/lang';
 
 // use core-js in browser.
 
@@ -20,6 +21,10 @@ export class Injector extends BaseInjector implements IInjector {
         super();
     }
 
+    protected parse(...providers: InjectTypes[]): IInjector {
+        return new (lang.getClass(this))(this.factory).inject(...providers);
+    }
+
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {
         return this.factory as ContainerFactory<T>;
     }
@@ -32,8 +37,8 @@ export class Injector extends BaseInjector implements IInjector {
         return this.getContainer().hasTokenKey(key);
     }
 
-    protected tryGetInRoot<T>(key: SymbolType<T>, providers: ProviderTypes[]): T {
-        return this.getContainer().getInstance(key, ...providers);
+    protected tryGetInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.getContainer().getTokenFactory(key);
     }
 
     /**

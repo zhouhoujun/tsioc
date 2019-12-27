@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { IIocContainer, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
-import { Type, Token, Factory, SymbolType, ToInstance } from './types';
+import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
-import { ParamProviders } from './providers/types';
+import { ParamProviders, InjectTypes } from './providers/types';
 import { TypeReflects } from './services/TypeReflects';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { DesignActionContext } from './actions/design/DesignActionContext';
@@ -11,6 +11,8 @@ import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector } from './IInjector';
 import { BaseInjector, isInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
+import { ProviderParser } from './providers/ProviderParser';
+import { InjectToken } from './InjectToken';
 
 
 const factoryToken = ContainerFactoryToken.toString();
@@ -90,7 +92,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                     if (isClass(value)) {
                         this.registerType(injector, value, key, singleton);
                     } else {
-                        classFactory = this.createCustomFactory(injector, key, value as ToInstance<T>, singleton);
+                        classFactory = this.createCustomFactory(injector, key, value, singleton);
                     }
                 } else if (singleton && value !== undefined) {
                     classFactory = this.createCustomFactory(injector, key, () => value, singleton);
@@ -107,18 +109,22 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this;
     }
 
-    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: ToInstance<T>, singleton?: boolean) {
+    protected parse(...providers: InjectTypes[]): IInjector {
+        return this.getInstance(ProviderParser).parse(...providers);
+    }
+
+    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ParamProviders[]) => {
                 let mgr = injector.getInstance(IocSingletonManager);
                 if (mgr.has(key)) {
                     return mgr.get(key);
                 }
-                let instance = factory(injector, ...providers);
+                let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
                 mgr.set(key, instance);
                 return instance;
             }
-            : (...providers: ParamProviders[]) => factory(injector, ...providers);
+            : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
     }
 
     /**
