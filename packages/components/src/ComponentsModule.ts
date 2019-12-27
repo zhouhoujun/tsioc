@@ -1,8 +1,8 @@
 import {
     BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction,
-    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
+    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken, IocExt
 } from '@tsdi/ioc';
-import { IContainer, IocExt, ContainerToken } from '@tsdi/core';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import {
     ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner,
     BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope
@@ -40,7 +40,7 @@ import { ModuleInitHandle } from './resolvers/ModuleInitHandle';
  * @export
  * @class ComponentsModule
  */
-@IocExt('setup')
+@IocExt()
 export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {

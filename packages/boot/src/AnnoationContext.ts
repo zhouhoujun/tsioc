@@ -1,4 +1,7 @@
-import { Type, createRaiseContext, IocProvidersOption, IocProvidersContext, isToken, IInjector, ClassType, RegInMetadata, ClassMetadata } from '@tsdi/ioc';
+import {
+    Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
+    isToken, IInjector, ClassType, RegInMetadata, ClassMetadata
+} from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION } from './context-tokens';
 import { ModuleConfigure } from './modules/ModuleConfigure';
