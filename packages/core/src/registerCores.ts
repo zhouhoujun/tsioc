@@ -6,7 +6,6 @@ import { ServiceResolveLifeScope } from './resolves/service/ServiceResolveLifeSc
 import { ServicesResolveLifeScope } from './resolves/services/ServicesResolveLifeScope';
 
 
-
 export function registerCores(container: IContainer) {
 
     container.registerValue(ContainerToken, container);

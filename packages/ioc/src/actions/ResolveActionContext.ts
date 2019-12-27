@@ -1,4 +1,4 @@
-import { Token, ClassType } from '../types';
+import { Token } from '../types';
 import { createRaiseContext, IocProvidersContext, IocProvidersOption } from './IocAction';
 import { IInjector } from '../IInjector';
 

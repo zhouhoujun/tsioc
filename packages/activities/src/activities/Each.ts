@@ -1,7 +1,10 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext, Expression, ParallelExecutor, ActivityType, ControlActivity } from '../core';
+import { Expression, ActivityType } from '../core/ActivityConfigure';
+import { ActivityContext } from '../core/ActivityContext';
+import { ControlActivity } from '../core/ControlActivity';
+import { ParallelExecutor } from '../core/ParallelExecutor';
 
 
 @Task('each')

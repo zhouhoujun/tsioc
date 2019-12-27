@@ -1,7 +1,9 @@
 import { Token, ProviderTypes } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext, Expression, Activity } from '../core';
+import { Expression } from '../core/ActivityConfigure';
+import { ActivityContext } from '../core/ActivityContext';
+import { Activity } from '../core/Activity';
 
 
 /**

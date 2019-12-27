@@ -7,11 +7,12 @@ import {
 } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
 import { registerCores } from './registerCores';
-import { ServiceOption, ResolveServiceContext } from './resolves/ResolveServiceContext';
-import { ServiceResolveLifeScope } from './resolves/ServiceResolveLifeScope';
-import { ServicesOption, ResolveServicesContext } from './resolves/ResolveServicesContext';
-import { ServicesResolveLifeScope } from './resolves/ServicesResolveLifeScope';
+import { ServiceOption, ResolveServiceContext } from './resolves/service/ResolveServiceContext';
+import { ServiceResolveLifeScope } from './resolves/service/ServiceResolveLifeScope';
+import { ServicesOption, ResolveServicesContext } from './resolves/services/ResolveServicesContext';
+import { ServicesResolveLifeScope } from './resolves/services/ServicesResolveLifeScope';
 import { InjectLifeScope } from './injectors/InjectLifeScope';
+
 
 
 /**
@@ -68,7 +69,8 @@ export class Container extends IocContainer implements IContainer {
      * @returns {this}
      * @memberof Container
      */
-    use(...modules: Modules[]): this {
+    use(...modules: Modules[]): this;
+    use(...modules: any[]): this {
         let injector: IInjector;
         if (modules.length && isInjector(modules[0])) {
             injector = modules[0];
@@ -98,7 +100,8 @@ export class Container extends IocContainer implements IContainer {
      * @returns {Promise<Type[]>}  types loaded.
      * @memberof IContainer
      */
-    async load(...modules: LoadType[]): Promise<Type[]> {
+    load(...modules: LoadType[]): Promise<Type[]>;
+    async load(...modules: any[]): Promise<Type[]> {
         let injector: IInjector;
         if (modules.length && isInjector(modules[0])) {
             injector = modules[0];
@@ -181,6 +184,7 @@ export class Container extends IocContainer implements IContainer {
     getServices<T>(injector: any, target: any, ...providers: ProviderTypes[]): T[] {
         if (!isInjector(injector)) {
             providers.unshift(target);
+            target = undefined;
         }
         let maps = this.getServiceProviders(injector, target);
 
@@ -218,6 +222,7 @@ export class Container extends IocContainer implements IContainer {
             injector = arg1;
             target = arg2;
         } else {
+            injector = this;
             target = arg1;
         }
         let context = ResolveServicesContext.parse(injector, isToken(target) ? { token: target } : target);

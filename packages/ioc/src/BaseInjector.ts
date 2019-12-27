@@ -1,4 +1,4 @@
-import { IInjector, InjectorToken, INJECTOR } from './IInjector';
+import { IInjector, InjectorToken, INJECTOR, InjectorFactoryToken } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, ToInstance, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
@@ -55,7 +55,9 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     protected init() {
-        this.registerValue(InjectorToken, this);
+        let fac = () => this;
+        this.set(InjectorToken, fac);
+        this.registerValue(InjectorFactoryToken, fac);
         this.registerValue(IocSingletonManager, new IocSingletonManager(this));
         this.registerValue(IocCacheManager, new IocCacheManager(this))
     }

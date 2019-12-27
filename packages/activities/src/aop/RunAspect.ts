@@ -1,6 +1,7 @@
 import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
-import { RunState, ActivityContext } from '../core';
 import { Task } from '../decorators/Task';
+import { ActivityContext } from '../core/ActivityContext';
+import { RunState } from '../core/WorkflowInstance';
 
 /**
  * Task Log

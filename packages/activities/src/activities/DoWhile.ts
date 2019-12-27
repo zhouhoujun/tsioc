@@ -1,6 +1,7 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityContext, ControlActivity } from '../core';
+import { ControlActivity } from '../core/ControlActivity';
+import { ActivityContext } from '../core/ActivityContext';
 import { ConditionActivity } from './ConditionActivity';
 import { BodyActivity } from './BodyActivity';
 

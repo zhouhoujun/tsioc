@@ -1,4 +1,4 @@
-import { ProviderTypes, Type, InjectToken, ClassType } from '@tsdi/ioc';
+import { ProviderTypes, Type, InjectToken } from '@tsdi/ioc';
 import { IBuilderService, IBuildOption } from '@tsdi/boot';
 
 /**

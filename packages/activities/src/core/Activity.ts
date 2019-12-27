@@ -1,8 +1,8 @@
 import {
     isClass, Type, isFunction, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    ProviderTypes, lang, ContainerFactoryToken, ContainerFactory, CTX_CURR_SCOPE
+    ProviderTypes, lang, ContainerFactoryToken, ContainerFactory, CTX_CURR_SCOPE, IInjector, InjectorFactoryToken, InjectorFactory
 } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { Input, ComponentManager } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
@@ -83,16 +83,20 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @type {IContainer}
      * @memberof Activity
      */
-    @Inject(ContainerFactoryToken)
-    private containerFac: ContainerFactory;
+    @Inject(InjectorFactoryToken)
+    private injFactory: InjectorFactory;
 
 
     constructor() {
 
     }
 
+    getInjector(): IInjector {
+        return this.injFactory();
+    }
+
     getContainer(): IContainer {
-        return this.containerFac() as IContainer;
+        return this.getInjector().get(ContainerToken);
     }
 
     /**
@@ -124,7 +128,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     protected abstract execute(ctx: TCtx): Promise<void>;
 
     protected async initResult(ctx: TCtx, ...providers: ProviderTypes[]): Promise<ActivityResult> {
-        return this.getContainer().getService({ token: ActivityResult, target: lang.getClass(this) }, ...providers);
+        return this.getContainer().getService(this.getInjector(), { token: ActivityResult, target: lang.getClass(this) }, ...providers);
     }
 
     protected async refreshResult(ctx: TCtx): Promise<any> {

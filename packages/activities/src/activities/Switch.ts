@@ -1,7 +1,9 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext, Expression, ControlActivity } from '../core';
 import { BodyActivity } from './BodyActivity';
+import { Expression } from '../core/ActivityConfigure';
+import { ActivityContext } from '../core/ActivityContext';
+import { ControlActivity } from '../core/ControlActivity';
 
 
 @Task('case')

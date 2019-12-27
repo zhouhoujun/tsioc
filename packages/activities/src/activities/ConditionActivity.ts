@@ -1,5 +1,5 @@
 import { Input } from '@tsdi/components';
-import { Expression } from '../core';
+import { Expression } from '../core/ActivityConfigure';
 import { Task } from '../decorators';
 import { ExpressionActivity } from './ExpressionActivity';
 

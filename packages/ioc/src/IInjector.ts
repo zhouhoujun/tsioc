@@ -304,6 +304,15 @@ export interface IInjector {
 export const InjectorToken = new InjectToken<IInjector>('DI_INJECTOR');
 
 /**
+ * injector factory of current injector.
+ */
+export type InjectorFactory = () => IInjector;
+/**
+ * injector factory token of current injector.
+ */
+export const InjectorFactoryToken = new InjectToken<InjectorFactory>('DI_INJECTOR_FACTORY');
+
+/**
  *  injector token. create new injector.
  */
 export const INJECTOR = new InjectToken<IInjector>('DI_INJECTOR_FACTORY');

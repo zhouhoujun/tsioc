@@ -1,7 +1,8 @@
 import { isFunction, isString } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators';
-import { ActivityContext, Activity } from '../core';
+import { Activity } from '../core/Activity';
+import { ActivityContext } from '../core/ActivityContext';
 
 /**
  * execute activity.

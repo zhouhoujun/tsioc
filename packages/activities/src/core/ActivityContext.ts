@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject } from '@tsdi/ioc';
+import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject, IInjector } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext, IModuleReflect, CTX_DATA } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';
@@ -138,8 +138,8 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityConfigu
         return baseURL || this.baseURL;
     }
 
-    static parse(target: Type | ActivityOption, raiseContainer?: ContainerFactory<IContainer>): ActivityContext {
-        return createRaiseContext(ActivityContext, isToken(target) ? { module: target } : target, raiseContainer);
+    static parse(injector: IInjector, target: Type | ActivityOption): ActivityContext {
+        return createRaiseContext(injector, ActivityContext, isToken(target) ? { module: target } : target);
     }
 
     private _executor: ActivityExecutor;
