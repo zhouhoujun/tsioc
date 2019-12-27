@@ -4,6 +4,7 @@ import { DesignActionContext } from './DesignActionContext';
 import { IocAutorunAction } from './IocAutorunAction';
 import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
 import { Autorun } from '../../decorators/AutoRun';
+import { IocExt } from '../../decorators/IocExt';
 import { IActionSetup } from '../Action';
 
 export class AnnoationScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
@@ -13,7 +14,8 @@ export class AnnoationScope extends IocRegisterScope<DesignActionContext> implem
             .regAction(IocAutorunAction);
 
         this.actInjector.getInstance(DesignRegisterer)
-            .register(Autorun, DecoratorScopes.AfterAnnoation, IocAutorunAction);
+            .register(Autorun, DecoratorScopes.AfterAnnoation, IocAutorunAction)
+            .register(IocExt, DecoratorScopes.AfterAnnoation, IocAutorunAction);
 
         this.use(AnnoationDecoratorScope)
             .use(AfterAnnoationDecoratorScope);

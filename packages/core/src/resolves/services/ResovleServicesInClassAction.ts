@@ -1,16 +1,15 @@
-import { IocResolveServicesAction } from './IocResolveServicesAction';
-import { isToken, InjectReference, isClassType, ProviderTypes, InjectorToken } from '@tsdi/ioc';
+import { isToken, InjectReference, isClassType, ProviderTypes, InjectorToken, lang, IocResolveAction } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
-import { CTX_TARGET_REFS } from '../context-tokens';
+import { CTX_TARGET_REFS } from '../../context-tokens';
 
 
-export class ResovleServicesInTargetAction extends IocResolveServicesAction {
+export class ResovleServicesInClassAction extends IocResolveAction<ResolveServicesContext> {
     execute(ctx: ResolveServicesContext, next: () => void): void {
         let targetRefs = ctx.get(CTX_TARGET_REFS);
         let injector = ctx.injector;
         if (targetRefs && targetRefs.length) {
             targetRefs.forEach(t => {
-                let tk = isToken(t) ? t : t.getToken();
+                let tk = isToken(t) ? t : lang.getClass(t);
                 let maps = injector.get(new InjectReference(InjectorToken, tk));
                 if (maps && maps.size) {
                     maps.iterator((fac, tk) => {
@@ -18,13 +17,16 @@ export class ResovleServicesInTargetAction extends IocResolveServicesAction {
                             ctx.services.set(tk, (...providers: ProviderTypes[]) => fac(...providers));
                         }
                     })
+                } else {
+                    ctx.types.forEach(ty => {
+                        let reftk = new InjectReference(ty, tk);
+                        if (!ctx.services.has(reftk) && injector.hasRegister(reftk)) {
+                            ctx.services.set(reftk, (...providers: ProviderTypes[]) => injector.get(reftk, ...providers))
+                        }
+                    });
                 }
             });
-            if (ctx.getOptions().both) {
-                next();
-            }
-        } else {
-            next();
         }
+        next();
     }
 }

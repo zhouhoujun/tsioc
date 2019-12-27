@@ -251,10 +251,11 @@ export interface IInjector {
      * iterator current resolver.
      *
      * @param {((fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void|boolean)} callbackfn
+     * @param {boolean} [deep] deep iterator all register.
      * @returns {(void|boolean)}
      * @memberof IInjector
      */
-    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean): void | boolean;
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean;
     /**
      * copy injector to current injector.
      *

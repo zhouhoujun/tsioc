@@ -1,4 +1,4 @@
-import { Type, TypeMetadata, createClassDecorator, isString, ITypeDecorator, isBoolean, Token, SymbolType } from '@tsdi/ioc';
+import { Type, TypeMetadata, createClassDecorator, isString, ITypeDecorator, isBoolean, SymbolType, ProviderMetadata } from '@tsdi/ioc';
 import { IPipeTransform } from '../bindings/IPipeTransform';
 
 /**
@@ -13,7 +13,7 @@ export type PipeDecorator = <TFunction extends Type<IPipeTransform>>(target: TFu
  * @interface IPipeMetadata
  * @extends {TypeMetadata}
  */
-export interface IPipeMetadata extends TypeMetadata {
+export interface IPipeMetadata extends TypeMetadata, ProviderMetadata {
     /**
      * name of pipe.
      */
@@ -68,9 +68,9 @@ export const Pipe: IPipeDecorator = createClassDecorator<IPipeMetadata>('Pipe', 
             ctx.metadata.prue = ctx.currArg;
         }
     },
-], meta=>{
-    if(meta.name){
-        meta.pr
+], meta => {
+    if (meta.name) {
+        meta.provide = getPipeToken(meta.name);
     }
 });
 

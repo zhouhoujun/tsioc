@@ -1,7 +1,7 @@
 import {
-    Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer, Autorun,
+    Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer,
     RuntimeMethodScope, BindProviderAction, RegisterSingletionAction, DecoratorScopes, RuntimeLifeScope,
-    ConstructorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer
+    ConstructorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -24,11 +24,10 @@ import { MatchPointcutAction } from './actions/MatchPointcutAction';
 
 /**
  * aop ext for ioc. auto run setup after registered.
- * with `@Autorun('setup')` decorator.
  * @export
  * @class AopModule
  */
-@Autorun('setup')
+@IocExt()
 export class AopModule {
 
     constructor() {

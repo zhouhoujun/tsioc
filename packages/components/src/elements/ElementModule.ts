@@ -1,5 +1,5 @@
-import { Inject, DecoratorProvider, ActionInjectorToken } from '@tsdi/ioc';
-import { IocExt, ContainerToken, IContainer } from '@tsdi/core';
+import { Inject, DecoratorProvider, ActionInjectorToken, IocExt } from '@tsdi/ioc';
+import { ContainerToken, IContainer } from '@tsdi/core';
 import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { Component } from '../decorators/Component';
 import { ElementNode } from './ElementNode';
@@ -15,7 +15,7 @@ import { BindingComponentHandle } from './handles/BindingComponentHandle';
  * @export
  * @class ElementModule
  */
-@IocExt('setup')
+@IocExt()
 export class ElementModule {
 
     constructor() {
@@ -23,7 +23,6 @@ export class ElementModule {
     }
 
     setup(@Inject(ContainerToken) container: IContainer) {
-        ;
         container.register(RefElementSelector);
 
         let actInjector = container.get(ActionInjectorToken)

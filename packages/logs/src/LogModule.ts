@@ -1,5 +1,4 @@
-import { Inject, DecoratorScopes, BindMethodProviderAction, DesignRegisterer } from '@tsdi/ioc';
-import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { Inject, DecoratorScopes, BindMethodProviderAction, DesignRegisterer, IocExt, IIocContainer, IocContainerToken } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLoggerAspect } from './AnnotationLoggerAspect';
@@ -9,11 +8,10 @@ import { LogFormater } from './LogFormater';
 
 /**
  * aop logs ext for Ioc. auto run setup after registered.
- * with @IocExt('setup') decorator.
  * @export
  * @class LogModule
  */
-@IocExt('setup')
+@IocExt()
 export class LogModule {
 
     constructor() {
@@ -25,7 +23,7 @@ export class LogModule {
      *
      * @memberof AopModule
      */
-    setup(@Inject(ContainerToken) container: IContainer) {
+    setup(@Inject(IocContainerToken) container: IIocContainer) {
         if (!container.has(AopModule)) {
             container.register(AopModule);
         }

@@ -6,6 +6,7 @@ import { RegisterSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';
 import { Singleton } from '../../decorators/Singleton';
 import { Injectable } from '../../decorators/Injectable';
+import { IocExt } from '../../decorators/IocExt';
 import { IActionSetup } from '../Action';
 
 /**
@@ -23,7 +24,8 @@ export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext
 
         this.actInjector.getInstance(RuntimeRegisterer)
             .register(Singleton, DecoratorScopes.Class, RegisterSingletionAction)
-            .register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+            .register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
+            .register(IocExt, DecoratorScopes.Class, RegisterSingletionAction);
 
 
         this.use(RuntimeAnnoationDecorScope);
