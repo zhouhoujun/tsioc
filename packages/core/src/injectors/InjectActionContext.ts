@@ -1,4 +1,4 @@
-import { ActionContextOption, Type, Modules, IocRaiseContext, ContainerFactory, createRaiseContext, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
+import { ActionContextOption, Type, Modules, IocRaiseContext, createRaiseContext, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
 
 
 /**

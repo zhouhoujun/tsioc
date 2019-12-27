@@ -4,7 +4,7 @@ import { InjectActionContext } from './InjectActionContext';
 import { RegisterTypeAction } from './RegisterTypeAction';
 import { CTX_CURR_TYPE } from '../context-tokens';
 
-export abstract class InjectRegisterScope extends InjectScope  implements IActionSetup {
+export abstract class InjectRegisterScope extends InjectScope implements IActionSetup {
 
     execute(ctx: InjectActionContext, next?: () => void): void {
         let types = this.getTypes(ctx);
