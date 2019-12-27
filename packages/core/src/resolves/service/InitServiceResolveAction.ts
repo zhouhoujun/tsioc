@@ -17,6 +17,5 @@ export class InitServiceResolveAction extends IocResolveAction<ResolveServiceCon
         }
         options.tokens = options.tokens.filter(t => isToken(t));
         next();
-
     }
 }
