@@ -1,8 +1,6 @@
 import { Singleton, Type } from '@tsdi/ioc';
 import { RefSelector } from '../RefSelector';
 import { ElementNode } from './ElementNode';
-import { CompositeNode } from './CompositeNode';
-import { NodeSelector } from '../NodeSelector';
 
 /**
  * ref element selector.
@@ -13,23 +11,18 @@ import { NodeSelector } from '../NodeSelector';
  */
 @Singleton()
 export class RefElementSelector extends RefSelector {
-    isComponentType(decorator: string, element: any): boolean {
-        return super.isComponentType(decorator, element) || this.reflects.isExtends(element, ElementNode);
+
+    isComponentType(element: any): boolean {
+        return super.isComponentType(element) || this.reflects.isExtends(element, ElementNode);
     }
+
     getDefaultCompose(): Type<any> {
         return ElementNode;
     }
-    getComponentSelector(): string {
+    getSelectorKey(): string {
         return 'element';
     }
-    getSelectKey(): string {
+    getRefSelectKey(): string {
         return 'selector';
-    }
-
-    createNodeSelector(element): NodeSelector {
-        if (element instanceof CompositeNode) {
-            return element.getSelector();
-        }
-        return null;
     }
 }

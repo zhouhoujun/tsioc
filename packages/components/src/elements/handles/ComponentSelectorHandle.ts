@@ -16,7 +16,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
         let options = ctx.getOptions();
         if (isArray(options.template) && ctx.annoation.template === options.template) {
             ctx.selector = refSelector.getDefaultCompose();
-        } else if (refSelector.isComponentType(ctx.decorator, options.template)) {
+        } else if (refSelector.isComponentType(options.template)) {
             ctx.selector = options.template;
             options.template = null;
         } else if (options.template) {
@@ -29,16 +29,16 @@ export class ComponentSelectorHandle extends TemplateHandle {
     }
 
     protected getSelector(template: any, refSelector?: RefSelector): any {
-        return template ? template[refSelector.getComponentSelector()] : null
+        return template ? template[refSelector.getSelectorKey()] : null
     }
 
     protected getComponent(ctx: TemplateContext, template: any, refSelector: RefSelector): Type {
         let selector = this.getSelector(template, refSelector);
         if (selector) {
-            let mgr = ctx.getContainer().resolve(SelectorManager);
-            if (isString(selector) && mgr.has(selector)) {
-                return mgr.get(selector);
-            } else if (refSelector.isComponentType(ctx.decorator, selector)) {
+            let injector = ctx.injector;
+            if (isString(selector) && injector.hasRegister(selector)) {
+                return injector.getTokenProvider(selector);
+            } else if (refSelector.isComponentType(selector)) {
                 return selector;
             }
         }

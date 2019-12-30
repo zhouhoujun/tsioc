@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, ContainerFactory, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject, IInjector } from '@tsdi/ioc';
+import { Injectable, Type, Refs, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject, IInjector } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext, IModuleReflect, CTX_DATA } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';

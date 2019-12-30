@@ -11,8 +11,8 @@ import { Advice } from './decorators/Advice';
 import { Aspect } from './decorators/Aspect';
 import { NonePointcut } from './decorators/NonePointcut';
 import {
-    annPreChkExp, executionChkExp, preParam, endParam, annContentExp, aExp, execContentExp, mthNameExp,
-    tgMthChkExp, replAny, replAny1, replDot, replNav, withInChkExp, targetChkExp
+    annPreChkExp, executionChkExp, preParam, endParam, annContentExp, aExp, execContentExp,
+    mthNameExp, tgMthChkExp, replAny, replAny1, replDot, replNav, withInChkExp, targetChkExp
 } from './regexps';
 
 /**

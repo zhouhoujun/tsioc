@@ -1,12 +1,11 @@
 import {
-    isClass, Type, isFunction, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    ProviderTypes, lang, ContainerFactoryToken, ContainerFactory, CTX_CURR_SCOPE, IInjector, InjectorFactoryToken, InjectorFactory
+    isClass, Type, isNullOrUndefined, Abstract, PromiseUtil, Inject,
+    ProviderTypes, lang, IInjector, InjectorFactoryToken, InjectorFactory
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { Input, ComponentManager } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
-import { ValuePipe } from './ValuePipe';
 import { ActivityResult } from './ActivityResult';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
@@ -33,28 +32,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     isScope?: boolean;
 
-    /**
-     * component of this activity.
-     *
-     * @type {*}
-     * @memberof Activity
-     */
-    $scope?: any;
-
-    private _scopes: any[];
     protected _eableDefaultSetResult = true;
-    /**
-     * components of this activity.
-     *
-     * @type {any[]}
-     * @memberof Activity
-     */
-    get $scopes(): any[] {
-        if (!this._scopes) {
-            this._scopes = this.getContainer().getInstance(ComponentManager).getScopes(this.$scope);
-        }
-        return this._scopes;
-    }
+
 
     /**
      * activity display name.
@@ -63,8 +42,6 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     @Input() name: string;
-
-    @Input('pipe') pipe: ValuePipe;
 
     private _result: ActivityResult<T>;
     /**
@@ -85,7 +62,6 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     @Inject(InjectorFactoryToken)
     private injFactory: InjectorFactory;
-
 
     constructor() {
 
@@ -110,9 +86,6 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
-        if (this.$scope) {
-            ctx.set(CTX_CURR_SCOPE, this.$scope);
-        }
         this._result = await this.initResult(ctx);
         await this.refreshResult(ctx);
         await this.execute(ctx);
@@ -133,12 +106,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
 
     protected async refreshResult(ctx: TCtx): Promise<any> {
         let ret = isNullOrUndefined(ctx.result) ? ctx.getOptions().data : ctx.result;
-        if (!isNullOrUndefined(ret)) {
-            if (this.pipe) {
-                this.result.value = await this.pipe.transform(ret);
-            } else if (this._eableDefaultSetResult) {
-                this.setActivityResult(ctx, ret);
-            }
+        if (this._eableDefaultSetResult && !isNullOrUndefined(ret)) {
+            this.setActivityResult(ctx, ret);
         }
     }
 
@@ -147,14 +116,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     }
 
     protected async refreshContext(ctx: TCtx) {
-        if (!isNullOrUndefined(this.result.value)) {
-            if (this.pipe) {
-                if (isFunction(this.pipe.refresh)) {
-                    await this.pipe.refresh(ctx, this.result.value);
-                }
-            } else if (this._eableDefaultSetResult) {
-                this.setContextResult(ctx);
-            }
+        if (this._eableDefaultSetResult && !isNullOrUndefined(this.result.value)) {
+            this.setContextResult(ctx);
         }
     }
 

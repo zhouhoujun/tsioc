@@ -6,8 +6,6 @@ import { ElementNode } from './ElementNode';
 import { RefSelector } from '../RefSelector';
 import { RefElementSelector } from './RefElementSelector';
 import { ComponentSelectorHandle } from './handles/ComponentSelectorHandle';
-import { ValidComponentHandle } from './handles/ValidComponentHandle';
-import { BindingComponentHandle } from './handles/BindingComponentHandle';
 
 /**
  * component element module.
@@ -23,17 +21,12 @@ export class ElementModule {
     }
 
     setup(@Inject(ContainerToken) container: IContainer) {
-        container.register(RefElementSelector);
 
         let actInjector = container.get(ActionInjectorToken)
         actInjector.getInstance(StartupDecoratorRegisterer)
-            .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle)
-            .register(Component, StartupScopes.ValifyComponent, ValidComponentHandle)
-            .register(Component, StartupScopes.Binding, BindingComponentHandle);
+            .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
 
-        actInjector.register(ComponentSelectorHandle)
-            .register(ValidComponentHandle)
-            .register(BindingComponentHandle);
+        actInjector.register(ComponentSelectorHandle);
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Component, { provide: RefSelector, useClass: RefElementSelector })

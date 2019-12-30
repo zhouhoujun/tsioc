@@ -53,6 +53,7 @@ export * from './registers/ComponentRegisterAction';
 export * from './registers/RegisterVaildateAction';
 
 export * from './ComponentLifecycle';
+export * from './ComponentRef';
 export * from './RefSelector';
 export * from './NodeSelector';
 export * from './ComponentAnnotationCloner';

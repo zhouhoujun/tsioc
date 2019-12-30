@@ -1,9 +1,10 @@
-import { isNullOrUndefined } from '@tsdi/ioc';
+import { isNullOrUndefined, DecoratorProvider } from '@tsdi/ioc';
 import { ResolveHandle, BuildContext } from '@tsdi/boot';
-import { ViewRef, ComponentRef, RootViewRef } from '../ComponentRef';
+import { ComponentRef, RootNodeRef, CTX_TEMPLATE_REF } from '../ComponentRef';
 import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
+import { RefSelector } from '../RefSelector';
 
 
 export class ResolveTemplateScope extends ResolveHandle {
@@ -25,8 +26,12 @@ export class ResolveTemplateScope extends ResolveHandle {
                 .execute(pCtx);
 
             if (!isNullOrUndefined(pCtx.value)) {
-                pCtx.set(ViewRef, new RootViewRef(pCtx));
-                ctx.set(ComponentRef, new ComponentRef(ctx.type, ctx.target, pCtx));
+                pCtx.setParent(ctx);
+                ctx.addChild(pCtx);
+                let refSeltor = this.actInjector.get(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
+                pCtx.set(CTX_TEMPLATE_REF, pCtx.value);
+                pCtx.set(RootNodeRef, refSeltor.createRootNodeRef(pCtx.value, pCtx));
+                ctx.set(ComponentRef, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx));
             }
         }
         await next();

@@ -1,4 +1,4 @@
-import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
+import { Type, isClass, LoadType, isArray, isClassType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
@@ -109,7 +109,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
 
     protected getBootDeps() {
         let deps = super.getBootDeps();
-        if (!isClass(this.target) && this.target['staticSeq']) {
+        if (!isClassType(this.target) && this.target['staticSeq']) {
             deps = [];
             let options = this.target instanceof ActivityContext ? this.target.getOptions() : this.target;
             options.template.forEach(t => {

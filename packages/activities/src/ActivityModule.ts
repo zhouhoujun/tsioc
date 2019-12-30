@@ -1,5 +1,5 @@
-import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, DecoratorProvider, DesignRegisterer, ActionInjectorToken } from '@tsdi/ioc';
-import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, DecoratorProvider, DesignRegisterer, ActionInjectorToken, IocExt } from '@tsdi/ioc';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
 import { ComponentRegisterAction, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';
 import { Task } from './decorators/Task';
@@ -22,7 +22,7 @@ import { WorkflowInstance } from './core/WorkflowInstance';
  * @export
  * @param {IContainer} container
  */
-@IocExt('setup')
+@IocExt()
 export class ActivityModule {
     constructor() {
     }
@@ -37,10 +37,6 @@ export class ActivityModule {
             .regAction(BindingTaskComponentHandle)
             .regAction(TaskDecorSelectorHandle);
 
-        // actInjector.getInstance(DecoratorProvider)
-        //     .bindProviders(Task, { provide: BootTargetAccessor, useClass: BootComponentAccessor })
-
-
         actInjector.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
             .register(Task, DecoratorScopes.Inject, TaskInjectorRegisterAction);
@@ -51,7 +47,6 @@ export class ActivityModule {
             .register(Task, StartupScopes.Binding, BindingTaskComponentHandle);
 
 
-        container.register(ActivityRefSelector);
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Task,
                 {

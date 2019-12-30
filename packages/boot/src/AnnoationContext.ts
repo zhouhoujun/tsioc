@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, IInjector, ClassType, RegInMetadata, ClassMetadata
+    isToken, IInjector, ClassType, RegInMetadata, ClassMetadata, InjectToken, lang
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION } from './context-tokens';
@@ -43,9 +43,11 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
      * @memberof AnnoationOption
      */
     annoation?: ClassMetadata;
-
 }
 
+
+export const CTX_PARENT_CONTEXT = new InjectToken<AnnoationContext>('CTX_PARENT_CONTEXT');
+export const CTX_SUB_CONTEXT = new InjectToken<AnnoationContext[]>('CTX_PARENT_CONTEXT');
 /**
  * annoation context.
  *
@@ -80,6 +82,39 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         }
         return this._targetReflect;
     }
+
+
+    setParent(context: AnnoationContext): this {
+        this.set(CTX_PARENT_CONTEXT, context);
+        return this;
+    }
+
+    getParent() {
+        return this.get(CTX_PARENT_CONTEXT);
+    }
+
+    addChild(contex: AnnoationContext) {
+        let chiledren = this.getChildren() || [];
+        chiledren.push(contex);
+        this.set(CTX_SUB_CONTEXT, chiledren);
+    }
+
+    removeChild(contex: AnnoationContext) {
+        let chiledren = this.getChildren();
+        if (chiledren) {
+            return lang.remove(chiledren, contex);
+        }
+        return [];
+    }
+
+    hasChildren() {
+        return this.has(CTX_SUB_CONTEXT);
+    }
+
+    getChildren() {
+        return this.get(CTX_SUB_CONTEXT);
+    }
+
 
     /**
      * annoation metadata.

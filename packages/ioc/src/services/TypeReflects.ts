@@ -35,8 +35,8 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         this.map = new Map();
     }
 
-    getContainer() {
-        return this.container;
+    getContainer<T extends IIocContainer>(): T {
+        return this.container as T;
     }
 
     private _actInj: IActionInjector;

@@ -11,6 +11,8 @@ import { OneWayBinding } from '../bindings/OneWayBinding';
 import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
+import { getAttrSelectorToken } from '../decorators/Component';
+import { IComponentReflect } from '../IComponentReflect';
 
 
 /**
@@ -126,25 +128,29 @@ export class TranslateExpressionHandle extends ParseHandle {
 export class TranslateAtrrHandle extends ParseHandle {
     async execute(ctx: ParseContext, next: () => Promise<void>): Promise<void> {
         let options = ctx.getOptions();
-        let container = ctx.getContainer();
+        let injector = ctx.injector;
         if (!isNullOrUndefined(ctx.bindExpression)) {
-            let mgr = container.get(SelectorManager);
             let pdr = ctx.binding.provider;
             let selector: ClassType;
-            if (isString(pdr) && mgr.hasAttr(pdr)) {
-                selector = mgr.getAttr(pdr);
+            if (isString(pdr) && injector.hasRegister(getAttrSelectorToken(pdr))) {
+                selector = injector.getTokenProvider(getAttrSelectorToken(pdr));
             } else if (ctx.binding.type !== Array) {
-                if (isClassType(ctx.binding.provider) && mgr.has(ctx.binding.provider)) {
-                    selector = ctx.binding.provider;
-                } else if (isClassType(ctx.binding.type) && mgr.has(ctx.binding.type)) {
-                    selector = ctx.binding.type;
+                if (isClassType(ctx.binding.provider)) {
+                    if (ctx.reflects.get<IComponentReflect>(ctx.binding.provider).component) {
+                        selector = ctx.binding.provider;
+                    }
+                }
+                if (!selector && isClassType(ctx.binding.type)) {
+                    if (ctx.reflects.get<IComponentReflect>(ctx.binding.type).component) {
+                        selector = ctx.binding.type;
+                    }
                 }
             }
 
             if (selector) {
                 let template = {};
                 template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
-                ctx.value = await container.get(ComponentBuilderToken).resolveNode({
+                ctx.value = await injector.get(ComponentBuilderToken).resolveNode({
                     type: selector,
                     scope: options.scope,
                     template: template,

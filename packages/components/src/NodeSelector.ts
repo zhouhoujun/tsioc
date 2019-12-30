@@ -1,4 +1,5 @@
-import { Express, isFunction, isBoolean, Abstract } from '@tsdi/ioc';
+import { Express, isFunction, isBoolean, Abstract, isArray } from '@tsdi/ioc';
+import { RootNodeRef, NodeRef } from './ComponentRef';
 
 
 /**
@@ -34,9 +35,9 @@ export enum Mode {
  * @class NodeSelector
  * @template T
  */
-@Abstract()
-export abstract class NodeSelector<T = any> {
-    constructor(protected node: T) {
+export class NodeSelector<T = any> {
+
+    constructor(protected node: NodeRef<T>) {
 
     }
 
@@ -102,8 +103,8 @@ export abstract class NodeSelector<T = any> {
     }
 
 
-    protected eachChildren<Tc extends T>(node: T, express: Express<Tc, void | boolean>) {
-        this.getChildren(node).some(item => express(item as Tc) === false);
+    protected eachChildren<Tc extends T>(node: NodeRef<T>, express: Express<Tc, void | boolean>) {
+        this.getChildren(node).some(item => this.currNode(item, express) === false);
     }
 
     /**
@@ -113,8 +114,8 @@ export abstract class NodeSelector<T = any> {
      *
      *@memberOf IComponent
      */
-    routeUp(node: T, express: Express<T, void | boolean>) {
-        if (express(node) === false) {
+    routeUp(node: NodeRef<T>, express: Express<T, void | boolean>) {
+        if (this.currNode(node, express) === false) {
             return false;
         }
         let parentNode = this.getParent(node);
@@ -130,8 +131,8 @@ export abstract class NodeSelector<T = any> {
      *
      *@memberOf IComponent
      */
-    trans(node: T, express: Express<T, void | boolean>) {
-        if (express(node) === false) {
+    trans(node: NodeRef<T>, express: Express<T, void | boolean>) {
+        if (this.currNode(node, express) === false) {
             return false;
         }
         let children = this.getChildren(node);
@@ -143,29 +144,64 @@ export abstract class NodeSelector<T = any> {
         return true;
     }
 
-    transAfter(node: T, express: Express<T, void | boolean>) {
+    transAfter(node: NodeRef<T>, express: Express<T, void | boolean>) {
         let children = this.getChildren(node);
         if (children.some(r => this.transAfter(r, express) === false)) {
             return false;
         }
-        if (express(node) === false) {
+
+        if (this.currNode(node, express) === false) {
             return false;
         }
         return true;
     }
 
-    protected abstract getParent(node: T): T;
+    protected currNode(node: NodeRef<T>, express: Express<T, void | boolean>): boolean {
+        if (node instanceof RootNodeRef) {
+            let roots = node.rootNodes;
+            if ((isArray(roots) ? roots : [roots]).some(n => {
+                if (n instanceof NodeRef) {
+                    return this.currNode(n, express);
+                }
+                return express(n as T) === false
+            })) {
+                return false;
+            }
+        } else if (node instanceof NodeRef) {
+            if (express(node.node) === false) {
+                return false;
+            }
+        }
+    }
 
-    protected abstract getChildren(node: T): T[];
+    protected getParent(node: NodeRef<T>): NodeRef<T> {
+        if (node instanceof RootNodeRef) {
+            let parent = node.getContext().getParent();
+            if (parent && parent.has(RootNodeRef)) {
+                return parent.get(RootNodeRef) as NodeRef<T>;
+            }
+        }
+        return null;
+    }
+
+    protected getChildren(node: NodeRef<T>): NodeRef<T>[] {
+        if (node instanceof RootNodeRef) {
+            let ctx = node.getContext()
+            if (ctx.hasChildren()) {
+                return ctx.getChildren().map(c => c.get(RootNodeRef) as NodeRef<T>);
+            }
+        }
+        return [];
+    }
 }
 
 
 export class NullSelector<T = any> extends NodeSelector<T> {
-    protected getParent(node: T): T {
+    protected getParent(node: NodeRef<T>): NodeRef<T> {
         return null
     }
 
-    protected getChildren(node: T): T[] {
+    protected getChildren(node: NodeRef<T>): NodeRef<T>[] {
         return [];
     }
 }

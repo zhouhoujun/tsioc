@@ -7,7 +7,6 @@ export * from './utils';
 // core
 export * from './core/injectors'
 export * from './core/ParallelExecutor';
-export * from './core/ValuePipe';
 export * from './core/Activity';
 export * from './core/ControlActivity';
 export * from './core/IActivityExecutor';

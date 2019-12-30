@@ -6,7 +6,7 @@ import { BuilderService, IBuildOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { APP_COMPONENT_REFS } from './ComponentRef';
+import { COMPONENT_REFS } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
@@ -35,7 +35,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         let ctx = await this.resolveContext(target);
         let bootTarget = this.getBootTarget(ctx);
 
-        return this.container.get(APP_COMPONENT_REFS).get(bootTarget) || bootTarget;
+        return this.container.get(COMPONENT_REFS).get(bootTarget) || bootTarget;
     }
 
     serialize<T = any>(component: T): any {
@@ -56,7 +56,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
             if (refs && refs.selector) {
                 let json = {};
                 let refselector = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(refs.decorator, RefSelector);
-                json[refselector.getComponentSelector()] = refs.selector;
+                json[refselector.getSelectorKey()] = refs.selector;
                 refs.propInBindings.forEach((v, key) => {
                     if (reflects.hasMetadata(NonSerialize, compClass, key, 'property')) {
                         return;

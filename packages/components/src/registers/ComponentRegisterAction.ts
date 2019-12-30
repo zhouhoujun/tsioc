@@ -2,6 +2,7 @@ import { IocDesignAction, DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc'
 import { IComponentReflect } from '../IComponentReflect';
 import { attrExp } from '../bindings/exps';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
+import { getAttrSelectorToken, getSelectorToken } from '../decorators/Component';
 
 
 /**
@@ -14,6 +15,7 @@ import { IComponentMetadata } from '../decorators/IComponentMetadata';
 export class ComponentRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let currDecor = ctx.get(CTX_CURR_DECOR);
+        let injector = ctx.injector;
         let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
         let reflects = ctx.targetReflect as IComponentReflect;
         reflects.decorator = currDecor;
@@ -27,18 +29,20 @@ export class ComponentRegisterAction extends IocDesignAction {
                     sel = sel.trim();
                     if (attrExp.test(sel)) {
                         reflects.attrSelector = sel;
+                        injector.bindProvider(getAttrSelectorToken(sel), ctx.type);
                     } else {
                         reflects.selector = sel;
+                        injector.bindProvider(getSelectorToken(sel), ctx.type);
                     }
-                    // mgr.set(sel, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
                 })
             } else {
                 if (attrExp.test(meta.selector)) {
                     reflects.attrSelector = meta.selector;
+                    injector.bindProvider(getAttrSelectorToken(meta.selector), ctx.type);
                 } else {
                     reflects.selector = meta.selector;
+                    injector.bindProvider(getSelectorToken(meta.selector), ctx.type);
                 }
-                // mgr.set(meta.selector, ctx.targetType, (...providers: ProviderTypes[]) => this.container.get(ctx.targetType, ...providers));
             }
         });
 
