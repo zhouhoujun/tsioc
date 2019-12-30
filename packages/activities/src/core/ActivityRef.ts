@@ -1,5 +1,6 @@
 import { Activity } from './Activity';
 import { NodeRef, OnDestory, IPipeTransform } from '@tsdi/components';
+import { ActivityContext } from './ActivityContext';
 
 
 
@@ -9,7 +10,9 @@ export class ActivityRef<T extends Activity = Activity> extends NodeRef<T> {
         super(node);
     }
 
-    execute()
+    execute(ctx: ActivityContext) {
+        this.node.run(ctx);
+    }
 
     destroy(): void {
         let node = this.node as T & OnDestory;
