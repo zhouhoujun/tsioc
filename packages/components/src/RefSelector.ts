@@ -32,8 +32,8 @@ export abstract class RefSelector {
             ?.getNodeSelector();
     }
 
-    createComponentRef<T>(type: Type<T>, target: T, context: AnnoationContext): ComponentRef<T> {
-        return new ComponentRef(type, target, context);
+    createComponentRef<T, TN>(type: Type<T>, target: T, context: AnnoationContext, nodes: NodeType<TN> | NodeType<TN>[]): ComponentRef<T, TN> {
+        return new ComponentRef(type, target, context, this.createRootNodeRef(nodes, context));
     }
 
     createRootNodeRef<T>(roots: NodeType<T> | NodeType<T>[], context: AnnoationContext): RootNodeRef<T> {

@@ -18,6 +18,10 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
  */
 export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
 
+export interface IActionRun<TCtx extends ActivityContext> {
+    run(ctx: TCtx, next?: () => Promise<void>): Promise<void>;
+}
+
 
 /**
  * base activity execute context.

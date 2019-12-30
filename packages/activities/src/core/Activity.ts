@@ -5,7 +5,7 @@ import {
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityContext } from './ActivityContext';
+import { ActivityContext, IActionRun } from './ActivityContext';
 import { ActivityResult } from './ActivityResult';
 import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
@@ -22,7 +22,7 @@ import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
  * @implements {OnActivityInit}
  */
 @Abstract()
-export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> {
+export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> implements IActionRun<TCtx> {
 
     /**
      * is scope or not.

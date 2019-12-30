@@ -1,24 +1,22 @@
+import { ComponentRef } from '@tsdi/components';
+import { ActivityContext, IActionRun } from './ActivityContext';
 import { Activity } from './Activity';
-import { NodeRef, OnDestory, IPipeTransform } from '@tsdi/components';
-import { ActivityContext } from './ActivityContext';
+import { PromiseUtil } from '@tsdi/ioc';
 
 
 
-export class ActivityRef<T extends Activity = Activity> extends NodeRef<T> {
-
-    constructor(public node: T, private inPipe?: IPipeTransform, private outPipe?: IPipeTransform) {
-        super(node);
+export class ActivityRef<T = any, TN extends Activity = Activity> extends ComponentRef<T, TN> implements IActionRun<ActivityContext> {
+    async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
+        await ctx.getExector().runActivity(ctx, this.nodeRef.rootNodes, next);
     }
 
-    execute(ctx: ActivityContext) {
-        this.node.run(ctx);
-    }
-
-    destroy(): void {
-        let node = this.node as T & OnDestory;
-        if (node.onDestory) {
-            node.onDestory();
+    private _actionFunc: PromiseUtil.ActionHandle;
+    toAction(): PromiseUtil.ActionHandle<T> {
+        if (!this._actionFunc) {
+            this._actionFunc = (ctx: ActivityContext, next?: () => Promise<void>) => this.run(ctx, next);
         }
+        return this._actionFunc;
     }
 }
+
 

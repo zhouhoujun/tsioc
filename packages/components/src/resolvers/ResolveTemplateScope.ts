@@ -30,8 +30,7 @@ export class ResolveTemplateScope extends ResolveHandle {
                 ctx.addChild(pCtx);
                 let refSeltor = this.actInjector.get(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
                 pCtx.set(CTX_TEMPLATE_REF, pCtx.value);
-                pCtx.set(RootNodeRef, refSeltor.createRootNodeRef(pCtx.value, pCtx));
-                ctx.set(ComponentRef, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx));
+                ctx.set(ComponentRef, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx, pCtx.value));
             }
         }
         await next();

@@ -1,15 +1,16 @@
 import {
     Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerFactoryToken,
-    ContainerFactory, isMetadataObject, lang, isFunction, isPromise, ObjectMap
+    ContainerFactory, isMetadataObject, lang, isFunction, isPromise, ObjectMap, isBaseObject
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, ComponentManager, SelectorManager, AstResolver } from '@tsdi/components';
+import { ComponentBuilderToken, AstResolver, getSelectorToken, ComponentBuilder } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
+import { ActivityRef } from './ActivityRef';
 
 
 /**
@@ -38,14 +39,6 @@ export class ActivityExecutor implements IActivityExecutor {
         return this.containerFac() as IContainer;
     }
 
-    private componentMgr: ComponentManager;
-    getComponentManager() {
-        if (!this.componentMgr) {
-            this.componentMgr = this.getContainer().get(ComponentManager);
-        }
-        return this.componentMgr;
-    }
-
     /**
      * run activity in sub workflow.
      *
@@ -57,19 +50,20 @@ export class ActivityExecutor implements IActivityExecutor {
      */
     runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType, data?: any): Promise<T> {
         let container = this.getContainer();
-        if (activity instanceof Activity) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>({ type: lang.getClass(activity), target: activity, contexts: ctx.cloneContext(), data: data });
+        if (activity instanceof Activity || activity instanceof ActivityRef) {
+            let nctx = ctx.clone().setBody(data);
+            return activity.run(nctx).then(() => nctx);
         } else if (isClass(activity)) {
             return container.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, contexts: ctx.cloneContext(), data: data });
         } else if (isFunction(activity)) {
-            return activity(ctx.clone().setBody(data)).then(() => ctx);
+            let nctx = ctx.clone().setBody(data)
+            return activity(nctx).then(() => nctx);
         } else {
             let md: Type;
-            let mgr = container.getInstance(SelectorManager);
             if (isClass(activity.activity)) {
                 md = activity.activity;
             } else {
-                md = mgr.get(activity.activity)
+                md = ctx.injector.getTokenProvider(getSelectorToken(activity.activity));
             }
 
             let option = {
@@ -133,21 +127,13 @@ export class ActivityExecutor implements IActivityExecutor {
     }
 
     parseAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
-        if (activity instanceof Activity) {
+        if (activity instanceof Activity || activity instanceof ActivityRef) {
             return activity.toAction();
-        } else if (isClass(activity) || isMetadataObject(activity)) {
+        } else if (isClass(activity) || isBaseObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type | ControlTemplate, ctx.scope);
-                if (act instanceof Activity) {
+                let act = await this.buildActivity(activity as Type | ControlTemplate, ctx);
+                if (act instanceof Activity || act instanceof ActivityRef) {
                     await act.run(ctx, next);
-                } else if (act) {
-                    let component = this.getComponentManager().getSelector(act).find(e => e instanceof Activity);
-                    if (component instanceof Activity) {
-                        await component.run(ctx, next);
-                    } else {
-                        console.log(act);
-                        throw new Error(lang.getClassName(act) + ' is not activity');
-                    }
                 } else {
                     await next();
                 }
@@ -156,41 +142,27 @@ export class ActivityExecutor implements IActivityExecutor {
         if (isFunction(activity)) {
             return activity;
         }
-        if (activity) {
-            let component = this.getComponentManager().getLeaf(activity);
-            if (component instanceof Activity) {
-                return component.toAction();
-            }
-        }
         return null;
     }
 
-    protected async buildActivity(activity: Type | ControlTemplate, scope?: any): Promise<Activity> {
+    protected async buildActivity(activity: Type | ControlTemplate, ctx: ActivityContext): Promise<Activity | ActivityRef> {
         let container = this.getContainer();
         if (isClass(activity)) {
-            return await container.get(ComponentBuilderToken).resolveNode<ActivityContext>(activity, { scope: scope });
+            return await container.get(ComponentBuilderToken).resolveNode<ActivityContext>(activity);
         } else {
             let md: Type;
-            let mgr = container.getInstance(SelectorManager);
             if (isClass(activity.activity)) {
                 md = activity.activity;
             } else {
-                md = mgr.get(activity.activity)
+                md = ctx.injector.getTokenProvider(getSelectorToken(activity.activity))
             }
 
             let option = {
                 module: md,
                 template: activity,
-                scope: scope
+                scope: ctx.scope
             };
-            let ctx = await container.getInstance(BuilderService).build<ActivityContext>(option);
-            let boot = ctx.getBootTarget();
-            if (boot) {
-                return this.getComponentManager().getSelector(boot).find(e => e instanceof Activity);
-            } else {
-                console.log('activity config error');
-                return boot;
-            }
+            return await container.getInstance(ComponentBuilder).resolveNode<ActivityContext>(option) as (ActivityRef | Activity);
         }
     }
 }

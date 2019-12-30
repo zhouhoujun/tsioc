@@ -6,7 +6,7 @@ import { BuilderService, IBuildOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
@@ -31,7 +31,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.value;
     }
 
-    async resolveNode<T>(target: Type<T> | IBuildOption<T>): Promise<any> {
+    async resolveNode<T>(target: Type<T> | IBuildOption<T>): Promise<T | ComponentRef<T>> {
         let ctx = await this.resolveContext(target);
         let bootTarget = this.getBootTarget(ctx);
 

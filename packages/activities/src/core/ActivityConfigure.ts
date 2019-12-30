@@ -4,6 +4,7 @@ import { Binding, ElementTemplate } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { ValuePipe } from './ValuePipe';
+import { ActivityRef } from './ActivityRef';
 
 /**
  * workflow id.
@@ -257,7 +258,7 @@ export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T 
 /**
  *  activity type.
  */
-export type ActivityType<TVal= any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | Type<Activity<TVal>> | TemplateType<T>;
+export type ActivityType<TVal= any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | ActivityRef<TVal> | Type<Activity<TVal>> | TemplateType<T>;
 
 /**
  * activity template.

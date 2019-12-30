@@ -3,14 +3,13 @@ import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
 
-export type NodeType<T = any> = ElementRef | NodeRef<T> | Object;
 
-export const CTX_TEMPLATE_REF = new InjectToken<NodeType | NodeType[]>('CTX_TEMPLATE_REF')
+export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF')
 
 
 @Abstract()
 export abstract class NodeRefFactory {
-    abstract createRoot<T>(roots: NodeType<T> | NodeType<T>[], context?: AnnoationContext): RootNodeRef<T>
+    abstract createRoot<T>(roots: T | T[], context?: AnnoationContext): RootNodeRef<T>
     abstract create<T>(node: T, context?: AnnoationContext): NodeRef<T>;
 }
 
@@ -37,12 +36,12 @@ export abstract class NodeRef<T = any> {
 
 export class RootNodeRef<T = any> extends NodeRef<T> {
 
-    constructor(public rootNodes: NodeType<T> | NodeType<T>[], private context: AnnoationContext) {
+    constructor(public rootNodes: T | T[], private context: AnnoationContext) {
         super();
     }
 
-    getContext(): AnnoationContext {
-        return this.context;
+    getContext<TC extends AnnoationContext>(): TC {
+        return this.context as TC;
     }
 
     destroy(): void {
@@ -68,26 +67,24 @@ export class ElementRef<T = any> {
     }
 }
 
-export class IComponentRef<T> {
+export interface IComponentRef<T, TN> {
     readonly context: AnnoationContext;
     readonly instance: T;
-    readonly hostView: RootNodeRef<T>;
     readonly componentType: Type<T>;
+    readonly nodeRef: RootNodeRef<TN>
 }
 
 export const COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef>>('COMPONENT_REFS');
 
 
-export class ComponentRef<T = any> implements IComponentRef<T> {
+export class ComponentRef<T = any, TN= any> implements IComponentRef<T, TN> {
     private destroyCbs: (() => void)[] = [];
-    get hostView(): RootNodeRef {
-        return this.context.get(RootNodeRef);
-    }
 
     constructor(
         public readonly componentType: Type<T>,
         public readonly instance: T,
-        public readonly context: AnnoationContext
+        public readonly context: AnnoationContext,
+        public readonly nodeRef: RootNodeRef<TN>
     ) {
         if (!context.injector.has(COMPONENT_REFS)) {
             context.injector.registerValue(COMPONENT_REFS, new WeakMap());
@@ -96,14 +93,14 @@ export class ComponentRef<T = any> implements IComponentRef<T> {
     }
 
     getNodeSelector(): NodeSelector {
-        return new NodeSelector(this.hostView);
+        return new NodeSelector(this.nodeRef);
     }
 
     destroy(): void {
         if (this.destroyCbs) {
             this.destroyCbs.forEach(fn => fn());
             this.destroyCbs = null;
-            !this.hostView.destroyed && this.hostView.destroy();
+            !this.nodeRef.destroyed && this.nodeRef.destroy();
             this.context.clear();
         }
     }
