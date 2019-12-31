@@ -1,4 +1,4 @@
-import { IParameter, MethodMetadata, Type, Injector } from '@tsdi/ioc';
+import { IParameter, Type, Injector, TypeMetadata } from '@tsdi/ioc';
 import { IPointcut } from './IPointcut';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices/Advicer';
@@ -76,10 +76,10 @@ export interface IJoinpoint extends IPointcut {
     /**
      * orgin pointcut method metadatas.
      *
-     * @type {MethodMetadata[]}
+     * @type {TypeMetadata[]}
      * @memberof IJoinpoint
      */
-    annotations: MethodMetadata[];
+    annotations: TypeMetadata[];
 
     /**
      * pointcut target instance

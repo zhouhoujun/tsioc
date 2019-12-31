@@ -2,7 +2,7 @@ import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from 
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
-import { ActivityRef } from './ActivityRef';
+import { IActivity } from './IActivity';
 
 
 /**
@@ -13,7 +13,7 @@ import { ActivityRef } from './ActivityRef';
  * @extends {RunnableConfigure}
  * @template T
  */
-export interface ActivityMetadata<T extends TemplateOption = ControlTemplate>  extends IComponentMetadata {
+export interface ActivityMetadata<T extends TemplateOption = ControlTemplate> extends IComponentMetadata {
     /**
     * action name.
     *
@@ -22,13 +22,9 @@ export interface ActivityMetadata<T extends TemplateOption = ControlTemplate>  e
     */
     name?: string;
     /**
-     * task title.
-     *
-     * @type {string}
-     * @memberof ActivityMetadata
+     * base url.
      */
-    title?: string;
-
+    baseURL?: string,
     /**
      * activities component template scope.
      *
@@ -237,7 +233,7 @@ export interface TryTemplate extends TemplateOption {
     finally?: Binding<ActivityType[]>;
 }
 
-export type ControlTemplate =  Required<TemplateOption> | ExecuteOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
+export type ControlTemplate = Required<TemplateOption> | ExecuteOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
@@ -246,12 +242,12 @@ export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T 
 /**
  *  activity type.
  */
-export type ActivityType<TVal= any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | ActivityRef<Activity> | Type<Activity<TVal>> | TemplateType<T>;
+export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = IActivity<TVal> | Type<Activity<TVal>> | TemplateType<T>;
 
 /**
  * activity template.
  */
-export type ActivityTemplate<T extends TemplateOption = ControlTemplate>  = TemplateType<T> | TemplateType<T>[];
+export type ActivityTemplate<T extends TemplateOption = ControlTemplate> = TemplateType<T> | TemplateType<T>[];
 
 /**
  * context expression.

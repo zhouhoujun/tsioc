@@ -1,16 +1,18 @@
 import {
     Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString,
-    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider, IInjector
+    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider, IInjector, Token
 } from '@tsdi/ioc';
 import { BuilderService, IBuildOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption, InstanceRef } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS, ComponentRef } from './ComponentRef';
+import { COMPONENT_REFS } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
+import { IPipeTransform } from './bindings/IPipeTransform';
+import { getPipeToken } from './decorators/Pipe';
 
 
 /**
@@ -37,10 +39,12 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return this.getComponentRef(bootTarget, ctx.injector);
     }
 
+    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {
+        return injector.get(isString(token) ? getPipeToken(token) : token)
+    }
+
     getComponentRef<T>(target: T, injector?: IInjector): InstanceRef<T> {
-        if (!injector) {
-            injector = this.reflects.get(lang.getClass(target)).getInjector();
-        }
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
         return injector.get(COMPONENT_REFS)?.get(target) || target;
     }
 

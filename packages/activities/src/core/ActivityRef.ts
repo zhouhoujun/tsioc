@@ -6,7 +6,7 @@ import { Activity } from './Activity';
 import { ActivityResult } from './ActivityResult';
 
 
-export class ActivityRef<T = any, TN extends Activity = Activity> extends ComponentRef<T, TN> implements IActivity<T> {
+export class ActivityRef<T = any, TN extends IActivity = IActivity> extends ComponentRef<T, TN> implements IActivity<T> {
     isScope = true;
 
     get name(): string {

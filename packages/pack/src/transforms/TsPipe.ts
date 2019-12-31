@@ -1,10 +1,9 @@
-import { Injectable } from '@tsdi/ioc';
-import { ValuePipe } from '@tsdi/activities';
 import { NodeActivityContext } from '../core';
+import { IPipeTransform, Pipe } from '@tsdi/components';
 
 
-@Injectable()
-export class TypeScriptJsPipe extends ValuePipe {
+@Pipe('tsjs')
+export class TypeScriptJsPipe implements IPipeTransform  {
     async transform(value: any): Promise<any> {
         return value.js;
     }
@@ -13,8 +12,8 @@ export class TypeScriptJsPipe extends ValuePipe {
     }
 }
 
-@Injectable()
-export class TypeScriptDtsPipe extends ValuePipe {
+@Pipe('dts')
+export class TypeScriptDtsPipe implements IPipeTransform {
     async transform(value: any): Promise<any> {
         return value.dts;
     }

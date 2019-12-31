@@ -61,7 +61,7 @@ export class TaskLogProcess extends LogProcess {
 })
 export class TaskLogAspect extends TaskLogProcess {
 
-    @Around('execution(*.execute)')
+    @Around('execution(*.run)')
     logging(joinPoint: Joinpoint) {
         this.processLog(joinPoint);
     }
@@ -76,12 +76,11 @@ export class TaskLogAspect extends TaskLogProcess {
  * @extends {TaskLogProcess}
  */
 @Aspect({
-    annotation: Task,
     within: ControlActivity,
     singleton: true
 })
 export class TaskControlLogAspect extends TaskLogProcess {
-    @Around('execution(*.execute)')
+    @Around('execution(*.run)')
     logging(joinPoint: Joinpoint) {
         this.processLog(joinPoint);
     }

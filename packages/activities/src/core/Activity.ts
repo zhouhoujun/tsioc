@@ -1,9 +1,9 @@
 import {
     isClass, Type, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    ProviderTypes, lang, IInjector, InjectorFactoryToken, InjectorFactory
+    ProviderTypes, lang, IInjector, InjectorFactoryToken, InjectorFactory, isDefined
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { Input } from '@tsdi/components';
+import { Input, getPipeToken, ComponentBuilderToken } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
 import { IActivity } from './IActivity';
@@ -33,7 +33,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     isScope?: boolean;
 
-    protected _enableSetResult = true;
+    protected _enableSetResult?: boolean;
 
 
     /**
@@ -44,6 +44,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     @Input() name: string;
 
+    @Input() pipe: string;
+
     private _result: ActivityResult<T>;
     /**
      * activity result.
@@ -52,6 +54,9 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     get result(): ActivityResult<T> {
+        if (!this._result) {
+            this._result = this.getInjector().get<ActivityResult<T>>(ActivityResult);
+        }
         return this._result;
     }
 
@@ -87,8 +92,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
-        this._result = await this.initResult(ctx);
-        await this.refreshResult(ctx);
+        await this.initResult(ctx);
         await this.execute(ctx);
         await this.refreshContext(ctx);
         if (this.isScope) {
@@ -101,29 +105,30 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
 
     protected abstract execute(ctx: TCtx): Promise<void>;
 
-    protected async initResult(ctx: TCtx, ...providers: ProviderTypes[]): Promise<ActivityResult> {
-        return this.getContainer().getService(this.getInjector(), { token: ActivityResult, target: lang.getClass(this) }, ...providers);
-    }
-
-    protected async refreshResult(ctx: TCtx): Promise<any> {
-        let ret = isNullOrUndefined(ctx.result) ? ctx.getOptions().data : ctx.result;
-        if (this._enableSetResult && !isNullOrUndefined(ret)) {
-            this.setActivityResult(ctx, ret);
+    protected async initResult(ctx: TCtx): Promise<any> {
+        let runspc = ctx.status.scopes.find(s => isDefined(s.scope.result.value));
+        let ret = runspc ? runspc.scope : ctx.data;
+        if (this._enableSetResult !== false && !isNullOrUndefined(ret)) {
+            if (this.pipe) {
+                this.result.value = ctx.injector.get(ComponentBuilderToken)
+                    .getPipe(this.pipe, this.getInjector())
+                    ?.transform(ret);
+            } else {
+                this.result.value = ret;
+            }
         }
-    }
-
-    protected setActivityResult(ctx: TCtx, value?: any) {
-        this.result.value = value || ctx.result;
     }
 
     protected async refreshContext(ctx: TCtx) {
-        if (this._enableSetResult && !isNullOrUndefined(this.result.value)) {
-            this.setContextResult(ctx);
+        if (this._enableSetResult !== false && !isNullOrUndefined(this.result.value)) {
+            if (this.pipe) {
+                ctx.injector.get(ComponentBuilderToken)
+                    .getPipe(this.pipe, this.getInjector())
+                    ?.reverse(ctx, this.result.value);
+            } else {
+                ctx.result = this.result.value;
+            }
         }
-    }
-
-    protected setContextResult(ctx: TCtx) {
-        ctx.result = this.result.value;
     }
 
     private _executor: IActivityExecutor;
@@ -138,7 +143,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     protected async runActivity(ctx: TCtx, activities: ActivityType | ActivityType[], next?: () => Promise<void>, refresh?: boolean): Promise<void> {
         await this.getExector().runActivity(ctx, activities, next);
         if (refresh !== false) {
-            await this.refreshResult(ctx);
+            await this.initResult(ctx);
         }
     }
 

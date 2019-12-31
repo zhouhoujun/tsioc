@@ -1,7 +1,7 @@
-import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
 import {
-    Inject, DecoratorScopes, RegisterSingletionAction, ProviderTypes, InjectReference,
+    Inject, IocExt, DecoratorScopes, RegisterSingletionAction, ProviderTypes, InjectReference,
     DesignRegisterer, RuntimeRegisterer, DecoratorProvider, ActionInjectorToken
 } from '@tsdi/ioc';
 import { BootContext, AnnoationDesignAction } from '@tsdi/boot';
@@ -13,7 +13,7 @@ import { BootContext, AnnoationDesignAction } from '@tsdi/boot';
  * @export
  * @class BootModule
  */
-@IocExt('setup')
+@IocExt()
 export class UnitSetup {
 
     constructor() {

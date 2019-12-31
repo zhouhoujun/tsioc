@@ -1,16 +1,12 @@
 import { ObjectMap, isString } from '@tsdi/ioc';
-import { Input, Binding, AfterInit } from '@tsdi/components';
-import { Task, ValuePipe, ActivityType, Src } from '@tsdi/activities';
-import { NodeActivityContext, NodeExpression } from '../core';
+import { Input, Binding } from '@tsdi/components';
+import { Task, Src, Activities } from '@tsdi/activities';
+import { NodeActivityContext, NodeExpression, ITransform } from '../core';
 import { CompilerOptions } from 'typescript';
-import { AssetActivityOption, AssetActivity } from './AssetActivity';
-import { SourceActivity } from './SourceActivity';
-import { DestActivity } from './DestActivity';
-import { UglifyActivity } from './UglifyActivity';
-import { AnnotationActivity } from './AnnotationActivity';
+import { AssetActivityOption } from './AssetActivity';
 import { StreamActivity } from './StreamActivity';
-import { UnitTestActivity } from '../tasks';
-import { TypeScriptJsPipe, TypeScriptDtsPipe } from './TsPipe';
+import { TransformService } from './TransformActivity';
+import { classAnnotations } from '@tsdi/annotations';
 const ts = require('gulp-typescript');
 
 /**
@@ -27,92 +23,120 @@ export interface TsBuildOption extends AssetActivityOption {
     dts?: Binding<NodeExpression<string>>;
     uglify?: Binding<NodeExpression<boolean>>;
     uglifyOptions?: Binding<NodeExpression>;
-    jsValuePipe?: Binding<NodeExpression<ValuePipe | boolean>>;
-    dtsValuePipe?: Binding<NodeExpression<ValuePipe | boolean>>;
 }
 
-
-@Task('ts')
-export class TsBuildActivity extends AssetActivity implements AfterInit {
-
-    @Input() test: UnitTestActivity;
-
-    @Input('annotation') annotation: AnnotationActivity;
-
-    @Input() uglify: UglifyActivity;
-    /**
-     * assert src.
-     *
-     * @type {NodeExpression<Src>}
-     * @memberof AssetActivity
-     */
-    @Input() src: SourceActivity;
-
-    @Input('tsPipes') tsPipes: StreamActivity;
-
-    @Input('dts') dts: DestActivity;
-
-    @Input('jsValuePipe') jsPipe: ValuePipe;
-
-    @Input('dtsValuePipe') tdsPipe: ValuePipe;
+@Task({
+    selector: 'ts',
+    template: [
+        {
+            activity: 'test',
+            src: 'binding: test'
+        },
+        {
+            activity: 'clean',
+            clean: 'binding: dist'
+        },
+        {
+            activity: 'src',
+            src: 'binding: src',
+        },
+        {
+            activity: 'annotation',
+            annotationFramework: 'binding: annotationFramework',
+            annotation: 'binding: annotation'
+        },
+        {
+            activity: Activities.execute,
+            action: ctx => {
+                if (ctx.scope.beforePipes) {
+                    return ctx.scope.beforePipes.run(ctx);
+                }
+            }
+        },
+        {
+            activity: Activities.if,
+            condition: ctx => ctx.scope.sourcemap,
+            body: {
+                activity: Activities.execute,
+                action: (ctx: NodeActivityContext, activity) => {
+                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
+                    return ctx.injector.get(TransformService).executePipe(ctx, activity.result.value, framework.init())
+                }
+            }
+        },
+        {
+            activity: Activities.execute,
+            action: async (ctx: NodeActivityContext, activity) => {
+                if (!ctx.scope.tsconfig) {
+                    return;
+                }
+                let tsconfig = await ctx.resolveExpression(ctx.scope.tsconfig);
+                let tsCompile;
+                if (isString(tsconfig)) {
+                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig));
+                    tsCompile = tsProject();
+                } else {
+                    let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
+                    tsCompile = tsProject();
+                }
+                return await ctx.injector.get(TransformService).executePipe(ctx, activity.result.value, tsCompile);
+            }
+        },
+        {
+            activity: Activities.if,
+            condition: ctx => ctx.scope.dts,
+            body: {
+                activity: 'dist',
+                pipe: 'dts',
+                dist: 'binding: dts',
+            }
+        },
+        {
+            activity: Activities.execute,
+            pipe: 'tsjs',
+            action: ctx => {
+                if (ctx.scope.streamPipes) {
+                    return ctx.scope.streamPipes.run(ctx);
+                }
+            }
+        },
+        {
+            activity: 'uglify',
+            uglify: 'binding: uglify',
+            uglifyOptions: 'binding: uglifyOptions'
+        },
+        {
+            activity: Activities.if,
+            condition: ctx => ctx.scope.sourcemap,
+            body: {
+                activity: Activities.execute,
+                pipe: 'tsjs',
+                action: (ctx: NodeActivityContext, activity) => {
+                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
+                    return ctx.injector.get(TransformService).executePipe(ctx, activity.result.value, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
+                }
+            }
+        },
+        {
+            activity: 'dist',
+            pipe: 'tsjs',
+            dist: 'binding: dist',
+        }
+    ]
+})
+export class TsBuildActivity {
+    @Input() src: NodeExpression<Src>;
+    @Input() dist: NodeExpression<string>;
+    @Input() dts: NodeExpression<string>;
+    @Input() sourcemap: string | boolean;
+    @Input('sourceMapFramework') framework: any
+    @Input('beforePipes') beforePipes: StreamActivity;
+    @Input('pipes') streamPipes: StreamActivity;
+    @Input() annotation: NodeExpression<boolean>;
+    @Input('annotationFramework', classAnnotations) annotationFramework: NodeExpression<ITransform>;
 
     @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string | ObjectMap>;
-
-
-    onAfterInit(): void | Promise<void> {
-        this.jsPipe = this.jsPipe || this.getContainer().resolve(TypeScriptJsPipe);
-        this.tdsPipe = this.tdsPipe || this.getContainer().resolve(TypeScriptDtsPipe);
-        if (this.streamPipes) {
-            this.streamPipes.pipe = this.streamPipes.pipe || this.jsPipe;
-        }
-        if (this.uglify) {
-            this.uglify.pipe = this.uglify.pipe || this.jsPipe;
-        }
-        if (this.dist) {
-            this.dist.pipe = this.dist.pipe || this.jsPipe;
-        }
-        if (this.dts) {
-            if (!this.dts.dist) {
-                this.dts.dist = this.dist.dist;
-            }
-            this.dts.pipe = this.dts.pipe || this.tdsPipe;
-        }
-        if (this.sourcemapWrite) {
-            this.sourcemapWrite.pipe = this.sourcemapWrite.pipe || this.jsPipe;
-        }
-    }
-
-
-    protected getRunSequence(): ActivityType[] {
-        return [
-            this.test,
-            this.clean,
-            this.src,
-            this.annotation,
-            this.sourcemapInit,
-            this.tsPipes,
-            this.promiseLikeToAction<NodeActivityContext>(ctx => this.complieTs(ctx)),
-            this.streamPipes,
-            this.dts,
-            this.uglify,
-            this.sourcemapWrite,
-            this.dist
-        ];
-    }
-
-    protected async complieTs(ctx: NodeActivityContext): Promise<void> {
-        if (!this.tsconfig) {
-            return;
-        }
-        let tsconfig = await this.resolveExpression(this.tsconfig, ctx);
-        let tsCompile;
-        if (isString(tsconfig)) {
-            let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig));
-            tsCompile = tsProject();
-        } else {
-            let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
-            tsCompile = tsProject();
-        }
-        this.result.value = ctx.result = await this.executePipe(ctx, ctx.result, tsCompile);
-    }
+    @Input() uglify: NodeExpression<boolean>;
+    @Input('uglifyOptions') uglifyOptions: NodeExpression;
 }
+

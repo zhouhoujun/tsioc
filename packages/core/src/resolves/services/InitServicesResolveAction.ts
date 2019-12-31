@@ -11,7 +11,9 @@ export class InitServicesResolveAction extends IocResolveAction<ResolveServicesC
                 ctx.set(CTX_TARGET_REFS, targets);
             }
         }
+
         options.tokens = options.tokens?.filter(t => isToken(t));
+
         next();
     }
 }

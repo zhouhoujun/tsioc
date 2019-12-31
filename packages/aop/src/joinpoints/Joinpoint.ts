@@ -1,4 +1,4 @@
-import { Type, Injectable, MethodMetadata, IParameter, InjectToken, Inject, ClassMetadata, Injector } from '@tsdi/ioc';
+import { Type, Injectable, MethodMetadata, IParameter, InjectToken, Inject, ClassMetadata, Injector, TypeMetadata } from '@tsdi/ioc';
 import { IJoinpoint } from './IJoinpoint';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices/Advicer';
@@ -111,10 +111,10 @@ export class Joinpoint implements IJoinpoint {
     /**
      * orgin pointcut method metadatas.
      *
-     * @type {(ClassMetadata | MethodMetadata)[]}
+     * @type {TypeMetadata[]}
      * @memberof Joinpoint
      */
-    annotations: (ClassMetadata | MethodMetadata)[];
+    annotations: TypeMetadata[];
 
     /**
      * pointcut target instance

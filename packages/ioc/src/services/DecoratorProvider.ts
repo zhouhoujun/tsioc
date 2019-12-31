@@ -74,7 +74,7 @@ export class DecoratorProvider extends IocCoreService {
         return null;
     }
 
-    register<T>(decorator: string | Function, provide: Token<T>, provider: Token<T> | Factory<T>): this {
+    register<T>(decorator: string | Function, provide: Token<T>, provider: Factory<T>): this {
         this.existify(decorator).register(provide, provider);
         return this;
     }

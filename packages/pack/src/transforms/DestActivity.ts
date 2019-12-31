@@ -1,8 +1,8 @@
 import { Input, Binding } from '@tsdi/components';
 import { Task, ActivityType, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext, ITransform, NodeExpression } from '../core';
+import { TransformActivity, TransformService } from './TransformActivity';
 import { DestOptions, dest } from 'vinyl-fs';
-import { PipeActivity } from './PipeActivity';
 
 
 /**
@@ -47,7 +47,7 @@ export interface DistActivityOption extends TemplateOption {
  * @extends {TransformActivity}
  */
 @Task('dist, [dist]')
-export class DestActivity extends PipeActivity {
+export class DestActivity extends TransformActivity {
 
     @Input() dist: NodeExpression<string>;
 
@@ -57,7 +57,7 @@ export class DestActivity extends PipeActivity {
         let dist = await this.resolveExpression(this.dist, ctx);
         if (dist) {
             let options = await this.resolveExpression(this.options, ctx);
-            await this.executePipe(ctx, this.result.value, dest(ctx.platform.toRootPath(dist), options), true);
+            await ctx.injector.get(TransformService).executePipe(ctx, this.result.value, dest(ctx.platform.toRootPath(dist), options), true);
         }
         this.result.value = null;
     }

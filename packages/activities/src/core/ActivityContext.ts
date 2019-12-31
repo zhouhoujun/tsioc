@@ -53,20 +53,13 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityMetadat
      */
     runnable: WorkflowInstance;
 
+    result: any;
     /**
      * workflow instane run status.
      */
     get status(): ActivityStatus {
         return this.runnable.status;
     }
-
-    /**
-     * current result.
-     *
-     * @type {*}
-     * @memberof ActivityContext
-     */
-    result?: any;
 
     private _body: any;
     /**

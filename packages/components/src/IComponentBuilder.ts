@@ -1,6 +1,7 @@
-import { ProviderTypes, Type, InjectToken, IInjector } from '@tsdi/ioc';
+import { ProviderTypes, Type, InjectToken, IInjector, Token } from '@tsdi/ioc';
 import { IBuilderService, IBuildOption } from '@tsdi/boot';
 import { ComponentRef } from './ComponentRef';
+import { IPipeTransform } from './bindings/IPipeTransform';
 
 /**
  * template option.
@@ -42,6 +43,8 @@ export interface IComponentBuilder extends IBuilderService {
      * @param target
      */
     resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<InstanceRef<T>>;
+    
+    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T;
     /**
      * get target component ref
      * @param target target injector.

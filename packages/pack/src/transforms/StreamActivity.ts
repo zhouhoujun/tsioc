@@ -1,11 +1,10 @@
-import { isDefined } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task, Expression } from '@tsdi/activities';
-import { PipeActivity } from './PipeActivity';
-import { ITransform, NodeActivityContext, isTransform } from '../core';
+import { ITransform, NodeActivityContext } from '../core';
+import { TransformService, TransformActivity } from './TransformActivity';
 
 @Task('[pipes]')
-export class StreamActivity extends PipeActivity {
+export class StreamActivity extends TransformActivity {
 
     @Input('pipes') protected pipes: Expression<ITransform>[];
 
@@ -31,8 +30,9 @@ export class StreamActivity extends PipeActivity {
             return stream;
         }
 
+        let service = ctx.injector.get(TransformService);
         if (pipes.length === 1) {
-            return await this.executePipe(ctx, stream, pipes[0]);
+            return await service.executePipe(ctx, stream, pipes[0]);
         }
 
         let pstream = Promise.resolve(stream);
@@ -40,63 +40,11 @@ export class StreamActivity extends PipeActivity {
             if (transform) {
                 pstream = pstream
                     .then(stm => {
-                        return this.executePipe(ctx, stm, transform);
+                        return service.executePipe(ctx, stm, transform);
                     });
             }
         });
         return await pstream;
-    }
-
-    /**
-     * execute stream pipe.
-     *
-     * @protected
-     * @param {NodeActivityContext} ctx
-     * @param {ITransform} stream stream pipe from
-     * @param {GActivityType<ITransform>} transform steam pipe to.
-     * @param {boolean} [waitend=false] wait pipe end or not.
-     * @returns {Promise<ITransform>}
-     * @memberof TransformActivity
-     */
-    protected async executePipe(ctx: NodeActivityContext, stream: ITransform, transform: Expression<ITransform>, waitend = false): Promise<ITransform> {
-        let next: ITransform;
-        let transPipe = await this.resolveExpression(transform, ctx);
-        let vaild = false;
-        if (isTransform(stream)) {
-            if (isTransform(transPipe) && !transPipe.changeAsOrigin) {
-                vaild = true;
-            } else {
-                next = stream;
-            }
-        } else if (isTransform(transPipe) && transPipe.changeAsOrigin) {
-            next = transPipe;
-        }
-
-        if (vaild) {
-            next = stream.pipe(transPipe);
-            if (waitend) {
-                return await new Promise((r, j) => {
-                    next
-                        .once('end', r)
-                        .once('error', j);
-                }).then(() => {
-                    next.removeAllListeners('error');
-                    next.removeAllListeners('end');
-                    return next;
-                }, err => {
-                    next.removeAllListeners('error');
-                    next.removeAllListeners('end');
-                    if (isDefined(process)) {
-                        console.error(err);
-                        process.exit(1);
-                        return err;
-                    } else {
-                        return Promise.reject(new Error(err));
-                    }
-                });
-            }
-        }
-        return next;
     }
 
 }

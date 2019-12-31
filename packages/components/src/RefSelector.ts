@@ -2,7 +2,7 @@ import { Abstract, Type, isClass, isString, TypeReflects, Inject, lang } from '@
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import { IComponentReflect } from './IComponentReflect';
-import { COMPONENT_REFS, ComponentRef, RootNodeRef, NodeType, NodeRef, NodeRefFactory } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef, RootNodeRef, NodeRef, NodeRefFactory } from './ComponentRef';
 
 
 
@@ -32,11 +32,11 @@ export abstract class RefSelector {
             ?.getNodeSelector();
     }
 
-    createComponentRef<T, TN>(type: Type<T>, target: T, context: AnnoationContext, nodes: NodeType<TN> | NodeType<TN>[]): ComponentRef<T, TN> {
+    createComponentRef(type: Type, target: Object, context: AnnoationContext, nodes: Object | Object[]): ComponentRef {
         return new ComponentRef(type, target, context, this.createRootNodeRef(nodes, context));
     }
 
-    createRootNodeRef<T>(roots: NodeType<T> | NodeType<T>[], context: AnnoationContext): RootNodeRef<T> {
+    createRootNodeRef(roots: Object | Object[], context: AnnoationContext): RootNodeRef {
         return new RootNodeRef(roots, context);
     }
 

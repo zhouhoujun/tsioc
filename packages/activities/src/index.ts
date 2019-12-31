@@ -22,5 +22,7 @@ export * from './core/WorkflowInstance';
 export * from './core/ActivityContext';
 export * from './core/uuid';
 
+export * from './registers/ActivityDepsRegister';
+
 export * from './aop';
 export * from './activities';

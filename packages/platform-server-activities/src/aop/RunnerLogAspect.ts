@@ -1,7 +1,7 @@
 import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
-import { LoggerAspect, LogProcess } from '@tsdi/logs';
+import { LogProcess } from '@tsdi/logs';
 import { WorkflowInstance } from '@tsdi/activities';
 import chalk from 'chalk';
 const timestamp = require('time-stamp');

@@ -1,7 +1,7 @@
 import { lang } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
-import { Task, Activity, ControlActivity } from '@tsdi/activities';
+import { Task, Activity, ControlActivity, ActivityRef } from '@tsdi/activities';
 
 /**
  * Task Log process.
@@ -52,13 +52,12 @@ export class TaskLogProcess extends LogProcess {
  * @extends {TaskLogProcess}
  */
 @Aspect({
-    annotation: Task,
-    within: Activity,
+    within: [Activity, ActivityRef],
     without: ControlActivity,
     singleton: true
 })
 export class TaskLogAspect extends TaskLogProcess {
-    @Around('execution(*.execute)')
+    @Around('execution(*.run)')
     logging(joinPoint: Joinpoint) {
         this.processLog(joinPoint);
     }
@@ -73,12 +72,11 @@ export class TaskLogAspect extends TaskLogProcess {
  * @extends {TaskLogProcess}
  */
 @Aspect({
-    annotation: Task,
     within: ControlActivity,
     singleton: true
 })
 export class TaskControlLogAspect extends TaskLogProcess {
-    @Around('execution(*.execute)')
+    @Around('execution(*.run)')
     logging(joinPoint: Joinpoint) {
         this.processLog(joinPoint);
     }

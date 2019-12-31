@@ -15,6 +15,7 @@ import { ActivityResult } from './core/ActivityResult';
 import { ActivityStatus } from './core/ActivityStatus';
 import { CompoiseActivity } from './core/CompoiseActivity';
 import { WorkflowInstance } from './core/WorkflowInstance';
+import { ActivityDepsRegister } from './registers/ActivityDepsRegister';
 
 
 /**
@@ -32,8 +33,10 @@ export class ActivityModule {
 
         let actInjector = container.get(ActionInjectorToken);
 
+        actInjector.regAction(ActivityDepsRegister);
+
         actInjector.getInstance(DesignRegisterer)
-            .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction);
+            .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction, ActivityDepsRegister);
 
         container.getInstance(StartupDecoratorRegisterer)
             .register(Task, StartupScopes.TranslateTemplate, ComponentSelectorHandle);

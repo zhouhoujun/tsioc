@@ -1,6 +1,5 @@
 import { MetadataExtends, createClassDecorator, isString, ITypeDecorator, isNumber, ArgsIteratorAction } from '@tsdi/ioc';
 import { SuiteMetadata } from '../metadata/SuiteMetadata';
-import { SuiteRunnerToken } from '../runner/ISuiteRunner';
 
 
 /**
@@ -60,7 +59,6 @@ export function createSuiteDecorator<T extends SuiteMetadata>(
                 metaExtends(metadata);
             }
             metadata.singleton = true;
-            metadata.defaultRunnable = SuiteRunnerToken;
             return metadata;
         }) as ISuiteDecorator<T>;
 }
