@@ -1,8 +1,8 @@
 import {
-    Inject, BindProviderAction, IocSetCacheAction, DecoratorScopes, IocAutorunAction,
-    RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken, IActionInjector
+    Inject, BindProviderAction, IocSetCacheAction, DecoratorScopes, IocAutorunAction, IocExt,
+    RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken, IocExt } from '@tsdi/core';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
 import { Annotation } from './decorators/Annotation';
 import { Message } from './decorators/Message';
@@ -29,7 +29,7 @@ import { AnnoationRegisterAction } from './registers/AnnoationRegisterAction';
  * @export
  * @class BootModule
  */
-@IocExt('setup')
+@IocExt()
 export class BootModule {
 
     constructor() {

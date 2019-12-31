@@ -58,7 +58,6 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
     /**
      * bootstrap instance.
      *
-     * @type {T}
      * @memberof BootOptions
      */
     bootstrap?: Token;

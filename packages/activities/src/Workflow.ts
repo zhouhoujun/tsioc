@@ -8,7 +8,7 @@ import { SequenceActivity } from './activities';
 import { ActivityContext, WorkflowContextToken } from './core/ActivityContext';
 import { ActivityOption } from './core/ActivityOption';
 import { WorkflowInstance } from './core/WorkflowInstance';
-import { ActivityType } from './core/ActivityConfigure';
+import { ActivityType } from './core/ActivityMetadata';
 import { UUIDToken, RandomUUIDFactory } from './core/uuid';
 
 /**

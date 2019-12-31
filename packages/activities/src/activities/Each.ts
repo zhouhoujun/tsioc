@@ -21,7 +21,7 @@ export class EachActicity<T> extends ControlActivity {
         items = items.filter(i => !isNullOrUndefined(i));
         if (items && items.length) {
             if (this.parallel) {
-                this._eableDefaultSetResult = true;
+                this._enableSetResult = true;
                 if (this.getContainer().has(ParallelExecutor)) {
                     this.result.value = await this.getContainer().getInstance(ParallelExecutor).run(v => {
                         return this.runWorkflow(ctx, this.body, v).then(c => c.result);
@@ -32,7 +32,7 @@ export class EachActicity<T> extends ControlActivity {
                     }));
                 }
             } else {
-                this._eableDefaultSetResult = false;
+                this._enableSetResult = false;
                 let actions = await this.getExector().parseActions(this.body);
                 await this.getExector().execActions(ctx, items.map(v => async (c: ActivityContext, next) => {
                     ctx.setBody(v);

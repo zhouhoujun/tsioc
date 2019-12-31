@@ -5,7 +5,7 @@ import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
-import { ActivityConfigure, Expression } from './ActivityConfigure';
+import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ActivityStatus } from './ActivityStatus';
 
 /**
@@ -18,9 +18,6 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
  */
 export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
 
-export interface IActionRun<TCtx extends ActivityContext> {
-    run(ctx: TCtx, next?: () => Promise<void>): Promise<void>;
-}
 
 
 /**
@@ -32,7 +29,7 @@ export interface IActionRun<TCtx extends ActivityContext> {
 @Injectable
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
-export class ActivityContext extends BootContext<ActivityOption, ActivityConfigure> {
+export class ActivityContext extends BootContext<ActivityOption, ActivityMetadata> {
     /**
      * workflow id.
      *

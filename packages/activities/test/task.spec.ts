@@ -60,7 +60,7 @@ describe('activity test', () => {
             let ctx = await Workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
             expect(ctx.result).toEqual('component task');
-            let ifact = ctx.runnable.getBootNode().activities[0] as IfActivity;
+            let ifact = ctx.runnable.getBoot().activities[0] as IfActivity;
             console.log(ifact);
             expect(ifact instanceof IfActivity).toBeTruthy();
             expect(ifact.name).toEqual('test---task---3');
@@ -69,7 +69,7 @@ describe('activity test', () => {
 
         it('should bootstrap with template configure.', async () => {
             let app = new BootApplication();
-            await app.container.load(ComponentsModule, ActivityModule, SimpleTask, SimpleCTask)
+            await app.getContainer().load(ComponentsModule, ActivityModule, SimpleTask, SimpleCTask)
             let ctx = await Workflow.run({
                 // deps: [
                 //     ServerActivitiesModule
@@ -79,16 +79,14 @@ describe('activity test', () => {
                     name: 'test------2',
                     activity: 'comptest'
                 },
-
-                raiseContainer: app.container.getFactory()
-
+                injector: app.getContainer()
             });
             expect(ctx.result).toEqual('component task');
         });
 
         it('should bootstrap with template configure array.', async () => {
             let app = new BootApplication();
-            await app.container.load(ComponentsModule, ActivityModule, SimpleTask, SimpleCTask)
+            await app.getContainer().load(ComponentsModule, ActivityModule, SimpleTask, SimpleCTask)
             let ctx = await Workflow.run({
                 // deps: [
                 //     ServerActivitiesModule
@@ -104,8 +102,7 @@ describe('activity test', () => {
                         activity: 'comptest'
                     }
                 ],
-                raiseContainer: app.container.getFactory()
-
+                injector: app.getContainer()
             });
             expect(ctx.result).toEqual('component task');
         });

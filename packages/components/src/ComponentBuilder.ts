@@ -31,7 +31,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.value;
     }
 
-    async resolveNode<T>(target: Type<T> | IBuildOption<T>): Promise<T | ComponentRef<T>> {
+    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<T | ComponentRef<T>> {
         let ctx = await this.resolveContext(target);
         let bootTarget = this.getBootTarget(ctx);
 

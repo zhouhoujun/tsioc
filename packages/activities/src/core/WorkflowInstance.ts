@@ -1,8 +1,9 @@
 import { Injectable, Refs } from '@tsdi/ioc';
 import { Service, Startup, CTX_DATA } from '@tsdi/boot';
-import { Activity } from './Activity';
+import { IActivity } from './IActivity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityStatus } from './ActivityStatus';
+import { Activity } from './Activity';
 
 /**
  *run state.
@@ -43,7 +44,7 @@ export enum RunState {
 @Injectable
 @Refs(Activity, Startup)
 @Refs('@Task', Startup)
-export class WorkflowInstance<T extends Activity = Activity, TCtx extends ActivityContext = ActivityContext> extends Service<T, TCtx> {
+export class WorkflowInstance<T extends IActivity<TCtx> = IActivity, TCtx extends ActivityContext = ActivityContext> extends Service<T, TCtx> {
 
 
     private _result: any;
@@ -71,7 +72,7 @@ export class WorkflowInstance<T extends Activity = Activity, TCtx extends Activi
         if (this.context.id && !container.has(this.context.id)) {
             container.registerValue(this.context.id, this);
         }
-        let target = this.getBootNode();
+        let target = this.getBoot();
         await target.run(this.context, async () => {
             this.state = RunState.complete;
             this._result = this.context.result;

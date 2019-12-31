@@ -1,7 +1,7 @@
 import { PromiseUtil, InjectToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { ActivityContext } from './ActivityContext';
-import { Expression, ActivityType } from './ActivityConfigure';
+import { Expression, ActivityType } from './ActivityMetadata';
 
 /**
  * activity executor.

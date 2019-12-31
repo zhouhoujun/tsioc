@@ -1,6 +1,5 @@
-import { isString, createClassDecorator, MetadataExtends, isClass, ITypeDecorator, lang, ClassType, Type, ArgsIteratorAction } from '@tsdi/ioc';
-import { RegFor, BootContext } from '@tsdi/boot';
-import { ActivityConfigure } from '../core/ActivityConfigure';
+import { isString, createClassDecorator, isClass, ITypeDecorator, lang, ClassType } from '@tsdi/ioc';
+import { ActivityMetadata } from '../core/ActivityMetadata';
 
 
 /**
@@ -11,7 +10,7 @@ import { ActivityConfigure } from '../core/ActivityConfigure';
  * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface ITaskDecorator<T extends ActivityConfigure> extends ITypeDecorator<T> {
+export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorator<T> {
     /**
      * Activity decorator, use to define class as Activity element.
      *
@@ -38,58 +37,23 @@ export interface ITaskDecorator<T extends ActivityConfigure> extends ITypeDecora
 }
 
 /**
- * create task decorator.
- *
- * @export
- * @template T
- * @param {string} taskType
- * @param {(Token<IActivityBuilder> | IActivityBuilder)} builder
- * @param {InjectToken<IActivity>} provideType
- * @param {MetadataAdapter} [actions]
- * @param {MetadataExtends<T>} [metadataExtends]
- * @returns {ITaskDecorator<T>}
- */
-export function createTaskDecorator<T extends ActivityConfigure>(
-    taskType: string,
-    actions?: ArgsIteratorAction<T>[],
-    defaultContext?: Type<BootContext>,
-    metadataExtends?: MetadataExtends<T>): ITaskDecorator<T> {
-
-    return createClassDecorator<ActivityConfigure>(taskType,
-        [
-            ...(actions || []),
-            (ctx, next) => {
-                if (isString(ctx.currArg)) {
-                    ctx.metadata.selector = ctx.currArg;
-                    ctx.next(next);
-                }
-            }
-        ],
-        metadata => {
-            if (metadataExtends) {
-                metadataExtends(metadata as T);
-            }
-
-            metadata.regIn = metadata.regIn || RegFor.boot;
-
-            if (!metadata.name && isClass(metadata.type)) {
-                metadata.name = lang.getClassName(metadata.type);
-            }
-
-            metadata.provide = 'activity_' + metadata.selector;
-            if (!metadata.contextType) {
-                metadata.contextType = defaultContext;
-            }
-            metadata.decorType = taskType;
-
-            return metadata;
-        }) as ITaskDecorator<T>;
-}
-
-/**
  * task decorator, use to define class is a task element.
  *
  * @Task
  */
-export const Task: ITaskDecorator<ActivityConfigure> = createTaskDecorator('Task');
+export const Task: ITaskDecorator<ActivityMetadata> = createClassDecorator<ActivityMetadata>('Task',
+    [
+        (ctx, next) => {
+            if (isString(ctx.currArg)) {
+                ctx.metadata.selector = ctx.currArg;
+                ctx.next(next);
+            }
+        }
+    ],
+    metadata => {
+        if (!metadata.name && isClass(metadata.type)) {
+            metadata.name = lang.getClassName(metadata.type);
+        }
+        return metadata;
+    }) as ITaskDecorator<ActivityMetadata>;
 

@@ -1,16 +1,53 @@
 import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from '@tsdi/ioc';
-import { RunnableConfigure } from '@tsdi/boot';
-import { Binding, ElementTemplate } from '@tsdi/components';
+import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
-import { ValuePipe } from './ValuePipe';
 import { ActivityRef } from './ActivityRef';
+
+
+/**
+ * activity configuration.
+ *
+ * @export
+ * @interface ActivityConfigure
+ * @extends {RunnableConfigure}
+ * @template T
+ */
+export interface ActivityMetadata<T extends TemplateOption = ControlTemplate>  extends IComponentMetadata {
+    /**
+    * action name.
+    *
+    * @type {string}
+    * @memberof ActivityMetadata
+    */
+    name?: string;
+    /**
+     * task title.
+     *
+     * @type {string}
+     * @memberof ActivityMetadata
+     */
+    title?: string;
+
+    /**
+     * activities component template scope.
+     *
+     * @type {ActivityTemplate}
+     * @memberof ActivityMetadata
+     */
+    template?: ActivityTemplate<T>;
+
+    /**
+     * activity deps types.
+     */
+    deps?: Type[]
+
+}
 
 /**
  * workflow id.
  */
 export const WorkflowId = new InjectToken<string>('Workflow_ID');
-
 
 /**
  * selectors.
@@ -34,55 +71,6 @@ export enum Activities {
     interval = 'interval',
     each = 'each',
     execute = 'execute'
-}
-
-/**
- * activity configuration.
- *
- * @export
- * @interface ActivityConfigure
- * @extends {RunnableConfigure}
- * @template T
- */
-export interface ActivityConfigure<T extends TemplateOption = ControlTemplate>  extends RunnableConfigure {
-    /**
-    * action name.
-    *
-    * @type {string}
-    * @memberof ActivityConfigure
-    */
-    name?: string;
-    /**
-     * task title.
-     *
-     * @type {string}
-     * @memberof IActivityConfigure
-     */
-    title?: string;
-
-    /**
-     * activities component template scope.
-     *
-     * @type {ActivityTemplate}
-     * @memberof ActivityConfigure
-     */
-    template?: ActivityTemplate<T>;
-
-    /**
-     * decor Type
-     *
-     * @type {string}
-     * @memberof ActivityConfigure
-     */
-    decorType?: string;
-
-    /**
-     * context type.
-     *
-     * @type {Token<ActivityContext>}
-     * @memberof ActivityConfigure
-     */
-    contextType?: Token<ActivityContext>;
 }
 
 /**
@@ -112,10 +100,10 @@ export interface TemplateOption extends ElementTemplate, ObjectMap {
     /**
      * value pipe.
      *
-     * @type {(Type<ValuePipe> | ValuePipe)}
+     * @type {string}
      * @memberof TemplateOption
      */
-    pipe?: Type<ValuePipe> | ValuePipe;
+    pipe?: string;
 }
 
 
@@ -258,7 +246,7 @@ export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T 
 /**
  *  activity type.
  */
-export type ActivityType<TVal= any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | ActivityRef<TVal> | Type<Activity<TVal>> | TemplateType<T>;
+export type ActivityType<TVal= any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | ActivityRef<Activity> | Type<Activity<TVal>> | TemplateType<T>;
 
 /**
  * activity template.

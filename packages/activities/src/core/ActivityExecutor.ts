@@ -1,16 +1,16 @@
 import {
     Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerFactoryToken,
-    ContainerFactory, isMetadataObject, lang, isFunction, isPromise, ObjectMap, isBaseObject
+    ContainerFactory, isFunction, isPromise, ObjectMap, isBaseObject
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
 import { ComponentBuilderToken, AstResolver, getSelectorToken, ComponentBuilder } from '@tsdi/components';
-import { ActivityType, ControlTemplate, Expression } from './ActivityConfigure';
+import { ActivityType, ControlTemplate, Expression } from './ActivityMetadata';
 import { ActivityContext } from './ActivityContext';
-import { Activity } from './Activity';
+import { IActivity } from './IActivity';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
-import { ActivityRef } from './ActivityRef';
+import { isAcitvity } from './ActivityRef';
 
 
 /**
@@ -50,7 +50,7 @@ export class ActivityExecutor implements IActivityExecutor {
      */
     runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType, data?: any): Promise<T> {
         let container = this.getContainer();
-        if (activity instanceof Activity || activity instanceof ActivityRef) {
+        if (isAcitvity(activity)) {
             let nctx = ctx.clone().setBody(data);
             return activity.run(nctx).then(() => nctx);
         } else if (isClass(activity)) {
@@ -95,7 +95,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
-        } else if (express instanceof Activity) {
+        } else if (isAcitvity(express)) {
             await express.run(ctx);
             return express.result.value;
         } else if (isPromise(express)) {
@@ -127,12 +127,12 @@ export class ActivityExecutor implements IActivityExecutor {
     }
 
     parseAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
-        if (activity instanceof Activity || activity instanceof ActivityRef) {
+        if (isAcitvity(activity)) {
             return activity.toAction();
         } else if (isClass(activity) || isBaseObject(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
                 let act = await this.buildActivity(activity as Type | ControlTemplate, ctx);
-                if (act instanceof Activity || act instanceof ActivityRef) {
+                if (isAcitvity(act)) {
                     await act.run(ctx, next);
                 } else {
                     await next();
@@ -145,10 +145,10 @@ export class ActivityExecutor implements IActivityExecutor {
         return null;
     }
 
-    protected async buildActivity(activity: Type | ControlTemplate, ctx: ActivityContext): Promise<Activity | ActivityRef> {
+    protected async buildActivity(activity: Type | ControlTemplate, ctx: ActivityContext): Promise<IActivity> {
         let container = this.getContainer();
         if (isClass(activity)) {
-            return await container.get(ComponentBuilderToken).resolveNode<ActivityContext>(activity);
+            return await container.get(ComponentBuilderToken).resolveRef<ActivityContext>(activity);
         } else {
             let md: Type;
             if (isClass(activity.activity)) {
@@ -162,7 +162,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 template: activity,
                 scope: ctx.scope
             };
-            return await container.getInstance(ComponentBuilder).resolveNode<ActivityContext>(option) as (ActivityRef | Activity);
+            return await container.getInstance(ComponentBuilder).resolveRef(option);
         }
     }
 }

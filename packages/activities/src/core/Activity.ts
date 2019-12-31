@@ -5,10 +5,14 @@ import {
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityContext, IActionRun } from './ActivityContext';
+import { ActivityContext } from './ActivityContext';
+import { IActivity } from './IActivity';
 import { ActivityResult } from './ActivityResult';
-import { ActivityConfigure, ActivityType, Expression } from './ActivityConfigure';
+import { ActivityMetadata, ActivityType, Expression } from './ActivityMetadata';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
+
+
+
 
 
 
@@ -22,7 +26,7 @@ import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
  * @implements {OnActivityInit}
  */
 @Abstract()
-export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> implements IActionRun<TCtx> {
+export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> implements IActivity<TCtx> {
 
     /**
      * is scope or not.
@@ -32,7 +36,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     isScope?: boolean;
 
-    protected _eableDefaultSetResult = true;
+    protected _enableSetResult = true;
 
 
     /**
@@ -106,7 +110,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
 
     protected async refreshResult(ctx: TCtx): Promise<any> {
         let ret = isNullOrUndefined(ctx.result) ? ctx.getOptions().data : ctx.result;
-        if (this._eableDefaultSetResult && !isNullOrUndefined(ret)) {
+        if (this._enableSetResult && !isNullOrUndefined(ret)) {
             this.setActivityResult(ctx, ret);
         }
     }
@@ -116,7 +120,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     }
 
     protected async refreshContext(ctx: TCtx) {
-        if (this._eableDefaultSetResult && !isNullOrUndefined(this.result.value)) {
+        if (this._enableSetResult && !isNullOrUndefined(this.result.value)) {
             this.setContextResult(ctx);
         }
     }
@@ -181,16 +185,6 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
 
 }
 
-/**
- * is acitivty instance or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Activity}
- */
-export function isAcitvity(target: any): target is Activity {
-    return target instanceof Activity;
-}
 
 /**
  * target is activity class.
@@ -199,7 +193,7 @@ export function isAcitvity(target: any): target is Activity {
  * @param {*} target
  * @returns {target is Type<IActivity>}
  */
-export function isAcitvityClass(target: any, ext?: (meta: ActivityConfigure) => boolean): target is Type<Activity> {
+export function isAcitvityClass(target: any, ext?: (meta: ActivityMetadata) => boolean): target is Type<IActivity> {
     if (!isClass(target)) {
         return false;
     }

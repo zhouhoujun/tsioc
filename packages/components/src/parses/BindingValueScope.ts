@@ -150,7 +150,7 @@ export class TranslateAtrrHandle extends ParseHandle {
             if (selector) {
                 let template = {};
                 template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
-                ctx.value = await injector.get(ComponentBuilderToken).resolveNode({
+                ctx.value = await injector.get(ComponentBuilderToken).resolveRef({
                     type: selector,
                     scope: options.scope,
                     template: template,

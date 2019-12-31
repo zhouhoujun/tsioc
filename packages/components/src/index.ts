@@ -11,6 +11,7 @@ export * from './bindings/Events';
 
 // decorators
 export * from './decorators/BindingPropertyMetadata';
+export * from './decorators/IComponentMetadata';
 export * from './decorators/Component';
 export * from './decorators/Input';
 export * from './decorators/Output';

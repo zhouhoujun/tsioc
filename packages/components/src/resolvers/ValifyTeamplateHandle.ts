@@ -1,9 +1,10 @@
 import { BuildContext, ResolveHandle, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import {  ComponentRef } from '../ComponentRef';
+import { CTX_COMPONENT_REF } from '../ComponentRef';
+
 
 export class ValifyTeamplateHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.target && ctx.has(ComponentRef)) {
+        if (ctx.target && ctx.has(CTX_COMPONENT_REF)) {
 
             let startupRegr = this.actInjector.getInstance(StartupDecoratorRegisterer);
 

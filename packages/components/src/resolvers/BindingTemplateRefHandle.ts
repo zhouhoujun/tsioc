@@ -2,7 +2,7 @@ import { DecoratorProvider } from '@tsdi/ioc';
 import { ResolveHandle, BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { RefSelector } from '../RefSelector';
-import { ComponentRef } from '../ComponentRef';
+import { CTX_COMPONENT_REF } from '../ComponentRef';
 
 /**
  * binding temlpate handle.
@@ -13,16 +13,16 @@ import { ComponentRef } from '../ComponentRef';
  */
 export class BindingTemplateRefHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.target && ctx.has(ComponentRef)) {
+        if (ctx.target && ctx.has(CTX_COMPONENT_REF)) {
             let ref = ctx.targetReflect as IComponentReflect;
             if (ref && ref.propRefChildBindings) {
                 let dpr = this.actInjector.getInstance(DecoratorProvider);
                 if (dpr.has(ctx.decorator, RefSelector)) {
                     // todo ref chile view
                     let refSelector = dpr.resolve(ctx.decorator, RefSelector);
-                    let cref = ctx.get(ComponentRef);
+                    let cref = ctx.get(CTX_COMPONENT_REF);
                     ref.propRefChildBindings.forEach(b => {
-                        let result = refSelector.select(cref.hostView, b.bindingName || b.name);
+                        let result = refSelector.select(cref.nodeRef, b.bindingName || b.name);
                         if (result) {
                             ctx.target[b.name] = result;
                         }

@@ -3,9 +3,9 @@ import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
 
-
+export const CTX_COMPONENT = new InjectToken<any>('CTX_COMPONENT')
 export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF')
-
+export const CTX_COMPONENT_REF = new InjectToken<ComponentRef>('CTX_COMPONENT_REF')
 
 @Abstract()
 export abstract class NodeRefFactory {

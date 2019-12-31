@@ -1,4 +1,4 @@
-import { ControlTemplate, ActivityConfigure } from '@tsdi/activities';
+import { ControlTemplate, ActivityMetadata } from '@tsdi/activities';
 import {
     CleanActivityOption, ServeConfigure, WatchActivityOption,
     ShellActivityOption, UnitTestActivityOption
@@ -15,6 +15,6 @@ export type PackTemplates = ControlTemplate | AssetActivityOption | CleanActivit
     | UnitTestActivityOption | WatchActivityOption | JsonEditActivityOption | JsonReplaceActivityOption
     | TsBuildOption | RollupOption | LibPackBuilderOption;
 
-export interface PackConfigure extends ActivityConfigure<PackTemplates> {
+export interface PackConfigure extends ActivityMetadata<PackTemplates> {
 
 }

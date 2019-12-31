@@ -64,7 +64,7 @@ export class WorkTask extends Activity<string> {
 }
 
 @Task({
-    imports: [
+    deps: [
         WorkTask
     ],
     selector: 'comptest',
@@ -112,7 +112,7 @@ export class SimpleCTask {
 
 @Task({
     name: 'test-module',
-    imports: [
+    deps: [
         ServerActivitiesModule
     ],
     template: [
