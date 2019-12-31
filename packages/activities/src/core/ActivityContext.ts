@@ -7,6 +7,7 @@ import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ActivityStatus } from './ActivityStatus';
+import { ActivityRef } from './ActivityRef';
 
 /**
  * workflow context token.
@@ -122,16 +123,10 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityMetadat
 
     getCurrBaseURL() {
         let baseURL = '';
-        let mgr = this.reflects;
         this.status.scopes.some(s => {
-            if (s.scope.$scopes && s.scope.$scopes.length) {
-                return s.scope.$scopes.some(c => {
-                    let refl = mgr.get<IModuleReflect>(lang.getClass(c));
-                    if (refl && refl.baseURL) {
-                        baseURL = refl.baseURL;
-                    }
-                    return !!baseURL
-                })
+            if (s.scope.isScope && s.scope instanceof ActivityRef) {
+                baseURL = s.scope.context.targetReflect.baseURL;
+                return !!baseURL;
             }
             return false;
         });

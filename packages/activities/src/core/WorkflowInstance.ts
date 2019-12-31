@@ -4,6 +4,7 @@ import { IActivity } from './IActivity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityStatus } from './ActivityStatus';
 import { Activity } from './Activity';
+import { ComponentBuilderToken } from '@tsdi/components';
 
 /**
  *run state.
@@ -64,15 +65,21 @@ export class WorkflowInstance<T extends IActivity<TCtx> = IActivity, TCtx extend
         await mgr.getConfig();
     }
 
+    getActivity(): IActivity {
+        let injector = this.getInjector();
+        return injector.get(ComponentBuilderToken).getComponentRef(this.getBoot(), injector) as IActivity;
+    }
+
     async start(data?: any): Promise<TCtx> {
         let container = this.getContainer();
         this.context.set(CTX_DATA, data);
-        this._status = container.get(ActivityStatus);
+        this._status = this.getInjector().get(ActivityStatus);
         this.context.set(WorkflowInstance, this);
         if (this.context.id && !container.has(this.context.id)) {
             container.registerValue(this.context.id, this);
         }
-        let target = this.getBoot();
+
+        let target = this.getActivity();
         await target.run(this.context, async () => {
             this.state = RunState.complete;
             this._result = this.context.result;

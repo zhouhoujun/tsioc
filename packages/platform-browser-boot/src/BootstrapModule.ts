@@ -7,7 +7,7 @@ let processRoot = isDefined(System) ? System.baseURL : '.';
 
 
 @DIModule({
-    regFor: 'root',
+    regIn: 'root',
     imports: [
         BrowserModule
     ],

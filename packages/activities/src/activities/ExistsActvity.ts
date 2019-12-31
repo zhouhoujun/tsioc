@@ -1,8 +1,8 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
-import { Task } from '../../decorators';
-import { ActivityContext } from '../../core/ActivityContext';
-import { ControlActivity } from '../../core/ControlActivity';
+import { Task } from '../decorators/Task';
+import { ActivityContext } from '../core/ActivityContext';
+import { ControlActivity } from '../core/ControlActivity';
 
 @Task('exists')
 export class ExistsActvity extends ControlActivity<boolean> {

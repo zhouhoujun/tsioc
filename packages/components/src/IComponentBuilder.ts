@@ -1,4 +1,4 @@
-import { ProviderTypes, Type, InjectToken } from '@tsdi/ioc';
+import { ProviderTypes, Type, InjectToken, IInjector } from '@tsdi/ioc';
 import { IBuilderService, IBuildOption } from '@tsdi/boot';
 import { ComponentRef } from './ComponentRef';
 
@@ -17,6 +17,8 @@ export interface ITemplateOption extends IBuildOption {
  * component build token.
  */
 export const ComponentBuilderToken = new InjectToken<IComponentBuilder>('ComponentBuilder');
+
+export type InstanceRef<T> = T | ComponentRef<T>;
 
 /**
  * component builder.
@@ -39,7 +41,13 @@ export interface IComponentBuilder extends IBuilderService {
      * resolve node componsite of component.
      * @param target
      */
-    resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<T | ComponentRef<T>>;
+    resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<InstanceRef<T>>;
+    /**
+     * get target component ref
+     * @param target target injector.
+     * @param injector the injector target registed in.
+     */
+    getComponentRef<T>(target: T, injector?: IInjector): InstanceRef<T>
     /**
      * serialize component as template json.
      *

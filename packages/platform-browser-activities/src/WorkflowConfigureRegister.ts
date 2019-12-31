@@ -1,14 +1,15 @@
 import { Singleton } from '@tsdi/ioc';
 import { DebugLogAspect } from '@tsdi/logs';
 import { ConfigureRegister, RunnableConfigure } from '@tsdi/boot';
+import { ActivityContext } from '@tsdi/activities';
 
 
 @Singleton
 export class WorkflowConfigureRegister extends ConfigureRegister {
 
-    async register(config: RunnableConfigure): Promise<void> {
+    async register(config: RunnableConfigure, ctx: ActivityContext): Promise<void> {
         if (config.debug) {
-            this.container.register(DebugLogAspect);
+            ctx.injector.register(DebugLogAspect);
         }
     }
 }

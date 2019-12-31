@@ -148,7 +148,7 @@ export class ActivityExecutor implements IActivityExecutor {
     protected async buildActivity(activity: Type | ControlTemplate, ctx: ActivityContext): Promise<IActivity> {
         let container = this.getContainer();
         if (isClass(activity)) {
-            return await container.get(ComponentBuilderToken).resolveRef<ActivityContext>(activity);
+            return await container.get(ComponentBuilderToken).resolveRef(activity);
         } else {
             let md: Type;
             if (isClass(activity.activity)) {

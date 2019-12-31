@@ -5,7 +5,7 @@ import { TaskLogAspect } from './aop/TaskLogAspect';
 import { RunnerLogAspect } from './aop/RunnerLogAspect';
 
 @DIModule({
-    regFor: 'root',
+    regIn: 'root',
     imports: [
         BrowserModule,
         TaskLogAspect,

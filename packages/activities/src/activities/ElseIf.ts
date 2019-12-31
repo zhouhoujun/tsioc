@@ -1,4 +1,4 @@
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core/ActivityContext';
 import { IfActivity, IFStateKey } from './If';
 

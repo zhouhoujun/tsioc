@@ -1,5 +1,5 @@
-import { Inject } from '@tsdi/ioc';
-import { IocExt, ContainerToken, IContainer, ModuleLoader } from '@tsdi/core';
+import { Inject, IocExt } from '@tsdi/ioc';
+import { ContainerToken, IContainer, ModuleLoader } from '@tsdi/core';
 import { NodeModuleLoader } from './NodeModuleLoader';
 
 /**
@@ -8,7 +8,7 @@ import { NodeModuleLoader } from './NodeModuleLoader';
  * @export
  * @class ServerModule
  */
-@IocExt('setup')
+@IocExt()
 export class ServerModule {
 
     constructor() {

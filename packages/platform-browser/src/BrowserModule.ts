@@ -1,6 +1,6 @@
 import 'core-js';
-import { Inject } from '@tsdi/ioc';
-import { IocExt, ContainerToken, IContainer, ModuleLoader } from '@tsdi/core';
+import { IocExt, Inject } from '@tsdi/ioc';
+import { ContainerToken, IContainer, ModuleLoader } from '@tsdi/core';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
 
 
@@ -10,7 +10,7 @@ import { BrowserModuleLoader } from './BrowserModuleLoader';
  * @export
  * @class BrowserModule
  */
-@IocExt('setup')
+@IocExt()
 export class BrowserModule {
 
     constructor() {

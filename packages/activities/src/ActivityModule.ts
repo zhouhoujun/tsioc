@@ -1,12 +1,14 @@
-import { Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes, DecoratorProvider, DesignRegisterer, ActionInjectorToken, IocExt } from '@tsdi/ioc';
+import {
+    Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes,
+    DecoratorProvider, DesignRegisterer, ActionInjectorToken, IocExt
+} from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
-import { ComponentRegisterAction, RefSelector, ComponentAnnotationCloner } from '@tsdi/components';
+import { ComponentRegisterAction, RefSelector, ComponentAnnotationCloner, ComponentSelectorHandle } from '@tsdi/components';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop';
 import * as activites from './activities';
 import { ActivityRefSelector } from './ActivityRefSelector';
-import { TaskDecorSelectorHandle, BindingTaskComponentHandle, ValidTaskComponentHandle } from './handles';
 import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
 import { ActivityResult } from './core/ActivityResult';
@@ -30,18 +32,11 @@ export class ActivityModule {
 
         let actInjector = container.get(ActionInjectorToken);
 
-        actInjector
-            .regAction(ValidTaskComponentHandle)
-            .regAction(BindingTaskComponentHandle)
-            .regAction(TaskDecorSelectorHandle);
-
         actInjector.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction);
 
         container.getInstance(StartupDecoratorRegisterer)
-            .register(Task, StartupScopes.TranslateTemplate, TaskDecorSelectorHandle)
-            .register(Task, StartupScopes.ValifyComponent, ValidTaskComponentHandle)
-            .register(Task, StartupScopes.Binding, BindingTaskComponentHandle);
+            .register(Task, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
 
 
         actInjector.getInstance(DecoratorProvider)

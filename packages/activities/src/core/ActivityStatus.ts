@@ -1,5 +1,5 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { Activity } from './Activity';
+import { IActivity } from './IActivity';
 
 
 /**
@@ -9,7 +9,7 @@ import { Activity } from './Activity';
  * @interface RunScopes
  */
 export class RunScopes {
-    subs: Activity[];
+    subs: IActivity[];
     private _state: Map<any, any>;
     protected get state(): Map<any, any> {
         if (!this._state) {
@@ -18,7 +18,7 @@ export class RunScopes {
         return this._state;
     }
 
-    constructor(public scope: Activity) {
+    constructor(public scope: IActivity) {
         this.subs = [];
     }
 
@@ -55,18 +55,18 @@ export class ActivityStatus {
     }
 
 
-    private _current: Activity;
+    private _current: IActivity;
     /**
      * current actiivty.
      *
      * @type {Activity}
      * @memberof ActivityStateManager
      */
-    get current(): Activity {
+    get current(): IActivity {
         return this._current;
     }
 
-    set current(activity: Activity) {
+    set current(activity: IActivity) {
         this._current = activity;
         if (activity.isScope) {
             // clean parent scope control state.

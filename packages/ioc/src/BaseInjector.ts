@@ -5,7 +5,7 @@ import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { IocCoreService } from './IocCoreService';
-import { Provider, ParamProvider, ObjectMapProvider, ProviderType, StaticProviders } from './providers/Provider';
+import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';

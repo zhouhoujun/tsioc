@@ -2,7 +2,7 @@ import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
-import { Task, Activity, ControlActivity } from '@tsdi/activities';
+import { Task, Activity, ControlActivity, ActivityRef, IActivity } from '@tsdi/activities';
 import chalk from 'chalk';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
@@ -17,11 +17,8 @@ export class TaskLogProcess extends LogProcess {
     processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
-            let target = joinPoint.target as Activity;
+            let target = joinPoint.target as IActivity;
             let name = target.name;
-            if (!name && target.$scopes && target.$scopes.length) {
-                name = lang.getClassName(lang.last(target.$scopes));
-            }
             if (!name) {
                 name = lang.getClassName(joinPoint.targetType);
             }
@@ -58,8 +55,7 @@ export class TaskLogProcess extends LogProcess {
  * @class TaskLogAspect
  */
 @Aspect({
-    annotation: Task,
-    within: Activity,
+    within: [Activity, ActivityRef],
     without: ControlActivity,
     singleton: true
 })

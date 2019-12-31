@@ -1,9 +1,10 @@
 export * from './Workflow';
 export * from './ActivityModule';
-export * from './decorators';
-export * from './handles';
+export * from './decorators/Task';
 
-export * from './utils';
+
+export * from './utils/objectUtil';
+export * from './utils/types';
 // core
 export * from './core/IActivity';
 export * from './core/Activity';
@@ -23,4 +24,3 @@ export * from './core/uuid';
 
 export * from './aop';
 export * from './activities';
-

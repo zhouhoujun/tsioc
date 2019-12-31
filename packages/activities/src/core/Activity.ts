@@ -13,9 +13,6 @@ import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
 
 
 
-
-
-
 /**
  * activity base.
  *
@@ -26,7 +23,7 @@ import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
  * @implements {OnActivityInit}
  */
 @Abstract()
-export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> implements IActivity<TCtx> {
+export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> implements IActivity<T, TCtx> {
 
     /**
      * is scope or not.

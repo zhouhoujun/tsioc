@@ -1,9 +1,9 @@
 import {
     Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString,
-    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider
+    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider, IInjector
 } from '@tsdi/ioc';
 import { BuilderService, IBuildOption } from '@tsdi/boot';
-import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
+import { IComponentBuilder, ComponentBuilderToken, ITemplateOption, InstanceRef } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
 import { COMPONENT_REFS, ComponentRef } from './ComponentRef';
@@ -31,11 +31,17 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.value;
     }
 
-    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<T | ComponentRef<T>> {
+    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<InstanceRef<T>> {
         let ctx = await this.resolveContext(target);
         let bootTarget = this.getBootTarget(ctx);
+        return this.getComponentRef(bootTarget, ctx.injector);
+    }
 
-        return this.container.get(COMPONENT_REFS).get(bootTarget) || bootTarget;
+    getComponentRef<T>(target: T, injector?: IInjector): InstanceRef<T> {
+        if (!injector) {
+            injector = this.reflects.get(lang.getClass(target)).getInjector();
+        }
+        return injector.get(COMPONENT_REFS)?.get(target) || target;
     }
 
     serialize<T = any>(component: T): any {

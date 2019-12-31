@@ -1,6 +1,6 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityType } from '../core/ActivityConfigure';
+import { ActivityType } from '../core/ActivityMetadata';
 import { ActivityContext } from '../core/ActivityContext';
 import { CompoiseActivity } from '../core/CompoiseActivity';
 import { ParallelExecutor } from '../core/ParallelExecutor';

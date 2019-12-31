@@ -1,9 +1,9 @@
 import { isArray, PromiseUtil } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
-import { Task } from '../decorators';
+import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
-import { ActivityType } from '../core/ActivityConfigure';
+import { ActivityType } from '../core/ActivityMetadata';
 
 /**
  * body activity.
