@@ -4,7 +4,7 @@ import { TypeReflectsToken } from './services/ITypeReflects';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionInjector } from './actions/ActionInjector';
 import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
-import { Injector } from './Injector';
+import { Injector, ContextInjector } from './Injector';
 import { ProviderParser } from './providers/ProviderParser';
 import { DecoratorProvider } from './services/DecoratorProvider';
 import { MethodAccessor } from './actions/MethodAccessor';
@@ -26,6 +26,7 @@ export function registerCores(container: IIocContainer) {
     container.registerValue(ContainerFactoryToken, fac);
     container.registerValue(TypeReflectsToken, new TypeReflects(container), TypeReflects);
     container.set(INJECTOR, () => new Injector(fac), Injector);
+    container.set(ContextInjector, () => new ContextInjector(fac));
     container.registerValue(ProviderParser, new ProviderParser(container));
     container.registerValue(MethodAccessorToken, new MethodAccessor(container), MethodAccessor);
 

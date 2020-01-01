@@ -2,7 +2,7 @@ import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
 import { IInjector } from './IInjector';
 import { IIocContainer, ContainerFactory } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
-import { ProviderTypes, InjectTypes } from './providers/types';
+import { InjectTypes } from './providers/types';
 import { lang } from './utils/lang';
 
 // use core-js in browser.
@@ -87,3 +87,14 @@ export class Injector extends BaseInjector implements IInjector {
 export const ProviderMap = Injector;
 
 
+/**
+ * context injector.
+ *
+ * @export
+ * @class ContextInjector
+ * @extends {Injector}
+ */
+export class ContextInjector extends Injector {
+    init() {
+    }
+}

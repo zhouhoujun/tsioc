@@ -1,9 +1,9 @@
 import {
     isClass, Type, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    ProviderTypes, lang, IInjector, InjectorFactoryToken, InjectorFactory, isDefined
+    IInjector, InjectorFactoryToken, InjectorFactory, isDefined
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { Input, getPipeToken, ComponentBuilderToken } from '@tsdi/components';
+import { Input, ComponentBuilderToken } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
 import { IActivity } from './IActivity';
@@ -91,10 +91,10 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
-        ctx.status.current = this;
         await this.initResult(ctx);
+        ctx.status.current = this;
         await this.execute(ctx);
-        await this.refreshContext(ctx);
+        await this.setResult(ctx);
         if (this.isScope) {
             ctx.status.scopeEnd();
         }
@@ -119,7 +119,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
         }
     }
 
-    protected async refreshContext(ctx: TCtx) {
+    protected async setResult(ctx: TCtx) {
         if (this._enableSetResult !== false && !isNullOrUndefined(this.result.value)) {
             if (this.pipe) {
                 ctx.injector.get(ComponentBuilderToken)
