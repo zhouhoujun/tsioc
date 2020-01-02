@@ -23,11 +23,11 @@ export class EachActicity<T> extends ControlActivity {
             if (this.parallel) {
                 this._enableSetResult = true;
                 if (this.getContainer().has(ParallelExecutor)) {
-                    this.result.value = await this.getContainer().getInstance(ParallelExecutor).run(v => {
+                    this.result = await this.getContainer().getInstance(ParallelExecutor).run(v => {
                         return this.runWorkflow(ctx, this.body, v).then(c => c.result);
                     }, items);
                 } else {
-                    this.result.value = await Promise.all(items.map(v => {
+                    this.result = await Promise.all(items.map(v => {
                         return this.runWorkflow(ctx, this.body, v).then(c => c.result);
                     }));
                 }

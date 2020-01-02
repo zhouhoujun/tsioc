@@ -9,7 +9,7 @@ import { ITypeReflects } from '../services/ITypeReflects';
  * @abstract
  * @class TypeDecorators
  */
-export abstract class TypeDecorators {
+export class TypeDecorators {
     constructor(protected type: ClassType, protected reflects: ITypeReflects, protected register: DecoratorsRegisterer) {
     }
 

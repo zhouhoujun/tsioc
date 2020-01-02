@@ -48,7 +48,7 @@ export class SourceActivity extends TransformActivity {
         let strSrc = await this.resolveExpression(this.src, ctx);
         if (strSrc) {
             let options = await this.resolveExpression(this.options, ctx);
-            this.result.value = src(ctx.platform.normalizeSrc(strSrc), Object.assign({cwd: ctx.platform.getRootPath()}, options || {}));
+            this.result = src(ctx.platform.normalizeSrc(strSrc), Object.assign({cwd: ctx.platform.getRootPath()}, options || {}));
         }
     }
 }

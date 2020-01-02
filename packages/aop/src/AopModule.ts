@@ -48,7 +48,7 @@ export class AopModule {
 
         let actInjector = container.getInstance(ActionInjector);
 
-        actInjector.register(RegistAspectAction);
+        actInjector.regAction(RegistAspectAction);
 
         actInjector.get(IocBeforeConstructorScope)
             .useBefore(InvokeBeforeConstructorAction);

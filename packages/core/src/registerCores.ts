@@ -16,8 +16,8 @@ export function registerCores(container: IContainer) {
     let actInjector = container.get(ActionInjectorToken);
 
     // register action
-    actInjector.register(InjectLifeScope)
-        .register(ServiceResolveLifeScope)
-        .register(ServicesResolveLifeScope);
+    actInjector.regAction(InjectLifeScope)
+        .regAction(ServiceResolveLifeScope)
+        .regAction(ServicesResolveLifeScope);
 
 }

@@ -23,6 +23,6 @@ export class IntervalActivity<T> extends ControlActivity<T> {
         await this.timer.run(ctx);
         setInterval(() => {
             this.body.run(ctx);
-        }, this.timer.result.value);
+        }, this.timer.result);
     }
 }

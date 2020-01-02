@@ -1,6 +1,9 @@
 import { isString, isToken, Registration, ClassType, Token, createPropDecorator, isClassType } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
+
+export type RefDectorator = (target: Object, propertyKey: string | symbol) => void;
+
 /**
  * RefChild decorator
  *

@@ -28,7 +28,7 @@ export class DelayActivity<T> extends ControlActivity<T> {
         let timmer = setTimeout(() => {
             defer.resolve();
             clearTimeout(timmer);
-        }, this.timer.result.value);
+        }, this.timer.result);
         await defer.promise;
         await this.body.run(ctx);
     }

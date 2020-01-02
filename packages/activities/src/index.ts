@@ -13,7 +13,6 @@ export * from './core/ControlActivity';
 export * from './core/IActivityExecutor';
 export * from './core/ActivityExecutor';
 export * from './core/ParallelExecutor';
-export * from './core/ActivityResult';
 export * from './core/ActivityStatus';
 export * from './core/ActivityOption';
 export * from './core/ActivityMetadata';

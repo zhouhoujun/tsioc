@@ -22,10 +22,10 @@ export class WhileActivity<T> extends ControlActivity<T> {
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         await this.condition.run(ctx);
-        if (this.condition.result.value) {
+        if (this.condition.result) {
             await this.body.run(ctx, async () => {
                 await this.condition.run(ctx);
-                if (this.condition.result.value) {
+                if (this.condition.result) {
                     await this.execute(ctx);
                 }
             });

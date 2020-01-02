@@ -35,7 +35,6 @@ export class CatchActivity<T = any> extends ControlActivity<T> {
  */
 @Task('try')
 export class TryCatchActivity<T> extends Activity<T> {
-    isScope = true;
 
     @Input()
     try: BodyActivity<T>;
@@ -50,14 +49,14 @@ export class TryCatchActivity<T> extends Activity<T> {
         try {
             await this.try.run(ctx);
         } catch (err) {
-            this.result.error = err;
+            this.result = err;
             if (this.catchs) {
                 await this.runActivity(ctx, this.catchs);
             }
         } finally {
             if (this.finallies) {
                 await this.finallies.run(ctx);
-                this.result.value = this.finallies.result.value;
+                this.result = this.finallies.result;
             }
         }
     }

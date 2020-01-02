@@ -11,7 +11,6 @@ import * as activites from './activities';
 import { ActivityRefSelector } from './ActivityRefSelector';
 import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
-import { ActivityResult } from './core/ActivityResult';
 import { ActivityStatus } from './core/ActivityStatus';
 import { CompoiseActivity } from './core/CompoiseActivity';
 import { WorkflowInstance } from './core/WorkflowInstance';
@@ -61,7 +60,7 @@ export class ActivityModule {
             );
 
 
-        container.inject(ActivityContext, ActivityExecutor, ActivityResult, ActivityStatus, CompoiseActivity, WorkflowInstance)
+        container.inject(ActivityContext, ActivityExecutor, ActivityStatus, CompoiseActivity, WorkflowInstance)
             .register(RunAspect)
             .use(activites);
     }

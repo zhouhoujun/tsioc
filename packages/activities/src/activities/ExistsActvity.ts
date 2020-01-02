@@ -11,6 +11,6 @@ export class ExistsActvity extends ControlActivity<boolean> {
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let exp = this.getExector().eval(ctx, this.expect);
-        this.result.value = !isNullOrUndefined(exp);
+        this.result = !isNullOrUndefined(exp);
     }
 }

@@ -27,7 +27,7 @@ export class InvokeActivity<T = any> extends Activity<T> {
         let method = await this.resolveExpression(this.method, ctx);
         let args = await this.resolveExpression(this.args, ctx);
         if (target && method) {
-            this.result.value = this.getContainer().invoke(target, method, ...(args || []));
+            this.result = ctx.injector.invoke(target, method, ...(args || []));
         }
     }
 }

@@ -26,8 +26,8 @@ export class ParallelActivity<T> extends CompoiseActivity<T> {
      * @memberof ParallelActivity
      */
     protected async execute(ctx: ActivityContext): Promise<void> {
-        if (this.getContainer().has(ParallelExecutor)) {
-            await this.getContainer().getInstance(ParallelExecutor).run<ActivityType>(act => this.runWorkflow(ctx, act), this.activities)
+        if (ctx.injector.hasRegister(ParallelExecutor)) {
+            await ctx.injector.getInstance(ParallelExecutor).run<ActivityType>(act => this.runWorkflow(ctx, act), this.activities)
         } else {
             await Promise.all(this.activities.map(act => this.runWorkflow(ctx, act)));
         }

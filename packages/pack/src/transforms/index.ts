@@ -1,5 +1,4 @@
 export * from './TransformActivity';
-export * from './PipeActivity';
 export * from './AnnotationActivity';
 export * from './UglifyActivity';
 export * from './JsonEditActivity';

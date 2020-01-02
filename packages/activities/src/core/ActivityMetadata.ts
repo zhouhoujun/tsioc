@@ -1,8 +1,8 @@
 import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from '@tsdi/ioc';
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
+import { IActivity } from './IActivity';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
-import { IActivity } from './IActivity';
 
 
 /**

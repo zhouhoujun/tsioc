@@ -40,9 +40,9 @@ export class JsonEditActivity extends TransformActivity {
         }
         if (isFunction(this.json)) {
             let jsonFunc = this.json;
-            this.result.value = jeditor((json) => jsonFunc(json, ctx));
+            this.result = jeditor((json) => jsonFunc(json, ctx));
         } else {
-            this.result.value = jeditor(this.json);
+            this.result = jeditor(this.json);
         }
     }
 
@@ -77,7 +77,7 @@ export class JsonReplaceActivity extends TransformActivity {
         if (!isFunction(fields)) {
             return;
         }
-        this.result.value = through.obj(function (file, encoding, callback) {
+        this.result = through.obj(function (file, encoding, callback) {
             if (file.isNull()) {
                 return callback(null, file);
             }

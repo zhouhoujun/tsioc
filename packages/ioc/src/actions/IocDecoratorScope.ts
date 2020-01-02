@@ -1,4 +1,3 @@
-import { ObjectMap } from '../types';
 import { IocCompositeAction } from './IocCompositeAction';
 import { RegisterActionContext } from './RegisterActionContext';
 import { DecoratorScopes, DecoratorsRegisterer } from './DecoratorsRegisterer';
@@ -7,34 +6,27 @@ import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
 
 export abstract class IocDecoratorScope<T extends RegisterActionContext> extends IocCompositeAction<T> {
     execute(ctx: T, next?: () => void): void {
-        if (!this.isCompleted(ctx)) {
-            this.getDecorators(ctx)
-                .forEach(dec => {
-                    ctx.set(CTX_CURR_DECOR, dec);
-                    ctx.set(CTX_CURR_DECOR_SCOPE, this.getDecorScope());
-                    super.execute(ctx);
-                    this.done(ctx);
-                });
-        }
+        this.getDecorators(ctx)
+            .forEach(dec => {
+                ctx.set(CTX_CURR_DECOR, dec);
+                ctx.set(CTX_CURR_DECOR_SCOPE, this.getDecorScope());
+                super.execute(ctx);
+            });
         next && next();
     }
 
-    protected done(ctx: T): boolean {
-        return this.getState(ctx, this.getDecorScope())[ctx.get(CTX_CURR_DECOR)] = true;
-    }
-    protected isCompleted(ctx: T): boolean {
-        return !Object.values(this.getState(ctx, this.getDecorScope())).some(inj => !inj);
-    }
     protected getDecorators(ctx: T): string[] {
         let reg = this.getScopeRegisterer();
         let scope = this.getDecorScope();
-        let states = this.getState(ctx, scope);
+        let filters = this.hasDecors(ctx, scope);
         return reg.getRegisterer(scope)
             .getDecorators()
-            .filter(dec => states[dec] === false);
+            .filter(d => filters.indexOf(d) >= 0);
     }
 
-    protected abstract getState(ctx: T, dtype: DecoratorScopes): ObjectMap<boolean>;
+    protected abstract hasDecors(ctx: T, scope: DecoratorScopes): string[]
+
+
     protected abstract getScopeRegisterer(): DecoratorsRegisterer;
     protected abstract getDecorScope(): DecoratorScopes;
 }

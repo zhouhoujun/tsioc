@@ -3,7 +3,7 @@ import { lang, isArray } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
 import { ProviderTypes } from '../providers/types';
-import { IIocContainer, ContainerFactory, ContainerFactoryToken, IocContainerToken } from '../IIocContainer';
+import { IIocContainer, IocContainerToken } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
@@ -47,8 +47,6 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
     options && ctx.setOptions(options);
     return ctx;
 }
-
-
 
 /**
  * context with raise container.

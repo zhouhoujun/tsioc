@@ -97,7 +97,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return await express(ctx);
         } else if (isAcitvity(express)) {
             await express.run(ctx);
-            return express.result.value;
+            return express.result;
         } else if (isPromise(express)) {
             return await express;
         }

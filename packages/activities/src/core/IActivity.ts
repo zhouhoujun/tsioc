@@ -1,11 +1,12 @@
 import { ActivityContext } from './ActivityContext';
-import { ActivityResult } from './ActivityResult';
-import { PromiseUtil } from '@tsdi/ioc';
+import { PromiseUtil, InjectToken } from '@tsdi/ioc';
+
+export const ActivityResult = new InjectToken<any>('Activity_Result');
 
 export interface IActivity<T = any, TContext extends ActivityContext = ActivityContext> {
     name?: string;
-    isScope?: boolean;
-    readonly result: ActivityResult<T>;
+    readonly runScope: boolean;
+    readonly result: T;
     run(ctx: TContext, next?: () => Promise<void>): Promise<void>;
     toAction(): PromiseUtil.ActionHandle<T>;
 }

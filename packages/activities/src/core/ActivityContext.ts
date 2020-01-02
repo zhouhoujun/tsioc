@@ -1,6 +1,6 @@
-import { Injectable, Type, Refs, InjectToken, lang, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject, IInjector } from '@tsdi/ioc';
+import { Injectable, Type, Refs, InjectToken, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject, IInjector } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, IModuleReflect, CTX_DATA } from '@tsdi/boot';
+import { BootContext, CTX_DATA } from '@tsdi/boot';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -117,7 +117,7 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityMetadat
     getCurrBaseURL() {
         let baseURL = '';
         this.status.scopes.some(s => {
-            if (s.scope.isScope && s.scope instanceof ActivityRef) {
+            if (s.scope.runScope && s.scope instanceof ActivityRef) {
                 baseURL = s.scope.context.targetReflect.baseURL;
                 return !!baseURL;
             }

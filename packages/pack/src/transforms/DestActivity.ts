@@ -57,8 +57,8 @@ export class DestActivity extends TransformActivity {
         let dist = await this.resolveExpression(this.dist, ctx);
         if (dist) {
             let options = await this.resolveExpression(this.options, ctx);
-            await ctx.injector.get(TransformService).executePipe(ctx, this.result.value, dest(ctx.platform.toRootPath(dist), options), true);
+            await ctx.injector.get(TransformService).executePipe(ctx, this.result, dest(ctx.platform.toRootPath(dist), options), true);
         }
-        this.result.value = null;
+        this.result = null;
     }
 }

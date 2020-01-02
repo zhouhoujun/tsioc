@@ -12,6 +12,6 @@ export class EqualsActivity extends ControlActivity<boolean> {
 
     protected async execute(ctx: ActivityContext): Promise<void> {
         let exp = this.getExector().eval(ctx, this.expect);
-        this.result.value = exp === this.value;
+        this.result = exp === this.value;
     }
 }

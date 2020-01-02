@@ -12,13 +12,13 @@ import { isUndefined } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
-import { DesignDecorators } from '../actions/DesignDecorators';
 import { RuntimeDecorators } from '../actions/RuntimeDecorators';
 import { Singleton } from '../decorators/Singleton';
 import { DecoratorProvider } from './DecoratorProvider';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegisterer';
 import { ITypeReflects } from './ITypeReflects';
 import { ActionInjectorToken, IActionInjector } from '../actions/Action';
+import { TypeDecorators } from '../actions/TypeDecorators';
 
 
 /**
@@ -68,8 +68,8 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
             targetReflect = this.get(type);
         } else {
             let decs = new TargetDecoractors(
-                new DesignDecorators(type, this, this.container.getInstance(DesignRegisterer)),
-                new RuntimeDecorators(type, this, this.container.getInstance(RuntimeRegisterer)));
+                new TypeDecorators(type, this, this.getActionInjector().getInstance(DesignRegisterer)),
+                new RuntimeDecorators(type, this, this.getActionInjector().getInstance(RuntimeRegisterer)));
             targetReflect = {
                 type: type,
                 decorators: decs,

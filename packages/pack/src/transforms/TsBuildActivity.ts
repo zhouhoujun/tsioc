@@ -60,7 +60,7 @@ export interface TsBuildOption extends AssetActivityOption {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, activity) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, activity.result.value, framework.init())
+                    return ctx.injector.get(TransformService).executePipe(ctx, activity.result, framework.init())
                 }
             }
         },
@@ -79,7 +79,7 @@ export interface TsBuildOption extends AssetActivityOption {
                     let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
                     tsCompile = tsProject();
                 }
-                return await ctx.injector.get(TransformService).executePipe(ctx, activity.result.value, tsCompile);
+                return await ctx.injector.get(TransformService).executePipe(ctx, activity.result, tsCompile);
             }
         },
         {
@@ -92,35 +92,39 @@ export interface TsBuildOption extends AssetActivityOption {
             }
         },
         {
-            activity: Activities.execute,
-            pipe: 'tsjs',
-            action: ctx => {
-                if (ctx.scope.streamPipes) {
-                    return ctx.scope.streamPipes.run(ctx);
-                }
-            }
-        },
-        {
-            activity: 'uglify',
-            uglify: 'binding: uglify',
-            uglifyOptions: 'binding: uglifyOptions'
-        },
-        {
             activity: Activities.if,
-            condition: ctx => ctx.scope.sourcemap,
-            body: {
-                activity: Activities.execute,
-                pipe: 'tsjs',
-                action: (ctx: NodeActivityContext, activity) => {
-                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, activity.result.value, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
-                }
-            }
-        },
-        {
-            activity: 'dist',
+            condition: ctx => ctx.scope.js,
             pipe: 'tsjs',
-            dist: 'binding: dist',
+            body: [
+                {
+                    activity: Activities.execute,
+                    action: ctx => {
+                        if (ctx.scope.streamPipes) {
+                            return ctx.scope.streamPipes.run(ctx);
+                        }
+                    }
+                },
+                {
+                    activity: 'uglify',
+                    uglify: 'binding: uglify',
+                    uglifyOptions: 'binding: uglifyOptions'
+                },
+                {
+                    activity: Activities.if,
+                    condition: ctx => ctx.scope.sourcemap,
+                    body: {
+                        activity: Activities.execute,
+                        action: (ctx: NodeActivityContext, activity) => {
+                            let framework = ctx.scope.framework || require('gulp-sourcemaps');
+                            return ctx.injector.get(TransformService).executePipe(ctx, activity.result, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
+                        }
+                    }
+                },
+                {
+                    activity: 'dist',
+                    dist: 'binding: dist',
+                }
+            ]
         }
     ]
 })

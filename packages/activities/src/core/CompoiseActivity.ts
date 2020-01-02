@@ -14,7 +14,7 @@ import { ActivityType } from './ActivityMetadata';
 @Task
 export class CompoiseActivity<T> extends Activity<T> {
 
-    isScope = true;
+    runScope = true;
     protected activities: ActivityType[];
     private actions: PromiseUtil.ActionHandle<ActivityContext>[];
     constructor() {

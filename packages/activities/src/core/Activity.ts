@@ -6,8 +6,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Input, ComponentBuilderToken } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
-import { IActivity } from './IActivity';
-import { ActivityResult } from './ActivityResult';
+import { IActivity, ActivityResult } from './IActivity';
 import { ActivityMetadata, ActivityType, Expression } from './ActivityMetadata';
 import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
 
@@ -24,14 +23,13 @@ import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
  */
 @Abstract()
 export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> implements IActivity<T, TCtx> {
-
     /**
      * is scope or not.
      *
      * @type {boolean}
      * @memberof Activity
      */
-    isScope?: boolean;
+    readonly runScope: boolean
 
     protected _enableSetResult?: boolean;
 
@@ -46,19 +44,10 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
 
     @Input() pipe: string;
 
-    private _result: ActivityResult<T>;
     /**
      * activity result.
-     *
-     * @type {ActivityResult<T>}
-     * @memberof Activity
      */
-    get result(): ActivityResult<T> {
-        if (!this._result) {
-            this._result = this.getInjector().get<ActivityResult<T>>(ActivityResult);
-        }
-        return this._result;
-    }
+    result: T;
 
     /**
      * conatiner.
@@ -91,13 +80,10 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     async run(ctx: TCtx, next?: () => Promise<void>): Promise<void> {
-        await this.initResult(ctx);
         ctx.status.current = this;
+        await this.initResult(ctx);
         await this.execute(ctx);
         await this.setResult(ctx);
-        if (this.isScope) {
-            ctx.status.scopeEnd();
-        }
         if (next) {
             await next();
         }
@@ -106,27 +92,32 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     protected abstract execute(ctx: TCtx): Promise<void>;
 
     protected async initResult(ctx: TCtx): Promise<any> {
-        let runspc = ctx.status.scopes.find(s => isDefined(s.scope.result.value));
-        let ret = runspc ? runspc.scope : ctx.data;
+        let runspc = ctx.status.scopes.find(s => isDefined(s.has(ActivityResult)));
+        let ret = runspc ? runspc.get(ActivityResult) : ctx.data;
         if (this._enableSetResult !== false && !isNullOrUndefined(ret)) {
             if (this.pipe) {
-                this.result.value = ctx.injector.get(ComponentBuilderToken)
+                this.result = ctx.injector.get(ComponentBuilderToken)
                     .getPipe(this.pipe, this.getInjector())
                     ?.transform(ret);
             } else {
-                this.result.value = ret;
+                this.result = ret;
             }
+        }
+        if (this.runScope) {
+            ctx.status.currentScope.set(ActivityResult, this.result);
         }
     }
 
     protected async setResult(ctx: TCtx) {
-        if (this._enableSetResult !== false && !isNullOrUndefined(this.result.value)) {
+        if (this.runScope) {
+            ctx.status.scopeEnd();
+        }
+        if (this._enableSetResult !== false && !isNullOrUndefined(this.result)) {
+            ctx.status.currentScope.set(ActivityResult, this.result);
             if (this.pipe) {
                 ctx.injector.get(ComponentBuilderToken)
                     .getPipe(this.pipe, this.getInjector())
-                    ?.reverse(ctx, this.result.value);
-            } else {
-                ctx.result = this.result.value;
+                    ?.reverse(ctx, this.result);
             }
         }
     }

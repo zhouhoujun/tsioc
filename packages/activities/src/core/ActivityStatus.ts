@@ -68,7 +68,7 @@ export class ActivityStatus {
 
     set current(activity: IActivity) {
         this._current = activity;
-        if (activity.isScope) {
+        if (activity.runScope) {
             // clean parent scope control state.
             this.scopes.unshift(new RunScopes(activity));
         } else if (this.currentScope) {

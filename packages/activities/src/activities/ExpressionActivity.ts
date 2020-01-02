@@ -28,7 +28,7 @@ export class ExpressionActivity<T> extends ControlActivity<T> {
             expression = this.expression;
         }
 
-        this.result.value = await this.resolveExpression(expression, ctx);
+        this.result = await this.resolveExpression(expression, ctx);
     }
 
 }

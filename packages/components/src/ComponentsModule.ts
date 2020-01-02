@@ -33,6 +33,7 @@ import { ModuleAfterContentInitHandle } from './resolvers/ModuleAfterContentInit
 import { BindingOutputHandle } from './resolvers/BindingOutputHandle';
 import { BootTemplateHandle } from './resolvers/BootTemplateHandle';
 import { ModuleInitHandle } from './resolvers/ModuleInitHandle';
+import { DefaultComponentFactory } from './ComponentRef';
 
 /**
  * components module.
@@ -44,12 +45,12 @@ import { ModuleInitHandle } from './resolvers/ModuleInitHandle';
 export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
-
+        container.register(DefaultComponentFactory);
         container.inject(ComponentAnnotationCloner, AstResolver);
         let actInjector = container.get(ActionInjectorToken);
 
-        actInjector.register(ComponentRegisterAction)
-            .register(BindingPropertyTypeAction);
+        actInjector.regAction(ComponentRegisterAction)
+            .regAction(BindingPropertyTypeAction);
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Input, {
@@ -82,8 +83,8 @@ export class ComponentsModule {
             .bindProviders(Component,
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner });
 
-        actInjector.register(BindingScope)
-            .register(TemplateParseScope)
+        actInjector.regAction(BindingScope)
+            .regAction(TemplateParseScope)
             .get(ResolveMoudleScope)
             .use(ModuleBeforeInitHandle)
             .use(BindingPropertyHandle)

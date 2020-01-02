@@ -12,31 +12,6 @@ export interface ITypeDecoractors {
     reset();
 }
 
-export interface IDesignDecorators extends ITypeDecoractors {
-    /**
-     * class decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof ITypeReflect
-     */
-    classDecorState?: ObjectMap<boolean>;
-
-    /**
-     * props decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    propsDecorState?: ObjectMap<boolean>;
-
-    /**
-     * method decorators annoationed state.
-     *
-     * @type {ObjectMap<boolean>}
-     * @memberof RegisterActionContext
-     */
-    methodDecorState?: ObjectMap<boolean>;
-}
 
 export interface IRuntimeDecorators extends ITypeDecoractors {
     beforeCstrDecors?: string[];
@@ -45,7 +20,7 @@ export interface IRuntimeDecorators extends ITypeDecoractors {
 }
 
 export interface ITargetDecoractors {
-    readonly design: IDesignDecorators;
+    readonly design: ITypeDecoractors;
     readonly runtime: IRuntimeDecorators;
     readonly classDecors: string[];
     readonly methodDecors: string[];
@@ -54,7 +29,7 @@ export interface ITargetDecoractors {
 }
 
 export class TargetDecoractors implements ITargetDecoractors {
-    constructor(public design: IDesignDecorators, public runtime: IRuntimeDecorators) {
+    constructor(public design: ITypeDecoractors, public runtime: IRuntimeDecorators) {
 
     }
 

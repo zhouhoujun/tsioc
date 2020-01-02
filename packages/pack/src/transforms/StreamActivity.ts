@@ -11,7 +11,7 @@ export class StreamActivity extends TransformActivity {
     protected async execute(ctx: NodeActivityContext): Promise<void> {
         let pipes = await this.resolveExpression(this.pipes, ctx);
         if (pipes && pipes.length) {
-            this.result.value = await this.pipeStream(ctx, this.result.value, ...pipes);
+            this.result = await this.pipeStream(ctx, this.result, ...pipes);
         }
     }
 

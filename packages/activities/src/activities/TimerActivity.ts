@@ -12,6 +12,6 @@ export class TimerActivity extends ControlActivity<number> {
     @Input('timer') time: Expression<number>;
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        this.result.value = await this.resolveExpression(this.time, ctx);
+        this.result = await this.resolveExpression(this.time, ctx);
     }
 }

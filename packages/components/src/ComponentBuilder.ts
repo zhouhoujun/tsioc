@@ -3,10 +3,10 @@ import {
     isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider, IInjector, Token
 } from '@tsdi/ioc';
 import { BuilderService, IBuildOption } from '@tsdi/boot';
-import { IComponentBuilder, ComponentBuilderToken, ITemplateOption, InstanceRef } from './IComponentBuilder';
+import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS } from './ComponentRef';
+import { COMPONENT_REFS, CTX_COMPONENT_REF, IComponentRef, ComponentFactory, DefaultComponentFactory } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
@@ -33,17 +33,25 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.value;
     }
 
-    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<InstanceRef<T>> {
+    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<IComponentRef<T> | T> {
         let ctx = await this.resolveContext(target);
         let bootTarget = this.getBootTarget(ctx);
         return this.getComponentRef(bootTarget, ctx.injector);
+        // let compRef: TRef;
+        // if (!ctx.has(CTX_COMPONENT_REF)) {
+        //     let factory = this.container.getService(ctx.injector, { token: ComponentFactory, target: ctx.type, default: DefaultComponentFactory });
+        //     compRef = factory.create(ctx.type, bootTarget, ctx, bootTarget) as TRef;
+        //     ctx.set(CTX_COMPONENT_REF, compRef);
+        // } else {
+        //     compRef = ctx.get(CTX_COMPONENT_REF) as TRef;
+        // }
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {
         return injector.get(isString(token) ? getPipeToken(token) : token)
     }
 
-    getComponentRef<T>(target: T, injector?: IInjector): InstanceRef<T> {
+    getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T> | T {
         injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
         return injector.get(COMPONENT_REFS)?.get(target) || target;
     }

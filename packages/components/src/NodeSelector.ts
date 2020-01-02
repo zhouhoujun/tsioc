@@ -1,5 +1,5 @@
-import { Express, isFunction, isBoolean, Abstract, isArray } from '@tsdi/ioc';
-import { RootNodeRef, NodeRef } from './ComponentRef';
+import { Express, isFunction, isBoolean } from '@tsdi/ioc';
+import { NodeRef } from './ComponentRef';
 
 
 /**
@@ -157,40 +157,33 @@ export class NodeSelector<T = any> {
     }
 
     protected currNode(node: NodeRef<T>, express: Express<T, void | boolean>): boolean {
-        if (node instanceof RootNodeRef) {
-            let roots = node.rootNodes;
-            if ((isArray(roots) ? roots : [roots]).some(n => {
-                if (n instanceof NodeRef) {
-                    return this.currNode(n, express);
-                }
-                return express(n as T) === false
-            })) {
-                return false;
+        let roots = node.rootNodes;
+        if (roots.some(n => {
+            if (n instanceof NodeRef) {
+                return this.currNode(n, express);
             }
-        } else if (node instanceof NodeRef) {
-            if (express(node.node) === false) {
-                return false;
-            }
+            return express(n as T) === false
+        })) {
+            return false;
         }
     }
 
     protected getParent(node: NodeRef<T>): NodeRef<T> {
-        if (node instanceof RootNodeRef) {
-            let parent = node.getContext().getParent();
-            if (parent && parent.has(RootNodeRef)) {
-                return parent.get(RootNodeRef) as NodeRef<T>;
-            }
+
+        let parent = node.context.getParent();
+        if (parent && parent.has(NodeRef)) {
+            return parent.get(NodeRef) as NodeRef<T>;
         }
+
         return null;
     }
 
     protected getChildren(node: NodeRef<T>): NodeRef<T>[] {
-        if (node instanceof RootNodeRef) {
-            let ctx = node.getContext()
-            if (ctx.hasChildren()) {
-                return ctx.getChildren().map(c => c.get(RootNodeRef) as NodeRef<T>);
-            }
+        let ctx = node.context
+        if (ctx.hasChildren()) {
+            return ctx.getChildren().map(c => c.get(NodeRef) as NodeRef<T>);
         }
+
         return [];
     }
 }

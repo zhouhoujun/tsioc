@@ -39,8 +39,8 @@ export function registerCores(container: IIocContainer) {
 
     // bing action.
     actInjector
-        .register(DesignLifeScope)
-        .register(RuntimeLifeScope)
-        .register(ResolveLifeScope);
+        .regAction(DesignLifeScope)
+        .regAction(RuntimeLifeScope)
+        .regAction(ResolveLifeScope);
 
 }

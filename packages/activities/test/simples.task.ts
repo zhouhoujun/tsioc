@@ -8,7 +8,7 @@ import { Input } from '@tsdi/components';
 export class SimpleTask extends Activity<string> {
     async execute(ctx: ActivityContext): Promise<void> {
         // console.log('before simple task:', this.name);
-        this.result.value = await Promise.resolve('simple task')
+        this.result = await Promise.resolve('simple task')
             .then(val => {
                 console.log('return simple task:', val);
                 return val;
@@ -34,7 +34,7 @@ export class LoadData extends Activity<any> {
                 let getFunc = isString(this.getParams) ? this.getExector().eval(ctx, this.getParams) : this.getParams;
                 params = isFunction(getFunc) ? getFunc(ctx) : [];
             }
-            this.result.value = await service[this.action](...params);
+            this.result = await service[this.action](...params);
         }
     }
 }
@@ -54,7 +54,7 @@ export class SetData extends Activity<void> {
 export class WorkTask extends Activity<string> {
     async execute(ctx: ActivityContext): Promise<void> {
         // console.log('before simple task:', this.name);
-        this.result.value = await Promise.resolve('component task')
+        this.result = await Promise.resolve('component task')
             .then(val => {
                 console.log('return component work task:', val);
                 return val;
@@ -101,7 +101,7 @@ export class SimpleCTask {
     //     console.log('execute SimpleCTask........');
     //     await super.execute(ctx);
     //     // console.log('before component task:', this.name);
-    //     this.result.value = await Promise.resolve('component task')
+    //     this.result = await Promise.resolve('component task')
     //         .then(val => {
     //             console.log('return component task:', val);
     //             return val;

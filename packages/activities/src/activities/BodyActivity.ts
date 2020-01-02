@@ -16,6 +16,7 @@ import { ActivityType } from '../core/ActivityMetadata';
 @Task('[body]')
 export class BodyActivity<T = any> extends ControlActivity<T> {
 
+    runScope = true;
     private actions: PromiseUtil.ActionHandle<ActivityContext>[];
     @Input('body') activities: ActivityType | ActivityType[];
 
