@@ -21,10 +21,10 @@ export class BindPropertyTypeAction extends IocDesignAction {
             Object.keys(propMetas).forEach(key => {
                 let props = propMetas[key];
                 props.forEach(prop => {
-                    if (isClass(prop.provider) && !injector.has(prop.provider)) {
+                    if (isClass(prop.provider) && !injector.hasRegister(prop.provider)) {
                         injector.register(prop.provider);
                     }
-                    if (isClass(prop.type) && !injector.has(prop.type)) {
+                    if (isClass(prop.type) && !injector.hasRegister(prop.type)) {
                         injector.register(prop.type);
                     }
 
