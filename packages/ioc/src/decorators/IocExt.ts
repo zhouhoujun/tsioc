@@ -40,5 +40,6 @@ export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('Io
     (metadata) => {
         metadata.autorun = 'setup';
         metadata.singleton = true;
+        metadata.regIn = 'root';
         return metadata;
     }) as IocExtDecorator;

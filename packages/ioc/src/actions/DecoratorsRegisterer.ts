@@ -128,8 +128,6 @@ export class DesignRegisterer extends DecoratorsRegisterer {
     }
 }
 
-export const DesignDecoratorRegisterer = DesignRegisterer;
-
 /**
  * runtiem decorator registerer.
  *
@@ -142,5 +140,4 @@ export class RuntimeRegisterer extends DecoratorsRegisterer {
         return new IocDecoratorRegisterer() as DecoratorRegisterer;
     }
 }
-export const RuntimeDecoratorRegisterer = RuntimeRegisterer;
 

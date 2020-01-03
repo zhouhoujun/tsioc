@@ -8,22 +8,34 @@ export class ActionInjector extends Injector implements IActionInjector {
 
     regAction<T extends Action>(type: Type<T>): this {
         if (this.hasTokenKey(type)) {
-            return;
+            return this;
         }
-
-        if (lang.isExtendsClass(type, Action)) {
-            this.registerAction(type);
-            let instance = this.getInstance(type) as T & IActionSetup;
-            if (instance instanceof Action && isFunction(instance.setup)) {
-                instance.setup();
-            }
-        }
+        this.registerAction(type);
         return this;
     }
 
-    protected registerAction(type: Type<Action>) {
-        let instance = new type(this);
-        this.set(type, () => instance);
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
+        if (!provide && this.registerAction(type)) {
+            return this;
+        }
+        this.getContainer().registerType(this, type, provide, singleton);
+        return this;
+    }
+
+    protected registerAction(type: Type) {
+        if (lang.isExtendsClass(type, Action)) {
+            if (this.hasTokenKey(type)) {
+                return true;
+            }
+
+            let instance = new type(this) as Action & IActionSetup;
+            this.set(type, () => instance);
+            if (instance instanceof Action && isFunction(instance.setup)) {
+                instance.setup();
+            }
+            return true;
+        }
+        return false;
     }
 
     getAction<T extends Function>(target: Token<Action> | Action | Function): T {

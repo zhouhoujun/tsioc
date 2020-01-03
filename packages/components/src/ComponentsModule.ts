@@ -112,7 +112,7 @@ export class ComponentsModule {
         actInjector.getInstance(RuntimeRegisterer)
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        actInjector.register(ComponentBuilder);
+        container.register(ComponentBuilder);
     }
 
 }

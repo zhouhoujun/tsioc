@@ -57,15 +57,15 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
  */
 export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
-    private _injector: IInjector;
-    constructor(@Inject(InjectorToken) injector: IInjector) {
+    // private _injector: IInjector;
+    constructor(@Inject(InjectorToken) public readonly injector: IInjector) {
         super();
-        this._injector = injector;
+        // this._injector = injector;
     }
 
-    get injector(): IInjector {
-        return this._injector;
-    }
+    // get injector(): IInjector {
+    //     return this._injector;
+    // }
 
     /**
      * get type reflects.
@@ -84,7 +84,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     get contexts(): IInjector {
         if (!this._context) {
             this._context = this.injector.get(ContextInjector);
-            this._context.registerValue(InjectorToken, this._injector);
+            this._context.registerValue(InjectorToken, this.injector);
         }
         return this._context;
     }
@@ -137,9 +137,9 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         if (providers.length === 2 && isToken(providers[0])) {
             let provde = providers[0];
             let value = providers[1];
-            if (provde === InjectorToken) {
-                this._injector = value;
-            }
+            // if (provde === InjectorToken) {
+            //     this._injector = value;
+            // }
             this.contexts.registerValue(provde, value);
         } else {
             this.contexts.inject(...providers);
@@ -171,7 +171,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
                 } else {
                     this._context = options.contexts;
                 }
-                this._context.registerValue(InjectorToken, this._injector);
+                this._context.registerValue(InjectorToken, this.injector);
             } else if (isArray(options.contexts)) {
                 this.contexts.inject(...options.contexts);
             }

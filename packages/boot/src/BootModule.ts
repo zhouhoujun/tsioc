@@ -21,6 +21,10 @@ import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer
 import { ModuleInjector } from './modules/ModuleInjector';
 import { AnnoationInjectorCheck } from './registers/AnnoationInjectorCheck';
 import { AnnoationRegisterAction } from './registers/AnnoationRegisterAction';
+import { ResolveMoudleScope } from './builder/resolvers/ResolveMoudleScope';
+import { ModuleBuilderLifeScope } from './builder/ModuleBuilderLifeScope';
+import { RunnableBuildLifeScope } from './builder/RunnableBuildLifeScope';
+import { BootLifeScope } from './builder/BootLifeScope';
 
 
 /**
@@ -47,9 +51,13 @@ export class BootModule {
         let actInjector = container.get(ActionInjectorToken);
 
         actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
-            .register(DIModuleInjectScope)
-            .register(MessageRegisterAction)
-            .register(AnnoationDesignAction);
+            .regAction(DIModuleInjectScope)
+            .regAction(MessageRegisterAction)
+            .regAction(AnnoationDesignAction)
+            .regAction(ResolveMoudleScope)
+            .regAction(ModuleBuilderLifeScope)
+            .regAction(RunnableBuildLifeScope)
+            .regAction(BootLifeScope);
 
         let desgReger = actInjector.getInstance(DesignRegisterer);
         registerModule(DIModule, desgReger);

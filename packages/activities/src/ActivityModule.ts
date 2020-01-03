@@ -60,8 +60,7 @@ export class ActivityModule {
             );
 
 
-        container.inject(ActivityContext, ActivityExecutor, ActivityStatus, CompoiseActivity, WorkflowInstance)
-            .register(RunAspect)
+        container.inject(ActivityContext, ActivityExecutor, ActivityStatus, CompoiseActivity, WorkflowInstance, RunAspect)
             .use(activites);
     }
 }

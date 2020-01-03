@@ -1,5 +1,5 @@
 import {
-    IocCoreService, Inject, Singleton, Autorun, TypeReflects,
+    IocCoreService, Inject, Singleton, TypeReflects,
     isFunction, isString, isBaseObject, isClassType, ClassType
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
@@ -27,7 +27,6 @@ import { IBuildOption } from './IBuildOption';
  * @extends {IocCoreService}
  */
 @Singleton(BuilderServiceToken)
-@Autorun('setup')
 export class BuilderService extends IocCoreService implements IBuilderService {
 
     @Inject(ContainerToken)
@@ -35,14 +34,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
 
     @Inject()
     protected reflects: TypeReflects;
-
-    setup() {
-        this.reflects.getActionInjector()
-            .register(ResolveMoudleScope)
-            .register(ModuleBuilderLifeScope)
-            .register(RunnableBuildLifeScope)
-            .register(BootLifeScope);
-    }
 
     /**
      * resolve binding module.
