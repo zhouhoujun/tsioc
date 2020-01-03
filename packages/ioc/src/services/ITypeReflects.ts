@@ -92,7 +92,6 @@ export interface ITypeReflects extends IMetadataAccess {
     getMetadata<T = any>(decorator: string | Function, target: ClassType, type: 'method' | 'property'): ObjectMap<T[]>;
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): T[];
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): T[][];
-
     getDecorators(target: ClassType): string[];
     getDecorators(target: ClassType): string[];
     getDecorators(target: ClassType, type: DefineClassTypes): string[];
@@ -101,7 +100,6 @@ export interface ITypeReflects extends IMetadataAccess {
 
     getMetadatas<T = any>(target: ClassType): T[];
     getMetadatas<T = any>(target: any, propertyKey: string, type: 'method' | 'property'): T[];
-
     /**
      * get all method paramerter names.
      *

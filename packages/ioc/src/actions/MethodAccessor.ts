@@ -8,9 +8,8 @@ import { ParamProviders } from '../providers/types';
 import { ProviderParser } from '../providers/ProviderParser';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
-import { TypeReflects } from '../services/TypeReflects';
 import { ActionInjectorToken, IActionInjector } from './Action';
-import { IIocContainer } from '../IIocContainer';
+import { TypeReflectsToken } from '../services/ITypeReflects';
 
 
 
@@ -25,7 +24,7 @@ const ActionInjectorKey = ActionInjectorToken.toString();
  */
 export class MethodAccessor implements IMethodAccessor {
 
-    constructor(private container: IIocContainer) {
+    constructor() {
 
     }
 
@@ -52,7 +51,7 @@ export class MethodAccessor implements IMethodAccessor {
             instance = target;
         }
 
-        let reflects = injector.getInstance(TypeReflects);
+        let reflects = injector.get(TypeReflectsToken);
         let tgRefl = reflects.get(targetClass);
         let key: string;
         if (isFunction(propertyKey)) {

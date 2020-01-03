@@ -4,7 +4,7 @@ import { DesignActionContext } from './design/DesignActionContext';
 import { DesignDecoratorAction } from './design/DesignDecoratorAction';
 import { DesignPropertyScope } from './design/DesignPropertyScope';
 import { DesignMethodScope } from './design/DesignMethodScope';
-import { DesignAnnoationScope } from './design/DesignAnnoationScope';
+import { DesignClassScope } from './design/DesignClassScope';
 import { IActionSetup } from './Action';
 import { AnnoationScope } from './design/AnnoationScope';
 
@@ -21,7 +21,7 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> impl
         this.actInjector.regAction(DesignDecoratorAction);
 
         this.use(InitReflectAction)
-            .use(DesignAnnoationScope)
+            .use(DesignClassScope)
             .use(DesignPropertyScope)
             .use(DesignMethodScope)
             .use(AnnoationScope);

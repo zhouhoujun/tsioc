@@ -45,7 +45,7 @@ export class ElementsTemplateHandle extends TemplateHandle {
                     template: tp,
                     decorator: ctx.decorator
                 });
-                await this.actInjector.get(TemplateParseScope).execute(subCtx);
+                await this.actInjector.getInstance(TemplateParseScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
             }));
         }

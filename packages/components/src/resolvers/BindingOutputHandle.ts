@@ -24,7 +24,7 @@ export class BindingOutputHandle extends ResolveHandle {
                             binding: binding,
                             decorator: ctx.decorator
                         });
-                        await this.actInjector.get(BindingScopeHandle).execute(pctx);
+                        await this.actInjector.getInstance(BindingScopeHandle).execute(pctx);
                         pctx.dataBinding.bind(ctx.target);
                     }
 

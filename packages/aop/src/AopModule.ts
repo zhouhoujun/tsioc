@@ -50,17 +50,17 @@ export class AopModule {
 
         actInjector.regAction(RegistAspectAction);
 
-        actInjector.get(IocBeforeConstructorScope)
+        actInjector.getInstance(IocBeforeConstructorScope)
             .useBefore(InvokeBeforeConstructorAction);
 
-        actInjector.get(IocAfterConstructorScope)
+        actInjector.getInstance(IocAfterConstructorScope)
             .use(ExetndsInstanceAction)
             .use(InvokeAfterConstructorAction);
 
-        actInjector.get(RuntimeMethodScope)
+        actInjector.getInstance(RuntimeMethodScope)
             .useBefore(BindMethodPointcutAction);
 
-        actInjector.get(RuntimeLifeScope)
+        actInjector.getInstance(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, ConstructorArgsAction);
 
         actInjector.getInstance(DesignRegisterer)

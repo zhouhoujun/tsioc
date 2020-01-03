@@ -315,7 +315,7 @@ export const InjectorToken = new InjectToken<IInjector>('DI_INJECTOR');
 /**
  * injector factory of current injector.
  */
-export type InjectorFactory = () => IInjector;
+export type InjectorFactory<T extends IInjector = IInjector> = () => T;
 /**
  * injector factory token of current injector.
  */

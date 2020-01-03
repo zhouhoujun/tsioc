@@ -6,7 +6,7 @@ import { RuntimeActionContext } from './RuntimeActionContext';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 
-    protected hasDecors(ctx: RuntimeActionContext, scope: DecoratorScopes): string[] {
+    protected getScopeDecorators(ctx: RuntimeActionContext, scope: DecoratorScopes): string[] {
         switch (scope) {
             case DecoratorScopes.Class:
                 return ctx.targetReflect.decorators.runtime.classDecors;
@@ -21,11 +21,7 @@ export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeAct
             case DecoratorScopes.AfterConstructor:
                 return ctx.targetReflect.decorators.runtime.afterCstrDecors
         }
-        return [];
-    }
-
-    protected getScopeRegisterer(): DecoratorsRegisterer {
-        return this.actInjector.get(RuntimeRegisterer);
+        return ctx.targetReflect.decorators.runtime.getDecortors(scope);
     }
 
     setup() {

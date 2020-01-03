@@ -1,5 +1,5 @@
 import {
-    Singleton, Type, ObjectMap, lang, ParamProviders, TypeReflects, Inject
+    Singleton, Type, ObjectMap, lang, ParamProviders, Inject, TypeReflectsToken, ITypeReflects
 } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { Advice } from './decorators/Advice';
@@ -31,7 +31,7 @@ export class Advisor implements IAdvisor {
      */
     advices: Map<string, Advices>;
 
-    @Inject() reflects: TypeReflects;
+    @Inject(TypeReflectsToken) reflects: ITypeReflects;
 
     constructor() {
         this.aspects = new Map();

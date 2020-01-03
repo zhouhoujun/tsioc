@@ -44,7 +44,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @type {Map<Token, Type>}
      * @memberof BaseInjector
      */
-    protected provideTypes: Map<Token, Type>;
+    protected provideTypes: Map<SymbolType, Type>;
 
 
     constructor() {
@@ -142,7 +142,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let provideKey = this.getTokenKey(provide);
         let factory;
         if (isClass(provider)) {
-            if (!this.has(provider)) {
+            if (!this.hasRegister(provider)) {
                 this.register(provider);
             }
             this.provideTypes.set(provideKey, provider);

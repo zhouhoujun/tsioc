@@ -83,8 +83,20 @@ export interface IPlatformService {
      * @memberof NodeActivityContext
      */
     relativeRoot(pathstr: string): string;
+    /**
+     * get root path.
+     */
     getRootPath(): string;
+    /**
+     * to root src.
+     * @param src
+     */
     toRootSrc(src: Src): Src;
+    /**
+     * relative path.
+     * @param path1 path1
+     * @param path2 path2
+     */
     relativePath(path1: string, path2: string): string;
     /**
      * get package.

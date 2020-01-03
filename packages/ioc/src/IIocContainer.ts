@@ -1,7 +1,7 @@
 import { Token, Factory, Type } from './types';
 import { IInjector } from './IInjector';
 import { InjectToken } from './InjectToken';
-import { TypeReflects } from './services/TypeReflects';
+import { ITypeReflects } from './services/ITypeReflects';
 
 
 /**
@@ -41,10 +41,10 @@ export interface IIocContainer extends IInjector {
     /**
      * get type reflects manager in current container.
      *
-     * @returns {TypeReflects}
+     * @returns {ITypeReflects}
      * @memberof IIocContainer
      */
-    getTypeReflects(): TypeReflects;
+    getTypeReflects(): ITypeReflects;
     /**
      * register type class.
      * @param Type the class.

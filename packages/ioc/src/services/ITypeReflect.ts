@@ -1,14 +1,19 @@
-import { Token, ObjectMap, ClassType } from '../types';
+import { Token, ClassType } from '../types';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers/types';
 import { InjectableMetadata } from '../metadatas/InjectableMetadata';
 import { lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
+import { DecoratorScopes } from '../actions/DecoratorsRegisterer';
 
 export interface ITypeDecoractors {
-    classDecors: string[];
-    propsDecors: string[];
-    methodDecors: string[];
+    readonly classDecors: string[];
+    readonly propsDecors: string[];
+    readonly methodDecors: string[];
+    readonly beforeAnnoDecors: string[];
+    readonly annoDecors: string[];
+    readonly afterAnnoDecors: string[];
+    getDecortors(scope: DecoratorScopes): string[];
     reset();
 }
 
@@ -29,15 +34,22 @@ export interface ITargetDecoractors {
 }
 
 export class TargetDecoractors implements ITargetDecoractors {
-    constructor(public design: ITypeDecoractors, public runtime: IRuntimeDecorators) {
+    constructor(public readonly design: ITypeDecoractors, public readonly runtime: IRuntimeDecorators) {
 
     }
-
-    private _clsDc;
-    get classDecors() {
+    private _clsDc: string[];
+    get classDecors(): string[] {
         if (!this._clsDc) {
             let decs = this.design.classDecors;
-            this._clsDc = decs.concat(this.runtime.classDecors.filter(d => decs.indexOf(d) < 0));
+            [...this.design.beforeAnnoDecors,
+            ...this.design.annoDecors,
+            ...this.runtime.classDecors,
+            ...this.design.afterAnnoDecors].forEach(d => {
+                if (decs.indexOf(d) < 0) {
+                    decs.push(d);
+                }
+            });
+            this._clsDc = decs;
         }
         return this._clsDc;
     }
@@ -46,7 +58,12 @@ export class TargetDecoractors implements ITargetDecoractors {
     get methodDecors() {
         if (!this._methodDc) {
             let decs = this.design.methodDecors;
-            this._methodDc = decs.concat(this.runtime.methodDecors.filter(d => decs.indexOf(d) < 0));
+            this.runtime.methodDecors.forEach(d => {
+                if (decs.indexOf(d) < 0) {
+                    decs.push(d);
+                }
+            });
+            this._methodDc = decs;
         }
         return this._methodDc;
     }
@@ -55,7 +72,12 @@ export class TargetDecoractors implements ITargetDecoractors {
     get propsDecors() {
         if (!this._propDc) {
             let decs = this.design.propsDecors;
-            this._propDc = decs.concat(this.runtime.propsDecors.filter(d => decs.indexOf(d) < 0));
+            this.runtime.propsDecors.forEach(d => {
+                if (decs.indexOf(d) < 0) {
+                    decs.push(d);
+                }
+            });
+            this._propDc = decs;
         }
         return this._propDc;
     }
@@ -107,7 +129,7 @@ export interface ITypeReflect extends InjectableMetadata {
      */
     decorator?: string;
 
-    decorators?: ITargetDecoractors;
+    decorators: ITargetDecoractors;
 
     /**
      * defines.

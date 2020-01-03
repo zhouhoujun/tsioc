@@ -22,13 +22,13 @@ export class ResolveTemplateScope extends ResolveHandle {
                 decorator: ctx.decorator
             });
 
-            await this.actInjector.get(TemplateParseScope)
+            await this.actInjector.getInstance(TemplateParseScope)
                 .execute(pCtx);
 
             if (!isNullOrUndefined(pCtx.value)) {
                 pCtx.setParent(ctx);
                 ctx.addChild(pCtx);
-                let refSeltor = this.actInjector.get(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
+                let refSeltor = this.actInjector.getInstance(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
                 pCtx.set(CTX_TEMPLATE_REF, pCtx.value);
                 ctx.set(CTX_COMPONENT, ctx.target);
                 ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx, pCtx.value));

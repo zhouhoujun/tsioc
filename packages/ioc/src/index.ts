@@ -135,7 +135,7 @@ export * from './actions/runtime/CreateInstanceAction';
 
 // design time action.
 export * from './actions/design/DesignActionContext';
-export * from './actions/design/DesignAnnoationScope';
+export * from './actions/design/DesignClassScope';
 export * from './actions/design/DesignDecoratorAction';
 export * from './actions/design/DesignPropertyScope';
 export * from './actions/design/DesignMethodScope';

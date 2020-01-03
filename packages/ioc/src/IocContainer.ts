@@ -4,7 +4,6 @@ import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
-import { TypeReflects } from './services/TypeReflects';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
@@ -13,6 +12,7 @@ import { BaseInjector, isInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { ProviderParser } from './providers/ProviderParser';
 import { InjectToken } from './InjectToken';
+import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
 
 
 const factoryToken = ContainerFactoryToken.toString();
@@ -34,8 +34,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this.factories.size;
     }
 
-    getTypeReflects(): TypeReflects {
-        return this.getInstance(TypeReflects);
+    getTypeReflects(): ITypeReflects {
+        return this.get(TypeReflectsToken);
     }
 
     /**
@@ -157,14 +157,14 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             singleton = arg3;
         }
 
-        (async () => {
-            this.getInstance<IActionInjector>(actionInjectorKey).get(DesignLifeScope).register(
-                DesignActionContext.parse(injector, {
-                    token: provide,
-                    type: type,
-                    singleton: singleton
-                }));
-        })();
+        // (async () => {
+        this.getInstance<IActionInjector>(actionInjectorKey).getInstance(DesignLifeScope).register(
+            DesignActionContext.parse(injector, {
+                token: provide,
+                type: type,
+                singleton: singleton
+            }));
+        // })();
         return this;
     }
 }

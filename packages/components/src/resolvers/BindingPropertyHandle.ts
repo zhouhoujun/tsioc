@@ -37,7 +37,7 @@ export class BindingPropertyHandle extends ResolveHandle {
                                 binding: binding,
                                 decorator: ctx.decorator
                             });
-                            await this.actInjector.get(BindingScope).execute(pctx);
+                            await this.actInjector.getInstance(BindingScope).execute(pctx);
 
                             if (pctx.dataBinding instanceof ParseBinding) {
                                 if (pctx.dataBinding.resolveExression() === pctx.value || isBaseValue(pctx.value)) {

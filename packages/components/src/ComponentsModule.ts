@@ -96,9 +96,9 @@ export class ComponentsModule {
             .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
 
-        actInjector.get(BootLifeScope)
+        actInjector.getInstance(BootLifeScope)
             .useBefore(BootTemplateHandle, ModuleBuildScope);
-        actInjector.get(RunnableBuildLifeScope)
+        actInjector.getInstance(RunnableBuildLifeScope)
             .useBefore(BootTemplateHandle, ModuleBuildScope);
 
 

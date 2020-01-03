@@ -1,4 +1,4 @@
-import { Abstract, Type, isClass, isString, TypeReflects, Inject, lang, Token } from '@tsdi/ioc';
+import { Abstract, Type, isClass, isString, Inject, lang, Token, TypeReflectsToken, ITypeReflects } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import { IComponentReflect } from './IComponentReflect';
@@ -16,7 +16,7 @@ import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, IComponentRe
 @Abstract()
 export abstract class RefSelector {
 
-    @Inject() reflects: TypeReflects;
+    @Inject(TypeReflectsToken) reflects: ITypeReflects;
 
     abstract getSelectorKey(): string;
 

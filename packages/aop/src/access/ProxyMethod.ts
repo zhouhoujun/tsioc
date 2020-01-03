@@ -1,6 +1,6 @@
 import {
     Singleton, Inject, Type, isFunction, RuntimeLifeScope, IocContainerToken, IIocContainer,
-    TypeReflects, ActionInjectorToken, MethodAccessorToken
+    ActionInjectorToken, MethodAccessorToken
 } from '@tsdi/ioc';
 import { Advices, AdvicesToken } from '../advices/Advices';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
@@ -24,14 +24,6 @@ export class ProxyMethod implements IProxyMethod {
 
     constructor(@Inject(IocContainerToken) private container: IIocContainer) {
 
-    }
-
-    private _refs;
-    get reflects(): TypeReflects {
-        if (!this._refs) {
-            this._refs = this.container.getTypeReflects();
-        }
-        return this._refs;
     }
 
     private _advisor: IAdvisor;
@@ -88,6 +80,7 @@ export class ProxyMethod implements IProxyMethod {
         let fullName = pointcut.fullName;
         let methodName = pointcut.name;
         let container = this.container;
+        let reflects = container.getTypeReflects();
         return (...args: any[]) => {
             let cuurPrd = container.getInjector(targetType).get(MethodAccessorToken).invokedProvider(target, methodName);
             let joinPoint = container.getInstance(Joinpoint, {
@@ -96,8 +89,8 @@ export class ProxyMethod implements IProxyMethod {
                     name: methodName,
                     fullName: fullName,
                     provJoinpoint: provJoinpoint,
-                    annotations: provJoinpoint ? null : this.reflects.getMetadatas(targetType, methodName, 'method'),
-                    params: this.reflects.getParameters(targetType, target, methodName),
+                    annotations: provJoinpoint ? null : reflects.getMetadatas(targetType, methodName, 'method'),
+                    params: reflects.getParameters(targetType, target, methodName),
                     args: args,
                     target: target,
                     targetType: targetType,

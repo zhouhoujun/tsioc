@@ -24,11 +24,11 @@ export function registerCores(container: IIocContainer) {
     let fac = container.get(InjectorFactoryToken) as ContainerFactory;
     container.set(IocContainerToken, fac);
     container.registerValue(ContainerFactoryToken, fac);
-    container.registerValue(TypeReflectsToken, new TypeReflects(container), TypeReflects);
+    container.registerValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
     container.set(INJECTOR, () => new Injector(fac), Injector);
     container.set(ContextInjector, () => new ContextInjector(fac));
     container.registerValue(ProviderParser, new ProviderParser(container));
-    container.registerValue(MethodAccessorToken, new MethodAccessor(container), MethodAccessor);
+    container.registerValue(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);
     container.registerValue(ActionInjectorToken, actInjector, ActionInjector);

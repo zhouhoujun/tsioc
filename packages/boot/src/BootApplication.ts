@@ -71,7 +71,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     }
 
     protected bindContextToken(ctx: T) {
-        this.container.registerValue(ApplicationContextToken, ctx);
+        this.getContainer().registerValue(ApplicationContextToken, ctx);
     }
 
     /**
@@ -98,9 +98,9 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
      * @memberof BootApplication
      */
     async run(...args: string[]): Promise<T> {
-        await this.container.load(...this.getBootDeps());
-        await this.container.load(...this.getTargetDeps(this.target));
-        let ctx = await this.container.resolve(BuilderServiceToken).bootApp(this, ...args);
+        await this.getContainer().load(...this.getBootDeps());
+        await this.getContainer().load(...this.getTargetDeps(this.target));
+        let ctx = await this.getContainer().get(BuilderServiceToken).bootApp(this, ...args);
         return ctx as T;
     }
 
@@ -115,9 +115,10 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     protected getTargetDeps(target: ClassType | BootOption | T) {
         let dependences = [];
         if (isClassType(target)) {
-            this.context.reflects.create(target);
-            this.context.targetReflect.decorators.classDecors.forEach(d => {
-                this.context.reflects.getMetadata(d, target).forEach(meta => {
+            let reflects = this.getContainer().getTypeReflects();
+            let targetReflect = reflects.create(target);
+            targetReflect.decorators.classDecors.forEach(d => {
+                reflects.getMetadata(d, target).forEach(meta => {
                     if (meta && meta.deps) {
                         dependences.push(...meta.deps);
                     }

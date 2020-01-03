@@ -47,7 +47,7 @@ export class BindingArrayHandle extends ParseHandle {
                     template: tp,
                     decorator: ctx.decorator
                 });
-                await this.actInjector.get(BindingScope).execute(subCtx);
+                await this.actInjector.getInstance(BindingScope).execute(subCtx);
                 return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
             }));
         }

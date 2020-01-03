@@ -43,7 +43,7 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.register(ModuleInjector, () => new ModuleInjector(container.getFactory()));
+        container.set(ModuleInjector, () => new ModuleInjector(container.getFactory()));
         let actInjector = container.get(ActionInjectorToken);
 
         actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
@@ -68,11 +68,7 @@ export class BootModule {
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        container.inject(MessageContext, MessageQueue);
-
-
-        container.inject(BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices);
-
+        container.inject(BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices, MessageContext, MessageQueue);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

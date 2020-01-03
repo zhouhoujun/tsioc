@@ -17,7 +17,7 @@ import { RuntimeActionContext } from '../runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from '../RuntimeLifeScope';
 import { CTX_TYPE_REGIN } from '../../context-tokens';
 
-export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
+export class DesignClassScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
     setup() {
         this.actInjector
@@ -31,7 +31,7 @@ export class DesignAnnoationScope extends IocRegisterScope<DesignActionContext> 
 
         this.use(AnnoationRegInAction)
             .use(BeforeAnnoationDecoratorScope)
-            .use(RegAnnoationAction)
+            .use(RegClassAction)
             .use(DesignClassDecoratorScope);
     }
 }
@@ -56,7 +56,7 @@ export class AnnoationRegInAction extends IocDesignAction {
     }
 }
 
-export class RegAnnoationAction extends IocDesignAction {
+export class RegClassAction extends IocDesignAction {
 
     constructor(private actInjector: IActionInjector) {
         super()
@@ -79,7 +79,7 @@ export class RegAnnoationAction extends IocDesignAction {
                 singleton: singleton,
                 providers: providers
             });
-            actInjector.get(RuntimeLifeScope).register(ctx);
+            actInjector.getInstance(RuntimeLifeScope).register(ctx);
             return ctx.target;
         };
 
