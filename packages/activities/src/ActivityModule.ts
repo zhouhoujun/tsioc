@@ -37,7 +37,7 @@ export class ActivityModule {
         actInjector.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction, ActivityDepsRegister);
 
-        container.getInstance(StartupDecoratorRegisterer)
+        actInjector.getInstance(StartupDecoratorRegisterer)
             .register(Task, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
 
 

@@ -99,7 +99,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 }
 
             } else if (isClass(key)) {
-                this.registerType(injector, key, key, singleton);
+                this.registerType(injector, key, null, singleton);
             }
 
             if (classFactory) {
