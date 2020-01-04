@@ -65,7 +65,7 @@ export const COMPONENT_REFS = new InjectToken<WeakMap<any, IComponentRef>>('COMP
 
 @Abstract()
 export abstract class ComponentFactory {
-    abstract create<T, TN>(componentType: Type<T>, target: T, context: AnnoationContext, ...nodes: TN[]): IComponentRef<T, TN>;
+    abstract create<T>(componentType: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): IComponentRef<T, any>;
 }
 
 export class ComponentRef<T = any, TN = any> implements IComponentRef<T, TN> {

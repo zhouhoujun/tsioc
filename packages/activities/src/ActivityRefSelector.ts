@@ -3,6 +3,7 @@ import { RefSelector } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
 import { ActivityRef } from './core/ActivityRef';
+import { ActivityFactory } from './core/ActivityFactory';
 
 /**
  * activity ref selector.
@@ -27,7 +28,7 @@ export class ActivityRefSelector extends RefSelector {
     }
 
     getDefaultComponentFactory() {
-        return ActivityRef;
+        return ActivityFactory;
     }
 
     isComponentType(element: any): boolean {
