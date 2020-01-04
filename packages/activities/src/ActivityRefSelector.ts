@@ -2,7 +2,6 @@ import { Type, Singleton } from '@tsdi/ioc';
 import { RefSelector } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
-import { ActivityRef } from './core/ActivityRef';
 import { ActivityFactory } from './core/ActivityFactory';
 
 /**
