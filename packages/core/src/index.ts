@@ -31,12 +31,10 @@ export * from './resolves/service/ResolveServiceContext';
 export * from './resolves/service/ResolveDecoratorServiceAction';
 export * from './resolves/service/ResolveServiceInClassChain';
 export * from './resolves/service/ResolveServiceScope';
-export * from './resolves/service/ServiceResolveLifeScope';
 // services
 export * from './resolves/services/ResolveServicesContext';
-export * from './resolves/services/ResolveServicesScope';
 export * from './resolves/services/ResovleServicesInClassAction';
 export * from './resolves/services/ResovleServicesAction';
-export * from './resolves/services/ServicesResolveLifeScope';
+export * from './resolves/services/ResolveServicesScope';
 
 

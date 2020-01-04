@@ -51,8 +51,6 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         super();
         this.factories = new Map();
         this.provideTypes = new Map();
-        this.registerValue(IocCacheManager, new IocCacheManager(this));
-        this.registerValue(IocSingletonManager, new IocSingletonManager(this));
         this.init();
     }
 
@@ -60,6 +58,8 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let fac = () => this;
         this.set(InjectorToken, fac, lang.getClass(this));
         this.registerValue(InjectorFactoryToken, fac);
+        this.registerValue(IocCacheManager, new IocCacheManager(this));
+        this.registerValue(IocSingletonManager, new IocSingletonManager(this));
     }
 
     get size(): number {

@@ -28,9 +28,14 @@ export class IocResolveScope<T extends ResolveActionContext = ResolveActionConte
             if (target) {
                 ctx.set(CTX_TARGET_TOKEN, isToken(target) ? target : lang.getClass(target));
             }
-            super.execute(ctx, next);
+            super.execute(ctx);
         }
 
+        if (isNullOrUndefined(ctx.instance) && next) {
+            next();
+        }
+
+        // after all.
         if (isNullOrUndefined(ctx.instance) && ctx.getOptions().regify && isClass(ctx.token) && !ctx.injector.has(ctx.token)) {
             ctx.injector.registerType(ctx.token);
             ctx.instance = ctx.injector.get(ctx.token, ctx.providers);

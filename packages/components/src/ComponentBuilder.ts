@@ -6,7 +6,7 @@ import { BuilderService, IBuildOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS, CTX_COMPONENT_REF, IComponentRef, ComponentFactory, DefaultComponentFactory } from './ComponentRef';
+import { COMPONENT_REFS, IComponentRef } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';

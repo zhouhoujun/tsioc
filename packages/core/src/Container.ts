@@ -8,9 +8,9 @@ import {
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
 import { registerCores } from './registerCores';
 import { ServiceOption, ResolveServiceContext } from './resolves/service/ResolveServiceContext';
-import { ServiceResolveLifeScope } from './resolves/service/ServiceResolveLifeScope';
+import { ResolveServiceScope } from './resolves/service/ResolveServiceScope';
 import { ServicesOption, ResolveServicesContext } from './resolves/services/ResolveServicesContext';
-import { ServicesResolveLifeScope } from './resolves/services/ServicesResolveLifeScope';
+import { ResolveServicesScope } from './resolves/services/ResolveServicesScope';
 import { InjectLifeScope } from './injectors/InjectLifeScope';
 
 
@@ -147,7 +147,7 @@ export class Container extends IocContainer implements IContainer {
         let context = ResolveServiceContext.parse(injt, isToken(tag) ? { token: tag } : tag);
         providers.length && context.providers.inject(...providers);
         this.get(ActionInjectorToken)
-            .get(ServiceResolveLifeScope)
+            .get(ResolveServiceScope)
             .execute(context);
         return context.instance || null;
     }
@@ -227,7 +227,7 @@ export class Container extends IocContainer implements IContainer {
         }
         let context = ResolveServicesContext.parse(injector, isToken(target) ? { token: target } : target);
         this.get(ActionInjectorToken)
-            .get(ServicesResolveLifeScope)
+            .get(ResolveServicesScope)
             .execute(context);
 
         return context.services;

@@ -6,6 +6,9 @@ import { CTX_CURR_TOKEN, CTX_TARGET_REFS } from '../../context-tokens';
 
 export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext> implements IActionSetup {
     execute(ctx: ResolveServiceContext, next?: () => void): void {
+        if (ctx.instance || !ctx.tokens || !ctx.tokens.length) {
+            return;
+        }
         let has: boolean;
         if (ctx.has(CTX_TARGET_REFS)) {
             has = ctx.get(CTX_TARGET_REFS).some(t => {
@@ -24,10 +27,17 @@ export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext> 
                 return !!ctx.instance;
             });
         }
-
-        if (has) {
-            this.clear(ctx);
+        this.clear(ctx);
+        if (!has) {
             next && next();
+
+            if (!ctx.instance) {
+                // after all resolve default.
+                let defaultTk = ctx.getOptions().default;
+                if (defaultTk) {
+                    ctx.instance = ctx.injector.get(defaultTk, ctx.providers);
+                }
+            }
         }
     }
 
