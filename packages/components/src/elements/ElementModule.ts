@@ -26,11 +26,11 @@ export class ElementModule {
         actInjector.getInstance(StartupDecoratorRegisterer)
             .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
 
-        actInjector.register(ComponentSelectorHandle);
+        actInjector.regAction(ComponentSelectorHandle);
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Component, { provide: RefSelector, useClass: RefElementSelector })
 
-        container.register(ElementNode);
+        container.registerType(ElementNode);
     }
 }

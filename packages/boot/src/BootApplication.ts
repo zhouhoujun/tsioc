@@ -45,10 +45,10 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
             container = this.getContainer();
         }
 
-        container.register(BootModule);
+        container.registerType(BootModule);
 
         if (!container.has(BootContext)) {
-            container.register(BootContext);
+            container.registerType(BootContext);
         }
 
         container.registerValue(BootApplication, this);

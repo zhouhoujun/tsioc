@@ -19,7 +19,7 @@ export * from './utils/PromiseUtil';
 // services
 export * from './services/ITypeReflect';
 export * from './services/ITypeReflects';
-export * from './services/TypeReflects';
+// export * from './services/TypeReflects';
 export * from './services/DecoratorProvider';
 
 // metadates

@@ -5,15 +5,15 @@ import { MessageMetadata } from '../decorators/Message';
 
 export class MessageRegisterAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
-        let container = ctx.getContainer();
-        let msgQueue = container.get(RootMessageQueueToken);
+        let injector = ctx.injector;
+        let msgQueue = injector.get(RootMessageQueueToken);
         let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.get(CTX_CURR_DECOR), ctx.type);
         let { regIn, before, after } = metas.find(meta => !!meta.before || !!meta.after) || <MessageMetadata>{};
         if (regIn) {
-            if (!container.has(regIn)) {
-                container.register(regIn);
+            if (!injector.hasRegister(regIn)) {
+                injector.registerType(regIn);
             }
-            msgQueue = container.get(regIn);
+            msgQueue = injector.get(regIn);
         }
         if (before) {
             msgQueue.useBefore(ctx.type, before);

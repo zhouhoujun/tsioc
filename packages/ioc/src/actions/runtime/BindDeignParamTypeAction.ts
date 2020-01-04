@@ -34,8 +34,8 @@ export class BindDeignParamTypeAction extends IocRuntimeAction {
         let injector = ctx.injector;
         paramTokens = paramTokens.slice(0);
         paramTokens.forEach(dtype => {
-            if (isClass(dtype) && !injector.has(dtype)) {
-                injector.register(dtype);
+            if (isClass(dtype) && !injector.hasRegister(dtype)) {
+                injector.registerType(dtype);
             }
         });
         let names = ctx.reflects.getParamerterNames(type, propertyKey);

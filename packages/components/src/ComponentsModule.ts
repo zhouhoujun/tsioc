@@ -45,8 +45,9 @@ import { DefaultComponentFactory } from './ComponentRef';
 export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
-        container.register(DefaultComponentFactory);
-        container.inject(ComponentAnnotationCloner, AstResolver);
+        container.registerType(DefaultComponentFactory)
+            .registerType(ComponentAnnotationCloner)
+            .registerType(AstResolver);
         let actInjector = container.get(ActionInjectorToken);
 
         actInjector.regAction(ComponentRegisterAction)
@@ -112,7 +113,7 @@ export class ComponentsModule {
         actInjector.getInstance(RuntimeRegisterer)
             .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        container.register(ComponentBuilder);
+        container.registerType(ComponentBuilder);
     }
 
 }

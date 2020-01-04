@@ -1,6 +1,5 @@
 import {
-    IocCoreService, Inject, Singleton, TypeReflects,
-    isFunction, isString, isBaseObject, isClassType, ClassType
+    IocCoreService, Inject, Singleton, isFunction, isString, isBaseObject, isClassType, ClassType, TypeReflectsToken, ITypeReflects
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
@@ -32,8 +31,8 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     @Inject(ContainerToken)
     protected container: IContainer;
 
-    @Inject()
-    protected reflects: TypeReflects;
+    @Inject(TypeReflectsToken)
+    protected reflects: ITypeReflects;
 
     /**
      * resolve binding module.

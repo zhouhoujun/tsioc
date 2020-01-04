@@ -21,7 +21,7 @@ export class UnitTestConfigureRegister extends ConfigureRegister {
     }
     async register(config: UnitTestConfigure, ctx: UnitTestContext): Promise<void> {
         if (config.debug) {
-            ctx.injector.register(DebugLogAspect);
+            ctx.injector.registerType(DebugLogAspect);
         }
         if (!ctx.injector.has(Assert)) {
             ctx.injector.set(Assert, () => assert);

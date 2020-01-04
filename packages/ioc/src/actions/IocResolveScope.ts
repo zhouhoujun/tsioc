@@ -32,7 +32,7 @@ export class IocResolveScope<T extends ResolveActionContext = ResolveActionConte
         }
 
         if (isNullOrUndefined(ctx.instance) && ctx.getOptions().regify && isClass(ctx.token) && !ctx.injector.has(ctx.token)) {
-            ctx.injector.register(ctx.token);
+            ctx.injector.registerType(ctx.token);
             ctx.instance = ctx.injector.get(ctx.token, ctx.providers);
         }
     }

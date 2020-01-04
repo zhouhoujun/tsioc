@@ -10,7 +10,7 @@ export function registerCores(container: IContainer) {
 
     container.bindProvider(ContainerToken, IocContainerToken);
     if (!container.has(ModuleLoader)) {
-        container.register(ModuleLoader);
+        container.registerType(ModuleLoader);
     }
 
     let actInjector = container.get(ActionInjectorToken);

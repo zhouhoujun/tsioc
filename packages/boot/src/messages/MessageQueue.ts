@@ -142,8 +142,8 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
     }
 
     protected registerHandle(HandleType: HandleType<T>): this {
-        if (isClass(HandleType)) {
-            this.injector.register(HandleType);
+        if (isClass(HandleType) && !this.injector.hasRegister(HandleType)) {
+            this.injector.registerType(HandleType);
         }
         return this;
     }

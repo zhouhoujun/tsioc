@@ -143,7 +143,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let factory;
         if (isClass(provider)) {
             if (!this.hasRegister(provider)) {
-                this.register(provider);
+                this.registerType(provider);
             }
             this.provideTypes.set(provideKey, provider);
             factory = this.getTokenFactory(provider);

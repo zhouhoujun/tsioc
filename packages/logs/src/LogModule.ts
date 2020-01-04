@@ -25,7 +25,7 @@ export class LogModule {
      */
     setup(@Inject(IocContainerToken) container: IIocContainer) {
         if (!container.has(AopModule)) {
-            container.register(AopModule);
+            container.registerType(AopModule);
         }
         container.get(ActionInjectorToken).getInstance(DesignRegisterer)
             .register(Logger, DecoratorScopes.Class, BindMethodProviderAction)
