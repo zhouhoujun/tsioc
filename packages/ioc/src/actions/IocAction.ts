@@ -7,10 +7,10 @@ import { IIocContainer, IocContainerToken } from '../IIocContainer';
 import { IocCoreService } from '../IocCoreService';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
-import { IInjector, InjectorToken, INJECTOR } from '../IInjector';
+import { IInjector, InjectorToken, PROVIDERS } from '../IInjector';
 import { isInjector } from '../BaseInjector';
 import { ActionContextOption, Action } from './Action';
-import { ContextInjector } from '../Injector';
+import { InjectorProvider } from '../Injector';
 
 /**
  * ioc action context.
@@ -83,7 +83,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      */
     get contexts(): IInjector {
         if (!this._context) {
-            this._context = this.injector.get(ContextInjector);
+            this._context = this.injector.get(PROVIDERS);
             this._context.registerValue(InjectorToken, this.injector);
         }
         return this._context;
@@ -229,7 +229,7 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
      */
     get providers(): IInjector {
         if (!this.has(CTX_PROVIDERS)) {
-            this.set(CTX_PROVIDERS, this.injector.get(INJECTOR));
+            this.set(CTX_PROVIDERS, this.injector.get(PROVIDERS));
         }
         return this.get(CTX_PROVIDERS);
     }

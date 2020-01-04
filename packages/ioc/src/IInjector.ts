@@ -317,11 +317,16 @@ export const InjectorToken = new InjectToken<IInjector>('DI_INJECTOR');
  */
 export type InjectorFactory<T extends IInjector = IInjector> = () => T;
 /**
- * injector factory token of current injector.
+ * the token of injector factory in current injector.
  */
 export const InjectorFactoryToken = new InjectToken<InjectorFactory>('DI_INJECTOR_FACTORY');
 
 /**
+ *  injector provider token. create new injector provider.
+ */
+export const PROVIDERS = new InjectToken<IInjector>('DI_PROVIDERS');
+
+/**
  *  injector token. create new injector.
  */
-export const INJECTOR = new InjectToken<IInjector>('DI_INJECTOR_FACTORY');
+export const INJECTOR = new InjectToken<IInjector>('INJECTOR');

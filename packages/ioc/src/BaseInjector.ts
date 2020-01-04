@@ -1,4 +1,4 @@
-import { IInjector, InjectorToken, INJECTOR, InjectorFactoryToken } from './IInjector';
+import { IInjector, InjectorToken, PROVIDERS, InjectorFactoryToken } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
@@ -58,7 +58,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
 
     protected init() {
         let fac = () => this;
-        this.set(InjectorToken, fac);
+        this.set(InjectorToken, fac, lang.getClass(this));
         this.registerValue(InjectorFactoryToken, fac);
     }
 
@@ -187,7 +187,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {
-            this.registerValue(refToken, this.get(INJECTOR).inject(...providers));
+            this.registerValue(refToken, this.get(PROVIDERS).inject(...providers));
         }
         return refToken;
     }

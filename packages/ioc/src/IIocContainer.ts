@@ -38,6 +38,8 @@ export interface IIocContainer extends IInjector {
      * @param type
      */
     getInjector(type: Type): IInjector;
+
+    createInjector(): IInjector;
     /**
      * get type reflects manager in current container.
      *

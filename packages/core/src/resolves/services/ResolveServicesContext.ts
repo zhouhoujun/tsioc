@@ -1,5 +1,6 @@
-import { ClassType, createRaiseContext, IInjector, ResolveActionContext } from '@tsdi/ioc';
-import { ServiceOption } from '../service/ResolveServiceContext';
+import { createRaiseContext, IInjector, ResolveActionContext, Token, ClassType } from '@tsdi/ioc';
+import { ServiceOption, ResolveServiceContext } from '../service/ResolveServiceContext';
+import { CTX_TOKENS, CTX_TYPES } from '../../context-tokens';
 
 /**
  * services context options
@@ -16,13 +17,6 @@ export interface ServicesOption<T> extends ServiceOption<T> {
      * @memberof ServicesActionOption
      */
     both?: boolean;
-    /**
-     * class type.
-     *
-     * @type {ClassType[]}
-     * @memberof ServicesActionOption
-     */
-    types?: ClassType[];
 }
 
 /**
@@ -32,7 +26,7 @@ export interface ServicesOption<T> extends ServiceOption<T> {
  * @class ResolveServicesContext
  * @extends {ResolveServiceContext}
  */
-export class ResolveServicesContext<T = any> extends ResolveActionContext<T, ServicesOption<T>> {
+export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, ServicesOption<T>> {
     /**
      * parse service resolve context.
      *
@@ -47,7 +41,12 @@ export class ResolveServicesContext<T = any> extends ResolveActionContext<T, Ser
     }
 
     get types(): ClassType[] {
-        return this.getOptions().types;
+        if (!this.has(CTX_TYPES)) {
+            let types = this.tokens.map(t => this.injector.getTokenProvider(t))
+                .filter(t => t);
+            this.set(CTX_TYPES, types);
+        }
+        return this.get(CTX_TYPES);
     }
 
     /**

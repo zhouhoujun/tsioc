@@ -3,7 +3,7 @@ import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
 import { ProviderTypes } from '../providers/types';
-import { IInjector, INJECTOR } from '../IInjector';
+import { IInjector, PROVIDERS } from '../IInjector';
 
 /**
  * decorator default provider.
@@ -95,7 +95,7 @@ export class DecoratorProvider extends IocCoreService {
     existify(decorator: string | Function): IInjector {
         decorator = this.getKey(decorator);
         if (!this.map.has(decorator)) {
-            this.map.set(decorator, this.container.get(INJECTOR));
+            this.map.set(decorator, this.container.get(PROVIDERS));
         }
         return this.map.get(decorator);
     }

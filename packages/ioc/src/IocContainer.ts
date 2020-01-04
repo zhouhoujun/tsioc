@@ -7,7 +7,7 @@ import { ParamProviders, InjectTypes } from './providers/types';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
-import { IInjector } from './IInjector';
+import { IInjector, InjectorFactoryToken, INJECTOR } from './IInjector';
 import { BaseInjector, isInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { ProviderParser } from './providers/ProviderParser';
@@ -44,6 +44,10 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      */
     getInjector(type: Type): IInjector {
         return this.getTypeReflects().getInjector(type);
+    }
+
+    createInjector(): IInjector {
+        return this.get(INJECTOR);
     }
 
     getFactory<T extends IIocContainer>(): ContainerFactory<T> {

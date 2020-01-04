@@ -5,8 +5,9 @@ import { IProviderParser } from './IProviderParser';
 import { IIocContainer } from '../IIocContainer';
 import { Provider, ObjectMapProvider } from './Provider';
 import { IocCoreService } from '../IocCoreService';
-import { IInjector, INJECTOR } from '../IInjector';
+import { IInjector, PROVIDERS } from '../IInjector';
 import { isInjector } from '../BaseInjector';
+import { InjectorProvider } from '../Injector';
 
 /**
  * provider matcher. use to find custome providers in resolve.
@@ -27,7 +28,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
         if (providers.length === 1 && isInjector(providers[0])) {
             return providers[0] as IInjector;
         }
-        let map = this.container.get(INJECTOR);
+        let map = this.container.get(PROVIDERS);
         return map.inject(map, ...providers);
     }
 }
@@ -40,7 +41,7 @@ export class ProviderParser extends IocCoreService implements IProviderParser {
  * @returns {target is ProviderTypes}
  */
 export function isProvider(target: any): target is ProviderTypes {
-    return isInjector(target)
+    return target instanceof InjectorProvider
         || target instanceof ObjectMapProvider
         || target instanceof Provider
         || (isMetadataObject(target, 'provide') && isToken(target.provide));

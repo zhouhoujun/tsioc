@@ -94,7 +94,7 @@ export const ProviderMap = Injector;
  * @class ContextInjector
  * @extends {Injector}
  */
-export class ContextInjector extends Injector {
+export class InjectorProvider extends Injector {
     init() {
     }
 }

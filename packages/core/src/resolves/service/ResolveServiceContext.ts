@@ -1,4 +1,5 @@
-import { Token, ResolveActionContext, ResolveActionOption, createRaiseContext, IInjector } from '@tsdi/ioc';
+import { Token, ResolveActionContext, ResolveActionOption, createRaiseContext, IInjector, isArray } from '@tsdi/ioc';
+import { CTX_TOKENS, CTX_TARGET_REFS } from '../../context-tokens';
 
 /**
  * service context option.
@@ -52,8 +53,31 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
      * @type {Type}
      * @memberof ResolveServiceContext
      */
-    get tokens(): Token[] {
-        return this.getOptions().tokens;
+    get tokens(): Token<T>[] {
+        return this.get(CTX_TOKENS);
+    }
+
+    setOptions(options: TOP) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        let tokens = this.get(CTX_TOKENS) || [];
+        if (options.token) {
+            tokens.push(options.token)
+        }
+        if (options.tokens && options.tokens.length) {
+            options.tokens.forEach(t => {
+                t && tokens.push(t);
+            });
+        }
+        if (options.target) {
+            let targets = (isArray(options.target) ? options.target : [options.target]).filter(t => t);
+            if (targets.length) {
+                this.set(CTX_TARGET_REFS, targets);
+            }
+        }
+        this.set(CTX_TOKENS, tokens);
     }
 
 }
