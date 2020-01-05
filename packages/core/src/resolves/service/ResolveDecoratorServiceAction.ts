@@ -8,14 +8,13 @@ export class ResolveDecoratorServiceAction extends IocResolveAction<ResolveServi
             let dprvoider = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
             let clasType = ctx.get(CTX_TARGET_TOKEN);
             if (isClassType(clasType)) {
-                ctx.reflects.getDecorators(clasType, 'class')
+                let tk = ctx.get(CTX_CURR_TOKEN) || ctx.token;
+                ctx.reflects.getDecorators(clasType)
                     .some(dec => {
-                        if (dprvoider.has(dec)) {
-                            ctx.instance = dprvoider.resolve(dec, ctx.get(CTX_CURR_TOKEN) || ctx.token, ctx.providers);
-                            return !!ctx.instance;
-                        } else {
-                            return false;
+                        if (dprvoider.has(dec, tk)) {
+                            ctx.instance = dprvoider.resolve(dec, tk, ctx.providers);
                         }
+                        return !!ctx.instance;
                     });
             }
         }

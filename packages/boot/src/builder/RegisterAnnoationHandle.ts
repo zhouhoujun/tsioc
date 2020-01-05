@@ -14,7 +14,6 @@ export class RegisterAnnoationHandle extends AnnoationHandle {
             ctx.set(CTX_MODULE_ANNOATION, annoation);
             next();
         } else {
-            console.log(ctx.type);
             throw new Error(`boot type [${lang.getClassName(ctx.type)}] is not vaild annoation class.`);
         }
     }
