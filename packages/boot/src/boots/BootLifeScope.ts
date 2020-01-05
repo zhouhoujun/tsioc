@@ -1,5 +1,5 @@
 import { IActionSetup } from '@tsdi/ioc';
-import { BuildHandles } from './BuildHandles';
+import { BuildHandles } from '../builder/BuildHandles';
 import { AnnoationContext } from '../AnnoationContext';
 import { BootProvidersHandle } from './BootProvidersHandle';
 import { BootDepsHandle } from './BootDepsHandle';
@@ -18,8 +18,8 @@ import { ConfigureServiceHandle } from './ConfigureServiceHandle';
 export class BootLifeScope extends BuildHandles<AnnoationContext> implements IActionSetup {
 
     setup() {
-        this.use(BootProvidersHandle)
-            .use(BootDepsHandle)
+        this.use(BootDepsHandle)
+            .use(BootProvidersHandle)
             .use(BootConfigureLoadHandle)
             .use(RegisterModuleScope)
             .use(BootConfigureRegisterHandle)

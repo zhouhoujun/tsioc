@@ -34,9 +34,8 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
     }
 
     async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<IComponentRef<T> | T> {
-        let ctx = await this.resolveContext(target);
-        let bootTarget = this.getBootTarget(ctx);
-        return this.getComponentRef(bootTarget, ctx.injector);
+        let ctx = await this.build(target);
+        return ctx.get(COMPONENT_REFS) || ctx.target;
         // let compRef: TRef;
         // if (!ctx.has(CTX_COMPONENT_REF)) {
         //     let factory = this.container.getService(ctx.injector, { token: ComponentFactory, target: ctx.type, default: DefaultComponentFactory });

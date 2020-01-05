@@ -1,6 +1,5 @@
 import { isBaseType, IActionSetup } from '@tsdi/ioc';
-import { RegisterModuleRegisterHandle } from './RegisterModuleRegisterHandle';
-import { BuildHandles } from './BuildHandles';
+import { BuildHandles } from '../builder/BuildHandles';
 import { AnnoationContext } from '../AnnoationContext';
 import { RegisterAnnoationHandle } from './RegisterAnnoationHandle';
 import { BootContext } from '../BootContext';
@@ -22,7 +21,7 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
             return;
         }
         // has build module instance.
-        if (!(ctx.injector.has(ctx.type) && ctx.getContainer().has(ctx.type))) {
+        if (ctx.reflects.has(ctx.type)) {
             await super.execute(ctx);
         }
 
@@ -31,7 +30,6 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
         }
     }
     setup() {
-        this.use(RegisterAnnoationHandle)
-            .use(RegisterModuleRegisterHandle);
+        this.use(RegisterAnnoationHandle);
     }
 }

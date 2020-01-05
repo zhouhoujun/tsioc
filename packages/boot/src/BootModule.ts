@@ -13,18 +13,17 @@ import { DIModuleInjectScope } from './injectors/DIModuleInjectScope';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
 import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { Bootstrap } from './decorators/Bootstrap';
-import { BuilderService } from './builder/BuilderService';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { StartupServices } from './services/StartupServices';
+import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
 import { ModuleInjector } from './modules/ModuleInjector';
 import { AnnoationInjectorCheck } from './registers/AnnoationInjectorCheck';
 import { AnnoationRegisterAction } from './registers/AnnoationRegisterAction';
 import { ResolveMoudleScope } from './builder/resolvers/ResolveMoudleScope';
-import { ModuleBuilderLifeScope } from './builder/ModuleBuilderLifeScope';
-import { RunnableBuildLifeScope } from './builder/RunnableBuildLifeScope';
-import { BootLifeScope } from './builder/BootLifeScope';
+import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
+import { BootLifeScope } from './boots/BootLifeScope';
 
 
 /**
@@ -55,7 +54,6 @@ export class BootModule {
             .regAction(MessageRegisterAction)
             .regAction(AnnoationDesignAction)
             .regAction(ResolveMoudleScope)
-            .regAction(ModuleBuilderLifeScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);
 

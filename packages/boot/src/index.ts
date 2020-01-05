@@ -6,9 +6,11 @@ export * from './services/BaseTypeParser';
 export * from './services/ModuleBuilder';
 export * from './services/StartupService';
 export * from './services/StartupServices';
-
 export * from './services/AnnotationMerger';
 export * from './services/AnnotationCloner';
+
+export * from './services/IBuilderService';
+export * from './services/BuilderService';
 
 // annotations
 export * from './annotations/RunnableConfigure';
@@ -49,7 +51,6 @@ export * from './injectors/DIModuleInjectScope';
 // modules
 export * from './modules/IModuleReflect';
 export * from './modules/ModuleRef';
-export * from './modules/ModuleRegister';
 export * from './modules/ModuleConfigure';
 
 // handles
@@ -72,32 +73,7 @@ export * from './builder/AnnoationHandle';
 export * from './builder/ComponentContext';
 export * from './builder/IBuildOption';
 export * from './builder/BuildContext';
-export * from './builder/RegisterAnnoationHandle';
-export * from './builder/RegisterModuleRegisterHandle';
-export * from './builder/RegisterModuleScope';
 
-export * from './builder/BootHandle';
-export * from './builder/BootConfigureLoadHandle';
-export * from './builder/BootConfigureRegisterHandle';
-export * from './builder/BootProvidersHandle';
-export * from './builder/BootDepsHandle';
-export * from './builder/ModuleConfigureRegisterHandle';
-export * from './builder/ConfigureServiceHandle';
-
-export * from './builder/ModuleBuildScope';
-
-export * from './builder/ResolveBootHandle';
-export * from './builder/ResolveTypeHandle';
-
-export * from './builder/ResolveRunnableScope';
-export * from './builder/RefRunnableHandle';
-export * from './builder/RunBootHandle';
-
-export * from './builder/ModuleBuilderLifeScope';
-export * from './builder/RunnableBuildLifeScope';
-export * from './builder/BootLifeScope';
-export * from './builder/IBuilderService';
-export * from './builder/BuilderService';
 
 // build resolvers
 export * from './builder/resolvers/ResolveHandle';
@@ -105,6 +81,31 @@ export * from './builder/resolvers/BuildModuleHandle';
 export * from './builder/resolvers/DecoratorBuildHandle';
 export * from './builder/resolvers/ResolveModuleHandle';
 export * from './builder/resolvers/ResolveMoudleScope';
+
+
+// boots
+export * from './boots/RegisterAnnoationHandle';
+export * from './boots/RegisterModuleScope';
+
+export * from './boots/BootHandle';
+export * from './boots/BootConfigureLoadHandle';
+export * from './boots/BootConfigureRegisterHandle';
+export * from './boots/BootProvidersHandle';
+export * from './boots/BootDepsHandle';
+export * from './boots/ModuleConfigureRegisterHandle';
+export * from './boots/ConfigureServiceHandle';
+
+export * from './boots/ModuleBuildScope';
+
+export * from './boots/ResolveBootHandle';
+export * from './boots/ResolveTypeHandle';
+
+export * from './boots/ResolveRunnableScope';
+export * from './boots/RefRunnableHandle';
+export * from './boots/RunBootHandle';
+
+export * from './boots/RunnableBuildLifeScope';
+export * from './boots/BootLifeScope';
 
 export * from './IBootApplication';
 export * from './BootApplication';

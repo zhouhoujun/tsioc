@@ -20,11 +20,12 @@ export class UnitTestRunner extends Runnable<any, UnitTestContext> {
         let mgr = this.context.getConfigureManager();
         let config = await mgr.getConfig();
         let src = config.src;
-        let container = this.getContainer();
+        let injector = this.getInjector();
         let suites: any[] = [];
 
-        let oldRunner = container.resolve(OldTestRunner);
-        let loader = container.getLoader();
+        let oldRunner = injector.resolve(OldTestRunner);
+        console.log(injector);
+        let loader = this.getContainer().getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
             let alltypes = await loader.loadTypes({ files: [src], basePath: this.context.baseURL });
@@ -45,8 +46,8 @@ export class UnitTestRunner extends Runnable<any, UnitTestContext> {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
-        let builder = container.resolve(BuilderService);
+        let builder = injector.resolve(BuilderService);
         await PromiseUtil.step(suites.filter(v => isClass(v) && this.context.reflects.hasMetadata(Suite, v)).map(s => () => builder.run(s)));
-        await container.resolve(TestReport).report();
+        await injector.resolve(TestReport).report();
     }
 }

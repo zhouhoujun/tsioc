@@ -1,5 +1,5 @@
 import { isClass, lang } from '@tsdi/ioc';
-import { BuilderServiceToken } from './IBuilderService';
+import { BuilderServiceToken } from '../services/IBuilderService';
 import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 

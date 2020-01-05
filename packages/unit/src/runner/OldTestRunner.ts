@@ -1,4 +1,4 @@
-import { Inject, PromiseUtil, Singleton, Type } from '@tsdi/ioc';
+import { Inject, PromiseUtil, Singleton, Type, InjectorToken, IInjector } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { BootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
@@ -31,11 +31,15 @@ const globals = typeof window !== 'undefined' ? window : global;
 @Singleton
 export class OldTestRunner implements ISuiteRunner {
 
-    @Inject(ContainerToken)
-    private container: IContainer;
+    @Inject(InjectorToken)
+    private injector: IInjector;
 
     getContainer(): IContainer {
-        return this.container;
+        return this.injector.get(ContainerToken);
+    }
+
+    getInjector(): IInjector {
+        return this.injector;
     }
 
     timeout: number;
@@ -196,7 +200,7 @@ export class OldTestRunner implements ISuiteRunner {
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = this.getContainer().resolve(Assert);
+                let assert = this.getInjector().resolve(Assert);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: fn,

@@ -13,12 +13,20 @@ import { BootContext } from '../BootContext';
  */
 export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
     /**
-     * container.
+     * get root container.
      *
      * @type {IContainer}
      * @memberof IBoot
      */
     getContainer(): IContainer;
+
+    /**
+     * get injector.
+     *
+     * @returns {IInjector}
+     * @memberof IStartup
+     */
+    getInjector(): IInjector;
 
     /**
      * runable context.

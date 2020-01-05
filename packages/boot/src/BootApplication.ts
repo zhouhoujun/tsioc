@@ -2,7 +2,7 @@ import { LoadType, isArray, isString, isInjector, ClassType, isClassType } from 
 import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
-import { BuilderServiceToken } from './builder/IBuilderService';
+import { BuilderServiceToken } from './services/IBuilderService';
 import { BootModule } from './BootModule';
 
 
