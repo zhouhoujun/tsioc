@@ -19,7 +19,7 @@ const ts = require('gulp-typescript');
 export interface TsBuildOption extends AssetActivityOption {
     test?: Binding<NodeExpression<Src>>;
     annotation?: Binding<NodeExpression<boolean>>;
-    tsconfig: Binding<NodeExpression<string | CompilerOptions>>;
+    tsconfig?: Binding<NodeExpression<string | CompilerOptions>>;
     dts?: Binding<NodeExpression<string>>;
     uglify?: Binding<NodeExpression<boolean>>;
     uglifyOptions?: Binding<NodeExpression>;

@@ -17,7 +17,6 @@ import { AfterInit } from '@tsdi/components';
         annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', moduleName: 'main', moduleFolder: 'src', dtsMain: 'index.d.ts' },
-            { target: 'es2015' },
             { target: 'es2017' }
         ]
     }
