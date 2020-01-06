@@ -1,4 +1,4 @@
-import { Injector, ContainerFactory, Token, lang, SymbolType, Type, InstanceFactory, IInjector } from '@tsdi/ioc';
+import { Injector, ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector } from '@tsdi/ioc';
 import { ModuleRef } from './ModuleRef';
 
 
@@ -16,7 +16,7 @@ export class ModuleInjector extends Injector {
 
     protected exports: ModuleRef[];
 
-    constructor(factory: ContainerFactory) {
+    constructor(factory: ContainerProxy) {
         super(factory);
         this.exports = [];
     }

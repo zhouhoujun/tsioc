@@ -1,4 +1,4 @@
-import { lang, InjectToken } from '@tsdi/ioc';
+import { lang, INJECTOR } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 import { AnnoationHandle } from '../builder/AnnoationHandle';
 import { CTX_MODULE_ANNOATION } from '../context-tokens';
@@ -9,9 +9,11 @@ import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
 export class RegisterAnnoationHandle extends AnnoationHandle {
 
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        ctx.injector.registerType(ctx.type);
+        if (!ctx.targetReflect || !ctx.targetReflect.getInjector) {
+            ctx.injector.registerType(ctx.type);
+        }
         let annoation = ctx.targetReflect.getAnnoation ? ctx.targetReflect.getAnnoation() : null;
-        ctx.set(InjectToken, ctx.targetReflect.getInjector());
+        ctx.set(INJECTOR, ctx.targetReflect.getInjector());
         if (annoation) {
             ctx.set(CTX_MODULE_ANNOATION, annoation);
             if (annoation.baseURL) {

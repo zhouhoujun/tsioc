@@ -1,4 +1,4 @@
-import { Singleton, IocCoreService, Token, Inject, ContainerFactoryToken, ContainerFactory, isToken } from '@tsdi/ioc';
+import { Singleton, IocCoreService, Token, Inject, ContainerProxyToken, ContainerProxy, isToken } from '@tsdi/ioc';
 
 /**
  * startup services.
@@ -12,8 +12,8 @@ export class StartupServices extends IocCoreService {
 
     startups: Token[];
 
-    @Inject(ContainerFactoryToken)
-    protected cfacory: ContainerFactory;
+    @Inject(ContainerProxyToken)
+    protected proxy: ContainerProxy;
 
     constructor() {
         super();
@@ -30,6 +30,6 @@ export class StartupServices extends IocCoreService {
         if (!tk) {
             return null;
         }
-        return this.cfacory().get(tk);
+        return this.proxy().get(tk);
     }
 }

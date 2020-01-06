@@ -1,5 +1,3 @@
-import { Inject } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
 import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import { TestReport } from '../reports/TestReport';
@@ -12,14 +10,10 @@ import { SuiteRunner, OldTestRunner, ISuiteRunner } from '../runner';
 })
 export class RunAspect extends LoggerAspect {
 
-    constructor(@Inject(ContainerToken) container: IContainer) {
-        super(container);
-    }
-
     report: ITestReport;
     getReport(): ITestReport {
         if (!this.report) {
-            this.report = this.container.resolve(TestReport);
+            this.report = this.injector.resolve(TestReport);
         }
         return this.report;
     }

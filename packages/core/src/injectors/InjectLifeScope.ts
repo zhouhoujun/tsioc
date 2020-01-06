@@ -27,8 +27,7 @@ export class InjectLifeScope extends LifeScope<InjectActionContext> {
             if (ctx.registered) {
                 types.push(...ctx.registered);
             }
-
-        })
+        });
         return types;
     }
 }

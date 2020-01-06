@@ -1,6 +1,6 @@
 import {
-    Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerFactoryToken,
-    ContainerFactory, isFunction, isPromise, ObjectMap, isBaseObject
+    Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerProxyToken,
+    ContainerProxy, isFunction, isPromise, ObjectMap, isBaseObject
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
@@ -32,8 +32,8 @@ export class ActivityExecutor implements IActivityExecutor {
      * @type {IContainer}
      * @memberof Activity
      */
-    @Inject(ContainerFactoryToken)
-    private containerFac: ContainerFactory;
+    @Inject(ContainerProxyToken)
+    private containerFac: ContainerProxy;
 
     getContainer(): IContainer {
         return this.containerFac() as IContainer;

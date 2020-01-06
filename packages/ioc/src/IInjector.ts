@@ -156,6 +156,11 @@ export interface IInjector {
      * @memberof IInjector
      */
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T>;
+
+    /**
+     *  get injector proxy
+     */
+    getProxy(): InjectorProxy;
     /**
      * set provide.
      *
@@ -310,16 +315,16 @@ export interface IInjector {
 /**
  * injector instance token of self.
  */
-export const InjectorToken = new InjectToken<IInjector>('DI_INJECTOR');
+export const INJECTOR = new InjectToken<IInjector>('DI_INJECTOR');
 
 /**
- * injector factory of current injector.
+ * injector proxy of current injector.
  */
-export type InjectorFactory<T extends IInjector = IInjector> = () => T;
+export type InjectorProxy<T extends IInjector = IInjector> = () => T;
 /**
  * the token of injector factory in current injector.
  */
-export const InjectorFactoryToken = new InjectToken<InjectorFactory>('DI_INJECTOR_FACTORY');
+export const InjectorProxyToken = new InjectToken<InjectorProxy>('DI_INJECTOR_PROXY');
 
 /**
  *  injector provider token. create new injector provider.
@@ -329,4 +334,4 @@ export const PROVIDERS = new InjectToken<IInjector>('DI_PROVIDERS');
 /**
  *  injector token. create new injector.
  */
-export const INJECTOR = new InjectToken<IInjector>('INJECTOR');
+export const InjectorFactoryToken = new InjectToken<IInjector>('DI_INJECTOR_FACTORY');

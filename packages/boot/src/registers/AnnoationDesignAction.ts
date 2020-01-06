@@ -10,6 +10,7 @@ export class AnnoationDesignAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let tgRef = ctx.targetReflect as IModuleReflect;
         if (tgRef.getAnnoation) {
+            ctx.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
             return next();
         }
 

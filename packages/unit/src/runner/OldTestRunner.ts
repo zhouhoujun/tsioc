@@ -1,4 +1,4 @@
-import { Inject, PromiseUtil, Singleton, Type, InjectorToken, IInjector } from '@tsdi/ioc';
+import { Inject, PromiseUtil, Singleton, Type, INJECTOR, IInjector } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { BootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
@@ -31,7 +31,7 @@ const globals = typeof window !== 'undefined' ? window : global;
 @Singleton
 export class OldTestRunner implements ISuiteRunner {
 
-    @Inject(InjectorToken)
+    @Inject(INJECTOR)
     private injector: IInjector;
 
     getContainer(): IContainer {

@@ -1,4 +1,4 @@
-import { IActionSetup, InjectToken } from '@tsdi/ioc';
+import { IActionSetup, INJECTOR } from '@tsdi/ioc';
 import { BuildHandles } from '../BuildHandles';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
@@ -21,7 +21,7 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
         if (!ctx.reflects.has(ctx.type)) {
             ctx.injector.registerType(ctx.type);
             if (ctx.targetReflect) {
-                ctx.set(InjectToken, ctx.targetReflect.getInjector())
+                ctx.set(INJECTOR, ctx.targetReflect.getInjector())
             }
         }
         if (ctx.targetReflect) {

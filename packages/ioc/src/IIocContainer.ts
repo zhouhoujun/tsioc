@@ -8,15 +8,15 @@ import { ITypeReflects } from './services/ITypeReflects';
  * root ioc container token.
  * it is a symbol id, you can use  `@Inject`, `@Autowried` or `@Param` to get container instance in yourself class.
  */
-export const IocContainerToken = new InjectToken<IIocContainer>('DI_IocContainer');
+export const IocContainerToken = new InjectToken<IIocContainer>('DI_IOCCONTAINER');
 /**
- * root container factory.
+ * root container proxy.
  */
-export type ContainerFactory<T extends IIocContainer = IIocContainer> = () => T;
+export type ContainerProxy<T extends IIocContainer = IIocContainer> = () => T;
 /**
  * root container factory token.
  */
-export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_ContainerFactory');
+export const ContainerProxyToken = new InjectToken<ContainerProxy>('DI_CONTAINER_PROXY');
 
 /**
  * root container interface.
@@ -26,13 +26,13 @@ export const ContainerFactoryToken = new InjectToken<ContainerFactory>('DI_Conta
  */
 export interface IIocContainer extends IInjector {
     /**
-     * get container factory.
+     * get container proxy.
      *
      * @template T
-     * @returns {ContainerFactory<T>}
+     * @returns {ContainerProxy<T>}
      * @memberof IIocContainer
      */
-    getFactory<T extends IIocContainer>(): ContainerFactory<T>;
+    getContainerProxy<T extends IIocContainer>(): ContainerProxy<T>;
     /**
      * get injector the type injected.
      * @param type

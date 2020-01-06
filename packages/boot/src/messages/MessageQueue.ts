@@ -1,4 +1,4 @@
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, InjectorToken, IInjector, Inject } from '@tsdi/ioc';
+import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, IInjector, Inject } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
@@ -17,7 +17,7 @@ import { Handles } from '../handles/Handles';
 @Injectable
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
-    @Inject(InjectorToken)
+    @Inject(INJECTOR)
     injector: IInjector;
 
     /**

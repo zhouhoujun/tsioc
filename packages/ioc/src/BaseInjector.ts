@@ -1,4 +1,4 @@
-import { IInjector, InjectorToken, PROVIDERS, InjectorFactoryToken } from './IInjector';
+import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
@@ -6,7 +6,7 @@ import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject,
 import { isToken } from './utils/isToken';
 import { IocCoreService } from './IocCoreService';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
-import { IIocContainer, ContainerFactory } from './IIocContainer';
+import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';
 import { IParameter } from './IParameter';
@@ -56,8 +56,8 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
 
     protected init() {
         let fac = () => this;
-        this.set(InjectorToken, fac, lang.getClass(this));
-        this.registerValue(InjectorFactoryToken, fac);
+        this.set(INJECTOR, fac, lang.getClass(this));
+        this.registerValue(InjectorProxyToken, fac);
         this.registerValue(IocCacheManager, new IocCacheManager(this));
         this.registerValue(IocSingletonManager, new IocSingletonManager(this));
     }
@@ -74,10 +74,14 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return Array.from(this.factories.values());
     }
 
+    getProxy(): InjectorProxy<IInjector> {
+        return this.get(InjectorProxyToken);
+    }
+
     /**
      *  get container factory.
      */
-    abstract getFactory<T extends IIocContainer>(): ContainerFactory<T>;
+    abstract getContainerProxy<T extends IIocContainer>(): ContainerProxy<T>;
 
     /**
      * register type.
@@ -183,7 +187,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     bindTagProvider<T>(target: Token, ...providers: InjectTypes[]): InjectReference<IInjector> {
-        let refToken = new InjectReference(InjectorToken, target);
+        let refToken = new InjectReference(INJECTOR, target);
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {
@@ -513,7 +517,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
             to = filter;
             filter = undefined;
         }
-        to = to || new (lang.getClass(this))(this.getFactory());
+        to = to || new (lang.getClass(this))(this.getContainerProxy());
         this.mergeInjector(this, to as BaseInjector, filter);
         return to;
     }

@@ -41,7 +41,7 @@ export * from './registers/RegModuleProvidersAction';
 export * from './registers/RegModuleRefAction';
 export * from './registers/RegModuleExportsAction';
 export * from './registers/AnnoationInjectorCheck';
-export * from './registers/AnnoationRegisterAction';
+export * from './registers/AnnoationRegisterScope';
 
 
 // injectors

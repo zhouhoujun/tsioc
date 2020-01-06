@@ -23,20 +23,6 @@ export class InjectPropertyAction extends IocRuntimeAction {
             if (isToken(token) && !ctx.has(key)) {
                 ctx.target[propertyKey] = injector.resolve({ token, target: ctx.type }, providers);
                 ctx.set(key, true);
-                // let pdrMap = container.get(new InjectReference(Injector, ctx.type));
-                // if (pdrMap && pdrMap.has(token)) {
-                //     ctx.target[propertyKey] = pdrMap.get(token, providers);
-                //     ctx.set(key, true);
-                // } else if (providers && providers.has(token)) {
-                //     ctx.target[propertyKey] = providers.get(token, providers);
-                //     ctx.set(key, true);
-                // } else {
-                //     let val = container.resolve(token, providers);
-                //     if (!isNullOrUndefined(val)) {
-                //         ctx.target[propertyKey] = val;
-                //         ctx.set(key, true);
-                //     }
-                // }
             }
         });
 

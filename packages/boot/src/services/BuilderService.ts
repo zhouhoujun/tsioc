@@ -1,5 +1,6 @@
 import {
-    IocCoreService, Inject, Singleton, isFunction, isString, isBaseObject, isClassType, ClassType, TypeReflectsToken, ITypeReflects, IInjector
+    IocCoreService, Inject, Singleton, isFunction, isString, isBaseObject, isClassType,
+    ClassType, TypeReflectsToken, ITypeReflects, IInjector
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';

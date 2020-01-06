@@ -1,11 +1,11 @@
-import { Singleton, Inject, InjectorToken, IInjector } from '@tsdi/ioc';
+import { Singleton, Inject, INJECTOR, IInjector } from '@tsdi/ioc';
 import { AstParserToken } from './AstParser';
 
 
 @Singleton()
 export class AstResolver {
 
-    @Inject(InjectorToken) protected injector: IInjector;
+    @Inject(INJECTOR) protected injector: IInjector;
 
     constructor() {
     }

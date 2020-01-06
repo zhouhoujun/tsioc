@@ -1,6 +1,6 @@
 import {
     isClass, Type, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    IInjector, InjectorFactoryToken, InjectorFactory, isDefined
+    IInjector, InjectorProxyToken, InjectorProxy, isDefined
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Input, ComponentBuilderToken } from '@tsdi/components';
@@ -55,8 +55,8 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @type {IContainer}
      * @memberof Activity
      */
-    @Inject(InjectorFactoryToken)
-    private injFactory: InjectorFactory;
+    @Inject(InjectorProxyToken)
+    private injFactory: InjectorProxy;
 
     constructor() {
 

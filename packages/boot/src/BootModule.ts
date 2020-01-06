@@ -20,7 +20,7 @@ import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
 import { ModuleInjector } from './modules/ModuleInjector';
 import { AnnoationInjectorCheck } from './registers/AnnoationInjectorCheck';
-import { AnnoationRegisterAction } from './registers/AnnoationRegisterAction';
+import { AnnoationRegisterScope } from './registers/AnnoationRegisterScope';
 import { ResolveMoudleScope } from './builder/resolvers/ResolveMoudleScope';
 import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
 import { BootLifeScope } from './boots/BootLifeScope';
@@ -46,13 +46,15 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.set(ModuleInjector, () => new ModuleInjector(container.getFactory()));
+        container.set(ModuleInjector, () => new ModuleInjector(container.getContainerProxy()));
         let actInjector = container.get(ActionInjectorToken);
 
         actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
+            .regAction(AnnoationRegisterScope)
             .regAction(DIModuleInjectScope)
-            .regAction(MessageRegisterAction)
+            .regAction(AnnoationInjectorCheck)
             .regAction(AnnoationDesignAction)
+            .regAction(MessageRegisterAction)
             .regAction(ResolveMoudleScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);
@@ -92,7 +94,7 @@ export function registerModule(decorator: string | Function, registerer: DesignR
         { scope: DecoratorScopes.Inject, action: DIModuleInjectScope },
         { scope: DecoratorScopes.BeforeAnnoation, action: AnnoationInjectorCheck },
         { scope: DecoratorScopes.Class, action: [BindProviderAction, AnnoationDesignAction] },
-        { scope: DecoratorScopes.Annoation, action: AnnoationRegisterAction },
+        { scope: DecoratorScopes.Annoation, action: AnnoationRegisterScope },
         { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }
     );
 }

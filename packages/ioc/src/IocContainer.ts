@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { IIocContainer, ContainerFactoryToken, ContainerFactory } from './IIocContainer';
+import { IIocContainer, ContainerProxyToken, ContainerProxy } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
@@ -7,7 +7,7 @@ import { ParamProviders, InjectTypes } from './providers/types';
 import { IocSingletonManager } from './actions/IocSingletonManager';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
-import { IInjector, InjectorFactoryToken, INJECTOR } from './IInjector';
+import { IInjector, InjectorFactoryToken } from './IInjector';
 import { BaseInjector, isInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { ProviderParser } from './providers/ProviderParser';
@@ -15,7 +15,7 @@ import { InjectToken } from './InjectToken';
 import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
 
 
-const factoryToken = ContainerFactoryToken.toString();
+const factoryToken = ContainerProxyToken.toString();
 const actionInjectorKey = ActionInjectorToken.toString();
 /**
  * Container
@@ -47,11 +47,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     }
 
     createInjector(): IInjector {
-        return this.get(INJECTOR);
+        return this.get(InjectorFactoryToken);
     }
 
-    getFactory<T extends IIocContainer>(): ContainerFactory<T> {
-        return this.getInstance(factoryToken) as ContainerFactory<T>;
+    getContainerProxy<T extends IIocContainer>(): ContainerProxy<T> {
+        return this.getInstance(factoryToken) as ContainerProxy<T>;
     }
 
     /**

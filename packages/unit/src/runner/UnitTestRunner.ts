@@ -24,7 +24,6 @@ export class UnitTestRunner extends Runnable<any, UnitTestContext> {
         let suites: any[] = [];
 
         let oldRunner = injector.resolve(OldTestRunner);
-        console.log(injector);
         let loader = this.getContainer().getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {

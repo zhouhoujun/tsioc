@@ -1,6 +1,6 @@
 import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
 import { IInjector } from './IInjector';
-import { IIocContainer, ContainerFactory } from './IIocContainer';
+import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
 import { InjectTypes } from './providers/types';
 import { lang } from './utils/lang';
@@ -17,20 +17,20 @@ import { lang } from './utils/lang';
  */
 export class Injector extends BaseInjector implements IInjector {
 
-    constructor(private factory: ContainerFactory) {
+    constructor(private proxy: ContainerProxy) {
         super();
     }
 
     protected parse(...providers: InjectTypes[]): IInjector {
-        return new (lang.getClass(this))(this.factory).inject(...providers);
+        return new (lang.getClass(this))(this.proxy).inject(...providers);
     }
 
-    getFactory<T extends IIocContainer>(): ContainerFactory<T> {
-        return this.factory as ContainerFactory<T>;
+    getContainerProxy<T extends IIocContainer>(): ContainerProxy<T> {
+        return this.proxy as ContainerProxy<T>;
     }
 
     getContainer<T extends IIocContainer>(): T {
-        return this.factory() as T;
+        return this.proxy() as T;
     }
 
     protected hasInRoot(key: SymbolType): boolean {
@@ -84,9 +84,6 @@ export class Injector extends BaseInjector implements IInjector {
     }
 }
 
-export const ProviderMap = Injector;
-
-
 /**
  * context injector.
  *
@@ -98,3 +95,6 @@ export class InjectorProvider extends Injector {
     init() {
     }
 }
+
+export const ProviderMap = InjectorProvider;
+

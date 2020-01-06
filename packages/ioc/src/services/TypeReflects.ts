@@ -1,6 +1,6 @@
 import { ClassType, ObjectMap, Type, Token } from '../types';
 import { IocCoreService } from '../IocCoreService';
-import { IIocContainer, ContainerFactory } from '../IIocContainer';
+import { IIocContainer, ContainerProxy } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import { MetadataTypes, DefineClassTypes } from '../factories/DecoratorType';
 import {
@@ -19,7 +19,7 @@ import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegist
 import { ITypeReflects } from './ITypeReflects';
 import { ActionInjectorToken, IActionInjector } from '../actions/Action';
 import { TypeDecorators } from '../actions/TypeDecorators';
-import { InjectorFactory, InjectorFactoryToken } from '../IInjector';
+import { InjectorProxy, InjectorProxyToken } from '../IInjector';
 
 
 /**
@@ -31,7 +31,7 @@ import { InjectorFactory, InjectorFactoryToken } from '../IInjector';
  */
 export class TypeReflects extends IocCoreService implements ITypeReflects {
     protected map: Map<ClassType, ITypeReflect>;
-    constructor(private containerFactory: ContainerFactory) {
+    constructor(private containerFactory: ContainerProxy) {
         super();
         this.map = new Map();
     }
@@ -40,10 +40,10 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         return this.containerFactory() as T;
     }
 
-    private _actInj: InjectorFactory<IActionInjector>;
+    private _actInj: InjectorProxy<IActionInjector>;
     getActionInjector(): IActionInjector {
         if (!this._actInj) {
-            this._actInj = this.getContainer().get(ActionInjectorToken).get(InjectorFactoryToken) as InjectorFactory<IActionInjector>;
+            this._actInj = this.getContainer().get(ActionInjectorToken).get(InjectorProxyToken) as InjectorProxy<IActionInjector>;
         }
         return this._actInj();
     }
