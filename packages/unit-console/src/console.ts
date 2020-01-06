@@ -12,11 +12,6 @@ import chalk from 'chalk';
         ServerModule,
         ServerBootstrapModule,
         ServerLogsModule
-    ],
-    exports: [
-        ServerModule,
-        ServerBootstrapModule,
-        ServerLogsModule
     ]
 })
 export class ConsoleReporter extends RealtimeReporter {
