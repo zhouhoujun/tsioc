@@ -2,7 +2,7 @@ import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } fro
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
-import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject } from './utils/lang';
+import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject, isClassType, isAbstractClass } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { IocCoreService } from './IocCoreService';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
@@ -100,6 +100,17 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @param value factory
      */
     abstract registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
+
+    set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
+        let key = this.getTokenKey(provide);
+        this.factories.set(key, fac);
+        if (isClassType(provider)) {
+            this.factories.set(provider, fac);
+            this.provideTypes.set(key, provider);
+        }
+        return this;
+    }
+
     /**
      * register value.
      *
@@ -122,17 +133,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     abstract registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
 
-    set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
-        let key = this.getTokenKey(provide);
-        this.factories.set(key, fac);
-        if (provider) {
-            if (!this.factories.has(provider)) {
-                this.factories.set(provider, fac);
-            }
-            this.provideTypes.set(key, provider);
-        }
-        return this;
-    }
+
     /**
      * bind provider.
      *
@@ -146,9 +147,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let provideKey = this.getTokenKey(provide);
         let factory;
         if (isClass(provider)) {
-            if (!this.hasRegister(provider)) {
-                this.registerType(provider);
-            }
+            this.registerType(provider);
             this.provideTypes.set(provideKey, provider);
             factory = this.getTokenFactory(provider);
         } else if (isToken(provider)) {
@@ -216,9 +215,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                     this.factories.set(this.getTokenKey(p.type), (...providers: ParamProviders[]) => p.resolve(this, ...providers));
                 }
             } else if (isClass(p)) {
-                if (!this.has(p)) {
-                    this.registerType(p);
-                }
+                this.registerType(p);
             } else if (p instanceof ObjectMapProvider) {
                 let pr = p.get();
                 lang.forIn(pr, (val, name) => {
@@ -234,7 +231,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                     let provide = this.getTokenKey(pr.provide);
                     if (isArray(pr.deps) && pr.deps.length) {
                         pr.deps.forEach(d => {
-                            if (isClass(d) && !this.has(d)) {
+                            if (isClass(d)) {
                                 this.registerType(d);
                             }
                         });
@@ -381,7 +378,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         if (this.provideTypes.has(tokenKey)) {
             return this.provideTypes.get(tokenKey);
         }
-        return null;
+        return isAbstractClass(token) ? token as Type<T> : null;
     }
 
 

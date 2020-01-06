@@ -8,7 +8,7 @@ import {
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess } from './MetadataAccess';
-import { isUndefined } from '../utils/lang';
+import { isUndefined, lang, isClassType } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
@@ -57,6 +57,10 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         return this.map.has(type);
     }
 
+    hasRegister(type: ClassType): boolean {
+        return !!this.map.get(type)?.getInjector;
+    }
+
     set(type: ClassType, typeInfo: ITypeReflect): this {
         this.map.set(type, typeInfo);
         return this;
@@ -96,7 +100,10 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     }
 
     isExtends(type: Token, base: ClassType): boolean {
-        return this.has(type as ClassType) ? this.get(type as ClassType).defines.isExtends(base) : false; // lang.isExtendsClass(type, base);
+        if (!isClassType(type)) {
+            return false;
+        }
+        return this.has(type) ? this.get(type).defines.isExtends(base) : false;
     }
 
     getExtends(type: ClassType): ClassType[] {

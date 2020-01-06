@@ -22,7 +22,7 @@ export class InvokeAfterConstructorAction extends IocRuntimeAction {
         let container = ctx.getContainer();
         let advisor = container.get(AdvisorToken);
         let className = lang.getClassName(ctx.type);
-        let advices = advisor.getAdvices(className + '.constructor');
+        let advices = advisor.getAdvices(ctx.type, 'constructor');
         if (!advices) {
             return next();
         }

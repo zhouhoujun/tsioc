@@ -90,9 +90,7 @@ export class ModuleInjector extends Injector {
         if (super.iterator(callbackfn) === false) {
             return false;
         }
-        if (this.exports.some(exp => {
-            return exp.exports.iterator(callbackfn);
-        }) === false) {
+        if (this.exports.some(exp => exp.exports.iterator(callbackfn) === false)) {
             return false;
         }
         if (deep) {

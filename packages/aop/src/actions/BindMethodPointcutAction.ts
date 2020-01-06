@@ -2,6 +2,7 @@ import { RuntimeActionContext, lang, isUndefined, IocRuntimeAction } from '@tsdi
 import { IPointcut } from '../joinpoints/IPointcut';
 import { isValideAspectTarget } from './isValideAspectTarget';
 import { ProxyMethodToken } from '../access/IProxyMethod';
+import { AdvisorToken } from '../IAdvisor';
 
 
 
@@ -28,46 +29,33 @@ export class BindMethodPointcutAction extends IocRuntimeAction {
             return next();
         }
         let injector = ctx.injector;
-        if (!injector.has(ProxyMethodToken)) {
-            return next();
-        }
 
         let proxy = injector.get(ProxyMethodToken);
+        if (!proxy) {
+            return next();
+        }
 
         let target = ctx.target;
         let targetType = ctx.type;
 
         let className = lang.getClassName(targetType);
-        let methods: IPointcut[] = [];
         let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
+        let advisor = injector.get(AdvisorToken);
+        let advicesMap = advisor.getAdviceMap(targetType);
 
-        lang.forIn(decorators, (item, name) => {
-            if (name === 'constructor') {
-                return;
-            }
-            methods.push({
-                name: name,
-                fullName: `${className}.${name}`,
-                descriptor: item
-            });
-        });
-
-        let allmethods = ctx.reflects.getParamerterNames(targetType);
-        lang.forIn(allmethods, (item, name) => {
-            if (name === 'constructor') {
-                return;
-            }
-            if (isUndefined(decorators[name])) {
-                methods.push({
+        if (advicesMap && advicesMap.size) {
+            advicesMap.forEach((advices, name) => {
+                if (name === 'constructor') {
+                    return;
+                }
+                let pointcut = {
                     name: name,
-                    fullName: `${className}.${name}`
-                });
-            }
-        });
-
-        methods.forEach(pointcut => {
-            proxy.proceed(target, targetType, pointcut, target['_cache_JoinPoint']);
-        });
+                    fullName: `${className}.${name}`,
+                    descriptor: decorators[name]
+                }
+                proxy.proceed(target, targetType, advices, pointcut, target['_cache_JoinPoint'])
+            });
+        }
 
         next();
     }

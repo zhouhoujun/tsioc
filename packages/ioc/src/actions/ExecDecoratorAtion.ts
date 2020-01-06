@@ -25,13 +25,10 @@ export abstract class ExecDecoratorAtion extends IocAction<RegisterActionContext
             let currScope = ctx.get(CTX_CURR_DECOR_SCOPE);
             if (decor.has(currDec, currScope)) {
                 let actions = decor.getFuncs(this.actInjector, currDec, currScope);
-                this.execFuncs(ctx, actions, next);
-            } else {
-                next && next();
+                this.execFuncs(ctx, actions);
             }
-        } else {
-            next && next();
         }
+        next && next();
     }
     protected abstract getScopeRegisterer(): DecoratorsRegisterer;
 }

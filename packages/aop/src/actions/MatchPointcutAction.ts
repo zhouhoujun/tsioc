@@ -23,14 +23,15 @@ export class MatchPointcutAction extends IocRuntimeAction {
         let injector = ctx.injector;
         let advisor = injector.get(AdvisorToken);
         let matcher = injector.get(AdviceMatcherToken);
+        let targetType = ctx.type;
 
         advisor.aspects.forEach((adviceMetas, type) => {
-            let matchpoints = matcher.match(type, ctx.type, adviceMetas, ctx.target);
+            let matchpoints = matcher.match(type, targetType, adviceMetas, ctx.target);
             matchpoints.forEach(mpt => {
-                let fullName = mpt.fullName;
+                let name = mpt.name;
                 let advice = mpt.advice;
 
-                let advices = advisor.getAdvices(fullName);
+                let advices = advisor.getAdvices(targetType, name);
                 if (!advices) {
                     advices = {
                         Before: [],
@@ -40,7 +41,7 @@ export class MatchPointcutAction extends IocRuntimeAction {
                         AfterThrowing: [],
                         AfterReturning: []
                     } as Advices;
-                    advisor.setAdvices(fullName, advices);
+                    advisor.setAdvices(targetType, name, advices);
                 }
                 let advicer = Object.assign(mpt, {
                     aspectType: type

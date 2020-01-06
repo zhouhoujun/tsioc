@@ -184,7 +184,6 @@ export class Container extends IocContainer implements IContainer {
     getServices<T>(injector: any, target: any, ...providers: ProviderTypes[]): T[] {
         if (!isInjector(injector)) {
             providers.unshift(target);
-            target = undefined;
         }
         let maps = this.getServiceProviders(injector, target);
 

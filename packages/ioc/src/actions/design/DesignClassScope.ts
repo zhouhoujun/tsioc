@@ -83,9 +83,10 @@ export class RegClassAction extends IocDesignAction {
             return ctx.target;
         };
 
-        injector.set(type, factory);
         if (provide !== type) {
             injector.set(provide, factory, type);
+        } else {
+            injector.set(type, factory);
         }
 
         ctx.targetReflect.getInjector = () => injector;

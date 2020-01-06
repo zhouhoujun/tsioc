@@ -1,7 +1,4 @@
-import {
-    ClassMetadata, IocDesignAction,
-    isClass, DesignActionContext, isArray
-} from '@tsdi/ioc';
+import { IocDesignAction, DesignActionContext } from '@tsdi/ioc';
 import { IAdvisor, AdvisorToken } from '../IAdvisor';
 
 /**
@@ -16,15 +13,7 @@ export class RegistAspectAction extends IocDesignAction {
     execute(ctx: DesignActionContext, next: () => void): void {
         let type = ctx.type;
         let aspectMgr = ctx.injector.get<IAdvisor>(AdvisorToken);
-        let metadata = ctx.reflects.getMetadata<ClassMetadata>(ctx.currDecoractor, type);
-        if (isArray(metadata) && metadata.length > 0) {
-            metadata.forEach(meta => {
-                if (isClass(meta.type)) {
-                    aspectMgr.add(meta.type);
-                }
-            });
-        }
-
+        aspectMgr.add(type);
         next();
     }
 }

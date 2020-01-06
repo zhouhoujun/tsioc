@@ -26,10 +26,10 @@ export class Advisor implements IAdvisor {
     /**
      * method advices.
      *
-     * @type {Map<string, Advices>}
+     * @type {Map<Type, Map<string, Advices>>}
      * @memberof AspectManager
      */
-    advices: Map<string, Advices>;
+    advices: Map<Type, Map<string, Advices>>;
 
     @Inject(TypeReflectsToken) reflects: ITypeReflects;
 
@@ -45,10 +45,15 @@ export class Advisor implements IAdvisor {
      * @param {Advices} advices
      * @memberof Advisor
      */
-    setAdvices(key: string, advices: Advices) {
-        if (!this.advices.has(key)) {
-            this.advices.set(key, advices);
+    setAdvices(type: Type, key: string, advices: Advices) {
+        if (!this.advices.has(type)) {
+            this.advices.set(type, new Map());
         }
+        this.advices.get(type).set(key, advices);
+    }
+
+    hasAdvices(type: Type): boolean {
+        return this.advices.has(type);
     }
 
     /**
@@ -58,21 +63,19 @@ export class Advisor implements IAdvisor {
      * @returns
      * @memberof Advisor
      */
-    getAdvices(key: string) {
-        return this.advices.get(key) || null;
+    getAdvices(type: Type, key: string) {
+        return this.advices.get(type)?.get(key) || null;
     }
 
     /**
-     * has register advices or not.
+     * get advices.
      *
-     * @param {Type} targetType
-     * @returns {boolean}
-     * @memberof Advisor
+     * @param {string} key
+     * @returns {Advices}
+     * @memberof IAdvisor
      */
-    hasRegisterAdvices(targetType: Type): boolean {
-        let methods = Object.keys(Object.getOwnPropertyDescriptors(targetType.prototype));
-        let className = lang.getClassName(targetType);
-        return methods.some(m => this.advices.has(`${className}.${m}`));
+    getAdviceMap(type: Type): Map<string, Advices> {
+        return this.advices.get(type);
     }
 
     /**

@@ -198,6 +198,7 @@ export interface IInjector {
      * @template T
      * @param {Token<T>} token
      * @param {T} value
+     * @param {Type<T>} provider the token provider
      * @returns {this}
      * @memberof IInjector
      */

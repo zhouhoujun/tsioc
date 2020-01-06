@@ -7,6 +7,7 @@ import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import chalk from 'chalk';
 
 @DIModule({
+    regIn: 'root',
     imports: [
         ServerModule,
         ServerBootstrapModule,

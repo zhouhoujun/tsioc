@@ -1,6 +1,7 @@
 import { Type, InjectToken } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
+import { Advices } from '../advices/Advices';
 
 /**
  * Aop proxy method interface token.
@@ -24,5 +25,5 @@ export interface IProxyMethod {
      * @param {Joinpoint} [provJoinpoint]
      * @memberof IProxyMethod
      */
-    proceed(target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint);
+    proceed(target: any, targetType: Type, advices: Advices,  pointcut: IPointcut, provJoinpoint?: Joinpoint);
 }

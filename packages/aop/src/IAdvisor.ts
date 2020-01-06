@@ -27,35 +27,43 @@ export interface IAdvisor {
     /**
      * advices
      *
-     * @type {Map<string, Advices>}
+     * @type {Map<Type, Map<string, Advices>>}
      * @memberof IAdvisor
      */
-    advices: Map<string, Advices>;
+    advices: Map<Type, Map<string, Advices>>;
 
-    /**
-     * has register advices or not.
-     *
-     * @param {Type} targetType
-     * @returns {boolean}
-     * @memberof IAdvisor
-     */
-    hasRegisterAdvices(targetType: Type): boolean;
     /**
      * set advices.
      *
+     * @param {Type} type
      * @param {string} key
      * @param {Advices} advices
      * @memberof IAdvisor
      */
-    setAdvices(key: string, advices: Advices);
+    setAdvices(type: Type, key: string, advices: Advices);
+
+    /**
+     * the type has advices or not.
+     * @param type
+     */
+    hasAdvices(type: Type): boolean;
     /**
      * get advices.
      *
+     * @param {Type} type
+     * @returns {Advices}
+     * @memberof IAdvisor
+     */
+    getAdviceMap(type: Type): Map<string, Advices>;
+    /**
+     * get advices.
+     *
+     * @param {Type} type
      * @param {string} key
      * @returns {Advices}
      * @memberof IAdvisor
      */
-    getAdvices(key: string): Advices;
+    getAdvices(type: Type, key: string): Advices;
 
     /**
      * add aspect.

@@ -1,4 +1,4 @@
-import { Singleton, Inject, Token, InjectToken, Type, lang } from '@tsdi/ioc';
+import { Singleton, Inject, Token, InjectToken, Type, lang, INJECTOR, IInjector } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Reporter, RealtimeReporter } from './Reporter';
@@ -18,15 +18,15 @@ export const ReportsToken = new InjectToken<Type<Reporter>[]>('unit-reports')
 @Singleton
 export class TestReport implements ITestReport {
 
-    @Inject(ContainerToken)
-    container: IContainer;
+    @Inject(INJECTOR)
+    injector: IInjector;
 
     suites: Map<Token, ISuiteDescribe>;
 
     resports: Reporter[];
     getReports() {
         if (!this.resports || this.resports.length < 0) {
-            this.resports = this.container.getServices(Reporter);
+            this.resports = this.injector.get(ContainerToken).getServices(this.injector, Reporter);
         }
         return this.resports || [];
     }
@@ -51,7 +51,6 @@ export class TestReport implements ITestReport {
                     rep.renderSuite(describe);
                 }
             });
-
         }
     }
 

@@ -161,14 +161,19 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             singleton = arg3;
         }
 
-        // (async () => {
-        this.getInstance<IActionInjector>(actionInjectorKey).getInstance(DesignLifeScope).register(
-            DesignActionContext.parse(injector, {
-                token: provide,
-                type: type,
-                singleton: singleton
-            }));
-        // })();
+        // make sure class register once.
+        if (this.getTypeReflects().hasRegister(type) || this.hasRegister(type)) {
+            return this;
+        }
+
+        (async () => {
+            this.getInstance<IActionInjector>(actionInjectorKey).getInstance(DesignLifeScope).register(
+                DesignActionContext.parse(injector, {
+                    token: provide,
+                    type: type,
+                    singleton: singleton
+                }));
+        })();
         return this;
     }
 }

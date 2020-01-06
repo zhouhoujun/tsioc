@@ -26,22 +26,6 @@ export class ProxyMethod implements IProxyMethod {
 
     }
 
-    private _advisor: IAdvisor;
-    get advisor(): IAdvisor {
-        if (!this._advisor) {
-            this._advisor = this.container.get(AdvisorToken);
-        }
-        return this._advisor;
-    }
-
-    private _lifeScope: RuntimeLifeScope;
-    get lifeScope(): RuntimeLifeScope {
-        if (!this._lifeScope) {
-            this._lifeScope = this.container.get(ActionInjectorToken).get(RuntimeLifeScope);
-        }
-        return this._lifeScope;
-    }
-
     /**
      * proceed the proxy method.
      *
@@ -51,13 +35,8 @@ export class ProxyMethod implements IProxyMethod {
      * @param {Joinpoint} [provJoinpoint]
      * @memberof ProxyMethod
      */
-    proceed(target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
-
-        let aspectMgr = this.advisor;
-        let fullName = pointcut.fullName;
+    proceed(target: any, targetType: Type, advices: Advices, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
         let methodName = pointcut.name;
-
-        let advices = aspectMgr.getAdvices(fullName);
         if (advices && pointcut) {
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
                 if (pointcut.descriptor.get) {

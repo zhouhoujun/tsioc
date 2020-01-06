@@ -25,6 +25,7 @@ export function registerCores(container: IIocContainer) {
     container.set(IocContainerToken, fac);
     container.registerValue(ContainerProxyToken, fac);
     container.registerValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
+
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
     container.set(PROVIDERS, () => new InjectorProvider(fac), InjectorProvider);
     container.registerValue(ProviderParser, new ProviderParser(container));

@@ -18,10 +18,16 @@ export const TypeReflectsToken = new InjectToken<ITypeReflects>('IOC_TYPEREFLECT
  */
 export interface ITypeReflects extends IMetadataAccess {
     /**
-     * has register reflect or not.
+     * has reflect or not.
      * @param type the type
      */
     has(type: ClassType): boolean;
+
+    /**
+     * the type has register in injector or not.
+     * @param type
+     */
+    hasRegister(type: ClassType): boolean;
     /**
      * register reflect info of type.
      * @param type the type

@@ -221,7 +221,6 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
         if (isDefined(joinPoint.throwing) && metadata.throwing) {
             providers.push({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
-
         return this.container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
     }
 }
