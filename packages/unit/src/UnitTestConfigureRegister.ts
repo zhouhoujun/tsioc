@@ -2,10 +2,11 @@ import { DebugLogAspect } from '@tsdi/logs';
 import { Singleton, isArray } from '@tsdi/ioc';
 import { ConfigureRegister } from '@tsdi/boot';
 import { UnitTestConfigure } from './UnitTestConfigure';
-import { Assert, ExpectToken } from './assert';
+import { Assert } from './assert/assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
 import { UnitTestContext } from './UnitTestContext';
+import { ExpectToken } from './assert/expects';
 
 /**
  * unit test configure register.

@@ -5,10 +5,11 @@ import { BeforeEach } from '../decorators/BeforeEach';
 import { Test } from '../decorators/Test';
 import { AfterEach } from '../decorators/AfterEach';
 import { After } from '../decorators/After';
-import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
-import { ISuiteDescribe, ICaseDescribe } from '../reports';
+import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
+import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
-import { RunCaseToken, RunSuiteToken, Assert } from '../assert';
+import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
+import { SuiteMetadata } from '../metadata/SuiteMetadata';
 
 /**
  * Suite runner.

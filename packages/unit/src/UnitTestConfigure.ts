@@ -1,6 +1,6 @@
 import { Type } from '@tsdi/ioc';
 import { BootOption, RunnableConfigure } from '@tsdi/boot';
-import { ITestReport } from './reports';
+import { ITestReport } from './reports/ITestReport';
 
 /**
  * unit test options.

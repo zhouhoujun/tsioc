@@ -3,14 +3,14 @@ import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, DIModule, ConfigureRegister } from '@tsdi/boot';
 import { UnitSetup } from './UnitSetup';
-import * as aops from './aop';
-import * as asserts from './assert';
-import * as runners from './runner';
-import * as reports from './reports';
 import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestContext } from './UnitTestContext';
-import { UnitTestRunner } from './runner';
+import { UnitTestRunner } from './runner/UnitTestRunner';
+import { RunAspect } from './aop/RunAspect';
+import { OldTestRunner } from './runner/OldTestRunner';
+import { SuiteRunner } from './runner/SuiteRunner';
+import { TestReport } from './reports/TestReport';
 
 
 @DIModule({
@@ -19,11 +19,12 @@ import { UnitTestRunner } from './runner';
       LogModule,
       UnitTestContext,
       UnitTestConfigureRegister,
-      aops,
+      RunAspect,
       UnitSetup,
-      runners,
-      reports,
-      asserts
+      OldTestRunner,
+      SuiteRunner,
+      UnitTestRunner,
+      TestReport
    ],
    providers: [
       { provide: ConfigureRegister, useClass: UnitTestConfigureRegister }

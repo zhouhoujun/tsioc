@@ -2,7 +2,9 @@ import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import { TestReport } from '../reports/TestReport';
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
-import { SuiteRunner, OldTestRunner, ISuiteRunner } from '../runner';
+import { ISuiteRunner } from '../runner/ISuiteRunner';
+import { SuiteRunner } from '../runner/SuiteRunner';
+import { OldTestRunner } from '../runner/OldTestRunner';
 
 @Aspect({
     within: [SuiteRunner, OldTestRunner],

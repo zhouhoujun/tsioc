@@ -1,8 +1,21 @@
-export * from './metadata';
+export * from './metadata/SuiteMetadata';
+export * from './metadata/TestMetadata';
+
 export * from './decorators';
-export * from './assert';
-export * from './runner';
-export * from './reports';
+
+export * from './assert/assert';
+export * from './assert/expects';
+
+
+export * from './runner/ISuiteRunner';
+export * from './runner/SuiteRunner';
+export * from './runner/OldTestRunner';
+export * from './runner/UnitTestRunner';
+
+export * from './reports/ITestReport';
+export * from './reports/TestReport';
+export * from './reports/Reporter';
+
 export * from './UnitTest';
 export * from './UnitTestConfigure';
 export * from './UnitTestConfigureRegister';

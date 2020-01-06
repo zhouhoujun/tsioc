@@ -1,6 +1,6 @@
 import {
     Inject, Singleton, isString, isRegExp, isUndefined, isDefined,
-    Type, ObjectMap, lang, isArray, isFunction, IIocContainer, IocContainerToken, TypeReflectsToken, ITypeReflects
+    Type, ObjectMap, lang, isArray, isFunction, TypeReflectsToken, ITypeReflects
 } from '@tsdi/ioc';
 import { IAdviceMatcher, AdviceMatcherToken } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/AdviceMetadata';

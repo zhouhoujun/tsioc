@@ -2,7 +2,7 @@ import { Injectable, isString, isClass, isArray, PromiseUtil } from '@tsdi/ioc';
 import { Runnable, BuilderService } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { Suite } from '../decorators';
-import { TestReport } from '../reports';
+import { TestReport } from '../reports/TestReport';
 import { UnitTestContext } from '../UnitTestContext';
 
 
