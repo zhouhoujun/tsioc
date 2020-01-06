@@ -26,9 +26,9 @@ import { TestReport } from './reports/TestReport';
       UnitTestRunner,
       TestReport
    ],
-   providers: [
-      { provide: ConfigureRegister, useClass: UnitTestConfigureRegister }
-   ],
+   // providers: [
+   //    { provide: ConfigureRegister, useClass: UnitTestConfigureRegister }
+   // ],
    bootstrap: UnitTestRunner
 })
 export class UnitTest {

@@ -29,6 +29,7 @@ export class SuiteTest {
     testInTime(assert: Assert) {
         console.log('--------assert test in time------');
         let def = PromiseUtil.defer();
+        assert.ok(assert);
         setTimeout(() => {
             console.log('in time do...');
             def.resolve('in time do...')

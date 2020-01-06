@@ -17,13 +17,12 @@ import { ExpectToken } from './assert/expects';
  */
 @Singleton
 export class UnitTestConfigureRegister extends ConfigureRegister {
-    constructor() {
-        super();
-    }
+
     async register(config: UnitTestConfigure, ctx: UnitTestContext): Promise<void> {
         if (config.debug) {
             ctx.injector.registerType(DebugLogAspect);
         }
+
         if (!ctx.injector.has(Assert)) {
             ctx.injector.set(Assert, () => assert);
         }

@@ -114,17 +114,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
 
     protected getTargetDeps(target: ClassType | BootOption | T) {
         let dependences = [];
-        if (isClassType(target)) {
-            let reflects = this.getContainer().getTypeReflects();
-            let targetReflect = reflects.create(target);
-            targetReflect.decorators.classDecors.forEach(d => {
-                reflects.getMetadata(d, target).forEach(meta => {
-                    if (meta && meta.deps) {
-                        dependences.push(...meta.deps);
-                    }
-                });
-            });
-        } else if (target) {
+        if (!isClassType(target)) {
             let options = target instanceof BootContext ? target.getOptions() : target;
             options.deps && dependences.push(...options.deps);
         }

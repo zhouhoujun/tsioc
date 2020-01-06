@@ -13,14 +13,6 @@ import { BootContext } from '../BootContext';
  */
 export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
     /**
-     * get root container.
-     *
-     * @type {IContainer}
-     * @memberof IBoot
-     */
-    getContainer(): IContainer;
-
-    /**
      * get injector.
      *
      * @returns {IInjector}
@@ -92,9 +84,6 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
         this._ctx = ctx as TCtx;
     }
 
-    getContainer(): IContainer {
-        return this.context.getContainer();
-    }
 
     getInjector(): IInjector {
         return this.context.injector;

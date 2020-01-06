@@ -2,7 +2,7 @@ import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } fro
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
-import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject, isClassType, isAbstractClass } from './utils/lang';
+import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject, isClassType } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { IocCoreService } from './IocCoreService';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
@@ -371,14 +371,11 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @memberof BaseInjector
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
-        if (isClass(token)) {
-            return token;
-        }
         let tokenKey = this.getTokenKey(token);
         if (this.provideTypes.has(tokenKey)) {
             return this.provideTypes.get(tokenKey);
         }
-        return isAbstractClass(token) ? token as Type<T> : null;
+        return isClassType(tokenKey) ? tokenKey as Type<T> : null;
     }
 
 

@@ -14,8 +14,6 @@ export class RefRunnableHandle extends BootHandle {
             { provide: BootContext, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx });
 
-        console.log(ctx.runnable, ctx.getBootTarget(), ctx.injector)
-
         if (!ctx.runnable) {
             await next();
         }

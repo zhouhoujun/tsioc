@@ -24,10 +24,6 @@ import { InjectLifeScope } from './injectors/InjectLifeScope';
  */
 export class Container extends IocContainer implements IContainer {
 
-    constructor() {
-        super();
-    }
-
     protected init() {
         super.init();
         registerCores(this);
