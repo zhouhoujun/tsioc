@@ -9,10 +9,12 @@ import { Service } from '../runnable/Service';
 
 export class RefRunnableHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        ctx.runnable = ctx.getContainer().getService(
-            { tokens: [Startup, Renderer, Runnable, Service], target: [ctx.getBootTarget(), ctx.targetReflect ? ctx.targetReflect.decorator : ctx.decorator] },
+        ctx.runnable = ctx.getContainer().getService(ctx.injector,
+            { tokens: [Startup, Renderer, Runnable, Service], target: ctx.getBootTarget() },
             { provide: BootContext, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx });
+
+        console.log(ctx.runnable, ctx.getBootTarget(), ctx.injector)
 
         if (!ctx.runnable) {
             await next();

@@ -20,13 +20,13 @@ describe('di module', () => {
 
     it('message test.', async () => {
         let ctx = await BootApplication.run(ModuleB);
-        ctx.getContainer().get(SubMessageQueue).subscribe((ctx, next) => {
+        ctx.injector.get(SubMessageQueue).subscribe((ctx, next) => {
             if (ctx.event === 'test') {
                 console.log('message queue test: ' + ctx.data);
             }
             return next()
         })
-        expect(ctx.getContainer().get(SubMessageQueue)['handles'].length).toEqual(1);
+        expect(ctx.injector.get(SubMessageQueue)['handles'].length).toEqual(1);
         ctx.getContainer().get(RootMessageQueueToken)
             .send('test', 'hello');
     });

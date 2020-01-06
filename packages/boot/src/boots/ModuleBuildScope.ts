@@ -9,7 +9,7 @@ export class ModuleBuildScope extends BuildHandles<BootContext> implements IActi
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         // has build module instance.
-        if (!ctx.target) {
+        if (!ctx.target && !ctx.bootstrap) {
             await super.execute(ctx);
         }
         if (next) {

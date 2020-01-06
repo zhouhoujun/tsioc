@@ -1,6 +1,6 @@
 import {
     IocCoreService, Inject, Singleton, isFunction, isString, isBaseObject, isClassType,
-    ClassType, TypeReflectsToken, ITypeReflects, IInjector
+    ClassType, TypeReflectsToken, ITypeReflects, IInjector, INJECTOR, Type
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
@@ -136,17 +136,33 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ...args);
     }
 
-    protected async execLifeScope<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(contextInit: (ctx: T) => void, scope: BuildHandles<T>, target: ClassType | Topt | T, ...args: string[]): Promise<T> {
+    protected async execLifeScope<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(
+        contextInit: (ctx: T) => void, scope: BuildHandles<T>,
+        target: ClassType | Topt | T,
+        ...args: string[]): Promise<T> {
+
         let ctx: T;
         if (target instanceof BootContext) {
             ctx = target as T;
         } else {
-            let md = isClassType(target) ? target : target.type;
-            ctx = this.container.getService({ token: BootContext, target: md, default: BootContext }) as T;
-            ctx.setOptions({ type: md });
-        }
-        if (isBaseObject(target)) {
-            ctx.setOptions(target as BootOption);
+            let md: ClassType;
+            let injector: IInjector;
+            if (isClassType(target)) {
+                md = target;
+            } else {
+                md = target.type || target.module;
+                injector = target.injector;
+            }
+            if (!injector) {
+                injector = this.reflects.hasRegister(md) ? this.reflects.getInjector(md) : this.container;
+            }
+            ctx = this.container.getService(injector, { token: BootContext, target: md, default: BootContext }) as T;
+            ctx.set(INJECTOR, injector);
+            if (isClassType(target)) {
+                ctx.setOptions({ type: md, injector: injector });
+            } else {
+                ctx.setOptions({...target, type: md, injector: injector})
+            }
         }
         ctx.set(CTX_APP_ENVARGS, args);
         if (contextInit) {

@@ -17,8 +17,6 @@ export class ResolveTypeHandle extends BootHandle {
                 injector: ctx.injector
             });
         }
-        if (ctx.target) {
-            await next();
-        }
+        await next();
     }
 }

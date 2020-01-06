@@ -17,10 +17,10 @@ import { TestReport } from './reports/TestReport';
    imports: [
       AopModule,
       LogModule,
+      UnitSetup,
       UnitTestContext,
       UnitTestConfigureRegister,
       RunAspect,
-      UnitSetup,
       OldTestRunner,
       SuiteRunner,
       UnitTestRunner,
