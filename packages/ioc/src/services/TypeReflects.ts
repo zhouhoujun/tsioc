@@ -8,7 +8,7 @@ import {
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess } from './MetadataAccess';
-import { isUndefined, lang, isClassType } from '../utils/lang';
+import { isUndefined, isClassType } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
@@ -19,7 +19,6 @@ import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegist
 import { ITypeReflects } from './ITypeReflects';
 import { ActionInjectorToken, IActionInjector } from '../actions/Action';
 import { TypeDecorators } from '../actions/TypeDecorators';
-import { InjectorProxy, InjectorProxyToken } from '../IInjector';
 
 
 /**
@@ -40,12 +39,20 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         return this.containerFactory() as T;
     }
 
-    private _actInj: InjectorProxy<IActionInjector>;
+    private _actInj: IActionInjector;
     getActionInjector(): IActionInjector {
         if (!this._actInj) {
-            this._actInj = this.getContainer().get(ActionInjectorToken).get(InjectorProxyToken) as InjectorProxy<IActionInjector>;
+            this._actInj = this.getContainer().get(ActionInjectorToken);
         }
-        return this._actInj();
+        return this._actInj;
+    }
+
+    private decorPdr: DecoratorProvider;
+    getDecorProvider(): DecoratorProvider {
+        if (!this.decorPdr) {
+            this.decorPdr = this.getActionInjector().getInstance(DecoratorProvider);
+        }
+        return this.decorPdr;
     }
 
     getInjector(type: Type) {
@@ -116,7 +123,7 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): boolean;
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): boolean;
     hasMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): boolean {
-        let access = this.getActionInjector().getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
+        let access = this.getDecorProvider().resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }
@@ -180,7 +187,7 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): T[];
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): T[][];
     getMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): any {
-        let access = this.getActionInjector().getInstance(DecoratorProvider).resolve(decorator, MetadataAccess);
+        let access = this.getDecorProvider().resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }
