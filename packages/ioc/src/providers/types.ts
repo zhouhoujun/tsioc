@@ -1,13 +1,13 @@
 import { ProviderType, ParamProvider } from './Provider';
 import { Type } from '../types';
-import { IInjector } from '../IInjector';
+import { IProviders } from '../IInjector';
 
 
 /**
  * providers.
  * note: ObjectMap provider can not resolve token.
  */
-export type ProviderTypes = IInjector | ProviderType;
+export type ProviderTypes = IProviders | ProviderType;
 
 /**
  * inject types

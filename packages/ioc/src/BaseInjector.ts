@@ -37,6 +37,8 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     protected factories: Map<SymbolType, InstanceFactory>;
 
+    // protected singletons: Map<SymbolType, InstanceFactory>;
+
     /**
      * provide types.
      *
@@ -50,6 +52,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     constructor() {
         super();
         this.factories = new Map();
+        // this.singletons = new Map();
         this.provideTypes = new Map();
         this.init();
     }
@@ -146,6 +149,9 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     bindProvider<T>(provide: Token<T>, provider: Token<T> | T): this {
         let provideKey = this.getTokenKey(provide);
+        if (!provideKey) {
+            return this;
+        }
         if (isToken(provider)) {
             let ptk = this.getTokenKey(provider);
             let type = this.getTokenProvider(ptk);
@@ -528,9 +534,6 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is BaseInjector {
-    if (!isObject(target)) {
-        return false;
-    }
     return target instanceof BaseInjector;
 }
 

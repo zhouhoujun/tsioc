@@ -326,10 +326,14 @@ export type InjectorProxy<T extends IInjector = IInjector> = () => T;
  */
 export const InjectorProxyToken = new InjectToken<InjectorProxy>('DI_INJECTOR_PROXY');
 
+export interface IProviders extends IInjector {
+
+}
+
 /**
  *  injector provider token. create new injector provider.
  */
-export const PROVIDERS = new InjectToken<IInjector>('DI_PROVIDERS');
+export const PROVIDERS = new InjectToken<IProviders>('DI_PROVIDERS');
 
 /**
  *  injector token. create new injector.

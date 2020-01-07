@@ -1,5 +1,5 @@
 import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
-import { IInjector } from './IInjector';
+import { IInjector, IProviders } from './IInjector';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
 import { InjectTypes } from './providers/types';
@@ -91,7 +91,7 @@ export class Injector extends BaseInjector implements IInjector {
  * @class ContextInjector
  * @extends {Injector}
  */
-export class InjectorProvider extends Injector {
+export class InjectorProvider extends Injector implements IProviders {
     init() {
     }
 }

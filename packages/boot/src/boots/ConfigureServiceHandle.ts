@@ -5,7 +5,7 @@ import { StartupService } from '../services/StartupService';
 
 export class ConfigureServiceHandle extends BootHandle {
     async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        let regs = ctx.getContainer().getServices(StartupService);
+        let regs = ctx.getContainer().getServices(ctx.injector, StartupService);
         if (regs && regs.length) {
             let sts = ctx.starupServices;
             await Promise.all(regs.map(async reg => {
