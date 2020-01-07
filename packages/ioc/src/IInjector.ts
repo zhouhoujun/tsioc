@@ -20,14 +20,6 @@ export interface IInjector {
      */
     readonly size: number;
     /**
-     * keys.
-     */
-    keys(): SymbolType[];
-    /**
-     * values.
-     */
-    values(): InstanceFactory[];
-    /**
      * get token.
      *
      * @template T
@@ -76,6 +68,11 @@ export interface IInjector {
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
+     * has singleton or not.
+     * @param key
+     */
+    hasSingleton<T>(key: SymbolType<T>): boolean;
+    /**
      * has register in the injector or root container.
      * @param token the token.
      */
@@ -117,6 +114,12 @@ export interface IInjector {
      * @memberof IInjector
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
+
+    /**
+     * get singleton instance.
+     * @param key token key.
+     */
+    getSingleton<T>(key: SymbolType<T>): T;
     /**
      * resolve token instance with token and param provider.
      *

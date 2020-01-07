@@ -4,7 +4,7 @@ import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
-import { IocSingletonManager } from './actions/IocSingletonManager';
+// import { IocSingletonManager } from './actions/IocSingletonManager';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector, InjectorFactoryToken } from './IInjector';
@@ -25,10 +25,6 @@ const actionInjectorKey = ActionInjectorToken.toString();
  * @implements {IIocContainer}
  */
 export class IocContainer extends BaseInjector implements IIocContainer {
-    constructor() {
-        super();
-        this.init();
-    }
 
     get size(): number {
         return this.factories.size;
@@ -120,12 +116,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ParamProviders[]) => {
-                let mgr = injector.getInstance(IocSingletonManager);
-                if (mgr.has(key)) {
-                    return mgr.get(key);
+                if (injector.hasSingleton(key)) {
+                    return injector.getSingleton(key);
                 }
                 let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-                mgr.set(key, instance);
+                injector.registerValue(key, instance);
                 return instance;
             }
             : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));

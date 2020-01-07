@@ -1,4 +1,4 @@
-import { Injector, ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector } from '@tsdi/ioc';
+import { Injector, ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector, isDefined } from '@tsdi/ioc';
 import { ModuleRef } from './ModuleRef';
 
 
@@ -22,7 +22,25 @@ export class ModuleInjector extends Injector {
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.factories.has(key) || this.exports.some(r => r.exports.hasTokenKey(key))
+        return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
+    }
+
+    hasSingleton<T>(key: SymbolType<T>): boolean {
+        return super.hasSingleton(key) || this.exports.some(r => r.exports.hasSingleton(key));
+    }
+
+    getSingleton<T>(key: SymbolType<T>): T {
+        if (this.singletons.has(key)) {
+            return this.singletons.get(key);
+        }
+        let instance: T;
+        this.exports.some(r => {
+            if (r.exports.hasSingleton(key)) {
+                instance = r.exports.getSingleton(key);
+            }
+            return isDefined(instance);
+        });
+        return isDefined(instance) ? instance : this.tryGetSingletonInRoot(key);
     }
 
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {

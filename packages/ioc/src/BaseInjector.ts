@@ -2,12 +2,11 @@ import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } fro
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
-import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isObject, isClassType } from './utils/lang';
+import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isClassType } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { IocCoreService } from './IocCoreService';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
-import { IocSingletonManager } from './actions/IocSingletonManager';
 import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';
 import { IParameter } from './IParameter';
 import { ResolveActionOption } from './actions/ResolveActionContext';
@@ -36,8 +35,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @memberof BaseInjector
      */
     protected factories: Map<SymbolType, InstanceFactory>;
-
-    // protected singletons: Map<SymbolType, InstanceFactory>;
+    protected singletons: Map<SymbolType, any>;
 
     /**
      * provide types.
@@ -52,30 +50,21 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     constructor() {
         super();
         this.factories = new Map();
-        // this.singletons = new Map();
+        this.singletons = new Map();
         this.provideTypes = new Map();
         this.init();
     }
 
     protected init() {
-        let fac = () => this;
-        this.set(INJECTOR, fac, lang.getClass(this));
-        this.registerValue(InjectorProxyToken, fac);
+        this.registerValue(INJECTOR, this, lang.getClass(this));
+        this.registerValue(InjectorProxyToken, () => this);
         this.registerValue(IocCacheManager, new IocCacheManager(this));
-        this.registerValue(IocSingletonManager, new IocSingletonManager(this));
     }
 
     get size(): number {
         return this.factories.size;
     }
 
-    keys(): SymbolType[] {
-        return Array.from(this.factories.keys());
-    }
-
-    values(): InstanceFactory[] {
-        return Array.from(this.factories.values());
-    }
 
     getProxy(): InjectorProxy<IInjector> {
         return this.get(InjectorProxyToken);
@@ -126,7 +115,14 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      * @memberof BaseInjector
      */
     registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
-        this.set(token, () => value, provider);
+        let key = this.getTokenKey(token);
+        if (isClass(provider)) {
+            this.singletons.set(provider, value);
+            this.factories.set(key, (...providers) => this.getInstance(provider, ...providers));
+            this.provideTypes.set(key, provider);
+        } else {
+            this.singletons.set(key, value);
+        }
         return this;
     }
 
@@ -162,7 +158,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
             this.factories.set(provideKey, (...providers) => this.getInstance(ptk, ...providers));
 
         } else {
-            this.factories.set(provideKey, () => provider);
+            this.singletons.set(provideKey, provider);
         }
         return this;
     }
@@ -216,7 +212,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                 lang.forIn(pr, (val, name) => {
                     if (name && isString(name)) {
                         // object this can not resolve token. set all fileld as value factory.
-                        this.factories.set(name, () => val);
+                        this.singletons.set(name, val);
                     }
                 });
 
@@ -233,7 +229,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                     }
                     if (isDefined(pr.useValue)) {
                         let val = pr.useValue;
-                        this.factories.set(provide, () => val);
+                        this.singletons.set(provide, val);
                     } else if (isClass(pr.useClass)) {
                         this.registerType(pr.useClass, pr.provide, pr.singleton);
                     } else if (isFunction(pr.useFactory)) {
@@ -260,9 +256,6 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this;
     }
 
-    hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.factories.has(key);
-    }
     /**
      * has register.
      *
@@ -304,7 +297,19 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this.hasTokenKey(key) || this.hasInRoot(key);
     }
 
+    hasTokenKey<T>(key: SymbolType<T>): boolean {
+        return this.factories.has(key) || this.singletons.has(key);
+    }
+
+    hasSingleton<T>(key: SymbolType<T>): boolean {
+        return this.singletons.has(key) ||  this.hasSingletonInRoot(key);
+    }
+
     protected hasInRoot(key: SymbolType): boolean {
+        return false;
+    }
+
+    protected hasSingletonInRoot(key: SymbolType): boolean {
         return false;
     }
     /**
@@ -331,12 +336,24 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
+        let instance = this.getSingleton(key);
+        if (isDefined(instance)) {
+            return instance;
+        }
         let fac = this.getTokenFactory(key);
         return fac ? fac(...providers) : null;
     }
 
+    getSingleton<T>(key: SymbolType<T>): T {
+        return this.singletons.has(key) ? this.singletons.get(key) : this.tryGetSingletonInRoot(key);
+    }
+
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
         return this.factories.has(key) ? this.factories.get(key) : this.tryGetInRoot(key);
+    }
+
+    protected tryGetSingletonInRoot<T>(key: SymbolType<T>): T {
+        return null;
     }
 
     protected tryGetInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
@@ -456,12 +473,19 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        return !Array.from(this.factories.keys()).some(tk => {
+        let next = !Array.from(this.singletons.keys()).some(tk => {
             if (isToken(tk)) {
-                return callbackfn(this.factories.get(tk), tk, this) === false;
+                return callbackfn(() => this.singletons.get(tk), tk, this) === false;
             }
             return false;
         });
+
+        return next ? !Array.from(this.factories.keys()).some(tk => {
+            if (!this.singletons.has(tk) && isToken(tk)) {
+                return callbackfn(this.factories.get(tk), tk, this) === false;
+            }
+            return false;
+        }) : false;
     }
 
     /**
@@ -516,6 +540,12 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                 return;
             }
             to.factories.set(key, fac);
+        });
+        from.singletons.forEach((val, key) => {
+            if (filter && !filter(key)) {
+                return;
+            }
+            to.singletons.set(key, val);
         });
         from.provideTypes.forEach((fac, key) => {
             if (filter && !filter(key)) {

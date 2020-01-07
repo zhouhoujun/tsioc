@@ -1,4 +1,4 @@
-import {  ActionInjectorToken, IocContainerToken } from '@tsdi/ioc';
+import {  ActionInjectorToken } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from './IContainer';
 import { ModuleLoader } from './services/ModuleLoader';
 import { InjectLifeScope } from './injectors/InjectLifeScope';
@@ -8,13 +8,13 @@ import { ResolveServicesScope } from './resolves/services/ResolveServicesScope';
 
 export function registerCores(container: IContainer) {
 
-    container.set(ContainerToken, container.getTokenFactory(IocContainerToken.toString()));
+    container.registerValue(ContainerToken, container);
     if (!container.has(ModuleLoader)) {
-        container.registerValue(ModuleLoader, new ModuleLoader());
+        container.registerType(ModuleLoader);
     }
 
     let actInjector = container.get(ActionInjectorToken);
-
+    console.log(actInjector);
     // register action
     actInjector.regAction(InjectLifeScope)
         .regAction(ResolveServiceScope)

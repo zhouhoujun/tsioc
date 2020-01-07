@@ -37,8 +37,16 @@ export class Injector extends BaseInjector implements IInjector {
         return this.getContainer().hasTokenKey(key);
     }
 
+    protected hasSingletonInRoot(key: SymbolType): boolean {
+        return this.getContainer().hasSingleton(key);
+    }
+
     protected tryGetInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
         return this.getContainer().getTokenFactory(key);
+    }
+
+    protected tryGetSingletonInRoot<T>(key: SymbolType<T>): T {
+        return this.getContainer().getSingleton(key);
     }
 
     /**

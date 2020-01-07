@@ -89,7 +89,7 @@ export * from './actions/DesignLifeScope';
 export * from './actions/RuntimeLifeScope';
 export * from './actions/DecoratorRegisterer';
 export * from './actions/DecoratorsRegisterer';
-export * from './actions/IocSingletonManager';
+// export * from './actions/IocSingletonManager';
 export * from './actions/ResolveLifeScope';
 
 export * from './actions/MethodAccessor';

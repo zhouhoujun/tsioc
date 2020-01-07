@@ -1,6 +1,5 @@
 import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { IocSingletonManager } from '../IocSingletonManager';
 
 /**
  * singleton action, to set the factory of Token as singleton.
@@ -12,9 +11,8 @@ import { IocSingletonManager } from '../IocSingletonManager';
 export class RegisterSingletionAction extends IocRuntimeAction {
     execute(ctx: RuntimeActionContext, next: () => void): void {
         if (ctx.type && ctx.target && ctx.targetReflect.singleton) {
-            let mgr = ctx.injector.getInstance(IocSingletonManager);
-            if (!mgr.has(ctx.type)) {
-                mgr.set(ctx.type, ctx.target);
+            if (!ctx.injector.hasSingleton(ctx.type)) {
+                ctx.injector.registerValue(ctx.type, ctx.target);
             }
         }
         next();

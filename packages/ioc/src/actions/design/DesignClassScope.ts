@@ -12,7 +12,6 @@ import { InjectableMetadata } from '../../metadatas/InjectableMetadata';
 import { IocDesignAction } from './IocDesignAction';
 import { InjectToken } from '../../InjectToken';
 import { ParamProviders } from '../../providers/types';
-import { IocSingletonManager } from '../IocSingletonManager';
 import { RuntimeActionContext } from '../runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from '../RuntimeLifeScope';
 import { CTX_TYPE_REGIN } from '../../context-tokens';
@@ -69,9 +68,8 @@ export class RegClassAction extends IocDesignAction {
         let singleton = ctx.targetReflect.singleton;
         let actInjector = this.actInjector;
         let factory = (...providers: ParamProviders[]) => {
-            let mgr = injector.getInstance(IocSingletonManager);
-            if (mgr.has(provide)) {
-                return mgr.get(provide);
+            if (injector.hasSingleton(provide)) {
+                return injector.getSingleton(provide);
             }
             let ctx = RuntimeActionContext.parse(injector, {
                 token: provide,
