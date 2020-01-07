@@ -46,7 +46,7 @@ export class UnitTestRunner extends Runnable<any, UnitTestContext> {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         let builder = injector.resolve(BuilderService);
-        await PromiseUtil.step(suites.filter(v => isClass(v) && this.context.reflects.hasMetadata(Suite, v)).map(s => () => builder.run({ type: s, injector: this.context.injector })));
+        await PromiseUtil.step(suites.filter(v => isClass(v) && this.context.reflects.hasMetadata(Suite, v)).map(s => () => builder.run({ type: s, injector: injector })));
         await injector.resolve(TestReport).report();
     }
 }
