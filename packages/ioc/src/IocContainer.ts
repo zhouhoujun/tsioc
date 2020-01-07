@@ -8,7 +8,7 @@ import { IocSingletonManager } from './actions/IocSingletonManager';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector, InjectorFactoryToken } from './IInjector';
-import { BaseInjector, isInjector } from './BaseInjector';
+import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { ProviderParser } from './providers/ProviderParser';
 import { InjectToken } from './InjectToken';
@@ -94,7 +94,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             if (isDefined(value)) {
                 if (isFunction(value)) {
                     if (isClass(value)) {
-                        this.registerType(injector, value, key, singleton);
+                        this.registerIn(injector, value, key, singleton);
                     } else {
                         classFactory = this.createCustomFactory(injector, key, value, singleton);
                     }
@@ -103,7 +103,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 }
 
             } else if (isClass(key)) {
-                this.registerType(injector, key, null, singleton);
+                this.registerIn(injector, key, null, singleton);
             }
 
             if (classFactory) {
@@ -137,7 +137,9 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * @param [provide] the class prodvider to.
      * @param [singleton]
      */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
+        return this.registerIn(this, type, provide, singleton);
+    }
     /**
      * register type class.
      * @param injector register in the injector.
@@ -145,24 +147,12 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * @param [provide] the class prodvider to.
      * @param [singleton]
      */
-    registerType<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
-    registerType<T>(arg1: any, arg2: any, arg3?: any, singleton?: boolean): this {
-        let injector: IInjector;
-        let type: Type<T>;
-        let provide: Token<T>;
-        if (isInjector(arg1)) {
-            injector = arg1;
-            type = arg2;
-            provide = arg3 || arg2;
-        } else {
-            injector = this;
-            type = arg1;
-            provide = arg2 || arg1;
-            singleton = arg3;
-        }
-
+    registerIn<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean) {
         // make sure class register once.
         if (this.getTypeReflects().hasRegister(type) || this.hasRegister(type)) {
+            if (provide) {
+                this.set(provide, (...providers) => injector.resolve(type));
+            }
             return this;
         }
 

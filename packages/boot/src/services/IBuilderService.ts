@@ -3,7 +3,6 @@ import { IContainer } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
 import { IBuildOption } from '../builder/IBuildOption';
-import { IStartup } from '../runnable/Startup';
 import { BuildContext } from '../builder/BuildContext';
 
 export interface BootSubAppOption<T extends BootContext> {

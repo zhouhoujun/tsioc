@@ -47,6 +47,8 @@ export interface ClassProvider extends IProvider {
      * used as arguments to the `useFactory` function.
      */
     deps?: any[];
+
+    singleton?: boolean;
 }
 
 /**

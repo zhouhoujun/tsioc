@@ -18,7 +18,7 @@ export class ActionInjector extends Injector implements IActionInjector {
         if (!provide && this.registerAction(type)) {;
             return this;
         }
-        this.getContainer().registerType(this, type, provide, singleton);
+        this.getContainer().registerIn(this, type, provide, singleton);
         return this;
     }
 

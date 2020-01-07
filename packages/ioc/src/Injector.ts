@@ -56,7 +56,7 @@ export class Injector extends BaseInjector implements IInjector {
     }
 
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        this.getContainer().registerType(this, type, provide, singleton);
+        this.getContainer().registerIn(this, type, provide, singleton);
         return this;
     }
 

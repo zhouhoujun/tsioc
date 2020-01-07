@@ -156,7 +156,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T>;
-
     /**
      *  get injector proxy
      */

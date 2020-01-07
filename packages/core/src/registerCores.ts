@@ -8,7 +8,7 @@ import { ResolveServicesScope } from './resolves/services/ResolveServicesScope';
 
 export function registerCores(container: IContainer) {
 
-    container.bindProvider(ContainerToken, IocContainerToken);
+    container.set(ContainerToken, container.getTokenFactory(IocContainerToken.toString()));
     if (!container.has(ModuleLoader)) {
         container.registerType(ModuleLoader);
     }

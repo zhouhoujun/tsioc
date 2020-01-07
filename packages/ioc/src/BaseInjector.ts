@@ -103,10 +103,12 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
 
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
-        this.factories.set(key, fac);
-        if (isClassType(provider)) {
+        if (isClass(provider)) {
             this.factories.set(provider, fac);
+            this.factories.set(key, (...providers) => this.getInstance(provider, ...providers));
             this.provideTypes.set(key, provider);
+        } else {
+            this.factories.set(key, fac);
         }
         return this;
     }
@@ -133,7 +135,6 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     abstract registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
 
-
     /**
      * bind provider.
      *
@@ -145,30 +146,18 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     bindProvider<T>(provide: Token<T>, provider: Token<T> | T): this {
         let provideKey = this.getTokenKey(provide);
-        let factory;
-        if (isClass(provider)) {
-            this.registerType(provider);
-            this.provideTypes.set(provideKey, provider);
-            factory = this.getTokenFactory(provider);
-        } else if (isToken(provider)) {
-            let key = this.getTokenKey(provider);
-            factory = this.getTokenFactory(key);
-            if (!factory) {
-                factory = (...providers: ParamProviders[]) => {
-                    return this.getInstance(key, ...providers);
-                };
-            }
-            let type = this.getTokenProvider(provider);
+        if (isToken(provider)) {
+            let ptk = this.getTokenKey(provider);
+            let type = this.getTokenProvider(ptk);
             if (isClass(type)) {
+                this.registerType(type);
                 this.provideTypes.set(provideKey, type);
             }
-        } else {
-            factory = () => {
-                return provider
-            };
-        }
+            this.factories.set(provideKey, (...providers) => this.getInstance(ptk, ...providers));
 
-        this.factories.set(provideKey, factory);
+        } else {
+            this.factories.set(provideKey, () => provider);
+        }
         return this;
     }
 
@@ -240,14 +229,14 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                         let val = pr.useValue;
                         this.factories.set(provide, () => val);
                     } else if (isClass(pr.useClass)) {
-                        this.bindProvider(provide, pr.useClass);
+                        this.registerType(pr.useClass, pr.provide, pr.singleton);
                     } else if (isFunction(pr.useFactory)) {
                         this.factories.set(provide, (...providers: ProviderTypes[]) => {
                             let args = [];
                             if (isArray(pr.deps) && pr.deps.length) {
                                 args = pr.deps.map(d => {
                                     if (isToken(d)) {
-                                        return this.get(d, ...providers);
+                                        return this.resolve(d, ...providers);
                                     } else {
                                         return d;
                                     }
@@ -256,8 +245,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
                             return pr.useFactory.apply(pr, args.concat(providers));
                         });
                     } else if (isToken(pr.useExisting)) {
-                        let fac = this.getTokenFactory(this.getTokenKey(pr.useExisting));
-                        this.factories.set(provide, fac);
+                        this.factories.set(provide, (...providers) => this.resolve(pr.useExisting, ...providers));
                     }
                 }
             }
