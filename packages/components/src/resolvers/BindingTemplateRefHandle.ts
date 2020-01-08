@@ -18,11 +18,11 @@ export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?
         if (ref && ref.propRefChildBindings) {
             let dpr = actInjector.getInstance(DecoratorProvider);
             if (dpr.has(ctx.decorator, RefSelector)) {
-                // todo ref chile view
+                // todo ref child view
                 let refSelector = dpr.resolve(ctx.decorator, RefSelector);
                 let cref = ctx.get(CTX_COMPONENT_REF);
                 ref.propRefChildBindings.forEach(b => {
-                    let result = refSelector.select(cref.nodeRef, b.bindingName || b.name);
+                    let result = refSelector.select(cref, b.bindingName || b.name);
                     if (result) {
                         ctx.target[b.name] = result;
                     }

@@ -201,6 +201,7 @@ class Columns {
 }
 
 @DIModule({
+    regIn: 'root',
     imports: [
         ComponentsModule,
         ElementModule,
@@ -316,7 +317,7 @@ export class CTest {
         expect(comp instanceof Components).toBeTruthy();
         expect(comp.name).toEqual('test111');
         expect(comp.address).toEqual('cd111');
-        // console.log('comp:', comp);
+        console.log('comp:', comp);
         expect(comp.cmp1 instanceof Component1).toBeTruthy();
         expect(comp.cmp2 instanceof Component2).toBeTruthy();
         expect(comp.cmp1.name).toEqual('test111');

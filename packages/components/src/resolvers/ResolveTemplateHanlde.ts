@@ -1,4 +1,4 @@
-import { isNullOrUndefined, DecoratorProvider } from '@tsdi/ioc';
+import { isNullOrUndefined, DecoratorProvider, isArray } from '@tsdi/ioc';
 import { BuildContext } from '@tsdi/boot';
 import { CTX_TEMPLATE_REF, CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateContext } from '../parses/TemplateContext';
@@ -32,7 +32,7 @@ export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: ()
             let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
             pCtx.set(CTX_TEMPLATE_REF, pCtx.value);
             ctx.set(CTX_COMPONENT, ctx.target);
-            ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx, pCtx.value));
+            ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx, ...(isArray(pCtx.value) ? pCtx.value : [pCtx.value])));
         }
     }
     await next();

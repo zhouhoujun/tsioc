@@ -9,7 +9,6 @@ export const BindingOutputHandle = async function (ctx: BuildContext, next: () =
     if (ctx.target) {
         let ref = ctx.targetReflect as IComponentReflect;
         if (ref && ref.propOutBindings) {
-            // let actInjector = ctx.reflects.getActionInjector();
             let options = ctx.getOptions();
             await Promise.all(Array.from(ref.propOutBindings.keys()).map(async n => {
                 let binding = ref.propOutBindings.get(n);

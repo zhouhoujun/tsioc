@@ -47,7 +47,7 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
 
 
 export const CTX_PARENT_CONTEXT = new InjectToken<AnnoationContext>('CTX_PARENT_CONTEXT');
-export const CTX_SUB_CONTEXT = new InjectToken<AnnoationContext[]>('CTX_PARENT_CONTEXT');
+export const CTX_SUB_CONTEXT = new InjectToken<AnnoationContext[]>('CTX_SUB_CONTEXT');
 /**
  * annoation context.
  *
@@ -94,7 +94,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     }
 
     addChild(contex: AnnoationContext) {
-        let chiledren = this.getChildren() || [];
+        let chiledren = this.getChildren();
         chiledren.push(contex);
         this.set(CTX_SUB_CONTEXT, chiledren);
     }
@@ -112,7 +112,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     }
 
     getChildren() {
-        return this.get(CTX_SUB_CONTEXT);
+        return this.get(CTX_SUB_CONTEXT) || [];
     }
 
 

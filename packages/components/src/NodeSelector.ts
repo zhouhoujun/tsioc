@@ -1,4 +1,4 @@
-import { Express, isFunction, isBoolean } from '@tsdi/ioc';
+import { Express, isFunction, isBoolean, isArray } from '@tsdi/ioc';
 import { NodeRef } from './ComponentRef';
 
 
@@ -161,6 +161,8 @@ export class NodeSelector<T = any> {
         if (roots.some(n => {
             if (n instanceof NodeRef) {
                 return this.currNode(n, express);
+            } else if (isArray(n)) {
+                return n.some(l => express(l) === false);
             }
             return express(n as T) === false
         })) {

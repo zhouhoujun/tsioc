@@ -2,7 +2,7 @@ import { Abstract, Type, isClass, isString, Inject, lang, Token, TypeReflectsTok
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import { IComponentReflect } from './IComponentReflect';
-import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, IComponentRef } from './ComponentRef';
+import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, IComponentRef, ComponentRef } from './ComponentRef';
 
 
 
@@ -57,10 +57,7 @@ export abstract class RefSelector {
         } else {
             selFunc = selector;
         }
-        if (selFunc(element)) {
-            return element;
-        }
-        let cmpSelector = this.createNodeSelector(element);
+        let cmpSelector = element instanceof ComponentRef ? element.getNodeSelector() : this.createNodeSelector(element);
         if (cmpSelector) {
             return cmpSelector.find(e => selFunc(e));
         }
