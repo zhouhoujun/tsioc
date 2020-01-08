@@ -62,6 +62,9 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         this._injector = injector;
     }
 
+    /**
+     * raise injector of this context.
+     */
     get injector(): IInjector {
         return this._injector;
     }

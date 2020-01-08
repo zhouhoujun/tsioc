@@ -2,7 +2,7 @@ import { DIModule, BootApplication, BootContext, BuilderService } from '@tsdi/bo
 import { Suite, Test, Before } from '@tsdi/unit';
 import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode } from '../src';
 import expect = require('expect');
-import { Inject, Injectable, Autorun } from '@tsdi/ioc';
+import { Inject, Injectable, Autorun, IInjector, INJECTOR } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 
 
@@ -65,12 +65,12 @@ class CustomeService {
     @Inject()
     builder: ComponentBuilder;
 
-    @Inject(ContainerToken)
-    container: IContainer;
+    @Inject(INJECTOR)
+    injector: IInjector;
 
     createComponent3() {
         // console.log(this.container.resolve(BuildHandleRegisterer));
-        return this.builder.resolveTemplate({ template: { element: 'selector3', name: 'test3', address: 'address3', phone: '+86177000000010' } })
+        return this.builder.resolveTemplate({ template: { element: 'selector3', name: 'test3', address: 'address3', phone: '+86177000000010' }, injector: this.injector })
     }
 }
 
@@ -235,7 +235,7 @@ export class CTest {
     @Test('can resolve component template')
     async test2() {
         let container = this.ctx.getContainer();
-        let comp1 = await container.get(ComponentBuilder).resolveTemplate({ template: { element: 'selector1', name: 'test1' } });
+        let comp1 = await container.get(ComponentBuilder).resolveTemplate({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector });
         let comp11 = await container.get(BuilderService).resolve({ type: Component1, template: { name: 'test1' } });
         console.log('comp1:', comp1);
         console.log('comp11:', comp11);
@@ -259,8 +259,7 @@ export class CTest {
 
     @Test('can resolve component template in sub module')
     async test3() {
-        let container = this.ctx.getContainer();
-        let service = container.get(CustomeService);
+        let service = this.ctx.injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let comp3 = await service.createComponent3() as Component3;
         console.log('comp3:', comp3);
@@ -281,18 +280,18 @@ export class CTest {
     @Test('can resolve component template in sub module by sub module')
     async test5() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getContainer();
+        let injector = ctx.injector;
         // console.log(container);
         console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
-        let service = container.get(CustomeService);
+        let service = injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let comp3 = await service.createComponent3() as Component3;
         console.log('comp3 :', comp3);
         expect(comp3 instanceof Component3).toBeTruthy();
         expect(comp3.phone).toEqual('+86177000000010');
-        console.log(container.get(ComponentBuilder).serialize(comp3))
+        console.log(injector.get(ComponentBuilder).serialize(comp3))
     }
 
     @Test('can boot sub module component')
@@ -309,11 +308,11 @@ export class CTest {
     @Test('can get refchild')
     async test7() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getContainer();
+        let injector = ctx.injector;
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
-        let comp = await container.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' } }) as Components;
+        let comp = await injector.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as Components;
         expect(comp instanceof Components).toBeTruthy();
         expect(comp.name).toEqual('test111');
         expect(comp.address).toEqual('cd111');
@@ -323,7 +322,7 @@ export class CTest {
         expect(comp.cmp1.name).toEqual('test111');
         expect(comp.cmp2.name).toEqual('test111');
         expect(comp.cmp2.address).toEqual('cd111');
-        let json = container.get(ComponentBuilder).serialize(comp);
+        let json = injector.get(ComponentBuilder).serialize(comp);
         console.log(json);
         expect(json.element).toEqual('comp');
         expect(json.name).toEqual('test111');
@@ -333,15 +332,15 @@ export class CTest {
     @Test('can get refchild, two way binding name')
     async test8() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getContainer();
+        let injector = ctx.injector;
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
-        let comp = await container.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' } }) as Components;
+        let comp = await injector.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as Components;
         expect(comp instanceof Components).toBeTruthy();
         expect(comp.name).toEqual('test111');
         expect(comp.address).toEqual('cd111');
-        // console.log('comp:', comp);
+        console.log('comp:', comp);
         expect(comp.cmp1 instanceof Component1).toBeTruthy();
         expect(comp.cmp2 instanceof Component2).toBeTruthy();
         expect(comp.cmp1.name).toEqual('test111');
@@ -357,8 +356,9 @@ export class CTest {
 
     @Test('can binding sub field')
     async test9() {
-        let container = this.ctx.getContainer();
-        let comp = await container.get(ComponentBuilder).resolveTemplate({
+        let injector = this.ctx.injector;
+        let comp = await injector.get(ComponentBuilder).resolveTemplate({
+            injector: injector,
             template: {
                 element: 'obj-comp',
                 options: { name: 'testobject', address: 'chengdu' }

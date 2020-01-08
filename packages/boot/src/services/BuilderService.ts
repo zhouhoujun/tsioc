@@ -54,7 +54,11 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             injector = this.reflects.getInjector(target);
             options = { type: target };
         } else {
-            injector = target.injector || this.container;
+            injector = target.injector;
+            if (!injector) {
+                let md = target.type || target.module;
+                injector = md ? this.reflects.getInjector(md) : this.container;
+            };
             options = target;
         }
         let rctx = BuildContext.parse(injector, options);
@@ -161,7 +165,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             if (isClassType(target)) {
                 ctx.setOptions({ type: md, injector: injector });
             } else {
-                ctx.setOptions({...target, type: md, injector: injector})
+                ctx.setOptions({ ...target, type: md, injector: injector })
             }
         }
         ctx.set(CTX_APP_ENVARGS, args);

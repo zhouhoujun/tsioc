@@ -34,26 +34,24 @@ export class TemplateParseScope extends TemplatesHandle implements IActionSetup 
  * @class ElementsTemplateHandle
  * @extends {TemplateHandle}
  */
-export class ElementsTemplateHandle extends TemplateHandle {
-
-    async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let options = ctx.getOptions();
-        if (isArray(options.template)) {
-            ctx.value = await Promise.all(options.template.map(async tp => {
-                let subCtx = TemplateContext.parse(ctx.injector, {
-                    scope: options.scope,
-                    template: tp,
-                    decorator: ctx.decorator
-                });
-                await this.actInjector.getInstance(TemplateParseScope).execute(subCtx);
-                return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
-            }));
-        }
-
-        if (isNullOrUndefined(ctx.value)) {
-            await next();
-        }
-
+export const ElementsTemplateHandle = async function (ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
+    let options = ctx.getOptions();
+    if (isArray(options.template)) {
+        let actInjector = ctx.reflects.getActionInjector();
+        ctx.value = await Promise.all(options.template.map(async tp => {
+            let subCtx = TemplateContext.parse(ctx.injector, {
+                scope: options.scope,
+                template: tp,
+                decorator: ctx.decorator
+            });
+            await actInjector.getInstance(TemplateParseScope).execute(subCtx);
+            return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
+        }));
     }
-}
+
+    if (isNullOrUndefined(ctx.value)) {
+        await next();
+    }
+
+};
 

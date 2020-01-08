@@ -1,6 +1,6 @@
-import { IActionSetup } from '@tsdi/ioc';
+import { IActionSetup, PromiseUtil } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { TemplatesHandle, TemplateHandle } from './TemplateHandle';
+import { TemplatesHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
 
 
@@ -31,16 +31,15 @@ export class TranslateSelectorScope extends TemplatesHandle implements IActionSe
  * @class TranslateElementHandle
  * @extends {TemplateHandle}
  */
-export class TranslateElementHandle extends TemplateHandle {
-    async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let reg = this.actInjector.getInstance(StartupDecoratorRegisterer).getRegisterer(StartupScopes.TranslateTemplate);
-        if (reg.has(ctx.decorator)) {
-            await this.execFuncs(ctx, reg.getFuncs(this.actInjector, ctx.decorator));
-        }
-
-        if (!ctx.selector) {
-            await next();
-        }
+export const TranslateElementHandle = async function (ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
+    let actInjector = ctx.reflects.getActionInjector();
+    let reg = actInjector.getInstance(StartupDecoratorRegisterer).getRegisterer(StartupScopes.TranslateTemplate);
+    if (reg.has(ctx.decorator)) {
+        await PromiseUtil.runInChain(reg.getFuncs(actInjector, ctx.decorator), ctx);
     }
-}
+
+    if (!ctx.selector) {
+        await next();
+    }
+};
 
