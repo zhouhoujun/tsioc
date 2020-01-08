@@ -4,7 +4,6 @@ import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
-// import { IocSingletonManager } from './actions/IocSingletonManager';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector, InjectorFactoryToken } from './IInjector';

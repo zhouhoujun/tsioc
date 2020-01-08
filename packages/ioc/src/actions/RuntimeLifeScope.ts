@@ -3,7 +3,7 @@ import { InitReflectAction } from './InitReflectAction';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
 import { RuntimeDecoratorAction } from './runtime/RuntimeDecoratorAction';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
-import { GetSingletionAction } from './runtime/GetSingletionAction';
+// import { GetSingletionAction } from './runtime/GetSingletionAction';
 import { IocGetCacheAction } from './runtime/IocGetCacheAction';
 import { ConstructorArgsAction } from './runtime/ConstructorArgsAction';
 import { IocBeforeConstructorScope } from './runtime/IocBeforeConstructorScope';
@@ -34,7 +34,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             .regAction(RuntimeParamScope);
 
         this.use(InitReflectAction)
-            .use(GetSingletionAction)
+            // .use(GetSingletionAction)
             .use(IocGetCacheAction)
             .use(ConstructorArgsAction)
             .use(IocBeforeConstructorScope)

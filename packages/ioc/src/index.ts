@@ -126,7 +126,6 @@ export * from './actions/runtime/BindDeignParamTypeAction';
 export * from './actions/runtime/BindParameterTypeAction';
 export * from './actions/runtime/InjectPropertyAction';
 export * from './actions/runtime/MethodAutorunAction';
-export * from './actions/runtime/GetSingletionAction';
 export * from './actions/runtime/RegisterSingletionAction';
 export * from './actions/runtime/IocGetCacheAction';
 export * from './actions/runtime/IocSetCacheAction';
