@@ -10,8 +10,8 @@ import { IActionSetup } from '../Action';
 export class AnnoationScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
     setup() {
-        this.actInjector
-            .regAction(IocAutorunAction);
+        // this.actInjector
+        //     .regAction(IocAutorunAction);
 
         this.actInjector.getInstance(DesignRegisterer)
             .register(Autorun, DecoratorScopes.AfterAnnoation, IocAutorunAction)

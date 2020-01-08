@@ -31,9 +31,9 @@ export enum DecoratorScopes {
     Inject = 'Inject'
 }
 
-export interface IScopeAction {
+export interface IScopeAction<TAction extends Function = lang.Action> {
     scope: string | DecoratorScopes,
-    action: Type<Action> | Type<Action>[]
+    action: TAction | Type<Action> | (TAction | Type<Action>)[]
 }
 
 /**
@@ -49,7 +49,7 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
         this.map = new Map();
     }
 
-    register(decorator: string | Function, ...actions: IScopeAction[]): this;
+    register(decorator: string | Function, ...actions: IScopeAction<TAction>[]): this;
     /**
      * register decorator actions.
      *
@@ -57,14 +57,14 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
      * @param {...T[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, scope: string | DecoratorScopes, ...actions: Type<Action>[]): this;
+    register(decorator: string | Function, scope: string | DecoratorScopes, ...actions: (TAction | Type<Action>)[]): this;
     register(decorator: string | Function, scope?: any, ...actions): this {
         if (isString(scope)) {
             this.getRegisterer(scope)
                 .register(decorator, ...actions);
         } else {
             actions.unshift(scope);
-            let scopes: IScopeAction[] = actions as IScopeAction[];
+            let scopes: IScopeAction<TAction>[] = actions as IScopeAction<TAction>[];
             scopes.forEach(s => {
                 this.getRegisterer(s.scope)
                     .register(decorator, ...(isArray(s.action) ? s.action : [s.action]));
@@ -74,7 +74,7 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
     }
 
 
-    has(decorator: string | Function, scope: string | DecoratorScopes, action?: Type<Action>): boolean {
+    has(decorator: string | Function, scope: string | DecoratorScopes, action?: TAction | Type<Action>): boolean {
         return this.getRegisterer(scope).has(decorator, action);
     }
 

@@ -6,7 +6,6 @@ import { clsUglifyExp, clsStartExp } from './exps';
 declare let process: any;
 
 
-
 const toString = Object.prototype.toString;
 /**
  * lang utils
@@ -135,7 +134,7 @@ export namespace lang {
         let elm = isFunction(el) ? list.find(el) : el;
         const index = list.indexOf(elm);
         if (index > -1) {
-           return list.splice(index, 1);
+            return list.splice(index, 1);
         }
         return null;
     }
@@ -177,7 +176,7 @@ export namespace lang {
         if (isFunction(target.getClassAnnations)) {
             return true;
         }
-        return target.classAnnations && isString(target.classAnnations.name) && target.classAnnations.name.length > 0;
+        return target.classAnnations && target.classAnnations.name && isString(target.classAnnations.name);
     }
 
 
@@ -357,7 +356,7 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return classCheck(target, tg => Reflect.getOwnMetadataKeys(tg).length > 0, tg => Reflect.hasOwnMetadata(AbstractDecor, tg))
+    return classCheck(target, tg => Reflect.hasOwnMetadata(AbstractDecor, tg))
 }
 
 /**
@@ -368,44 +367,43 @@ export function isClass(target: any): target is Type {
  * @returns {target is ClassType}
  */
 export function isClassType(target: any): target is ClassType {
-    return classCheck(target, tg => Reflect.getOwnMetadataKeys(tg).length > 0);
+    return classCheck(target);
 }
 
 
-function classCheck(target: any, preChecks?: (target: Function) => boolean, exclude?: (target: Function) => boolean): boolean {
+function classCheck(target: any, exclude?: (target: Function) => boolean): boolean {
     if (!isFunction(target)) {
-        return false;
-    }
-    if (isPrimitiveType(target)) {
         return false;
     }
     if (exclude && exclude(target)) {
         return false;
     }
-    if (preChecks && preChecks(target)) {
+
+    if (lang.hasClassAnnations(target)) {
         return true;
     }
 
-    if (target.prototype) {
-        if (!target.name) {
-            return false;
-        }
-        if (lang.hasClassAnnations(target)) {
-            return true;
-        }
-        if (clsUglifyExp.test(target.name) || !clsStartExp.test(target.name)) {
-            return false;
-        }
-
-        try {
-            target.arguments && target.caller;
-            return false;
-        } catch (e) {
-            return true;
-        }
+    if (Reflect.getOwnMetadataKeys(target).length) {
+        return true;
     }
 
-    return false;
+    if (isPrimitiveType(target)) {
+        return false;
+    }
+
+    if (!target.name || !target.prototype) {
+        return false;
+    }
+
+    if (clsUglifyExp.test(target.name) || !clsStartExp.test(target.name)) {
+        return false;
+    }
+
+    if (Object.getOwnPropertyNames(target.prototype).length > 1) {
+        return true;
+    }
+
+    return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
 }
 
 /**

@@ -145,7 +145,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         // make sure class register once.
         if (this.getTypeReflects().hasRegister(type) || this.hasRegister(type)) {
             if (provide) {
-                this.set(provide, (...providers) => injector.resolve(type));
+                this.set(provide, (...providers) => injector.resolve(type, ...providers));
             }
             return this;
         }

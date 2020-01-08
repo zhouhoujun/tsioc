@@ -1,16 +1,12 @@
 import { DecoratorScopes, DesignRegisterer, CTX_CURR_DECOR, ActionInjectorToken } from '@tsdi/ioc';
-import { InjectAction } from './InjectAction';
 import { InjectActionContext } from './InjectActionContext';
 
-export class DecoratorInjectAction extends InjectAction {
-    execute(ctx: InjectActionContext, next?: () => void): void {
-        if (ctx.has(CTX_CURR_DECOR)) {
-            let register = ctx.get(ActionInjectorToken);
-            let decRgr = register.getInstance(DesignRegisterer).getRegisterer(DecoratorScopes.Inject);
-            let actions = decRgr.getFuncs(register, ctx.get(CTX_CURR_DECOR));
-            this.execFuncs(ctx, actions, next);
-        } else {
-            next && next();
-        }
+export const DecoratorInjectAction = function (ctx: InjectActionContext, next?: () => void): void {
+    if (ctx.has(CTX_CURR_DECOR)) {
+        let register = ctx.get(ActionInjectorToken);
+        let decRgr = register.getInstance(DesignRegisterer).getRegisterer(DecoratorScopes.Inject);
+        decRgr.execAction(register, ctx.get(CTX_CURR_DECOR), ctx, next);
+    } else {
+        next && next();
     }
-}
+};

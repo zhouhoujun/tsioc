@@ -1,5 +1,5 @@
 import { isFunction } from '@tsdi/ioc';
-import { BuildContext, ResolveHandle } from '@tsdi/boot';
+import { BuildContext } from '@tsdi/boot';
 import { AfterInit } from '../ComponentLifecycle';
 
 /**
@@ -9,16 +9,14 @@ import { AfterInit } from '../ComponentLifecycle';
  * @class ModuleAfterInitHandle
  * @extends {ResolveHandle}
  */
-export class ModuleAfterInitHandle extends ResolveHandle {
-    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+export const ModuleAfterInitHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
 
-        let target = ctx.target as AfterInit;
-        if (target && isFunction(target.onAfterInit)) {
-            await target.onAfterInit();
-        }
-
-        if (next) {
-            await next();
-        }
+    let target = ctx.target as AfterInit;
+    if (target && isFunction(target.onAfterInit)) {
+        await target.onAfterInit();
     }
-}
+
+    if (next) {
+        await next();
+    }
+};

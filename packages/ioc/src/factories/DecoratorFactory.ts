@@ -11,10 +11,9 @@ import { ClassMetadata } from '../metadatas/ClassMetadata';
 import { MethodMetadata } from '../metadatas/MethodMetadata';
 import { PropertyMetadata } from '../metadatas/PropertyMetadata';
 import { ParameterMetadata } from '../metadatas/ParameterMetadata';
-import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES } from '../utils/exps';
+import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
 
 
-export const ParamerterName = 'paramerter_names';
 
 /**
  * extend metadata.

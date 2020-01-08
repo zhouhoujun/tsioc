@@ -1,4 +1,3 @@
-import { IocRuntimeAction } from './IocRuntimeAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { CTX_ARGS } from '../../context-tokens';
 
@@ -10,11 +9,10 @@ import { CTX_ARGS } from '../../context-tokens';
  * @class CreateInstanceAction
  * @extends {IocRuntimeAction}
  */
-export class CreateInstanceAction extends IocRuntimeAction {
-    execute(ctx: RuntimeActionContext, next: () => void): void {
-        if (!ctx.target) {
-            ctx.target = new ctx.type(...ctx.get(CTX_ARGS));
-        }
-        next();
+export const CreateInstanceAction = function (ctx: RuntimeActionContext, next: () => void): void {
+    if (!ctx.target) {
+        ctx.target = new ctx.type(...ctx.get(CTX_ARGS));
     }
-}
+    next();
+};
+

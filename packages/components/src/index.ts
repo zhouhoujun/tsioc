@@ -43,7 +43,7 @@ export * from './resolvers/ModuleInitHandle';
 export * from './resolvers/ModuleAfterInitHandle';
 export * from './resolvers/ModuleBeforeInitHandle';
 export * from './resolvers/ModuleAfterContentInitHandle';
-export * from './resolvers/ResolveTemplateScope';
+export * from './resolvers/ResolveTemplateHanlde';
 export * from './resolvers/BootTemplateHandle';
 
 

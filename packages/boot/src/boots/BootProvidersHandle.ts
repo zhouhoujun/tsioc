@@ -1,4 +1,3 @@
-import { BootHandle } from './BootHandle';
 import { BootContext } from '../BootContext';
 
 /**
@@ -8,11 +7,9 @@ import { BootContext } from '../BootContext';
  * @class BootProvidersHandle
  * @extends {BootHandle}
  */
-export class BootProvidersHandle extends BootHandle {
-    async execute(ctx: BootContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.providers.size) {
-            ctx.injector.copy(ctx.providers);
-        }
-        await next();
+export const BootProvidersHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
+    if (ctx.providers.size) {
+        ctx.injector.copy(ctx.providers);
     }
-}
+    await next();
+};

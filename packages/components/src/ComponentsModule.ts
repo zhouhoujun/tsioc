@@ -26,7 +26,7 @@ import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
 import { ModuleBeforeInitHandle } from './resolvers/ModuleBeforeInitHandle';
 import { BindingPropertyHandle } from './resolvers/BindingPropertyHandle';
 import { ModuleAfterInitHandle } from './resolvers/ModuleAfterInitHandle';
-import { ResolveTemplateScope } from './resolvers/ResolveTemplateScope';
+import { ResolveTemplateHanlde } from './resolvers/ResolveTemplateHanlde';
 import { ValifyTeamplateHandle } from './resolvers/ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './resolvers/BindingTemplateRefHandle';
 import { ModuleAfterContentInitHandle } from './resolvers/ModuleAfterContentInitHandle';
@@ -49,9 +49,6 @@ export class ComponentsModule {
             .registerType(ComponentAnnotationCloner)
             .registerType(AstResolver);
         let actInjector = container.get(ActionInjectorToken);
-
-        actInjector.regAction(ComponentRegisterAction)
-            .regAction(BindingPropertyTypeAction);
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Input, {
@@ -91,7 +88,7 @@ export class ComponentsModule {
             .use(BindingPropertyHandle)
             .use(ModuleInitHandle)
             .use(ModuleAfterInitHandle)
-            .use(ResolveTemplateScope)
+            .use(ResolveTemplateHanlde)
             .use(ValifyTeamplateHandle)
             .use(BindingTemplateRefHandle)
             .use(BindingOutputHandle)

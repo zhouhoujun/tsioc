@@ -10,7 +10,6 @@ import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, INJECTOR, PROVIDERS, IProviders } from '../IInjector';
 import { isInjector } from '../BaseInjector';
 import { ActionContextOption, Action } from './Action';
-import { InjectorProvider } from '../Injector';
 
 /**
  * ioc action context.

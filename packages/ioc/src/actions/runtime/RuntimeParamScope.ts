@@ -20,7 +20,8 @@ import { IActionSetup } from '../Action';
 export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     execute(ctx: RuntimeActionContext, next?: () => void): void {
         if (!ctx.targetReflect) {
-            this.actInjector.getInstance(InitReflectAction).execute(ctx, () => 0);
+            InitReflectAction(ctx);
+            // this.actInjector.getInstance(InitReflectAction).execute(ctx);
         }
         super.execute(ctx, next);
     }

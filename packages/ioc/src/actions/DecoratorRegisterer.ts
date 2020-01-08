@@ -11,7 +11,7 @@ import { Type } from '../types';
  * @extends {IocCoreService}
  */
 export abstract class DecoratorRegisterer<TAction extends Function = lang.Action> extends IocCoreService {
-    protected actionMap: Map<string, Type<Action>[]>;
+    protected actionMap: Map<string, (TAction | Type<Action>)[]>;
     protected funcs: Map<string, TAction[]>;
     constructor() {
         super();
@@ -23,7 +23,7 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
         return this.actionMap.size;
     }
 
-    getActions(): Map<string, Type<Action>[]> {
+    getActions(): Map<string, (TAction | Type<Action>)[]> {
         return this.actionMap;
     }
 
@@ -38,7 +38,7 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
      * @param {...Type<Action>[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, ...actions: Type<Action>[]): this {
+    register(decorator: string | Function, ...actions: (TAction | Type<Action>)[]): this {
         this.registing(decorator, actions, (regs, dec) => {
             regs.push(...actions);
             this.actionMap.set(dec, regs);
@@ -50,12 +50,12 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
      * register decorator actions before the action.
      *
      * @param {(string | Function)} decorator
-     * @param {Type<Action>} before
-     * @param {...Type<Action>[]} actions
+     * @param {TAction | Type<Action>} before
+     * @param {...(TAction | Type<Action>)[]} actions
      * @returns {this}
      * @memberof DecoratorRegisterer
      */
-    registerBefore(decorator: string | Function, before: Type<Action>, ...actions: Type<Action>[]): this {
+    registerBefore(decorator: string | Function, before: TAction | Type<Action>, ...actions: (TAction | Type<Action>)[]): this {
         this.registing(decorator, actions, (regs, dec) => {
             if (before && regs.indexOf(before) > 0) {
                 regs.splice(regs.indexOf(before), 0, ...actions);
@@ -76,7 +76,7 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
      * @returns {this}
      * @memberof DecoratorRegisterer
      */
-    registerAfter(decorator: string | Function, after: Type<Action>, ...actions: Type<Action>[]): this {
+    registerAfter(decorator: string | Function, after: TAction | Type<Action>, ...actions: (TAction | Type<Action>)[]): this {
         this.registing(decorator, actions, (regs, dec) => {
             if (after && regs.indexOf(after) >= 0) {
                 regs.splice(regs.indexOf(after) + 1, 0, ...actions);
@@ -88,7 +88,7 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
         return this;
     }
 
-    protected registing(decorator: string | Function, actions: Type<Action>[], reg: (regs: Type<Action>[], dec: string) => void) {
+    protected registing(decorator: string | Function, actions: (TAction | Type<Action>)[], reg: (regs: (TAction | Type<Action>)[], dec: string) => void) {
         let dec = this.getKey(decorator);
         this.funcs.delete(dec);
         if (this.actionMap.has(dec)) {
@@ -98,7 +98,7 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
         }
     }
 
-    has(decorator: string | Function, action?: Type<Action>): boolean {
+    has(decorator: string | Function, action?: TAction | Type<Action>): boolean {
         let dec = this.getKey(decorator);
         let has = this.actionMap.has(dec);
         if (has && action) {
@@ -122,6 +122,11 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
             this.funcs.set(dec, this.get(dec).map(a => register.getAction<TAction>(a)).filter(c => c));
         }
         return this.funcs.get(dec) || [];
+    }
+
+    execAction<T>(register: IActionInjector, decorator: string | Function, ctx: T, next?: any, exector?: Function) {
+        let funcs = this.getFuncs(register, decorator) as any;
+        return funcs.length && (exector ? exector(funcs, ctx, next) : lang.execAction(funcs, ctx, next));
     }
 
 }

@@ -7,9 +7,8 @@ import { Injectable } from '../../decorators/Injectable';
 import { Singleton } from '../../decorators/Singleton';
 import { Providers } from '../../decorators/Providers';
 import { Refs } from '../../decorators/Refs';
-import { IActionSetup, IActionInjector } from '../Action';
+import { IActionSetup } from '../Action';
 import { InjectableMetadata } from '../../metadatas/InjectableMetadata';
-import { IocDesignAction } from './IocDesignAction';
 import { InjectToken } from '../../InjectToken';
 import { ParamProviders } from '../../providers/types';
 import { RuntimeActionContext } from '../runtime/RuntimeActionContext';
@@ -19,8 +18,8 @@ import { CTX_TYPE_REGIN } from '../../context-tokens';
 export class DesignClassScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
     setup() {
-        this.actInjector
-            .regAction(BindProviderAction);
+        // this.actInjector
+        //     .regAction(BindProviderAction);
 
         this.actInjector.getInstance(DesignRegisterer)
             .register(Injectable, DecoratorScopes.Class, BindProviderAction)
@@ -35,63 +34,52 @@ export class DesignClassScope extends IocRegisterScope<DesignActionContext> impl
     }
 }
 
-export class AnnoationRegInAction extends IocDesignAction {
-    execute(ctx: DesignActionContext, next: () => void): void {
-        let regIn: string;
-        ctx.targetReflect.decorators.classDecors.some(d => {
-            if (ctx.reflects.hasMetadata(d, ctx.type)) {
-                let meta = ctx.reflects.getMetadata<InjectableMetadata>(d, ctx.type).find(m => m.regIn);
-                if (meta) {
-                    regIn = meta.regIn;
-                }
+export const AnnoationRegInAction = function (ctx: DesignActionContext, next: () => void): void {
+    let regIn: string;
+    ctx.targetReflect.decorators.classDecors.some(d => {
+        if (ctx.reflects.hasMetadata(d, ctx.type)) {
+            let meta = ctx.reflects.getMetadata<InjectableMetadata>(d, ctx.type).find(m => m.regIn);
+            if (meta) {
+                regIn = meta.regIn;
             }
-            return regIn;
+        }
+        return regIn;
+    });
+    if (regIn === 'root') {
+        ctx.set(CTX_TYPE_REGIN, regIn);
+        ctx.set(InjectToken, ctx.getContainer());
+    }
+    next();
+};
+
+
+export const RegClassAction = function (ctx: DesignActionContext, next: () => void): void {
+    let injector = ctx.injector;
+    let provide = injector.getTokenKey(ctx.token);
+    let type = ctx.type;
+    let singleton = ctx.targetReflect.singleton;
+    let actInjector = ctx.reflects.getActionInjector();
+    let factory = (...providers: ParamProviders[]) => {
+        let ctx = RuntimeActionContext.parse(injector, {
+            token: provide,
+            type: type,
+            singleton: singleton,
+            providers: providers
         });
-        if (regIn === 'root') {
-            ctx.set(CTX_TYPE_REGIN, regIn);
-            ctx.set(InjectToken, ctx.getContainer());
-        }
-        next();
-    }
-}
+        actInjector.getInstance(RuntimeLifeScope).register(ctx);
+        return ctx.target;
+    };
 
-export class RegClassAction extends IocDesignAction {
-
-    constructor(private actInjector: IActionInjector) {
-        super()
+    if (provide && provide !== type) {
+        injector.set(provide, factory, type);
+    } else {
+        injector.set(type, factory);
     }
 
-    execute(ctx: DesignActionContext, next: () => void): void {
-        let injector = ctx.injector;
-        let provide = injector.getTokenKey(ctx.token);
-        let type = ctx.type;
-        let singleton = ctx.targetReflect.singleton;
-        let actInjector = this.actInjector;
-        let factory = (...providers: ParamProviders[]) => {
-            if (injector.hasSingleton(provide)) {
-                return injector.getSingleton(provide);
-            }
-            let ctx = RuntimeActionContext.parse(injector, {
-                token: provide,
-                type: type,
-                singleton: singleton,
-                providers: providers
-            });
-            actInjector.getInstance(RuntimeLifeScope).register(ctx);
-            return ctx.target;
-        };
+    ctx.targetReflect.getInjector = () => injector;
 
-        if (provide && provide !== type) {
-            injector.set(provide, factory, type);
-        } else {
-            injector.set(type, factory);
-        }
-
-        ctx.targetReflect.getInjector = () => injector;
-
-        next();
-    }
-}
+    next();
+};
 
 
 export class BeforeAnnoationDecoratorScope extends DesignDecoratorScope {

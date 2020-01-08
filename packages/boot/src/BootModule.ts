@@ -52,9 +52,9 @@ export class BootModule {
         actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .regAction(AnnoationRegisterScope)
             .regAction(DIModuleInjectScope)
-            .regAction(AnnoationInjectorCheck)
-            .regAction(AnnoationDesignAction)
-            .regAction(MessageRegisterAction)
+            // .regAction(AnnoationInjectorCheck)
+            // .regAction(AnnoationDesignAction)
+            // .regAction(MessageRegisterAction)
             .regAction(ResolveMoudleScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);

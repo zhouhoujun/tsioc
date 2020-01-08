@@ -15,7 +15,8 @@ export class ActionInjector extends Injector implements IActionInjector {
     }
 
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        if (!provide && this.registerAction(type)) {;
+        if (!provide && this.registerAction(type)) {
+            ;
             return this;
         }
         this.getContainer().registerIn(this, type, provide, singleton);
