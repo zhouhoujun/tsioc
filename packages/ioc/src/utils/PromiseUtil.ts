@@ -158,7 +158,7 @@ export namespace PromiseUtil {
     export type ActionHandle<T = any> = (ctx: T, next?: () => Promise<void>) => Promise<void>;
 
     /**
-     * run action in chain.
+     * run handles in chain.
      *
      * @export
      * @template T

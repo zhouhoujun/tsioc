@@ -123,12 +123,6 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
         }
         return this.funcs.get(dec) || [];
     }
-
-    execAction<T>(register: IActionInjector, decorator: string | Function, ctx: T, next?: any, exector?: Function) {
-        let funcs = this.getFuncs(register, decorator) as any;
-        return funcs.length && (exector ? exector(funcs, ctx, next) : lang.execAction(funcs, ctx, next));
-    }
-
 }
 
 /**
