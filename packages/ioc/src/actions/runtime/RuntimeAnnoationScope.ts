@@ -18,9 +18,6 @@ import { IActionSetup } from '../Action';
  */
 export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        // this.actInjector
-        //     .regAction(RegisterSingletionAction)
-        //     .regAction(IocSetCacheAction);
 
         this.actInjector.getInstance(RuntimeRegisterer)
             .register(Singleton, DecoratorScopes.Class, RegisterSingletionAction)

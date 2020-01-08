@@ -1,4 +1,4 @@
-import { isNullOrUndefined, DecoratorProvider, ActionInjectorToken } from '@tsdi/ioc';
+import { isNullOrUndefined, DecoratorProvider } from '@tsdi/ioc';
 import { BuildContext } from '@tsdi/boot';
 import { CTX_TEMPLATE_REF, CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateContext } from '../parses/TemplateContext';
@@ -21,7 +21,7 @@ export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: ()
             annoation: annoation,
             decorator: ctx.decorator
         });
-        let actInjector = ctx.injector.get(ActionInjectorToken);
+        let actInjector = ctx.reflects.getActionInjector();
 
         await actInjector.getInstance(TemplateParseScope)
             .execute(pCtx);

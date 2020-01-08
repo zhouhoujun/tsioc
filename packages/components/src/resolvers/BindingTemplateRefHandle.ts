@@ -1,4 +1,4 @@
-import { DecoratorProvider, ActionInjectorToken, PromiseUtil } from '@tsdi/ioc';
+import { DecoratorProvider, PromiseUtil } from '@tsdi/ioc';
 import { BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { RefSelector } from '../RefSelector';
@@ -14,7 +14,7 @@ import { CTX_COMPONENT_REF } from '../ComponentRef';
 export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
     if (ctx.target && ctx.has(CTX_COMPONENT_REF)) {
         let ref = ctx.targetReflect as IComponentReflect;
-        let actInjector = ctx.injector.get(ActionInjectorToken);
+        let actInjector = ctx.reflects.getActionInjector();
         if (ref && ref.propRefChildBindings) {
             let dpr = actInjector.getInstance(DecoratorProvider);
             if (dpr.has(ctx.decorator, RefSelector)) {

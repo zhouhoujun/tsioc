@@ -1,5 +1,5 @@
-import { isNullOrUndefined, isTypeObject, isBaseValue, lang, ActionInjectorToken } from '@tsdi/ioc';
-import { BuildContext, ResolveHandle } from '@tsdi/boot';
+import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
+import { BuildContext } from '@tsdi/boot';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
 import { IComponentReflect } from '../IComponentReflect';
@@ -20,7 +20,7 @@ export const BindingPropertyHandle = async function (ctx: BuildContext, next: ()
         let ref = ctx.targetReflect as IComponentReflect;
         if (ref && ref.propInBindings) {
             let options = ctx.getOptions();
-            let actInjector = ctx.injector.get(ActionInjectorToken);
+            let actInjector = ctx.reflects.getActionInjector();
             await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {
                 let binding = ref.propInBindings.get(n);
                 let filed = binding.bindingName || binding.name;

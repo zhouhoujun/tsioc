@@ -8,8 +8,6 @@ import { IActionSetup } from '../Action';
 
 export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
     setup() {
-        // this.actInjector.regAction(MethodAutorunAction);
-
         this.actInjector.getInstance(RuntimeRegisterer)
             .register(Autorun, DecoratorScopes.Method, MethodAutorunAction);
 
