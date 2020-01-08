@@ -94,4 +94,3 @@ export const BindParameterTypeAction = function (ctx: RuntimeActionContext, next
 
     next();
 };
-

@@ -17,3 +17,4 @@ export const BindDeignParamTypeAction = function (ctx: RuntimeActionContext, nex
     }
     next();
 };
+
