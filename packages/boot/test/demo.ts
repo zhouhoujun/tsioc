@@ -1,5 +1,5 @@
 import { DIModule, Startup, Message, MessageQueue } from '../src';
-import { Injectable, Inject } from '@tsdi/ioc';
+import { Injectable, Inject, TypeReflectsToken } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 
@@ -48,7 +48,7 @@ export class ClassSevice extends Startup {
 
     async startup(): Promise<any> {
         console.log('running.....');
-        let refs = this.getContainer().getTypeReflects();
+        let refs = this.getInjector().get(TypeReflectsToken);
         console.log(refs.get(ClassSevice));
 
         // console.log(this.container);
