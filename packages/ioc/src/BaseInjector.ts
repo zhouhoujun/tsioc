@@ -345,18 +345,26 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     getSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.has(key) ? this.singletons.get(key) : this.tryGetSingletonInRoot(key);
+        return this.tryGetSingleton(key) ?? this.tryGetSingletonInRoot(key);
     }
 
-    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
-        return this.factories.has(key) ? this.factories.get(key) : this.tryGetInRoot(key);
+    protected tryGetSingleton<T>(key: SymbolType<T>): T {
+        return this.singletons.has(key) ? this.singletons.get(key) : null;
     }
 
     protected tryGetSingletonInRoot<T>(key: SymbolType<T>): T {
         return null;
     }
 
-    protected tryGetInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
+    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.tryGetFactory(key) ?? this.tryGetFactoryInRoot(key);
+    }
+
+    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.factories.has(key) ? this.factories.get(key) : null;
+    }
+
+    protected tryGetFactoryInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
         return null;
     }
 
@@ -383,10 +391,21 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let tokenKey = this.getTokenKey(token);
+        let type = this.tryGetTokenProvidider(tokenKey) ?? this.tryGetTokenProviderInRoot(tokenKey);
+        if (type) {
+            return type;
+        }
+        return isClassType(tokenKey) ? tokenKey as Type<T> : null;
+    }
+
+    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
         if (this.provideTypes.has(tokenKey)) {
             return this.provideTypes.get(tokenKey);
         }
-        return isClassType(tokenKey) ? tokenKey as Type<T> : null;
+    }
+
+    protected tryGetTokenProviderInRoot<T>(tokenKey: SymbolType<T>): Type<T> {
+        return null;
     }
 
 

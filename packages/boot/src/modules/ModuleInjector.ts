@@ -29,42 +29,29 @@ export class ModuleInjector extends Injector {
         return super.hasSingleton(key) || this.exports.some(r => r.exports.hasSingleton(key));
     }
 
-    getSingleton<T>(key: SymbolType<T>): T {
-        if (this.singletons.has(key)) {
-            return this.singletons.get(key);
-        }
-        let instance: T;
-        this.exports.some(r => {
-            if (r.exports.hasSingleton(key)) {
-                instance = r.exports.getSingleton(key);
-            }
-            return isDefined(instance);
-        });
-        return isDefined(instance) ? instance : this.tryGetSingletonInRoot(key);
+
+    protected tryGetSingleton<T>(key: SymbolType<T>): T {
+        return this.singletons.has(key) ? this.singletons.get(key)
+            : this.exports.find(r => r.exports.hasSingleton(key))?.exports.getSingleton(key);
     }
 
-    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
-        if (this.hasTokenKey(key)) {
-            if (this.factories.has(key)) {
-                return this.factories.get(key);
-            }
-            let mref = this.exports.find(r => r.exports.hasTokenKey(key));
-            if (mref) {
-                return mref.exports.getTokenFactory(key);
-            }
-        }
-        return this.tryGetInRoot(key);
+
+    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.factories.has(key) ? this.factories.get(key)
+            : this.exports.find(r => r.exports.hasTokenKey(key))?.exports.getTokenFactory(key);
     }
 
-    getTokenProvider<T>(token: Token<T>): Type<T> {
-        let type = super.getTokenProvider(token);
-        if (!type) {
+    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
+        if (this.provideTypes.has(tokenKey)) {
+            return this.provideTypes.get(tokenKey);
+        } else {
+            let type;
             this.exports.some(r => {
-                type = r.exports.getTokenProvider(token);
+                type = r.exports.getTokenProvider(tokenKey);
                 return type;
             });
+            return type || null;
         }
-        return type;
     }
 
     clearCache(targetType: Type) {
