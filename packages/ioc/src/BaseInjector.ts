@@ -336,12 +336,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
-        let instance = this.getSingleton(key);
-        if (isDefined(instance)) {
-            return instance;
-        }
-        let fac = this.getTokenFactory(key);
-        return fac ? fac(...providers) : null;
+        return this.getSingleton(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
     }
 
     getSingleton<T>(key: SymbolType<T>): T {
@@ -391,11 +386,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let tokenKey = this.getTokenKey(token);
-        let type = this.tryGetTokenProvidider(tokenKey) ?? this.tryGetTokenProviderInRoot(tokenKey);
-        if (type) {
-            return type;
-        }
-        return isClassType(tokenKey) ? tokenKey as Type<T> : null;
+        return this.tryGetTokenProvidider(tokenKey) ?? this.tryGetTokenProviderInRoot(tokenKey) ?? (isClassType(tokenKey) ? tokenKey as Type<T> : null);
     }
 
     protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
