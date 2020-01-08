@@ -375,6 +375,11 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
     if (!isFunction(target)) {
         return false;
     }
+
+    if (!target.name || !target.prototype) {
+        return false;
+    }
+
     if (exclude && exclude(target)) {
         return false;
     }
@@ -391,9 +396,6 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
         return false;
     }
 
-    if (!target.name || !target.prototype) {
-        return false;
-    }
 
     if (clsUglifyExp.test(target.name) || !clsStartExp.test(target.name)) {
         return false;
