@@ -118,7 +118,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let key = this.getTokenKey(token);
         if (isClass(provider)) {
             this.singletons.set(provider, value);
-            this.factories.set(key, (...providers) => this.getInstance(provider, ...providers));
+            this.singletons.set(key, value);
             this.provideTypes.set(key, provider);
         } else {
             this.singletons.set(key, value);
@@ -302,7 +302,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
     }
 
     hasSingleton<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key) ||  this.hasSingletonInRoot(key);
+        return this.singletons.has(key) || this.hasSingletonInRoot(key);
     }
 
     protected hasInRoot(key: SymbolType): boolean {

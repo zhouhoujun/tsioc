@@ -14,7 +14,6 @@ export function registerCores(container: IContainer) {
     }
 
     let actInjector = container.get(ActionInjectorToken);
-    console.log(actInjector);
     // register action
     actInjector.regAction(InjectLifeScope)
         .regAction(ResolveServiceScope)
