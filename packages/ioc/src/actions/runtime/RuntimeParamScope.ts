@@ -21,13 +21,11 @@ export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> im
     execute(ctx: RuntimeActionContext, next?: () => void): void {
         if (!ctx.targetReflect) {
             InitReflectAction(ctx);
-            // this.actInjector.getInstance(InitReflectAction).execute(ctx);
         }
         super.execute(ctx, next);
     }
 
     setup() {
-        this.actInjector.regAction(BindParameterTypeAction);
 
         this.actInjector.getInstance(RuntimeRegisterer)
             .register(Inject, DecoratorScopes.Parameter, BindParameterTypeAction)
