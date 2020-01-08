@@ -1,4 +1,4 @@
-import { createClassDecorator, isString, ITypeDecorator, SymbolType } from '@tsdi/ioc';
+import { createClassDecorator, isString, ITypeDecorator } from '@tsdi/ioc';
 import { IComponentMetadata } from './IComponentMetadata';
 
 /**
@@ -40,22 +40,3 @@ export const Component: IComponentDecorator = createClassDecorator<IComponentMet
         }
     }
 ]);
-
-
-const attrSelPrefix = /^ATTR_SELTR_/;
-export function getAttrSelectorToken<T = any>(selector: string): SymbolType<T> {
-    return attrSelPrefix.test(selector) ? selector : `ATTR_SELTR_${selector}`;
-}
-
-export function isAttrSelectorToken(token: SymbolType): boolean {
-    return isString(token) && attrSelPrefix.test(token);
-}
-
-const seletPrefix = /^SELTR_/;
-export function getSelectorToken<T = any>(selector: string): SymbolType<T> {
-    return seletPrefix.test(selector) ? selector : `SELTR_${selector}`;
-}
-
-export function iSelectorToken(token: SymbolType): boolean {
-    return isString(token) && seletPrefix.test(token);
-}

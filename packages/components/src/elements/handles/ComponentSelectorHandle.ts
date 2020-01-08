@@ -2,7 +2,6 @@ import { isString, Type, isArray, DecoratorProvider, Token } from '@tsdi/ioc';
 import { RefSelector } from '../../RefSelector';
 import { TemplateHandle } from '../../parses/TemplateHandle';
 import { TemplateContext } from '../../parses/TemplateContext';
-import { getSelectorToken } from '../../decorators/Component';
 
 /**
  * component selector handle.
@@ -33,19 +32,16 @@ export class ComponentSelectorHandle extends TemplateHandle {
         return template ? template[refSelector.getSelectorKey()] : null
     }
 
-    protected getSelectorToken(selector: string): Token {
-        return getSelectorToken(selector);
+    protected getSelectorToken(refSelector: RefSelector, selector: string): Token {
+        return refSelector.toSelectorToken(selector);
     }
 
     protected getComponent(ctx: TemplateContext, template: any, refSelector: RefSelector): Type {
         let selector = this.getSelector(template, refSelector);
         if (selector) {
-            let injector = ctx.injector;
             if (isString(selector)) {
-                let selkey = this.getSelectorToken(selector);
-                if (injector.hasRegister(selkey)) {
-                    return injector.getTokenProvider(selkey);
-                }
+                let selkey = this.getSelectorToken(refSelector, selector);
+                return ctx.injector.getTokenProvider(selkey);
             } else if (refSelector.isComponentType(selector)) {
                 return selector;
             }

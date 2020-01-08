@@ -12,7 +12,6 @@ import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
 import { IPipeTransform } from './bindings/IPipeTransform';
-import { getPipeToken } from './decorators/Pipe';
 
 
 /**
@@ -38,8 +37,12 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.get(COMPONENT_REFS) || ctx.target;
     }
 
-    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {
-        return injector.get(isString(token) ? getPipeToken(token) : token)
+    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector, decorator?: string): T {
+        if (isString(token)) {
+            token = this.reflects.getActionInjector().get(DecoratorProvider)
+                .resolve(decorator || Component, RefSelector)?.toPipeToken(token) ?? token;
+        }
+        return injector.get(token);
     }
 
     getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T> | T {

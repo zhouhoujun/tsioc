@@ -33,7 +33,7 @@ export class ActivityModule {
 
         let actInjector = container.get(ActionInjectorToken);
 
-        actInjector.regAction(ActivityDepsRegister);
+        // actInjector.regAction(ActivityDepsRegister);
 
         actInjector.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction, ActivityDepsRegister);

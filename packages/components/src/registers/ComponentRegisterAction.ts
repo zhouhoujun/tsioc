@@ -1,9 +1,8 @@
-import { DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { DesignActionContext, CTX_CURR_DECOR, DecoratorProvider } from '@tsdi/ioc';
 import { IComponentReflect } from '../IComponentReflect';
 import { attrExp } from '../bindings/exps';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
-import { getAttrSelectorToken, getSelectorToken } from '../decorators/Component';
-
+import { RefSelector } from '../RefSelector';
 
 /**
  * component register action.
@@ -17,6 +16,7 @@ export const ComponentRegisterAction = function (ctx: DesignActionContext, next:
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
     let reflects = ctx.targetReflect as IComponentReflect;
+    let refSelector = ctx.reflects.getActionInjector().get(DecoratorProvider).resolve(currDecor, RefSelector);
     reflects.decorator = currDecor;
     reflects.component = true;
     metas.forEach(meta => {
@@ -28,19 +28,19 @@ export const ComponentRegisterAction = function (ctx: DesignActionContext, next:
                 sel = sel.trim();
                 if (attrExp.test(sel)) {
                     reflects.attrSelector = sel;
-                    injector.bindProvider(getAttrSelectorToken(sel), ctx.type);
+                    injector.bindProvider(refSelector.toAttrSelectorToken(sel), ctx.type);
                 } else {
                     reflects.selector = sel;
-                    injector.bindProvider(getSelectorToken(sel), ctx.type);
+                    injector.bindProvider(refSelector.toSelectorToken(sel), ctx.type);
                 }
             })
         } else {
             if (attrExp.test(meta.selector)) {
                 reflects.attrSelector = meta.selector;
-                injector.bindProvider(getAttrSelectorToken(meta.selector), ctx.type);
+                injector.bindProvider(refSelector.toAttrSelectorToken(meta.selector), ctx.type);
             } else {
                 reflects.selector = meta.selector;
-                injector.bindProvider(getSelectorToken(meta.selector), ctx.type);
+                injector.bindProvider(refSelector.toSelectorToken(meta.selector), ctx.type);
             }
         }
     });

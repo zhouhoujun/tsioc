@@ -51,6 +51,7 @@ export * from './resolvers/BootTemplateHandle';
 export * from './registers/BindingCache';
 export * from './registers/BindingPropertyTypeAction';
 export * from './registers/ComponentRegisterAction';
+export * from './registers/PipeRegisterAction';
 export * from './registers/RegisterVaildateAction';
 
 export * from './ComponentLifecycle';

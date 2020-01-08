@@ -12,6 +12,7 @@ import { Output } from './decorators/Output';
 import { RefChild } from './decorators/RefChild';
 import { Component } from './decorators/Component';
 import { Vaildate } from './decorators/Vaildate';
+import { Pipe } from './decorators/Pipe';
 import { BindingScope } from './parses/BindingScope';
 import { TemplateParseScope } from './parses/TemplateParseScope';
 import { ComponentBuilder } from './ComponentBuilder';
@@ -34,6 +35,8 @@ import { BindingOutputHandle } from './resolvers/BindingOutputHandle';
 import { BootTemplateHandle } from './resolvers/BootTemplateHandle';
 import { ModuleInitHandle } from './resolvers/ModuleInitHandle';
 import { DefaultComponentFactory } from './ComponentRef';
+import { PipeRegisterAction } from './registers/PipeRegisterAction';
+
 
 /**
  * components module.
@@ -102,6 +105,7 @@ export class ComponentsModule {
 
         actInjector.getInstance(DesignRegisterer)
             .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
+            .register(Pipe, DecoratorScopes.Class, BindProviderAction, PipeRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction)

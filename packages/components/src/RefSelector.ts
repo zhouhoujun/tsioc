@@ -1,11 +1,13 @@
-import { Abstract, Type, isClass, isString, Inject, lang, Token, TypeReflectsToken, ITypeReflects } from '@tsdi/ioc';
+import { Abstract, Type, isString, Inject, lang, Token, TypeReflectsToken, ITypeReflects, SymbolType, isClass } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { IComponentReflect } from './IComponentReflect';
 import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, IComponentRef, ComponentRef } from './ComponentRef';
+import { IComponentReflect } from './IComponentReflect';
 
 
-
+const attrSelPrefix = /^ATTR_SELTR_/;
+const seletPrefix = /^SELTR_/;
+const pipePrefix = /^PIPE_/;
 /**
  * ref element identfy selector.
  *
@@ -40,6 +42,19 @@ export abstract class RefSelector {
         let factory = context.getContainer().getService(context.injector, { token: ComponentFactory, target: type, default: this.getDefaultComponentFactory() });
         return factory.create(type, target, context, ...nodes);
     }
+
+    toSelectorToken(selector: string): SymbolType {
+        return seletPrefix.test(selector) ? selector : `SELTR_${selector}`;
+    }
+
+    toAttrSelectorToken(selector: string): SymbolType {
+        return attrSelPrefix.test(selector) ? selector : `ATTR_SELTR_${selector}`;
+    }
+
+    toPipeToken(name: string): SymbolType {
+        return pipePrefix.test(name) ? name : `PIPE_${name}`;
+    }
+
 
     /**
      * select ref tag in element.

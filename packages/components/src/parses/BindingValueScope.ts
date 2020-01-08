@@ -1,4 +1,4 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, DecoratorProvider, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
@@ -11,8 +11,8 @@ import { OneWayBinding } from '../bindings/OneWayBinding';
 import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
-import { getAttrSelectorToken } from '../decorators/Component';
 import { IComponentReflect } from '../IComponentReflect';
+import { RefSelector } from '../RefSelector';
 
 
 /**
@@ -128,8 +128,9 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
     if (!isNullOrUndefined(ctx.bindExpression)) {
         let pdr = ctx.binding.provider;
         let selector: ClassType;
-        if (isString(pdr) && injector.hasRegister(getAttrSelectorToken(pdr))) {
-            selector = injector.getTokenProvider(getAttrSelectorToken(pdr));
+        let refSelector = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector)
+        if (isString(pdr) && injector.hasRegister(refSelector.toAttrSelectorToken(pdr))) {
+            selector = injector.getTokenProvider(refSelector.toAttrSelectorToken(pdr));
         } else if (ctx.binding.type !== Array) {
             if (isClassType(ctx.binding.provider)) {
                 if (ctx.reflects.get<IComponentReflect>(ctx.binding.provider).component) {

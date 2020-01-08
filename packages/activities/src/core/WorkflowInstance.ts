@@ -71,12 +71,12 @@ export class WorkflowInstance<T extends IActivity<TCtx> = IActivity, TCtx extend
     }
 
     async start(data?: any): Promise<TCtx> {
-        let container = this.getContainer();
+        let injector = this.getInjector();
         this.context.set(CTX_DATA, data);
         this._status = this.getInjector().get(ActivityStatus);
         this.context.set(WorkflowInstance, this);
-        if (this.context.id && !container.has(this.context.id)) {
-            container.registerValue(this.context.id, this);
+        if (this.context.id && !injector.has(this.context.id)) {
+            injector.registerValue(this.context.id, this);
         }
 
         let target = this.getActivity();

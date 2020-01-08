@@ -46,8 +46,9 @@ export interface IComponentBuilder extends IBuilderService {
      * get pipe instance via token.
      * @param token
      * @param injector
+     * @param decorator the component decorator.
      */
-    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T;
+    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector, decorator?: string): T
     /**
      * get target component ref
      * @param target target injector.
