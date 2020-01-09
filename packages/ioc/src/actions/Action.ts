@@ -1,7 +1,7 @@
 import { Token, Type } from '../types';
 import { lang } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';
-import { IInjector } from '../IInjector';
+import { IInjector, IProviders } from '../IInjector';
 import { InjectToken } from '../InjectToken';
 
 /**
@@ -14,10 +14,10 @@ export interface ActionContextOption {
     /**
      * providers for contexts.
      *
-     * @type {(ProviderTypes[] | IInjector)}
+     * @type {(ProviderTypes[] | IProviders)}
      * @memberof BootOption
      */
-    contexts?: ProviderTypes[] | IInjector;
+    contexts?: ProviderTypes[] | IProviders;
 }
 
 /**

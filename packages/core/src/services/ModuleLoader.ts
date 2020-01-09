@@ -45,7 +45,7 @@ export interface IModuleLoader {
      * @returns {Type[]}
      * @memberof IModuleLoader
      */
-    getTypes(modules: Modules): Type[];
+    getTypes(...modules: Modules[]): Type[];
 
 }
 
@@ -121,8 +121,17 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      * @returns {Type[]}
      * @memberof DefaultModuleLoader
      */
-    getTypes(modules: Modules): Type[] {
-        return this.getContentTypes(modules);
+    getTypes(...modules: Modules[]): Type[] {
+        if (!modules.length) {
+            return [];
+        } else if (modules.length === 1) {
+            return this.getContentTypes(modules[0])
+        }
+        let types = [];
+        modules.forEach(m => {
+            types = types.concat(this.getContentTypes(m));
+        })
+        return types;
     }
 
     async require(fileName: string): Promise<any> {

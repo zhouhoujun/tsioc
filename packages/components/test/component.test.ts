@@ -3,7 +3,7 @@ import { Suite, Test, Before } from '@tsdi/unit';
 import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, Autorun, IInjector, INJECTOR } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
 
 
 @Component('selector1')
@@ -66,7 +66,7 @@ class CustomeService {
     builder: ComponentBuilder;
 
     @Inject(INJECTOR)
-    injector: IInjector;
+    injector: ICoreInjector;
 
     createComponent3() {
         // console.log(this.container.resolve(BuildHandleRegisterer));

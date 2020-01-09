@@ -13,14 +13,15 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
         .parse(...annoation.providers || []);
     // inject module providers
     if (annoation.components) {
-        continer.use(map, ...annoation.components);
+        continer.getModuleProvider().use(map, ...annoation.components);
     }
 
     if (map.size) {
         ctx.injector.copy(map);
     }
 
-    let exptypes: Type[] = injector.getInstance(ModuleLoader).getTypes(annoation.exports || []);
+
+    let exptypes: Type[] = injector.getInstance(ModuleLoader).getTypes(...annoation.exports || []);
 
     exptypes.forEach(ty => {
         let reflect = tRef.get(ty);

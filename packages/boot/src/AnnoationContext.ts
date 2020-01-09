@@ -1,8 +1,8 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, IInjector, ClassType, RegInMetadata, ClassMetadata, InjectToken, lang
+    isToken, ClassType, RegInMetadata, ClassMetadata, InjectToken, lang
 } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION } from './context-tokens';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { IModuleReflect } from './modules/IModuleReflect';
@@ -55,9 +55,9 @@ export const CTX_SUB_CONTEXT = new InjectToken<AnnoationContext[]>('CTX_SUB_CONT
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, IContainer> {
+export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, ICoreInjector, IContainer> {
 
-    static parse(injector: IInjector, target: ClassType | AnnoationOption): AnnoationContext {
+    static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createRaiseContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
     }
 

@@ -1,5 +1,5 @@
 import { Token, ProviderTypes, IInjector } from '@tsdi/ioc';
-import { ServiceOption } from './resolves/service/ResolveServiceContext';
+import { ServiceOption } from '../resolves/service/ResolveServiceContext';
 
 /**
  * service resolver.
@@ -8,16 +8,6 @@ import { ServiceOption } from './resolves/service/ResolveServiceContext';
  * @interface IServiceResolver
  */
 export interface IServiceResolver {
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | ServiceOption<T>)} target servive token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T;
     /**
      * get service or target reference service in the injector.
      *

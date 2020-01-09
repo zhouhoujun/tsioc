@@ -1,8 +1,8 @@
 import {
     LoadType, InjectToken, Type, Injectable, createRaiseContext, Token,
-    isToken, isDefined, CTX_CURR_SCOPE, isTypeObject, IInjector
+    isToken, isDefined, CTX_CURR_SCOPE, isTypeObject
 } from '@tsdi/ioc';
-import { IModuleLoader } from '@tsdi/core';
+import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
@@ -11,7 +11,6 @@ import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableCo
 import { IComponentContext } from './builder/ComponentContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { AnnoationOption, AnnoationContext } from './AnnoationContext';
-
 
 
 /**
@@ -113,7 +112,7 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
     /**
      * injector.
      */
-    injector?: IInjector;
+    injector?: ICoreInjector;
 }
 
 /**
@@ -240,7 +239,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
         return this.getContainer().resolve(ConfigureManager) as ConfigureManager<CFG>;
     }
 
-    static parse(injector: IInjector, target: Type | BootOption): BootContext {
+    static parse(injector: ICoreInjector, target: Type | BootOption): BootContext {
         return createRaiseContext(injector, BootContext, isToken(target) ? { module: target } : target);
     }
 

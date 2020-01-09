@@ -1,4 +1,5 @@
-import { Injector, ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector, isDefined } from '@tsdi/ioc';
+import { ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector } from '@tsdi/ioc';
+import { CoreInjector } from '@tsdi/core';
 import { ModuleRef } from './ModuleRef';
 
 
@@ -11,7 +12,7 @@ import { ModuleRef } from './ModuleRef';
  * @extends {IocCoreService}
  * @implements {IResolver}
  */
-export class ModuleInjector extends Injector {
+export class ModuleInjector extends CoreInjector {
 
 
     protected exports: ModuleRef[];

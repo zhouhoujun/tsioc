@@ -49,7 +49,7 @@ export interface ITypeReflects extends IMetadataAccess {
      * get injector of type injected.
      * @param type
      */
-    getInjector(type: ClassType): IInjector;
+    getInjector<T extends IInjector>(type: ClassType): T;
     /**
      * get action injector.
      */

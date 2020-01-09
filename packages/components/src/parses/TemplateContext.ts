@@ -1,4 +1,5 @@
-import { Injectable, Type, InjectToken, createRaiseContext, IInjector } from '@tsdi/ioc';
+import { Injectable, Type, InjectToken, createRaiseContext } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { IComponentContext, AnnoationContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
@@ -24,7 +25,7 @@ export class TemplateContext extends AnnoationContext<ITemplateOption, IComponen
 
     value?: any;
 
-    static parse(injector: IInjector, options: ITemplateOption): TemplateContext {
+    static parse(injector: ICoreInjector, options: ITemplateOption): TemplateContext {
         return createRaiseContext(injector, TemplateContext, options);
     }
 }

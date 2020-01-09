@@ -1,36 +1,19 @@
-import 'reflect-metadata';
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, IProviders } from '@tsdi/ioc';
-import { IContainer } from './IContainer';
+import { Injector, Modules, LoadType, Type, Token, ProviderTypes, IProviders } from '@tsdi/ioc';
+import { ICoreInjector } from './ICoreInjector';
+import { ServiceProvider } from './services/ServiceProvider';
+import { ModuleProvider } from './services/ModuleProvider';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
-import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
-import { registerCores } from './registerCores';
+import { IModuleLoader, ModuleLoader } from './services/ModuleLoader';
 import { ServiceOption } from './resolves/service/ResolveServiceContext';
 import { ServicesOption } from './resolves/services/ResolveServicesContext';
-import { ModuleProvider } from './services/ModuleProvider';
-import { ServiceProvider } from './services/ServiceProvider';
 
-
-
-/**
- * Container
- *
- * @export
- * @class Container
- * @implements {IContainer}
- */
-export class Container extends IocContainer implements IContainer {
-
-    protected init() {
-        super.init();
-        registerCores(this);
-    }
-
+export class CoreInjector extends Injector implements ICoreInjector {
     getServiceProvider(): ServiceProvider {
-        return this.getSingleton(ServiceProvider)
+        return this.tryGetSingletonInRoot(ServiceProvider)
     }
 
     getModuleProvider(): ModuleProvider {
-        return this.getSingleton(ModuleProvider);
+        return this.tryGetSingletonInRoot(ModuleProvider);
     }
 
     /**
@@ -40,7 +23,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.get(ContainerBuilderToken);
+        return this.tryGetSingletonInRoot(ContainerBuilderToken.toString());
     }
 
     /**
@@ -119,15 +102,4 @@ export class Container extends IocContainer implements IContainer {
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProviders  {
         return this.getServiceProvider().getServiceProviders(this, target);
     }
-}
-
-/**
- * is container or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Container}
- */
-export function isContainer(target: any): target is Container {
-    return target && target instanceof Container;
 }

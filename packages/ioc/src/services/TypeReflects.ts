@@ -19,6 +19,7 @@ import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegist
 import { ITypeReflects } from './ITypeReflects';
 import { ActionInjectorToken, IActionInjector } from '../actions/Action';
 import { TypeDecorators } from '../actions/TypeDecorators';
+import { IInjector } from '../IInjector';
 
 
 /**
@@ -55,9 +56,9 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         return this.decorPdr;
     }
 
-    getInjector(type: Type) {
+    getInjector<T extends IInjector>(type: Type): T {
         let refl = this.get(type);
-        return (refl && refl.getInjector) ? refl.getInjector() : this.getContainer();
+        return ((refl && refl.getInjector) ? refl.getInjector() : this.getContainer()) as T;
     }
 
     has(type: ClassType): boolean {

@@ -39,7 +39,7 @@ export abstract class RefSelector {
     }
 
     createComponentRef(type: Type, target: Object, context: AnnoationContext, ...nodes: Object[]): IComponentRef {
-        let factory = context.getContainer().getService(context.injector, { token: ComponentFactory, target: type, default: this.getDefaultComponentFactory() });
+        let factory = context.injector.getService({ token: ComponentFactory, target: type, default: this.getDefaultComponentFactory() });
         return factory.create(type, target, context, ...nodes);
     }
 

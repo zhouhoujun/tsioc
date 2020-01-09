@@ -1,5 +1,6 @@
-import { IInjector } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { AnnoationOption } from '../AnnoationContext';
+
 
 /**
  * module resolve option.
@@ -23,6 +24,6 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
     /**
      * module reslove in the injector.
      */
-    injector?: IInjector;
+    injector?: ICoreInjector;
 
 }

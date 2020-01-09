@@ -1,5 +1,5 @@
 import { lang, Type, Abstract, Inject, InjectReference, Token, IInjector } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { ICoreInjector } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 
 
@@ -18,7 +18,7 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
      * @returns {IInjector}
      * @memberof IStartup
      */
-    getInjector(): IInjector;
+    getInjector(): ICoreInjector;
 
     /**
      * runable context.
@@ -85,7 +85,7 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
     }
 
 
-    getInjector(): IInjector {
+    getInjector(): ICoreInjector {
         return this.context.injector;
     }
 

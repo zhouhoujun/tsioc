@@ -54,10 +54,10 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
  * @class IocRasieContext
  * @extends {IocActionContext}
  */
-export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TC extends IIocContainer = IIocContainer> extends IocActionContext {
+export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TJ extends IInjector = IInjector, TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
-    private _injector: IInjector;
-    constructor(@Inject(INJECTOR) injector: IInjector) {
+    private _injector: TJ;
+    constructor(@Inject(INJECTOR) injector: TJ) {
         super();
         this._injector = injector;
     }
@@ -65,7 +65,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     /**
      * raise injector of this context.
      */
-    get injector(): IInjector {
+    get injector(): TJ {
         return this._injector;
     }
 
@@ -76,14 +76,14 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return this.injector.get(TypeReflectsToken);
     }
 
-    private _context: IInjector;
+    private _context: IProviders;
     /**
      * context providers of boot.
      *
      * @type {IInjector}
      * @memberof BootContext
      */
-    get contexts(): IInjector {
+    get contexts(): IProviders {
         if (!this._context) {
             this._context = this.injector.get(PROVIDERS);
             this._context.registerValue(INJECTOR, this.injector);
@@ -224,7 +224,7 @@ export interface IocProvidersOption extends ActionContextOption {
 }
 
 
-export abstract class IocProvidersContext<T extends IocProvidersOption = IocProvidersOption, TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TC> {
+export abstract class IocProvidersContext<T extends IocProvidersOption = IocProvidersOption, TJ extends IInjector = IInjector, TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TJ, TC> {
 
     /**
      * get providers of options.

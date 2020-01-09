@@ -7,7 +7,7 @@ import { Service } from '../runnable/Service';
 
 
 export const RefRunnableHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    ctx.runnable = ctx.getContainer().getService(ctx.injector,
+    ctx.runnable = ctx.injector.getService(
         { tokens: [Startup, Renderer, Runnable, Service], target: ctx.getBootTarget() },
         { provide: BootContext, useValue: ctx },
         { provide: lang.getClass(ctx), useValue: ctx });

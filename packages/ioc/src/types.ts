@@ -5,7 +5,7 @@ import { IInjector } from './IInjector';
 /**
  * module types.
  */
-export type Modules = Type | ObjectMap;
+export type Modules = Type | Object;
 
 /**
  * load modules in base on an path.
