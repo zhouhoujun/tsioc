@@ -1,16 +1,17 @@
 import {
     Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerProxyToken,
-    ContainerProxy, isFunction, isPromise, ObjectMap, isBaseObject
+    ContainerProxy, isFunction, isPromise, ObjectMap, isBaseObject, ActionInjectorToken, DecoratorProvider
 } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, AstResolver, getSelectorToken, ComponentBuilder } from '@tsdi/components';
+import { ComponentBuilderToken, AstResolver, ComponentBuilder, RefSelector } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityMetadata';
 import { ActivityContext } from './ActivityContext';
 import { IActivity } from './IActivity';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvity } from './ActivityRef';
+import { Task } from '../decorators/Task';
 
 
 /**
@@ -39,6 +40,14 @@ export class ActivityExecutor implements IActivityExecutor {
         return this.containerFac() as IContainer;
     }
 
+    private _refSelector: RefSelector;
+    getRefSelector() {
+        if (!this._refSelector) {
+            this._refSelector = this.getContainer().get(ActionInjectorToken).get(DecoratorProvider).resolve(Task, RefSelector);
+        }
+        return this._refSelector;
+    }
+
     /**
      * run activity in sub workflow.
      *
@@ -63,7 +72,7 @@ export class ActivityExecutor implements IActivityExecutor {
             if (isClass(activity.activity)) {
                 md = activity.activity;
             } else {
-                md = ctx.injector.getTokenProvider(getSelectorToken(activity.activity));
+                md = ctx.injector.getTokenProvider(this.getRefSelector().toSelectorToken(activity.activity));
             }
 
             let option = {
@@ -154,7 +163,7 @@ export class ActivityExecutor implements IActivityExecutor {
             if (isClass(activity.activity)) {
                 md = activity.activity;
             } else {
-                md = ctx.injector.getTokenProvider(getSelectorToken(activity.activity))
+                md = ctx.injector.getTokenProvider(this.getRefSelector().toSelectorToken(activity.activity))
             }
 
             let option = {

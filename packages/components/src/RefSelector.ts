@@ -5,7 +5,7 @@ import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, IComponentRe
 import { IComponentReflect } from './IComponentReflect';
 
 
-const attrSelPrefix = /^ATTR_SELTR_/;
+const attrSelPrefix = /^ATTR__/;
 const seletPrefix = /^SELTR_/;
 const pipePrefix = /^PIPE_/;
 /**
@@ -48,7 +48,7 @@ export abstract class RefSelector {
     }
 
     toAttrSelectorToken(selector: string): SymbolType {
-        return attrSelPrefix.test(selector) ? selector : `ATTR_SELTR_${selector}`;
+        return attrSelPrefix.test(selector) ? selector : `ATTR_${selector}`;
     }
 
     toPipeToken(name: string): SymbolType {

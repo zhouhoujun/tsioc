@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities } from '../src';
+import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities, ActivityRef } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 import { BootApplication } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
@@ -60,7 +60,8 @@ describe('activity test', () => {
             let ctx = await Workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
             expect(ctx.result).toEqual('component task');
-            let ifact = ctx.runnable.getBoot().activities[0] as IfActivity;
+            let activity = ctx.activity as ActivityRef;
+            let ifact = activity.nodeRef.rootNodes[0] as IfActivity;
             console.log(ifact);
             expect(ifact instanceof IfActivity).toBeTruthy();
             expect(ifact.name).toEqual('test---task---3');

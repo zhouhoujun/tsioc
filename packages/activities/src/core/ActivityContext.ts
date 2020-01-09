@@ -1,6 +1,7 @@
 import { Injectable, Type, Refs, InjectToken, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject, IInjector } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext, CTX_DATA } from '@tsdi/boot';
+import { COMPONENT_REFS } from '@tsdi/components';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -8,6 +9,7 @@ import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ActivityStatus } from './ActivityStatus';
 import { ActivityRef } from './ActivityRef';
+import { IActivity } from './IActivity';
 
 /**
  * workflow context token.
@@ -19,7 +21,10 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
  */
 export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
 
-
+/**
+ * each body token.
+ */
+export const ACTIVITY_RESULT = new InjectToken<any>('ACTIVITY_RESULT');
 
 /**
  * base activity execute context.
@@ -31,6 +36,11 @@ export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
 export class ActivityContext extends BootContext<ActivityOption, ActivityMetadata> {
+
+    get activity(): IActivity {
+        return this.get(COMPONENT_REFS) || this.getBootTarget();
+    }
+
     /**
      * workflow id.
      *
@@ -53,7 +63,10 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityMetadat
      */
     runnable: WorkflowInstance;
 
-    result: any;
+    get result(): any {
+        return this.get(ACTIVITY_RESULT);
+    }
+
     /**
      * workflow instane run status.
      */

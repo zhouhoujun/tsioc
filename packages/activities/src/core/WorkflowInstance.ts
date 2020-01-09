@@ -4,7 +4,6 @@ import { IActivity } from './IActivity';
 import { ActivityContext } from './ActivityContext';
 import { ActivityStatus } from './ActivityStatus';
 import { Activity } from './Activity';
-import { ComponentBuilderToken } from '@tsdi/components';
 
 /**
  *run state.
@@ -60,16 +59,6 @@ export class WorkflowInstance<T extends IActivity<TCtx> = IActivity, TCtx extend
         return this._status;
     }
 
-    async onInit(): Promise<void> {
-        let mgr = this.context.getConfigureManager();
-        await mgr.getConfig();
-    }
-
-    getActivity(): IActivity {
-        let injector = this.getInjector();
-        return injector.get(ComponentBuilderToken).getComponentRef(this.getBoot(), injector) as IActivity;
-    }
-
     async start(data?: any): Promise<TCtx> {
         let injector = this.getInjector();
         this.context.set(CTX_DATA, data);
@@ -79,7 +68,7 @@ export class WorkflowInstance<T extends IActivity<TCtx> = IActivity, TCtx extend
             injector.registerValue(this.context.id, this);
         }
 
-        let target = this.getActivity();
+        let target = this.context.activity;
         await target.run(this.context, async () => {
             this.state = RunState.complete;
             this._result = this.context.result;

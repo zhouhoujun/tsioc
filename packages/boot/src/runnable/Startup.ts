@@ -37,14 +37,6 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
     getBoot(): T;
 
     /**
-     * get boot component node.
-     *
-     * @returns {*}
-     * @memberof IStartup
-     */
-    getBootNode?(): any;
-
-    /**
      * get boot type.
      *
      * @returns {Type<T>}
