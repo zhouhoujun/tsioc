@@ -154,7 +154,7 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
      * @memberof ResovleContext
      */
     getContainer<T extends TC>(): T {
-        return this.injector.get(IocContainerToken) as T;
+        return this.injector.getContainer() as T;
     }
 
     protected _options: T;

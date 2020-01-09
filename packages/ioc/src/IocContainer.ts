@@ -33,6 +33,10 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this.get(TypeReflectsToken);
     }
 
+    getContainer(): this {
+        return this;
+    }
+
     /**
      * get injector
      * @param type

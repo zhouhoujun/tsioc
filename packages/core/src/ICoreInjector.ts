@@ -5,8 +5,13 @@ import { ServiceProvider } from './services/ServiceProvider';
 import { ModuleProvider } from './services/ModuleProvider';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './services/ModuleLoader';
+import { IContainer } from './IContainer';
 
 export interface ICoreInjector extends IInjector {
+    /**
+     * get root container.
+     */
+    getContainer(): IContainer;
 
     getServiceProvider(): ServiceProvider;
 

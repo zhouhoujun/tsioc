@@ -15,5 +15,8 @@ export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
  * @interface IContainer
  */
 export interface IContainer extends IIocContainer, ICoreInjector {
-
+    /**
+     * get root container.
+     */
+    getContainer(): this;
 }

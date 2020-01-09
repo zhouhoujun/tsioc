@@ -4,6 +4,7 @@ import { InjectToken } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
 import { ResolveActionOption } from './actions/ResolveActionContext';
 import { InjectReference } from './InjectReference';
+import { IIocContainer, ContainerProxy } from './IIocContainer';
 
 /**
  * injector interface.
@@ -19,6 +20,14 @@ export interface IInjector {
      * @memberof IInjector
      */
     readonly size: number;
+    /**
+     * get root container.
+     */
+    getContainer(): IIocContainer;
+    /**
+     * get container proxy.
+     */
+    getContainerProxy<T extends IIocContainer>(): ContainerProxy<T>;
     /**
      * get token.
      *

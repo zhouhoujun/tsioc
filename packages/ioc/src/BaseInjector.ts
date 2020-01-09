@@ -70,6 +70,8 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this.get(InjectorProxyToken);
     }
 
+    abstract getContainer(): IIocContainer;
+
     /**
      *  get container factory.
      */

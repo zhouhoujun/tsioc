@@ -26,6 +26,10 @@ export const ContainerProxyToken = new InjectToken<ContainerProxy>('DI_CONTAINER
  */
 export interface IIocContainer extends IInjector {
     /**
+     * get root contianer.
+     */
+    getContainer(): this;
+    /**
      * get container proxy.
      *
      * @template T

@@ -2,7 +2,7 @@ import {
     isClass, Type, isNullOrUndefined, Abstract, PromiseUtil, Inject,
     IInjector, InjectorProxyToken, InjectorProxy, isDefined
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
 import { Input, ComponentBuilderToken } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
@@ -56,18 +56,18 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      * @memberof Activity
      */
     @Inject(InjectorProxyToken)
-    private injFactory: InjectorProxy;
+    private injProxy: InjectorProxy<ICoreInjector>;
 
     constructor() {
 
     }
 
-    getInjector(): IInjector {
-        return this.injFactory();
+    getInjector(): ICoreInjector {
+        return this.injProxy();
     }
 
     getContainer(): IContainer {
-        return this.getInjector().get(ContainerToken);
+        return this.getInjector().getContainer();
     }
 
     /**

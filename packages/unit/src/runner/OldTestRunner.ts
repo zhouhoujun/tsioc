@@ -35,7 +35,7 @@ export class OldTestRunner implements ISuiteRunner {
     private injector: ICoreInjector;
 
     getContainer(): IContainer {
-        return this.injector.get(ContainerToken);
+        return this.injector.getContainer();
     }
 
     getInjector(): ICoreInjector {
