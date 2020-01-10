@@ -9,7 +9,7 @@ export class InjectLifeScope extends LifeScope<InjectActionContext> {
     execute(ctx: InjectActionContext, next?: () => void): void {
         super.execute(ctx, next);
         // after all clean.
-        ctx.clear();
+        ctx.destroy();
     }
 
     setup() {

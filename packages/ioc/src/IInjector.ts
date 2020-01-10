@@ -5,6 +5,8 @@ import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
 import { ResolveActionOption } from './actions/ResolveActionContext';
 import { InjectReference } from './InjectReference';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
+import { IDestoryable } from './Destoryable';
+
 
 /**
  * injector interface.
@@ -12,7 +14,7 @@ import { IIocContainer, ContainerProxy } from './IIocContainer';
  * @export
  * @interface IInjector
  */
-export interface IInjector {
+export interface IInjector extends IDestoryable {
     /**
      * resolver size.
      *
@@ -262,10 +264,6 @@ export interface IInjector {
      * @memberof IInjector
      */
     unregister<T>(token: Token<T>): this;
-    /**
-     * clear injector.
-     */
-    clear(): void;
     /**
      * clear cache.
      *

@@ -3,13 +3,13 @@ import { lang, isArray } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
 import { ProviderTypes } from '../providers/types';
-import { IIocContainer, IocContainerToken } from '../IIocContainer';
-import { IocCoreService } from '../IocCoreService';
+import { IIocContainer } from '../IIocContainer';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, INJECTOR, PROVIDERS, IProviders } from '../IInjector';
 import { isInjector } from '../BaseInjector';
 import { ActionContextOption, Action } from './Action';
+import { IocDestoryable } from '../Destoryable';
 
 /**
  * ioc action context.
@@ -17,7 +17,7 @@ import { ActionContextOption, Action } from './Action';
  * @export
  * @class IocActionContext
  */
-export abstract class IocActionContext extends IocCoreService {
+export abstract class IocActionContext extends IocDestoryable {
 
     /**
      * reflects.
@@ -26,11 +26,6 @@ export abstract class IocActionContext extends IocCoreService {
      * @memberof IocActionContext
      */
     abstract get reflects(): ITypeReflects;
-
-    /**
-     * clear.
-     */
-    abstract clear(): void;
 
     /**
      * set options.
@@ -210,14 +205,10 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return createRaiseContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} });
     }
 
-    private _cleared;
-    clear() {
-        if (!this._cleared) {
-            this._cleared = true;
-            this._context.clear();
-            this._context = null;
-            this._injector = null;
-        }
+    protected destroying() {
+        this._context.destroy();
+        this._context = null;
+        this._injector = null;
     }
 
 }

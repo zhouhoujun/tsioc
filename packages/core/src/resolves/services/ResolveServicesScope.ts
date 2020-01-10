@@ -28,7 +28,7 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
             }
         }
         // after all clean.
-        ctx.clear();
+        ctx.destroy();
     }
     setup() {
         this.use(ResovleServicesInClassAction)

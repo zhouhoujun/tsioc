@@ -4,7 +4,6 @@ import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isClassType } from './utils/lang';
 import { isToken } from './utils/isToken';
-import { IocCoreService } from './IocCoreService';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';
@@ -14,10 +13,13 @@ import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
+import { IocDestoryable } from './Destoryable';
 
 
 const MethodAccessorKey = MethodAccessorToken.toString();
 const ActionInjectorKey = ActionInjectorToken.toString();
+
+
 /**
  * Base Injector.
  *
@@ -26,7 +28,7 @@ const ActionInjectorKey = ActionInjectorToken.toString();
  * @class BaseInjector
  * @implements {IInjector}
  */
-export abstract class BaseInjector extends IocCoreService implements IInjector {
+export abstract class BaseInjector extends IocDestoryable implements IInjector {
     /**
      * factories.
      *
@@ -445,17 +447,13 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this;
     }
 
-    private _cleared;
-    clear() {
-        if (this._cleared) {
-            this._cleared = true;
-            this.singletons.clear();
-            this.factories.clear();
-            this.provideTypes.clear();
-            this.singletons = null;
-            this.factories = null;
-            this.provideTypes = null;
-        }
+    protected destroying() {
+        this.singletons.clear();
+        this.factories.clear();
+        this.provideTypes.clear();
+        delete this.singletons;
+        delete this.factories;
+        delete this.provideTypes;
     }
 
     /**

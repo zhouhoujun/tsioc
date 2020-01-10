@@ -23,7 +23,7 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> impl
             super.execute(ctx, next);
         }
         // after all clean.
-        ctx.clear();
+        ctx.destroy();
     }
     setup() {
         this.actInjector.regAction(DesignDecoratorAction);

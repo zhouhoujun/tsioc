@@ -21,7 +21,7 @@ export class BindingScope extends ParsersHandle implements IActionSetup {
         }
         // after all clean.
         if (isNullOrUndefined(ctx.value)) {
-            ctx.clear();
+            ctx.destroy();
         }
     }
 

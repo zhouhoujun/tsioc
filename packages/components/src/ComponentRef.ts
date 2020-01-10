@@ -1,4 +1,4 @@
-import { Type, InjectToken, Abstract, isFunction, Singleton } from '@tsdi/ioc';
+import { Type, InjectToken, Abstract, isFunction, Singleton, Destoryable, IDestoryable } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
@@ -9,19 +9,8 @@ export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF')
 export const CTX_COMPONENT_REF = new InjectToken<ComponentRef>('CTX_COMPONENT_REF');
 
 
-export interface IDestoryable {
-    destroy(): void;
-    onDestroy?(callback: () => void): void;
-}
 
-
-export class NodeRef<T> implements IDestoryable {
-
-    protected _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
-    get destroyed() {
-        return this._destroyed;
-    }
+export class NodeRef<T> extends Destoryable {
 
     private _rootNodes: T[]
     get rootNodes(): T[] {
@@ -29,37 +18,23 @@ export class NodeRef<T> implements IDestoryable {
     }
 
     constructor(public readonly context: AnnoationContext, nodes: T[]) {
+        super();
         this._rootNodes = nodes;
     }
 
-    destroy(): void {
-        if (!this.destroyed) {
-            this.rootNodes
-                .forEach((node: T & IDestoryable) => {
-                    if (node && isFunction(node.destroy)) {
-                        node.destroy();
-                    }
-                });
-            delete this._rootNodes;
-            this.context.clear();
-            this._destroyed = true;
-        }
-    }
-
-    onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
-        }
+    protected destroying(): void {
+        this.rootNodes
+            .forEach((node: T & IDestoryable) => {
+                if (node && isFunction(node.destroy)) {
+                    node.destroy();
+                }
+            });
+        delete this._rootNodes;
+        this.context.destroy();
     }
 }
 
-export class ElementRef<T> implements IDestoryable {
-
-    protected _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
-    get destroyed() {
-        return this._destroyed;
-    }
+export class ElementRef<T> extends Destoryable {
 
     private _element: T;
     get nativeElement(): T {
@@ -67,25 +42,17 @@ export class ElementRef<T> implements IDestoryable {
     }
 
     constructor(public readonly context: AnnoationContext, element: T) {
+        super();
         this._element = element;
     }
 
-    destroy(): void {
-        if (!this.destroyed) {
-            let element = this._element as T & IDestoryable;
-            if (element && isFunction(element.destroy)) {
-                element.destroy();
-            }
-            delete this._element;
-            this.context.clear();
-            this._destroyed = true;
+    protected destroying(): void {
+        let element = this._element as T & IDestoryable;
+        if (element && isFunction(element.destroy)) {
+            element.destroy();
         }
-    }
-
-    onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
-        }
+        delete this._element;
+        this.context.destroy();
     }
 }
 
@@ -97,8 +64,7 @@ export abstract class ComponentFactory {
     abstract create<T>(componentType: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): ComponentRef<T, any>;
 }
 
-export class ComponentRef<T = any, TN = any> {
-    private destroyCbs: (() => void)[] = [];
+export class ComponentRef<T = any, TN = any> extends Destoryable {
 
     private _nodeRef: NodeRef<TN>
     get nodeRef(): NodeRef<TN> {
@@ -110,6 +76,7 @@ export class ComponentRef<T = any, TN = any> {
         public readonly context: AnnoationContext,
         nodes: TN[]
     ) {
+        super();
         if (!context.injector.has(COMPONENT_REFS)) {
             context.injector.registerValue(COMPONENT_REFS, new WeakMap());
         }
@@ -126,19 +93,9 @@ export class ComponentRef<T = any, TN = any> {
         return new NodeSelector(this.nodeRef);
     }
 
-    destroy(): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.forEach(fn => fn());
-            this.destroyCbs = null;
-            !this.nodeRef.destroyed && this.nodeRef.destroy();
-            this.context.clear();
-        }
-    }
-
-    onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
-        }
+    protected destroying(): void {
+        this.nodeRef.destroy();
+        this.context.destroy();
     }
 }
 

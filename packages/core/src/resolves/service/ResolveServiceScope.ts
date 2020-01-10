@@ -41,7 +41,7 @@ export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext> 
         }
 
         // after all clean.
-        ctx.clear();
+        ctx.destroy();
 
     }
 
