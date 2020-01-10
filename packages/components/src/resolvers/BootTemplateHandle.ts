@@ -4,12 +4,11 @@ import { Component } from '../decorators/Component';
 
 export const BootTemplateHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     if (!ctx.type) {
-        let options = ctx.getOptions();
-        if (options.template) {
+        if (ctx.template) {
             ctx.target = await ctx.getContainer().get(ComponentBuilderToken).resolveTemplate({
                 decorator: ctx.decorator || Component.toString(),
-                scope: options.scope,
-                template: options.template,
+                parent: ctx,
+                template: ctx.template,
                 injector: ctx.injector,
                 providers: ctx.providers
             });

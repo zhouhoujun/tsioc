@@ -36,12 +36,12 @@ export class TemplateParseScope extends TemplatesHandle implements IActionSetup 
  * @extends {TemplateHandle}
  */
 export const ElementsTemplateHandle = async function (ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-    let options = ctx.getOptions();
-    if (isArray(options.template)) {
+    let template = ctx.template;
+    if (isArray(template)) {
         let actInjector = ctx.reflects.getActionInjector();
-        ctx.value = await Promise.all(options.template.map(async tp => {
+        ctx.value = await Promise.all(template.map(async tp => {
             let subCtx = TemplateContext.parse(ctx.injector, {
-                scope: options.scope,
+                parent: ctx,
                 template: tp,
                 decorator: ctx.decorator
             });

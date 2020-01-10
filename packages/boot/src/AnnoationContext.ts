@@ -43,6 +43,11 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
      * @memberof AnnoationOption
      */
     annoation?: ClassMetadata;
+
+    /**
+     *  parent context.
+     */
+    parent?: AnnoationContext;
 }
 
 
@@ -139,7 +144,9 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         }
         options.type = options.type || options.module;
         super.setOptions(options);
-
+        if (options.parent instanceof AnnoationContext) {
+            this.setParent(options.parent);
+        }
         if (options.decorator) {
             this.set(CTX_MODULE_DECTOR, options.decorator);
         }

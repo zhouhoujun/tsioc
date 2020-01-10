@@ -15,7 +15,7 @@ import { BuildContext } from '../BuildContext';
 export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IActionSetup {
 
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.target) {
+        if (ctx.value) {
             return;
         }
         if (!ctx.reflects.has(ctx.type)) {

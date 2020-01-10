@@ -44,7 +44,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      */
     async resolve<T>(target: ClassType<T> | IBuildOption<T>): Promise<T> {
         let ctx = await this.build(target);
-        return ctx.target;
+        return ctx.value;
     }
 
     async build<T>(target: ClassType<T> | IBuildOption<T>): Promise<BuildContext> {

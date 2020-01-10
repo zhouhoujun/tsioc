@@ -1,5 +1,5 @@
 import { ICoreInjector } from '@tsdi/core';
-import { AnnoationOption, AnnoationContext } from '../AnnoationContext';
+import { AnnoationOption } from '../AnnoationContext';
 
 
 /**
@@ -9,15 +9,6 @@ import { AnnoationOption, AnnoationContext } from '../AnnoationContext';
  * @interface IModuleResolveOption
  */
 export interface IBuildOption<T = any> extends AnnoationOption<T> {
-    /**
-     * component scope.
-     *
-     * @type {*}
-     * @memberof BootOption
-     */
-    scope?: any;
-
-    parent?: AnnoationContext;
 
     template?: any;
 
@@ -27,5 +18,4 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
      * module reslove in the injector.
      */
     injector?: ICoreInjector;
-
 }

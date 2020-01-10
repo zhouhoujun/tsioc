@@ -24,7 +24,7 @@ export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?
             ref.propRefChildBindings.forEach(b => {
                 let result = refSelector.select(cref, b.bindingName || b.name);
                 if (result) {
-                    ctx.target[b.name] = result;
+                    ctx.value[b.name] = result;
                 }
             });
         }

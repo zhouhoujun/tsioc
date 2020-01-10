@@ -7,7 +7,7 @@ export const ResolveTypeHandle = async function (ctx: BootContext, next: () => P
         let options = ctx.getOptions();
         ctx.target = await ctx.injector.get(BuilderServiceToken).resolve({
             type: ctx.type,
-            scope: options.scope,
+            parent: ctx,
             template: options.template,
             annoation: ctx.annoation,
             decorator: ctx.targetReflect.decorator,

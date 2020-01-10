@@ -17,7 +17,7 @@ export const ModuleBeforeInitHandle = async function (ctx: BuildContext, next?: 
     }
 
     if (ctx.decorator) {
-        let target = ctx.target as BeforeInit;
+        let target = ctx.value as BeforeInit;
         if (target && isFunction(target.onBeforeInit)) {
             await target.onBeforeInit();
         }

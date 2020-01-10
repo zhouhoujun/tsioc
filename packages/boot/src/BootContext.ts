@@ -6,7 +6,7 @@ import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
-import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS } from './context-tokens';
+import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE } from './context-tokens';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
 import { IComponentContext } from './builder/ComponentContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
@@ -67,13 +67,6 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
      * @memberof BootOption
      */
     renderHost?: any;
-    /**
-     * component scope.
-     *
-     * @type {*}
-     * @memberof BootOption
-     */
-    scope?: any;
     /**
      * bind template
      *
@@ -199,7 +192,7 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
      * get template.
      */
     get template(): any {
-        return this.getOptions().template;
+        return this.get(CTX_TEMPLATE);
     }
     /**
      * startup services
@@ -248,11 +241,11 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
             return;
         }
         super.setOptions(options);
-        if (options.scope) {
-            this.set(CTX_CURR_SCOPE, options.scope);
-        }
         if (isTypeObject(options.target)) {
             this.target = options.target;
+        }
+        if (options.template) {
+            this.set(CTX_TEMPLATE, options.template);
         }
         if (isDefined(options.data)) {
             this.set(CTX_DATA, options.data);

@@ -11,7 +11,7 @@ import { AfterContentInit } from '../ComponentLifecycle';
  * @extends {ResolveHandle}
  */
 export const ModuleAfterContentInitHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-    let target = ctx.target as AfterContentInit;
+    let target = ctx.value as AfterContentInit;
     if (target && isFunction(target.onAfterContentInit)) {
         await target.onAfterContentInit();
     }

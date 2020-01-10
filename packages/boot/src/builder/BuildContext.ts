@@ -1,18 +1,27 @@
 import { Injectable, createRaiseContext } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { IComponentContext } from './ComponentContext';
 import { AnnoationContext } from '../AnnoationContext';
 import { IBuildOption } from './IBuildOption';
+import { CTX_TEMPLATE } from '../context-tokens';
 
 @Injectable
-export class BuildContext<T extends IBuildOption = IBuildOption> extends AnnoationContext<T> implements IComponentContext {
+export class BuildContext<T extends IBuildOption = IBuildOption, TMeta extends ModuleConfigure = ModuleConfigure> extends AnnoationContext<T, TMeta> implements IComponentContext {
     /**
      * current target module
      *
      * @type {*}
      * @memberof BuildContext
      */
-    target: any;
+    value: any;
+
+    /**
+     * get template.
+     */
+    get template(): any {
+        return this.get(CTX_TEMPLATE);
+    }
 
     static parse(injector: ICoreInjector, options: IBuildOption): BuildContext {
         return createRaiseContext(injector, BuildContext, options);
@@ -23,8 +32,8 @@ export class BuildContext<T extends IBuildOption = IBuildOption> extends Annoati
             return;
         }
         super.setOptions(options);
-        if (options.parent instanceof AnnoationContext) {
-            this.setParent(options.parent);
+        if (options.template) {
+            this.set(CTX_TEMPLATE, options.template);
         }
     }
 }

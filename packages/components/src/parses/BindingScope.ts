@@ -36,12 +36,11 @@ export class BindingScope extends ParsersHandle implements IActionSetup {
  */
 export const BindingArrayHandle = async function (ctx: ParseContext, next: () => Promise<void>): Promise<void> {
     if (ctx.binding.type === Array && isArray(ctx.bindExpression)) {
-        let options = ctx.getOptions();
         let actInjector = ctx.reflects.getActionInjector();
         ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
             let subCtx = ParseContext.parse(ctx.injector, {
                 type: ctx.type,
-                scope: options.scope,
+                parent: ctx,
                 binding: ctx.binding,
                 bindExpression: tp,
                 template: tp,

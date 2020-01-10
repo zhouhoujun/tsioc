@@ -1,8 +1,9 @@
 import { Injectable, createRaiseContext } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuildContext, IBuildOption, IComponentContext } from '@tsdi/boot';
+import { BuildContext, IBuildOption, IComponentContext, AnnoationContext } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
+import { CTX_COMPONENT } from '../ComponentRef';
 
 /**
  * binding parse option.
@@ -11,8 +12,7 @@ import { DataBinding } from '../bindings/DataBinding';
  * @interface IBindingParseOption
  * @extends {IBuildOption}
  */
-export interface IBindingParseOption extends IBuildOption  {
-    scope?: any;
+export interface IBindingParseOption extends IBuildOption {
     bindExpression?: any;
     binding: IBinding;
 }
@@ -36,9 +36,19 @@ export class ParseContext extends BuildContext<IBindingParseOption> implements I
         return this.getOptions().bindExpression;
     }
 
-    dataBinding?: DataBinding;
+    private _scope: any;
+    get scope(): any {
+        if (!this._scope) {
+            let ctx: AnnoationContext = this;
+            while (ctx && !this._scope) {
+                this._scope = ctx.get(CTX_COMPONENT);
+                ctx = ctx.getParent();
+            }
+        }
+        return this._scope;
+    }
 
-    value?: any;
+    dataBinding?: DataBinding;
 
     static parse(injector: ICoreInjector, options: IBindingParseOption): ParseContext {
         return createRaiseContext(injector, ParseContext, options);

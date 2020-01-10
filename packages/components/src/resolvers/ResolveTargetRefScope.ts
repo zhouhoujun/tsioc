@@ -5,17 +5,17 @@ import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { RefSelector } from '../RefSelector';
-import { ELEMENT_REFS, CTX_ELEMENT_REF } from '../ComponentRef';
+import { ELEMENT_REFS, CTX_ELEMENT_REF, CTX_COMPONENT } from '../ComponentRef';
 
 
 export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements IActionSetup {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         let options = ctx.getOptions();
         let annoation = ctx.annoation as IComponentMetadata;
-        if (!options.scope && !options.parsing && options.template && !annoation.template) {
+        if (!ctx.template && !options.parsing && options.template && !annoation.template) {
             annoation.template = options.template;
         }
-        if (ctx.target && annoation.template) {
+        if (ctx.value && annoation.template) {
             await super.execute(ctx);
             ctx.getParent()?.addChild(ctx);
         } else {
@@ -30,8 +30,8 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
                             ctx.injector.registerValue(ELEMENT_REFS, new WeakMap());
                         }
                         let map = ctx.injector.get(ELEMENT_REFS);
-                        let elRef = refSelector.createElementRef(ctx.target, ctx);
-                        map.set(ctx.target, elRef);
+                        let elRef = refSelector.createElementRef(ctx.value, ctx);
+                        map.set(ctx.value, elRef);
                         ctx.set(CTX_ELEMENT_REF, elRef);
                         ctx.getParent()?.addChild(ctx);
                         return true;

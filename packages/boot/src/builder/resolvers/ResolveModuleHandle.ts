@@ -3,11 +3,11 @@ import { ResolveHandle } from './ResolveHandle';
 
 
 export const ResolveModuleHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
-    if (!ctx.target) {
-        ctx.target = ctx.injector.resolve(ctx.type, ctx.providers);
+    if (!ctx.value) {
+        ctx.value = ctx.injector.resolve(ctx.type, ctx.providers);
     }
 
-    if (ctx.target) {
+    if (ctx.value) {
         await next();
     }
 };

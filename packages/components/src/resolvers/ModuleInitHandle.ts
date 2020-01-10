@@ -12,7 +12,7 @@ import { OnInit } from '../ComponentLifecycle';
 export class ModuleInitHandle extends ResolveHandle {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
 
-        let target = ctx.target as OnInit;
+        let target = ctx.value as OnInit;
         if (target && isFunction(target.onInit)) {
             await target.onInit();
         }

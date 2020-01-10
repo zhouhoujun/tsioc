@@ -13,15 +13,15 @@ import { ComponentBuilderToken } from '../IComponentBuilder';
 export const ParseSelectorHandle = async function (ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
     if (ctx.selector) {
         let selector = ctx.selector;
-        let options = ctx.getOptions();
+        let template = ctx.template;
         ctx.value = await ctx.getContainer().get(ComponentBuilderToken)
             .resolve({
                 type: selector,
-                scope: options.scope,
+                parent: ctx,
                 parsing: true,
-                template: options.template,
+                template: template,
                 injector: ctx.injector,
-                providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: options })
+                providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions()})
             });
     }
     if (isNullOrUndefined(ctx.value)) {

@@ -415,6 +415,7 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         let key = this.getTokenKey(token);
         if (this.has(key)) {
             this.factories.delete(key);
+            this.singletons.delete(key);
             this.provideTypes.delete(key);
             if (isClass(key)) {
                 let keys = [];

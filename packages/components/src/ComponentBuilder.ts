@@ -41,8 +41,8 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
                 ctx.injector.registerValue(ELEMENT_REFS, new WeakMap());
             }
             let map = ctx.injector.get(ELEMENT_REFS);
-            let elRef = new ElementRef(ctx, ctx.target);
-            map.set(ctx.target, elRef);
+            let elRef = new ElementRef(ctx, ctx.value);
+            map.set(ctx.value, elRef);
             return elRef;
         }
     }

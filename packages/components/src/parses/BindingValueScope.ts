@@ -59,26 +59,26 @@ export const BindingScopeHandle = async function (ctx: ParseContext, next?: () =
             let exp = ctx.bindExpression.trim();
             if (ctx.binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    ctx.dataBinding = new OneWayBinding(ctx.injector, options.scope, ctx.binding, exp.replace(bindPref, '').trim());
+                    ctx.dataBinding = new OneWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ctx.injector, options.scope, ctx.binding, exp.replace(twobindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ctx.injector, options.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
                 }
             } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                ctx.dataBinding = new EventBinding(ctx.injector, options.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
+                ctx.dataBinding = new EventBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
             }
         }
     }
 
     if (ctx.dataBinding instanceof ParseBinding) {
         if (!ctx.dataBinding.source) {
-            ctx.dataBinding.source = options.scope;
+            ctx.dataBinding.source = ctx.scope;
         }
         options.bindExpression = ctx.dataBinding.resolveExression();
     } else if (ctx.dataBinding instanceof DataBinding) {
         if (!ctx.dataBinding.source) {
-            ctx.dataBinding.source = options.scope;
+            ctx.dataBinding.source = ctx.scope;
         }
         ctx.value = ctx.dataBinding.resolveExression();
     }
@@ -93,7 +93,7 @@ export const TranslateExpressionHandle = async function (ctx: ParseContext, next
     let options = ctx.getOptions();
     if (!isNullOrUndefined(ctx.bindExpression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
-            scope: options.scope,
+            parent: ctx,
             template: ctx.bindExpression,
             decorator: ctx.decorator,
             providers: ctx.providers
@@ -123,7 +123,6 @@ export const TranslateExpressionHandle = async function (ctx: ParseContext, next
  * @extends {ParseHandle}
  */
 export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-    let options = ctx.getOptions();
     let injector = ctx.injector;
     if (!isNullOrUndefined(ctx.bindExpression)) {
         let pdr = ctx.binding.provider;
@@ -149,7 +148,7 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             ctx.value = await injector.get(ComponentBuilderToken).resolveRef({
                 type: selector,
-                scope: options.scope,
+                parent: ctx,
                 template: template,
                 providers: ctx.providers,
                 injector: ctx.injector

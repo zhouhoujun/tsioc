@@ -10,26 +10,26 @@ import { RefSelector } from '../RefSelector';
 export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 
     let annoation = ctx.annoation as IComponentMetadata;
-
+    ctx.set(CTX_COMPONENT, ctx.value);
     let pCtx = TemplateContext.parse(ctx.injector, {
-        scope: ctx.target,
+        parent: ctx,
         template: annoation.template,
         annoation: annoation,
         decorator: ctx.decorator
     });
+
     let actInjector = ctx.reflects.getActionInjector();
 
     await actInjector.getInstance(TemplateParseScope)
         .execute(pCtx);
 
     if (!isNullOrUndefined(pCtx.value)) {
-        pCtx.setParent(ctx);
         ctx.addChild(pCtx);
         let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
         pCtx.set(CTX_TEMPLATE_REF, pCtx.value);
-        ctx.set(CTX_COMPONENT, ctx.target);
-        ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx, ...(isArray(pCtx.value) ? pCtx.value : [pCtx.value])));
-
+        ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.value, pCtx, ...(isArray(pCtx.value) ? pCtx.value : [pCtx.value])));
         await next();
+    } else {
+        ctx.remove(CTX_COMPONENT)
     }
 };

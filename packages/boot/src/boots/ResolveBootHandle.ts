@@ -14,7 +14,7 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
             let options = ctx.getOptions();
             ctx.bootstrap = await ctx.injector.get(BuilderServiceToken).resolve({
                 type: bootModule,
-                scope: options.scope,
+                parent: ctx,
                 template: options.template,
                 providers: ctx.providers,
                 injector: ctx.injector
