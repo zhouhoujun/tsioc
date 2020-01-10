@@ -1,4 +1,4 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, DecoratorProvider, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, DecoratorProvider } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';

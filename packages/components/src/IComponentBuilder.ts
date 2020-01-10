@@ -41,7 +41,7 @@ export interface IComponentBuilder extends IBuilderService {
      * resolve node componsite of component.
      * @param target
      */
-    resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | ElementRef<T>>;
+    resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | ElementRef<T> | T>;
     /**
      * get pipe instance via token.
      * @param token

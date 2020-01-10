@@ -6,7 +6,7 @@ import { BuilderService, IBuildOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS, CTX_COMPONENT_REF, ELEMENT_REFS, ElementRef, ComponentRef } from './ComponentRef';
+import { COMPONENT_REFS, CTX_COMPONENT_REF, ELEMENT_REFS, ElementRef, ComponentRef, CTX_ELEMENT_REF } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
@@ -32,19 +32,9 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.value;
     }
 
-    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | ElementRef<T>> {
+    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | ElementRef<T> | T> {
         let ctx = await this.build(target);
-        if (ctx.has(CTX_COMPONENT_REF)) {
-            return ctx.get(CTX_COMPONENT_REF)
-        } else {
-            if (!ctx.injector.has(ELEMENT_REFS)) {
-                ctx.injector.registerValue(ELEMENT_REFS, new WeakMap());
-            }
-            let map = ctx.injector.get(ELEMENT_REFS);
-            let elRef = new ElementRef(ctx, ctx.value);
-            map.set(ctx.value, elRef);
-            return elRef;
-        }
+        return ctx.get(CTX_COMPONENT_REF) ?? ctx.get(CTX_ELEMENT_REF) ?? ctx.value;
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector, decorator?: string): T {
