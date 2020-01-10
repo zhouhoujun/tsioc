@@ -211,7 +211,10 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
     }
 
     clear() {
-        this.contexts.clear();
+        if (this._context) {
+            this._context.clear();
+            this._context = null;
+        }
     }
 
 }
