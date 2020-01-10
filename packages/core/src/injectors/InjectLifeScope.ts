@@ -6,6 +6,14 @@ import { ModuleToTypesAction } from './ModuleToTypesAction';
 import { ModuleInjectScope } from './ModuleInjectScope';
 
 export class InjectLifeScope extends LifeScope<InjectActionContext> {
+    execute(ctx: InjectActionContext, next?: () => void): void {
+        super.execute(ctx, next);
+        // after all clean.
+        (async () => {
+            ctx.clear();
+        })();
+    }
+
     setup() {
         let ijdr = new InjectDecoratorRegisterer();
         this.actInjector.regAction(IocExtRegisterScope);

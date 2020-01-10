@@ -21,8 +21,9 @@ export class BindingScope extends ParsersHandle implements IActionSetup {
         }
         // after all clean.
         if (isNullOrUndefined(ctx.value)) {
-            ctx.getParent()?.removeChild(ctx);
-            ctx.setParent(null);
+            (async () => {
+                ctx.clear();
+            })();
         }
     }
 

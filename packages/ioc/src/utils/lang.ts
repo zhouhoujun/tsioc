@@ -131,6 +131,9 @@ export namespace lang {
      * @param el remove item.
      */
     export function remove<T>(list: T[], el: T | ((el: T) => boolean)) {
+        if (!list.length) {
+            return null;
+        }
         let elm = isFunction(el) ? list.find(el) : el;
         const index = list.indexOf(elm);
         if (index > -1) {

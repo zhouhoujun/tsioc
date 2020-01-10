@@ -40,6 +40,11 @@ export class IocResolveScope<T extends ResolveActionContext = ResolveActionConte
             ctx.injector.registerType(ctx.token);
             ctx.instance = ctx.injector.get(ctx.token, ctx.providers);
         }
+
+        // after all clean.
+        (async () => {
+            ctx.clear();
+        })();
     }
 
     setup() {

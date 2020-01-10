@@ -39,6 +39,11 @@ export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext> 
                 }
             }
         }
+
+        // after all clean.
+        (async () => {
+            ctx.clear();
+        })()
     }
 
     protected clear(ctx: ResolveServiceContext) {
