@@ -210,12 +210,14 @@ export abstract class IocRaiseContext<T extends ActionContextOption = ActionCont
         return createRaiseContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} });
     }
 
+    private _cleared;
     clear() {
-        if (this._context) {
+        if (!this._cleared) {
+            this._cleared = true;
             this._context.clear();
+            this._context = null;
+            this._injector = null;
         }
-        this._context = null;
-        this._injector = null;
     }
 
 }

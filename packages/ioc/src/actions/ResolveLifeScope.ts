@@ -22,9 +22,7 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
         }
 
         // after all clean.
-        (async () => {
-            ctx.clear();
-        })();
+        ctx.clear();
     }
 
     setup() {

@@ -34,9 +34,7 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
 
         // after all clean.
         if (isNullOrUndefined(ctx.value)) {
-            (async () => {
-                ctx.clear();
-            })();
+            ctx.clear();
         }
     }
 

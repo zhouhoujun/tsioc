@@ -26,9 +26,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
             super.execute(ctx, next);
         }
         // after all clean.
-        (async () => {
-            ctx.clear();
-        })();
+        ctx.clear();
     }
 
     setup() {

@@ -21,9 +21,7 @@ export class TemplateParseScope extends TemplatesHandle implements IActionSetup 
         }
         // after all clean.
         if (isNullOrUndefined(ctx.value)) {
-            (async () => {
-                ctx.clear();
-            })();
+            ctx.clear();
         }
     }
     setup() {

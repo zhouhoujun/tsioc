@@ -445,9 +445,17 @@ export abstract class BaseInjector extends IocCoreService implements IInjector {
         return this;
     }
 
+    private _cleared;
     clear() {
-        this.factories.clear();
-        this.provideTypes.clear();
+        if (this._cleared) {
+            this._cleared = true;
+            this.singletons.clear();
+            this.factories.clear();
+            this.provideTypes.clear();
+            this.singletons = null;
+            this.factories = null;
+            this.provideTypes = null;
+        }
     }
 
     /**
