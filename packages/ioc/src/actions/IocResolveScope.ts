@@ -2,11 +2,11 @@ import { ResolveActionContext } from './ResolveActionContext';
 import { ResolveInInjectorAction } from './resolves/ResolveInInjectorAction';
 import { ResolveInRootAction } from './resolves/ResolveInRootAction';
 import { ResolvePrivateAction } from './resolves/ResolvePrivateAction';
-import { ActionScope } from './ActionScope';
 import { ResolveRefAction } from './resolves/ResolveRefAction';
 import { isNullOrUndefined, isClass, lang } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { CTX_TARGET_TOKEN } from '../context-tokens';
+import { IocCompositeAction } from './IocCompositeAction';
 
 
 /**
@@ -17,10 +17,10 @@ import { CTX_TARGET_TOKEN } from '../context-tokens';
  * @export
  * @abstract
  * @class IocResolveScope
- * @extends {ActionScope<T>}
+ * @extends {IocCompositeAction<T>}
  * @template T
  */
-export class IocResolveScope<T extends ResolveActionContext = ResolveActionContext> extends ActionScope<T> {
+export class IocResolveScope<T extends ResolveActionContext = ResolveActionContext> extends IocCompositeAction<T> {
 
     execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {

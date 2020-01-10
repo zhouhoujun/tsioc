@@ -81,7 +81,6 @@ export * from './actions/Action';
 export * from './actions/IocAction';
 export * from './actions/ActionInjector';
 export * from './actions/IocCompositeAction';
-export * from './actions/ActionScope';
 export * from './actions/IocCacheManager';
 export * from './actions/LifeScope';
 export * from './actions/RegisterLifeScope';
