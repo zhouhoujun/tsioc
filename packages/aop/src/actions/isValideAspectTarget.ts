@@ -13,8 +13,8 @@ export function isValideAspectTarget(targetType: Type, reflects: ITypeReflects):
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-    if (reflects.hasMetadata(NonePointcut, targetType)) {
+    if (targetType.nonePointcut) {
         return false;
     }
-    return !targetType.nonePointcut;
+    return !reflects.hasMetadata(NonePointcut, targetType)
 }
