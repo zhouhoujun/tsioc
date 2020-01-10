@@ -1,7 +1,7 @@
 import { Abstract, Type, isString, Inject, lang, Token, TypeReflectsToken, ITypeReflects, SymbolType, isClass } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, IComponentRef, ComponentRef } from './ComponentRef';
+import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, ComponentRef, ElementRef } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 
 
@@ -38,9 +38,13 @@ export abstract class RefSelector {
         return DefaultComponentFactory;
     }
 
-    createComponentRef(type: Type, target: Object, context: AnnoationContext, ...nodes: Object[]): IComponentRef {
+    createComponentRef(type: Type, target: Object, context: AnnoationContext, ...nodes: Object[]): ComponentRef {
         let factory = context.injector.getService({ token: ComponentFactory, target: type, default: this.getDefaultComponentFactory() });
         return factory.create(type, target, context, ...nodes);
+    }
+
+    createElementRef<T>(target: T, context: AnnoationContext): ElementRef<T> {
+        return new ElementRef(context, target);
     }
 
     toSelectorToken(selector: string): SymbolType {
@@ -79,9 +83,15 @@ export abstract class RefSelector {
         return null;
     }
 
+    isNodeType(element: any): boolean {
+        return this.isComponentType(element) || this.isElementType(element);
+    }
+
     isComponentType(element: any): boolean {
         return isClass(element) && this.reflects.get<IComponentReflect>(element).component;
     }
+
+    abstract isElementType(element: any): boolean;
 
 }
 

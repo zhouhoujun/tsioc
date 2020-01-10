@@ -17,7 +17,7 @@ export const AnnoationDesignAction = function (ctx: DesignActionContext, next: (
     if (!tgRef.decorator) {
         tgRef.decorator = cuurDec;
     }
-    tgRef.annoDecoractor = cuurDec;
+
     let decorator = cuurDec || tgRef.decorator;
     let metas = ctx.reflects.getMetadata(decorator, ctx.type);
     if (metas.length) {

@@ -17,4 +17,14 @@ export class BuildContext<T extends IBuildOption = IBuildOption> extends Annoati
     static parse(injector: ICoreInjector, options: IBuildOption): BuildContext {
         return createRaiseContext(injector, BuildContext, options);
     }
+
+    setOptions(options: T) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        if (options.parent instanceof AnnoationContext) {
+            this.setParent(options.parent);
+        }
+    }
 }

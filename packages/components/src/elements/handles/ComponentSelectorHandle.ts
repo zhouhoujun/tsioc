@@ -16,7 +16,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
         let options = ctx.getOptions();
         if (isArray(options.template) && ctx.annoation.template === options.template) {
             ctx.selector = refSelector.getDefaultCompose();
-        } else if (refSelector.isComponentType(options.template)) {
+        } else if (refSelector.isNodeType(options.template)) {
             ctx.selector = options.template;
             options.template = null;
         } else if (options.template) {
@@ -42,7 +42,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
             if (isString(selector)) {
                 let selkey = this.getSelectorToken(refSelector, selector);
                 return ctx.injector.getTokenProvider(selkey);
-            } else if (refSelector.isComponentType(selector)) {
+            } else if (refSelector.isNodeType(selector)) {
                 return selector;
             }
         }

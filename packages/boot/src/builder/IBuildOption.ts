@@ -1,5 +1,5 @@
 import { ICoreInjector } from '@tsdi/core';
-import { AnnoationOption } from '../AnnoationContext';
+import { AnnoationOption, AnnoationContext } from '../AnnoationContext';
 
 
 /**
@@ -16,6 +16,8 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
      * @memberof BootOption
      */
     scope?: any;
+
+    parent?: AnnoationContext;
 
     template?: any;
 

@@ -54,15 +54,10 @@ export class WorkflowInstance<T extends IActivity<TCtx> = IActivity, TCtx extend
 
     state: RunState;
 
-    private _status: ActivityStatus
-    get status(): ActivityStatus {
-        return this._status;
-    }
-
     async start(data?: any): Promise<TCtx> {
         let injector = this.getInjector();
         this.context.set(CTX_DATA, data);
-        this._status = this.getInjector().get(ActivityStatus);
+        this.context.set(ActivityStatus, this.getInjector().get(ActivityStatus));
         this.context.set(WorkflowInstance, this);
         if (this.context.id && !injector.has(this.context.id)) {
             injector.registerValue(this.context.id, this);

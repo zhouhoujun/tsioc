@@ -1,5 +1,5 @@
 import { isNullOrUndefined, isArray, IActionSetup } from '@tsdi/ioc';
-import { TemplateHandle, TemplatesHandle } from './TemplateHandle';
+import { TemplatesHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
 import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
@@ -15,6 +15,7 @@ import { TranslateSelectorScope } from './TranslateSelectorScope';
 export class TemplateParseScope extends TemplatesHandle implements IActionSetup {
     async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
+        // after template parsed.
         if (isNullOrUndefined(ctx.value) && next) {
             await next();
         }

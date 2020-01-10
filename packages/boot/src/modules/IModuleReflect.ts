@@ -1,4 +1,4 @@
-import { ITypeReflect, InjectToken, IInjector } from '@tsdi/ioc';
+import { ITypeReflect, InjectToken, IInjector, Type } from '@tsdi/ioc';
 import { ModuleConfigure } from './ModuleConfigure';
 import { ModuleRef } from './ModuleRef';
 
@@ -9,19 +9,20 @@ export const ParentInjectorToken = new InjectToken<IInjector>('IOC_PARENT_INJECT
 
 export interface IModuleReflect extends ITypeReflect {
     /**
-     * anno decorator.
-     *
-     * @type {string}
-     * @memberof IModuleReflect
-     */
-    annoDecoractor?: string;
-    /**
      * baseurl.
      *
      * @type {string}
      * @memberof IModuleReflect
      */
     baseURL?: string;
+    /**
+     *  components of current module.
+     */
+    components?: Type[];
+    /**
+     * dectors of components.
+     */
+    componentDectors?: string[];
     /**
      * get annoation.
      *

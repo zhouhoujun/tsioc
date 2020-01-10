@@ -40,7 +40,7 @@ export class ActivityRefSelector extends RefSelector {
         return attrSelPrefix.test(selector) ? selector : `ACT_ATTR_${selector}`;
     }
 
-    isComponentType(element: any): boolean {
-        return super.isComponentType(element) || this.reflects.isExtends(element, Activity);
+    isElementType(element: any): boolean {
+        return this.reflects.isExtends(element, Activity);
     }
 }

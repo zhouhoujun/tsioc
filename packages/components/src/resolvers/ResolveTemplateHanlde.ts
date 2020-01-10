@@ -8,32 +8,28 @@ import { RefSelector } from '../RefSelector';
 
 
 export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
-    let options = ctx.getOptions();
+
     let annoation = ctx.annoation as IComponentMetadata;
-    if (!options.scope && !options.parsing && options.template && !annoation.template) {
-        annoation.template = options.template;
+
+    let pCtx = TemplateContext.parse(ctx.injector, {
+        scope: ctx.target,
+        template: annoation.template,
+        annoation: annoation,
+        decorator: ctx.decorator
+    });
+    let actInjector = ctx.reflects.getActionInjector();
+
+    await actInjector.getInstance(TemplateParseScope)
+        .execute(pCtx);
+
+    if (!isNullOrUndefined(pCtx.value)) {
+        pCtx.setParent(ctx);
+        ctx.addChild(pCtx);
+        let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
+        pCtx.set(CTX_TEMPLATE_REF, pCtx.value);
+        ctx.set(CTX_COMPONENT, ctx.target);
+        ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx, ...(isArray(pCtx.value) ? pCtx.value : [pCtx.value])));
+
+        await next();
     }
-
-    if (ctx.target && annoation.template) {
-        let pCtx = TemplateContext.parse(ctx.injector, {
-            scope: ctx.target,
-            template: annoation.template,
-            annoation: annoation,
-            decorator: ctx.decorator
-        });
-        let actInjector = ctx.reflects.getActionInjector();
-
-        await actInjector.getInstance(TemplateParseScope)
-            .execute(pCtx);
-
-        if (!isNullOrUndefined(pCtx.value)) {
-            pCtx.setParent(ctx);
-            ctx.addChild(pCtx);
-            let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(pCtx.decorator, RefSelector)
-            pCtx.set(CTX_TEMPLATE_REF, pCtx.value);
-            ctx.set(CTX_COMPONENT, ctx.target);
-            ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.target, pCtx, ...(isArray(pCtx.value) ? pCtx.value : [pCtx.value])));
-        }
-    }
-    await next();
 };

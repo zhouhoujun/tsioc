@@ -27,9 +27,7 @@ import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
 import { ModuleBeforeInitHandle } from './resolvers/ModuleBeforeInitHandle';
 import { BindingPropertyHandle } from './resolvers/BindingPropertyHandle';
 import { ModuleAfterInitHandle } from './resolvers/ModuleAfterInitHandle';
-import { ResolveTemplateHanlde } from './resolvers/ResolveTemplateHanlde';
-import { ValifyTeamplateHandle } from './resolvers/ValifyTeamplateHandle';
-import { BindingTemplateRefHandle } from './resolvers/BindingTemplateRefHandle';
+import { ResolveTargetRefScope } from './resolvers/ResolveTargetRefScope';
 import { ModuleAfterContentInitHandle } from './resolvers/ModuleAfterContentInitHandle';
 import { BindingOutputHandle } from './resolvers/BindingOutputHandle';
 import { BootTemplateHandle } from './resolvers/BootTemplateHandle';
@@ -91,9 +89,7 @@ export class ComponentsModule {
             .use(BindingPropertyHandle)
             .use(ModuleInitHandle)
             .use(ModuleAfterInitHandle)
-            .use(ResolveTemplateHanlde)
-            .use(ValifyTeamplateHandle)
-            .use(BindingTemplateRefHandle)
+            .use(ResolveTargetRefScope)
             .use(BindingOutputHandle)
             .use(ModuleAfterContentInitHandle);
 

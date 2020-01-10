@@ -12,8 +12,8 @@ import { ElementNode } from './ElementNode';
 @Singleton()
 export class RefElementSelector extends RefSelector {
 
-    isComponentType(element: any): boolean {
-        return super.isComponentType(element) || this.reflects.isExtends(element, ElementNode);
+    isElementType(element: any): boolean {
+        return this.reflects.isExtends(element, ElementNode);
     }
 
     getDefaultCompose(): Type<any> {

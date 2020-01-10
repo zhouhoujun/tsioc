@@ -3,9 +3,10 @@ import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
 
-export const CTX_COMPONENT = new InjectToken<any>('CTX_COMPONENT')
-export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF')
-export const CTX_COMPONENT_REF = new InjectToken<IComponentRef>('CTX_COMPONENT_REF')
+export const CTX_COMPONENT = new InjectToken<any>('CTX_COMPONENT');
+export const CTX_ELEMENT_REF = new InjectToken<any | any[]>('CTX_ELEMENT_REF');
+export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF');
+export const CTX_COMPONENT_REF = new InjectToken<ComponentRef>('CTX_COMPONENT_REF');
 
 export interface IDestoryable {
     destroy(): void;
@@ -51,24 +52,51 @@ export class NodeRef<T> implements IDestoryable {
     }
 }
 
+export class ElementRef<T> implements IDestoryable {
 
-export interface IComponentRef<T = any, TN = any> extends IDestoryable {
-    readonly context: AnnoationContext;
-    readonly instance: T;
-    readonly componentType: Type<T>;
-    readonly nodeRef: NodeRef<TN>;
-    getNodeSelector(): NodeSelector;
+    protected _destroyed = false;
+    private destroyCbs: (() => void)[] = [];
+    get destroyed() {
+        return this._destroyed;
+    }
+
+    private _element: T;
+    get nativeElement(): T {
+        return this._element;
+    }
+
+    constructor(public readonly context: AnnoationContext, element: T) {
+        this._element = element;
+    }
+
+    destroy(): void {
+        if (!this.destroyed) {
+            let element = this._element as T & IDestoryable;
+            if (element && isFunction(element.destroy)) {
+                element.destroy();
+            }
+            delete this._element;
+            this.context.clear();
+            this._destroyed = true;
+        }
+    }
+
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
+        }
+    }
 }
 
-export const COMPONENT_REFS = new InjectToken<WeakMap<any, IComponentRef>>('COMPONENT_REFS');
-
+export const COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef>>('COMPONENT_REFS');
+export const ELEMENT_REFS = new InjectToken<WeakMap<any, ElementRef<any>>>('ELEMENT_REFS');
 
 @Abstract()
 export abstract class ComponentFactory {
-    abstract create<T>(componentType: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): IComponentRef<T, any>;
+    abstract create<T>(componentType: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): ComponentRef<T, any>;
 }
 
-export class ComponentRef<T = any, TN = any> implements IComponentRef<T, TN> {
+export class ComponentRef<T = any, TN = any> {
     private destroyCbs: (() => void)[] = [];
 
     private _nodeRef: NodeRef<TN>
@@ -116,7 +144,7 @@ export class ComponentRef<T = any, TN = any> implements IComponentRef<T, TN> {
 
 @Singleton()
 export class DefaultComponentFactory extends ComponentFactory {
-    create<T, TN>(componentType: Type<T>, target: T, context: AnnoationContext, ...nodes: TN[]): IComponentRef<T, TN> {
+    create<T, TN>(componentType: Type<T>, target: T, context: AnnoationContext, ...nodes: TN[]): ComponentRef<T, TN> {
         return new ComponentRef(componentType, target, context, nodes);
     }
 }

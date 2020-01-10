@@ -1,8 +1,8 @@
 import {
     isClass, Type, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    IInjector, InjectorProxyToken, InjectorProxy, isDefined
+    InjectorProxyToken, InjectorProxy, isDefined
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
+import { IContainer, ICoreInjector } from '@tsdi/core';
 import { Input, ComponentBuilderToken } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
@@ -43,12 +43,6 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     @Input() name: string;
 
     @Input() pipe: string;
-
-    /**
-     * activity result.
-     */
-    result: T;
-
     /**
      * conatiner.
      *

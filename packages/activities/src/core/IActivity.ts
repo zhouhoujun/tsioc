@@ -6,7 +6,6 @@ export const ActivityResult = new InjectToken<any>('Activity_Result');
 export interface IActivity<T = any, TContext extends ActivityContext = ActivityContext> {
     name?: string;
     readonly runScope: boolean;
-    readonly result: T;
     run(ctx: TContext, next?: () => Promise<void>): Promise<void>;
     toAction(): PromiseUtil.ActionHandle<T>;
 }

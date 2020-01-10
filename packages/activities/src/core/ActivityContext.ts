@@ -9,7 +9,7 @@ import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ActivityStatus } from './ActivityStatus';
 import { ActivityRef } from './ActivityRef';
-import { IActivity } from './IActivity';
+import { IActivity, ActivityResult } from './IActivity';
 
 /**
  * workflow context token.
@@ -21,13 +21,9 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
  */
 export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
 
-/**
- * each body token.
- */
-export const ACTIVITY_RESULT = new InjectToken<any>('ACTIVITY_RESULT');
 
 /**
- * base activity execute context.
+ * activity execute context.
  *
  * @export
  * @class ActivityContext
@@ -37,6 +33,9 @@ export const ACTIVITY_RESULT = new InjectToken<any>('ACTIVITY_RESULT');
 @Refs('@Task', BootContext)
 export class ActivityContext extends BootContext<ActivityOption, ActivityMetadata> {
 
+    /**
+     * root activity.
+     */
     get activity(): IActivity {
         return this.get(COMPONENT_REFS) || this.getBootTarget();
     }
@@ -64,81 +63,81 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityMetadat
     runnable: WorkflowInstance;
 
     get result(): any {
-        return this.get(ACTIVITY_RESULT);
+        return this.get(ActivityResult);
     }
 
     /**
      * workflow instane run status.
      */
     get status(): ActivityStatus {
-        return this.runnable.status;
+        return this.get(ActivityStatus);
     }
 
-    private _body: any;
-    /**
-     * context share body data.
-     *
-     * @type {*}
-     * @memberof ActivityContext
-     */
-    get body(): any {
-        if (!this._body) {
-            this._body = this.get(CTX_EACH_BODY) || this.get(CTX_DATA);
-        }
-        return this._body;
-    }
-    /**
-     * set context share body.
-     *
-     * @param {*} value the value set to body.
-     * @memberof ActivityContext
-     */
-    setBody(value: any);
-    /**
-     * set context share body.
-     *
-     * @param {*} value  the value set to body.
-     * @param {string} filed name of filed to set value to
-     * @memberof ActivityContext
-     */
-    setBody(value: any, filed: string);
-    /**
-     * set context share body.
-     *
-     * @param {*} value the value set to body.
-     * @param {boolean} merge merge to existe body or not.
-     * @memberof ActivityContext
-     */
-    setBody(value: any, merge: boolean);
-    setBody(value: any, way?: any) {
-        let body = this.body;
-        if (isNullOrUndefined(body)) {
-            body = {};
-        }
-        if (isString(way)) {
-            body[way] = value;
-        } else if (way === true) {
-            body = isBaseObject(value) ? Object.assign(body, value) : value;
-        } else {
-            body = value;
-        }
-        this._body = body;
-        this.set(CTX_EACH_BODY, body);
-        return this;
-    }
+    // private _body: any;
+    // /**
+    //  * context share body data.
+    //  *
+    //  * @type {*}
+    //  * @memberof ActivityContext
+    //  */
+    // get body(): any {
+    //     if (!this._body) {
+    //         this._body = this.get(CTX_EACH_BODY) || this.get(CTX_DATA);
+    //     }
+    //     return this._body;
+    // }
+    // /**
+    //  * set context share body.
+    //  *
+    //  * @param {*} value the value set to body.
+    //  * @memberof ActivityContext
+    //  */
+    // setBody(value: any);
+    // /**
+    //  * set context share body.
+    //  *
+    //  * @param {*} value  the value set to body.
+    //  * @param {string} filed name of filed to set value to
+    //  * @memberof ActivityContext
+    //  */
+    // setBody(value: any, filed: string);
+    // /**
+    //  * set context share body.
+    //  *
+    //  * @param {*} value the value set to body.
+    //  * @param {boolean} merge merge to existe body or not.
+    //  * @memberof ActivityContext
+    //  */
+    // setBody(value: any, merge: boolean);
+    // setBody(value: any, way?: any) {
+    //     let body = this.body;
+    //     if (isNullOrUndefined(body)) {
+    //         body = {};
+    //     }
+    //     if (isString(way)) {
+    //         body[way] = value;
+    //     } else if (way === true) {
+    //         body = isBaseObject(value) ? Object.assign(body, value) : value;
+    //     } else {
+    //         body = value;
+    //     }
+    //     this._body = body;
+    //     this.set(CTX_EACH_BODY, body);
+    //     return this;
+    // }
 
-    getCurrBaseURL() {
-        let baseURL = '';
-        this.status.scopes.some(s => {
-            if (s.scope.runScope && s.scope instanceof ActivityRef) {
-                baseURL = s.scope.context.targetReflect.baseURL;
-                return !!baseURL;
-            }
-            return false;
-        });
+    // getCurrBaseURL() {
+    //     let baseURL = '';
+    //     this.status.scopes.some(s => {
+    //         if (s.scope.runScope && s.scope instanceof ActivityRef) {
+    //             baseURL = s.scope.context.targetReflect.baseURL;
+    //             return !!baseURL;
+    //         }
+    //         return false;
+    //     });
 
-        return baseURL || this.baseURL;
-    }
+    //     return baseURL || this.baseURL;
+    // }
 
     static parse(injector: IInjector, target: Type | ActivityOption): ActivityContext {
         return createRaiseContext(injector, ActivityContext, isToken(target) ? { module: target } : target);

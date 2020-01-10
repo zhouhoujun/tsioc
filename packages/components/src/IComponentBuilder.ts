@@ -1,6 +1,6 @@
 import { ProviderTypes, Type, InjectToken, IInjector, Token } from '@tsdi/ioc';
 import { IBuilderService, IBuildOption } from '@tsdi/boot';
-import { IComponentRef } from './ComponentRef';
+import { ElementRef, ComponentRef } from './ComponentRef';
 import { IPipeTransform } from './bindings/IPipeTransform';
 
 /**
@@ -41,7 +41,7 @@ export interface IComponentBuilder extends IBuilderService {
      * resolve node componsite of component.
      * @param target
      */
-    resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<IComponentRef<T> | T>;
+    resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | ElementRef<T>>;
     /**
      * get pipe instance via token.
      * @param token
@@ -51,10 +51,17 @@ export interface IComponentBuilder extends IBuilderService {
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector, decorator?: string): T
     /**
      * get target component ref
-     * @param target target injector.
+     * @param target target component.
      * @param injector the injector target registed in.
      */
-    getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T> | T;
+    getComponentRef<T>(target: T, injector?: IInjector): ComponentRef<T>;
+
+    /**
+     * get element ref
+     * @param target target element.
+     * @param injector the injector target registed in.
+     */
+    getElementRef<T>(target: T, injector?: IInjector): ElementRef<T>;
     /**
      * serialize component as template json.
      *

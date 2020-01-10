@@ -6,7 +6,7 @@ import { BuilderService, IBuildOption } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS, IComponentRef } from './ComponentRef';
+import { COMPONENT_REFS, CTX_COMPONENT_REF, ELEMENT_REFS, ElementRef, ComponentRef } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
@@ -32,9 +32,19 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.value;
     }
 
-    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<IComponentRef<T> | T> {
+    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | ElementRef<T>> {
         let ctx = await this.build(target);
-        return ctx.get(COMPONENT_REFS) || ctx.target;
+        if (ctx.has(CTX_COMPONENT_REF)) {
+            return ctx.get(CTX_COMPONENT_REF)
+        } else {
+            if (!ctx.injector.has(ELEMENT_REFS)) {
+                ctx.injector.registerValue(ELEMENT_REFS, new WeakMap());
+            }
+            let map = ctx.injector.get(ELEMENT_REFS);
+            let elRef = new ElementRef(ctx, ctx.target);
+            map.set(ctx.target, elRef);
+            return elRef;
+        }
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector, decorator?: string): T {
@@ -45,9 +55,19 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return injector.get(token);
     }
 
-    getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T> | T {
+    getComponentRef<T>(target: T, injector?: IInjector): ComponentRef<T> {
         injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
-        return injector.get(COMPONENT_REFS)?.get(target) || target;
+        return injector.get(COMPONENT_REFS)?.get(target);
+    }
+
+    /**
+     * get element ref
+     * @param target target element.
+     * @param injector the injector target registed in.
+     */
+    getElementRef<T>(target: T, injector?: IInjector): ElementRef<T> {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
+        return injector.get(ELEMENT_REFS)?.get(target);
     }
 
     serialize<T = any>(component: T): any {
