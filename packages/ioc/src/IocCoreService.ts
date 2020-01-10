@@ -6,5 +6,6 @@
  * @class IocCoreService
  */
 export abstract class IocCoreService {
+    static nonePointcut = true;
     constructor() { }
 }

@@ -40,5 +40,5 @@ export abstract class Destoryable implements IDestoryable {
 }
 
 export abstract class IocDestoryable extends Destoryable {
-
+    static nonePointcut = true;
 }

@@ -121,6 +121,7 @@ export interface Type<T = any> extends Function {
     new(...args: any[]): T;
     classAnnations?: ClassAnnations;
     getClassAnnations?(): ClassAnnations;
+    nonePointcut?: boolean;
 }
 
 /**

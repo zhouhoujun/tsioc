@@ -1,4 +1,4 @@
-import { isClass, isBaseType, ITypeReflects, Type, IocCoreService, IocDestoryable } from '@tsdi/ioc';
+import { isClass, isBaseType, ITypeReflects, Type } from '@tsdi/ioc';
 import { NonePointcut } from '../decorators/NonePointcut';
 
 
@@ -16,8 +16,5 @@ export function isValideAspectTarget(targetType: Type, reflects: ITypeReflects):
     if (reflects.hasMetadata(NonePointcut, targetType)) {
         return false;
     }
-    if (reflects.isExtends(targetType, IocDestoryable)) {
-        return false;
-    }
-    return !reflects.isExtends(targetType, IocCoreService);
+    return !targetType.nonePointcut;
 }
