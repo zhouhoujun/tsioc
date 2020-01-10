@@ -20,6 +20,11 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
         if (isNullOrUndefined(ctx.instance)) {
             super.execute(ctx, next);
         }
+
+        // after all clean.
+        (async () => {
+            ctx.clear();
+        })();
     }
 
     setup() {

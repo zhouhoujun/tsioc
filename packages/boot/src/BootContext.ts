@@ -1,6 +1,6 @@
 import {
     LoadType, InjectToken, Type, Injectable, createRaiseContext, Token,
-    isToken, isDefined, CTX_CURR_SCOPE, isTypeObject
+    isToken, isDefined, isTypeObject
 } from '@tsdi/ioc';
 import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
@@ -158,10 +158,6 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
 
     get data(): any {
         return this.get(CTX_DATA);
-    }
-
-    get scope(): any {
-        return this.get(CTX_CURR_SCOPE);
     }
 
     /**
