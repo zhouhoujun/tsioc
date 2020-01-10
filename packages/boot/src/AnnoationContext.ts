@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, ClassMetadata, InjectToken, lang, isNullOrUndefined
+    isToken, ClassType, RegInMetadata, ClassMetadata, InjectToken, lang
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION } from './context-tokens';
@@ -89,8 +89,8 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     }
 
 
-    setParent(context?: AnnoationContext): this {
-        if (isNullOrUndefined(context)) {
+    setParent(context: AnnoationContext): this {
+        if (context === null) {
             this.remove(CTX_PARENT_CONTEXT);
         } else {
             this.set(CTX_PARENT_CONTEXT, context);

@@ -19,6 +19,11 @@ export class BindingScope extends ParsersHandle implements IActionSetup {
         if (next) {
             await next();
         }
+        // after all clean.
+        if (isNullOrUndefined(ctx.value)) {
+            ctx.getParent()?.removeChild(ctx);
+            ctx.setParent(null);
+        }
     }
 
     setup() {
@@ -47,7 +52,7 @@ export const BindingArrayHandle = async function (ctx: ParseContext, next: () =>
                 decorator: ctx.decorator
             });
             await actInjector.getInstance(BindingScope).execute(subCtx);
-            return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
+            return subCtx.value ?? tp;
         }));
     }
 

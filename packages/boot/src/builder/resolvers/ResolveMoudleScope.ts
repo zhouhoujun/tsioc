@@ -1,4 +1,4 @@
-import { IActionSetup, INJECTOR } from '@tsdi/ioc';
+import { IActionSetup, INJECTOR, isNullOrUndefined } from '@tsdi/ioc';
 import { BuildHandles } from '../BuildHandles';
 import { DecoratorBuildHandle } from './DecoratorBuildHandle';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
@@ -30,6 +30,12 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
         }
         if (ctx.annoation && next) {
             await next();
+        }
+
+        // after all clean.
+        if (isNullOrUndefined(ctx.value)) {
+            ctx.getParent()?.removeChild(ctx);
+            ctx.setParent(null);
         }
     }
 

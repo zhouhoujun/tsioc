@@ -19,6 +19,11 @@ export class TemplateParseScope extends TemplatesHandle implements IActionSetup 
         if (isNullOrUndefined(ctx.value) && next) {
             await next();
         }
+        // after all clean.
+        if (isNullOrUndefined(ctx.value)) {
+            ctx.getParent()?.removeChild(ctx);
+            ctx.setParent(null);
+        }
     }
     setup() {
         this.use(ElementsTemplateHandle)
