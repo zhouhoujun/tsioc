@@ -17,7 +17,6 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
         }
         if (ctx.value && annoation.template) {
             await super.execute(ctx);
-            ctx.getParent()?.addChild(ctx);
         } else {
             let mdref = ctx.injector.getSingleton(ModuleRef);
             if (mdref && mdref.reflect.componentDectors) {
@@ -33,11 +32,15 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
                         let elRef = refSelector.createElementRef(ctx.value, ctx);
                         map.set(ctx.value, elRef);
                         ctx.set(CTX_ELEMENT_REF, elRef);
-                        ctx.getParent()?.addChild(ctx);
                         return true;
                     }
                     return false;
                 });
+            }
+            // is not compoent or element.
+            if (!ctx.has(CTX_ELEMENT_REF)) {
+                ctx.getParent()?.removeChild(ctx);
+                ctx.setParent(null);
             }
         }
         await next();
