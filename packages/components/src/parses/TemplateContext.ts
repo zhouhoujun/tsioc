@@ -1,8 +1,9 @@
 import { Injectable, Type, InjectToken, createRaiseContext } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IComponentContext, BuildContext } from '@tsdi/boot';
+import { IComponentContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
+import { CompContext } from './CompContext';
 
 
 /**
@@ -19,7 +20,7 @@ export const TemplateOptionToken = new InjectToken<ITemplateOption>('COMPONENT_T
  * @implements {IComponentContext}
  */
 @Injectable
-export class TemplateContext extends BuildContext<ITemplateOption, IComponentMetadata> implements IComponentContext {
+export class TemplateContext extends CompContext<ITemplateOption, IComponentMetadata> implements IComponentContext {
 
     selector?: Type;
 

@@ -20,8 +20,7 @@ export const BindingOutputHandle = async function (ctx: BuildContext, next: () =
                         parent: ctx,
                         bindExpression: expression,
                         template: template,
-                        binding: binding,
-                        decorator: ctx.decorator
+                        binding: binding
                     });
                     await BindingScopeHandle(pctx);
                     pctx.dataBinding.bind(ctx.value);

@@ -243,6 +243,11 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
             }
         }
     }
+
+    protected destroying() {
+        this.providers?.destroy();
+        super.destroy();
+    }
 }
 
 /**

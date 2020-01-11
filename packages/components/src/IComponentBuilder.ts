@@ -36,7 +36,7 @@ export interface IComponentBuilder extends IBuilderService {
      * @returns {Promise<any>}
      * @memberof IComponentBuilder
      */
-    resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any>;
+    resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ComponentRef<any> | ElementRef<any>>;
     /**
      * resolve node componsite of component.
      * @param target

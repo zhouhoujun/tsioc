@@ -34,8 +34,7 @@ export const BindingPropertyHandle = async function (ctx: BuildContext, next: ()
                             parent: ctx,
                             bindExpression: expression,
                             template: template,
-                            binding: binding,
-                            decorator: ctx.decorator
+                            binding: binding
                         });
                         await actInjector.getInstance(BindingScope).execute(pctx);
 

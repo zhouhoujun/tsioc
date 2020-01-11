@@ -15,13 +15,13 @@ export const ParseSelectorHandle = async function (ctx: TemplateContext, next: (
         let selector = ctx.selector;
         let template = ctx.template;
         ctx.value = await ctx.getContainer().get(ComponentBuilderToken)
-            .resolve({
+            .resolveRef({
                 type: selector,
                 parent: ctx,
                 parsing: true,
                 template: template,
                 injector: ctx.injector,
-                providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions()})
+                providers: ctx.providers.clone().inject({ provide: TemplateOptionToken, useValue: ctx.getOptions()})
             });
     }
     if (isNullOrUndefined(ctx.value)) {

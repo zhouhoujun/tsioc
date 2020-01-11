@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext, BuilderService } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode } from '../src';
+import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode, ComponentRef } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, Autorun, IInjector, INJECTOR } from '@tsdi/ioc';
 import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
@@ -262,7 +262,9 @@ export class CTest {
     async test3() {
         let service = this.ctx.injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
-        let comp3 = await service.createComponent3() as Component3;
+        let cmpRef = await service.createComponent3() as ComponentRef;
+        console.log('cmpRef:', cmpRef);
+        let comp3 = cmpRef.instance as Component3;
         console.log('comp3:', comp3);
         expect(comp3 instanceof Component3).toBeTruthy();
         expect(comp3.phone).toEqual('+86177000000010');
@@ -288,7 +290,8 @@ export class CTest {
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let service = injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
-        let comp3 = await service.createComponent3() as Component3;
+        let cmpRef = await service.createComponent3() as ComponentRef;
+        let comp3 = cmpRef.instance as Component3;
         console.log('comp3 :', comp3);
         expect(comp3 instanceof Component3).toBeTruthy();
         expect(comp3.phone).toEqual('+86177000000010');
@@ -312,12 +315,16 @@ export class CTest {
         let injector = ctx.injector;
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
-        let comp = await injector.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as Components;
+        let compRef = await injector.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef;
+
+        expect(compRef instanceof ComponentRef).toBeTruthy();
+        let comp = compRef.instance as Components;
+        console.log('comp:', comp);
         expect(comp instanceof Components).toBeTruthy();
         expect(comp.name).toEqual('test111');
         expect(comp.address).toEqual('cd111');
-        console.log('comp:', comp);
+
         expect(comp.cmp1 instanceof Component1).toBeTruthy();
         expect(comp.cmp2 instanceof Component2).toBeTruthy();
         expect(comp.cmp1.name).toEqual('test111');
@@ -336,8 +343,10 @@ export class CTest {
         let injector = ctx.injector;
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
-        let comp = await injector.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as Components;
+        let compRef = await injector.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef;
+
+        let comp = compRef.instance;
         expect(comp instanceof Components).toBeTruthy();
         expect(comp.name).toEqual('test111');
         expect(comp.address).toEqual('cd111');
@@ -358,13 +367,14 @@ export class CTest {
     @Test('can binding sub field')
     async test9() {
         let injector = this.ctx.injector;
-        let comp = await injector.get(ComponentBuilder).resolveTemplate({
+        let compRef = await injector.get(ComponentBuilder).resolveTemplate({
             injector: injector,
             template: {
                 element: 'obj-comp',
                 options: { name: 'testobject', address: 'chengdu' }
             }
-        }) as ObjectComponent;
+        }) as ComponentRef;
+        let comp = compRef.instance;
 
         expect(comp.options.name).toEqual('testobject');
         expect(comp.options.address).toEqual('chengdu');

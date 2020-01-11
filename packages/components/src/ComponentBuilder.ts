@@ -24,8 +24,8 @@ import { IPipeTransform } from './bindings/IPipeTransform';
 @Singleton(ComponentBuilderToken)
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
-    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
-        let ctx = TemplateContext.parse(options.injector || this.container, { decorator: Component.toString(), ...options });
+    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ComponentRef<any> | ElementRef<any>> {
+        let ctx = TemplateContext.parse(options.injector || this.container, options);
         providers.length && ctx.providers.inject(...providers);
         await this.reflects.getActionInjector().get(TemplateParseScope)
             .execute(ctx);

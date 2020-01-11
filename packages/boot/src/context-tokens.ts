@@ -1,7 +1,9 @@
-import { InjectToken, Injector } from '@tsdi/ioc';
+import { InjectToken, Injector, Type } from '@tsdi/ioc';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 
+
+export const CTX_MODULE = new InjectToken<Type>('CTX_MODULE');
 export const CTX_MODULE_DECTOR = new InjectToken<string>('CTX_MODULE_DECTOR');
 export const CTX_MODULE_EXPORTS = new InjectToken<Injector>('CTX_MODULE_EXPORTS');
 export const CTX_MODULE_ANNOATION = new InjectToken<ModuleConfigure>('CTX_MODULE_ANNOATION');

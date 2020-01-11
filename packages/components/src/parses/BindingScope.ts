@@ -47,8 +47,7 @@ export const BindingArrayHandle = async function (ctx: ParseContext, next: () =>
                 parent: ctx,
                 binding: ctx.binding,
                 bindExpression: tp,
-                template: tp,
-                decorator: ctx.decorator
+                template: tp
             });
             await actInjector.getInstance(BindingScope).execute(subCtx);
             return subCtx.value ?? tp;

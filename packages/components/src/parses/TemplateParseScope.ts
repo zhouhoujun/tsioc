@@ -46,8 +46,7 @@ export const ElementsTemplateHandle = async function (ctx: TemplateContext, next
         ctx.value = await Promise.all(template.map(async tp => {
             let subCtx = TemplateContext.parse(ctx.injector, {
                 parent: ctx,
-                template: tp,
-                decorator: ctx.decorator
+                template: tp
             });
             await actInjector.getInstance(TemplateParseScope).execute(subCtx);
             return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;

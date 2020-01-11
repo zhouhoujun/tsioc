@@ -11,11 +11,10 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
             { provide: lang.getClass(ctx), useValue: ctx }
         )
         if (isClass(bootModule)) {
-            let options = ctx.getOptions();
             ctx.bootstrap = await ctx.injector.get(BuilderServiceToken).resolve({
                 type: bootModule,
                 parent: ctx,
-                template: options.template,
+                template: ctx.template,
                 providers: ctx.providers,
                 injector: ctx.injector
             });

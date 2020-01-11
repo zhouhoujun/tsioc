@@ -3,9 +3,10 @@ import {
     isToken, ClassType, RegInMetadata, ClassMetadata, InjectToken, lang
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
-import { CTX_MODULE_DECTOR, CTX_MODULE_ANNOATION } from './context-tokens';
+import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { IModuleReflect } from './modules/IModuleReflect';
+import { ModuleRef } from './modules/ModuleRef';
 
 /**
  * annoation action option.
@@ -30,21 +31,6 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
      */
     module?: ClassType<T>;
     /**
-     * module decorator.
-     *
-     * @type {string}
-     * @memberof AnnoationActionOption
-     */
-    decorator?: string;
-    /**
-     * annoation metadata config.
-     *
-     * @type {IAnnotationMetadata}
-     * @memberof AnnoationOption
-     */
-    annoation?: ClassMetadata;
-
-    /**
      *  parent context.
      */
     parent?: AnnoationContext;
@@ -67,9 +53,20 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
     }
 
     get type(): Type {
-        return this.injector.getTokenProvider(this.getOptions().type);
+        return this.get(CTX_MODULE) ?? this.tryGetCurrType();
     }
 
+    protected tryGetCurrType(): Type {
+        return null;
+    }
+
+    /**
+     * current annoation type decorator.
+     *
+     * @readonly
+     * @type {string}
+     * @memberof AnnoationContext
+     */
     get decorator(): string {
         if (!this.has(CTX_MODULE_DECTOR) && this.type) {
             let dec = this.targetReflect.decorator;
@@ -78,6 +75,10 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
             }
         }
         return this.get(CTX_MODULE_DECTOR);
+    }
+
+    getModuleRef(): ModuleRef {
+        return this.injector.get(ModuleRef);
     }
 
     private _targetReflect: IModuleReflect;
@@ -147,15 +148,12 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
             return;
         }
         options.type = options.type || options.module;
+        if (options.type) {
+            this.set(CTX_MODULE, options.type);
+        }
         super.setOptions(options);
         if (options.parent instanceof AnnoationContext) {
             this.setParent(options.parent);
-        }
-        if (options.decorator) {
-            this.set(CTX_MODULE_DECTOR, options.decorator);
-        }
-        if (options.annoation) {
-            this.set(CTX_MODULE_ANNOATION, options.annoation);
         }
     }
 }

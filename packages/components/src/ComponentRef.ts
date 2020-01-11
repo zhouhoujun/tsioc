@@ -2,7 +2,7 @@ import { Type, InjectToken, Abstract, isFunction, Singleton, Destoryable, IDesto
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
-
+export const CTX_COMPONENT_DECTOR = new InjectToken<string>('CTX_COMPONENT_DECTOR');
 export const CTX_COMPONENT = new InjectToken<any>('CTX_COMPONENT');
 export const CTX_ELEMENT_REF = new InjectToken<any | any[]>('CTX_ELEMENT_REF');
 export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF');
@@ -44,6 +44,8 @@ export class ElementRef<T> extends Destoryable {
     constructor(public readonly context: AnnoationContext, element: T) {
         super();
         this._element = element;
+        let injector = context.injector;
+        this.onDestroy(() => injector.get(ELEMENT_REFS)?.delete(element));
     }
 
     protected destroying(): void {
@@ -80,7 +82,9 @@ export class ComponentRef<T = any, TN = any> extends Destoryable {
         if (!context.injector.has(COMPONENT_REFS)) {
             context.injector.registerValue(COMPONENT_REFS, new WeakMap());
         }
-        context.injector.get(COMPONENT_REFS).set(instance, this);
+        let injector = context.injector;
+        injector.get(COMPONENT_REFS).set(instance, this);
+        this.onDestroy(() => injector.get(COMPONENT_REFS)?.delete(this.instance));
         let nodeRef = this._nodeRef = this.createNodeRef(context, nodes);
         context.set(NodeRef, nodeRef);
     }

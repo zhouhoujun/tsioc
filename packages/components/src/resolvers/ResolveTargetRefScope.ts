@@ -5,7 +5,7 @@ import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { RefSelector } from '../RefSelector';
-import { ELEMENT_REFS, CTX_ELEMENT_REF, CTX_COMPONENT } from '../ComponentRef';
+import { ELEMENT_REFS, CTX_ELEMENT_REF } from '../ComponentRef';
 
 
 export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements IActionSetup {
@@ -18,17 +18,18 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
         if (ctx.value && annoation.template) {
             await super.execute(ctx);
         } else {
-            let mdref = ctx.injector.getSingleton(ModuleRef);
+            let injector = ctx.injector;
+            let mdref = injector.getSingleton(ModuleRef);
             if (mdref && mdref.reflect.componentDectors) {
                 let componentDectors = mdref.reflect.componentDectors;
                 let decorPdr = ctx.reflects.getActionInjector().get(DecoratorProvider);
                 componentDectors.some(decor => {
-                    let refSelector = decorPdr.resolve(decor, RefSelector)
+                    let refSelector = decorPdr.resolve(decor, RefSelector);
                     if (refSelector?.isElementType(ctx.type)) {
-                        if (!ctx.injector.has(ELEMENT_REFS)) {
-                            ctx.injector.registerValue(ELEMENT_REFS, new WeakMap());
+                        if (!injector.has(ELEMENT_REFS)) {
+                            injector.registerValue(ELEMENT_REFS, new WeakMap());
                         }
-                        let map = ctx.injector.get(ELEMENT_REFS);
+                        let map = injector.get(ELEMENT_REFS);
                         let elRef = refSelector.createElementRef(ctx.value, ctx);
                         map.set(ctx.value, elRef);
                         ctx.set(CTX_ELEMENT_REF, elRef);

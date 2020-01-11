@@ -4,13 +4,10 @@ import { BuilderServiceToken } from '../services/IBuilderService';
 
 export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.type && !ctx.target) {
-        let options = ctx.getOptions();
         ctx.target = await ctx.injector.get(BuilderServiceToken).resolve({
             type: ctx.type,
-            parent: ctx,
-            template: options.template,
-            annoation: ctx.annoation,
-            decorator: ctx.targetReflect.decorator,
+            parent: ctx.getParent(),
+            template: ctx.template,
             providers: ctx.providers,
             injector: ctx.injector
         });

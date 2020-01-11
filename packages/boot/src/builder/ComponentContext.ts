@@ -1,5 +1,4 @@
 import { IHandleContext } from '../handles/Handle';
-import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 
 /**
@@ -19,19 +18,4 @@ export interface IComponentContext extends IHandleContext {
      */
     template?: any;
 
-    /**
-     * decoractor.
-     *
-     * @type {string}
-     * @memberof IComponentContext
-     */
-    decorator?: string;
-
-    /**
-     * annoation metadata config.
-     *
-     * @type {ModuleConfigure}
-     * @memberof BuildContext
-     */
-    annoation?: ModuleConfigure;
 }

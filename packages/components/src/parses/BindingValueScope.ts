@@ -53,8 +53,8 @@ export const BindingScopeHandle = async function (ctx: ParseContext, next?: () =
         let regs = actInjector.getInstance(StartupDecoratorRegisterer)
             .getRegisterer(StartupScopes.BindExpression);
         // translate binding expression via current decorator.
-        if (regs.has(ctx.decorator)) {
-            await PromiseUtil.runInChain(regs.getFuncs(actInjector, ctx.decorator), ctx);
+        if (ctx.componentDecorator && regs.has(ctx.componentDecorator)) {
+            await PromiseUtil.runInChain(regs.getFuncs(actInjector, ctx.componentDecorator), ctx);
         } else {
             let exp = ctx.bindExpression.trim();
             if (ctx.binding.direction === BindingDirection.input) {
@@ -95,7 +95,6 @@ export const TranslateExpressionHandle = async function (ctx: ParseContext, next
         let tpCtx = TemplateContext.parse(ctx.injector, {
             parent: ctx,
             template: ctx.bindExpression,
-            decorator: ctx.decorator,
             providers: ctx.providers
         });
         await ctx.reflects.getActionInjector()
@@ -127,8 +126,8 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
     if (!isNullOrUndefined(ctx.bindExpression)) {
         let pdr = ctx.binding.provider;
         let selector: ClassType;
-        let refSelector = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector)
-        if (isString(pdr) && injector.hasRegister(refSelector.toAttrSelectorToken(pdr))) {
+        let refSelector = ctx.componentDecorator ? ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.componentDecorator, RefSelector) : null;
+        if (isString(pdr) && refSelector && injector.hasRegister(refSelector.toAttrSelectorToken(pdr))) {
             selector = injector.getTokenProvider(refSelector.toAttrSelectorToken(pdr));
         } else if (ctx.binding.type !== Array) {
             if (isClassType(ctx.binding.provider)) {

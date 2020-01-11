@@ -1,4 +1,4 @@
-import { Injectable, createRaiseContext } from '@tsdi/ioc';
+import { Injectable, createRaiseContext, lang, Type } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { IComponentContext } from './ComponentContext';
@@ -15,6 +15,10 @@ export class BuildContext<T extends IBuildOption = IBuildOption, TMeta extends M
      * @memberof BuildContext
      */
     value: any;
+
+    protected tryGetCurrType(): Type {
+        return this.value ? lang.getClass(this.value) : null;
+    }
 
     /**
      * get template.

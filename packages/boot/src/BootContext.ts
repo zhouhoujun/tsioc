@@ -1,6 +1,6 @@
 import {
     LoadType, InjectToken, Type, Injectable, createRaiseContext, Token,
-    isToken, isDefined, isTypeObject
+    isToken, isDefined, isTypeObject, lang
 } from '@tsdi/ioc';
 import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
@@ -125,6 +125,21 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
         return this.getContainer().resolve(ConfigureLoggerManger);
     }
 
+    protected tryGetCurrType(): Type {
+        let value = this.getBootTarget();
+        return value ? lang.getClass(value) : null;
+    }
+
+    /**
+     * startup services
+     *
+     * @type {Token[]}
+     * @memberof BootContext
+     */
+    get starupServices(): StartupServices {
+        return this.get(StartupServices);
+    }
+
     /**
      * boot base url.
      *
@@ -189,15 +204,6 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
      */
     get template(): any {
         return this.get(CTX_TEMPLATE);
-    }
-    /**
-     * startup services
-     *
-     * @type {Token[]}
-     * @memberof BootContext
-     */
-    get starupServices(): StartupServices {
-        return this.getContainer().resolve(StartupServices);
     }
 
     getContext<T>(token: Token<T>): T {

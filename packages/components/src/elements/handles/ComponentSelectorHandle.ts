@@ -13,7 +13,7 @@ import { CTX_TEMPLATE } from '@tsdi/boot';
  */
 export class ComponentSelectorHandle extends TemplateHandle {
     async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
-        let refSelector = this.actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector);
+        let refSelector = this.actInjector.getInstance(DecoratorProvider).resolve(ctx.componentDecorator, RefSelector);
         let template = ctx.template;
         if (isArray(template) && ctx.annoation.template === template) {
             ctx.selector = refSelector.getDefaultCompose();
