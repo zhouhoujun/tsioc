@@ -7,7 +7,6 @@ export const ResolveTypeHandle = async function (ctx: BootContext, next: () => P
         ctx.target = await ctx.injector.get(BuilderServiceToken).resolve({
             type: ctx.type,
             parent: ctx.getParent(),
-            template: ctx.template,
             providers: ctx.providers,
             injector: ctx.injector
         });

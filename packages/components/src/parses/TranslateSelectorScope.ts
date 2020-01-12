@@ -1,5 +1,5 @@
 import { IActionSetup, PromiseUtil } from '@tsdi/ioc';
-import { StartupDecoratorRegisterer, StartupScopes, CTX_MODULE_DECTOR } from '@tsdi/boot';
+import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplatesHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
 import { CTX_COMPONENT_DECTOR } from '../ComponentRef';

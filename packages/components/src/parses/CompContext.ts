@@ -1,8 +1,13 @@
-import { BuildContext, IBuildOption, AnnoationContext, ModuleConfigure } from '@tsdi/boot';
+import { BuildContext, IBuildOption, AnnoationContext } from '@tsdi/boot';
 import { CTX_COMPONENT_DECTOR, CTX_COMPONENT } from '../ComponentRef';
+import { IComponentMetadata } from '../decorators/IComponentMetadata';
+import { IComponentReflect } from '../IComponentReflect';
 
 
-export class CompContext<T extends IBuildOption, TMeta extends ModuleConfigure = ModuleConfigure> extends BuildContext<T, TMeta> {
+export class CompContext<T extends IBuildOption = IBuildOption,
+    TMeta extends IComponentMetadata = IComponentMetadata,
+    TRefl extends IComponentReflect = IComponentReflect>
+    extends BuildContext<T, TMeta, TRefl> {
     private _scope: any;
     get scope(): any {
         if (!this._scope) {

@@ -4,8 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import {
-    ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner,
-    BootLifeScope, ModuleBuildScope, RunnableBuildLifeScope
+    ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner
 } from '@tsdi/boot';
 import { Input } from './decorators/Input';
 import { Output } from './decorators/Output';
@@ -23,17 +22,9 @@ import { ComponentRegisterAction } from './registers/ComponentRegisterAction';
 import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
 import { BindingCache, BindingCacheFactory } from './registers/BindingCache';
 import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
-
-import { ModuleBeforeInitHandle } from './resolvers/ModuleBeforeInitHandle';
-import { BindingPropertyHandle } from './resolvers/BindingPropertyHandle';
-import { ModuleAfterInitHandle } from './resolvers/ModuleAfterInitHandle';
-import { ResolveTargetRefScope } from './resolvers/ResolveTargetRefScope';
-import { ModuleAfterContentInitHandle } from './resolvers/ModuleAfterContentInitHandle';
-import { BindingOutputHandle } from './resolvers/BindingOutputHandle';
-import { BootTemplateHandle } from './resolvers/BootTemplateHandle';
-import { ModuleInitHandle } from './resolvers/ModuleInitHandle';
-import { DefaultComponentFactory } from './ComponentRef';
 import { PipeRegisterAction } from './registers/PipeRegisterAction';
+import { BindingComponentScope } from './resolvers/BindingComponentScope';
+import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
 
 
 /**
@@ -46,8 +37,7 @@ import { PipeRegisterAction } from './registers/PipeRegisterAction';
 export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
-        container.registerType(DefaultComponentFactory)
-            .registerType(ComponentAnnotationCloner)
+        container.registerType(ComponentAnnotationCloner)
             .registerType(AstResolver);
         let actInjector = container.get(ActionInjectorToken);
 
@@ -85,18 +75,9 @@ export class ComponentsModule {
         actInjector.regAction(BindingScope)
             .regAction(TemplateParseScope)
             .get(ResolveMoudleScope)
-            .use(ModuleBeforeInitHandle)
-            .use(BindingPropertyHandle)
-            .use(ModuleInitHandle)
-            .use(ModuleAfterInitHandle)
-            .use(ResolveTargetRefScope)
-            .use(BindingOutputHandle)
-            .use(ModuleAfterContentInitHandle);
+            .use(BindingComponentScope)
+            .use(ParseTemplateHandle);
 
-        actInjector.getInstance(BootLifeScope)
-            .useBefore(BootTemplateHandle, ModuleBuildScope);
-        actInjector.getInstance(RunnableBuildLifeScope)
-            .useBefore(BootTemplateHandle, ModuleBuildScope);
 
 
         actInjector.getInstance(DesignRegisterer)

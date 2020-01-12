@@ -1,7 +1,7 @@
 import { Abstract, Type, isString, Inject, lang, Token, TypeReflectsToken, ITypeReflects, SymbolType, isClass } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentFactory, DefaultComponentFactory, ComponentRef, ElementRef } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, NodeType } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 
 
@@ -34,13 +34,12 @@ export abstract class RefSelector {
             ?.getNodeSelector();
     }
 
-    getDefaultComponentFactory(): Token<ComponentFactory> {
-        return DefaultComponentFactory;
+    createComponentRef<T>(type: Type<T>, target: T, context: AnnoationContext, tempRef: TemplateRef): ComponentRef<T> {
+        return new ComponentRef(type, target, context, tempRef);
     }
 
-    createComponentRef(type: Type, target: Object, context: AnnoationContext, ...nodes: Object[]): ComponentRef {
-        let factory = context.injector.getService({ token: ComponentFactory, target: type, default: this.getDefaultComponentFactory() });
-        return factory.create(type, target, context, ...nodes);
+    createTemplateRef<T>(context: AnnoationContext, ...nodes: NodeType<T>[]): TemplateRef<T> {
+        return new TemplateRef(context, nodes);
     }
 
     createElementRef<T>(target: T, context: AnnoationContext): ElementRef<T> {

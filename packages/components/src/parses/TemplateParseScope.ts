@@ -1,8 +1,11 @@
-import { isNullOrUndefined, isArray, IActionSetup } from '@tsdi/ioc';
+import { isNullOrUndefined, isArray, IActionSetup, DecoratorProvider, lang } from '@tsdi/ioc';
 import { TemplatesHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
 import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
+import { RefSelector } from '../RefSelector';
+import { CompContext } from './CompContext';
+import { CTX_COMPONENT_DECTOR, CTX_TEMPLATE_REF, CTX_COMPONENT, ElementRef, ContextNode } from '../ComponentRef';
 
 
 /**
@@ -19,6 +22,23 @@ export class TemplateParseScope extends TemplatesHandle implements IActionSetup 
         if (isNullOrUndefined(ctx.value) && next) {
             await next();
         }
+
+        if (ctx.value) {
+            // let parent = ctx.getParent();
+            let decor: string;
+            if (!ctx.componentDecorator) {
+                let node = (isArray(ctx.value) ? lang.first(ctx.value) : ctx.value) as ContextNode;
+                decor = (node.context as CompContext)?.componentDecorator;
+                decor && ctx.set(CTX_COMPONENT_DECTOR, decor);
+            } else {
+                decor = ctx.componentDecorator;
+            }
+            let refSeltor = this.actInjector.getInstance(DecoratorProvider).resolve(decor, RefSelector);
+            let tempRef = refSeltor.createTemplateRef(ctx, ...(isArray(ctx.value) ? ctx.value : [ctx.value]));
+            ctx.set(CTX_TEMPLATE_REF, tempRef);
+
+        }
+
         // after all clean.
         if (isNullOrUndefined(ctx.value)) {
             ctx.destroy();

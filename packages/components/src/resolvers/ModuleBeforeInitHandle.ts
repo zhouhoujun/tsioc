@@ -1,7 +1,6 @@
 import { isFunction } from '@tsdi/ioc';
 import { BuildContext } from '@tsdi/boot';
 import { BeforeInit } from '../ComponentLifecycle';
-import { IComponentReflect } from '../IComponentReflect';
 
 
 /**
@@ -12,16 +11,11 @@ import { IComponentReflect } from '../IComponentReflect';
  * @extends {ResolveComponentHandle}
  */
 export const ModuleBeforeInitHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-    if (!(<IComponentReflect>ctx.targetReflect).component) {
-        return;
+    let target = ctx.value as BeforeInit;
+    if (target && isFunction(target.onBeforeInit)) {
+        await target.onBeforeInit();
     }
 
-    if (ctx.decorator) {
-        let target = ctx.value as BeforeInit;
-        if (target && isFunction(target.onBeforeInit)) {
-            await target.onBeforeInit();
-        }
-    }
     if (next) {
         await next();
     }

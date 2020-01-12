@@ -1,13 +1,9 @@
 import { BuildContext } from '../BuildContext';
-import { ResolveHandle } from './ResolveHandle';
 
 
 export const ResolveModuleHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
-    if (!ctx.value) {
+    if (!ctx.value && ctx.type) {
         ctx.value = ctx.injector.resolve(ctx.type, ctx.providers);
     }
-
-    if (ctx.value) {
-        await next();
-    }
+    await next();
 };

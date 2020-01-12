@@ -61,7 +61,7 @@ describe('activity test', () => {
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
             expect(ctx.result).toEqual('component task');
             let activity = ctx.activity as ActivityRef;
-            let ifact = activity.nodeRef.rootNodes[0] as IfActivity;
+            let ifact = activity.tempRef.rootNodes[0] as IfActivity;
             console.log(ifact);
             expect(ifact instanceof IfActivity).toBeTruthy();
             expect(ifact.name).toEqual('test---task---3');

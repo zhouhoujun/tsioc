@@ -15,10 +15,10 @@ export const ComponentRegisterAction = function (ctx: DesignActionContext, next:
     let currDecor = ctx.get(CTX_CURR_DECOR);
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
-    let reflects = ctx.targetReflect as IComponentReflect;
+    let compRefl = ctx.targetReflect as IComponentReflect;
     let refSelector = ctx.reflects.getActionInjector().get(DecoratorProvider).resolve(currDecor, RefSelector);
-    reflects.decorator = currDecor;
-    reflects.component = true;
+    compRefl.decorator = currDecor;
+    compRefl.component = true;
     metas.forEach(meta => {
         if (!meta.selector) {
             return;
@@ -27,19 +27,19 @@ export const ComponentRegisterAction = function (ctx: DesignActionContext, next:
             meta.selector.split(',').forEach(sel => {
                 sel = sel.trim();
                 if (attrExp.test(sel)) {
-                    reflects.attrSelector = sel;
+                    compRefl.attrSelector = sel;
                     injector.bindProvider(refSelector.toAttrSelectorToken(sel), ctx.type);
                 } else {
-                    reflects.selector = sel;
+                    compRefl.selector = sel;
                     injector.bindProvider(refSelector.toSelectorToken(sel), ctx.type);
                 }
             })
         } else {
             if (attrExp.test(meta.selector)) {
-                reflects.attrSelector = meta.selector;
+                compRefl.attrSelector = meta.selector;
                 injector.bindProvider(refSelector.toAttrSelectorToken(meta.selector), ctx.type);
             } else {
-                reflects.selector = meta.selector;
+                compRefl.selector = meta.selector;
                 injector.bindProvider(refSelector.toSelectorToken(meta.selector), ctx.type);
             }
         }

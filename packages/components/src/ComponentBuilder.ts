@@ -2,11 +2,11 @@ import {
     Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString,
     isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider, IInjector, Token
 } from '@tsdi/ioc';
-import { BuilderService, IBuildOption } from '@tsdi/boot';
+import { BuilderService, IBuildOption, BuildContext } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS, CTX_COMPONENT_REF, ELEMENT_REFS, ElementRef, ComponentRef, CTX_ELEMENT_REF } from './ComponentRef';
+import { COMPONENT_REFS, CTX_COMPONENT_REF, ELEMENT_REFS, ElementRef, ComponentRef, CTX_ELEMENT_REF, TemplateRef, CTX_TEMPLATE_REF } from './ComponentRef';
 import { Component } from './decorators/Component';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
@@ -24,17 +24,21 @@ import { IPipeTransform } from './bindings/IPipeTransform';
 @Singleton(ComponentBuilderToken)
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
-    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ComponentRef<any> | ElementRef<any>> {
+    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<TemplateRef<any>> {
         let ctx = TemplateContext.parse(options.injector || this.container, options);
         providers.length && ctx.providers.inject(...providers);
         await this.reflects.getActionInjector().get(TemplateParseScope)
             .execute(ctx);
-        return ctx.value;
+        return ctx.get(CTX_TEMPLATE_REF) ?? ctx.value;
     }
 
-    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | ElementRef<T> | T> {
+    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | TemplateRef<T> | ElementRef<T> | T> {
         let ctx = await this.build(target);
-        return ctx.get(CTX_COMPONENT_REF) ?? ctx.get(CTX_ELEMENT_REF) ?? ctx.value;
+        return this.getRefInCtx(ctx);
+    }
+
+    protected getRefInCtx(ctx: BuildContext) {
+        return ctx.get(CTX_COMPONENT_REF) ?? ctx.get(CTX_TEMPLATE_REF) ?? ctx.get(CTX_ELEMENT_REF) ?? ctx.value;
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector, decorator?: string): T {

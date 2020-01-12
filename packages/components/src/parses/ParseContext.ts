@@ -1,9 +1,10 @@
-import { Injectable, createRaiseContext } from '@tsdi/ioc';
+import { Injectable, createRaiseContext, lang } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IBuildOption, IComponentContext } from '@tsdi/boot';
+import { IBuildOption, IComponentContext, BuildContext } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
 import { CompContext } from './CompContext';
+import { IComponentReflect } from '../IComponentReflect';
 
 /**
  * binding parse option.
@@ -37,6 +38,20 @@ export class ParseContext extends CompContext<IBindingParseOption> implements IC
     }
 
     dataBinding?: DataBinding;
+
+
+    getExtenalTemplate() {
+        let parent = this.getParent() as CompContext;
+        if (parent) {
+            if (parent.template && parent.targetReflect) {
+                return lang.omit(parent.template,
+                    ...Array.from(parent.targetReflect.propInBindings?.keys() ?? []),
+                    ...Array.from(parent.targetReflect.propOutBindings?.keys() ?? []),
+                    ...Array.from(parent.targetReflect.propRefChildBindings?.keys() ?? []))
+            }
+        }
+        return {};
+    }
 
     static parse(injector: ICoreInjector, options: IBindingParseOption): ParseContext {
         return createRaiseContext(injector, ParseContext, options);

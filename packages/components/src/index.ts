@@ -45,7 +45,7 @@ export * from './resolvers/ModuleBeforeInitHandle';
 export * from './resolvers/ModuleAfterContentInitHandle';
 export * from './resolvers/ResolveTemplateHanlde';
 export * from './resolvers/ResolveTargetRefScope';
-export * from './resolvers/BootTemplateHandle';
+export * from './resolvers/ParseTemplateHandle';
 
 
 // registers

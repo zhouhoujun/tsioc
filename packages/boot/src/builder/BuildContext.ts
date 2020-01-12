@@ -1,13 +1,17 @@
 import { Injectable, createRaiseContext, lang, Type } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { IComponentContext } from './ComponentContext';
 import { AnnoationContext } from '../AnnoationContext';
 import { IBuildOption } from './IBuildOption';
 import { CTX_TEMPLATE } from '../context-tokens';
+import { IAnnoationReflect, IAnnotationMetadata } from '../annotations/IAnnoationReflect';
 
 @Injectable
-export class BuildContext<T extends IBuildOption = IBuildOption, TMeta extends ModuleConfigure = ModuleConfigure> extends AnnoationContext<T, TMeta> implements IComponentContext {
+export class BuildContext<
+    T extends IBuildOption = IBuildOption,
+    TMeta extends IAnnotationMetadata = IAnnotationMetadata,
+    TRefl extends IAnnoationReflect = IAnnoationReflect>
+    extends AnnoationContext<T, TMeta, TRefl> implements IComponentContext {
     /**
      * current target module
      *
@@ -15,10 +19,6 @@ export class BuildContext<T extends IBuildOption = IBuildOption, TMeta extends M
      * @memberof BuildContext
      */
     value: any;
-
-    protected tryGetCurrType(): Type {
-        return this.value ? lang.getClass(this.value) : null;
-    }
 
     /**
      * get template.

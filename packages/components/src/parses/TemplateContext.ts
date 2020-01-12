@@ -20,7 +20,7 @@ export const TemplateOptionToken = new InjectToken<ITemplateOption>('COMPONENT_T
  * @implements {IComponentContext}
  */
 @Injectable
-export class TemplateContext extends CompContext<ITemplateOption, IComponentMetadata> implements IComponentContext {
+export class TemplateContext extends CompContext<ITemplateOption> implements IComponentContext {
 
     selector?: Type;
 

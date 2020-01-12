@@ -143,7 +143,7 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
         }
 
         if (selector) {
-            let template = {};
+            let template = ctx.getExtenalTemplate();
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             ctx.value = await injector.get(ComponentBuilderToken).resolveRef({
                 type: selector,

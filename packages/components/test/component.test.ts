@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext, BuilderService } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode, ComponentRef } from '../src';
+import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode, ComponentRef, ElementRef, TemplateRef } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, Autorun, IInjector, INJECTOR } from '@tsdi/ioc';
 import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
@@ -236,12 +236,15 @@ export class CTest {
     @Test('can resolve component template')
     async test2() {
         let container = this.ctx.getContainer();
-        let comp1 = await container.get(ComponentBuilder).resolveTemplate({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector });
-        let comp11 = await container.get(BuilderService).resolve({ type: Component1, template: { name: 'test1' } });
-        console.log('comp1:', comp1);
+        let comp1Ref = await container.get(ComponentBuilder).resolveRef({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as TemplateRef<Component1>;
+        let comp11 = await container.get(ComponentBuilder).resolve({ type: Component1, template: { name: 'test1' } });
+        // console.log('comp1:', comp1);
         console.log('comp11:', comp11);
-        expect(comp1 instanceof Component1).toBeTruthy();
+        expect(comp1Ref instanceof TemplateRef).toBeTruthy();
+        let comp1 = comp1Ref.rootNodes[0] as ElementRef<Component1>;
+        expect(comp1.nativeElement.name).toEqual('test1')
         expect(comp11 instanceof Component1).toBeTruthy();
+        expect(comp11.name).toEqual('test1');
     }
 
     @Test('can run component template')
@@ -252,9 +255,9 @@ export class CTest {
             template: { element: 'selector1', name: 'test1' }
         });
 
-        let comp1 = ctx.getBootTarget();
-        expect(comp1 instanceof Component1).toBeTruthy();
-        expect(comp1.name).toEqual('test1');
+        let comp1 = ctx.getBootTarget() as TemplateRef<Component1>;
+        expect(comp1 instanceof TemplateRef).toBeTruthy();
+        expect((comp1.rootNodes[0] as ElementRef<Component1>).nativeElement?.name).toEqual('test1');
     }
 
 
@@ -262,12 +265,11 @@ export class CTest {
     async test3() {
         let service = this.ctx.injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
-        let cmpRef = await service.createComponent3() as ComponentRef;
-        console.log('cmpRef:', cmpRef);
-        let comp3 = cmpRef.instance as Component3;
-        console.log('comp3:', comp3);
-        expect(comp3 instanceof Component3).toBeTruthy();
-        expect(comp3.phone).toEqual('+86177000000010');
+        let cmpRef = await service.createComponent3() as TemplateRef;
+        let comp3 = cmpRef.rootNodes[0] as ElementRef<Component3>;
+        console.log('comp3:', comp3.nativeElement);
+        expect(comp3.nativeElement instanceof Component3).toBeTruthy();
+        expect(comp3.nativeElement.phone).toEqual('+86177000000010');
     }
 
     @Test('can resolve component template by sub module')
@@ -290,11 +292,11 @@ export class CTest {
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let service = injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
-        let cmpRef = await service.createComponent3() as ComponentRef;
-        let comp3 = cmpRef.instance as Component3;
-        console.log('comp3 :', comp3);
-        expect(comp3 instanceof Component3).toBeTruthy();
-        expect(comp3.phone).toEqual('+86177000000010');
+        let cmpRef = await service.createComponent3() as TemplateRef;
+        let comp3 = cmpRef.rootNodes[0] as ElementRef<Component3>;
+        console.log('comp3 :', comp3.nativeElement);
+        expect(comp3.nativeElement instanceof Component3).toBeTruthy();
+        expect(comp3.nativeElement.phone).toEqual('+86177000000010');
         console.log(injector.get(ComponentBuilder).serialize(comp3))
     }
 
@@ -316,21 +318,21 @@ export class CTest {
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let compRef = await injector.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef;
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as TemplateRef;
 
-        expect(compRef instanceof ComponentRef).toBeTruthy();
-        let comp = compRef.instance as Components;
+        expect(compRef instanceof TemplateRef).toBeTruthy();
+        let comp = compRef.rootNodes[0] as ComponentRef<Components>;
         console.log('comp:', comp);
-        expect(comp instanceof Components).toBeTruthy();
-        expect(comp.name).toEqual('test111');
-        expect(comp.address).toEqual('cd111');
+        expect(comp.instance instanceof Components).toBeTruthy();
+        expect(comp.instance.name).toEqual('test111');
+        expect(comp.instance.address).toEqual('cd111');
 
-        expect(comp.cmp1 instanceof Component1).toBeTruthy();
-        expect(comp.cmp2 instanceof Component2).toBeTruthy();
-        expect(comp.cmp1.name).toEqual('test111');
-        expect(comp.cmp2.name).toEqual('test111');
-        expect(comp.cmp2.address).toEqual('cd111');
-        let json = injector.get(ComponentBuilder).serialize(comp);
+        expect(comp.instance.cmp1 instanceof Component1).toBeTruthy();
+        expect(comp.instance.cmp2 instanceof Component2).toBeTruthy();
+        expect(comp.instance.cmp1.name).toEqual('test111');
+        expect(comp.instance.cmp2.name).toEqual('test111');
+        expect(comp.instance.cmp2.address).toEqual('cd111');
+        let json = injector.get(ComponentBuilder).serialize(comp.instance);
         console.log(json);
         expect(json.element).toEqual('comp');
         expect(json.name).toEqual('test111');
@@ -344,24 +346,24 @@ export class CTest {
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let compRef = await injector.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef;
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as TemplateRef;
 
-        let comp = compRef.instance;
-        expect(comp instanceof Components).toBeTruthy();
-        expect(comp.name).toEqual('test111');
-        expect(comp.address).toEqual('cd111');
+        let comp = compRef.rootNodes[0] as ComponentRef<Components>;
+        expect(comp.instance instanceof Components).toBeTruthy();
+        expect(comp.instance.name).toEqual('test111');
+        expect(comp.instance.address).toEqual('cd111');
         console.log('comp:', comp);
-        expect(comp.cmp1 instanceof Component1).toBeTruthy();
-        expect(comp.cmp2 instanceof Component2).toBeTruthy();
-        expect(comp.cmp1.name).toEqual('test111');
-        expect(comp.cmp2.name).toEqual('test111');
-        expect(comp.cmp2.address).toEqual('cd111');
-        comp.cmp1.name = 'twoway-bind';
-        expect(comp.name).toEqual('twoway-bind');
-        expect(comp.cmp2.name).toEqual('twoway-bind');
-        comp.cmp2.name = 'oneway-bind';
-        expect(comp.name).toEqual('twoway-bind');
-        expect(comp.cmp2.name).toEqual('oneway-bind');
+        expect(comp.instance.cmp1 instanceof Component1).toBeTruthy();
+        expect(comp.instance.cmp2 instanceof Component2).toBeTruthy();
+        expect(comp.instance.cmp1.name).toEqual('test111');
+        expect(comp.instance.cmp2.name).toEqual('test111');
+        expect(comp.instance.cmp2.address).toEqual('cd111');
+        comp.instance.cmp1.name = 'twoway-bind';
+        expect(comp.instance.name).toEqual('twoway-bind');
+        expect(comp.instance.cmp2.name).toEqual('twoway-bind');
+        comp.instance.cmp2.name = 'oneway-bind';
+        expect(comp.instance.name).toEqual('twoway-bind');
+        expect(comp.instance.cmp2.name).toEqual('oneway-bind');
     }
 
     @Test('can binding sub field')
@@ -373,23 +375,23 @@ export class CTest {
                 element: 'obj-comp',
                 options: { name: 'testobject', address: 'chengdu' }
             }
-        }) as ComponentRef;
-        let comp = compRef.instance;
-
-        expect(comp.options.name).toEqual('testobject');
-        expect(comp.options.address).toEqual('chengdu');
+        }) as TemplateRef;
+        let comp =  compRef.rootNodes[0] as ComponentRef<ObjectComponent>;
+        console.log('test9:', comp);
+        expect(comp.instance.options.name).toEqual('testobject');
+        expect(comp.instance.options.address).toEqual('chengdu');
         // console.log('comp:', comp);
-        expect(comp.cmp1 instanceof Component1).toBeTruthy();
-        expect(comp.cmp2 instanceof Component2).toBeTruthy();
-        expect(comp.cmp1.name).toEqual('testobject');
-        expect(comp.cmp2.name).toEqual('testobject');
-        expect(comp.cmp2.address).toEqual('chengdu');
-        comp.cmp1.name = 'twoway-bind';
-        expect(comp.options.name).toEqual('twoway-bind');
-        expect(comp.cmp2.name).toEqual('twoway-bind');
-        comp.cmp2.name = 'oneway-bind';
-        expect(comp.options.name).toEqual('twoway-bind');
-        expect(comp.cmp2.name).toEqual('oneway-bind');
+        expect(comp.instance.cmp1 instanceof Component1).toBeTruthy();
+        expect(comp.instance.cmp2 instanceof Component2).toBeTruthy();
+        expect(comp.instance.cmp1.name).toEqual('testobject');
+        expect(comp.instance.cmp2.name).toEqual('testobject');
+        expect(comp.instance.cmp2.address).toEqual('chengdu');
+        comp.instance.cmp1.name = 'twoway-bind';
+        expect(comp.instance.options.name).toEqual('twoway-bind');
+        expect(comp.instance.cmp2.name).toEqual('twoway-bind');
+        comp.instance.cmp2.name = 'oneway-bind';
+        expect(comp.instance.options.name).toEqual('twoway-bind');
+        expect(comp.instance.cmp2.name).toEqual('oneway-bind');
     }
 
 
@@ -428,7 +430,9 @@ export class CTest {
             }
         });
 
-        let comp1 = ctx.getBootTarget() as ListBox;
+        let tempRef = ctx.getBootTarget() as TemplateRef;
+        expect(tempRef instanceof TemplateRef).toBeTruthy();
+        let comp1 = (tempRef.rootNodes[0] as ElementRef<ListBox>).nativeElement;
         expect(comp1 instanceof ListBox).toBeTruthy();
         expect(comp1.items.length).toEqual(1);
         console.log(comp1.items[0]);

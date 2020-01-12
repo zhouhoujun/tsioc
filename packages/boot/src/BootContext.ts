@@ -11,6 +11,7 @@ import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableCo
 import { IComponentContext } from './builder/ComponentContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { AnnoationOption, AnnoationContext } from './AnnoationContext';
+import { IModuleReflect } from './modules/IModuleReflect';
 
 
 /**
@@ -116,9 +117,10 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
  * @extends {HandleContext}
  */
 @Injectable
-export class BootContext<T extends BootOption = BootOption, CFG extends RunnableConfigure = RunnableConfigure>
-    extends AnnoationContext<T, CFG>
-    implements IComponentContext {
+export class BootContext<T extends BootOption = BootOption,
+    IMeta extends RunnableConfigure = RunnableConfigure,
+    TRefl extends IModuleReflect = IModuleReflect>
+    extends AnnoationContext<T, IMeta, TRefl> implements IComponentContext {
 
 
     getLogManager(): ILoggerManager {
@@ -160,11 +162,11 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     /**
      * configuration merge metadata config and all application config.
      *
-     * @type {CFG}
+     * @type {IMeta}
      * @memberof BootContext
      */
-    get configuration(): CFG {
-        return this.get(CTX_APP_CONFIGURE) as CFG;
+    get configuration(): IMeta {
+        return this.get(CTX_APP_CONFIGURE) as IMeta;
     }
 
     get args(): string[] {
@@ -227,11 +229,11 @@ export class BootContext<T extends BootOption = BootOption, CFG extends Runnable
     /**
      * get configure manager.
      *
-     * @returns {ConfigureManager<CFG>}
+     * @returns {ConfigureManager<IMeta>}
      * @memberof BootContext
      */
-    getConfigureManager(): ConfigureManager<CFG> {
-        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<CFG>;
+    getConfigureManager(): ConfigureManager<IMeta> {
+        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<IMeta>;
     }
 
     static parse(injector: ICoreInjector, target: Type | BootOption): BootContext {

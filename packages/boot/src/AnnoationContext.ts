@@ -1,12 +1,11 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, ClassMetadata, InjectToken, lang
+    isToken, ClassType, RegInMetadata, InjectToken, lang
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
-import { ModuleConfigure } from './modules/ModuleConfigure';
-import { IModuleReflect } from './modules/IModuleReflect';
 import { ModuleRef } from './modules/ModuleRef';
+import { IAnnotationMetadata, IAnnoationReflect } from './annotations/IAnnoationReflect';
 
 /**
  * annoation action option.
@@ -46,18 +45,17 @@ export const CTX_SUB_CONTEXT = new InjectToken<AnnoationContext[]>('CTX_SUB_CONT
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta extends ModuleConfigure = ModuleConfigure> extends IocProvidersContext<T, ICoreInjector, IContainer> {
+export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
+    TMeta extends IAnnotationMetadata = IAnnotationMetadata,
+    TRefl extends IAnnoationReflect = IAnnoationReflect>
+    extends IocProvidersContext<T, ICoreInjector, IContainer> {
 
     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createRaiseContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
     }
 
     get type(): Type {
-        return this.get(CTX_MODULE) ?? this.tryGetCurrType();
-    }
-
-    protected tryGetCurrType(): Type {
-        return null;
+        return this.get(CTX_MODULE);
     }
 
     /**
@@ -69,7 +67,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
      */
     get decorator(): string {
         if (!this.has(CTX_MODULE_DECTOR) && this.type) {
-            let dec = this.targetReflect.decorator;
+            let dec = this.targetReflect?.decorator;
             if (dec) {
                 this.set(CTX_MODULE_DECTOR, dec);
             }
@@ -81,8 +79,8 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         return this.injector.get(ModuleRef);
     }
 
-    private _targetReflect: IModuleReflect;
-    get targetReflect(): IModuleReflect {
+    private _targetReflect: TRefl;
+    get targetReflect(): TRefl {
         if (!this._targetReflect && this.type) {
             this._targetReflect = this.reflects.get(this.type);
         }
@@ -121,8 +119,8 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption, TMeta
         return this.has(CTX_SUB_CONTEXT);
     }
 
-    getChildren() {
-        return this.get(CTX_SUB_CONTEXT) || [];
+    getChildren<T extends AnnoationContext>(): T[] {
+        return (this.get(CTX_SUB_CONTEXT) || []) as T[];
     }
 
 

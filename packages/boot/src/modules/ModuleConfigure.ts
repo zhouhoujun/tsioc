@@ -1,30 +1,6 @@
-import { Token, Modules, ClassMetadata, RegInMetadata, ClassType } from '@tsdi/ioc';
+import { Token, Modules } from '@tsdi/ioc';
+import { IAnnotationMetadata } from '../annotations/IAnnoationReflect';
 
-/**
- * annotation metadata.
- *
- * @export
- * @interface IAnnotationMetadata
- * @extends {ClassMetadata}
- * @template T
- */
-export interface IAnnotationMetadata<T = any> extends ClassMetadata, RegInMetadata {
-    /**
-     * annotation for the type.
-     *
-     * @type {Token<T>}
-     * @memberof AnnotationConfigure
-     */
-    token?: Token<T>;
-    /**
-     * Annotation class Type.
-     *
-     * @type {Type<T>}
-     * @memberof IAnnotationMetadata
-     */
-    type?: ClassType<T>;
-
-}
 
 /**
  * module metadata.

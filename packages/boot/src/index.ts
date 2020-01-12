@@ -3,7 +3,6 @@ export * from './decorators/Bootstrap';
 // services
 export * from './services/IBaseTypeParser';
 export * from './services/BaseTypeParser';
-export * from './services/ModuleBuilder';
 export * from './services/StartupService';
 export * from './services/StartupServices';
 export * from './services/AnnotationMerger';
@@ -13,6 +12,7 @@ export * from './services/IBuilderService';
 export * from './services/BuilderService';
 
 // annotations
+export * from './annotations/IAnnoationReflect';
 export * from './annotations/RunnableConfigure';
 export * from './annotations/IConfigureManager';
 export * from './annotations/ConfigureManager';
@@ -77,8 +77,6 @@ export * from './builder/BuildContext';
 
 // build resolvers
 export * from './builder/resolvers/ResolveHandle';
-export * from './builder/resolvers/BuildModuleHandle';
-export * from './builder/resolvers/DecoratorBuildHandle';
 export * from './builder/resolvers/ResolveModuleHandle';
 export * from './builder/resolvers/ResolveMoudleScope';
 
