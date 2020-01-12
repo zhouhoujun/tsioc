@@ -2,7 +2,8 @@ import { isString, isToken, Registration, ClassType, Token, createPropDecorator,
 import { BindingPropertyMetadata } from './BindingPropertyMetadata';
 
 
-export type RefDectorator = (target: Object, propertyKey: string | symbol) => void;
+export type RefChildDectorator = (target: Object, propertyKey: string | symbol) => void;
+
 
 /**
  * RefChild decorator

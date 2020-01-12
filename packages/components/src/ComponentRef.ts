@@ -28,7 +28,7 @@ export class ContextNode extends Destoryable {
     }
 }
 
-export type NodeType<T> = ElementRef<T> | NodeRef<T> | ComponentRef<T>;
+export type NodeType<T> =  ElementRef<T> | NodeRef<T> | ComponentRef<T>;
 
 export class NodeRef<T = any> extends ContextNode {
 

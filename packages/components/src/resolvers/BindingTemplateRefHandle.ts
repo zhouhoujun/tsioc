@@ -1,8 +1,9 @@
-import { DecoratorProvider, PromiseUtil } from '@tsdi/ioc';
+import { DecoratorProvider, PromiseUtil, lang } from '@tsdi/ioc';
 import { BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { RefSelector } from '../RefSelector';
-import { CTX_COMPONENT_REF } from '../ComponentRef';
+import { CTX_COMPONENT_REF, ElementRef, ComponentRef, NodeRef } from '../ComponentRef';
+import { ComponentBuilderToken } from '../IComponentBuilder';
 
 /**
  * binding temlpate handle.
@@ -21,10 +22,17 @@ export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?
             // todo ref child view
             let refSelector = dpr.resolve(ctx.decorator, RefSelector);
             let cref = ctx.get(CTX_COMPONENT_REF);
+            let builder = ctx.injector.get(ComponentBuilderToken);
             ref.propRefChildBindings.forEach(b => {
                 let result = refSelector.select(cref, b.bindingName || b.name);
                 if (result) {
-                    ctx.value[b.name] = result;
+                    if (lang.isExtendsClass(b.type, ElementRef)) {
+                        ctx.value[b.name] = builder.getElementRef(result, ctx.injector);
+                    } else if (lang.isExtendsClass(b.type, ComponentRef)) {
+                        ctx.value[b.name] = builder.getComponentRef(result, ctx.injector);
+                    } else {
+                        ctx.value[b.name] = result;
+                    }
                 }
             });
         }

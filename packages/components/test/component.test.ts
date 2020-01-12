@@ -48,7 +48,7 @@ class Components {
     @Input()
     address: string;
 
-    @RefChild('comp1') cmp1: Component1;
+    @RefChild('comp1') cmp1: ElementRef<Component1>;
 
     @RefChild() cmp2: Component2;
 
@@ -287,7 +287,7 @@ export class CTest {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
         let injector = ctx.injector;
         // console.log(container);
-        console.log(ctx.getBootTarget());
+        // console.log(ctx.getBootTarget());
         expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
         expect(ctx.getBootTarget().phone).toEqual('17000000000');
         let service = injector.get(CustomeService);
@@ -322,14 +322,14 @@ export class CTest {
 
         expect(compRef instanceof TemplateRef).toBeTruthy();
         let comp = compRef.rootNodes[0] as ComponentRef<Components>;
-        console.log('comp:', comp);
+        // console.log('comp:', comp);
         expect(comp.instance instanceof Components).toBeTruthy();
         expect(comp.instance.name).toEqual('test111');
         expect(comp.instance.address).toEqual('cd111');
 
-        expect(comp.instance.cmp1 instanceof Component1).toBeTruthy();
+        expect(comp.instance.cmp1.nativeElement instanceof Component1).toBeTruthy();
         expect(comp.instance.cmp2 instanceof Component2).toBeTruthy();
-        expect(comp.instance.cmp1.name).toEqual('test111');
+        expect(comp.instance.cmp1.nativeElement.name).toEqual('test111');
         expect(comp.instance.cmp2.name).toEqual('test111');
         expect(comp.instance.cmp2.address).toEqual('cd111');
         let json = injector.get(ComponentBuilder).serialize(comp.instance);
@@ -352,13 +352,13 @@ export class CTest {
         expect(comp.instance instanceof Components).toBeTruthy();
         expect(comp.instance.name).toEqual('test111');
         expect(comp.instance.address).toEqual('cd111');
-        console.log('comp:', comp);
-        expect(comp.instance.cmp1 instanceof Component1).toBeTruthy();
+        // console.log('comp:', comp);
+        expect(comp.instance.cmp1.nativeElement instanceof Component1).toBeTruthy();
         expect(comp.instance.cmp2 instanceof Component2).toBeTruthy();
-        expect(comp.instance.cmp1.name).toEqual('test111');
+        expect(comp.instance.cmp1.nativeElement.name).toEqual('test111');
         expect(comp.instance.cmp2.name).toEqual('test111');
         expect(comp.instance.cmp2.address).toEqual('cd111');
-        comp.instance.cmp1.name = 'twoway-bind';
+        comp.instance.cmp1.nativeElement.name = 'twoway-bind';
         expect(comp.instance.name).toEqual('twoway-bind');
         expect(comp.instance.cmp2.name).toEqual('twoway-bind');
         comp.instance.cmp2.name = 'oneway-bind';
@@ -377,7 +377,7 @@ export class CTest {
             }
         }) as TemplateRef;
         let comp =  compRef.rootNodes[0] as ComponentRef<ObjectComponent>;
-        console.log('test9:', comp);
+        // console.log('test9:', comp);
         expect(comp.instance.options.name).toEqual('testobject');
         expect(comp.instance.options.address).toEqual('chengdu');
         // console.log('comp:', comp);
@@ -435,6 +435,6 @@ export class CTest {
         let comp1 = (tempRef.rootNodes[0] as ElementRef<ListBox>).nativeElement;
         expect(comp1 instanceof ListBox).toBeTruthy();
         expect(comp1.items.length).toEqual(1);
-        console.log(comp1.items[0]);
+        // console.log(comp1.items[0]);
     }
 }
