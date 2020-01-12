@@ -1,8 +1,10 @@
 import { Type, Singleton, SymbolType } from '@tsdi/ioc';
-import { RefSelector } from '@tsdi/components';
+import { RefSelector, TemplateRef } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
-import { ActivityFactory } from './core/ActivityFactory';
+import { ActivityComponentRef, ActivityElementRef } from './core/ActivityRef';
+import { AnnoationContext } from '@tsdi/boot';
+import { IActivity } from './core/IActivity';
 
 const attrSelPrefix = /^ACT_ATTR_/;
 const seletPrefix = /^ACT_SELT_/;
@@ -28,8 +30,16 @@ export class ActivityRefSelector extends RefSelector {
         return SequenceActivity;
     }
 
-    getDefaultComponentFactory() {
-        return ActivityFactory;
+    createComponentRef(type: Type, target: IActivity, context: AnnoationContext, tempRef: TemplateRef<IActivity>): ActivityComponentRef {
+        return new ActivityComponentRef(type, target, context, tempRef);
+    }
+
+    createTemplateRef<T extends IActivity>(context: AnnoationContext, ...nodes: T[]): TemplateRef<T> {
+        return new TemplateRef(context, nodes);
+    }
+
+    createElementRef(target: Activity, context: AnnoationContext): ActivityElementRef {
+        return new ActivityElementRef(context, target);
     }
 
     toSelectorToken(selector: string): SymbolType {

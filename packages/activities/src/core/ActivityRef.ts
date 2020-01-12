@@ -1,15 +1,42 @@
 import { PromiseUtil, lang, isNullOrUndefined, isDefined } from '@tsdi/ioc';
-import { ComponentRef, ComponentBuilderToken } from '@tsdi/components';
+import { ComponentRef, ComponentBuilderToken, ElementRef } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
 import { IActivity, ActivityResult } from './IActivity';
 import { Activity } from './Activity';
 import { TemplateOption } from './ActivityMetadata';
 
+export class ActivityElementRef<T extends Activity = Activity> extends ElementRef<T> implements IActivity {
+    get name(): string {
+        return this.nativeElement.name ?? lang.getClassName(this.nativeElement);
+    }
+    get runScope(): boolean {
+        return this.nativeElement.runScope;
+    }
+
+    async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
+        ctx.status.current = this;
+        let result = await this.nativeElement.execute(ctx);
+        this.context.set(ActivityResult, result);
+        if (next) {
+            await next();
+        }
+    }
+
+    private _actionFunc: PromiseUtil.ActionHandle;
+    toAction(): PromiseUtil.ActionHandle<T> {
+        if (!this._actionFunc) {
+            this._actionFunc = (ctx: ActivityContext, next?: () => Promise<void>) => this.run(ctx, next);
+        }
+        return this._actionFunc;
+    }
+}
+
+
 
 /**
  *  activity ref for runtime.
  */
-export class ActivityRef<T = any, TN extends IActivity = IActivity> extends ComponentRef<T, TN> implements IActivity<T> {
+export class ActivityComponentRef<T = any, TN extends IActivity = IActivity> extends ComponentRef<T, TN> implements IActivity<T> {
     readonly runScope = true;
 
     get name(): string {
@@ -85,6 +112,6 @@ export class ActivityRef<T = any, TN extends IActivity = IActivity> extends Comp
  * @returns {target is Activity}
  */
 export function isAcitvity(target: any): target is IActivity {
-    return target instanceof Activity || target instanceof ActivityRef;
+    return target instanceof Activity || target instanceof ActivityComponentRef;
 }
 

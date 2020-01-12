@@ -1,4 +1,4 @@
-import { Type, InjectToken, Abstract, isFunction, Singleton, Destoryable, IDestoryable } from '@tsdi/ioc';
+import { Type, InjectToken, isFunction, Destoryable, IDestoryable } from '@tsdi/ioc';
 import { AnnoationContext, CTX_TEMPLATE } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
@@ -8,7 +8,7 @@ export const CTX_ELEMENT_REF = new InjectToken<any | any[]>('CTX_ELEMENT_REF');
 export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF');
 export const CTX_COMPONENT_REF = new InjectToken<ComponentRef>('CTX_COMPONENT_REF');
 
-export const COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef>>('COMPONENT_REFS');
+export const COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef<any, any>>>('COMPONENT_REFS');
 export const ELEMENT_REFS = new InjectToken<WeakMap<any, ElementRef<any>>>('ELEMENT_REFS');
 
 export class ContextNode extends Destoryable {
@@ -28,23 +28,23 @@ export class ContextNode extends Destoryable {
     }
 }
 
-export type NodeType<T> =  ElementRef<T> | NodeRef<T> | ComponentRef<T>;
+export type NodeType =  ElementRef | NodeRef | ComponentRef;
 
-export class NodeRef<T = any> extends ContextNode {
+export class NodeRef<T = NodeType> extends ContextNode {
 
-    private _rootNodes: NodeType<T>[]
-    get rootNodes(): NodeType<T>[] {
+    private _rootNodes: T[]
+    get rootNodes(): T[] {
         return this._rootNodes;
     }
 
-    constructor(context: AnnoationContext, nodes: NodeType<T>[]) {
+    constructor(context: AnnoationContext, nodes: T[]) {
         super(context);
         this._rootNodes = nodes;
     }
 
     protected destroying(): void {
         this.rootNodes
-            .forEach((node: IDestoryable) => {
+            .forEach((node: T & IDestoryable) => {
                 if (node && isFunction(node.destroy)) {
                     node.destroy();
                 }
@@ -83,13 +83,13 @@ export class ElementRef<T = any> extends ContextNode {
 }
 
 
-export class TemplateRef<T = any> extends NodeRef<T> {
+export class TemplateRef<T = NodeType> extends NodeRef<T> {
     get template() {
         return this.context.get(CTX_TEMPLATE);
     }
 }
 
-export class ComponentRef<T = any, TN = any> extends ContextNode {
+export class ComponentRef<T = any, TN = NodeType> extends ContextNode {
 
     private _nodeRef: TemplateRef<TN>
     get nodeRef(): TemplateRef<TN> {

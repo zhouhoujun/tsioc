@@ -236,7 +236,7 @@ export class CTest {
     @Test('can resolve component template')
     async test2() {
         let container = this.ctx.getContainer();
-        let comp1Ref = await container.get(ComponentBuilder).resolveRef({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as TemplateRef<Component1>;
+        let comp1Ref = await container.get(ComponentBuilder).resolveRef({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as TemplateRef;
         let comp11 = await container.get(ComponentBuilder).resolve({ type: Component1, template: { name: 'test1' } });
         // console.log('comp1:', comp1);
         console.log('comp11:', comp11);
@@ -255,7 +255,7 @@ export class CTest {
             template: { element: 'selector1', name: 'test1' }
         });
 
-        let comp1 = ctx.getBootTarget() as TemplateRef<Component1>;
+        let comp1 = ctx.getBootTarget() as TemplateRef;
         expect(comp1 instanceof TemplateRef).toBeTruthy();
         expect((comp1.rootNodes[0] as ElementRef<Component1>).nativeElement?.name).toEqual('test1');
     }

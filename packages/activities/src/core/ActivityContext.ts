@@ -8,7 +8,7 @@ import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ActivityStatus } from './ActivityStatus';
-import { ActivityRef } from './ActivityRef';
+import { ActivityComponentRef } from './ActivityRef';
 import { IActivity, ActivityResult } from './IActivity';
 
 /**
