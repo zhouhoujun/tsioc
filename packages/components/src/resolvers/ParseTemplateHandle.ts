@@ -1,7 +1,6 @@
 import { BuildContext } from '@tsdi/boot';
 import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
-import { CTX_TEMPLATE_REF } from '../ComponentRef';
 
 export const ParseTemplateHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
     if (!ctx.value && !ctx.type && ctx.template) {
@@ -17,10 +16,7 @@ export const ParseTemplateHandle = async function (ctx: BuildContext, next: () =
             .execute(pCtx);
 
         if (pCtx.value) {
-            let parent = ctx.getParent();
-            ctx.contexts.copy(pCtx.contexts);
-            ctx.setParent(parent);
-            ctx.value = pCtx.get(CTX_TEMPLATE_REF) ?? pCtx.value;
+            ctx.value = pCtx.getResultRef();
         }
     }
     await next();

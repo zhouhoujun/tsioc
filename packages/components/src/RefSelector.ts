@@ -34,8 +34,8 @@ export abstract class RefSelector {
             ?.getNodeSelector();
     }
 
-    createComponentRef(type: Type, target: Object, context: AnnoationContext, tempRef: TemplateRef<any>): ComponentRef<any, any> {
-        return new ComponentRef(type, target, context, tempRef);
+    createComponentRef(type: Type, target: Object, context: AnnoationContext, ...nodes: any[]): ComponentRef<any, any> {
+        return new ComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
     }
 
     createTemplateRef(context: AnnoationContext, ...nodes: any[]): TemplateRef<any> {

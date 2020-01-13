@@ -63,8 +63,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             };
             options = target;
         }
-        let rctx = injector.getService({ token: BuildContext, target: md, default: BuildContext });
-        rctx.setOptions(options);
+        let rctx: BuildContext;
+        if (md) {
+            rctx = injector.getService({ token: BuildContext, target: md, default: BuildContext });
+            rctx.setOptions(options);
+        } else {
+            rctx = BuildContext.parse(injector, options);
+        }
         await this.reflects.getActionInjector().get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;

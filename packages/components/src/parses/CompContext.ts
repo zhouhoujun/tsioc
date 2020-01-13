@@ -10,7 +10,7 @@ export class CompContext<T extends IBuildOption = IBuildOption,
     extends BuildContext<T, TMeta, TRefl> {
 
 
-    get result() {
+    getResultRef() {
         return this.get(CTX_COMPONENT_REF) ?? this.get(CTX_TEMPLATE_REF) ?? this.get(CTX_ELEMENT_REF) ?? this.value;
     }
 

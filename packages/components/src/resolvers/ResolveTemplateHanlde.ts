@@ -1,6 +1,6 @@
-import { isNullOrUndefined, DecoratorProvider } from '@tsdi/ioc';
+import { isNullOrUndefined, DecoratorProvider, isArray } from '@tsdi/ioc';
 import { BuildContext } from '@tsdi/boot';
-import { CTX_TEMPLATE_REF, CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
+import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
@@ -24,7 +24,9 @@ export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: ()
     if (!isNullOrUndefined(pCtx.value)) {
         ctx.addChild(pCtx);
         let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector)
-        ctx.set(CTX_COMPONENT_REF, refSeltor.createComponentRef(ctx.type, ctx.value, pCtx, pCtx.get(CTX_TEMPLATE_REF)));
+        ctx.set(CTX_COMPONENT_REF, isArray(pCtx.value) ?
+            refSeltor.createComponentRef(ctx.type, ctx.value, ctx, ...pCtx.value)
+            : refSeltor.createComponentRef(ctx.type, ctx.value, ctx, pCtx.value));
         await next();
     } else {
         ctx.remove(CTX_COMPONENT)
