@@ -56,28 +56,21 @@ export class NodeRef<T = NodeType, TCtx extends AnnoationContext = AnnoationCont
 
 export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContext> extends ContextNode<TCtx> {
 
-    private _element: T;
-    get nativeElement(): T {
-        return this._element;
-    }
-
-    constructor(context: TCtx, element: T) {
+    constructor(context: TCtx, public readonly nativeElement: T) {
         super(context);
-        this._element = element;
         let injector = context.injector;
         if (!injector.has(ELEMENT_REFS)) {
             injector.registerValue(ELEMENT_REFS, new WeakMap());
         }
-        injector.get(ELEMENT_REFS).set(element, this);
-        this.onDestroy(() => injector.get(ELEMENT_REFS)?.delete(element));
+        injector.get(ELEMENT_REFS).set(nativeElement, this);
+        this.onDestroy(() => injector.get(ELEMENT_REFS)?.delete(nativeElement));
     }
 
     protected destroying(): void {
-        let element = this._element as T & IDestoryable;
+        let element = this.nativeElement as T & IDestoryable;
         if (element && isFunction(element.destroy)) {
             element.destroy();
         }
-        this._element = null;
         super.destroy();
     }
 }
@@ -91,31 +84,13 @@ export class TemplateRef<T = NodeType, TCtx extends AnnoationContext = Annoation
 
 export class ComponentRef<T = any, TN = NodeType, TCtx extends AnnoationContext = AnnoationContext> extends ContextNode<TCtx> {
 
-    private _nodeRef: TemplateRef<TN>
-    get nodeRef(): TemplateRef<TN> {
-        return this._nodeRef;
-    }
-
-    private _componentType: Type<T>;
-    get componentType(): Type<T> {
-        return this._componentType;
-    }
-
-    private _instance: T;
-    get instance(): T {
-        return this._instance;
-    }
-
     constructor(
-        componentType: Type<T>,
-        instance: T,
+        public readonly componentType: Type<T>,
+        public readonly instance: T,
         context: TCtx,
-        tempRef: TemplateRef<TN>
+        public readonly nodeRef: TemplateRef<TN>
     ) {
         super(context);
-        this._componentType = componentType;
-        this._instance = instance;
-        this._nodeRef = tempRef;
         if (!context.injector.has(COMPONENT_REFS)) {
             context.injector.registerValue(COMPONENT_REFS, new WeakMap());
         }
@@ -130,9 +105,6 @@ export class ComponentRef<T = any, TN = NodeType, TCtx extends AnnoationContext 
 
     protected destroying(): void {
         this.nodeRef.destroy();
-        this._instance = null;
-        this._componentType = null;
-        this._nodeRef = null;
         super.destroying();
     }
 }

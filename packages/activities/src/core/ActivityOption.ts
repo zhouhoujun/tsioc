@@ -1,7 +1,6 @@
-import { BootOption } from '@tsdi/boot';
+import { IBuildOption } from '@tsdi/boot';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityTemplate } from './ActivityMetadata';
-
 
 
 /**
@@ -11,23 +10,8 @@ import { ActivityTemplate } from './ActivityMetadata';
  * @interface ActivityOption
  * @extends {BootOption}
  */
-export interface ActivityOption<T = any> extends BootOption<T> {
-    /**
-     * workflow id.
-     *
-     * @type {string}
-     * @memberof ActivityOption
-     */
-    id?: string;
-
-    /**
-     * bootstrap reference runable service.
-     *
-     * @type {WorkflowInstance}
-     * @memberof BootContext
-     */
-    runnable?: WorkflowInstance;
-
+export interface ActivityOption<T = any> extends IBuildOption<T> {
+    name?: string;
     /**
      * activities component template scope.
      *
