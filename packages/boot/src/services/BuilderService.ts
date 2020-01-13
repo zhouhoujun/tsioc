@@ -49,19 +49,22 @@ export class BuilderService extends IocCoreService implements IBuilderService {
 
     async build<T>(target: ClassType<T> | IBuildOption<T>): Promise<BuildContext> {
         let injector: ICoreInjector;
-        let options: IBuildOption
+        let options: IBuildOption;
+        let md: ClassType;
         if (isClassType(target)) {
             injector = this.reflects.getInjector(target);
             options = { type: target };
+            md = target;
         } else {
             injector = target.injector;
             if (!injector) {
-                let md = target.type || target.module;
+                md = target.type || target.module;
                 injector = md ? this.reflects.getInjector(md) : this.container;
             };
             options = target;
         }
-        let rctx = BuildContext.parse(injector, options);
+        let rctx = injector.getService({ token: BuildContext, target: md, default: BuildContext });
+        rctx.setOptions(options);
         await this.reflects.getActionInjector().get(ResolveMoudleScope)
             .execute(rctx);
         return rctx;

@@ -5,7 +5,7 @@ import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
 import { RefSelector } from '../RefSelector';
 import { CompContext } from './CompContext';
-import { CTX_COMPONENT_DECTOR, CTX_TEMPLATE_REF, CTX_COMPONENT, ElementRef, ContextNode } from '../ComponentRef';
+import { CTX_COMPONENT_DECTOR, CTX_TEMPLATE_REF, ContextNode } from '../ComponentRef';
 
 
 /**

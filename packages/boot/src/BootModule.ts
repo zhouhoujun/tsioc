@@ -24,6 +24,7 @@ import { AnnoationRegisterScope } from './registers/AnnoationRegisterScope';
 import { ResolveMoudleScope } from './builder/resolvers/ResolveMoudleScope';
 import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
 import { BootLifeScope } from './boots/BootLifeScope';
+import { BuildContext } from './builder/BuildContext';
 
 
 /**
@@ -76,7 +77,7 @@ export class BootModule {
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        container.inject(BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices, MessageContext, MessageQueue);
+        container.inject(BuildContext, BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices, MessageContext, MessageQueue);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

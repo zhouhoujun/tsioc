@@ -1,13 +1,13 @@
 import {
-    Injectable, isArray, PromiseUtil, Type, isClass, Inject, ContainerProxyToken,
-    ContainerProxy, isFunction, isPromise, ObjectMap, isBaseObject, ActionInjectorToken, DecoratorProvider
+    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap,
+    isBaseObject, ActionInjectorToken, DecoratorProvider
 } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { ICoreInjector } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
 import { ComponentBuilderToken, AstResolver, ComponentBuilder, RefSelector } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityMetadata';
 import { ActivityContext } from './ActivityContext';
-import { IActivity } from './IActivity';
+import { IActivityRef } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvity } from './ActivityRef';
@@ -24,26 +24,14 @@ import { Task } from '../decorators/Task';
 @Injectable(ActivityExecutorToken)
 export class ActivityExecutor implements IActivityExecutor {
 
-    constructor() {
+    constructor(private context: ActivityContext) {
 
-    }
-    /**
-     * conatiner.
-     *
-     * @type {IContainer}
-     * @memberof Activity
-     */
-    @Inject(ContainerProxyToken)
-    private containerFac: ContainerProxy;
-
-    getContainer(): IContainer {
-        return this.containerFac() as IContainer;
     }
 
     private _refSelector: RefSelector;
     getRefSelector() {
         if (!this._refSelector) {
-            this._refSelector = this.getContainer().get(ActionInjectorToken).get(DecoratorProvider).resolve(Task, RefSelector);
+            this._refSelector = this.context.injector.get(ActionInjectorToken).get(DecoratorProvider).resolve(Task, RefSelector);
         }
         return this._refSelector;
     }
@@ -57,13 +45,14 @@ export class ActivityExecutor implements IActivityExecutor {
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    runWorkflow<T extends ActivityContext>(ctx: T, activity: ActivityType, data?: any): Promise<T> {
-        let container = this.getContainer();
+    runWorkflow<T extends ActivityContext>(activity: ActivityType, data?: any): Promise<T> {
+        let ctx = this.context;
+        let injector = ctx.injector;
         if (isAcitvity(activity)) {
             let nctx = ctx.clone().setBody(data);
             return activity.run(nctx).then(() => nctx);
         } else if (isClass(activity)) {
-            return container.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, contexts: ctx.cloneContext(), data: data });
+            return injector.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, contexts: ctx.cloneContext(), data: data });
         } else if (isFunction(activity)) {
             let nctx = ctx.clone().setBody(data)
             return activity(nctx).then(() => nctx);
@@ -72,7 +61,7 @@ export class ActivityExecutor implements IActivityExecutor {
             if (isClass(activity.activity)) {
                 md = activity.activity;
             } else {
-                md = ctx.injector.getTokenProvider(this.getRefSelector().toSelectorToken(activity.activity));
+                md = injector.getTokenProvider(this.getRefSelector().toSelectorToken(activity.activity));
             }
 
             let option = {
@@ -82,49 +71,49 @@ export class ActivityExecutor implements IActivityExecutor {
                 data: data
             };
 
-            return container.get(BuilderServiceToken).run<T>(option);
+            return injector.get(BuilderServiceToken).run<T>(option);
         }
     }
 
-    eval(ctx: ActivityContext, expression: string, envOptions?: ObjectMap) {
+    eval(expression: string, envOptions?: ObjectMap) {
         if (!expression) {
             return expression;
         }
         envOptions = envOptions || {};
-        envOptions['ctx'] = ctx;
-        let container = this.getContainer();
-        return container.getInstance(AstResolver)
-            .resolve(expression, envOptions, container);
+        envOptions['ctx'] = this.context;
+        return this.context.injector.getInstance(AstResolver)
+            .resolve(expression, envOptions, this.context.injector);
     }
 
-    async resolveExpression<TVal>(ctx: ActivityContext, express: Expression<TVal>, container?: IContainer): Promise<TVal> {
+    async resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal> {
+        let ctx = this.context;
+        injector = injector || this.context.injector;
         if (isClass(express)) {
-            let options = ctx.getOptions();
-            let bctx = await (container || this.getContainer()).getInstance(BuilderService).run({ type: express, scope: options.scope });
+            let bctx = await injector.getInstance(BuilderService).run({ type: express, parent: ctx, injector: injector });
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
         } else if (isAcitvity(express)) {
             await express.run(ctx);
-            return express.result;
+            return ctx.status.current.;
         } else if (isPromise(express)) {
             return await express;
         }
         return express;
     }
 
-    async runActivity<T extends ActivityContext>(ctx: T, activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
-        await this.execActions(ctx, this.parseActions(activities), next);
+    async runActivity(activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
+        await this.execActions(this.parseActions(activities), next);
     }
 
-    async execActions<T extends ActivityContext>(ctx: T, actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+    async execActions<T extends ActivityContext>(actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
         if (actions.length < 1) {
             if (next) {
                 return await next();
             }
             return;
         }
-        return await PromiseUtil.runInChain<ActivityContext>(actions.filter(f => f), ctx, next);
+        return await PromiseUtil.runInChain(actions.filter(f => f), this.context, next);
     }
 
     parseActions<T extends ActivityContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[] {
@@ -154,10 +143,10 @@ export class ActivityExecutor implements IActivityExecutor {
         return null;
     }
 
-    protected async buildActivity(activity: Type | ControlTemplate, ctx: ActivityContext): Promise<IActivity> {
-        let container = this.getContainer();
+    protected async buildActivity(activity: Type | ControlTemplate): Promise<IActivityRef> {
+        let ctx = this.context;
         if (isClass(activity)) {
-            return await container.get(ComponentBuilderToken).resolveRef(activity);
+            return await ctx.injector.get(ComponentBuilderToken).resolveRef(activity);
         } else {
             let md: Type;
             if (isClass(activity.activity)) {
@@ -169,9 +158,9 @@ export class ActivityExecutor implements IActivityExecutor {
             let option = {
                 module: md,
                 template: activity,
-                scope: ctx.scope
+                parent: ctx
             };
-            return await container.getInstance(ComponentBuilder).resolveRef(option);
+            return await ctx.injector.getInstance(ComponentBuilder).resolveRef(option);
         }
     }
 }

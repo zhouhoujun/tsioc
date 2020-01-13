@@ -1,14 +1,8 @@
-import {
-    isClass, Type, isNullOrUndefined, Abstract, PromiseUtil, Inject,
-    InjectorProxyToken, InjectorProxy, isDefined
-} from '@tsdi/ioc';
-import { IContainer, ICoreInjector } from '@tsdi/core';
-import { Input, ComponentBuilderToken } from '@tsdi/components';
+import { isClass, Type, Abstract } from '@tsdi/ioc';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
-import { IActivity, ActivityResult } from './IActivity';
-import { ActivityMetadata, ActivityType, Expression } from './ActivityMetadata';
-import { IActivityExecutor, ActivityExecutorToken } from './IActivityExecutor';
+import { ActivityMetadata } from './ActivityMetadata';
 
 @Abstract()
 export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> {
@@ -192,9 +186,9 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
  *
  * @export
  * @param {*} target
- * @returns {target is Type<IActivity>}
+ * @returns {target is Type<Activity>}
  */
-export function isAcitvityClass(target: any, ext?: (meta: ActivityMetadata) => boolean): target is Type<IActivity> {
+export function isAcitvityClass(target: any, ext?: (meta: ActivityMetadata) => boolean): target is Type<Activity> {
     if (!isClass(target)) {
         return false;
     }

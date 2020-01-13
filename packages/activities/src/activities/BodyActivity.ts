@@ -21,12 +21,12 @@ export class BodyActivity<T = any> extends ControlActivity<T> {
     @Input('body') activities: ActivityType | ActivityType[];
 
     protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.getExector().execActions(ctx, this.getActions());
+        await ctx.getExector().execActions(this.getActions(ctx));
     }
 
-    protected getActions(): PromiseUtil.ActionHandle<ActivityContext>[] {
+    protected getActions(ctx: ActivityContext): PromiseUtil.ActionHandle<ActivityContext>[] {
         if (!this.actions) {
-            this.actions = (isArray(this.activities) ? this.activities : [this.activities]).map(ac => this.getExector().parseAction(ac))
+            this.actions = (isArray(this.activities) ? this.activities : [this.activities]).map(ac => ctx.getExector().parseAction(ac))
         }
         return this.actions;
     }

@@ -1,4 +1,4 @@
-import { Injectable, createRaiseContext, lang, Type } from '@tsdi/ioc';
+import { Injectable, createRaiseContext } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IComponentContext } from './ComponentContext';
 import { AnnoationContext } from '../AnnoationContext';

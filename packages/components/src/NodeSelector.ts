@@ -1,4 +1,4 @@
-import { Express, isFunction, isBoolean, isArray } from '@tsdi/ioc';
+import { Express, isFunction, isBoolean } from '@tsdi/ioc';
 import { NodeRef, ComponentRef, ElementRef } from './ComponentRef';
 
 

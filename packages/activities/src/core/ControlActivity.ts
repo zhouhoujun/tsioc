@@ -11,6 +11,6 @@ import { Activity } from './Activity';
  * @template T
  */
 export abstract class ControlActivity<T = any> extends Activity<T> {
-    protected _enableSetResult = false;
+
 }
 

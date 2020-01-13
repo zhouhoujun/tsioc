@@ -1,10 +1,9 @@
 import { Injectable, createRaiseContext, lang } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IBuildOption, IComponentContext, BuildContext } from '@tsdi/boot';
+import { IBuildOption, IComponentContext } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
 import { CompContext } from './CompContext';
-import { IComponentReflect } from '../IComponentReflect';
 
 /**
  * binding parse option.

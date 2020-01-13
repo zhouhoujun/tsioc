@@ -1,7 +1,7 @@
-import { Abstract, Type, isString, Inject, lang, Token, TypeReflectsToken, ITypeReflects, SymbolType, isClass } from '@tsdi/ioc';
+import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, NodeType } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 
 

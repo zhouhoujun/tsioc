@@ -1,11 +1,11 @@
-import { PromiseUtil, lang, isNullOrUndefined, isDefined } from '@tsdi/ioc';
+import { PromiseUtil, lang, isNullOrUndefined } from '@tsdi/ioc';
 import { ComponentRef, ComponentBuilderToken, ElementRef } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
-import { IActivity, ActivityResult } from './IActivity';
+import { IActivityRef, ActivityResult, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { TemplateOption } from './ActivityMetadata';
 
-export class ActivityElementRef<T extends Activity = Activity> extends ElementRef<T> implements IActivity {
+export class ActivityElementRef<T extends Activity = Activity> extends ElementRef<T, ActivityContext> implements IActivityRef {
     get name(): string {
         return this.nativeElement.name ?? lang.getClassName(this.nativeElement);
     }
@@ -13,9 +13,22 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
         return this.nativeElement.runScope;
     }
 
+    get input() {
+        return this.context.get(ACTIVITY_INPUT);
+    }
+
+    get output() {
+        return this.context.get(ACTIVITY_OUTPUT);
+    }
+
+    /**
+     * run activity.
+     * @param ctx root context.
+     * @param next next work.
+     */
     async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
-        let result = await this.nativeElement.execute(ctx);
+        let result = await this.nativeElement.execute(this.context);
         this.context.set(ActivityResult, result);
         if (next) {
             await next();
@@ -36,26 +49,34 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
 /**
  *  activity ref for runtime.
  */
-export class ActivityComponentRef<T = any, TN extends IActivity = IActivity> extends ComponentRef<T, TN> implements IActivity<T> {
+export class ActivityComponentRef<T = any, TN extends Activity = Activity> extends ComponentRef<T, TN, ActivityContext> implements IActivityRef<T> {
     readonly runScope = true;
 
     get name(): string {
-        return lang.getClassName(this.componentType);
-    }
-
-    private _result: T;
-    get result(): T {
-        return this._result;
+        return  this.context.targetReflect.name  || lang.getClassName(this.componentType);
     }
 
     get pipe(): string {
         return (<TemplateOption>this.context.getOptions()).pipe;
     }
 
+    get input() {
+        return this.context.get(ACTIVITY_INPUT);
+    }
+
+    get output() {
+        return this.context.get(ACTIVITY_OUTPUT);
+    }
+
+    /**
+     * run activity.
+     * @param ctx root context.
+     * @param next next work.
+     */
     async run(ctx: ActivityContext, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
         await this.initResult(ctx);
-        await ctx.getExector().runActivity(ctx, this.nodeRef.rootNodes, next);
+        await ctx.getExector().runActivity(this.nodeRef.rootNodes, next);
         await this.setResult(ctx);
         if (next) {
             await next();
@@ -63,7 +84,6 @@ export class ActivityComponentRef<T = any, TN extends IActivity = IActivity> ext
     }
 
     protected async initResult(ctx: ActivityContext): Promise<any> {
-        let runspc = ctx.status.scopes.find(s => isDefined(s.has(ActivityResult)));
         let ret = runspc ? runspc.get(ActivityResult) : ctx.data;
         if (!isNullOrUndefined(ret)) {
             if (this.pipe) {
@@ -75,7 +95,7 @@ export class ActivityComponentRef<T = any, TN extends IActivity = IActivity> ext
             }
         }
         if (this.runScope) {
-            ctx.status.currentScope.set(ActivityResult, this.result);
+            ctx.status.currentScope.context.set(ActivityResult, this.result);
         }
     }
 
@@ -111,7 +131,7 @@ export class ActivityComponentRef<T = any, TN extends IActivity = IActivity> ext
  * @param {*} target
  * @returns {target is Activity}
  */
-export function isAcitvity(target: any): target is IActivity {
+export function isAcitvity(target: any): target is IActivityRef {
     return target instanceof Activity || target instanceof ActivityComponentRef;
 }
 

@@ -1,6 +1,5 @@
 import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from '@tsdi/ioc';
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
-import { IActivity } from './IActivity';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 
@@ -242,7 +241,7 @@ export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T 
 /**
  *  activity type.
  */
-export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = IActivity<TVal> | Type<Activity<TVal>> | TemplateType<T>;
+export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | Type<Activity<TVal>> | TemplateType<T>;
 
 /**
  * activity template.

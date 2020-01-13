@@ -1,5 +1,5 @@
 import { BuildContext, IBuildOption, AnnoationContext } from '@tsdi/boot';
-import { CTX_COMPONENT_DECTOR, CTX_COMPONENT } from '../ComponentRef';
+import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF } from '../ComponentRef';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
 
@@ -8,6 +8,12 @@ export class CompContext<T extends IBuildOption = IBuildOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
     TRefl extends IComponentReflect = IComponentReflect>
     extends BuildContext<T, TMeta, TRefl> {
+
+
+    get result() {
+        return this.get(CTX_COMPONENT_REF) ?? this.get(CTX_TEMPLATE_REF) ?? this.get(CTX_ELEMENT_REF) ?? this.value;
+    }
+
     private _scope: any;
     get scope(): any {
         if (!this._scope) {

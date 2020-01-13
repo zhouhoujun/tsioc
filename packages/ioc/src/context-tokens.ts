@@ -13,5 +13,4 @@ export const CTX_CURR_DECOR = new InjectToken<string>('CTX_CURR_DECOR');
 export const CTX_CURR_DECOR_SCOPE = new InjectToken<any>('CTX_CURR_DECOR_SCOPE');
 export const CTX_TYPE_REGIN = new InjectToken<string>('CTX_TYPE_REGIN');
 
-
 export const CTX_TARGET_TOKEN = new InjectToken<Token>('CTX_TARGET_TOKEN');

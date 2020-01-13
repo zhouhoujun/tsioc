@@ -1,4 +1,4 @@
-import { IocCoreService, IInjector, Token, ProviderTypes, isToken, ActionInjectorToken, IProviders, ContainerProxy } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, ProviderTypes, isToken, ActionInjectorToken, IProviders, ContainerProxy, INJECTOR, InjectorProxyToken } from '@tsdi/ioc';
 import { ServiceOption, ResolveServiceContext } from '../resolves/service/ResolveServiceContext';
 import { ResolveServiceScope } from '../resolves/service/ResolveServiceScope';
 import { ServicesOption, ResolveServicesContext } from '../resolves/services/ResolveServicesContext';
@@ -20,9 +20,12 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T  {
+    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
         let context = ResolveServiceContext.parse(injector, isToken(target) ? { token: target } : target);
         providers.length && context.providers.inject(...providers);
+        context.providers.inject(
+            { provide: INJECTOR, useValue: injector },
+            { provide: InjectorProxyToken, useValue: injector.getProxy() });
         this.proxy().get(ActionInjectorToken)
             .get(ResolveServiceScope)
             .execute(context);
@@ -42,7 +45,9 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         let maps = this.getServiceProviders(injector, target);
         let services = [];
         maps.iterator((fac) => {
-            services.push(fac(...providers));
+            services.push(fac(...providers,
+                { provide: INJECTOR, useValue: injector },
+                { provide: InjectorProxyToken, useValue: injector.getProxy()}));
         });
         return services;
     }

@@ -1,15 +1,13 @@
-import { Injectable, Type, Refs, InjectToken, isString, createRaiseContext, isToken, isNullOrUndefined, isBaseObject, IInjector } from '@tsdi/ioc';
+import { Injectable, Type, Refs, InjectToken, createRaiseContext, isToken, IInjector } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, CTX_DATA } from '@tsdi/boot';
+import { BootContext } from '@tsdi/boot';
 import { COMPONENT_REFS } from '@tsdi/components';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
-import { ActivityStatus } from './ActivityStatus';
-import { ActivityComponentRef } from './ActivityRef';
-import { IActivity, ActivityResult } from './IActivity';
+import { IActivityRef, ActivityResult } from './IActivityRef';
 
 /**
  * workflow context token.
@@ -19,7 +17,11 @@ export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowCo
 /**
  * each body token.
  */
-export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
+export const CTX_CURR_ACT_REF = new InjectToken<any>('CTX_CURR_ACT_REF');
+/**
+ * each body token.
+ */
+export const CTX_CURR_ACTSCOPE_REF = new InjectToken<any>('CTX_CURR_ACTSCOPE_REF');
 
 
 /**
@@ -32,13 +34,6 @@ export const CTX_EACH_BODY = new InjectToken<any>('CTX_EACH_BODY');
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
 export class ActivityContext extends BootContext<ActivityOption, ActivityMetadata> {
-
-    /**
-     * root activity.
-     */
-    get activity(): IActivity {
-        return this.get(COMPONENT_REFS) || this.getBootTarget();
-    }
 
     /**
      * workflow id.
@@ -66,78 +61,13 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityMetadat
         return this.get(ActivityResult);
     }
 
-    /**
-     * workflow instane run status.
-     */
+    private _status: ActivityStatus;
     get status(): ActivityStatus {
-        return this.get(ActivityStatus);
+        if (!this._status) {
+            this._status = this.injector.get(ActivityStatus, { provide: ActivityContext, useValue: this });
+        }
+        return this._status;
     }
-
-    // private _body: any;
-    // /**
-    //  * context share body data.
-    //  *
-    //  * @type {*}
-    //  * @memberof ActivityContext
-    //  */
-    // get body(): any {
-    //     if (!this._body) {
-    //         this._body = this.get(CTX_EACH_BODY) || this.get(CTX_DATA);
-    //     }
-    //     return this._body;
-    // }
-    // /**
-    //  * set context share body.
-    //  *
-    //  * @param {*} value the value set to body.
-    //  * @memberof ActivityContext
-    //  */
-    // setBody(value: any);
-    // /**
-    //  * set context share body.
-    //  *
-    //  * @param {*} value  the value set to body.
-    //  * @param {string} filed name of filed to set value to
-    //  * @memberof ActivityContext
-    //  */
-    // setBody(value: any, filed: string);
-    // /**
-    //  * set context share body.
-    //  *
-    //  * @param {*} value the value set to body.
-    //  * @param {boolean} merge merge to existe body or not.
-    //  * @memberof ActivityContext
-    //  */
-    // setBody(value: any, merge: boolean);
-    // setBody(value: any, way?: any) {
-    //     let body = this.body;
-    //     if (isNullOrUndefined(body)) {
-    //         body = {};
-    //     }
-    //     if (isString(way)) {
-    //         body[way] = value;
-    //     } else if (way === true) {
-    //         body = isBaseObject(value) ? Object.assign(body, value) : value;
-    //     } else {
-    //         body = value;
-    //     }
-    //     this._body = body;
-    //     this.set(CTX_EACH_BODY, body);
-    //     return this;
-    // }
-
-    // getCurrBaseURL() {
-    //     let baseURL = '';
-    //     this.status.scopes.some(s => {
-    //         if (s.scope.runScope && s.scope instanceof ActivityRef) {
-    //             baseURL = s.scope.context.targetReflect.baseURL;
-    //             return !!baseURL;
-    //         }
-    //         return false;
-    //     });
-
-    //     return baseURL || this.baseURL;
-    // }
 
     static parse(injector: IInjector, target: Type | ActivityOption): ActivityContext {
         return createRaiseContext(injector, ActivityContext, isToken(target) ? { module: target } : target);
@@ -146,13 +76,46 @@ export class ActivityContext extends BootContext<ActivityOption, ActivityMetadat
     private _executor: ActivityExecutor;
     getExector(): ActivityExecutor {
         if (!this._executor) {
-            this._executor = this.getContainer().resolve(ActivityExecutor);
+            this._executor = this.injector.get(ActivityExecutor, { provide: ActivityContext, useValue: this });
         }
         return this._executor;
     }
 
+
     resolveExpression<TVal>(express: Expression<TVal>, container?: IContainer): Promise<TVal> {
-        return this.getExector().resolveExpression(this, express, container);
+        return this.getExector().resolveExpression(express, container);
     }
 
+}
+
+
+
+/**
+ * activity status.
+ *
+ * @export
+ * @class ActivityStatus
+ */
+@Injectable
+export class ActivityStatus {
+
+    constructor(private context: ActivityContext) {
+    }
+
+    get current(): IActivityRef {
+        return this.context.get(CTX_CURR_ACT_REF);
+    }
+
+    get currentScope(): IActivityRef {
+        return this.context.get(CTX_CURR_ACTSCOPE_REF);
+    }
+
+    set current(activity: IActivityRef) {
+        if (activity) {
+            this.context.set(CTX_CURR_ACT_REF, activity);
+            if (activity.runScope) {
+                this.context.set(CTX_CURR_ACTSCOPE_REF, activity);
+            }
+        }
+    }
 }

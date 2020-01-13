@@ -4,7 +4,6 @@ import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
 import { ActivityComponentRef, ActivityElementRef } from './core/ActivityRef';
 import { AnnoationContext } from '@tsdi/boot';
-import { IActivity } from './core/IActivity';
 
 const attrSelPrefix = /^ACT_ATTR_/;
 const seletPrefix = /^ACT_SELT_/;
@@ -30,11 +29,11 @@ export class ActivityRefSelector extends RefSelector {
         return SequenceActivity;
     }
 
-    createComponentRef(type: Type, target: IActivity, context: AnnoationContext, tempRef: TemplateRef<IActivity>): ActivityComponentRef {
+    createComponentRef(type: Type, target: Activity, context: AnnoationContext, tempRef: TemplateRef<Activity>): ActivityComponentRef {
         return new ActivityComponentRef(type, target, context, tempRef);
     }
 
-    createTemplateRef<T extends IActivity>(context: AnnoationContext, ...nodes: T[]): TemplateRef<T> {
+    createTemplateRef<T extends Activity>(context: AnnoationContext, ...nodes: T[]): TemplateRef<T> {
         return new TemplateRef(context, nodes);
     }
 

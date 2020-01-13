@@ -3,7 +3,7 @@ import { isToken } from '../utils/isToken';
 import { ProviderTypes } from '../providers/types';
 import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
-import { IInjector } from '../IInjector';
+import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { isNullOrUndefined } from '../utils/lang';
 
 /**
@@ -41,6 +41,9 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
     resolve<T>(injector: IInjector, token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
         let ctx = ResolveActionContext.parse(injector, isToken(token) ? { token: token } : token);
         providers.length && ctx.providers.inject(...providers);
+        ctx.providers.inject(
+            { provide: INJECTOR, useValue: injector },
+            { provide: InjectorProxyToken, useValue: injector.getProxy() });
         this.execute(ctx);
         return ctx.instance;
     }

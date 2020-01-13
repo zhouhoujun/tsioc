@@ -2,7 +2,7 @@ import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
-import { Task, Activity, ControlActivity, ActivityComponentRef, IActivity } from '@tsdi/activities';
+import { Task, Activity, ControlActivity, ActivityComponentRef, IActivitRef } from '@tsdi/activities';
 import chalk from 'chalk';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
@@ -17,7 +17,7 @@ export class TaskLogProcess extends LogProcess {
     processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
-            let target = joinPoint.target as IActivity;
+            let target = joinPoint.target as IActivitRef;
             let name = target.name;
             if (!name) {
                 name = lang.getClassName(joinPoint.targetType);

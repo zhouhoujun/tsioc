@@ -29,7 +29,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         providers.length && ctx.providers.inject(...providers);
         await this.reflects.getActionInjector().get(TemplateParseScope)
             .execute(ctx);
-        return ctx.get(CTX_TEMPLATE_REF) ?? ctx.value;
+        return ctx.result;
     }
 
     async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | TemplateRef<T> | ElementRef<T> | T> {

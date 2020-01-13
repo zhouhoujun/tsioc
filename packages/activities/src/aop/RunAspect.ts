@@ -2,6 +2,7 @@ import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core/ActivityContext';
 import { RunState } from '../core/WorkflowInstance';
+import { ActivityComponentRef, ActivityElementRef } from '../core/ActivityRef';
 
 /**
  * Task Log
@@ -10,7 +11,7 @@ import { RunState } from '../core/WorkflowInstance';
  * @class TaskLogAspect
  */
 @Aspect({
-    annotation: Task,
+    within: [ActivityComponentRef, ActivityElementRef],
     singleton: true
 })
 export class RunAspect {
@@ -19,7 +20,7 @@ export class RunAspect {
 
     }
 
-    @AfterReturning('execution(*.execute)')
+    @AfterReturning('execution(*.run)')
     afterRun(joinPoint: Joinpoint) {
 
         let ctx = joinPoint.args[0] as ActivityContext;

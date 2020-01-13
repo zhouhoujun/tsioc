@@ -49,7 +49,10 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
  * @class IocRasieContext
  * @extends {IocActionContext}
  */
-export abstract class IocRaiseContext<T extends ActionContextOption = ActionContextOption, TJ extends IInjector = IInjector, TC extends IIocContainer = IIocContainer> extends IocActionContext {
+export abstract class IocRaiseContext<
+    T extends ActionContextOption = ActionContextOption,
+    TJ extends IInjector = IInjector,
+    TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
     private _injector: TJ;
     constructor(@Inject(INJECTOR) injector: TJ) {
@@ -221,13 +224,18 @@ export interface IocProvidersOption extends ActionContextOption {
 }
 
 
-export abstract class IocProvidersContext<T extends IocProvidersOption = IocProvidersOption, TJ extends IInjector = IInjector, TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TJ, TC> {
+export abstract class IocProvidersContext<
+    T extends IocProvidersOption = IocProvidersOption,
+    TJ extends IInjector = IInjector,
+    TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TJ, TC> {
 
+    private _originPdr: boolean;
     /**
      * get providers of options.
      */
     get providers(): IProviders {
         if (!this.has(CTX_PROVIDERS)) {
+            this._originPdr = true;
             this.set(CTX_PROVIDERS, this.injector.get(PROVIDERS));
         }
         return this.get(CTX_PROVIDERS);
@@ -245,7 +253,9 @@ export abstract class IocProvidersContext<T extends IocProvidersOption = IocProv
     }
 
     protected destroying() {
-        this.providers?.destroy();
+        if (this._originPdr) {
+            this.providers?.destroy();
+        }
         super.destroy();
     }
 }

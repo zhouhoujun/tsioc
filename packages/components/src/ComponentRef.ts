@@ -11,13 +11,13 @@ export const CTX_COMPONENT_REF = new InjectToken<ComponentRef>('CTX_COMPONENT_RE
 export const COMPONENT_REFS = new InjectToken<WeakMap<any, ComponentRef<any, any>>>('COMPONENT_REFS');
 export const ELEMENT_REFS = new InjectToken<WeakMap<any, ElementRef<any>>>('ELEMENT_REFS');
 
-export class ContextNode extends Destoryable {
-    private _context: AnnoationContext;
-    get context(): AnnoationContext {
+export class ContextNode<TCtx extends AnnoationContext = AnnoationContext> extends Destoryable {
+    private _context: TCtx;
+    get context(): TCtx {
         return this._context;
     }
 
-    constructor(context: AnnoationContext) {
+    constructor(context: TCtx) {
         super();
         this._context = context;
     }
@@ -30,14 +30,14 @@ export class ContextNode extends Destoryable {
 
 export type NodeType =  ElementRef | NodeRef | ComponentRef;
 
-export class NodeRef<T = NodeType> extends ContextNode {
+export class NodeRef<T = NodeType, TCtx extends AnnoationContext = AnnoationContext> extends ContextNode<TCtx> {
 
     private _rootNodes: T[]
     get rootNodes(): T[] {
         return this._rootNodes;
     }
 
-    constructor(context: AnnoationContext, nodes: T[]) {
+    constructor(context: TCtx, nodes: T[]) {
         super(context);
         this._rootNodes = nodes;
     }
@@ -54,14 +54,14 @@ export class NodeRef<T = NodeType> extends ContextNode {
     }
 }
 
-export class ElementRef<T = any> extends ContextNode {
+export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContext> extends ContextNode<TCtx> {
 
     private _element: T;
     get nativeElement(): T {
         return this._element;
     }
 
-    constructor(context: AnnoationContext, element: T) {
+    constructor(context: TCtx, element: T) {
         super(context);
         this._element = element;
         let injector = context.injector;
@@ -83,13 +83,13 @@ export class ElementRef<T = any> extends ContextNode {
 }
 
 
-export class TemplateRef<T = NodeType> extends NodeRef<T> {
+export class TemplateRef<T = NodeType, TCtx extends AnnoationContext = AnnoationContext> extends NodeRef<T, TCtx> {
     get template() {
         return this.context.get(CTX_TEMPLATE);
     }
 }
 
-export class ComponentRef<T = any, TN = NodeType> extends ContextNode {
+export class ComponentRef<T = any, TN = NodeType, TCtx extends AnnoationContext = AnnoationContext> extends ContextNode<TCtx> {
 
     private _nodeRef: TemplateRef<TN>
     get nodeRef(): TemplateRef<TN> {
@@ -109,7 +109,7 @@ export class ComponentRef<T = any, TN = NodeType> extends ContextNode {
     constructor(
         componentType: Type<T>,
         instance: T,
-        context: AnnoationContext,
+        context: TCtx,
         tempRef: TemplateRef<TN>
     ) {
         super(context);
