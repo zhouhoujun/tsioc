@@ -306,12 +306,12 @@ export interface IInjector extends IDestoryable {
      *
      * @template T
      * @param {(Token<T> | T)} target type class
-     * @param {MethodType} propertyKey
+     * @param {MethodType<T>} propertyKey
      * @param {...ParamProviders[]} providers
      * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType, ...providers: ParamProviders[]): TR;
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR;
     /**
      * create params instances with IParameter and provider
      *

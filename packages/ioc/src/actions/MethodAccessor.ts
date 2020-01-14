@@ -3,7 +3,7 @@ import { IParameter } from '../IParameter';
 import { lang, isFunction, isBaseType } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { IInjector } from '../IInjector';
-import { IMethodAccessor } from '../IMethodAccessor';
+import { IMethodAccessor, MethodType } from '../IMethodAccessor';
 import { ParamProviders } from '../providers/types';
 import { ProviderParser } from '../providers/ProviderParser';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
@@ -39,7 +39,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: string | ((tag: ObjectMap<TypedPropertyDescriptor<any>>) => TypedPropertyDescriptor<any>), ...providers: ParamProviders[]): TR {
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR {
         let targetClass: Type;
         let instance: T;
         if (isToken(target)) {
@@ -56,7 +56,7 @@ export class MethodAccessor implements IMethodAccessor {
         let key: string;
         if (isFunction(propertyKey)) {
             let descriptors = tgRefl.defines.getPropertyDescriptors();
-            key = tgRefl.defines.getPropertyName(propertyKey(descriptors));
+            key = tgRefl.defines.getPropertyName(propertyKey(descriptors as any) as TypedPropertyDescriptor<any>);
         } else {
             key = propertyKey;
         }

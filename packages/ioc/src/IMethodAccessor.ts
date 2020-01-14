@@ -1,11 +1,11 @@
-import { Type, Token, ObjectMap } from './types';
+import { Type, Token } from './types';
 import { ParamProviders } from './providers/types';
 import { IParameter } from './IParameter';
 import { InjectToken } from './InjectToken';
 import { IInjector } from './IInjector';
 
 
-export type MethodType = string | ((tag: ObjectMap<TypedPropertyDescriptor<any>>) => TypedPropertyDescriptor<any>);
+export type MethodType<T> = string | ((tag: T) => Function);
 /**
  * execution, invoke some type method.
  *
@@ -48,7 +48,7 @@ export interface IMethodAccessor {
      * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType, ...providers: ParamProviders[]): TR;
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR;
 
     /**
      * create params instances with IParameter and provider
@@ -69,7 +69,7 @@ export interface IMethodAccessor {
      * @returns {IInjector}
      * @memberof IMethodAccessor
      */
-    invokedProvider(target: any, propertyKey: MethodType): IInjector;
+    invokedProvider(target: any, propertyKey: MethodType<any>): IInjector;
 }
 
 /**

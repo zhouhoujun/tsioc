@@ -518,7 +518,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @returns {TR}
      * @memberof BaseInjector
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType, ...providers: ParamProviders[]): TR {
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR {
         return this.getInstance<IMethodAccessor>(MethodAccessorKey).invoke(this, target, propertyKey, ...providers);
     }
 
