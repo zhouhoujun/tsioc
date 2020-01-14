@@ -2,6 +2,8 @@ import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from 
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
+import { WorkflowContext } from './WorkflowInstance';
+import { IActivityRef } from './IActivityRef';
 
 
 /**
@@ -236,12 +238,12 @@ export type ControlTemplate = Required<TemplateOption> | ExecuteOption | Express
     | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
-export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T | PromiseUtil.ActionHandle<ActivityContext>;
+export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T | PromiseUtil.ActionHandle<WorkflowContext>;
 
 /**
  *  activity type.
  */
-export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = Activity<TVal> | Type<Activity<TVal>> | TemplateType<T>;
+export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = IActivityRef<TVal> | Type<Activity<TVal>> | TemplateType<T>;
 
 /**
  * activity template.
@@ -251,10 +253,10 @@ export type ActivityTemplate<T extends TemplateOption = ControlTemplate> = Templ
 /**
  * context expression.
  */
-export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | Activity<T> | ((ctx: TC) => T | Promise<T>) | Type;
+export type CtxExpression<T, TC extends WorkflowContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | ((ctx: TC) => T | Promise<T>) | Type;
 
 /**
  * expression.
  */
-export type Expression<T = any> = CtxExpression<T, ActivityContext>;
+export type Expression<T = any> = CtxExpression<T, WorkflowContext>;
 

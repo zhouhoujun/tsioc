@@ -4,7 +4,9 @@ import { IActivityRef, ActivityResult } from './IActivityRef';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 import { ActivityOption } from './ActivityOption';
-import { ActivityMetadata } from './ActivityMetadata';
+import { ActivityMetadata, Expression } from './ActivityMetadata';
+import { ActivityExecutor } from './ActivityExecutor';
+import { ICoreInjector } from '@tsdi/core';
 
 
 
@@ -83,6 +85,18 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
             this._status = this.injector.get(ActivityStatus, { provide: ActivityContext, useValue: this });
         }
         return this._status;
+    }
+
+    private _executor: ActivityExecutor;
+    getExector(): ActivityExecutor {
+        if (!this._executor) {
+            this._executor = this.injector.get(ActivityExecutor, { provide: WorkflowContext, useValue: this });
+        }
+        return this._executor;
+    }
+
+    resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal> {
+        return this.getExector().resolveExpression(express, injector);
     }
 }
 

@@ -1,7 +1,7 @@
 import { PromiseUtil, InjectToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { ActivityContext } from './ActivityContext';
 import { Expression, ActivityType } from './ActivityMetadata';
+import { WorkflowContext } from './WorkflowInstance';
 
 /**
  * activity executor.
@@ -26,7 +26,7 @@ export interface IActivityExecutor {
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    runWorkflow<T extends ActivityContext>(activities: ActivityType, data?: any): Promise<T>;
+    runWorkflow<T extends WorkflowContext>(activities: ActivityType, data?: any): Promise<T>;
     /**
      * resolve expression.
      *
@@ -55,7 +55,7 @@ export interface IActivityExecutor {
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    execActions<T extends ActivityContext>(actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void>;
+    execActions<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void>;
     /**
      * parse activity to action.
      *
@@ -64,7 +64,7 @@ export interface IActivityExecutor {
      * @returns {PromiseUtil.ActionHandle<T>}
      * @memberof IActivityExecutor
      */
-    parseAction<T extends ActivityContext>(activity: ActivityType): PromiseUtil.ActionHandle<T>;
+    parseAction<T extends WorkflowContext>(activity: ActivityType): PromiseUtil.ActionHandle<T>;
 
     /**
      * parse activites to actions.
@@ -74,7 +74,7 @@ export interface IActivityExecutor {
      * @returns {PromiseUtil.ActionHandle<T>[]}
      * @memberof IActivityExecutor
      */
-    parseActions<T extends ActivityContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[];
+    parseActions<T extends WorkflowContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[];
 }
 
 export const ActivityExecutorToken = new InjectToken<IActivityExecutor>('ActivityExecutor');

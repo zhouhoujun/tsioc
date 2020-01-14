@@ -9,7 +9,7 @@ export const ACTIVITY_OUTPUT = new InjectToken<any>('ACTIVITY_OUTPUT');
 
 export interface IActivityRef<T = any> extends IDestoryable {
     name?: string;
-    readonly input: T;
+    input: T;
     readonly output: T;
     readonly runScope: boolean;
     readonly context: ActivityContext;

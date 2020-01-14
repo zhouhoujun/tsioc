@@ -18,5 +18,10 @@ export interface ActivityOption<T = any> extends IBuildOption<T> {
      * @type {ActivityTemplate}
      * @memberof ActivityConfigure
      */
-    template?: ActivityTemplate
+    template?: ActivityTemplate;
+
+    /**
+     * input data
+     */
+    data?: any;
 }

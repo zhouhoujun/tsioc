@@ -1,5 +1,5 @@
 import { PromiseUtil, lang } from '@tsdi/ioc';
-import { ComponentRef, ElementRef, TemplateRef, NodeType } from '@tsdi/components';
+import { ComponentRef, ElementRef, TemplateRef } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
 import { IActivityRef, ActivityResult, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
@@ -17,6 +17,10 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
 
     get input() {
         return this.context.get(ACTIVITY_INPUT);
+    }
+
+    set input(data: any) {
+        this.context.set(ACTIVITY_INPUT, data);
     }
 
     get output() {
@@ -60,6 +64,10 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
         return this.context.get(ACTIVITY_INPUT);
     }
 
+    set input(data: any) {
+        this.context.set(ACTIVITY_INPUT, data);
+    }
+
     get output() {
         return this.context.get(ACTIVITY_OUTPUT);
     }
@@ -72,7 +80,7 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
         let result = await this.toAction()(ctx);
-        this.context.set(ActivityResult, result);
+        this.context.set(ACTIVITY_OUTPUT, result);
         if (next) {
             await next();
         }
@@ -108,6 +116,10 @@ export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef,
         return this.context.get(ACTIVITY_INPUT);
     }
 
+    set input(data: any) {
+        this.context.set(ACTIVITY_INPUT, data);
+    }
+
     get output() {
         return this.context.get(ACTIVITY_OUTPUT);
     }
@@ -118,10 +130,8 @@ export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef,
      */
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
-        // await this.initResult(ctx);
-        await (this.nodeRef as ActivityTemplateRef).run(ctx);
-        // await this.context.getExector().runActivity(this.nodeRef., next);
-        // await this.setResult(ctx);
+        let nodeRef = this.nodeRef as ActivityTemplateRef;
+        await nodeRef.run(ctx);
         if (next) {
             await next();
         }
@@ -169,13 +179,13 @@ export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef,
 
 
 /**
- * is acitivty instance or not.
+ * is acitivty ref instance or not.
  *
  * @export
  * @param {*} target
  * @returns {target is Activity}
  */
-export function isAcitvity(target: any): target is IActivityRef {
+export function isAcitvityRef(target: any): target is IActivityRef {
     return target instanceof ActivityElementRef || target instanceof ActivityTemplateRef || target instanceof ActivityComponentRef;
 }
 
