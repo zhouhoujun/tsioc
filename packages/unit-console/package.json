@@ -45,7 +45,6 @@
     "@tsdi/platform-server-logs": "~5.3.13",
     "@tsdi/platform-server-boot": "~5.3.13",
     "@tsdi/unit": "~5.3.13",
-    "reflect-metadata": "^0.1.13",
     "tslib": "^1.10.0",
     "globby": "^10.0.1"
   },

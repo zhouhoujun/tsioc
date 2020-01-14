@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { ArgsIteratorAction } from './ArgsIterator';
 import { ClassMetadata } from '../metadatas/ClassMetadata';
 import { Type, Token, ProvideToken } from '../types';

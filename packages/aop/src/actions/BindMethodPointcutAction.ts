@@ -27,7 +27,7 @@ export const BindMethodPointcutAction = function (ctx: RuntimeActionContext, nex
     let targetType = ctx.type;
 
     let className = lang.getClassName(targetType);
-    let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
+    let decorators = ctx.targetReflect.defines.getPropertyDescriptors();
     let advisor = injector.get(AdvisorToken);
     let advicesMap = advisor.getAdviceMap(targetType);
 

@@ -172,7 +172,7 @@ export class ActivityStatus {
     set current(activity: IActivityRef) {
         if (activity) {
             this.context.set(CTX_CURR_ACT_REF, activity);
-            if (activity.runScope) {
+            if (activity.isScope) {
                 this.context.set(CTX_CURR_ACTSCOPE_REF, activity);
             }
         }

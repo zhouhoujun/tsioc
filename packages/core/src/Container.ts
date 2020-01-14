@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, IProviders } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';

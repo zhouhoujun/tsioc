@@ -6,6 +6,7 @@ import { ResolveActionOption } from './actions/ResolveActionContext';
 import { InjectReference } from './InjectReference';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
+import { MethodType } from './IMethodAccessor';
 
 
 /**
@@ -305,12 +306,12 @@ export interface IInjector extends IDestoryable {
      *
      * @template T
      * @param {(Token<T> | T)} target type class
-     * @param {(string | ((tag: T) => Function))} propertyKey
+     * @param {MethodType} propertyKey
      * @param {...ParamProviders[]} providers
      * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR;
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType, ...providers: ParamProviders[]): TR;
     /**
      * create params instances with IParameter and provider
      *

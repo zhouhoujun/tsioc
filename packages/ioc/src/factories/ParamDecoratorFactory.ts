@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { ParameterMetadata } from '../metadatas/ParameterMetadata';
 import { Token } from '../types';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';

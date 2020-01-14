@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { MethodMetadata } from '../metadatas/MethodMetadata';
 import { ParamProviders } from '../providers/types';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';

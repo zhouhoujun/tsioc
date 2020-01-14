@@ -92,7 +92,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
         } else {
             let points: IPointcut[] = [];
-            let decorators = Object.getOwnPropertyDescriptors(targetType.prototype);
+            let decorators = refs.create(targetType).defines.getPropertyDescriptors();
             // match method.
             for (let name in decorators) {
                 points.push({

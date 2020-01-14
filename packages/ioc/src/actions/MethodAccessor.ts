@@ -1,4 +1,4 @@
-import { Token, Type } from '../types';
+import { Token, Type, ObjectMap } from '../types';
 import { IParameter } from '../IParameter';
 import { lang, isFunction, isBaseType } from '../utils/lang';
 import { isToken } from '../utils/isToken';
@@ -39,7 +39,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: string | ((tag: ObjectMap<TypedPropertyDescriptor<any>>) => TypedPropertyDescriptor<any>), ...providers: ParamProviders[]): TR {
         let targetClass: Type;
         let instance: T;
         if (isToken(target)) {
@@ -55,12 +55,8 @@ export class MethodAccessor implements IMethodAccessor {
         let tgRefl = reflects.get(targetClass);
         let key: string;
         if (isFunction(propertyKey)) {
-            let meth = propertyKey(instance);
-            tgRefl.defines.extendTypes.forEach(t => {
-                let dcp = Object.getOwnPropertyDescriptors(t.prototype);
-                key = Object.keys(dcp).find(k => isFunction(dcp[k].value) && !(dcp[k].set || dcp[k].get) && instance[k] === meth);
-                return !key;
-            });
+            let descriptors = tgRefl.defines.getPropertyDescriptors();
+            key = tgRefl.defines.getPropertyName(propertyKey(descriptors));
         } else {
             key = propertyKey;
         }

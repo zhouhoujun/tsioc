@@ -1,4 +1,4 @@
-import { Token, ClassType } from '../types';
+import { Token, ClassType, ObjectMap } from '../types';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers/types';
 import { InjectableMetadata } from '../metadatas/InjectableMetadata';
@@ -91,8 +91,9 @@ export class TargetDecoractors implements ITargetDecoractors {
     }
 }
 
+const name = '__name';
 export class TypeDefine {
-    constructor(private type: ClassType) {
+    constructor(public readonly type: ClassType) {
 
     }
 
@@ -102,6 +103,40 @@ export class TypeDefine {
             this._extends = lang.getClassChain(this.type);
         }
         return this._extends;
+    }
+
+    getPropertyName(descriptor: TypedPropertyDescriptor<any>) {
+        if (!descriptor) {
+            return '';
+        }
+        return descriptor[name] ?? Object.keys(this.getPropertyDescriptors()).find(n => this.getPropertyDescriptors()[n] = descriptor);
+    }
+
+    private descriptos: ObjectMap<TypedPropertyDescriptor<any>>;
+    getPropertyDescriptors(): ObjectMap<TypedPropertyDescriptor<any>> {
+        if (!this.descriptos) {
+            let descriptos;
+            this.extendTypes.forEach(ty => {
+                let cdrs = Object.getOwnPropertyDescriptors(ty.prototype);
+                if (!descriptos) {
+                    descriptos = cdrs;
+                    descriptos = {};
+                    lang.forIn(cdrs, (d, n) => {
+                        d[name] = n;
+                        descriptos[n] = d;
+                    });
+                } else {
+                    lang.forIn(cdrs, (d, n) => {
+                        if (!descriptos[n]) {
+                            d[name] = n;
+                            descriptos[n] = d;
+                        }
+                    });
+                }
+            });
+            this.descriptos = descriptos;
+        }
+        return this.descriptos;
     }
 
     isExtends(type: ClassType): boolean {

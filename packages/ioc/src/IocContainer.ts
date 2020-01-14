@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { IIocContainer, ContainerProxyToken, ContainerProxy } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';

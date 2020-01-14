@@ -11,8 +11,8 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
     get name(): string {
         return this.nativeElement.name ?? lang.getClassName(this.nativeElement);
     }
-    get runScope(): boolean {
-        return this.nativeElement.runScope;
+    get isScope(): boolean {
+        return this.nativeElement.isScope;
     }
 
     get input() {
@@ -34,7 +34,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
      */
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
-        let result = await this.nativeElement.execute(this.context);
+        let result = await  this.context.injector.invoke(this.nativeElement, ) .execute(this.context);
         this.context.set(ActivityResult, result);
         if (next) {
             await next();
@@ -56,7 +56,7 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
     get name(): string {
         return this.context.getOptions()?.name;
     }
-    get runScope(): boolean {
+    get isScope(): boolean {
         return true;
     }
 
@@ -102,7 +102,7 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
  *  activity ref for runtime.
  */
 export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef, ActivityContext> implements IActivityRef<T> {
-    readonly runScope = true;
+    readonly isScope = true;
 
     get name(): string {
         return this.context.getOptions()?.name || lang.getClassName(this.componentType);

@@ -6,7 +6,7 @@ import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject,
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
-import { MethodAccessorToken, IMethodAccessor } from './IMethodAccessor';
+import { MethodAccessorToken, IMethodAccessor, MethodType } from './IMethodAccessor';
 import { IParameter } from './IParameter';
 import { ResolveActionOption } from './actions/ResolveActionContext';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
@@ -512,13 +512,13 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      *
      * @template T
      * @param {(T | Type<T>)} target type of class or instance
-     * @param {string} propertyKey
+     * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
      * @param {...ParamProviders[]} providers
      * @returns {TR}
      * @memberof BaseInjector
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: string | ((tag: T) => Function), ...providers: ParamProviders[]): TR {
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType, ...providers: ParamProviders[]): TR {
         return this.getInstance<IMethodAccessor>(MethodAccessorKey).invoke(this, target, propertyKey, ...providers);
     }
 
