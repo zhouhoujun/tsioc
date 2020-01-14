@@ -1,17 +1,16 @@
 import {
-    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap,
-    isBaseObject, ActionInjectorToken, DecoratorProvider
+    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap, isBaseObject
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, AstResolver, ComponentBuilder, RefSelector } from '@tsdi/components';
+import { ComponentBuilderToken, AstResolver, ComponentBuilder } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityMetadata';
-import { IActivityRef } from './IActivityRef';
+import { IActivityRef, ACTIVITY_INPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvityRef } from './ActivityRef';
-import { Task } from '../decorators/Task';
 import { WorkflowContext } from './WorkflowInstance';
+import { ActivityContext } from './ActivityContext';
 
 
 /**
@@ -24,16 +23,8 @@ import { WorkflowContext } from './WorkflowInstance';
 @Injectable(ActivityExecutorToken)
 export class ActivityExecutor implements IActivityExecutor {
 
-    constructor(private context: WorkflowContext) {
+    constructor(private context: ActivityContext) {
 
-    }
-
-    private _refSelector: RefSelector;
-    getRefSelector() {
-        if (!this._refSelector) {
-            this._refSelector = this.context.injector.get(ActionInjectorToken).get(DecoratorProvider).resolve(Task, RefSelector);
-        }
-        return this._refSelector;
     }
 
     /**
@@ -46,14 +37,14 @@ export class ActivityExecutor implements IActivityExecutor {
      * @memberof IActivityExecutor
      */
     runWorkflow<T extends WorkflowContext>(activity: ActivityType, data?: any): Promise<T> {
-        let ctx = this.context;
+        let ctx = this.context.workflow;
         let injector = ctx.injector;
         if (isAcitvityRef(activity)) {
             let nctx = ctx.clone() as T;
-            activity.input = data;
+            activity.context.set(ACTIVITY_INPUT, data);
             return activity.run(nctx).then(() => nctx);
         } else if (isClass(activity)) {
-            return injector.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, contexts: ctx.cloneContext(), data: data });
+            return injector.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, data: data });
         } else if (isFunction(activity)) {
             let nctx = ctx.clone() as T;
             return activity(nctx).then(() => nctx);
@@ -61,14 +52,13 @@ export class ActivityExecutor implements IActivityExecutor {
             let md: Type;
             if (isClass(activity.activity)) {
                 md = activity.activity;
-            } else {
-                md = injector.getTokenProvider(this.getRefSelector().toSelectorToken(activity.activity));
             }
 
             let option = {
-                module: md,
+                type: md,
                 template: activity,
-                contexts: ctx.cloneContext(),
+                injector: injector,
+                parent: ctx,
                 data: data
             };
 
@@ -95,8 +85,8 @@ export class ActivityExecutor implements IActivityExecutor {
         } else if (isFunction(express)) {
             return await express(ctx);
         } else if (isAcitvityRef(express)) {
-            await express.run(ctx);
-            return ctx.status.current.output;
+            await express.run(ctx.workflow);
+            return ctx.workflow.status.current.context.output;
         } else if (isPromise(express)) {
             return await express;
         }
@@ -114,7 +104,7 @@ export class ActivityExecutor implements IActivityExecutor {
             }
             return;
         }
-        return await PromiseUtil.runInChain(actions.filter(f => f), this.context, next);
+        return await PromiseUtil.runInChain(actions.filter(f => f), this.context.workflow, next);
     }
 
     parseActions<T extends WorkflowContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[] {
@@ -152,14 +142,13 @@ export class ActivityExecutor implements IActivityExecutor {
             let md: Type;
             if (isClass(activity.activity)) {
                 md = activity.activity;
-            } else {
-                md = ctx.injector.getTokenProvider(this.getRefSelector().toSelectorToken(activity.activity))
             }
 
             let option = {
-                module: md,
+                type: md,
                 template: activity,
-                parent: ctx
+                injector: ctx.injector,
+                parent: ctx,
             };
             return await ctx.injector.getInstance(ComponentBuilder).resolveRef(option);
         }

@@ -1,9 +1,11 @@
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
 import { ConditionActivity } from './ConditionActivity';
-import { BodyActivity } from './BodyActivity';
+import { WorkflowContext } from '../core/WorkflowInstance';
+import { PromiseUtil } from '@tsdi/ioc';
+import { ActivityType } from '../core/ActivityMetadata';
 
 
 
@@ -15,16 +17,21 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ContentActivity}
  */
 @Task('dowhile')
-export class DoWhileActivity<T> extends ControlActivity<T> {
+export class DoWhileActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input() body: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.body.run(ctx, async () => {
-            await this.condition.run(ctx);
-            if (this.condition.result) {
+    private action: PromiseUtil.ActionHandle<WorkflowContext>;
+
+    async execute(ctx: ActivityContext): Promise<void> {
+        if (!this.action) {
+            this.action = ctx.getExector().parseAction(this.body);
+        }
+        await this.action(ctx.workflow, async () => {
+            let condition = await this.condition.execute(ctx);
+            if (condition) {
                 await this.execute(ctx);
             }
         });

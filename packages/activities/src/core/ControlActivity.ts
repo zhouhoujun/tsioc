@@ -10,7 +10,7 @@ import { Activity } from './Activity';
  * @extends {Activity<T>}
  * @template T
  */
-export abstract class ControlActivity<T = any> extends Activity<T> {
+export abstract class ControlActivity<T = void> extends Activity<T> {
 
 }
 

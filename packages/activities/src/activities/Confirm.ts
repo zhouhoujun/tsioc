@@ -1,9 +1,9 @@
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { BodyActivity } from './BodyActivity';
 import { ConditionActivity } from './ConditionActivity';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
+import { ActivityType } from '../core/ActivityMetadata';
 
 
 
@@ -15,16 +15,16 @@ import { ActivityContext } from '../core/ActivityContext';
  * @extends {ControlActivity}
  */
 @Task('confirm')
-export class ConfirmActivity<T> extends ControlActivity<T> {
+export class ConfirmActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input() body: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.condition.run(ctx);
-        if (this.condition.result) {
-            await this.body.run(ctx)
+    async execute(ctx: ActivityContext): Promise<void> {
+        let result = await this.condition.execute(ctx);
+        if (result) {
+            await ctx.getExector().runActivity(this.body);
         }
     }
 }

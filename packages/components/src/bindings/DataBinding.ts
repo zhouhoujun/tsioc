@@ -1,4 +1,4 @@
-import { lang, isTypeObject, IInjector } from '@tsdi/ioc';
+import { lang, isTypeObject } from '@tsdi/ioc';
 import { IBinding } from './IBinding';
 import { AstResolver } from '../AstResolver';
 import { observe } from './onChange';
@@ -17,16 +17,12 @@ import { filedMatch, pathCkExp } from './exps';
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(protected injector: IInjector, public source: any, public binding: IBinding, public expression: string) {
+    constructor(protected ast: AstResolver, public source: any, public binding: IBinding, public expression: string) {
 
     }
 
-    getAstResolver() {
-        return this.injector.getInstance(AstResolver);
-    }
-
-    resolveExression(resolver?: AstResolver): T {
-        return (resolver || this.getAstResolver()).resolve(this.expression, this.source);
+    resolveExression(): T {
+        return this.ast.resolve(this.expression, this.source);
     }
 
     getFileds() {
@@ -47,7 +43,7 @@ export abstract class DataBinding<T = any> {
         if (!isTypeObject(target)) {
             return;
         }
-        let astResolver = this.getAstResolver();
+        let astResolver = this.ast;
         let fieldName = this.binding.name;
         if (pathCkExp.test(field)) {
             let paths = field.split('.');
@@ -56,21 +52,21 @@ export abstract class DataBinding<T = any> {
             let sub = astResolver.resolve(scope, this.source);
             let last = field.substring(idx + 1);
             observe.onPropertyChange(this.source, lang.first(paths), (value, oldVal) => {
-                target[fieldName] = this.resolveExression(astResolver);
+                target[fieldName] = this.resolveExression();
                 if (sub) {
                     observe.getEvents(sub).off(BindEventType.fieldChanged);
                 }
                 sub = astResolver.resolve(scope, this.source);
                 observe.onPropertyChange(sub, last, (value, oldVal) => {
-                    target[fieldName] = this.resolveExression(astResolver);
+                    target[fieldName] = this.resolveExression();
                 });
             });
             observe.onPropertyChange(sub, last, (value, oldVal) => {
-                target[fieldName] = this.resolveExression(astResolver);
+                target[fieldName] = this.resolveExression();
             });
         } else {
             observe.onPropertyChange(this.source, field, (value, oldVal) => {
-                target[fieldName] = this.resolveExression(astResolver);
+                target[fieldName] = this.resolveExression();
             });
         }
     }

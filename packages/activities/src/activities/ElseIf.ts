@@ -11,11 +11,10 @@ import { IfActivity, IFStateKey } from './If';
  * @template T
  */
 @Task('elseif')
-export class ElseIfActivity<T = any> extends IfActivity<T> {
-
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let currScope = ctx.status.currentScope;
-        if (currScope.has(IFStateKey) && !currScope.get(IFStateKey)) {
+export class ElseIfActivity extends IfActivity {
+    async execute(ctx: ActivityContext): Promise<void> {
+        let currScope = ctx.workflow.status.currentScope;
+        if (currScope.context.has(IFStateKey) && !currScope.context.get(IFStateKey)) {
             await this.tryExec(ctx);
         }
     }

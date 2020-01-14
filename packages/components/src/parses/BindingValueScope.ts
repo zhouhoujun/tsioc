@@ -13,6 +13,7 @@ import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
 import { RefSelector } from '../RefSelector';
+import { AstResolver } from '../AstResolver';
 
 
 /**
@@ -57,16 +58,17 @@ export const BindingScopeHandle = async function (ctx: ParseContext, next?: () =
             await PromiseUtil.runInChain(regs.getFuncs(actInjector, ctx.componentDecorator), ctx);
         } else {
             let exp = ctx.bindExpression.trim();
+            let ast = ctx.injector.get(AstResolver);
             if (ctx.binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    ctx.dataBinding = new OneWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
+                    ctx.dataBinding = new OneWayBinding(ast, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ast, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ast, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
                 }
             } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                ctx.dataBinding = new EventBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
+                ctx.dataBinding = new EventBinding(ast, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
             }
         }
     }
@@ -145,7 +147,7 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
         if (selector) {
             let template = ctx.getExtenalTemplate();
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
-            ctx.value = await injector.get(ComponentBuilderToken).resolveRef({
+            ctx.value = await injector.get(ComponentBuilderToken).resolve({
                 type: selector,
                 parent: ctx,
                 template: template,

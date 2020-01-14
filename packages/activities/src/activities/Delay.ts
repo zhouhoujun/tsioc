@@ -1,10 +1,10 @@
 import { PromiseUtil } from '@tsdi/ioc';
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
 import { TimerActivity } from './TimerActivity';
-import { BodyActivity } from './BodyActivity';
+import { ActivityType } from '../core/ActivityMetadata';
 
 
 
@@ -16,21 +16,21 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ControlActivity}
  */
 @Task('delay')
-export class DelayActivity<T> extends ControlActivity<T> {
+export class DelayActivity extends ControlActivity {
 
     @Input() timer: TimerActivity;
 
-    @Input() body: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.timer.run(ctx);
+    async execute(ctx: ActivityContext): Promise<void> {
+        let timeout = await this.timer.execute(ctx);
         let defer = PromiseUtil.defer();
         let timmer = setTimeout(() => {
             defer.resolve();
             clearTimeout(timmer);
-        }, this.timer.result);
+        }, timeout);
         await defer.promise;
-        await this.body.run(ctx);
+        await ctx.getExector().runActivity(this.body);
     }
 }
 

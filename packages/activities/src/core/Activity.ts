@@ -6,7 +6,6 @@ import { ActivityMetadata } from './ActivityMetadata';
 
 @Abstract()
 export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> {
-    readonly isScope: boolean;
     /**
      * activity display name.
      *
@@ -15,7 +14,7 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
      */
     @Input() name: string;
 
-    protected abstract execute(ctx: TCtx): Promise<T>;
+    abstract execute(ctx: TCtx): Promise<T>;
 }
 
 

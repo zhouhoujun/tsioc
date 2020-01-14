@@ -1,12 +1,13 @@
-import { isObservable, isFunction, IInjector } from '@tsdi/ioc';
+import { isObservable, isFunction } from '@tsdi/ioc';
 import { DataBinding } from './DataBinding';
 import { IBinding } from './IBinding';
+import { AstResolver } from '../AstResolver';
 
 
 export class EventBinding<T = any> extends DataBinding<T> {
 
-    constructor(injector: IInjector, source: any, binding: IBinding,  expression: string) {
-        super(injector, source, binding, expression)
+    constructor(ast: AstResolver, source: any, binding: IBinding,  expression: string) {
+        super(ast, source, binding, expression)
     }
 
     bind(target: any): void {
@@ -14,7 +15,7 @@ export class EventBinding<T = any> extends DataBinding<T> {
         let outEvent = target[this.binding.name];
         if (outEvent && isObservable(this.binding.type)) {
             outEvent.subsrcibe($event => {
-                let result = this.getAstResolver().resolve(this.expression,  { ...$scope, target: target, $scope: $scope, $event: $event });
+                let result = this.ast.resolve(this.expression,  { ...$scope, target: target, $scope: $scope, $event: $event });
                 if (isFunction(result)) {
                     result($event);
                 }

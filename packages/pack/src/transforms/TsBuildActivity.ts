@@ -83,18 +83,14 @@ export interface TsBuildOption extends AssetActivityOption {
             }
         },
         {
-            activity: Activities.if,
-            condition: ctx => ctx.scope.dts,
-            body: {
-                activity: 'dist',
-                pipe: 'dts',
-                dist: 'binding: dts',
-            }
+            activity: 'dist',
+            input: 'ctx.input | dts',
+            dist: 'binding: dts',
         },
         {
             activity: Activities.if,
             condition: ctx => ctx.scope.js,
-            pipe: 'tsjs',
+            input: 'ctx.input | tsjs',
             body: [
                 {
                     activity: Activities.execute,

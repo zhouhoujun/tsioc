@@ -1,5 +1,8 @@
 import { Singleton, Inject, INJECTOR, IInjector } from '@tsdi/ioc';
 import { AstParserToken } from './AstParser';
+import { pipeExp } from './bindings/exps';
+import { IPipeTransform } from './bindings/IPipeTransform';
+import { ComponentBuilderToken } from './IComponentBuilder';
 
 
 @Singleton()
@@ -29,16 +32,29 @@ export class AstResolver {
         }
 
         try {
+            // xxx | pipename
+            let pipeTransf: IPipeTransform;
+            if (pipeExp.test(expression)) {
+                let idex = expression.lastIndexOf(' | ');
+                let pipename = expression.substring(idex + 3);
+                if (pipename) {
+                    pipeTransf = injector.get(ComponentBuilderToken).getPipe(pipename, injector);
+                }
+                expression = expression.substring(0, idex);
+            }
+            let value;
             if (envOptions) {
                 // tslint:disable-next-line:no-eval
                 let func = eval(`(${Object.keys(envOptions).join(',')}) => {
                     return ${expression};
                 }`);
-                return func(...Object.values(envOptions));
+                value = func(...Object.values(envOptions));
+
             } else {
                 // tslint:disable-next-line:no-eval
-                return eval(expression);
+                value = eval(expression);
             }
+            return pipeTransf ? pipeTransf.transform(value) : value;
         } catch (err) {
             return void 0;
         }

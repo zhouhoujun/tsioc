@@ -95,12 +95,12 @@ export interface TemplateOption extends ElementTemplate, ObjectMap {
     name?: Binding<string>;
 
     /**
-     * value pipe.
+     * input data..
      *
      * @type {string}
      * @memberof TemplateOption
      */
-    pipe?: string;
+    input?: Binding<any>;
 }
 
 
@@ -115,13 +115,19 @@ export interface ExecuteOption extends TemplateOption {
 }
 
 
-export interface IBodyTemplate {
-    body?: Binding<ActivityType | ActivityType[]>;
+export interface BodyTemplate extends TemplateOption {
+    body: Binding<ActivityType | ActivityType[]>;
 }
 
-export interface BodyTemplate extends TemplateOption, IBodyTemplate {
+/**
+ * condition option.
+ *
+ * @export
+ * @interface ConditionTemplate
+ * @extends {ActivityOption}
+ */
+export interface ConditionTemplate extends TemplateOption, IConditionTemplate {
 }
-
 
 export interface IExpressionTemplate {
     /**
@@ -152,16 +158,6 @@ export interface IConditionTemplate {
      * @memberof ConditionOption
      */
     condition: Binding<Expression<boolean>>;
-}
-
-/**
- * condition option.
- *
- * @export
- * @interface ConditionTemplate
- * @extends {ActivityOption}
- */
-export interface ConditionTemplate extends BodyTemplate, IConditionTemplate {
 }
 
 export interface EachTeamplate extends BodyTemplate {
@@ -208,7 +204,7 @@ export interface SwitchTemplate extends TemplateOption {
 /**
  * case template.
  */
-export interface CaseTemplate extends IBodyTemplate {
+export interface CaseTemplate extends BodyTemplate {
     /**
      * case
      *
@@ -218,7 +214,7 @@ export interface CaseTemplate extends IBodyTemplate {
     case: Binding<any>;
 }
 
-export interface CatchTemplate extends IBodyTemplate {
+export interface CatchTemplate extends BodyTemplate {
     /**
      * to catch typeof this error.
      *
@@ -234,8 +230,8 @@ export interface TryTemplate extends TemplateOption {
     finally?: Binding<ActivityType[]>;
 }
 
-export type ControlTemplate = Required<TemplateOption> | ExecuteOption | ExpressionTemplate | ConditionTemplate | EachTeamplate | InvokeTemplate
-    | BodyTemplate | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
+export type ControlTemplate = Required<TemplateOption> | ExecuteOption | ConditionTemplate | ExpressionTemplate | EachTeamplate | InvokeTemplate
+    | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
 export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T | PromiseUtil.ActionHandle<WorkflowContext>;
@@ -253,10 +249,10 @@ export type ActivityTemplate<T extends TemplateOption = ControlTemplate> = Templ
 /**
  * context expression.
  */
-export type CtxExpression<T, TC extends WorkflowContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | ((ctx: TC) => T | Promise<T>) | Type;
+export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | ((ctx: TC) => T | Promise<T>) | Type;
 
 /**
  * expression.
  */
-export type Expression<T = any> = CtxExpression<T, WorkflowContext>;
+export type Expression<T = any> = CtxExpression<T, ActivityContext>;
 

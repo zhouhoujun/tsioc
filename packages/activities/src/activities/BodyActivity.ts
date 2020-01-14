@@ -1,34 +1,34 @@
-import { isArray, PromiseUtil } from '@tsdi/ioc';
-import { Input } from '@tsdi/components';
-import { Task } from '../decorators/Task';
-import { ControlActivity } from '../core/ControlActivity';
-import { ActivityContext } from '../core/ActivityContext';
-import { ActivityType } from '../core/ActivityMetadata';
+// import { isArray, PromiseUtil } from '@tsdi/ioc';
+// import { Input } from '@tsdi/components';
+// import { Task } from '../decorators/Task';
+// import { ControlActivity } from '../core/ControlActivity';
+// import { ActivityContext } from '../core/ActivityContext';
+// import { ActivityType } from '../core/ActivityMetadata';
 
-/**
- * body activity.
- *
- * @export
- * @class BodyActivity
- * @extends {ControlActivity<T>}
- * @template T
- */
-@Task('[body]')
-export class BodyActivity<T = any> extends ControlActivity<T> {
+// /**
+//  * body activity.
+//  *
+//  * @export
+//  * @class BodyActivity
+//  * @extends {ControlActivity<T>}
+//  * @template T
+//  */
+// @Task('[body]')
+// export class BodyActivity<T = any> extends ControlActivity<T> {
 
-    isScope = true;
-    private actions: PromiseUtil.ActionHandle<ActivityContext>[];
-    @Input('body') activities: ActivityType | ActivityType[];
+//     isScope = true;
+//     private actions: PromiseUtil.ActionHandle<ActivityContext>[];
+//     @Input('body') activities: ActivityType | ActivityType[];
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        await ctx.getExector().execActions(this.getActions(ctx));
-    }
+//     protected async execute(ctx: ActivityContext): Promise<void> {
+//         await ctx.workflow.getExector().execActions(isArray(this.activities)? this.activities : [this.activities]);
+//     }
 
-    protected getActions(ctx: ActivityContext): PromiseUtil.ActionHandle<ActivityContext>[] {
-        if (!this.actions) {
-            this.actions = (isArray(this.activities) ? this.activities : [this.activities]).map(ac => ctx.getExector().parseAction(ac))
-        }
-        return this.actions;
-    }
+//     protected getActions(ctx: ActivityContext): PromiseUtil.ActionHandle<ActivityContext>[] {
+//         if (!this.actions) {
+//             this.actions = (isArray(this.activities) ? this.activities : [this.activities]).map(ac => ctx.getExector().parseAction(ac))
+//         }
+//         return this.actions;
+//     }
 
-}
+// }

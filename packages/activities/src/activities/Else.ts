@@ -1,9 +1,9 @@
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core/ActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
-import { BodyActivity } from './BodyActivity';
 import { IFStateKey } from './If';
+import { ActivityType } from '../core/ActivityMetadata';
 
 /**
  * else activity.
@@ -14,13 +14,14 @@ import { IFStateKey } from './If';
  * @template T
  */
 @Task('else')
-export class ElseActivity<T> extends ControlActivity<T> {
+export class ElseActivity extends ControlActivity {
 
-    @Input() body: BodyActivity<T>;
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let currScope = ctx.status.currentScope;
-        if (currScope.has(IFStateKey) && !currScope.get(IFStateKey)) {
-            await this.body.run(ctx);
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+
+    async execute(ctx: ActivityContext): Promise<void> {
+        let currScope = ctx.workflow.status.currentScope;
+        if (currScope.context.has(IFStateKey) && !currScope.context.get(IFStateKey)) {
+            await ctx.getExector().runActivity(this.body);
         }
     }
 }

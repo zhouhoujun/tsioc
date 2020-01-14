@@ -20,15 +20,14 @@ export class ExpressionActivity<T> extends ControlActivity<T> {
 
     @Input() expression: Expression<T>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<T> {
         let expression;
         if (isString(this.expression)) {
-            expression = this.getExector().eval(ctx, this.expression);
+            expression = ctx.getExector().eval(this.expression);
         } else {
-            expression = this.expression;
+            expression = ctx.resolveExpression(this.expression);
         }
-
-        this.result = await this.resolveExpression(expression, ctx);
+        return expression;
     }
 
 }

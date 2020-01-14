@@ -1,12 +1,11 @@
-import { Injectable, Refs, InjectToken } from '@tsdi/ioc';
-import { Service, Startup, CTX_DATA, BootContext } from '@tsdi/boot';
-import { IActivityRef, ActivityResult } from './IActivityRef';
+import { Injectable, Refs, InjectToken, isDefined } from '@tsdi/ioc';
+import { Service, Startup, BootContext } from '@tsdi/boot';
+import { IActivityRef, ACTIVITY_INPUT } from './IActivityRef';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 import { ActivityOption } from './ActivityOption';
-import { ActivityMetadata, Expression } from './ActivityMetadata';
-import { ActivityExecutor } from './ActivityExecutor';
-import { ICoreInjector } from '@tsdi/core';
+import { ActivityMetadata } from './ActivityMetadata';
+
 
 
 
@@ -52,12 +51,12 @@ export enum RunState {
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)
 export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadata> {
-     /**
-     * workflow id.
-     *
-     * @type {string}
-     * @memberof ActivityContext
-     */
+    /**
+    * workflow id.
+    *
+    * @type {string}
+    * @memberof ActivityContext
+    */
     id: string;
     /**
     * action name.
@@ -74,11 +73,6 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
      */
     runnable: WorkflowInstance;
 
-
-    get result(): any {
-        return this.get(ActivityResult);
-    }
-
     private _status: ActivityStatus;
     get status(): ActivityStatus {
         if (!this._status) {
@@ -87,16 +81,14 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
         return this._status;
     }
 
-    private _executor: ActivityExecutor;
-    getExector(): ActivityExecutor {
-        if (!this._executor) {
-            this._executor = this.injector.get(ActivityExecutor, { provide: WorkflowContext, useValue: this });
+    setOptions(options: ActivityOption) {
+        if (!options) {
+            return;
         }
-        return this._executor;
-    }
-
-    resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal> {
-        return this.getExector().resolveExpression(express, injector);
+        super.setOptions(options);
+        if (isDefined(options.data)) {
+            this.set(ACTIVITY_INPUT, options.data);
+        }
     }
 }
 
@@ -122,17 +114,20 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
 
     async start(data?: any): Promise<TCtx> {
         let injector = this.getInjector();
-        this.context.set(CTX_DATA, data);
+        if (isDefined(data)) {
+            this.context.set(ACTIVITY_INPUT, data);
+        }
         this.context.set(WorkflowInstance, this);
+
         if (this.context.id && !injector.has(this.context.id)) {
             injector.registerValue(this.context.id, this);
         }
 
-        let target = this.context.result;
+        let target = this.context.getBootTarget() as IActivityRef;
         await target.run(this.context, async () => {
             this.state = RunState.complete;
-            this._result = this.context.result;
-        })
+            this._result = target.context.output;
+        });
 
         return this.context;
 

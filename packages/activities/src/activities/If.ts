@@ -1,9 +1,9 @@
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core/ActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ConditionActivity } from './ConditionActivity';
-import { BodyActivity } from './BodyActivity';
+import { ActivityType } from '../core/ActivityMetadata';
 
 
 export const IFStateKey = 'if-condition';
@@ -15,21 +15,21 @@ export const IFStateKey = 'if-condition';
  * @extends {ControlActivity}
  */
 @Task('if')
-export class IfActivity<T = any> extends ControlActivity<T> {
+export class IfActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input() body: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<void> {
         await this.tryExec(ctx);
     }
 
     protected async tryExec(ctx: ActivityContext) {
-        await this.condition.run(ctx);
-        ctx.status.currentScope.set(IFStateKey, this.condition.result);
-        if (this.condition.result) {
-            await this.body.run(ctx);
+        let result = await this.condition.execute(ctx);
+        ctx.workflow.status.currentScope.context.set(IFStateKey, result);
+        if (result) {
+            await ctx.getExector().runActivity(this.body);
         }
     }
 }

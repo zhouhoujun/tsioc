@@ -1,7 +1,7 @@
-import { PromiseUtil, lang } from '@tsdi/ioc';
+import { PromiseUtil, lang, isDefined } from '@tsdi/ioc';
 import { ComponentRef, ElementRef, TemplateRef } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
-import { IActivityRef, ActivityResult, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { TemplateOption } from './ActivityMetadata';
 import { WorkflowContext } from './WorkflowInstance';
@@ -11,21 +11,6 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
     get name(): string {
         return this.nativeElement.name ?? lang.getClassName(this.nativeElement);
     }
-    get isScope(): boolean {
-        return this.nativeElement.isScope;
-    }
-
-    get input() {
-        return this.context.get(ACTIVITY_INPUT);
-    }
-
-    set input(data: any) {
-        this.context.set(ACTIVITY_INPUT, data);
-    }
-
-    get output() {
-        return this.context.get(ACTIVITY_OUTPUT);
-    }
 
     /**
      * run activity.
@@ -34,8 +19,12 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
      */
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
         ctx.status.current = this;
-        let result = await  this.context.injector.invoke(this.nativeElement, ) .execute(this.context);
-        this.context.set(ActivityResult, result);
+        this.context.remove(ACTIVITY_OUTPUT);
+        let result = await this.nativeElement.execute(this.context);
+        if (isDefined(result)) {
+            this.context.set(ACTIVITY_OUTPUT, result);
+        }
+
         if (next) {
             await next();
         }
@@ -52,24 +41,9 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
 
 
 export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends TemplateRef<T, ActivityContext> implements IActivityRef {
-
+    readonly isScope = true;
     get name(): string {
         return this.context.getOptions()?.name;
-    }
-    get isScope(): boolean {
-        return true;
-    }
-
-    get input() {
-        return this.context.get(ACTIVITY_INPUT);
-    }
-
-    set input(data: any) {
-        this.context.set(ACTIVITY_INPUT, data);
-    }
-
-    get output() {
-        return this.context.get(ACTIVITY_OUTPUT);
     }
 
     /**
@@ -102,7 +76,6 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
  *  activity ref for runtime.
  */
 export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef, ActivityContext> implements IActivityRef<T> {
-    readonly isScope = true;
 
     get name(): string {
         return this.context.getOptions()?.name || lang.getClassName(this.componentType);
@@ -136,36 +109,6 @@ export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef,
             await next();
         }
     }
-
-    // protected async initResult(ctx: ActivityContext): Promise<any> {
-    //     let ret = runspc ? runspc.get(ActivityResult) : ctx.data;
-    //     if (!isNullOrUndefined(ret)) {
-    //         if (this.pipe) {
-    //             this._result = ctx.injector.get(ComponentBuilderToken)
-    //                 .getPipe(this.pipe, this.context.injector)
-    //                 ?.transform(ret);
-    //         } else {
-    //             this._result = ret;
-    //         }
-    //     }
-    //     if (this.runScope) {
-    //         ctx.status.currentScope.context.set(ActivityResult, this.result);
-    //     }
-    // }
-
-    // protected async setResult(ctx: ActivityContext) {
-    //     if (this.runScope) {
-    //         ctx.status.scopeEnd();
-    //     }
-    //     if (!isNullOrUndefined(this.result)) {
-    //         ctx.status.currentScope.set(ActivityResult, this.result);
-    //         if (this.pipe) {
-    //             ctx.injector.get(ComponentBuilderToken)
-    //                 .getPipe(this.pipe, this.context.injector)
-    //                 ?.reverse(ctx, this.result);
-    //         }
-    //     }
-    // }
 
     private _actionFunc: PromiseUtil.ActionHandle;
     toAction(): PromiseUtil.ActionHandle<WorkflowContext> {
