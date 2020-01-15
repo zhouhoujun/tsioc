@@ -58,17 +58,16 @@ export const BindingScopeHandle = async function (ctx: ParseContext, next?: () =
             await PromiseUtil.runInChain(regs.getFuncs(actInjector, ctx.componentDecorator), ctx);
         } else {
             let exp = ctx.bindExpression.trim();
-            let ast = ctx.injector.get(AstResolver);
             if (ctx.binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    ctx.dataBinding = new OneWayBinding(ast, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
+                    ctx.dataBinding = new OneWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ast, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ast, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
                 }
             } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                ctx.dataBinding = new EventBinding(ast, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
+                ctx.dataBinding = new EventBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
             }
         }
     }

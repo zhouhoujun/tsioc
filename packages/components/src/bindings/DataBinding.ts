@@ -1,4 +1,5 @@
 import { lang, isTypeObject } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { IBinding } from './IBinding';
 import { AstResolver } from '../AstResolver';
 import { observe } from './onChange';
@@ -17,12 +18,20 @@ import { filedMatch, pathCkExp } from './exps';
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(protected ast: AstResolver, public source: any, public binding: IBinding, public expression: string) {
+    constructor(protected injector: ICoreInjector, public source: any, public binding: IBinding, public expression: string) {
 
     }
 
+    private _ast: AstResolver;
+    getAst() {
+        if (!this._ast) {
+            this._ast = this.injector.getService({ token: AstResolver, target: this.source, default: AstResolver });
+        }
+        return this._ast;
+    }
+
     resolveExression(): T {
-        return this.ast.resolve(this.expression, this.source);
+        return this.getAst().resolve(this.expression, this.source);
     }
 
     getFileds() {
@@ -43,7 +52,7 @@ export abstract class DataBinding<T = any> {
         if (!isTypeObject(target)) {
             return;
         }
-        let astResolver = this.ast;
+        let astResolver = this.getAst();
         let fieldName = this.binding.name;
         if (pathCkExp.test(field)) {
             let paths = field.split('.');

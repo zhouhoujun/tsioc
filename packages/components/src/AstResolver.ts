@@ -1,19 +1,19 @@
 import { Singleton, Inject, INJECTOR, IInjector } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { AstParserToken } from './AstParser';
 import { pipeExp } from './bindings/exps';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { ComponentBuilderToken } from './IComponentBuilder';
 
-
 @Singleton()
 export class AstResolver {
 
-    @Inject(INJECTOR) protected injector: IInjector;
+    @Inject(INJECTOR) protected injector: ICoreInjector;
 
     constructor() {
     }
 
-    /**
+    /**ß
      * resolve expression.
      *
      * @param {string} expression
