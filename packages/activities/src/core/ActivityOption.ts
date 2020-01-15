@@ -1,5 +1,4 @@
 import { IBuildOption } from '@tsdi/boot';
-import { WorkflowInstance } from './WorkflowInstance';
 import { ActivityTemplate } from './ActivityMetadata';
 
 
@@ -11,6 +10,9 @@ import { ActivityTemplate } from './ActivityMetadata';
  * @extends {BootOption}
  */
 export interface ActivityOption<T = any> extends IBuildOption<T> {
+    /**
+     * name.
+     */
     name?: string;
     /**
      * activities component template scope.

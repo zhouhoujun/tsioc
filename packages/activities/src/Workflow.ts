@@ -5,9 +5,8 @@ import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
 import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';
-import { ActivityContext, WorkflowContextToken } from './core/ActivityContext';
 import { ActivityOption } from './core/ActivityOption';
-import { WorkflowInstance } from './core/WorkflowInstance';
+import { WorkflowInstance, WorkflowContext, WorkflowContextToken } from './core/WorkflowInstance';
 import { ActivityType } from './core/ActivityMetadata';
 import { UUIDToken, RandomUUIDFactory } from './core/uuid';
 
@@ -18,12 +17,12 @@ import { UUIDToken, RandomUUIDFactory } from './core/uuid';
  * @class Workflow
  * @extends {BootApplication}
  */
-export class Workflow<T extends ActivityContext = ActivityContext> extends BootApplication<T> implements ContextInit {
+export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootApplication<T> implements ContextInit {
 
     protected onInit(target: Type | ActivityOption<T> | T) {
         if (!isClass(target)) {
             if (!target.type) {
-                let options = target instanceof ActivityContext ? target.getOptions() : target;
+                let options = target instanceof WorkflowContext ? target.getOptions() : target;
                 options.type = SequenceActivity;
                 options.template = isArray(options.template) ? options.template : [options.template];
             }
@@ -45,7 +44,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async sequence<T extends ActivityContext>(ctx: T): Promise<T>;
+    static async sequence<T extends WorkflowContext>(ctx: T): Promise<T>;
     /**
      * run sequence.
      *
@@ -55,7 +54,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async sequence<T extends ActivityContext>(type: Type): Promise<T>;
+    static async sequence<T extends WorkflowContext>(type: Type): Promise<T>;
     /**
      * run sequence.
      *
@@ -65,13 +64,13 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async sequence<T extends ActivityContext>(...activities: ActivityType[]): Promise<T>;
-    static async sequence<T extends ActivityContext>(...activities: any[]): Promise<T> {
+    static async sequence<T extends WorkflowContext>(...activities: ActivityType[]): Promise<T>;
+    static async sequence<T extends WorkflowContext>(...activities: any[]): Promise<T> {
         if (activities.length === 1) {
             let actType = activities[0];
             if (isClass(actType)) {
                 return await Workflow.run<T>(actType);
-            } else if (actType instanceof ActivityContext) {
+            } else if (actType instanceof WorkflowContext) {
                 return await Workflow.run(actType as T);
             } else {
                 return await Workflow.run<T>((actType && actType.template) ? actType : { template: actType });
@@ -93,7 +92,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
      * @returns {Promise<T>}
      * @memberof Workflow
      */
-    static async run<T extends ActivityContext = ActivityContext>(target: T | Type | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
+    static async run<T extends WorkflowContext = WorkflowContext>(target: T | Type | ActivityOption<T>, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T> {
         let { deps: depmds, args: envs } = checkBootArgs(deps, ...args);
         return await new Workflow(target, depmds).run(...envs) as T;
     }
@@ -111,7 +110,7 @@ export class Workflow<T extends ActivityContext = ActivityContext> extends BootA
         let deps = super.getBootDeps();
         if (!isClassType(this.target) && this.target['staticSeq']) {
             deps = [];
-            let options = this.target instanceof ActivityContext ? this.target.getOptions() : this.target;
+            let options = this.target instanceof WorkflowContext ? this.target.getOptions() : this.target;
             options.template.forEach(t => {
                 deps.push(... this.getTargetDeps(t));
             });

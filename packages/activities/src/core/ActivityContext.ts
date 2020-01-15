@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, InjectToken, createRaiseContext, isToken, IInjector, Token, Inject, isNullOrUndefined } from '@tsdi/ioc';
+import { Injectable, Type, Refs, createRaiseContext, isToken, IInjector, Token, isNullOrUndefined } from '@tsdi/ioc';
 import { BuildContext, AnnoationContext, ApplicationContextToken } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -9,14 +9,9 @@ import { ActivityExecutor } from './ActivityExecutor';
 import { ICoreInjector } from '@tsdi/core';
 import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 
-/**
- * workflow context token.
- */
-export const WorkflowContextToken = new InjectToken<ActivityContext>('WorkflowContext');
-
 
 /**
- * activity execute context.
+ * activity execute context.ß
  *
  * @export
  * @class ActivityContext
@@ -76,7 +71,7 @@ export class ActivityContext extends BuildContext<ActivityOption, ActivityMetada
     private _executor: ActivityExecutor;
     getExector(): ActivityExecutor {
         if (!this._executor) {
-            this._executor = this.injector.get(ActivityExecutor, { provide: WorkflowContext, useValue: this });
+            this._executor = this.injector.get(ActivityExecutor, { provide: ActivityContext, useValue: this });
         }
         return this._executor;
     }

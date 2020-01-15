@@ -1,4 +1,4 @@
-import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from '@tsdi/ioc';
+import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap, Modules } from '@tsdi/ioc';
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
@@ -14,7 +14,7 @@ import { IActivityRef } from './IActivityRef';
  * @extends {RunnableConfigure}
  * @template T
  */
-export interface ActivityMetadata<T extends TemplateOption = ControlTemplate> extends IComponentMetadata {
+export interface ActivityMetadata extends IComponentMetadata {
     /**
     * action name.
     *
@@ -32,7 +32,7 @@ export interface ActivityMetadata<T extends TemplateOption = ControlTemplate> ex
      * @type {ActivityTemplate}
      * @memberof ActivityMetadata
      */
-    template?: ActivityTemplate<T>;
+    template?: ActivityTemplate;
 
     /**
      * activity deps types.
@@ -230,7 +230,7 @@ export interface TryTemplate extends TemplateOption {
     finally?: Binding<ActivityType[]>;
 }
 
-export type ControlTemplate = Required<TemplateOption> | ExecuteOption | ConditionTemplate | ExpressionTemplate | EachTeamplate | InvokeTemplate
+export type ControlTemplate = Required<TemplateOption> | TemplateOption | ExecuteOption | ConditionTemplate | ExpressionTemplate | EachTeamplate | InvokeTemplate
     | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
@@ -239,7 +239,7 @@ export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T 
 /**
  *  activity type.
  */
-export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = IActivityRef<TVal> | Type<Activity<TVal>> | TemplateType<T>;
+export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = IActivityRef<TVal> | TemplateType<T>;
 
 /**
  * activity template.

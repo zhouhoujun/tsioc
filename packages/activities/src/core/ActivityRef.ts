@@ -52,9 +52,12 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
      * @param next next work.
      */
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
+        this.context.remove(ACTIVITY_OUTPUT);
         ctx.status.current = this;
         let result = await this.toAction()(ctx);
-        this.context.set(ACTIVITY_OUTPUT, result);
+        if (isDefined(result)) {
+            this.context.set(ACTIVITY_OUTPUT, result);
+        }
         if (next) {
             await next();
         }

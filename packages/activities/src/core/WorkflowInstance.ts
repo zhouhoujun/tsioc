@@ -47,6 +47,14 @@ export enum RunState {
     complete
 }
 
+
+
+/**
+ * workflow context token.
+ */
+export const WorkflowContextToken = new InjectToken<WorkflowContext>('WorkflowContext');
+
+
 @Injectable
 @Refs(Activity, BootContext)
 @Refs('@Task', BootContext)

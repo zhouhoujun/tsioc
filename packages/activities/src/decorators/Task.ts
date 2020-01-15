@@ -10,7 +10,7 @@ import { ActivityMetadata } from '../core/ActivityMetadata';
  * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface ITaskDecorator<T extends ActivityMetadata> extends ITypeDecorator<T> {
+export interface ITaskDecorator<T extends ActivityMetadata = ActivityMetadata> extends ITypeDecorator<T> {
     /**
      * Activity decorator, use to define class as Activity element.
      *
