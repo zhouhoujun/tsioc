@@ -4,7 +4,7 @@ import { IComponentContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
 import { CompContext } from './CompContext';
 import { CTX_TEMPLATE_REF, ContextNode, CTX_COMPONENT_DECTOR } from '../ComponentRef';
-import { RefSelector } from '../RefSelector';
+import { ComponentProvider } from '../ComponentProvider';
 
 
 /**
@@ -35,7 +35,7 @@ export class TemplateContext extends CompContext<ITemplateOption> implements ICo
             } else {
                 decor = this.componentDecorator;
             }
-            let refSeltor = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(decor, RefSelector);
+            let refSeltor = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(decor, ComponentProvider);
             let tempRef = isArray(this.value) ? refSeltor.createTemplateRef(this, ...this.value) : refSeltor.createTemplateRef(this, this.value);
             this.set(CTX_TEMPLATE_REF, tempRef);
         }

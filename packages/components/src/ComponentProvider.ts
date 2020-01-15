@@ -1,8 +1,10 @@
-import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass } from '@tsdi/ioc';
+import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, INJECTOR, DECORATOR, DecoratorProvider } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
+import { IPipeTransform } from './bindings/IPipeTransform';
+import { AstResolver } from './AstResolver';
 
 
 const attrSelPrefix = /^ATTR__/;
@@ -16,7 +18,11 @@ const pipePrefix = /^PIPE_/;
  * @class RefIdentfy
  */
 @Abstract()
-export abstract class RefSelector {
+export abstract class ComponentProvider {
+
+    constructor(@Inject(DECORATOR) protected dectorator: string) {
+
+    }
 
     @Inject(TypeReflectsToken) reflects: ITypeReflects;
 
@@ -26,12 +32,23 @@ export abstract class RefSelector {
 
     abstract getDefaultCompose(): Type;
 
+    autoCreateElementRef = false;
+
     createNodeSelector(element): NodeSelector {
         return this.reflects.get(lang.getClass(element))
             ?.getInjector()
             ?.get(COMPONENT_REFS)
             ?.get(element)
             ?.getNodeSelector();
+    }
+
+    private ast: AstResolver;
+    getAstResolver(): AstResolver {
+        if (!this.ast) {
+            this.ast = this.reflects.getActionInjector().get(DecoratorProvider)
+                .resolve(this.dectorator, AstResolver) ?? this.reflects.getContainer().get(AstResolver);
+        }
+        return this.ast;
     }
 
     createComponentRef(type: Type, target: Object, context: AnnoationContext, ...nodes: any[]): ComponentRef<any, any> {
@@ -42,8 +59,25 @@ export abstract class RefSelector {
         return new TemplateRef(context, nodes);
     }
 
-    createElementRef(target: any, context: AnnoationContext): ElementRef<any> {
+    createElementRef(context: AnnoationContext, target: any): ElementRef<any> {
         return new ElementRef(context, target);
+    }
+
+    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {
+        if (isString(token)) {
+            token = this.toPipeToken(token) ?? token;
+        }
+        return injector.get(token);
+    }
+
+    getElementRef(target: any, injector?: IInjector): ElementRef<any> {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
+        return injector.get(ELEMENT_REFS)?.get(target);
+    }
+
+    getComponentRef<T>(target: T, injector?: IInjector): ComponentRef<T> {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
+        return injector.get(COMPONENT_REFS)?.get(target);
     }
 
     toSelectorToken(selector: string): SymbolType {

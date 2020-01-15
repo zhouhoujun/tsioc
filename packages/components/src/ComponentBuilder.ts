@@ -1,17 +1,15 @@
 import {
     Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString,
-    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider, IInjector, Token
+    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider
 } from '@tsdi/ioc';
 import { BuilderService, IBuildOption, BuildContext } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
-import { RefSelector } from './RefSelector';
-import { COMPONENT_REFS, CTX_COMPONENT_REF, ELEMENT_REFS, ElementRef, ComponentRef, CTX_ELEMENT_REF, TemplateRef, CTX_TEMPLATE_REF } from './ComponentRef';
-import { Component } from './decorators/Component';
+import { ComponentProvider } from './ComponentProvider';
+import { CTX_COMPONENT_REF, ElementRef, ComponentRef, CTX_ELEMENT_REF, TemplateRef, CTX_TEMPLATE_REF } from './ComponentRef';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
-import { IPipeTransform } from './bindings/IPipeTransform';
 
 
 /**
@@ -41,29 +39,6 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx.get(CTX_COMPONENT_REF) ?? ctx.get(CTX_TEMPLATE_REF) ?? ctx.get(CTX_ELEMENT_REF) ?? ctx.value;
     }
 
-    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector, decorator?: string): T {
-        if (isString(token)) {
-            token = this.reflects.getActionInjector().get(DecoratorProvider)
-                .resolve(decorator || Component, RefSelector)?.toPipeToken(token) ?? token;
-        }
-        return injector.get(token);
-    }
-
-    getComponentRef<T>(target: T, injector?: IInjector): ComponentRef<T> {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
-        return injector.get(COMPONENT_REFS)?.get(target);
-    }
-
-    /**
-     * get element ref
-     * @param target target element.
-     * @param injector the injector target registed in.
-     */
-    getElementRef<T>(target: T, injector?: IInjector): ElementRef<T> {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
-        return injector.get(ELEMENT_REFS)?.get(target);
-    }
-
     serialize<T = any>(component: T): any {
         if (!component) {
             return null;
@@ -81,7 +56,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
             let refs = reflects.get(compClass) as IComponentReflect;
             if (refs && refs.selector) {
                 let json = {};
-                let refselector = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(refs.decorator, RefSelector);
+                let refselector = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(refs.decorator, ComponentProvider);
                 json[refselector.getSelectorKey()] = refs.selector;
                 refs.propInBindings.forEach((v, key) => {
                     if (reflects.hasMetadata(NonSerialize, compClass, key, 'property')) {

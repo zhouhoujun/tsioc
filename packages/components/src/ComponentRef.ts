@@ -28,7 +28,14 @@ export class ContextNode<TCtx extends AnnoationContext = AnnoationContext> exten
     }
 }
 
-export type NodeType =  ElementRef | NodeRef | ComponentRef;
+/**
+ *  element type.
+ */
+export interface IElement {
+    destroy?();
+}
+
+export type NodeType =  IElement | ElementRef | NodeRef | ComponentRef;
 
 export class NodeRef<T = NodeType, TCtx extends AnnoationContext = AnnoationContext> extends ContextNode<TCtx> {
 
@@ -74,6 +81,7 @@ export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContex
         super.destroy();
     }
 }
+
 
 
 export class TemplateRef<T = NodeType, TCtx extends AnnoationContext = AnnoationContext> extends NodeRef<T, TCtx> {

@@ -41,40 +41,33 @@ export interface IActivityExecutor {
      * run activities.
      *
      * @param {(ActivityType | ActivityType[])} activities
+     * @param {*} [input]
      * @param {() => Promise<void>} [next]
-     * @returns {Promise<void>}
+     * @returns {Promise<any>}
      * @memberof IActivityExecutor
      */
-    runActivity(activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void>;
+    runActivity(activities: ActivityType | ActivityType[], input?: any, next?: () => Promise<void>): Promise<any>;
     /**
      * execute actions.
      *
      * @template T
-     * @param {PromiseUtil.ActionHandle<T>[]} actions
+     * @param {(PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[])} actions
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    execActions<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void>;
-    /**
-     * parse activity to action.
-     *
-     * @template T
-     * @param {ActivityType} activity
-     * @returns {PromiseUtil.ActionHandle<T>}
-     * @memberof IActivityExecutor
-     */
-    parseAction<T extends WorkflowContext>(activity: ActivityType): PromiseUtil.ActionHandle<T>;
+    execAction<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void>;
 
     /**
      * parse activites to actions.
      *
      * @template T
      * @param {(ActivityType | ActivityType[])} activities
-     * @returns {PromiseUtil.ActionHandle<T>[]}
+     * @param {*} [input]
+     * @returns {PromiseUtil.ActionHandle<T>}
      * @memberof IActivityExecutor
      */
-    parseActions<T extends WorkflowContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[];
+    parseAction<T extends WorkflowContext>(activities: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T>;
 }
 
 export const ActivityExecutorToken = new InjectToken<IActivityExecutor>('ActivityExecutor');

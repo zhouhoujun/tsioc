@@ -16,8 +16,7 @@ export class ThrowActivity extends ControlActivity<Error> {
 
     @Input('throw') error: Expression<Error>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let error = await this.resolveExpression(this.error, ctx);
-        throw error;
+    execute(ctx: ActivityContext): Promise<Error> {
+        return ctx.resolveExpression(this.error);
     }
 }

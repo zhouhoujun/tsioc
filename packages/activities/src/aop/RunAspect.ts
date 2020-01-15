@@ -1,7 +1,5 @@
 import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
-import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core/ActivityContext';
-import { RunState } from '../core/WorkflowInstance';
+import { RunState, WorkflowContext } from '../core/WorkflowInstance';
 import { ActivityComponentRef, ActivityElementRef } from '../core/ActivityRef';
 
 /**
@@ -23,7 +21,7 @@ export class RunAspect {
     @AfterReturning('execution(*.run)')
     afterRun(joinPoint: Joinpoint) {
 
-        let ctx = joinPoint.args[0] as ActivityContext;
+        let ctx = joinPoint.args[0] as WorkflowContext;
         if (!ctx.runnable) {
             return;
         }

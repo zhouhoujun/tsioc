@@ -1,7 +1,6 @@
 export * from './EqualsActivity';
 export * from './ExistsActvity';
 
-export * from './BodyActivity';
 export * from './ConditionActivity';
 export * from './TimerActivity';
 

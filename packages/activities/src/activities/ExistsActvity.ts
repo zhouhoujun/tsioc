@@ -9,8 +9,8 @@ export class ExistsActvity extends ControlActivity<boolean> {
 
     @Input() expect: string;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let exp = this.getExector().eval(ctx, this.expect);
-        this.result = !isNullOrUndefined(exp);
+    async execute(ctx: ActivityContext): Promise<boolean> {
+        let exp = ctx.getExector().eval(this.expect);
+        return !isNullOrUndefined(exp);
     }
 }

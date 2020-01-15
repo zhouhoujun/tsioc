@@ -1,10 +1,10 @@
 import { lang, isTypeObject } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBinding } from './IBinding';
-import { AstResolver } from '../AstResolver';
 import { observe } from './onChange';
 import { BindEventType } from './Events';
 import { filedMatch, pathCkExp } from './exps';
+import { ComponentProvider } from '../ComponentProvider';
 
 
 
@@ -18,20 +18,12 @@ import { filedMatch, pathCkExp } from './exps';
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(protected injector: ICoreInjector, public source: any, public binding: IBinding, public expression: string) {
+    constructor(protected injector: ICoreInjector, protected provider: ComponentProvider, public source: Object, public binding: IBinding, public expression: string) {
 
-    }
-
-    private _ast: AstResolver;
-    getAst() {
-        if (!this._ast) {
-            this._ast = this.injector.getService({ token: AstResolver, target: this.source, default: AstResolver });
-        }
-        return this._ast;
     }
 
     resolveExression(): T {
-        return this.getAst().resolve(this.expression, this.source);
+        return this.provider.getAstResolver().resolve(this.expression, this.injector, this.source);
     }
 
     getFileds() {
@@ -52,20 +44,20 @@ export abstract class DataBinding<T = any> {
         if (!isTypeObject(target)) {
             return;
         }
-        let astResolver = this.getAst();
+        let astResolver = this.provider.getAstResolver();
         let fieldName = this.binding.name;
         if (pathCkExp.test(field)) {
             let paths = field.split('.');
             let idx = field.lastIndexOf('.');
             let scope = field.substring(0, idx);
-            let sub = astResolver.resolve(scope, this.source);
+            let sub = astResolver.resolve(scope, this.injector, this.source);
             let last = field.substring(idx + 1);
             observe.onPropertyChange(this.source, lang.first(paths), (value, oldVal) => {
                 target[fieldName] = this.resolveExression();
                 if (sub) {
                     observe.getEvents(sub).off(BindEventType.fieldChanged);
                 }
-                sub = astResolver.resolve(scope, this.source);
+                sub = astResolver.resolve(scope, this.injector, this.source);
                 observe.onPropertyChange(sub, last, (value, oldVal) => {
                     target[fieldName] = this.resolveExression();
                 });

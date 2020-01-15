@@ -1,10 +1,11 @@
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core/ActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ConditionActivity } from './ConditionActivity';
-import { BodyActivity } from './BodyActivity';
-
+import { ActivityType } from '../core/ActivityMetadata';
+import { PromiseUtil } from '@tsdi/ioc';
+import { WorkflowContext } from '../core/WorkflowInstance';
 
 /**
  * while control activity.
@@ -14,18 +15,23 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ControlActivity}
  */
 @Task('while')
-export class WhileActivity<T> extends ControlActivity<T> {
+export class WhileActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input() body: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.condition.run(ctx);
-        if (this.condition.result) {
-            await this.body.run(ctx, async () => {
-                await this.condition.run(ctx);
-                if (this.condition.result) {
+    private action: PromiseUtil.ActionHandle<WorkflowContext>;
+
+    async execute(ctx: ActivityContext): Promise<void> {
+        let condition = await this.condition.execute(ctx);
+        if (condition) {
+            if (!this.action) {
+                this.action = ctx.getExector().parseAction(this.body);
+            }
+            await this.action(ctx.workflow, async () => {
+                condition = await this.condition.execute(ctx);
+                if (condition) {
                     await this.execute(ctx);
                 }
             });

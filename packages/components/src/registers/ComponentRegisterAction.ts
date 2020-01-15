@@ -2,7 +2,7 @@ import { DesignActionContext, CTX_CURR_DECOR, DecoratorProvider } from '@tsdi/io
 import { IComponentReflect } from '../IComponentReflect';
 import { attrExp } from '../bindings/exps';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
-import { RefSelector } from '../RefSelector';
+import { ComponentProvider } from '../ComponentProvider';
 
 /**
  * component register action.
@@ -16,7 +16,7 @@ export const ComponentRegisterAction = function (ctx: DesignActionContext, next:
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
     let compRefl = ctx.targetReflect as IComponentReflect;
-    let refSelector = ctx.reflects.getActionInjector().get(DecoratorProvider).resolve(currDecor, RefSelector);
+    let refSelector = ctx.reflects.getActionInjector().get(DecoratorProvider).resolve(currDecor, ComponentProvider);
     compRefl.decorator = currDecor;
     compRefl.component = true;
     metas.forEach(meta => {

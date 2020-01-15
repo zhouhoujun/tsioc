@@ -6,9 +6,9 @@ import { Input } from '@tsdi/components';
 
 @Task('stest')
 export class SimpleTask extends Activity<string> {
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<string> {
         // console.log('before simple task:', this.name);
-        this.result = await Promise.resolve('simple task')
+        return await Promise.resolve('simple task')
             .then(val => {
                 console.log('return simple task:', val);
                 return val;
@@ -23,18 +23,18 @@ export class LoadData extends Activity<any> {
     @Input() action: string;
     @Input() getParams: string | ((ctx: ActivityContext) => any[]);
     @Input() params: any[];
-    async execute(ctx: ActivityContext): Promise<void> {
-        let service = this.getContainer().resolve(this.service);
+    async execute(ctx: ActivityContext): Promise<any> {
+        let service = ctx.resolve(this.service);
         if (service && service[this.action]) {
 
             let params: any[];
             if (this.params && this.params.length) {
                 params = this.params;
             } else if (this.getParams) {
-                let getFunc = isString(this.getParams) ? this.getExector().eval(ctx, this.getParams) : this.getParams;
+                let getFunc = isString(this.getParams) ? ctx.getExector().eval(this.getParams) : this.getParams;
                 params = isFunction(getFunc) ? getFunc(ctx) : [];
             }
-            this.result = await service[this.action](...params);
+            return await service[this.action](...params);
         }
     }
 }
@@ -43,7 +43,7 @@ export class LoadData extends Activity<any> {
 export class SetData extends Activity<void> {
     @Input() func: string | Function;
     async execute(ctx: ActivityContext): Promise<void> {
-        let func = isString(this.func) ? this.getExector().eval(ctx, this.func) : this.func;
+        let func = isString(this.func) ? ctx.getExector().eval(this.func) : this.func;
         if (isFunction(func)) {
             func(ctx);
         }
@@ -52,9 +52,9 @@ export class SetData extends Activity<void> {
 
 @Task('comowork')
 export class WorkTask extends Activity<string> {
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<string> {
         // console.log('before simple task:', this.name);
-        this.result = await Promise.resolve('component task')
+        return await Promise.resolve('component task')
             .then(val => {
                 console.log('return component work task:', val);
                 return val;
@@ -69,14 +69,14 @@ export class WorkTask extends Activity<string> {
     ],
     selector: 'comptest',
     template: [
-        { activity: Activities.if, condition: (ctx) => !!ctx.args[0], body: [] },
+        { activity: Activities.if, condition: (ctx) => !!ctx.workflow.args[0], body: [] },
         {
             activity: Activities.else,
             body: [
                 // WorkTask
                 {
                     activity: Activities.switch,
-                    switch: (ctx) => ctx.args.length,
+                    switch: (ctx) => ctx.workflow.args.length,
                     cases: [
                         { case: 0, body: [] }
                     ]

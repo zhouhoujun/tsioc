@@ -2,9 +2,14 @@ import { Token, Factory } from '../types';
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
-import { ProviderTypes } from '../providers/types';
+import { ProviderTypes, InjectTypes } from '../providers/types';
 import { IInjector, PROVIDERS } from '../IInjector';
+import { InjectToken } from '../InjectToken';
 
+/**
+ * current decorator provide token key
+ */
+export const DECORATOR = new InjectToken<string>('DECORATOR_KEY')
 /**
  * decorator default provider.
  *
@@ -87,7 +92,7 @@ export class DecoratorProvider extends IocCoreService {
         return this;
     }
 
-    bindProviders(decorator: string | Function, ...providers: ProviderTypes[]): this {
+    bindProviders(decorator: string | Function, ...providers: InjectTypes[]): this {
         this.existify(decorator).inject(...providers);
         return this;
     }
@@ -95,7 +100,7 @@ export class DecoratorProvider extends IocCoreService {
     existify(decorator: string | Function): IInjector {
         decorator = this.getKey(decorator);
         if (!this.map.has(decorator)) {
-            this.map.set(decorator, this.container.get(PROVIDERS));
+            this.map.set(decorator, this.container.get(PROVIDERS).inject({ provide: DECORATOR, useValue: decorator }));
         }
         return this.map.get(decorator);
     }

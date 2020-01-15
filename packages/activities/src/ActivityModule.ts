@@ -4,18 +4,15 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
-import { ComponentRegisterAction, RefSelector, ComponentAnnotationCloner, ComponentSelectorHandle } from '@tsdi/components';
+import { ComponentRegisterAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle } from '@tsdi/components';
 import { Task } from './decorators/Task';
-import { RunAspect } from './aop';
+import { RunAspect } from './aop/RunAspect';
 import * as activites from './activities';
 import { ActivityRefSelector } from './ActivityRefSelector';
 import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
-import { ActivityStatus } from './core/ActivityStatus';
-import { CompoiseActivity } from './core/CompoiseActivity';
 import { WorkflowInstance } from './core/WorkflowInstance';
 import { ActivityDepsRegister } from './registers/ActivityDepsRegister';
-import { ActivityFactory } from './core/ActivityFactory';
 
 
 /**
@@ -54,12 +51,12 @@ export class ActivityModule {
                         }
                     }
                 },
-                { provide: RefSelector, useClass: ActivityRefSelector },
+                { provide: ComponentProvider, useClass: ActivityRefSelector },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner }
             );
 
 
-        container.inject(ActivityFactory, ActivityContext, ActivityExecutor, ActivityStatus, CompoiseActivity, WorkflowInstance, RunAspect)
+        container.inject(ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect)
             .use(activites);
     }
 }

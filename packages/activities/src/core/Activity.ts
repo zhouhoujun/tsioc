@@ -1,8 +1,9 @@
-import { isClass, Type, Abstract } from '@tsdi/ioc';
+import { isClass, Type, Abstract, PromiseUtil } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from './ActivityContext';
 import { ActivityMetadata } from './ActivityMetadata';
+import { WorkflowContext } from './WorkflowInstance';
 
 @Abstract()
 export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityContext> {
@@ -15,6 +16,12 @@ export abstract class Activity<T = any, TCtx extends ActivityContext = ActivityC
     @Input() name: string;
 
     abstract execute(ctx: TCtx): Promise<T>;
+
+    toAction<T extends WorkflowContext>(content: TCtx): PromiseUtil.ActionHandle<T> {
+        return async (ctx: T, next) => {
+            await this.execute(content);
+        };
+    }
 }
 
 

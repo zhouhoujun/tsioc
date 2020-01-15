@@ -1,34 +1,26 @@
-import { Singleton, Inject, INJECTOR, IInjector } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
-import { AstParserToken } from './AstParser';
+import { IInjector, Injectable } from '@tsdi/ioc';
 import { pipeExp } from './bindings/exps';
 import { IPipeTransform } from './bindings/IPipeTransform';
-import { ComponentBuilderToken } from './IComponentBuilder';
+import { ComponentProvider } from './ComponentProvider';
 
-@Singleton()
+@Injectable()
 export class AstResolver {
 
-    @Inject(INJECTOR) protected injector: ICoreInjector;
-
-    constructor() {
+    constructor(protected provider: ComponentProvider) {
     }
 
-    /**ß
+    /**
      * resolve expression.
      *
      * @param {string} expression
+     * @param {IInjector} [injector]
      * @param {*} [envOptions]
-     * @param {IContainer} [container]
      * @returns {*}
      * @memberof AstResolver
      */
-    resolve(expression: string, envOptions?: any, injector?: IInjector): any {
+    resolve(expression: string, injector: IInjector, envOptions?: any): any {
         if (!expression) {
             return expression;
-        }
-        injector = injector || this.injector;
-        if (injector.hasRegister(AstParserToken)) {
-            return injector.get(AstParserToken).parse(expression).execute(envOptions);
         }
 
         try {
@@ -38,7 +30,7 @@ export class AstResolver {
                 let idex = expression.lastIndexOf(' | ');
                 let pipename = expression.substring(idex + 3);
                 if (pipename) {
-                    pipeTransf = injector.get(ComponentBuilderToken).getPipe(pipename, injector);
+                    pipeTransf = this.provider.getPipe(pipename, injector);
                 }
                 expression = expression.substring(0, idex);
             }

@@ -2,8 +2,8 @@ import { DIModule, BootApplication, BootContext, BuilderService } from '@tsdi/bo
 import { Suite, Test, Before } from '@tsdi/unit';
 import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode, ComponentRef, ElementRef, TemplateRef } from '../src';
 import expect = require('expect');
-import { Inject, Injectable, Autorun, IInjector, INJECTOR } from '@tsdi/ioc';
-import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
+import { Inject, Injectable, INJECTOR } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 
 
 @Component('selector1')
@@ -241,8 +241,8 @@ export class CTest {
         // console.log('comp1:', comp1);
         console.log('comp11:', comp11);
         expect(comp1Ref instanceof TemplateRef).toBeTruthy();
-        let comp1 = comp1Ref.rootNodes[0] as ElementRef<Component1>;
-        expect(comp1.nativeElement.name).toEqual('test1')
+        let comp1 = comp1Ref.rootNodes[0] as Component1;
+        expect(comp1.name).toEqual('test1')
         expect(comp11 instanceof Component1).toBeTruthy();
         expect(comp11.name).toEqual('test1');
     }
@@ -257,7 +257,7 @@ export class CTest {
 
         let comp1 = ctx.getBootTarget() as TemplateRef;
         expect(comp1 instanceof TemplateRef).toBeTruthy();
-        expect((comp1.rootNodes[0] as ElementRef<Component1>).nativeElement?.name).toEqual('test1');
+        expect((comp1.rootNodes[0] as Component1).name).toEqual('test1');
     }
 
 
@@ -266,10 +266,10 @@ export class CTest {
         let service = this.ctx.injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let cmpRef = await service.createComponent3() as TemplateRef;
-        let comp3 = cmpRef.rootNodes[0] as ElementRef<Component3>;
-        console.log('comp3:', comp3.nativeElement);
-        expect(comp3.nativeElement instanceof Component3).toBeTruthy();
-        expect(comp3.nativeElement.phone).toEqual('+86177000000010');
+        let comp3 = cmpRef.rootNodes[0] as Component3;
+        console.log('comp3:', comp3);
+        expect(comp3 instanceof Component3).toBeTruthy();
+        expect(comp3.phone).toEqual('+86177000000010');
     }
 
     @Test('can resolve component template by sub module')
@@ -293,10 +293,10 @@ export class CTest {
         let service = injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let cmpRef = await service.createComponent3() as TemplateRef;
-        let comp3 = cmpRef.rootNodes[0] as ElementRef<Component3>;
-        console.log('comp3 :', comp3.nativeElement);
-        expect(comp3.nativeElement instanceof Component3).toBeTruthy();
-        expect(comp3.nativeElement.phone).toEqual('+86177000000010');
+        let comp3 = cmpRef.rootNodes[0] as Component3;
+        console.log('comp3 :', comp3);
+        expect(comp3 instanceof Component3).toBeTruthy();
+        expect(comp3.phone).toEqual('+86177000000010');
         console.log(injector.get(ComponentBuilder).serialize(comp3))
     }
 
@@ -376,7 +376,7 @@ export class CTest {
                 options: { name: 'testobject', address: 'chengdu' }
             }
         }) as TemplateRef;
-        let comp =  compRef.rootNodes[0] as ComponentRef<ObjectComponent>;
+        let comp = compRef.rootNodes[0] as ComponentRef<ObjectComponent>;
         // console.log('test9:', comp);
         expect(comp.instance.options.name).toEqual('testobject');
         expect(comp.instance.options.address).toEqual('chengdu');
@@ -432,7 +432,7 @@ export class CTest {
 
         let tempRef = ctx.getBootTarget() as TemplateRef;
         expect(tempRef instanceof TemplateRef).toBeTruthy();
-        let comp1 = (tempRef.rootNodes[0] as ElementRef<ListBox>).nativeElement;
+        let comp1 = tempRef.rootNodes[0] as ListBox;
         expect(comp1 instanceof ListBox).toBeTruthy();
         expect(comp1.items.length).toEqual(1);
         // console.log(comp1.items[0]);

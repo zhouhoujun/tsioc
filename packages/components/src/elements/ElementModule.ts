@@ -3,8 +3,8 @@ import { ContainerToken, IContainer } from '@tsdi/core';
 import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { Component } from '../decorators/Component';
 import { ElementNode } from './ElementNode';
-import { RefSelector } from '../RefSelector';
-import { RefElementSelector } from './RefElementSelector';
+import { ComponentProvider } from '../ComponentProvider';
+import { ElementProvider } from './ElementProvider';
 import { ComponentSelectorHandle } from './handles/ComponentSelectorHandle';
 
 /**
@@ -29,7 +29,7 @@ export class ElementModule {
         actInjector.regAction(ComponentSelectorHandle);
 
         actInjector.getInstance(DecoratorProvider)
-            .bindProviders(Component, { provide: RefSelector, useClass: RefElementSelector })
+            .bindProviders(Component, { provide: ComponentProvider, useClass: ElementProvider })
 
         container.registerType(ElementNode);
     }

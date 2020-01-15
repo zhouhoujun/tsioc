@@ -1,20 +1,19 @@
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { BodyActivity } from './BodyActivity';
-import { Expression } from '../core/ActivityMetadata';
+import { Expression, ActivityType } from '../core/ActivityMetadata';
 import { ActivityContext } from '../core/ActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 
 
 @Task('case')
-export class CaseActivity<T> extends ControlActivity<T> {
+export class CaseActivity extends ControlActivity {
 
     @Input() caseKey: any;
 
-    @Input() body: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        this.body.run(ctx);
+    async execute(ctx: ActivityContext): Promise<void> {
+        await ctx.getExector().runActivity(this.body);
     }
 }
 
@@ -26,25 +25,25 @@ export class CaseActivity<T> extends ControlActivity<T> {
  * @extends {ControlActivity}
  */
 @Task('switch')
-export class SwitchActivity<T> extends ControlActivity<T> {
+export class SwitchActivity extends ControlActivity {
 
     isScope = true;
 
     @Input() switch: Expression;
 
-    @Input(CaseActivity) cases: CaseActivity<T>[];
+    @Input(CaseActivity) cases: CaseActivity[];
 
-    @Input() defaults: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) defaults: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let matchkey = await this.resolveExpression(this.switch, ctx);
+    async execute(ctx: ActivityContext): Promise<void> {
+        let matchkey = await ctx.resolveExpression(this.switch);
 
         let activity = this.cases.find(c => c.caseKey === matchkey);
 
         if (activity) {
-            await activity.run(ctx);
+            await activity.execute(ctx);
         } else if (this.defaults) {
-            await this.defaults.run(ctx);
+            await ctx.getExector().runActivity(this.defaults);
         }
     }
 }

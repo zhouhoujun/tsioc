@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities, ActivityComponentRef } from '../src';
+import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities, ActivityComponentRef, ActivityElementRef } from '../src';
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 import { BootApplication } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
@@ -60,12 +60,12 @@ describe('activity test', () => {
             let ctx = await Workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
             expect(ctx.result).toEqual('component task');
-            let activity = ctx.activity as ActivityComponentRef;
-            let ifact = activity.nodeRef.rootNodes[0] as IfActivity;
+            let activity = ctx.getBootTarget() as ActivityComponentRef;
+            let ifact = activity.nodeRef.rootNodes[0] as ActivityElementRef;
             console.log(ifact);
-            expect(ifact instanceof IfActivity).toBeTruthy();
+            expect(ifact.nativeElement instanceof IfActivity).toBeTruthy();
             expect(ifact.name).toEqual('test---task---3');
-            expect(ifact.condition.name).not.toEqual('test---task---3');
+            expect((<IfActivity>ifact.nativeElement).condition.name).not.toEqual('test---task---3');
         });
 
         it('should bootstrap with template configure.', async () => {
@@ -134,7 +134,7 @@ describe('activity test', () => {
                         activity: Activities.execute,
                         action: ctx => {
                             // console.log(ctx.body);
-                            return `${ctx.getContext('data')}: ${ctx.body}`
+                            return `${ctx.get('data')}: ${ctx.input}`
                         }
                     }
                 },

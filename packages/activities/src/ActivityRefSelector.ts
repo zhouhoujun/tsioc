@@ -1,5 +1,5 @@
 import { Type, Singleton, SymbolType } from '@tsdi/ioc';
-import { RefSelector } from '@tsdi/components';
+import { ComponentProvider } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
 import { ActivityComponentRef, ActivityElementRef, ActivityTemplateRef } from './core/ActivityRef';
@@ -13,10 +13,10 @@ const seletPrefix = /^ACT_SELT_/;
  *
  * @export
  * @class ActivityRefSelector
- * @extends {RefSelector}
+ * @extends {ComponentProvider}
  */
 @Singleton()
-export class ActivityRefSelector extends RefSelector {
+export class ActivityRefSelector extends ComponentProvider {
 
     getSelectorKey(): string {
         return 'activity';
@@ -38,7 +38,7 @@ export class ActivityRefSelector extends RefSelector {
         return new ActivityTemplateRef(context, nodes);
     }
 
-    createElementRef(target: Activity, context: ActivityContext): ActivityElementRef {
+    createElementRef(context: ActivityContext, target: Activity): ActivityElementRef {
         return new ActivityElementRef(context, target);
     }
 

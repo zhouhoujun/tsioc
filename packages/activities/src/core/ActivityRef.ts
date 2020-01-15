@@ -1,13 +1,14 @@
 import { PromiseUtil, lang, isDefined } from '@tsdi/ioc';
-import { ComponentRef, ElementRef, TemplateRef } from '@tsdi/components';
+import { ComponentRef, TemplateRef, ElementRef } from '@tsdi/components';
 import { ActivityContext } from './ActivityContext';
-import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
-import { TemplateOption } from './ActivityMetadata';
 import { WorkflowContext } from './WorkflowInstance';
 
+export type ActivityNodeType = IActivityRef | Activity;
 
 export class ActivityElementRef<T extends Activity = Activity> extends ElementRef<T, ActivityContext> implements IActivityRef {
+
     get name(): string {
         return this.nativeElement.name ?? lang.getClassName(this.nativeElement);
     }
@@ -39,8 +40,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
     }
 }
 
-
-export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends TemplateRef<T, ActivityContext> implements IActivityRef {
+export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends TemplateRef<T, ActivityContext> implements IActivityRef {
     readonly isScope = true;
     get name(): string {
         return this.context.getOptions()?.name;
@@ -67,7 +67,7 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
     toAction(): PromiseUtil.ActionHandle<WorkflowContext> {
         if (!this._actionFunc) {
             this._actionFunc = async (ctx: WorkflowContext, next?: () => Promise<void>) => {
-                return await PromiseUtil.runInChain(this.rootNodes.map(r => r.toAction()), ctx, next);
+                return await PromiseUtil.runInChain(this.rootNodes.map(r => isAcitvityRef(r) ? r.toAction() : r.toAction(this.context)), ctx, next);
             };
         }
         return this._actionFunc;
@@ -78,27 +78,12 @@ export class ActivityTemplateRef<T extends IActivityRef = IActivityRef> extends 
 /**
  *  activity ref for runtime.
  */
-export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef, ActivityContext> implements IActivityRef<T> {
+export class ActivityComponentRef<T = any> extends ComponentRef<T, ActivityNodeType, ActivityContext> implements IActivityRef<T> {
 
     get name(): string {
         return this.context.getOptions()?.name || lang.getClassName(this.componentType);
     }
 
-    get pipe(): string {
-        return (<TemplateOption>this.context.getOptions()).pipe;
-    }
-
-    get input() {
-        return this.context.get(ACTIVITY_INPUT);
-    }
-
-    set input(data: any) {
-        this.context.set(ACTIVITY_INPUT, data);
-    }
-
-    get output() {
-        return this.context.get(ACTIVITY_OUTPUT);
-    }
     /**
      * run activity.
      * @param ctx root context.
@@ -132,6 +117,6 @@ export class ActivityComponentRef<T = any> extends ComponentRef<T, IActivityRef,
  * @returns {target is Activity}
  */
 export function isAcitvityRef(target: any): target is IActivityRef {
-    return target instanceof ActivityElementRef || target instanceof ActivityTemplateRef || target instanceof ActivityComponentRef;
+    return target instanceof ActivityTemplateRef || target instanceof ActivityComponentRef;
 }
 

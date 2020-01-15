@@ -1,5 +1,5 @@
 import { Singleton, Type } from '@tsdi/ioc';
-import { RefSelector } from '../RefSelector';
+import { ComponentProvider } from '../ComponentProvider';
 import { ElementNode } from './ElementNode';
 
 /**
@@ -7,10 +7,10 @@ import { ElementNode } from './ElementNode';
  *
  * @export
  * @class RefElementSelector
- * @extends {RefSelector}
+ * @extends {ComponentProvider}
  */
 @Singleton()
-export class RefElementSelector extends RefSelector {
+export class ElementProvider extends ComponentProvider {
 
     isElementType(element: any): boolean {
         return this.reflects.isExtends(element, ElementNode);

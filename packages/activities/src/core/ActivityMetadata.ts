@@ -239,7 +239,7 @@ export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T 
 /**
  *  activity type.
  */
-export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = IActivityRef<TVal> | TemplateType<T>;
+export type ActivityType<TVal = any, T extends TemplateOption = ControlTemplate> = IActivityRef<TVal> | Activity<TVal> | TemplateType<T>;
 
 /**
  * activity template.

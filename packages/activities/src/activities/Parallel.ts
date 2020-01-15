@@ -2,8 +2,8 @@ import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityType } from '../core/ActivityMetadata';
 import { ActivityContext } from '../core/ActivityContext';
-import { CompoiseActivity } from '../core/CompoiseActivity';
 import { ParallelExecutor } from '../core/ParallelExecutor';
+import { ControlActivity } from '../core/ControlActivity';
 
 
 /**
@@ -14,7 +14,7 @@ import { ParallelExecutor } from '../core/ParallelExecutor';
  * @extends {ControlActivity}
  */
 @Task('parallel')
-export class ParallelActivity<T> extends CompoiseActivity<T> {
+export class ParallelActivity<T> extends ControlActivity<T[]> {
 
     @Input() activities: ActivityType[];
 
@@ -25,11 +25,11 @@ export class ParallelActivity<T> extends CompoiseActivity<T> {
      * @returns {Promise<void>}
      * @memberof ParallelActivity
      */
-    protected async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<T[]> {
         if (ctx.injector.hasRegister(ParallelExecutor)) {
-            await ctx.injector.getInstance(ParallelExecutor).run<ActivityType>(act => this.runWorkflow(ctx, act), this.activities)
+            return await ctx.injector.getInstance(ParallelExecutor).run<ActivityType>(act => ctx.getExector().runWorkflow(act).then(c => c.result), this.activities)
         } else {
-            await Promise.all(this.activities.map(act => this.runWorkflow(ctx, act)));
+            return await Promise.all(this.activities.map(act => ctx.getExector().runWorkflow(act).then(c => c.result)));
         }
     }
 }

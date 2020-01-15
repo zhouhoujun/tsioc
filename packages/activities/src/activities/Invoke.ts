@@ -22,12 +22,12 @@ export class InvokeActivity<T = any> extends Activity<T> {
 
     @Input() args: Expression<ProviderTypes[]>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let target = await this.resolveExpression(this.target, ctx);
-        let method = await this.resolveExpression(this.method, ctx);
-        let args = await this.resolveExpression(this.args, ctx);
+    async execute(ctx: ActivityContext): Promise<T> {
+        let target = await ctx.resolveExpression(this.target);
+        let method = await ctx.resolveExpression(this.method);
+        let args = await ctx.resolveExpression(this.args);
         if (target && method) {
-            this.result = ctx.injector.invoke(target, method, ...(args || []));
+            return ctx.injector.invoke(target, method, ...(args || []));
         }
     }
 }

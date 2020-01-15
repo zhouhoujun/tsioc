@@ -4,7 +4,7 @@ import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
-import { RefSelector } from '../RefSelector';
+import { ComponentProvider } from '../ComponentProvider';
 
 
 export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
@@ -23,7 +23,7 @@ export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: ()
 
     if (!isNullOrUndefined(pCtx.value)) {
         ctx.addChild(pCtx);
-        let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, RefSelector)
+        let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, ComponentProvider)
         ctx.set(CTX_COMPONENT_REF, isArray(pCtx.value) ?
             refSeltor.createComponentRef(ctx.type, ctx.value, ctx, ...pCtx.value)
             : refSeltor.createComponentRef(ctx.type, ctx.value, ctx, pCtx.value));

@@ -57,12 +57,11 @@ export * from './registers/RegisterVaildateAction';
 
 export * from './ComponentLifecycle';
 export * from './ComponentRef';
-export * from './RefSelector';
+export * from './ComponentProvider';
 export * from './NodeSelector';
 export * from './ComponentAnnotationCloner';
 export * from './IComponentReflect';
 export * from './IComponentBuilder';
 export * from './ComponentBuilder';
 export * from './ComponentsModule';
-export * from './AstParser';
 export * from './AstResolver';

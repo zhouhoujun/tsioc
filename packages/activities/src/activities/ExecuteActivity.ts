@@ -18,10 +18,10 @@ export class ExecuteActivity<T> extends Activity<T> {
 
     @Input('action') action: string | ((ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>);
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let action = isString(this.action) ? this.getExector().eval(ctx, this.action) : this.action;
+    async execute(ctx: ActivityContext): Promise<T> {
+        let action = isString(this.action) ? ctx.getExector().eval(this.action) : this.action;
         if (isFunction(action)) {
-            this.result = await action(ctx, this);
+            return await action(ctx, this);
         }
     }
 }

@@ -1,9 +1,9 @@
 import { DecoratorProvider, PromiseUtil, lang } from '@tsdi/ioc';
 import { BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
-import { RefSelector } from '../RefSelector';
-import { CTX_COMPONENT_REF, ElementRef, ComponentRef, NodeRef } from '../ComponentRef';
-import { ComponentBuilderToken } from '../IComponentBuilder';
+import { ComponentProvider } from '../ComponentProvider';
+import { CTX_COMPONENT_REF, ElementRef, ComponentRef } from '../ComponentRef';
+
 
 /**
  * binding temlpate handle.
@@ -18,18 +18,17 @@ export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?
     let actInjector = ctx.reflects.getActionInjector();
     if (ref && ref.propRefChildBindings) {
         let dpr = actInjector.getInstance(DecoratorProvider);
-        if (dpr.has(ctx.decorator, RefSelector)) {
+        if (dpr.has(ctx.decorator, ComponentProvider)) {
             // todo ref child view
-            let refSelector = dpr.resolve(ctx.decorator, RefSelector);
+            let refSelector = dpr.resolve(ctx.decorator, ComponentProvider);
             let cref = ctx.get(CTX_COMPONENT_REF);
-            let builder = ctx.injector.get(ComponentBuilderToken);
             ref.propRefChildBindings.forEach(b => {
                 let result = refSelector.select(cref, b.bindingName || b.name);
                 if (result) {
                     if (lang.isExtendsClass(b.type, ElementRef)) {
-                        ctx.value[b.name] = builder.getElementRef(result, ctx.injector);
+                        ctx.value[b.name] = refSelector.getElementRef(result, ctx.injector) ?? refSelector.createElementRef(ctx, result);
                     } else if (lang.isExtendsClass(b.type, ComponentRef)) {
-                        ctx.value[b.name] = builder.getComponentRef(result, ctx.injector);
+                        ctx.value[b.name] = refSelector.getComponentRef(result, ctx.injector) ?? refSelector.createComponentRef(lang.getClass(result), result, ctx);
                     } else {
                         ctx.value[b.name] = result;
                     }

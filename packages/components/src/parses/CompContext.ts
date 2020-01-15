@@ -2,6 +2,8 @@ import { BuildContext, IBuildOption, AnnoationContext } from '@tsdi/boot';
 import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF } from '../ComponentRef';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
+import { ComponentProvider } from '../ComponentProvider';
+import { DecoratorProvider } from '@tsdi/ioc';
 
 
 export class CompContext<T extends IBuildOption = IBuildOption,
@@ -24,6 +26,14 @@ export class CompContext<T extends IBuildOption = IBuildOption,
             }
         }
         return this._scope;
+    }
+
+    private _prvoider: ComponentProvider;
+    get componentProvider(): ComponentProvider {
+        if (!this._prvoider && this.componentDecorator) {
+            this._prvoider = this.reflects.getActionInjector().get(DecoratorProvider).resolve(this.componentDecorator, ComponentProvider);
+        }
+        return this._prvoider;
     }
 
     get componentDecorator() {

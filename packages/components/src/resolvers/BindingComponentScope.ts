@@ -9,7 +9,7 @@ import { BindingOutputHandle } from './BindingOutputHandle';
 import { ResolveTargetRefScope } from './ResolveTargetRefScope';
 import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
 import { CTX_COMPONENT_DECTOR, CTX_ELEMENT_REF } from '../ComponentRef';
-import { RefSelector } from '../RefSelector';
+import { ComponentProvider } from '../ComponentProvider';
 
 
 export class BindingComponentScope extends BuildHandles<BuildContext> implements IActionSetup {
@@ -24,14 +24,17 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
                 let componentDectors = mdref.reflect.componentDectors;
                 let decorPdr = ctx.reflects.getActionInjector().get(DecoratorProvider);
                 componentDectors.some(decor => {
-                    let refSelector = decorPdr.resolve(decor, RefSelector);
-                    if (refSelector?.isNodeType(ctx.type)) {
-                        let elRef = refSelector.createElementRef(ctx.value, ctx);
+                    let refSelector = decorPdr.resolve(decor, ComponentProvider);
+                    if (refSelector.autoCreateElementRef && refSelector?.isNodeType(ctx.type)) {
+                        let elRef = refSelector.createElementRef(ctx, ctx.value);
                         ctx.set(CTX_ELEMENT_REF, elRef);
                         return true;
                     }
                     return false;
                 });
+            }
+            if (!ctx.has(CTX_ELEMENT_REF)) {
+                ctx.destroy();
             }
         }
         await next();

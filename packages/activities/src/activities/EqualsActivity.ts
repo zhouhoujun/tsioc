@@ -10,8 +10,8 @@ export class EqualsActivity extends ControlActivity<boolean> {
 
     @Input() value: any;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let exp = this.getExector().eval(ctx, this.expect);
-        this.result = exp === this.value;
+    async execute(ctx: ActivityContext): Promise<boolean> {
+        let exp = ctx.getExector().eval(this.expect);
+        return exp === this.value;
     }
 }

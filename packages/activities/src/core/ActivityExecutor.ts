@@ -1,16 +1,17 @@
 import {
-    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap, isBaseObject
+    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap, isBaseObject, isDefined, isMetadataObject
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
 import { ComponentBuilderToken, AstResolver, ComponentBuilder } from '@tsdi/components';
 import { ActivityType, ControlTemplate, Expression } from './ActivityMetadata';
-import { IActivityRef, ACTIVITY_INPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvityRef } from './ActivityRef';
-import { WorkflowContext } from './WorkflowInstance';
+import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
 import { ActivityContext } from './ActivityContext';
+import { Activity } from './Activity';
 
 
 /**
@@ -43,6 +44,14 @@ export class ActivityExecutor implements IActivityExecutor {
             let nctx = ctx.clone() as T;
             activity.context.set(ACTIVITY_INPUT, data);
             return activity.run(nctx).then(() => nctx);
+        } else if (activity instanceof Activity) {
+            let actx = this.context.clone();
+            return activity.execute(actx)
+                .then(v => {
+                    let nctx = ctx.clone();
+                    nctx.set(ACTIVITY_OUTPUT, v);
+                    return nctx as T;
+                });
         } else if (isClass(activity)) {
             return injector.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, data: data });
         } else if (isFunction(activity)) {
@@ -93,11 +102,15 @@ export class ActivityExecutor implements IActivityExecutor {
         return express;
     }
 
-    async runActivity(activities: ActivityType | ActivityType[], next?: () => Promise<void>): Promise<void> {
-        await this.execActions(this.parseActions(activities), next);
+    async runActivity(activities: ActivityType | ActivityType[], input?: any, next?: () => Promise<void>): Promise<any> {
+        await this.execAction(this.parseAction(activities, input), next);
+        return this.context.output;
     }
 
-    async execActions<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+    async execAction<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+        if (!isArray(actions)) {
+            return await actions(this.context.workflow as T, next);
+        }
         if (actions.length < 1) {
             if (next) {
                 return await next();
@@ -107,38 +120,34 @@ export class ActivityExecutor implements IActivityExecutor {
         return await PromiseUtil.runInChain(actions.filter(f => f), this.context.workflow, next);
     }
 
-    parseActions<T extends WorkflowContext>(activities: ActivityType | ActivityType[]): PromiseUtil.ActionHandle<T>[] {
-        let acts = isArray(activities) ? activities : (activities ? [activities] : []);
-        if (acts.length < 1) {
-            return [];
-        }
-        return acts.map(ac => this.parseAction(ac));
-    }
-
-    parseAction<T extends WorkflowContext>(activity: ActivityType): PromiseUtil.ActionHandle<T> {
-        if (isAcitvityRef(activity)) {
-            return activity.toAction();
-        } else if (isClass(activity) || isBaseObject(activity)) {
+    parseAction<T extends WorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> {
+        if (isArray(activity)) {
             return async (ctx: T, next?: () => Promise<void>) => {
-                let act = await this.buildActivity(activity as Type | ControlTemplate);
-                if (isAcitvityRef(act)) {
-                    await act.run(ctx, next);
-                } else {
-                    await next();
-                }
+                await this.execAction(await Promise.all(activity.map(act => this.buildActivity<T>(act, input))), next);
+            }
+        } else {
+            return async (ctx: T, next?: () => Promise<void>) => {
+                let handle = await this.buildActivity(activity, input);
+                await handle(ctx, next);
             }
         }
-        if (isFunction(activity)) {
-            return activity;
-        }
-        return null;
     }
 
-    protected async buildActivity(activity: Type | ControlTemplate): Promise<IActivityRef> {
+    protected async buildActivity<T extends WorkflowContext>(activity: ActivityType, input: any): Promise<PromiseUtil.ActionHandle<T>> {
         let ctx = this.context;
-        if (isClass(activity)) {
-            return await ctx.injector.get(ComponentBuilderToken).resolveRef(activity);
-        } else {
+        if (isAcitvityRef(activity)) {
+            isDefined(input) && activity.context.set(ACTIVITY_INPUT, input);
+            return activity.toAction();
+        } else if (activity instanceof Activity) {
+            return activity.toAction(this.context);
+        } else if (isClass(activity)) {
+            let aref = await ctx.injector.get(ComponentBuilderToken).resolveRef(activity) as IActivityRef;
+            aref.context.set(ACTIVITY_INPUT, input);
+            return aref.toAction();
+        } else if (isFunction(activity)) {
+            this.context.set(ACTIVITY_INPUT, input);
+            return activity;
+        } else if (activity) {
             let md: Type;
             if (isClass(activity.activity)) {
                 md = activity.activity;
@@ -148,9 +157,11 @@ export class ActivityExecutor implements IActivityExecutor {
                 type: md,
                 template: activity,
                 injector: ctx.injector,
-                parent: ctx,
+                parent: ctx
             };
-            return await ctx.injector.getInstance(ComponentBuilder).resolveRef(option);
+            let aref = await ctx.injector.getInstance(ComponentBuilder).resolveRef(option) as IActivityRef;
+            aref.context.set(ACTIVITY_INPUT, input);
+            return aref.toAction();
         }
     }
 }

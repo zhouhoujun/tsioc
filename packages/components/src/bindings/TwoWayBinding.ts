@@ -33,7 +33,7 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
             let scopeExp = pathCkExp.test(fd) ? fd.substring(0, fd.lastIndexOf('.')) : '';
             let scopeFile = pathCkExp.test(fd) ? fd.substring(fd.lastIndexOf('.') + 1) : fd;
             observe.onPropertyChange(target, field, (value, oldVal) => {
-                let scope = scopeExp ? this.getAst().resolve(scopeExp, this.source) : this.source;
+                let scope = scopeExp ? this.provider.getAstResolver().resolve(scopeExp, this.injector, this.source) : this.source;
                 scope[scopeFile] = value;
             });
         }

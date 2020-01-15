@@ -12,8 +12,7 @@ import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
-import { RefSelector } from '../RefSelector';
-import { AstResolver } from '../AstResolver';
+import { ComponentProvider } from '../ComponentProvider';
 
 
 /**
@@ -54,20 +53,20 @@ export const BindingScopeHandle = async function (ctx: ParseContext, next?: () =
         let regs = actInjector.getInstance(StartupDecoratorRegisterer)
             .getRegisterer(StartupScopes.BindExpression);
         // translate binding expression via current decorator.
-        if (ctx.componentDecorator && regs.has(ctx.componentDecorator)) {
+        if (regs.has(ctx.componentDecorator)) {
             await PromiseUtil.runInChain(regs.getFuncs(actInjector, ctx.componentDecorator), ctx);
         } else {
             let exp = ctx.bindExpression.trim();
             if (ctx.binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    ctx.dataBinding = new OneWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
+                    ctx.dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
+                    ctx.dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
                 }
             } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                ctx.dataBinding = new EventBinding(ctx.injector, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
+                ctx.dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
             }
         }
     }
@@ -127,7 +126,7 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
     if (!isNullOrUndefined(ctx.bindExpression)) {
         let pdr = ctx.binding.provider;
         let selector: ClassType;
-        let refSelector = ctx.componentDecorator ? ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.componentDecorator, RefSelector) : null;
+        let refSelector = ctx.componentDecorator ? ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.componentDecorator, ComponentProvider) : null;
         if (isString(pdr) && refSelector && injector.hasRegister(refSelector.toAttrSelectorToken(pdr))) {
             selector = injector.getTokenProvider(refSelector.toAttrSelectorToken(pdr));
         } else if (ctx.binding.type !== Array) {

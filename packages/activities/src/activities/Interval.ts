@@ -1,9 +1,9 @@
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core/ActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { TimerActivity } from './TimerActivity';
-import { BodyActivity } from './BodyActivity';
+import { ActivityType } from '../core/ActivityMetadata';
 
 /**
  * while control activity.
@@ -13,16 +13,20 @@ import { BodyActivity } from './BodyActivity';
  * @extends {ControlActivity}
  */
 @Task('interval')
-export class IntervalActivity<T> extends ControlActivity<T> {
+export class IntervalActivity extends ControlActivity {
 
     @Input() timer: TimerActivity;
 
-    @Input() body: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        await this.timer.run(ctx);
+    async execute(ctx: ActivityContext): Promise<void> {
+        let interval = await this.timer.execute(ctx);
+        let action = ctx.getExector().parseAction(this.body);
+        if (!action) {
+            return;
+        }
         setInterval(() => {
-            this.body.run(ctx);
-        }, this.timer.result);
+            action(ctx.workflow);
+        }, interval);
     }
 }

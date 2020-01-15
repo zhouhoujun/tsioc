@@ -1,6 +1,6 @@
 import { Injectable, Refs, InjectToken, isDefined } from '@tsdi/ioc';
 import { Service, Startup, BootContext } from '@tsdi/boot';
-import { IActivityRef, ACTIVITY_INPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 import { ActivityOption } from './ActivityOption';
@@ -81,6 +81,10 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
      */
     runnable: WorkflowInstance;
 
+    get result() {
+        return this.get(ACTIVITY_OUTPUT);
+    }
+
     private _status: ActivityStatus;
     get status(): ActivityStatus {
         if (!this._status) {
@@ -134,7 +138,7 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
         let target = this.context.getBootTarget() as IActivityRef;
         await target.run(this.context, async () => {
             this.state = RunState.complete;
-            this._result = target.context.output;
+            this.context.set(ACTIVITY_OUTPUT, target.context.output);
         });
 
         return this.context;

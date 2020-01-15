@@ -7,6 +7,7 @@ import { IParameter } from '../IParameter';
 import { InjectToken } from '../InjectToken';
 import { IInjector } from '../IInjector';
 import { IActionInjector } from '../actions/Action';
+import { IIocContainer } from '../IIocContainer';
 
 /**
  * type reflects token.
@@ -45,6 +46,10 @@ export interface ITypeReflects extends IMetadataAccess {
      * @param type the type.
      */
     get<T extends ITypeReflect>(type: ClassType): T;
+    /**
+     * get container.
+     */
+    getContainer<T extends IIocContainer>(): T;
     /**
      * get injector of type injected.
      * @param type

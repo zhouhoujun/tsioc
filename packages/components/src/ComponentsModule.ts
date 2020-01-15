@@ -25,6 +25,7 @@ import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
 import { PipeRegisterAction } from './registers/PipeRegisterAction';
 import { BindingComponentScope } from './resolvers/BindingComponentScope';
 import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
+import { ComponentProvider } from './ComponentProvider';
 
 
 /**
@@ -37,8 +38,7 @@ import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
 export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
-        container.registerType(ComponentAnnotationCloner)
-            .registerType(AstResolver);
+        container.registerType(ComponentAnnotationCloner);
         let actInjector = container.get(ActionInjectorToken);
 
         actInjector.getInstance(DecoratorProvider)
@@ -70,7 +70,9 @@ export class ComponentsModule {
                 })
             })
             .bindProviders(Component,
-                { provide: AnnotationCloner, useClass: ComponentAnnotationCloner });
+                { provide: AnnotationCloner, useClass: ComponentAnnotationCloner },
+                AstResolver
+            );
 
         actInjector.regAction(BindingScope)
             .regAction(TemplateParseScope)

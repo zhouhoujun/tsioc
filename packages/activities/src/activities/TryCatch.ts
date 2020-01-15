@@ -1,27 +1,25 @@
 import { lang, Type } from '@tsdi/ioc';
-import { Input } from '@tsdi/components';
+import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityContext } from '../core/ActivityContext';
 import { Activity } from '../core/Activity';
 import { ControlActivity } from '../core/ControlActivity';
-import { BodyActivity } from './BodyActivity';
+import { ActivityType } from '../core/ActivityMetadata';
 
 
 @Task('catch')
-export class CatchActivity<T = any> extends ControlActivity<T> {
+export class CatchActivity extends ControlActivity {
 
     @Input() error: Type<Error>;
 
-    @Input() body: BodyActivity;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
-        let runScope = ctx.status.currentScope;
-        if (this.error && runScope && runScope.scope
-            && runScope.scope.result.error
-            && lang.getClass(runScope.scope.result.error) === this.error) {
-            this.body.run(ctx);
+    async execute(ctx: ActivityContext): Promise<void> {
+        let err = ctx.input;
+        if (this.error && err && lang.getClass(err) === this.error) {
+            ctx.getExector().runActivity(this.body);
         } else if (!this.error) {
-            this.body.run(ctx);
+            ctx.getExector().runActivity(this.body);
         }
     }
 }
@@ -34,24 +32,21 @@ export class CatchActivity<T = any> extends ControlActivity<T> {
  * @extends {ControlActivity}
  */
 @Task('try')
-export class TryCatchActivity<T> extends Activity<T> {
+export class TryCatchActivity extends ControlActivity {
 
-    @Input()
-    try: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) try: ActivityType<any>;
 
     @Input('catchs', CatchActivity)
-    catchs: CatchActivity<T>[];
+    catchs: CatchActivity[];
 
-    @Input()
-    finallies: BodyActivity<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) finallies: ActivityType<any>;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<void> {
         try {
-            await this.try.run(ctx);
+            await ctx.getExector().runActivity(this.try);
         } catch (err) {
-            this.result = err;
             if (this.catchs) {
-                await this.runActivity(ctx, this.catchs);
+                await ctx.getExector().runActivity(this.catchs, err);
             }
         } finally {
             if (this.finallies) {

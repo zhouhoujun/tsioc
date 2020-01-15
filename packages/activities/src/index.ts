@@ -21,5 +21,7 @@ export * from './core/uuid';
 
 export * from './registers/ActivityDepsRegister';
 
-export * from './aop';
+// aop
+export * from './aop/RunAspect';
+
 export * from './activities';

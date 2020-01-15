@@ -17,27 +17,31 @@ export class EachActicity<T> extends ControlActivity<T> {
 
     @Input() parallel: boolean;
 
-    protected async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: ActivityContext): Promise<T> {
         let items = await ctx.resolveExpression(this.each);
         items = items.filter(i => !isNullOrUndefined(i));
         if (items && items.length) {
             if (this.parallel) {
                 if (ctx.injector.hasRegister(ParallelExecutor)) {
-                    await ctx.injector.getInstance(ParallelExecutor).run(v => {
-                        return ctx.getExector().runWorkflow(this.body, v).then(c => c);
+                    return await ctx.injector.getInstance(ParallelExecutor).run(v => {
+                        return ctx.getExector().runWorkflow(this.body, v).then(c => c.result);
                     }, items);
                 } else {
-                    await Promise.all(items.map(v => {
-                        return ctx.getExector().runWorkflow(this.body, v).then(c => c.status.currentScope.context.output);
+                    let result: any = await Promise.all(items.map(v => {
+                        return ctx.getExector().runWorkflow(this.body, v).then(c => c.result);
                     }));
+                    return result as T;
                 }
             } else {
-                let actions = await ctx.getExector().parseActions(this.body);
-                await ctx.getExector().execActions(items.map(v => async (c: WorkflowContext, next) => {
-                    await ctx.getExector().execActions(actions);
-                    await next();
+                await ctx.getExector().execAction(items.map(v => async (c: WorkflowContext, next) => {
+                    await ctx.getExector().runActivity(this.body, v);
+                    if (next) {
+                        await next();
+                    }
                 }));
+                return ctx.output as T;
             }
         }
+        return null;
     }
 }

@@ -4,8 +4,9 @@ import { ResolveTemplateHanlde } from './ResolveTemplateHanlde';
 import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
-import { RefSelector } from '../RefSelector';
+import { ComponentProvider } from '../ComponentProvider';
 import { CTX_ELEMENT_REF } from '../ComponentRef';
+
 
 
 export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements IActionSetup {
@@ -16,8 +17,8 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
         } else {
             // current type is component.
             let decorPdr = ctx.reflects.getActionInjector().get(DecoratorProvider);
-            let refSelector = decorPdr.resolve(ctx.decorator, RefSelector);
-            if (refSelector?.isNodeType(ctx.type)) {
+            let refSelector = decorPdr.resolve(ctx.decorator, ComponentProvider);
+            if (refSelector.autoCreateElementRef && refSelector?.isNodeType(ctx.type)) {
                 let elRef = refSelector.createElementRef(ctx.value, ctx);
                 ctx.set(CTX_ELEMENT_REF, elRef);
             }
