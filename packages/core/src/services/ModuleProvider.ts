@@ -28,7 +28,11 @@ export class ModuleProvider extends IocCoreService {
      * @memberof IContainer
      */
     use(injector: IInjector, ...modules: Modules[]): Type[] {
-        return this.proxy().get(ActionInjector).getInstance(InjectLifeScope).register(injector, ...modules);
+        let types = this.getLoader().getTypes(...modules);
+        types.forEach(ty => {
+            injector.registerType(ty);
+        });
+        return types;
     }
 
     /**
@@ -41,6 +45,6 @@ export class ModuleProvider extends IocCoreService {
      */
     async load(injector: IInjector, ...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
-        return this.use(injector, ...mdls);
+        return this.proxy().get(ActionInjector).getInstance(InjectLifeScope).register(injector, ...mdls);
     }
 }
