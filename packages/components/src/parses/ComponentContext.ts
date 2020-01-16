@@ -6,7 +6,7 @@ import { ComponentProvider } from '../ComponentProvider';
 import { DecoratorProvider } from '@tsdi/ioc';
 
 
-export class CompContext<T extends IBuildOption = IBuildOption,
+export class ComponentContext<T extends IBuildOption = IBuildOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
     TRefl extends IComponentReflect = IComponentReflect>
     extends BuildContext<T, TMeta, TRefl> {

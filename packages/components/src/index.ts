@@ -24,6 +24,7 @@ export * from './decorators/Pipe';
 export * from './elements';
 
 // parses
+export * from './parses/ComponentContext';
 export * from './parses/ParseContext';
 export * from './parses/ParseHandle';
 export * from './parses/ParseSelectorHandle';

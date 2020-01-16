@@ -3,7 +3,7 @@ import { BuildContext, AnnoationContext, ApplicationContextToken } from '@tsdi/b
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
-import { CTX_COMPONENT } from '@tsdi/components';
+import { ComponentContext } from '@tsdi/components';
 import { WorkflowContext } from './WorkflowInstance';
 import { ActivityExecutor } from './ActivityExecutor';
 import { ICoreInjector } from '@tsdi/core';
@@ -19,7 +19,7 @@ import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 @Injectable
 @Refs(Activity, BuildContext)
 @Refs('@Task', BuildContext)
-export class ActivityContext extends BuildContext<ActivityOption, ActivityMetadata> {
+export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
 
     get input() {
         return this.resolve(ACTIVITY_INPUT);
@@ -27,18 +27,6 @@ export class ActivityContext extends BuildContext<ActivityOption, ActivityMetada
 
     get output() {
         return this.resolve(ACTIVITY_OUTPUT);
-    }
-
-    private _scope: any;
-    get scope(): any {
-        if (!this._scope) {
-            let ctx: AnnoationContext = this;
-            while (ctx && !this._scope) {
-                this._scope = ctx.get(CTX_COMPONENT);
-                ctx = ctx.getParent();
-            }
-        }
-        return this._scope;
     }
 
     private _workflow: WorkflowContext;

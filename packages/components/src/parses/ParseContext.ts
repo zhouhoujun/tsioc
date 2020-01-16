@@ -3,7 +3,7 @@ import { ICoreInjector } from '@tsdi/core';
 import { IBuildOption, IComponentContext } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
-import { CompContext } from './CompContext';
+import { ComponentContext } from './ComponentContext';
 
 /**
  * binding parse option.
@@ -26,7 +26,7 @@ export interface IBindingParseOption extends IBuildOption {
  * @implements {IComponentContext}
  */
 @Injectable
-export class ParseContext extends CompContext<IBindingParseOption> implements IComponentContext {
+export class ParseContext extends ComponentContext<IBindingParseOption> implements IComponentContext {
 
     get binding(): IBinding {
         return this.getOptions().binding;
@@ -40,7 +40,7 @@ export class ParseContext extends CompContext<IBindingParseOption> implements IC
 
 
     getExtenalTemplate() {
-        let parent = this.getParent() as CompContext;
+        let parent = this.getParent() as ComponentContext;
         if (parent) {
             if (parent.template && parent.targetReflect) {
                 return lang.omit(parent.template,

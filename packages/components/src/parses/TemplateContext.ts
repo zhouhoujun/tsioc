@@ -2,7 +2,7 @@ import { Injectable, Type, InjectToken, createRaiseContext, isArray, lang, Decor
 import { ICoreInjector } from '@tsdi/core';
 import { IComponentContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
-import { CompContext } from './CompContext';
+import { ComponentContext } from './ComponentContext';
 import { CTX_TEMPLATE_REF, ContextNode, CTX_COMPONENT_DECTOR } from '../ComponentRef';
 import { ComponentProvider } from '../ComponentProvider';
 
@@ -21,7 +21,7 @@ export const TemplateOptionToken = new InjectToken<ITemplateOption>('COMPONENT_T
  * @implements {IComponentContext}
  */
 @Injectable
-export class TemplateContext extends CompContext<ITemplateOption> implements IComponentContext {
+export class TemplateContext extends ComponentContext<ITemplateOption> implements IComponentContext {
 
     selector?: Type;
 
@@ -30,7 +30,7 @@ export class TemplateContext extends CompContext<ITemplateOption> implements ICo
             let decor: string;
             if (!this.componentDecorator) {
                 let node = (isArray(this.value) ? lang.first(this.value) : this.value) as ContextNode;
-                decor = (node.context as CompContext)?.componentDecorator;
+                decor = (node.context as ComponentContext)?.componentDecorator;
                 decor && this.set(CTX_COMPONENT_DECTOR, decor);
             } else {
                 decor = this.componentDecorator;

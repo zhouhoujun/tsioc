@@ -3,13 +3,13 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, AstResolver, ComponentBuilder } from '@tsdi/components';
-import { ActivityType, ControlTemplate, Expression } from './ActivityMetadata';
+import { ComponentBuilderToken, ComponentBuilder } from '@tsdi/components';
+import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvityRef } from './ActivityRef';
-import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
+import { WorkflowContext } from './WorkflowInstance';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 
@@ -81,8 +81,8 @@ export class ActivityExecutor implements IActivityExecutor {
         }
         envOptions = envOptions || {};
         envOptions['ctx'] = this.context;
-        return this.context.injector.getInstance(AstResolver)
-            .resolve(expression, envOptions, this.context.injector);
+        this.context.componentProvider.getAstResolver()
+            .resolve(expression, this.context.injector, envOptions);
     }
 
     async resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal> {
