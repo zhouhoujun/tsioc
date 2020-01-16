@@ -9,9 +9,10 @@ import { Task } from './decorators/Task';
 import { RunAspect } from './aop/RunAspect';
 import * as activites from './activities';
 import { ActivityProvider } from './ActivityProvider';
+import { ActivityStatus } from './core/ActivityStatus';
 import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
-import { WorkflowInstance } from './core/WorkflowInstance';
+import { WorkflowInstance, WorkflowContext } from './core/WorkflowInstance';
 import { ActivityDepsRegister } from './registers/ActivityDepsRegister';
 
 
@@ -57,7 +58,7 @@ export class ActivityModule {
             );
 
 
-        container.inject(ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect)
+        container.inject(WorkflowContext, ActivityStatus, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect)
             .use(activites);
     }
 }

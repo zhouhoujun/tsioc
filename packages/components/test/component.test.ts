@@ -227,16 +227,16 @@ export class CTest {
 
     @Test('can bind bootsrap component')
     async test1() {
-        expect(this.ctx.getBootTarget() instanceof Component2).toBeTruthy();
-        expect(this.ctx.getBootTarget().name).toEqual('test');
-        expect(this.ctx.getBootTarget().defaultTest).toEqual('default test');
-        expect(this.ctx.getBootTarget().address).toEqual('cd');
+        expect(this.ctx.boot instanceof Component2).toBeTruthy();
+        expect(this.ctx.boot.name).toEqual('test');
+        expect(this.ctx.boot.defaultTest).toEqual('default test');
+        expect(this.ctx.boot.address).toEqual('cd');
     }
 
     @Test('can resolve component template')
     async test2() {
         let container = this.ctx.getContainer();
-        let comp1Ref = await container.get(ComponentBuilder).resolveRef({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as TemplateRef;
+        let comp1Ref = await container.get(ComponentBuilder).resolve({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as TemplateRef;
         let comp11 = await container.get(ComponentBuilder).resolve({ type: Component1, template: { name: 'test1' } });
         // console.log('comp1:', comp1);
         console.log('comp11:', comp11);
@@ -255,7 +255,7 @@ export class CTest {
             template: { element: 'selector1', name: 'test1' }
         });
 
-        let comp1 = ctx.getBootTarget() as TemplateRef;
+        let comp1 = ctx.boot as TemplateRef;
         expect(comp1 instanceof TemplateRef).toBeTruthy();
         expect((comp1.rootNodes[0] as Component1).name).toEqual('test1');
     }
@@ -275,10 +275,10 @@ export class CTest {
     @Test('can resolve component template by sub module')
     async test4() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
-        expect(ctx.getBootTarget().name).toEqual('test');
-        expect(ctx.getBootTarget().address).toEqual('cd');
-        expect(ctx.getBootTarget().phone).toEqual('17000000000');
+        expect(ctx.boot instanceof Component3).toBeTruthy();
+        expect(ctx.boot.name).toEqual('test');
+        expect(ctx.boot.address).toEqual('cd');
+        expect(ctx.boot.phone).toEqual('17000000000');
     }
 
 
@@ -287,9 +287,9 @@ export class CTest {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
         let injector = ctx.injector;
         // console.log(container);
-        // console.log(ctx.getBootTarget());
-        expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
-        expect(ctx.getBootTarget().phone).toEqual('17000000000');
+        // console.log(ctx.boot);
+        expect(ctx.boot instanceof Component3).toBeTruthy();
+        expect(ctx.boot.phone).toEqual('17000000000');
         let service = injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let cmpRef = await service.createComponent3() as TemplateRef;
@@ -303,20 +303,19 @@ export class CTest {
     @Test('can boot sub module component')
     async test6() {
         let ctx = await BootApplication.run({ type: ComponentTestMd3, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let container = ctx.getContainer();
         // console.log(container);
-        console.log(container.get(Component1));
-        // console.log(ctx.getBootTarget());
-        expect(ctx.getBootTarget() instanceof Component1).toBeTruthy();
-        expect(ctx.getBootTarget().name).toEqual('test');
+        console.log(ctx.injector.get(Component1));
+        // console.log(ctx.boot);
+        expect(ctx.boot instanceof Component1).toBeTruthy();
+        expect(ctx.boot.name).toEqual('test');
     }
 
     @Test('can get refchild')
     async test7() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
         let injector = ctx.injector;
-        expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
-        expect(ctx.getBootTarget().phone).toEqual('17000000000');
+        expect(ctx.boot instanceof Component3).toBeTruthy();
+        expect(ctx.boot.phone).toEqual('17000000000');
         let compRef = await injector.get(ComponentBuilder)
             .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as TemplateRef;
 
@@ -343,8 +342,8 @@ export class CTest {
     async test8() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
         let injector = ctx.injector;
-        expect(ctx.getBootTarget() instanceof Component3).toBeTruthy();
-        expect(ctx.getBootTarget().phone).toEqual('17000000000');
+        expect(ctx.boot instanceof Component3).toBeTruthy();
+        expect(ctx.boot.phone).toEqual('17000000000');
         let compRef = await injector.get(ComponentBuilder)
             .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as TemplateRef;
 
@@ -430,7 +429,7 @@ export class CTest {
             }
         });
 
-        let tempRef = ctx.getBootTarget() as TemplateRef;
+        let tempRef = ctx.boot as TemplateRef;
         expect(tempRef instanceof TemplateRef).toBeTruthy();
         let comp1 = tempRef.rootNodes[0] as ListBox;
         expect(comp1 instanceof ListBox).toBeTruthy();

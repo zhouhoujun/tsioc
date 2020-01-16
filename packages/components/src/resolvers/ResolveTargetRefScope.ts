@@ -5,7 +5,7 @@ import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { ComponentProvider } from '../ComponentProvider';
-import { CTX_ELEMENT_REF } from '../ComponentRef';
+import { CTX_ELEMENT_REF, CTX_COMPONENT_REF } from '../ComponentRef';
 
 
 
@@ -14,13 +14,15 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
         let annoation = ctx.annoation as IComponentMetadata;
         if (annoation.template) {
             await super.execute(ctx);
+            ctx.value = ctx.get(CTX_COMPONENT_REF);
         } else {
             // current type is component.
             let decorPdr = ctx.reflects.getActionInjector().get(DecoratorProvider);
             let refSelector = decorPdr.resolve(ctx.decorator, ComponentProvider);
-            if (refSelector.autoCreateElementRef && refSelector?.isNodeType(ctx.type)) {
-                let elRef = refSelector.createElementRef(ctx.value, ctx);
+            if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
+                let elRef = refSelector.createElementRef(ctx, ctx.value);
                 ctx.set(CTX_ELEMENT_REF, elRef);
+                ctx.value = elRef;
             }
 
             // is not compoent or element.

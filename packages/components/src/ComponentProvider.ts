@@ -1,7 +1,7 @@
-import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, INJECTOR, DECORATOR, DecoratorProvider } from '@tsdi/ioc';
+import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
@@ -32,7 +32,7 @@ export abstract class ComponentProvider {
 
     abstract getDefaultCompose(): Type;
 
-    autoCreateElementRef = false;
+    parseElementRef = false;
 
     createNodeSelector(element): NodeSelector {
         return this.reflects.get(lang.getClass(element))
@@ -51,16 +51,26 @@ export abstract class ComponentProvider {
         return this.ast;
     }
 
-    createComponentRef(type: Type, target: Object, context: AnnoationContext, ...nodes: any[]): ComponentRef<any, any> {
+    createComponentRef<T>(type: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): IComponentRef<T, any> {
         return new ComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
     }
 
-    createTemplateRef(context: AnnoationContext, ...nodes: any[]): TemplateRef<any> {
+    createTemplateRef(context: AnnoationContext, ...nodes: any[]): ITemplateRef {
         return new TemplateRef(context, nodes);
     }
 
-    createElementRef(context: AnnoationContext, target: any): ElementRef<any> {
+    createElementRef(context: AnnoationContext, target: any): IElementRef {
         return new ElementRef(context, target);
+    }
+
+    getElementRef(target: any, injector?: IInjector): IElementRef {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
+        return injector.get(ELEMENT_REFS)?.get(target);
+    }
+
+    getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T, any> {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
+        return injector.get(COMPONENT_REFS)?.get(target);
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {
@@ -68,16 +78,6 @@ export abstract class ComponentProvider {
             token = this.toPipeToken(token) ?? token;
         }
         return injector.get(token);
-    }
-
-    getElementRef(target: any, injector?: IInjector): ElementRef<any> {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
-        return injector.get(ELEMENT_REFS)?.get(target);
-    }
-
-    getComponentRef<T>(target: T, injector?: IInjector): ComponentRef<T> {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
-        return injector.get(COMPONENT_REFS)?.get(target);
     }
 
     toSelectorToken(selector: string): SymbolType {

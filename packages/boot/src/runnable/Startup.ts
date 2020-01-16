@@ -1,4 +1,4 @@
-import { lang, Type, Abstract, Inject, InjectReference, Token, IInjector } from '@tsdi/ioc';
+import { lang, Type, Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BootContext } from '../BootContext';
 
@@ -83,11 +83,11 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
 
 
     getBoot(): T {
-        return this.context.getBootTarget();
+        return this.context.boot;
     }
 
     getBootType(): Type<T> {
-        return lang.getClass(this.getBoot());
+        return lang.getClass(this.context.boot);
     }
 
     /**

@@ -1,12 +1,9 @@
-import {
-    LoadType, InjectToken, Type, Injectable, createRaiseContext, Token,
-    isToken, isDefined, isTypeObject, lang
-} from '@tsdi/ioc';
+import { LoadType, InjectToken, Type, Injectable, createRaiseContext, Token, isToken, isDefined } from '@tsdi/ioc';
 import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
-import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE } from './context-tokens';
+import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP } from './context-tokens';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
 import { IComponentContext } from './builder/ComponentContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
@@ -47,14 +44,6 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
      * @memberof BootOptions
      */
     configures?: (string | RunnableConfigure)[];
-
-    /**
-     * target module instace.
-     *
-     * @type {*}
-     * @memberof BootOptions
-     */
-    target?: any;
     /**
      * bootstrap instance.
      *
@@ -127,11 +116,6 @@ export class BootContext<T extends BootOption = BootOption,
         return this.getContainer().resolve(ConfigureLoggerManger);
     }
 
-    protected tryGetCurrType(): Type {
-        let value = this.getBootTarget();
-        return value ? lang.getClass(value) : null;
-    }
-
     /**
      * startup services
      *
@@ -178,28 +162,14 @@ export class BootContext<T extends BootOption = BootOption,
     }
 
     /**
-     * target module instace.
-     *
-     * @type {*}
-     * @memberof BootContext
-     */
-    target?: any;
-
-    /**
-     * configure bootstrap instance.
-     *
-     * @type {T}
-     * @memberof RunnableOptions
-     */
-    bootstrap?: any;
-
-    /**
-     * bootstrap runnable service.
+     * boot startup service instance.
      *
      * @type {IStartup}
      * @memberof BootContext
      */
-    runnable?: Startup;
+    get startup(): Startup {
+        return this.get(CTX_MODULE_STARTUP);
+    }
 
     /**
      * get template.
@@ -208,22 +178,15 @@ export class BootContext<T extends BootOption = BootOption,
         return this.get(CTX_TEMPLATE);
     }
 
-    getContext<T>(token: Token<T>): T {
-        return this.get(token);
-    }
-
-    setContext(token: Token, provider: any): void {
-        this.set(token, provider);
+    get target() {
+        return this.get(CTX_MODULE_INST);
     }
 
     /**
-     * get boot target.
-     *
-     * @returns {*}
-     * @memberof BootContext
+     * boot instance.
      */
-    getBootTarget(): any {
-        return this.bootstrap || this.target;
+    get boot(): any {
+        return this.get(CTX_MODULE_BOOT);
     }
 
     /**
@@ -245,11 +208,14 @@ export class BootContext<T extends BootOption = BootOption,
             return;
         }
         super.setOptions(options);
-        if (isTypeObject(options.target)) {
-            this.target = options.target;
-        }
+        // if (isTypeObject(options.target)) {
+        //     this.target = options.target;
+        // }
         if (options.template) {
             this.set(CTX_TEMPLATE, options.template);
+        }
+        if (options.bootstrap) {
+            this.set(CTX_MODULE_BOOT_TOKEN, options.bootstrap);
         }
         if (isDefined(options.data)) {
             this.set(CTX_DATA, options.data);

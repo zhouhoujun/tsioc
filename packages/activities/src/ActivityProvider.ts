@@ -2,9 +2,11 @@ import { Type, Singleton, SymbolType } from '@tsdi/ioc';
 import { ComponentProvider } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
-import { ActivityComponentRef, ActivityElementRef, ActivityTemplateRef } from './core/ActivityRef';
+import {
+    ActivityComponentRef, ActivityElementRef, ActivityTemplateRef, IActivityComponentRef,
+    IActivityTemplateRef, IActivityElementRef, ActivityNodeType
+} from './core/ActivityRef';
 import { ActivityContext } from './core/ActivityContext';
-import { IActivityRef } from './core/IActivityRef';
 
 const attrSelPrefix = /^ACT_ATTR_/;
 const seletPrefix = /^ACT_SELT_/;
@@ -30,15 +32,17 @@ export class ActivityProvider extends ComponentProvider {
         return SequenceActivity;
     }
 
-    createComponentRef(type: Type, target: Activity, context: ActivityContext, ...nodes: IActivityRef[]): ActivityComponentRef {
+    parseElementRef = true;
+
+    createComponentRef<T>(type: Type<T>, target: T, context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityComponentRef<T> {
         return new ActivityComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
     }
 
-    createTemplateRef(context: ActivityContext, ...nodes: IActivityRef[]): ActivityTemplateRef {
+    createTemplateRef(context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityTemplateRef<ActivityNodeType> {
         return new ActivityTemplateRef(context, nodes);
     }
 
-    createElementRef(context: ActivityContext, target: Activity): ActivityElementRef {
+    createElementRef(context: ActivityContext, target: Activity): IActivityElementRef {
         return new ActivityElementRef(context, target);
     }
 

@@ -1,12 +1,12 @@
 import {
-    Singleton, ProviderTypes, Type, lang, isNullOrUndefined, isString,
+    Singleton, ProviderTypes, lang, isNullOrUndefined, isString,
     isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider
 } from '@tsdi/ioc';
-import { BuilderService, IBuildOption, BuildContext } from '@tsdi/boot';
+import { BuilderService, BuildContext } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider } from './ComponentProvider';
-import { CTX_COMPONENT_REF, ElementRef, ComponentRef, CTX_ELEMENT_REF, TemplateRef, CTX_TEMPLATE_REF } from './ComponentRef';
+import { CTX_COMPONENT_REF, CTX_ELEMENT_REF, CTX_TEMPLATE_REF, ITemplateRef } from './ComponentRef';
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
@@ -22,17 +22,12 @@ import { TemplateParseScope } from './parses/TemplateParseScope';
 @Singleton(ComponentBuilderToken)
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
-    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<TemplateRef<any>> {
+    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ITemplateRef> {
         let ctx = TemplateContext.parse(options.injector || this.container, options);
         providers.length && ctx.providers.inject(...providers);
         await this.reflects.getActionInjector().get(TemplateParseScope)
             .execute(ctx);
         return ctx.getResultRef();
-    }
-
-    async resolveRef<T>(target: Type<T> | IBuildOption<T>): Promise<ComponentRef<T> | TemplateRef<T> | ElementRef<T> | T> {
-        let ctx = await this.build(target);
-        return this.getRefInCtx(ctx);
     }
 
     protected getRefInCtx(ctx: BuildContext) {

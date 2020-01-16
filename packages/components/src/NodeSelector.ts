@@ -1,5 +1,5 @@
 import { Express, isFunction, isBoolean } from '@tsdi/ioc';
-import { NodeRef, ComponentRef, ElementRef } from './ComponentRef';
+import { NodeRef, ComponentRef, ElementRef, INodeRef } from './ComponentRef';
 
 
 /**
@@ -37,7 +37,7 @@ export enum Mode {
  */
 export class NodeSelector<T = any> {
 
-    constructor(protected node: NodeRef<T>) {
+    constructor(protected node: INodeRef<T>) {
 
     }
 
@@ -103,7 +103,7 @@ export class NodeSelector<T = any> {
     }
 
 
-    protected eachChildren<Tc extends T>(node: NodeRef<T>, express: Express<Tc, void | boolean>) {
+    protected eachChildren<Tc extends T>(node: INodeRef<T>, express: Express<Tc, void | boolean>) {
         this.getChildren(node).some(item => this.currNode(item, express) === false);
     }
 
@@ -114,7 +114,7 @@ export class NodeSelector<T = any> {
      *
      *@memberOf IComponent
      */
-    routeUp(node: NodeRef<T>, express: Express<T, void | boolean>) {
+    routeUp(node: INodeRef<T>, express: Express<T, void | boolean>) {
         if (this.currNode(node, express) === false) {
             return false;
         }
@@ -131,7 +131,7 @@ export class NodeSelector<T = any> {
      *
      *@memberOf IComponent
      */
-    trans(node: NodeRef<T>, express: Express<T, void | boolean>) {
+    trans(node: INodeRef<T>, express: Express<T, void | boolean>) {
         if (this.currNode(node, express) === false) {
             return false;
         }
@@ -144,7 +144,7 @@ export class NodeSelector<T = any> {
         return true;
     }
 
-    transAfter(node: NodeRef<T>, express: Express<T, void | boolean>) {
+    transAfter(node: INodeRef<T>, express: Express<T, void | boolean>) {
         let children = this.getChildren(node);
         if (children.some(r => this.transAfter(r, express) === false)) {
             return false;
@@ -156,7 +156,7 @@ export class NodeSelector<T = any> {
         return true;
     }
 
-    protected currNode(node: NodeRef<T>, express: Express<T, void | boolean>): boolean {
+    protected currNode(node: INodeRef<T>, express: Express<T, void | boolean>): boolean {
         let roots = node.rootNodes;
         if (roots.some(n => {
             if (n instanceof NodeRef) {
@@ -178,7 +178,7 @@ export class NodeSelector<T = any> {
         }
     }
 
-    protected getParent(node: NodeRef<T>): NodeRef<T> {
+    protected getParent(node: INodeRef<T>): NodeRef<T> {
 
         let parent = node.context.getParent();
         if (parent && parent.has(NodeRef)) {
@@ -188,7 +188,7 @@ export class NodeSelector<T = any> {
         return null;
     }
 
-    protected getChildren(node: NodeRef<T>): NodeRef<T>[] {
+    protected getChildren(node: INodeRef<T>): NodeRef<T>[] {
         let ctx = node.context
         if (ctx.hasChildren()) {
             return ctx.getChildren().map(c => c.get(NodeRef) as NodeRef<T>);

@@ -10,7 +10,8 @@ describe('activity test', () => {
 
         it('should bootstrap with single task.', async () => {
             let ctx = await Workflow.run(SimpleTask);
-            expect(ctx.runnable instanceof WorkflowInstance).toBe(true);
+            console.log(ctx);
+            expect(ctx.startup instanceof WorkflowInstance).toBe(true);
             // console.log(result);
             expect(ctx.result).toEqual('simple task');
         });
@@ -60,7 +61,7 @@ describe('activity test', () => {
             let ctx = await Workflow.run(TaskModuleTest);
             // console.log('meta configure:' , result.instance.constructor.name, result.instance['activities'], result.resultValue)
             expect(ctx.result).toEqual('component task');
-            let activity = ctx.getBootTarget() as ActivityComponentRef;
+            let activity = ctx.boot as ActivityComponentRef;
             let ifact = activity.nodeRef.rootNodes[0] as ActivityElementRef;
             console.log(ifact);
             expect(ifact.nativeElement instanceof IfActivity).toBeTruthy();
@@ -118,7 +119,7 @@ describe('activity test', () => {
                     { provide: 'data', useValue: 'test data' }
                 ]
             });
-            expect(ctx.runnable instanceof WorkflowInstance).toBeTruthy();
+            expect(ctx.startup instanceof WorkflowInstance).toBeTruthy();
             // console.log(result);
             expect(ctx.result).toEqual('test data');
         });
@@ -142,7 +143,7 @@ describe('activity test', () => {
                     { provide: 'data', useValue: 'test data' }
                 ]
             });
-            expect(ctx.runnable instanceof WorkflowInstance).toBeTruthy();
+            expect(ctx.startup instanceof WorkflowInstance).toBeTruthy();
             expect(Array.isArray(ctx.result)).toBeTruthy();
             console.log(ctx.result);
             expect(ctx.result).toEqual([

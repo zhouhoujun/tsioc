@@ -141,7 +141,7 @@ export class ActivityExecutor implements IActivityExecutor {
         } else if (activity instanceof Activity) {
             return activity.toAction(this.context);
         } else if (isClass(activity)) {
-            let aref = await ctx.injector.get(ComponentBuilderToken).resolveRef(activity) as IActivityRef;
+            let aref = await ctx.injector.get(ComponentBuilderToken).resolve(activity) as IActivityRef;
             aref.context.set(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {
@@ -159,7 +159,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 injector: ctx.injector,
                 parent: ctx
             };
-            let aref = await ctx.injector.getInstance(ComponentBuilder).resolveRef(option) as IActivityRef;
+            let aref = await ctx.injector.getInstance(ComponentBuilder).resolve(option) as IActivityRef;
             aref.context.set(ACTIVITY_INPUT, input);
             return aref.toAction();
         }

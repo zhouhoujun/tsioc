@@ -79,7 +79,7 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
      * @type {WorkflowInstance}
      * @memberof BootContext
      */
-    runnable: WorkflowInstance;
+    startup: WorkflowInstance;
 
     get result() {
         return this.get(ACTIVITY_OUTPUT);
@@ -135,7 +135,7 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
             injector.registerValue(this.context.id, this);
         }
 
-        let target = this.context.getBootTarget() as IActivityRef;
+        let target = this.getBoot() as IActivityRef;
         await target.run(this.context, async () => {
             this.state = RunState.complete;
             this.context.set(ACTIVITY_OUTPUT, target.context.output);

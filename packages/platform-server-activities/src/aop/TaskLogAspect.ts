@@ -2,7 +2,7 @@ import { Inject, lang } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
-import { Task, Activity, ControlActivity, ActivityComponentRef, IActivityRef, ActivityElementRef, ActivityTemplateRef } from '@tsdi/activities';
+import { ControlActivity, ActivityComponentRef, IActivityRef, ActivityElementRef, ActivityTemplateRef, ActivityRef } from '@tsdi/activities';
 import chalk from 'chalk';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
@@ -55,7 +55,7 @@ export class TaskLogProcess extends LogProcess {
  * @class TaskLogAspect
  */
 @Aspect({
-    within: [ActivityElementRef, ActivityTemplateRef, ActivityComponentRef],
+    within: [ActivityRef],
     without: ControlActivity,
     singleton: true
 })

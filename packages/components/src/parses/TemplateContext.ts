@@ -35,8 +35,8 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
             } else {
                 decor = this.componentDecorator;
             }
-            let refSeltor = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(decor, ComponentProvider);
-            let tempRef = isArray(this.value) ? refSeltor.createTemplateRef(this, ...this.value) : refSeltor.createTemplateRef(this, this.value);
+            let compPdr = this.componentProvider;
+            let tempRef = isArray(this.value) ? compPdr.createTemplateRef(this, ...this.value) : compPdr.createTemplateRef(this, this.value);
             this.set(CTX_TEMPLATE_REF, tempRef);
         }
         return this.get(CTX_TEMPLATE_REF) ?? this.value;

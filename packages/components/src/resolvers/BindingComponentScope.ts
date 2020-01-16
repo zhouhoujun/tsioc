@@ -25,7 +25,7 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
                 let decorPdr = ctx.reflects.getActionInjector().get(DecoratorProvider);
                 componentDectors.some(decor => {
                     let refSelector = decorPdr.resolve(decor, ComponentProvider);
-                    if (refSelector.autoCreateElementRef && refSelector?.isNodeType(ctx.type)) {
+                    if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
                         let elRef = refSelector.createElementRef(ctx, ctx.value);
                         ctx.set(CTX_ELEMENT_REF, elRef);
                         return true;
@@ -33,7 +33,9 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
                     return false;
                 });
             }
-            if (!ctx.has(CTX_ELEMENT_REF)) {
+            if (ctx.has(CTX_ELEMENT_REF)) {
+                ctx.value = ctx.get(CTX_ELEMENT_REF);
+            } else {
                 ctx.destroy();
             }
         }

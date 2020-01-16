@@ -46,7 +46,7 @@ export const BootConfigureLoadHandle = async function (ctx: BootContext, next: (
         await container.load(injector, ...config.deps);
     }
     if (config.baseURL && !ctx.baseURL) {
-        ctx.setContext(ProcessRunRootToken, config.baseURL);
+        ctx.set(ProcessRunRootToken, config.baseURL);
         injector.registerValue(ProcessRunRootToken, ctx.baseURL);
     }
 

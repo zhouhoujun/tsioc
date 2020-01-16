@@ -4,15 +4,18 @@ import { Startup } from '../runnable/Startup';
 import { Renderer } from '../runnable/Renderer';
 import { Runnable } from '../runnable/Runnable';
 import { Service } from '../runnable/Service';
+import { CTX_MODULE_STARTUP } from '../context-tokens';
 
 
 export const RefRunnableHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    ctx.runnable = ctx.injector.getService(
-        { tokens: [Startup, Renderer, Runnable, Service], target: ctx.getBootTarget() },
+    let startup = ctx.injector.getService(
+        { tokens: [Startup, Renderer, Runnable, Service], target: ctx.boot },
         { provide: BootContext, useValue: ctx },
         { provide: lang.getClass(ctx), useValue: ctx });
 
-    if (!ctx.runnable) {
+    startup && ctx.set(CTX_MODULE_STARTUP, startup);
+
+    if (!ctx.has(CTX_MODULE_STARTUP)) {
         await next();
     }
 };
