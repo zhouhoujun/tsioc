@@ -1,4 +1,4 @@
-import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap, Modules } from '@tsdi/ioc';
+import { InjectToken, Type, PromiseUtil, Token, ProviderTypes, ObjectMap } from '@tsdi/ioc';
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
@@ -44,7 +44,7 @@ export interface ActivityMetadata extends IComponentMetadata {
 /**
  * workflow id.
  */
-export const WorkflowId = new InjectToken<string>('Workflow_ID');
+export const WorkflowId = new InjectToken<string>('WORKFLOW_ID');
 
 /**
  * selectors.

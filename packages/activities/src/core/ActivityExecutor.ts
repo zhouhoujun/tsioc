@@ -1,5 +1,5 @@
 import {
-    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap, isBaseObject, isDefined, isMetadataObject
+    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap, isDefined
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';

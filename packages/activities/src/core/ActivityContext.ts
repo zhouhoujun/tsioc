@@ -1,4 +1,5 @@
 import { Injectable, Type, Refs, createRaiseContext, isToken, IInjector, Token, isNullOrUndefined } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { BuildContext, AnnoationContext, ApplicationContextToken } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -6,7 +7,6 @@ import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ComponentContext } from '@tsdi/components';
 import { WorkflowContext } from './WorkflowInstance';
 import { ActivityExecutor } from './ActivityExecutor';
-import { ICoreInjector } from '@tsdi/core';
 import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 
 
