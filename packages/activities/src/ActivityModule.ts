@@ -4,11 +4,11 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
-import { ComponentRegisterAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle } from '@tsdi/components';
+import { ComponentRegisterAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle, AstResolver } from '@tsdi/components';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop/RunAspect';
 import * as activites from './activities';
-import { ActivityRefSelector } from './ActivityRefSelector';
+import { ActivityProvider } from './ActivityProvider';
 import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
 import { WorkflowInstance } from './core/WorkflowInstance';
@@ -51,7 +51,8 @@ export class ActivityModule {
                         }
                     }
                 },
-                { provide: ComponentProvider, useClass: ActivityRefSelector },
+                AstResolver,
+                { provide: ComponentProvider, useClass: ActivityProvider },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner }
             );
 

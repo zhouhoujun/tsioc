@@ -1,10 +1,10 @@
 import { Injectable, Refs, InjectToken, isDefined } from '@tsdi/ioc';
 import { Service, Startup, BootContext } from '@tsdi/boot';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
-import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
 import { ActivityOption } from './ActivityOption';
 import { ActivityMetadata } from './ActivityMetadata';
+import { ActivityStatus } from './ActivityStatus';
 
 
 
@@ -88,7 +88,7 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
     private _status: ActivityStatus;
     get status(): ActivityStatus {
         if (!this._status) {
-            this._status = this.injector.get(ActivityStatus, { provide: ActivityContext, useValue: this });
+            this._status = this.injector.get(ActivityStatus);
         }
         return this._status;
     }
@@ -153,35 +153,4 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
         this.state = RunState.pause;
     }
 
-}
-
-
-/**
- * activity status.
- *
- * @export
- * @class ActivityStatus
- */
-@Injectable
-export class ActivityStatus {
-
-    constructor(private context: WorkflowContext) {
-    }
-
-    get current(): IActivityRef {
-        return this.context.get(CTX_CURR_ACT_REF);
-    }
-
-    get currentScope(): IActivityRef {
-        return this.context.get(CTX_CURR_ACTSCOPE_REF);
-    }
-
-    set current(activity: IActivityRef) {
-        if (activity) {
-            this.context.set(CTX_CURR_ACT_REF, activity);
-            if (activity.isScope) {
-                this.context.set(CTX_CURR_ACTSCOPE_REF, activity);
-            }
-        }
-    }
 }

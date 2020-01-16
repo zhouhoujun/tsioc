@@ -18,7 +18,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ElementRe
      * @param ctx root context.
      * @param next next work.
      */
-    async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<any> {
         ctx.status.current = this;
         this.context.remove(ACTIVITY_OUTPUT);
         let result = await this.nativeElement.execute(this.context);
@@ -58,6 +58,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         if (isDefined(result)) {
             this.context.set(ACTIVITY_OUTPUT, result);
         }
+        ctx.status.scopeEnd();
         if (next) {
             await next();
         }

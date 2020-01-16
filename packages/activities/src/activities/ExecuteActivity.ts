@@ -14,14 +14,14 @@ import { ActivityContext } from '../core/ActivityContext';
  * @template T
  */
 @Task('execute')
-export class ExecuteActivity<T> extends Activity<T> {
+export class ExecuteActivity extends Activity {
 
-    @Input('action') action: string | ((ctx: ActivityContext, activity?: Activity<T>) => void | Promise<void>);
+    @Input('action') action: string | ((ctx: ActivityContext, activity?: Activity) => void | Promise<void>);
 
-    async execute(ctx: ActivityContext): Promise<T> {
+    async execute(ctx: ActivityContext): Promise<void> {
         let action = isString(this.action) ? ctx.getExector().eval(this.action) : this.action;
         if (isFunction(action)) {
-            return await action(ctx, this);
+            await action(ctx, this);
         }
     }
 }

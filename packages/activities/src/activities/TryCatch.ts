@@ -50,8 +50,7 @@ export class TryCatchActivity extends ControlActivity {
             }
         } finally {
             if (this.finallies) {
-                await this.finallies.run(ctx);
-                this.result = this.finallies.result;
+                await ctx.getExector().runActivity(this.finallies);
             }
         }
     }

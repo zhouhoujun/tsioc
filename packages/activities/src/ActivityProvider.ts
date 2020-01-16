@@ -9,14 +9,14 @@ import { IActivityRef } from './core/IActivityRef';
 const attrSelPrefix = /^ACT_ATTR_/;
 const seletPrefix = /^ACT_SELT_/;
 /**
- * activity ref selector.
+ * activity provider.
  *
  * @export
- * @class ActivityRefSelector
+ * @class ActivityProvider
  * @extends {ComponentProvider}
  */
 @Singleton()
-export class ActivityRefSelector extends ComponentProvider {
+export class ActivityProvider extends ComponentProvider {
 
     getSelectorKey(): string {
         return 'activity';

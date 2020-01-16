@@ -1,7 +1,7 @@
 import { lang } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
-import { Task, Activity, ControlActivity, ActivityRef } from '@tsdi/activities';
+import { Task, Activity, ControlActivity, IActivityRef, ActivityElementRef, ActivityTemplateRef, ActivityComponentRef } from '@tsdi/activities';
 
 /**
  * Task Log process.
@@ -14,7 +14,7 @@ export class TaskLogProcess extends LogProcess {
     processLog(joinPoint: Joinpoint) {
         (async () => {
             let logger = this.logger;
-            let target = joinPoint.target as Activity;
+            let target = joinPoint.target as IActivityRef;
             let name = target.name;
             if (!name) {
                 name = lang.getClassName(joinPoint.targetType);
@@ -52,7 +52,7 @@ export class TaskLogProcess extends LogProcess {
  * @extends {TaskLogProcess}
  */
 @Aspect({
-    within: [Activity, ActivityRef],
+    within: [ActivityElementRef, ActivityTemplateRef, ActivityComponentRef],
     without: ControlActivity,
     singleton: true
 })
