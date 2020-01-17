@@ -1,7 +1,7 @@
 import { LoadType, Type } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
-import { BootApplication, DIModule, ConfigureRegister } from '@tsdi/boot';
+import { BootApplication, DIModule } from '@tsdi/boot';
 import { UnitSetup } from './UnitSetup';
 import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
@@ -26,9 +26,6 @@ import { TestReport } from './reports/TestReport';
       UnitTestRunner,
       TestReport
    ],
-   // providers: [
-   //    { provide: ConfigureRegister, useClass: UnitTestConfigureRegister }
-   // ],
    bootstrap: UnitTestRunner
 })
 export class UnitTest {

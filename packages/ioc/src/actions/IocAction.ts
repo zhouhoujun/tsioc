@@ -67,11 +67,15 @@ export abstract class IocRaiseContext<
         return this._injector;
     }
 
+    private _reflects: ITypeReflects;
     /**
      * get type reflects.
      */
     get reflects(): ITypeReflects {
-        return this.injector.get(TypeReflectsToken);
+        if (!this._reflects) {
+            this._reflects = this.injector.get(TypeReflectsToken);
+        }
+        return this._reflects;
     }
 
     private _context: IProviders;
@@ -210,6 +214,7 @@ export abstract class IocRaiseContext<
 
     protected destroying() {
         this._context.destroy();
+        this._reflects = null;
         this._context = null;
         this._injector = null;
     }

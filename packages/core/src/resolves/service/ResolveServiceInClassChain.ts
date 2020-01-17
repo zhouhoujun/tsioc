@@ -8,7 +8,7 @@ export const ResolveServiceInClassChain = function (ctx: ResolveServiceContext, 
         let tgtk = ctx.get(CTX_TARGET_TOKEN);
         if (isClassType(tgtk)) {
             ctx.reflects.getExtends(tgtk).some(ty => {
-                ctx.instance = injector.resolve({ token: ctx.get(CTX_CURR_TOKEN), target: ty }, ctx.providers)
+                ctx.instance = injector.resolve({ token: ctx.get(CTX_CURR_TOKEN), target: ty }, ctx.providers);
                 return ctx.instance;
             });
         } else {

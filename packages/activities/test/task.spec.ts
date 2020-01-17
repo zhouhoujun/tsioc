@@ -10,7 +10,7 @@ describe('activity test', () => {
 
         it('should bootstrap with single task.', async () => {
             let ctx = await Workflow.run(SimpleTask);
-            console.log(ctx);
+            console.log(ctx.startup);
             expect(ctx.startup instanceof WorkflowInstance).toBe(true);
             // console.log(result);
             expect(ctx.result).toEqual('simple task');

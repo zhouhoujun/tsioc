@@ -13,9 +13,9 @@ import { CTX_COMPONENT_REF, ElementRef, ComponentRef } from '../ComponentRef';
  * @extends {ResolveHandle}
  */
 export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-
+    let reflects = ctx.reflects;
     let ref = ctx.targetReflect as IComponentReflect;
-    let actInjector = ctx.reflects.getActionInjector();
+    let actInjector = reflects.getActionInjector();
     if (ref && ref.propRefChildBindings) {
         let dpr = actInjector.getInstance(DecoratorProvider);
         if (dpr.has(ctx.decorator, ComponentProvider)) {
@@ -25,9 +25,9 @@ export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?
             ref.propRefChildBindings.forEach(b => {
                 let result = refSelector.select(cref, b.bindingName || b.name);
                 if (result) {
-                    if (lang.isExtendsClass(b.type, ElementRef)) {
+                    if (reflects.isExtends(b.type, ElementRef)) {
                         ctx.value[b.name] = refSelector.getElementRef(result, ctx.injector) ?? refSelector.createElementRef(ctx, result);
-                    } else if (lang.isExtendsClass(b.type, ComponentRef)) {
+                    } else if (reflects.isExtends(b.type, ComponentRef)) {
                         ctx.value[b.name] = refSelector.getComponentRef(result, ctx.injector) ?? refSelector.createComponentRef(lang.getClass(result), result, ctx);
                     } else {
                         ctx.value[b.name] = result;

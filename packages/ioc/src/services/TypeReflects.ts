@@ -8,7 +8,7 @@ import {
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess } from './MetadataAccess';
-import { isUndefined, isClassType } from '../utils/lang';
+import { isUndefined, isClassType, lang } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
@@ -111,11 +111,11 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         if (!isClassType(type)) {
             return false;
         }
-        return this.has(type) ? this.get(type).defines.isExtends(base) : false;
+        return this.has(type) ? this.get(type).defines.isExtends(base) : lang.isExtendsClass(type, base);
     }
 
     getExtends(type: ClassType): ClassType[] {
-        return this.has(type) ? this.get(type).defines.extendTypes : []; // lang.getClassChain(type);
+        return this.has(type) ? this.get(type).defines.extendTypes : lang.getClassChain(type);
     }
 
     hasMetadata<T = any>(decorator: string | Function, target: ClassType): boolean;

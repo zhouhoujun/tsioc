@@ -1,10 +1,11 @@
 import { Injectable, Refs, InjectToken, isDefined } from '@tsdi/ioc';
-import { Service, Startup, BootContext } from '@tsdi/boot';
+import { Service, Startup, BootContext, CTX_MODULE_STARTUP } from '@tsdi/boot';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { ActivityOption } from './ActivityOption';
 import { ActivityMetadata } from './ActivityMetadata';
 import { ActivityStatus } from './ActivityStatus';
+import { ActivityRef } from './ActivityRef';
 
 
 
@@ -73,16 +74,13 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
     * @memberof ActivityOption
     */
     name: string;
-    /**
-     * bootstrap runnable service.
-     *
-     * @type {WorkflowInstance}
-     * @memberof BootContext
-     */
-    startup: WorkflowInstance;
 
     get result() {
         return this.get(ACTIVITY_OUTPUT);
+    }
+
+    get startup(): WorkflowInstance {
+        return this.get(CTX_MODULE_STARTUP) as WorkflowInstance;
     }
 
     private _status: ActivityStatus;
@@ -112,10 +110,8 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
  * @implements {ITaskRunner}
  */
 @Injectable
-@Refs(Activity, Startup)
-@Refs('@Task', Startup)
+@Refs(ActivityRef, Startup)
 export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx extends WorkflowContext = WorkflowContext> extends Service<T, TCtx> {
-
 
     private _result: any;
     get result(): any {

@@ -75,4 +75,4 @@ export interface IMethodAccessor {
 /**
  * method accessor.
  */
-export const MethodAccessorToken = new InjectToken<IMethodAccessor>('__ioc__methodAccessor');
+export const MethodAccessorToken = new InjectToken<IMethodAccessor>('_DI_METHOD_ACCESSOR');

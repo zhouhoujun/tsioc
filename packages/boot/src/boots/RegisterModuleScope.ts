@@ -21,7 +21,7 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
             return;
         }
         // has build module instance.
-        if (ctx.reflects.has(ctx.type)) {
+        if (!ctx.reflects.has(ctx.type)) {
             await super.execute(ctx);
         }
 

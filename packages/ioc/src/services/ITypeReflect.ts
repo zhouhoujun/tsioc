@@ -1,10 +1,11 @@
 import { Token, ClassType, ObjectMap } from '../types';
-import { IParameter } from '../IParameter';
-import { ParamProviders } from '../providers/types';
-import { InjectableMetadata } from '../metadatas/InjectableMetadata';
 import { lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
 import { DecoratorScopes } from '../actions/DecoratorsRegisterer';
+import { IParameter } from '../IParameter';
+import { ParamProviders } from '../providers/types';
+import { InjectableMetadata } from '../metadatas/InjectableMetadata';
+
 
 export interface ITypeDecoractors {
     readonly classDecors: string[];
