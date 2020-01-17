@@ -181,7 +181,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     bindTagProvider<T>(target: Token, ...providers: InjectTypes[]): InjectReference<IInjector> {
-        let refToken = new InjectReference(INJECTOR, target);
+        let refToken = new InjectReference(PROVIDERS, target);
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {

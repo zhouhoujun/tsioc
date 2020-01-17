@@ -9,7 +9,7 @@ export const ResolveRefAction = function (ctx: ResolveActionContext, next: () =>
         let tk = new InjectReference(ctx.token, ctx.get(CTX_TARGET_TOKEN));
         ctx.instance = ctx.injector.get(tk, ctx.providers);
     }
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNullOrUndefined(ctx.instance) && !ctx.getOptions().tagOnly) {
         next();
     }
 };

@@ -1,4 +1,4 @@
-import { isToken, InjectReference, isClassType, ProviderTypes, INJECTOR, lang } from '@tsdi/ioc';
+import { isToken, InjectReference, isClassType, ProviderTypes, lang, PROVIDERS } from '@tsdi/ioc';
 import { ResolveServicesContext } from './ResolveServicesContext';
 import { CTX_TARGET_REFS } from '../../context-tokens';
 
@@ -9,7 +9,7 @@ export const ResovleServicesInClassAction = function (ctx: ResolveServicesContex
     if (targetRefs && targetRefs.length) {
         targetRefs.forEach(t => {
             let tk = isToken(t) ? t : lang.getClass(t);
-            let maps = injector.get(new InjectReference(INJECTOR, tk));
+            let maps = injector.get(new InjectReference(PROVIDERS, tk));
             if (maps && maps.size) {
                 maps.iterator((fac, tk) => {
                     if (!ctx.services.has(tk) && isClassType(tk) && ctx.types.some(ty => ctx.reflects.isExtends(tk, ty))) {

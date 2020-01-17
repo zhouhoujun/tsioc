@@ -21,6 +21,10 @@ export interface ResolveActionOption<T> extends IocProvidersOption {
      */
     target?: Token | Object;
     /**
+     * only for target private or ref token. if has target.
+     */
+    tagOnly?: boolean;
+    /**
      * all faild use the default token to get instance.
      */
     default?: Token<T>;

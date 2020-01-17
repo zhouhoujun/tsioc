@@ -33,6 +33,7 @@ export * from './injectors/InjectDecoratorRegisterer';
 export * from './resolves/service/ResolveServiceContext';
 export * from './resolves/service/ResolveDecoratorServiceAction';
 export * from './resolves/service/ResolveServiceInClassChain';
+export * from './resolves/service/ResolveTargetScope';
 export * from './resolves/service/ResolveServiceScope';
 // services
 export * from './resolves/services/ResolveServicesContext';
