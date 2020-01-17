@@ -27,17 +27,16 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
 
     getResultRef() {
         if (this.value && !this.has(CTX_TEMPLATE_REF)) {
-            let decor: string;
             if (!this.componentDecorator) {
                 let node = (isArray(this.value) ? lang.first(this.value) : this.value) as ContextNode;
-                decor = (node.context as ComponentContext)?.componentDecorator;
+                let decor = (node.context as ComponentContext)?.componentDecorator;
                 decor && this.set(CTX_COMPONENT_DECTOR, decor);
-            } else {
-                decor = this.componentDecorator;
             }
             let compPdr = this.componentProvider;
-            let tempRef = isArray(this.value) ? compPdr.createTemplateRef(this, ...this.value) : compPdr.createTemplateRef(this, this.value);
-            this.set(CTX_TEMPLATE_REF, tempRef);
+            if (compPdr) {
+                let tempRef = isArray(this.value) ? compPdr.createTemplateRef(this, ...this.value) : compPdr.createTemplateRef(this, this.value);
+                this.set(CTX_TEMPLATE_REF, tempRef);
+            }
         }
         return this.get(CTX_TEMPLATE_REF) ?? this.value;
     }

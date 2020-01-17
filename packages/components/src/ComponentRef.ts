@@ -83,6 +83,7 @@ export class NodeRef<T = NodeType, TCtx extends AnnoationContext = AnnoationCont
                     node.destroy();
                 }
             });
+        this._rootNodes.length = 0;
         delete this._rootNodes;
         super.destroy();
     }

@@ -107,6 +107,10 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         return this.map.get(type) as T || null;
     }
 
+    delete(type: ClassType) {
+        this.map.delete(type);
+    }
+
     isExtends(type: Token, base: ClassType): boolean {
         if (!isClassType(type)) {
             return false;

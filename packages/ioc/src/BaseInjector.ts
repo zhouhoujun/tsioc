@@ -14,6 +14,7 @@ import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { IocDestoryable } from './Destoryable';
+import { TypeReflectsToken } from './services/ITypeReflects';
 
 
 const MethodAccessorKey = MethodAccessorToken.toString();
@@ -431,6 +432,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
                     this.factories.delete(k);
                 });
                 this.clearCache(key);
+                this.get(TypeReflectsToken).delete(key);
             }
         }
         return this;
