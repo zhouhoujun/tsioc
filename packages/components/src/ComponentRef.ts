@@ -30,7 +30,7 @@ export class ContextNode<TCtx extends AnnoationContext = AnnoationContext> exten
 
     protected destroying(): void {
         this._context.destroy();
-        this._context = null;
+        delete this._context;
     }
 }
 

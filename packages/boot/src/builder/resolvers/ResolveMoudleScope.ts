@@ -18,7 +18,7 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
             return;
         }
 
-        if (ctx.type && !ctx.reflects.has(ctx.type)) {
+        if (ctx.type && !ctx.reflects.hasRegister(ctx.type)) {
             ctx.injector.registerType(ctx.type);
             if (ctx.targetReflect) {
                 ctx.set(INJECTOR, ctx.targetReflect.getInjector())

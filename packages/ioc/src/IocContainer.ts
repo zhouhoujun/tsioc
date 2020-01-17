@@ -28,8 +28,12 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this.factories.size;
     }
 
+    private reflects: ITypeReflects;
     getTypeReflects(): ITypeReflects {
-        return this.get(TypeReflectsToken);
+        if (!this.reflects) {
+            this.reflects = this.get(TypeReflectsToken);
+        }
+        return this.reflects;
     }
 
     getContainer(): this {

@@ -214,10 +214,11 @@ export abstract class IocRaiseContext<
 
     protected destroying() {
         this._context.destroy();
-        this._context = null;
-        this._options = null;
-        this._reflects = null;
-        this._injector = null;
+        delete this._context;
+        delete this._options;
+        delete this._reflects;
+        delete this._injector;
+        delete this._options;
     }
 
 }

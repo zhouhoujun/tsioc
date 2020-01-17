@@ -20,11 +20,10 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
         if (isBaseType(ctx.type)) {
             return;
         }
-        // has build module instance.
-        if (!ctx.reflects.has(ctx.type)) {
+        // has module register or not.
+        if (!ctx.reflects.hasRegister(ctx.type)) {
             await super.execute(ctx);
         }
-
         if (ctx.annoation && next) {
             await next();
         }

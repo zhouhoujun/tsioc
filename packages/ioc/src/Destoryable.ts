@@ -26,7 +26,7 @@ export abstract class Destoryable implements IDestoryable {
             this._destroyed = true;
             this.destroying();
             this.destroyCbs.forEach(cb => isFunction(cb) && cb());
-            delete this.destroyCbs;
+            this.destroyCbs.length = 0;
         }
     }
 
