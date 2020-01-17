@@ -1,5 +1,5 @@
-import { Inject, PromiseUtil, Singleton, Type, INJECTOR, IInjector } from '@tsdi/ioc';
-import { ContainerToken, IContainer, ICoreInjector } from '@tsdi/core';
+import { Inject, PromiseUtil, Singleton, Type, INJECTOR } from '@tsdi/ioc';
+import { IContainer, ICoreInjector } from '@tsdi/core';
 import { BootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';

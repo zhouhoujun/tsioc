@@ -7,7 +7,11 @@ export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext> 
         if (ctx.instance || !ctx.tokens || !ctx.tokens.length) {
             return;
         }
+
+        super.execute(ctx);
+
         next && next();
+
         if (!ctx.instance) {
             // after all resolve default.
             let defaultTk = ctx.getOptions().default;

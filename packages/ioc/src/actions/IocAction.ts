@@ -159,6 +159,7 @@ export abstract class IocRaiseContext<
         return this.injector.getContainer() as T;
     }
 
+    protected _options: T;
     /**
      * set options for context.
      * @param options options.
@@ -179,8 +180,8 @@ export abstract class IocRaiseContext<
                 this.contexts.inject(...options.contexts);
             }
         }
-        options = options ? Object.assign(this.getOptions(), options) : this.getOptions();
-        this.contexts.registerValue(CTX_OPTIONS, options);
+        this._options = this._options ? Object.assign(this._options, options) : options;
+        this.contexts.registerValue(CTX_OPTIONS, this._options);
     }
 
     /**
@@ -190,7 +191,14 @@ export abstract class IocRaiseContext<
      * @memberof IocRaiseContext
      */
     getOptions(): T {
-        return (this.get(CTX_OPTIONS) ?? {}) as T;
+        if (!this._options) {
+            this._options = this.get(CTX_OPTIONS) as T;
+            if (!this._options) {
+                this._options = {} as T;
+                this.set(CTX_OPTIONS, this._options);
+            }
+        }
+        return this._options;
     }
 
     cloneContext(filter?: (key: Token) => boolean) {
@@ -206,8 +214,9 @@ export abstract class IocRaiseContext<
 
     protected destroying() {
         this._context.destroy();
-        this._reflects = null;
         this._context = null;
+        this._options = null;
+        this._reflects = null;
         this._injector = null;
     }
 

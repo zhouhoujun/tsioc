@@ -19,7 +19,7 @@ export interface ResolveActionOption<T> extends IocProvidersOption {
     /**
      * resolve token in target context.
      */
-    target?: Token | Object;
+    target?: Token | Object | (Token | Object)[];
     /**
      * only for target private or ref token. if has target.
      */

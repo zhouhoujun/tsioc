@@ -1,4 +1,4 @@
-import { isClassType, isNullOrUndefined, CTX_TARGET_TOKEN, lang } from '@tsdi/ioc';
+import { isClassType, isNullOrUndefined, CTX_TARGET_TOKEN } from '@tsdi/ioc';
 import { ResolveServiceContext } from './ResolveServiceContext';
 import { CTX_CURR_TOKEN } from '../../context-tokens';
 
