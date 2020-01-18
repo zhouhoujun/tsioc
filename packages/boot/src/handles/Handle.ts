@@ -1,4 +1,4 @@
-import { PromiseUtil, Inject, ActionType, ActionInjectorToken, IActionInjector, Action } from '@tsdi/ioc';
+import { PromiseUtil, Inject, ActionType, IActionInjector, Action, ActionInjectorToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 
 

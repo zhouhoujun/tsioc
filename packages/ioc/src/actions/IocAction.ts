@@ -42,6 +42,7 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
     return ctx;
 }
 
+const TypeReflectsKey = TypeReflectsToken.toString();
 /**
  * context with raise container.
  *
@@ -67,15 +68,12 @@ export abstract class IocRaiseContext<
         return this._injector;
     }
 
-    private _reflects: ITypeReflects;
+    // private _reflects: ITypeReflects;
     /**
      * get type reflects.
      */
     get reflects(): ITypeReflects {
-        if (!this._reflects) {
-            this._reflects = this.injector.get(TypeReflectsToken);
-        }
-        return this._reflects;
+        return this.injector.getSingleton(TypeReflectsKey);
     }
 
     private _context: IProviders;
@@ -216,7 +214,6 @@ export abstract class IocRaiseContext<
         this._context.destroy();
         delete this._context;
         delete this._options;
-        delete this._reflects;
         delete this._injector;
         delete this._options;
     }

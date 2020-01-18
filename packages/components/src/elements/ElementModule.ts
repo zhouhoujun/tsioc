@@ -1,4 +1,4 @@
-import { Inject, DecoratorProvider, ActionInjectorToken, IocExt } from '@tsdi/ioc';
+import { Inject, DecoratorProvider, IocExt } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { Component } from '../decorators/Component';
@@ -22,7 +22,7 @@ export class ElementModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        let actInjector = container.get(ActionInjectorToken)
+        let actInjector = container.getActionInjector()
         actInjector.getInstance(StartupDecoratorRegisterer)
             .register(Component, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
 

@@ -17,7 +17,7 @@ import { Singleton } from '../decorators/Singleton';
 import { DecoratorProvider } from './DecoratorProvider';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegisterer';
 import { ITypeReflects } from './ITypeReflects';
-import { ActionInjectorToken, IActionInjector } from '../actions/Action';
+import { IActionInjector } from '../actions/Action';
 import { TypeDecorators } from '../actions/TypeDecorators';
 import { IInjector } from '../IInjector';
 
@@ -43,7 +43,7 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     private _actInj: IActionInjector;
     getActionInjector(): IActionInjector {
         if (!this._actInj) {
-            this._actInj = this.getContainer().get(ActionInjectorToken);
+            this._actInj = this.getContainer().getActionInjector();
         }
         return this._actInj;
     }

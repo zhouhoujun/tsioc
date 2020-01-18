@@ -1,4 +1,4 @@
-import { Token, Type, ObjectMap } from '../types';
+import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
 import { lang, isFunction, isBaseType } from '../utils/lang';
 import { isToken } from '../utils/isToken';
@@ -8,13 +8,11 @@ import { ParamProviders } from '../providers/types';
 import { ProviderParser } from '../providers/ProviderParser';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
-import { ActionInjectorToken, IActionInjector } from './Action';
 import { TypeReflectsToken } from '../services/ITypeReflects';
 
 
 
 const invokedPdrKey = '__invoked_prds_';
-const ActionInjectorKey = ActionInjectorToken.toString();
 /**
  * method accessor
  *
@@ -147,7 +145,7 @@ export class MethodAccessor implements IMethodAccessor {
             target: instance,
             propertyKey: propertyKey,
         });
-        injector.getInstance<IActionInjector>(ActionInjectorKey).get(RuntimeParamScope).execute(ctx);
+        injector.getContainer().getActionInjector().get(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
     }

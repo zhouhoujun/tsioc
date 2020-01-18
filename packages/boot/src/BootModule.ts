@@ -1,6 +1,6 @@
 import {
     Inject, BindProviderAction, IocSetCacheAction, DecoratorScopes, IocAutorunAction, IocExt,
-    RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer, ActionInjectorToken
+    RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
@@ -48,14 +48,11 @@ export class BootModule {
     setup(@Inject(ContainerToken) container: IContainer) {
 
         container.registerValue(ModuleInjector, new ModuleInjector(container.getContainerProxy()));
-        let actInjector = container.get(ActionInjectorToken);
+        let actInjector = container.getActionInjector();
 
         actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .regAction(AnnoationRegisterScope)
             .regAction(DIModuleInjectScope)
-            // .regAction(AnnoationInjectorCheck)
-            // .regAction(AnnoationDesignAction)
-            // .regAction(MessageRegisterAction)
             .regAction(ResolveMoudleScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);

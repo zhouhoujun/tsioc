@@ -1,6 +1,6 @@
 import {
     Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes,
-    DecoratorProvider, DesignRegisterer, ActionInjectorToken, IocExt
+    DecoratorProvider, DesignRegisterer, IocExt
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
@@ -29,7 +29,7 @@ export class ActivityModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        let actInjector = container.get(ActionInjectorToken);
+        let actInjector = container.getActionInjector();
 
         actInjector.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction, ActivityDepsRegister);

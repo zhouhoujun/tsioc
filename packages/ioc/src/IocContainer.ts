@@ -15,6 +15,7 @@ import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
 
 const factoryToken = ContainerProxyToken.toString();
 const actionInjectorKey = ActionInjectorToken.toString();
+const typeRefs = TypeReflectsToken.toString();
 /**
  * Container
  *
@@ -28,12 +29,13 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this.factories.size;
     }
 
-    private reflects: ITypeReflects;
     getTypeReflects(): ITypeReflects {
-        if (!this.reflects) {
-            this.reflects = this.get(TypeReflectsToken);
-        }
-        return this.reflects;
+        return this.getSingleton(typeRefs);
+
+    }
+
+    getActionInjector(): IActionInjector {
+        return this.getSingleton(actionInjectorKey);
     }
 
     getContainer(): this {
@@ -53,7 +55,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     }
 
     getContainerProxy<T extends IIocContainer>(): ContainerProxy<T> {
-        return this.getInstance(factoryToken) as ContainerProxy<T>;
+        return this.getSingleton(factoryToken) as ContainerProxy<T>;
     }
 
     /**
@@ -158,7 +160,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         }
 
         (async () => {
-            this.getInstance<IActionInjector>(actionInjectorKey).getInstance(DesignLifeScope).register(
+            this.getActionInjector().getInstance(DesignLifeScope).register(
                 DesignActionContext.parse(injector, {
                     token: provide,
                     type: type,

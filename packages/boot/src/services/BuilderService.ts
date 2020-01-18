@@ -171,9 +171,9 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ctx = injector.getService({ token: BootContext, target: md, default: BootContext }) as T;
             ctx.set(INJECTOR, injector);
             if (isClassType(target)) {
-                ctx.setOptions({ type: md, injector: injector });
+                ctx.setOptions({ type: md });
             } else {
-                ctx.setOptions({ ...target, type: md, injector: injector })
+                ctx.setOptions(target)
             }
         }
         ctx.set(CTX_APP_ENVARGS, args);

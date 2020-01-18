@@ -1,9 +1,8 @@
 import {
-    Singleton, Inject, Type, isFunction, RuntimeLifeScope, IocContainerToken, IIocContainer,
-    ActionInjectorToken, MethodAccessorToken
+    Singleton, Inject, Type, isFunction, IocContainerToken, IIocContainer,
+    MethodAccessorToken
 } from '@tsdi/ioc';
 import { Advices, AdvicesToken } from '../advices/Advices';
-import { IAdvisor, AdvisorToken } from '../IAdvisor';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
 import { NonePointcut } from '../decorators/NonePointcut';
 import { AdvisorChainFactory } from './AdvisorChainFactory';

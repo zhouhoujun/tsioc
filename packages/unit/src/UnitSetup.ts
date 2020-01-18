@@ -2,7 +2,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Suite } from './decorators/Suite';
 import {
     Inject, IocExt, DecoratorScopes, RegisterSingletionAction, ProviderTypes, InjectReference,
-    DesignRegisterer, RuntimeRegisterer, DecoratorProvider, ActionInjectorToken
+    DesignRegisterer, RuntimeRegisterer, DecoratorProvider
 } from '@tsdi/ioc';
 import { BootContext, AnnoationDesignAction } from '@tsdi/boot';
 
@@ -27,7 +27,7 @@ export class UnitSetup {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        let actInjector = container.get(ActionInjectorToken);
+        let actInjector = container.getActionInjector();
         actInjector.getInstance(DesignRegisterer)
             .register(Suite, DecoratorScopes.Class, AnnoationDesignAction);
 

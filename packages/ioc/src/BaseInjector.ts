@@ -19,7 +19,7 @@ import { TypeReflectsToken } from './services/ITypeReflects';
 
 const MethodAccessorKey = MethodAccessorToken.toString();
 const ActionInjectorKey = ActionInjectorToken.toString();
-
+const InjectorProxyKey = InjectorProxyToken.toString();
 
 /**
  * Base Injector.
@@ -60,7 +60,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
 
     protected init() {
         this.registerValue(INJECTOR, this, lang.getClass(this));
-        this.registerValue(InjectorProxyToken, () => this);
+        this.registerValue(InjectorProxyKey, () => this);
         this.registerValue(IocCacheManager, new IocCacheManager(this));
     }
 
@@ -69,8 +69,8 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
 
-    getProxy(): InjectorProxy<IInjector> {
-        return this.get(InjectorProxyToken);
+    getProxy(): InjectorProxy {
+        return this.getSingleton(InjectorProxyKey);
     }
 
     abstract getContainer(): IIocContainer;
@@ -378,7 +378,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
-        return this.getInstance<IActionInjector>(ActionInjectorKey).get(ResolveLifeScope).resolve(this, token, ...providers);
+        return this.getSingleton<IActionInjector>(ActionInjectorKey).get(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**
