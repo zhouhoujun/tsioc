@@ -3,12 +3,12 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, ComponentBuilder } from '@tsdi/components';
+import { ComponentBuilderToken, ComponentBuilder, ELEMENT_REFS } from '@tsdi/components';
 import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
-import { isAcitvityRef } from './ActivityRef';
+import { isAcitvityRef, ActivityElementRef, IActivityElementRef } from './ActivityRef';
 import { WorkflowContext } from './WorkflowInstance';
 import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
@@ -139,7 +139,8 @@ export class ActivityExecutor implements IActivityExecutor {
             isDefined(input) && activity.context.set(ACTIVITY_INPUT, input);
             return activity.toAction();
         } else if (activity instanceof Activity) {
-            return activity.toAction(this.context);
+            let ref = this.context.injector.get(ELEMENT_REFS).get(activity) as IActivityElementRef ?? new ActivityElementRef(this.context, activity);
+            return ref.toAction();
         } else if (isClass(activity)) {
             let aref = await ctx.injector.get(ComponentBuilderToken).resolve(activity) as IActivityRef;
             aref.context.set(ACTIVITY_INPUT, input);

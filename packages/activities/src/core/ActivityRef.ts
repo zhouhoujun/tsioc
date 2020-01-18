@@ -54,14 +54,6 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         this.onDestroy(() => injector.get(ELEMENT_REFS)?.delete(nativeElement));
     }
 
-    protected destroying(): void {
-        let element = this.nativeElement as T & IDestoryable;
-        if (element && isFunction(element.destroy)) {
-            element.destroy();
-        }
-        super.destroy();
-    }
-
     /**
      * run activity.
      * @param ctx root context.
@@ -73,11 +65,20 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         let result = await this.nativeElement.execute(this.context);
         if (isDefined(result)) {
             this.context.set(ACTIVITY_OUTPUT, result);
+            ctx.status.currentScope?.context.set(ACTIVITY_OUTPUT, result);
         }
 
         if (next) {
             await next();
         }
+    }
+
+    protected destroying(): void {
+        let element = this.nativeElement as T & IDestoryable;
+        if (element && isFunction(element.destroy)) {
+            element.destroy();
+        }
+        super.destroy();
     }
 }
 
@@ -111,10 +112,12 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         this.context.remove(ACTIVITY_OUTPUT);
         ctx.status.current = this;
         let result = await this.context.getExector().runActivity(this.rootNodes);
+        ctx.status.scopeEnd();
         if (isDefined(result)) {
             this.context.set(ACTIVITY_OUTPUT, result);
+            ctx.status.currentScope?.context.set(ACTIVITY_OUTPUT, result);
         }
-        ctx.status.scopeEnd();
+
         if (next) {
             await next();
         }
