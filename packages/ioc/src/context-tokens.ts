@@ -1,16 +1,24 @@
-import { InjectToken } from './InjectToken';
+import { tokenId } from './InjectToken';
 import { ActionContextOption } from './actions/Action';
 import { Injector } from './Injector';
 import { IParameter } from './IParameter';
-import { Token } from './types';
+import { Token, Type } from './types';
+import { ITypeReflect } from './services/ITypeReflect';
 
-export const CTX_PROVIDERS = new InjectToken<Injector>('DI_PROVIDERS');
-export const CTX_OPTIONS = new InjectToken<ActionContextOption>('CTX_OPTIONS');
-export const CTX_PARAMS = new InjectToken<IParameter[]>('CTX_PARAMS');
-export const CTX_ARGS = new InjectToken<any[]>('CTX_ARGS');
+export const CTX_PROVIDERS = tokenId<Injector>('DI_PROVIDERS');
+export const CTX_OPTIONS = tokenId<ActionContextOption>('CTX_OPTIONS');
+export const CTX_PARAMS = tokenId<IParameter[]>('CTX_PARAMS');
+export const CTX_ARGS = tokenId<any[]>('CTX_ARGS');
 
-export const CTX_CURR_DECOR = new InjectToken<string>('CTX_CURR_DECOR');
-export const CTX_CURR_DECOR_SCOPE = new InjectToken<any>('CTX_CURR_DECOR_SCOPE');
-export const CTX_TYPE_REGIN = new InjectToken<string>('CTX_TYPE_REGIN');
+export const CTX_CURR_DECOR = tokenId<string>('CTX_CURR_DECOR');
+export const CTX_CURR_DECOR_SCOPE = tokenId<any>('CTX_CURR_DECOR_SCOPE');
+export const CTX_TYPE_REGIN = tokenId<string>('CTX_TYPE_REGIN');
 
-export const CTX_TARGET_TOKEN = new InjectToken<Token>('CTX_TARGET_TOKEN');
+export const CTX_TARGET_TOKEN = tokenId<Token>('CTX_TARGET_TOKEN');
+export const CTX_TARGET_RELF = tokenId<ITypeReflect>('CTX_TARGET_RELF');
+
+export const CTX_TOKEN = tokenId<Token>('CTX_TOKEN');
+export const CTX_TYPE = tokenId<Type>('CTX_TYPE');
+export const CTX_DEFAULT_TOKEN = tokenId<Token>('CTX_DEFAULT_TOKEN');
+export const CTX_PROPERTYKEY = tokenId<string>('CTX_PROPERTYKEY');
+export const CTX_SINGLETON = tokenId<boolean>('CTX_SINGLETON');

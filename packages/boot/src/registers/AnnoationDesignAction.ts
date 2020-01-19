@@ -13,7 +13,7 @@ export const AnnoationDesignAction = function (ctx: DesignActionContext, next: (
         return next();
     }
 
-    let cuurDec = ctx.get(CTX_CURR_DECOR);
+    let cuurDec = ctx.getValue(CTX_CURR_DECOR);
     if (!tgRef.decorator) {
         tgRef.decorator = cuurDec;
     }

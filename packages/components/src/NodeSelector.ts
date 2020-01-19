@@ -181,8 +181,8 @@ export class NodeSelector<T = any> {
     protected getParent(node: INodeRef<T>): NodeRef<T> {
 
         let parent = node.context.getParent();
-        if (parent && parent.has(NodeRef)) {
-            return parent.get(NodeRef) as NodeRef<T>;
+        if (parent && parent.hasValue(NodeRef)) {
+            return parent.getValue(NodeRef) as NodeRef<T>;
         }
 
         return null;
@@ -191,7 +191,7 @@ export class NodeSelector<T = any> {
     protected getChildren(node: INodeRef<T>): NodeRef<T>[] {
         let ctx = node.context
         if (ctx.hasChildren()) {
-            return ctx.getChildren().map(c => c.get(NodeRef) as NodeRef<T>);
+            return ctx.getChildren().map(c => c.getValue(NodeRef) as NodeRef<T>);
         }
 
         return [];

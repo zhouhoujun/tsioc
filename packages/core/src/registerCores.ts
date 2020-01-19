@@ -16,7 +16,7 @@ export function registerCores(container: IContainer) {
         container.registerType(ModuleLoader);
     }
 
-    let fac = container.get(ContainerProxyToken);
+    let fac = container.getInstance(ContainerProxyToken);
     container.set(InjectorFactoryToken, () => new CoreInjector(fac), CoreInjector);
     container.registerValue(ModuleProvider, new ModuleProvider(fac));
     container.registerValue(ServiceProvider, new ServiceProvider(fac));

@@ -1,7 +1,7 @@
-import { Injectable, IocRaiseContext, ActionContextOption, isDefined } from '@tsdi/ioc';
+import { Injectable, IocRaiseContext, ActionContextOption, isDefined, CTX_TYPE } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { IHandleContext } from '../handles/Handle';
-import { CTX_DATA } from '../context-tokens';
+import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT } from '../context-tokens';
 
 
 /**
@@ -60,7 +60,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get target(): any {
-        return this.getOptions().target;
+        return this.getValue(CTX_MSG_TARGET);
     }
 
     /**
@@ -70,7 +70,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get type(): string {
-        return this.getOptions().type;
+        return this.getValue(CTX_MSG_TYPE);
     }
     /**
      * message event
@@ -79,7 +79,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get event(): string {
-        return this.getOptions().event;
+        return this.getValue(CTX_MSG_EVENT);
     }
 
     /**
@@ -89,7 +89,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get data(): any {
-        return this.get(CTX_DATA);
+        return this.getValue(CTX_DATA);
     }
 
     set data(data: any) {
@@ -103,6 +103,15 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
         super.setOptions(options);
         if (isDefined(options.data)) {
             this.set(CTX_DATA, options.data);
+        }
+        if (options.target) {
+            this.set(CTX_MSG_TARGET, options.target)
+        }
+        if (options.type) {
+            this.set(CTX_MSG_TYPE, options.type);
+        }
+        if (options.event) {
+            this.set(CTX_MSG_EVENT, options.event);
         }
     }
 

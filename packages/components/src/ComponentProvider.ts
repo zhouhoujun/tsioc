@@ -37,7 +37,7 @@ export abstract class ComponentProvider {
     createNodeSelector(element): NodeSelector {
         return this.reflects.get(lang.getClass(element))
             ?.getInjector()
-            ?.get(COMPONENT_REFS)
+            ?.getSingleton(COMPONENT_REFS)
             ?.get(element)
             ?.getNodeSelector();
     }
@@ -45,8 +45,8 @@ export abstract class ComponentProvider {
     private ast: AstResolver;
     getAstResolver(): AstResolver {
         if (!this.ast) {
-            this.ast = this.reflects.getActionInjector().get(DecoratorProvider)
-                .resolve(this.dectorator, AstResolver) ?? this.reflects.getContainer().get(AstResolver);
+            this.ast = this.reflects.getActionInjector().getInstance(DecoratorProvider)
+                .resolve(this.dectorator, AstResolver) ?? this.reflects.getContainer().getInstance(AstResolver);
         }
         return this.ast;
     }
@@ -65,12 +65,12 @@ export abstract class ComponentProvider {
 
     getElementRef(target: any, injector?: IInjector): IElementRef {
         injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
-        return injector.get(ELEMENT_REFS)?.get(target);
+        return injector.getSingleton(ELEMENT_REFS)?.get(target);
     }
 
     getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T, any> {
         injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
-        return injector.get(COMPONENT_REFS)?.get(target);
+        return injector.getSingleton(COMPONENT_REFS)?.get(target);
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {

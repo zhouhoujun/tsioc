@@ -1,4 +1,4 @@
-import { Type, ObjectMap, InjectToken } from '@tsdi/ioc';
+import { Type, ObjectMap, tokenId } from '@tsdi/ioc';
 import { AdviceMetadata } from './metadatas/AdviceMetadata';
 import { MatchPointcut } from './joinpoints/MatchPointcut';
 
@@ -6,7 +6,7 @@ import { MatchPointcut } from './joinpoints/MatchPointcut';
  * Aop advice matcher interface token.
  * it is a token id, you can register yourself IActionBuilder for this.
  */
-export const AdviceMatcherToken = new InjectToken<IAdviceMatcher>('DI_IAdviceMatcher');
+export const AdviceMatcherToken = tokenId<IAdviceMatcher>('DI_IAdviceMatcher');
 
 /**
  * advice match interface, use to match advice when a registered create instance.

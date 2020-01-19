@@ -1,4 +1,4 @@
-import { Type, isClass, LoadType, isArray, isClassType } from '@tsdi/ioc';
+import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
@@ -126,6 +126,6 @@ export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootA
         if (!container.has(UUIDToken)) {
             container.registerType(RandomUUIDFactory);
         }
-        return container.get(UUIDToken).generate();
+        return container.getInstance(UUIDToken).generate();
     }
 }

@@ -218,7 +218,7 @@ export class PlatformService {
 
     getRootPath(): string {
         let root = this.ctx.getCurrBaseURL()
-        return root || this.container.get(ProcessRunRootToken) || runMainPath();
+        return root || this.container.getSingleton(ProcessRunRootToken) || runMainPath();
     }
 
     toRootSrc(src: Src): Src {

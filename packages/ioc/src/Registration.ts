@@ -85,7 +85,7 @@ export class Registration<T = any> {
             let name = '';
             if (isFunction(reg.classType)) {
                 name = `{${lang.getClassName(reg.classType)}}`;
-            }  else if (reg.classType) {
+            } else if (reg.classType) {
                 name = reg.classType.toString();
             }
             return [reg.type, name, reg.desc].filter(n => n).join('_');

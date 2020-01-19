@@ -3,8 +3,8 @@ import { ModuleInjector } from '../modules/ModuleInjector';
 import { ParentInjectorToken } from '../modules/IModuleReflect';
 
 export const AnnoationInjectorCheck = function (ctx: DesignActionContext, next: () => void): void {
-    if (!ctx.has(CTX_TYPE_REGIN)) {
-        let injector = ctx.injector.get(ModuleInjector);
+    if (!ctx.hasValue(CTX_TYPE_REGIN)) {
+        let injector = ctx.injector.getInstance(ModuleInjector);
         injector.registerValue(ParentInjectorToken, ctx.injector);
         ctx.set(INJECTOR, injector);
     }

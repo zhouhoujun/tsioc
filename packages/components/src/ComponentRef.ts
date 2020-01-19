@@ -1,15 +1,15 @@
-import { Type, InjectToken, isFunction, Destoryable, IDestoryable } from '@tsdi/ioc';
+import { Type, isFunction, Destoryable, IDestoryable, tokenId } from '@tsdi/ioc';
 import { AnnoationContext, CTX_TEMPLATE } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
-export const CTX_COMPONENT_DECTOR = new InjectToken<string>('CTX_COMPONENT_DECTOR');
-export const CTX_COMPONENT = new InjectToken<any>('CTX_COMPONENT');
-export const CTX_ELEMENT_REF = new InjectToken<any | any[]>('CTX_ELEMENT_REF');
-export const CTX_TEMPLATE_REF = new InjectToken<any | any[]>('CTX_TEMPLATE_REF');
-export const CTX_COMPONENT_REF = new InjectToken<ComponentRef>('CTX_COMPONENT_REF');
+export const CTX_COMPONENT_DECTOR = tokenId<string>('CTX_COMPONENT_DECTOR');
+export const CTX_COMPONENT = tokenId<any>('CTX_COMPONENT');
+export const CTX_ELEMENT_REF = tokenId<any | any[]>('CTX_ELEMENT_REF');
+export const CTX_TEMPLATE_REF = tokenId<any | any[]>('CTX_TEMPLATE_REF');
+export const CTX_COMPONENT_REF = tokenId<ComponentRef>('CTX_COMPONENT_REF');
 
-export const COMPONENT_REFS = new InjectToken<WeakMap<any, IComponentRef<any, any>>>('COMPONENT_REFS');
-export const ELEMENT_REFS = new InjectToken<WeakMap<any, IElementRef<any>>>('ELEMENT_REFS');
+export const COMPONENT_REFS = tokenId<WeakMap<any, IComponentRef<any, any>>>('COMPONENT_REFS');
+export const ELEMENT_REFS = tokenId<WeakMap<any, IElementRef<any>>>('ELEMENT_REFS');
 
 
 export interface IContextNode<TCtx extends AnnoationContext = AnnoationContext> extends IDestoryable {
@@ -98,8 +98,8 @@ export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContex
         if (!injector.has(ELEMENT_REFS)) {
             injector.registerValue(ELEMENT_REFS, new WeakMap());
         }
-        injector.get(ELEMENT_REFS).set(nativeElement, this);
-        this.onDestroy(() => injector.get(ELEMENT_REFS)?.delete(nativeElement));
+        injector.getSingleton(ELEMENT_REFS).set(nativeElement, this);
+        this.onDestroy(() => injector.getSingleton(ELEMENT_REFS)?.delete(nativeElement));
     }
 
     protected destroying(): void {
@@ -114,7 +114,7 @@ export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContex
 export class TemplateRef<T = NodeType, TCtx extends AnnoationContext = AnnoationContext>
     extends NodeRef<T, TCtx> implements ITemplateRef<T, TCtx> {
     get template() {
-        return this.context.get(CTX_TEMPLATE);
+        return this.context.getValue(CTX_TEMPLATE);
     }
 }
 
@@ -132,8 +132,8 @@ export class ComponentRef<T = any, TN = NodeType, TCtx extends AnnoationContext 
             context.injector.registerValue(COMPONENT_REFS, new WeakMap());
         }
         let injector = context.injector;
-        injector.get(COMPONENT_REFS).set(instance, this);
-        this.onDestroy(() => injector.get(COMPONENT_REFS)?.delete(this.instance));
+        injector.getSingleton(COMPONENT_REFS).set(instance, this);
+        this.onDestroy(() => injector.getSingleton(COMPONENT_REFS)?.delete(this.instance));
     }
 
     getNodeSelector(): NodeSelector {

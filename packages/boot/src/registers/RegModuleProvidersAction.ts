@@ -6,7 +6,7 @@ import { IModuleReflect } from '../modules/IModuleReflect';
 
 export const RegModuleProvidersAction = function (ctx: DesignActionContext, next: () => void): void {
     let reflects = ctx.reflects;
-    let annoation = ctx.get(CTX_MODULE_ANNOATION);
+    let annoation = ctx.getValue(CTX_MODULE_ANNOATION);
 
     let injector = ctx.injector;
     let continer = ctx.getContainer<IContainer>();
@@ -39,7 +39,7 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
 
     exptypes.forEach(ty => {
         let reflect = reflects.get(ty);
-        map.set(ty, (...pds: ProviderTypes[]) => injector.get(ty, ...pds));
+        map.set(ty, (...pds: ProviderTypes[]) => injector.getInstance(ty, ...pds));
         if (reflect && isArray(reflect.provides) && reflect.provides.length) {
             reflect.provides.forEach(p => {
                 if (!map.has(p)) {

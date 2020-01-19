@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, InjectToken, lang
+    isToken, ClassType, RegInMetadata, lang, tokenId
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
@@ -36,8 +36,8 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
 }
 
 
-export const CTX_PARENT_CONTEXT = new InjectToken<AnnoationContext>('CTX_PARENT_CONTEXT');
-export const CTX_SUB_CONTEXT = new InjectToken<AnnoationContext[]>('CTX_SUB_CONTEXT');
+export const CTX_PARENT_CONTEXT = tokenId<AnnoationContext>('CTX_PARENT_CONTEXT');
+export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');
 /**
  * annoation context.
  *
@@ -55,7 +55,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     get type(): Type {
-        return this.get(CTX_MODULE);
+        return this.getValue(CTX_MODULE);
     }
 
     /**
@@ -66,17 +66,17 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @memberof AnnoationContext
      */
     get decorator(): string {
-        if (!this.has(CTX_MODULE_DECTOR) && this.type) {
+        if (!this.hasValue(CTX_MODULE_DECTOR) && this.type) {
             let dec = this.targetReflect?.decorator;
             if (dec) {
                 this.set(CTX_MODULE_DECTOR, dec);
             }
         }
-        return this.get(CTX_MODULE_DECTOR);
+        return this.getValue(CTX_MODULE_DECTOR);
     }
 
     getModuleRef(): ModuleRef {
-        return this.injector.get(ModuleRef);
+        return this.injector.getSingleton(ModuleRef);
     }
 
     private _targetReflect: TRefl;
@@ -98,7 +98,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     getParent() {
-        return this.get(CTX_PARENT_CONTEXT);
+        return this.getValue(CTX_PARENT_CONTEXT);
     }
 
     addChild(contex: AnnoationContext) {
@@ -116,11 +116,11 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     hasChildren() {
-        return this.has(CTX_SUB_CONTEXT);
+        return this.hasValue(CTX_SUB_CONTEXT);
     }
 
     getChildren<T extends AnnoationContext>(): T[] {
-        return (this.get(CTX_SUB_CONTEXT) || []) as T[];
+        return (this.getValue(CTX_SUB_CONTEXT) || []) as T[];
     }
 
 
@@ -131,13 +131,13 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @memberof AnnoationContext
      */
     get annoation(): TMeta {
-        if (!this.has(CTX_MODULE_ANNOATION) && this.type) {
+        if (!this.hasValue(CTX_MODULE_ANNOATION) && this.type) {
             let tgRef = this.targetReflect;
             if ((tgRef && tgRef.getAnnoation)) {
                 this.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation<TMeta>())
             }
         }
-        return this.get(CTX_MODULE_ANNOATION) as TMeta;
+        return this.getValue(CTX_MODULE_ANNOATION) as TMeta;
     }
 
 

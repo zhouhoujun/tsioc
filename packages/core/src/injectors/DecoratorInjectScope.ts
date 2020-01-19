@@ -24,7 +24,7 @@ export class DecoratorInjectScope extends InjectScope implements IActionSetup {
     }
 
     protected getState(ctx: InjectActionContext): ObjectMap<boolean> {
-        if (!ctx.has(DECOR_STATE)) {
+        if (!ctx.hasValue(DECOR_STATE)) {
             ctx.set(DECOR_STATE, this.getRegisterer()
                 .getDecorators()
                 .reduce((obj, dec) => {
@@ -32,11 +32,11 @@ export class DecoratorInjectScope extends InjectScope implements IActionSetup {
                     return obj;
                 }, {}));
         }
-        return ctx.get(DECOR_STATE);
+        return ctx.getValue(DECOR_STATE);
     }
 
     protected done(ctx: InjectActionContext): boolean {
-        return this.getState(ctx)[ctx.get(CTX_CURR_DECOR)] = true;
+        return this.getState(ctx)[ctx.getValue(CTX_CURR_DECOR)] = true;
     }
     protected isCompleted(ctx: InjectActionContext): boolean {
         return ctx.types.length === 0 || !Object.values(this.getState(ctx)).some(inj => !inj);

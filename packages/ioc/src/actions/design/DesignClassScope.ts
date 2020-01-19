@@ -18,9 +18,6 @@ import { CTX_TYPE_REGIN } from '../../context-tokens';
 export class DesignClassScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
     setup() {
-        // this.actInjector
-        //     .regAction(BindProviderAction);
-
         this.actInjector.getInstance(DesignRegisterer)
             .register(Injectable, DecoratorScopes.Class, BindProviderAction)
             .register(Singleton, DecoratorScopes.Class, BindProviderAction)

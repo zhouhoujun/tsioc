@@ -8,7 +8,7 @@ import { IAdvisor, AdvisorToken } from '../IAdvisor';
  */
 export const RegistAspectAction = function (ctx: DesignActionContext, next: () => void): void {
     let type = ctx.type;
-    let aspectMgr = ctx.injector.get<IAdvisor>(AdvisorToken);
+    let aspectMgr = ctx.injector.getInstance(AdvisorToken);
     aspectMgr.add(type);
     next();
 };

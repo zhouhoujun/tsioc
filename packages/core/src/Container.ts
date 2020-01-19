@@ -39,7 +39,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.get(ContainerBuilderToken);
+        return this.getSingleton(ContainerBuilderToken);
     }
 
     /**

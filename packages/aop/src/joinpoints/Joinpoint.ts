@@ -1,4 +1,4 @@
-import { Type, Injectable, MethodMetadata, IParameter, InjectToken, Inject, ClassMetadata, Injector, TypeMetadata } from '@tsdi/ioc';
+import { Type, Injectable, MethodMetadata, IParameter, Inject, ClassMetadata, Injector, TypeMetadata, tokenId } from '@tsdi/ioc';
 import { IJoinpoint } from './IJoinpoint';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices/Advicer';
@@ -21,7 +21,7 @@ export interface JoinpointOption {
     originProvider?: Injector;
     currProvider?: Injector;
 }
-export const JoinpointOptionToken = new InjectToken<IJoinpoint>('Joinpoint-Option');
+export const JoinpointOptionToken = tokenId<IJoinpoint>('Joinpoint-Option');
 
 /**
  * Join point data.

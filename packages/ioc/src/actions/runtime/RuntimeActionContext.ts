@@ -1,7 +1,7 @@
 import { IParameter } from '../../IParameter';
 import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
 import { createRaiseContext } from '../IocAction';
-import { CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
+import { CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../../context-tokens';
 import { ParamProviders } from '../../providers/types';
 import { IInjector } from '../../IInjector';
 
@@ -66,7 +66,7 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
     target?: any;
 
     get propertyKey() {
-        return this.getOptions().propertyKey || 'constructor';
+        return this.getValue(CTX_PROPERTYKEY);
     }
 
     /**
@@ -91,10 +91,11 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
             this.target = options.target;
         }
         if (options.args) {
-            this.set(CTX_ARGS, options.args);
+            this.context.registerValue(CTX_ARGS, options.args);
         }
         if (options.params) {
-            this.set(CTX_PARAMS, options.params);
+            this.context.registerValue(CTX_PARAMS, options.params);
         }
+        this.context.registerValue(CTX_PROPERTYKEY, options.propertyKey || 'constructor')
     }
 }

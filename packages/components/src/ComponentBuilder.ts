@@ -25,13 +25,13 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
     async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ITemplateRef> {
         let ctx = TemplateContext.parse(options.injector || this.container, options);
         providers.length && ctx.providers.inject(...providers);
-        await this.reflects.getActionInjector().get(TemplateParseScope)
+        await this.reflects.getActionInjector().getInstance(TemplateParseScope)
             .execute(ctx);
         return ctx.getResultRef();
     }
 
     protected getRefInCtx(ctx: BuildContext) {
-        return ctx.get(CTX_COMPONENT_REF) ?? ctx.get(CTX_TEMPLATE_REF) ?? ctx.get(CTX_ELEMENT_REF) ?? ctx.value;
+        return ctx.getValue(CTX_COMPONENT_REF) ?? ctx.getValue(CTX_TEMPLATE_REF) ?? ctx.getValue(CTX_ELEMENT_REF) ?? ctx.value;
     }
 
     serialize<T = any>(component: T): any {

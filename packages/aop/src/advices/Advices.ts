@@ -1,5 +1,5 @@
 import { Advicer } from './Advicer';
-import { InjectToken } from '@tsdi/ioc';
+import { tokenId } from '@tsdi/ioc';
 
 /**
  * advices of target.
@@ -17,4 +17,4 @@ export interface Advices {
 }
 
 
-export const AdvicesToken = new InjectToken<Advices>('AOP_ADVICES');
+export const AdvicesToken = tokenId<Advices>('AOP_ADVICES');

@@ -1,11 +1,11 @@
-import { InjectToken, IIocContainer } from '@tsdi/ioc';
+import { IIocContainer, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
 
 /**
  * root container token.
  * it is a symbol id, you can use  `@Inject`, `@Autowried` or `@Param` to get container instance in yourself class.
  */
-export const ContainerToken = new InjectToken<IContainer>('DI_IContainer');
+export const ContainerToken = tokenId<IContainer>('DI_IContainer');
 
 
 /**

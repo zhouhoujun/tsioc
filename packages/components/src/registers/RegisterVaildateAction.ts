@@ -5,7 +5,7 @@ import { IComponentReflect } from '../IComponentReflect';
 
 export const RegisterVaildateAction = function (ctx: DesignActionContext, next: () => void) {
     let ref = ctx.targetReflect as IComponentReflect;
-    let currDecor = ctx.get(CTX_CURR_DECOR);
+    let currDecor = ctx.getValue(CTX_CURR_DECOR);
     if (!ref.propVaildates) {
         ref.propVaildates = new Map();
     }

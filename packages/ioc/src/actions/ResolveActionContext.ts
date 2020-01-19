@@ -1,6 +1,7 @@
 import { Token } from '../types';
 import { createRaiseContext, IocProvidersContext, IocProvidersOption } from './IocAction';
 import { IInjector } from '../IInjector';
+import { CTX_TOKEN, CTX_DEFAULT_TOKEN } from '../context-tokens';
 
 /**
  * resovle action option.
@@ -54,7 +55,11 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
      * @memberof ResolveContext
      */
     get token(): Token<T> {
-        return this.getOptions().token;
+        return this.getValue(CTX_TOKEN);
+    }
+
+    get default(): Token<T> {
+        return this.getValue(CTX_DEFAULT_TOKEN);
     }
 
     /**
@@ -76,5 +81,18 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
      */
     static parse<T>(injector: IInjector, options: ResolveActionOption<T>): ResolveActionContext<T> {
         return createRaiseContext<ResolveActionContext>(injector, ResolveActionContext, options);
+    }
+
+    setOptions(options: TOP) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        if (options.token) {
+            this.context.registerValue(CTX_TOKEN, options.token);
+        }
+        if (options.default) {
+            this.context.registerValue(CTX_DEFAULT_TOKEN, options.default);
+        }
     }
 }

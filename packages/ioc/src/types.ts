@@ -47,6 +47,20 @@ export interface PathModules {
  */
 export type LoadType = Modules | string | PathModules;
 
+
+/**
+ *  token interface.
+ */
+export interface IToken<T> {
+    (): T;
+    tokenId: true;
+}
+
+/**
+ *  token id.
+ */
+export type TokenId<T> =  string | symbol | IToken<T>;
+
 /**
  * class type.
  */
@@ -54,17 +68,18 @@ export type ClassType<T = any> = Type<T> | AbstractType<T>;
 /**
  * symbol type
  */
-export type SymbolType<T = any> = ClassType<T> | string | symbol;
+export type SymbolType<T = any> = ClassType<T> | TokenId<T>;
 
 /**
  * factory tocken.
  */
 export type Token<T = any> = Registration<T> | SymbolType<T>;
 
+
 /**
  * provide token
  */
-export type ProvideToken<T> = Registration<T> | string | symbol;
+export type ProvideToken<T> = Registration<T> | TokenId<T>;
 
 /**
  * instance factory.

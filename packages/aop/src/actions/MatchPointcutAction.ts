@@ -17,8 +17,8 @@ export const MatchPointcutAction = function (ctx: RuntimeActionContext, next: ()
     }
 
     let injector = ctx.injector;
-    let advisor = injector.get(AdvisorToken);
-    let matcher = injector.get(AdviceMatcherToken);
+    let advisor = injector.getInstance(AdvisorToken);
+    let matcher = injector.getInstance(AdviceMatcherToken);
     let targetType = ctx.type;
 
     advisor.aspects.forEach((adviceMetas, type) => {

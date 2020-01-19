@@ -12,7 +12,7 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
 export const BindMethodProviderAction = function (ctx: DesignActionContext, next: () => void) {
     let refs = ctx.reflects;
     ctx.targetReflect.defines.extendTypes.forEach(ty => {
-        let metas = refs.getMethodMetadata<MethodMetadata>(ctx.get(CTX_CURR_DECOR), ty);
+        let metas = refs.getMethodMetadata<MethodMetadata>(ctx.getValue(CTX_CURR_DECOR), ty);
         Object.keys(metas).forEach(propertyKey => {
             let metadatas = metas[propertyKey];
             let providers = [];

@@ -11,7 +11,7 @@ import { BindingCache } from './BindingCache';
  */
 export const BindingPropertyTypeAction = function (ctx: DesignActionContext, next: () => void) {
     let ref = ctx.targetReflect as IComponentReflect;
-    let currDecor = ctx.get(CTX_CURR_DECOR);
+    let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let propBindings = ctx.reflects.getActionInjector().getInstance(DecoratorProvider)
         .resolve(currDecor, BindingCache)
         .getCache(ref);

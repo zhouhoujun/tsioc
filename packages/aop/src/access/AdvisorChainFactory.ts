@@ -5,7 +5,7 @@ import { Joinpoint } from '../joinpoints/Joinpoint';
 import { Advicer } from '../advices/Advicer';
 import { Advices, AdvicesToken } from '../advices/Advices';
 import { IAdvisorChainFactory } from './IAdvisorChainFactory';
-import { IAdvisorChain, AdvisorChainToken } from './IAdvisorChain';
+import { AdvisorChainToken } from './IAdvisorChain';
 import { NonePointcut } from '../decorators/NonePointcut';
 import { AOP_EXTEND_TARGET_TOKEN } from '../IAdvisor';
 import { aExp } from '../regexps';
@@ -138,7 +138,7 @@ export class AdvisorChainFactory implements IAdvisorChainFactory {
         }
 
         let cloneJp = { ...joinPoint };
-        let advChain = this.container.get<IAdvisorChain>(AdvisorChainToken, { provide: Joinpoint, useValue: cloneJp });
+        let advChain = this.container.getInstance(AdvisorChainToken, { provide: Joinpoint, useValue: cloneJp });
         arAdvices.forEach(advicer => {
             advChain.next((jp) => {
                 return this.invokeAdvice(jp, advicer);

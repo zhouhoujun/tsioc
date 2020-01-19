@@ -60,7 +60,7 @@ export class ProxyMethod implements IProxyMethod {
         let container = this.container;
         let reflects = container.getTypeReflects();
         return (...args: any[]) => {
-            let cuurPrd = container.getInjector(targetType).get(MethodAccessorToken).invokedProvider(target, methodName);
+            let cuurPrd = container.getInjector(targetType).getInstance(MethodAccessorToken).invokedProvider(target, methodName);
             let joinPoint = container.getInstance(Joinpoint, {
                 provide: JoinpointOptionToken,
                 useValue: <JoinpointOption>{

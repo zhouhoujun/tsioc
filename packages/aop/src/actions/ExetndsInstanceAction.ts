@@ -10,7 +10,7 @@ export const ExetndsInstanceAction = function (ctx: RuntimeActionContext, next: 
     // aspect class do nothing.
     let providers = ctx.providers;
     if (providers.has(AOP_EXTEND_TARGET_TOKEN)) {
-        providers.get(AOP_EXTEND_TARGET_TOKEN)(ctx.target);
+        providers.getInstance(AOP_EXTEND_TARGET_TOKEN)(ctx.target);
     }
     next();
 };

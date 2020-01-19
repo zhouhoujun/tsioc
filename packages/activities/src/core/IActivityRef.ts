@@ -1,9 +1,9 @@
-import { PromiseUtil, InjectToken, IDestoryable } from '@tsdi/ioc';
+import { PromiseUtil, IDestoryable, tokenId } from '@tsdi/ioc';
 import { WorkflowContext } from './WorkflowInstance';
 import { ActivityContext } from './ActivityContext';
 
-export const ACTIVITY_INPUT = new InjectToken<any>('ACTIVITY_INPUT');
-export const ACTIVITY_OUTPUT = new InjectToken<any>('ACTIVITY_OUTPUT');
+export const ACTIVITY_INPUT = tokenId<any>('ACTIVITY_INPUT');
+export const ACTIVITY_OUTPUT = tokenId<any>('ACTIVITY_OUTPUT');
 
 export interface IActivityRef<T = any> extends IDestoryable {
     name?: string;

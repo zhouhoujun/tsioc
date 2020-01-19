@@ -12,11 +12,11 @@ import { ComponentProvider } from '../ComponentProvider';
  * @extends {IocDesignAction}
  */
 export const ComponentRegisterAction = function (ctx: DesignActionContext, next: () => void): void {
-    let currDecor = ctx.get(CTX_CURR_DECOR);
+    let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
     let compRefl = ctx.targetReflect as IComponentReflect;
-    let refSelector = ctx.reflects.getActionInjector().get(DecoratorProvider).resolve(currDecor, ComponentProvider);
+    let refSelector = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(currDecor, ComponentProvider);
     compRefl.decorator = currDecor;
     compRefl.component = true;
     metas.forEach(meta => {

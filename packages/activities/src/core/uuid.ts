@@ -1,4 +1,4 @@
-import { InjectToken, Singleton } from '@tsdi/ioc';
+import { Singleton, tokenId } from '@tsdi/ioc';
 
 /**
  * uuid factory.
@@ -19,7 +19,7 @@ export interface UUIDFactory {
 /**
  * uuid factory token.
  */
-export const UUIDToken = new InjectToken<UUIDFactory>('uuid_factory');
+export const UUIDToken = tokenId<UUIDFactory>('uuid_factory');
 
 /**
  * random uuid factory.

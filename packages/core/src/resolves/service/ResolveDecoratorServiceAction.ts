@@ -3,10 +3,10 @@ import { ResolveServiceContext } from './ResolveServiceContext';
 import { CTX_CURR_TOKEN } from '../../context-tokens';
 
 export const ResolveDecoratorServiceAction = function (ctx: ResolveServiceContext, next: () => void): void {
-    let clasType = ctx.get(CTX_TARGET_TOKEN);
+    let clasType = ctx.getValue(CTX_TARGET_TOKEN);
     if (isClassType(clasType)) {
         let dprvoider = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
-        let tk = ctx.get(CTX_CURR_TOKEN);
+        let tk = ctx.getValue(CTX_CURR_TOKEN);
         ctx.reflects.getDecorators(clasType)
             .some(dec => {
                 if (dprvoider.has(dec, tk)) {

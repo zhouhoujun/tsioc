@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, createRaiseContext, isToken, Token, isNullOrUndefined } from '@tsdi/ioc';
+import { Injectable, Type, Refs, createRaiseContext, isToken, Token, isNullOrUndefined, SymbolType } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuildContext, AnnoationContext, ApplicationContextToken } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
@@ -32,34 +32,38 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
     private _workflow: WorkflowContext;
     get workflow(): WorkflowContext {
         if (!this._workflow) {
-            this._workflow = this.injector.get(ApplicationContextToken) as WorkflowContext;
+            this._workflow = this.injector.getSingleton(ApplicationContextToken) as WorkflowContext;
         }
         return this._workflow;
     }
 
     resolve<T>(token: Token<T>): T {
-        let key = this.contexts.getTokenKey(token);
+        let key = this.context.getTokenKey(token);
         let instance: T;
         let ctx: AnnoationContext = this;
         while (ctx && isNullOrUndefined(instance)) {
-            instance = ctx.contexts.getInstance(key);
+            instance = ctx.context.getInstance(key);
             ctx = ctx.getParent();
         }
         if (isNullOrUndefined(instance)) {
-            instance = this.workflow.contexts.getInstance(key);
+            instance = this.workflow.context.getInstance(key);
         }
         return instance;
     }
 
     get<T>(token: Token<T>): T {
-        let key = this.contexts.getTokenKey(token);
-        return this.contexts.getInstance(key) ?? this.workflow?.contexts.getInstance(key) ?? null;
+        let key = this.context.getTokenKey(token);
+        return this.context.getInstance(key) ?? this.workflow?.context.getInstance(key) ?? null;
+    }
+
+    getValue<T>(key: SymbolType<T>): T {
+        return this.context.getSingleton(key) ?? this.workflow?.context.getSingleton(key) ?? null;
     }
 
     private _executor: ActivityExecutor;
     getExector(): ActivityExecutor {
         if (!this._executor) {
-            this._executor = this.injector.get(ActivityExecutor, { provide: ActivityContext, useValue: this });
+            this._executor = this.injector.getInstance(ActivityExecutor, { provide: ActivityContext, useValue: this });
         }
         return this._executor;
     }

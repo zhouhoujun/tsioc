@@ -43,10 +43,10 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
         if (isClass(config)) {
             if (!this.container.has(LogConfigureToken)) {
                 this.container.register(LogConfigureToken, config);
-                this._config = this.container.get(LogConfigureToken);
+                this._config = this.container.getInstance(LogConfigureToken);
             } else if (!this.container.has(config)) {
                 this.container.register(config);
-                this._config = this.container.get<LogConfigure>(config);
+                this._config = this.container.getInstance<LogConfigure>(config);
             }
         } else {
             this._config = config;

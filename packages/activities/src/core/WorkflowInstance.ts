@@ -1,4 +1,4 @@
-import { Injectable, Refs, InjectToken, isDefined } from '@tsdi/ioc';
+import { Injectable, Refs, isDefined, tokenId } from '@tsdi/ioc';
 import { Service, Startup, BootContext, CTX_MODULE_STARTUP } from '@tsdi/boot';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
@@ -13,11 +13,11 @@ import { ActivityRef } from './ActivityRef';
 /**
  * each body token.
  */
-export const CTX_CURR_ACT_REF = new InjectToken<any>('CTX_CURR_ACT_REF');
+export const CTX_CURR_ACT_REF = tokenId<any>('CTX_CURR_ACT_REF');
 /**
  * each body token.
  */
-export const CTX_CURR_ACTSCOPE_REF = new InjectToken<any>('CTX_CURR_ACTSCOPE_REF');
+export const CTX_CURR_ACTSCOPE_REF = tokenId<any>('CTX_CURR_ACTSCOPE_REF');
 
 /**
  *run state.
@@ -53,8 +53,9 @@ export enum RunState {
 /**
  * workflow context token.
  */
-export const WorkflowContextToken = new InjectToken<WorkflowContext>('WorkflowContext');
+export const WorkflowContextToken = tokenId<WorkflowContext>('WorkflowContext');
 
+export const CTX_ACTIVITYSTATUS = tokenId<ActivityStatus>('CTX_ACTIVITYSTATUS');
 
 @Injectable
 @Refs(Activity, BootContext)
@@ -76,19 +77,19 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
     name: string;
 
     get result() {
-        return this.get(ACTIVITY_OUTPUT);
+        return this.getValue(ACTIVITY_OUTPUT);
     }
 
     get startup(): WorkflowInstance {
-        return this.get(CTX_MODULE_STARTUP) as WorkflowInstance;
+        return this.getValue(CTX_MODULE_STARTUP) as WorkflowInstance;
     }
 
-    private _status: ActivityStatus;
+
     get status(): ActivityStatus {
-        if (!this._status) {
-            this._status = this.injector.get(ActivityStatus);
+        if (!this.hasValue(CTX_ACTIVITYSTATUS)) {
+            this.set(CTX_ACTIVITYSTATUS, this.injector.get(ActivityStatus));
         }
-        return this._status;
+        return this.getValue(CTX_ACTIVITYSTATUS);
     }
 
     setOptions(options: ActivityOption) {

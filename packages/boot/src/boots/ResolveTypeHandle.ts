@@ -4,8 +4,8 @@ import { CTX_MODULE_INST } from '../context-tokens';
 
 
 export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.type && !ctx.has(CTX_MODULE_INST)) {
-        let target = await ctx.injector.get(BuilderServiceToken).resolve({
+    if (ctx.type && !ctx.hasValue(CTX_MODULE_INST)) {
+        let target = await ctx.injector.getInstance(BuilderServiceToken).resolve({
             type: ctx.type,
             parent: ctx.getParent(),
             providers: ctx.providers,

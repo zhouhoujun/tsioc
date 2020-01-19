@@ -6,7 +6,7 @@ import { IModuleReflect } from '../modules/IModuleReflect';
 export const RegModuleRefAction = function (ctx: DesignActionContext, next: () => void): void {
     let reflect = ctx.targetReflect as IModuleReflect;
     if (reflect) {
-        let mdRef = new ModuleRef(ctx.type, reflect, ctx.get(CTX_MODULE_EXPORTS));
+        let mdRef = new ModuleRef(ctx.type, reflect, ctx.getValue(CTX_MODULE_EXPORTS));
         ctx.injector.registerValue(ModuleRef, mdRef);
         ctx.set(ModuleRef, mdRef);
         reflect.getModuleRef = () => mdRef;

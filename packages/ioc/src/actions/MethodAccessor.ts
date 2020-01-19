@@ -49,7 +49,7 @@ export class MethodAccessor implements IMethodAccessor {
             instance = target;
         }
 
-        let reflects = injector.get(TypeReflectsToken);
+        let reflects = injector.getSingleton(TypeReflectsToken);
         let tgRefl = reflects.get(targetClass);
         let key: string;
         if (isFunction(propertyKey)) {
@@ -145,7 +145,7 @@ export class MethodAccessor implements IMethodAccessor {
             target: instance,
             propertyKey: propertyKey,
         });
-        injector.getContainer().getActionInjector().get(RuntimeParamScope).execute(ctx);
+        injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
         let params = ctx.targetReflect.methodParams.get(propertyKey);
         return params || [];
     }

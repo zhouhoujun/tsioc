@@ -1,4 +1,4 @@
-import { Type, InjectToken } from '@tsdi/ioc';
+import { Type, tokenId } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
 import { Advices } from '../advices/Advices';
@@ -7,7 +7,7 @@ import { Advices } from '../advices/Advices';
  * Aop proxy method interface token.
  * it is a token id, you can register yourself IProxyMethod for this.
  */
-export const ProxyMethodToken = new InjectToken<IProxyMethod>('DI_IProxyMethod');
+export const ProxyMethodToken = tokenId<IProxyMethod>('DI_IProxyMethod');
 
 /**
  * proxy method, for proxy advice method.

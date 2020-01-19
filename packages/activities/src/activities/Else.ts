@@ -20,7 +20,7 @@ export class ElseActivity extends ControlActivity {
 
     async execute(ctx: ActivityContext): Promise<void> {
         let currScope = ctx.workflow.status.currentScope;
-        if (currScope.context.has(IFStateKey) && !currScope.context.get(IFStateKey)) {
+        if (currScope.context.hasValue(IFStateKey) && !currScope.context.getValue(IFStateKey)) {
             await ctx.getExector().runActivity(this.body);
         }
     }

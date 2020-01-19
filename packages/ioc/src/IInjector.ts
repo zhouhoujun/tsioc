@@ -1,6 +1,6 @@
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { IParameter } from './IParameter';
-import { InjectToken } from './InjectToken';
+import { tokenId } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
 import { ResolveActionOption } from './actions/ResolveActionContext';
 import { InjectReference } from './InjectReference';
@@ -70,7 +70,7 @@ export interface IInjector extends IDestoryable {
      */
     has<T>(token: Token<T>): boolean;
     /**
-     *  has register.
+     * has token in current injector.
      *
      * @template T
      * @param {Token<T>} token the token.
@@ -80,10 +80,15 @@ export interface IInjector extends IDestoryable {
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
-     * has singleton or not.
+     * has singleton or not in current injector.
      * @param key
      */
     hasSingleton<T>(key: SymbolType<T>): boolean;
+    /**
+     * has registered singleton or not.
+     * @param key
+     */
+    hasRegisterSingleton<T>(key: SymbolType<T>): boolean;
     /**
      * has register in the injector or root container.
      * @param token the token.
@@ -326,7 +331,7 @@ export interface IInjector extends IDestoryable {
 /**
  * injector instance token of self.
  */
-export const INJECTOR = new InjectToken<IInjector>('DI_INJECTOR');
+export const INJECTOR = tokenId<IInjector>('DI_INJECTOR');
 
 /**
  * injector proxy of current injector.
@@ -335,7 +340,7 @@ export type InjectorProxy<T extends IInjector = IInjector> = () => T;
 /**
  * the token of injector factory in current injector.
  */
-export const InjectorProxyToken = new InjectToken<InjectorProxy>('DI_INJECTOR_PROXY');
+export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
 
 export interface IProviders extends IInjector {
 
@@ -344,9 +349,9 @@ export interface IProviders extends IInjector {
 /**
  *  injector provider token. create new injector provider.
  */
-export const PROVIDERS = new InjectToken<IProviders>('DI_PROVIDERS');
+export const PROVIDERS = tokenId<IProviders>('DI_PROVIDERS');
 
 /**
  *  injector token. create new injector.
  */
-export const InjectorFactoryToken = new InjectToken<IInjector>('DI_INJECTOR_FACTORY');
+export const InjectorFactoryToken = tokenId<IInjector>('DI_INJECTOR_FACTORY');

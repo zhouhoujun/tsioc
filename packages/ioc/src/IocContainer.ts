@@ -13,9 +13,6 @@ import { InjectToken } from './InjectToken';
 import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
 
 
-const factoryToken = ContainerProxyToken.toString();
-const actionInjectorKey = ActionInjectorToken.toString();
-const typeRefs = TypeReflectsToken.toString();
 /**
  * Container
  *
@@ -30,12 +27,12 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     }
 
     getTypeReflects(): ITypeReflects {
-        return this.getSingleton(typeRefs);
+        return this.getSingleton(TypeReflectsToken);
 
     }
 
     getActionInjector(): IActionInjector {
-        return this.getSingleton(actionInjectorKey);
+        return this.getSingleton(ActionInjectorToken);
     }
 
     getContainer(): this {
@@ -51,11 +48,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     }
 
     createInjector(): IInjector {
-        return this.get(InjectorFactoryToken);
+        return this.getInstance(InjectorFactoryToken);
     }
 
     getContainerProxy<T extends IIocContainer>(): ContainerProxy<T> {
-        return this.getSingleton(factoryToken) as ContainerProxy<T>;
+        return this.getSingleton(ContainerProxyToken) as ContainerProxy<T>;
     }
 
     /**
@@ -124,7 +121,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ParamProviders[]) => {
-                if (injector.hasSingleton(key)) {
+                if (injector.hasRegisterSingleton(key)) {
                     return injector.getSingleton(key);
                 }
                 let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));

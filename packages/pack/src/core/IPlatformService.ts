@@ -1,4 +1,4 @@
-import { ObjectMap, Express2, InjectToken } from '@tsdi/ioc';
+import { ObjectMap, Express2, tokenId } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { Src } from '@tsdi/activities';
@@ -148,4 +148,4 @@ export interface CmdOptions {
     silent?: boolean;
 }
 
-export const PlatformServiceToken = new InjectToken<IPlatformService>('pack_PlatformService');
+export const PlatformServiceToken = tokenId<IPlatformService>('pack_PlatformService');

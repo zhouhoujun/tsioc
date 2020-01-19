@@ -14,7 +14,7 @@ export const ParseSelectorHandle = async function (ctx: TemplateContext, next: (
     if (ctx.selector) {
         let selector = ctx.selector;
         let template = ctx.template;
-        ctx.value = await ctx.getContainer().get(ComponentBuilderToken)
+        ctx.value = await ctx.getContainer().getInstance(ComponentBuilderToken)
             .resolve({
                 type: selector,
                 parent: ctx,

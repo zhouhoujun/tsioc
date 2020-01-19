@@ -1,4 +1,4 @@
-import { PromiseUtil, InjectToken } from '@tsdi/ioc';
+import { PromiseUtil, tokenId } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { Expression, ActivityType } from './ActivityMetadata';
 import { WorkflowContext } from './WorkflowInstance';
@@ -70,4 +70,4 @@ export interface IActivityExecutor {
     parseAction<T extends WorkflowContext>(activities: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T>;
 }
 
-export const ActivityExecutorToken = new InjectToken<IActivityExecutor>('ActivityExecutor');
+export const ActivityExecutorToken = tokenId<IActivityExecutor>('ActivityExecutor');

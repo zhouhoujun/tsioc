@@ -1,7 +1,7 @@
 import { IActivityRef } from './IActivityRef';
-import { Injectable, lang, InjectToken } from '@tsdi/ioc';
+import { Injectable, lang, tokenId } from '@tsdi/ioc';
 
-const STATUS_SUB_TRACK = new InjectToken<IActivityRef[]>('STATUS_SUB_TRACK');
+const STATUS_SUB_TRACK = tokenId<IActivityRef[]>('STATUS_SUB_TRACK');
 /**
  * activity status.
  *
@@ -36,7 +36,7 @@ export class ActivityStatus {
             // clean parent scope control state.
             this.scopes.unshift(activity);
         } else if (this.currentScope) {
-            let subs = this.currentScope.context.get(STATUS_SUB_TRACK);
+            let subs = this.currentScope.context.getValue(STATUS_SUB_TRACK);
             subs.unshift(activity);
         }
     }

@@ -6,7 +6,7 @@ import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject,
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
-import { MethodAccessorToken, IMethodAccessor, MethodType } from './IMethodAccessor';
+import { MethodAccessorToken, MethodType } from './IMethodAccessor';
 import { IParameter } from './IParameter';
 import { ResolveActionOption } from './actions/ResolveActionContext';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
@@ -16,10 +16,6 @@ import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { IocDestoryable } from './Destoryable';
 import { TypeReflectsToken } from './services/ITypeReflects';
 
-
-const MethodAccessorKey = MethodAccessorToken.toString();
-const ActionInjectorKey = ActionInjectorToken.toString();
-const InjectorProxyKey = InjectorProxyToken.toString();
 
 /**
  * Base Injector.
@@ -60,7 +56,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
 
     protected init() {
         this.registerValue(INJECTOR, this, lang.getClass(this));
-        this.registerValue(InjectorProxyKey, () => this);
+        this.registerValue(InjectorProxyToken, () => this);
         this.registerValue(IocCacheManager, new IocCacheManager(this));
     }
 
@@ -70,7 +66,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
 
 
     getProxy(): InjectorProxy {
-        return this.getSingleton(InjectorProxyKey);
+        return this.getSingleton(InjectorProxyToken);
     }
 
     abstract getContainer(): IIocContainer;
@@ -303,10 +299,14 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.factories.has(key) || this.singletons.has(key);
+        return this.singletons.has(key) || this.factories.has(key);
     }
 
     hasSingleton<T>(key: SymbolType<T>): boolean {
+        return this.singletons.has(key);
+    }
+
+    hasRegisterSingleton<T>(key: SymbolType<T>): boolean {
         return this.singletons.has(key) || this.hasSingletonInRoot(key);
     }
 
@@ -378,7 +378,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
-        return this.getSingleton<IActionInjector>(ActionInjectorKey).get(ResolveLifeScope).resolve(this, token, ...providers);
+        return this.getSingleton(ActionInjectorToken).getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**
@@ -432,7 +432,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
                     this.factories.delete(k);
                 });
                 this.clearCache(key);
-                this.get(TypeReflectsToken).delete(key);
+                this.getSingleton(TypeReflectsToken).delete(key);
             }
         }
         return this;
@@ -521,11 +521,11 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof BaseInjector
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR {
-        return this.getInstance<IMethodAccessor>(MethodAccessorKey).invoke(this, target, propertyKey, ...providers);
+        return this.getInstance(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.getInstance<IMethodAccessor>(MethodAccessorKey).createParams(this, params, ...providers);
+        return this.getInstance(MethodAccessorToken).createParams(this, params, ...providers);
     }
 
     /**

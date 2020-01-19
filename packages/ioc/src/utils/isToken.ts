@@ -1,6 +1,6 @@
-import { Token, ProvideToken } from '../types';
+import { Token, ProvideToken, TokenId, IToken } from '../types';
 import { Registration } from '../Registration';
-import { isSymbol, isString, isClassType } from './lang';
+import { isSymbol, isString, isClassType, isBaseObject, isFunction } from './lang';
 
 /**
  * check target is token or not.
@@ -19,6 +19,11 @@ export function isToken(target: any): target is Token {
     return isProvideToken(target);
 }
 
+export function isTokenFunc(target: any): target is IToken<any> {
+    return isFunction(target) && (<IToken<any>>target).tokenId;
+}
+
+
 /**
  * check target is provide token or not.
  *
@@ -30,5 +35,5 @@ export function isProvideToken(target: any): target is ProvideToken<any> {
     if (isString(target) || isSymbol(target) || (target instanceof Registration)) {
         return true
     }
-    return false
+    return isTokenFunc(target);
 }

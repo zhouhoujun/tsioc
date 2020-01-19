@@ -4,7 +4,7 @@ import { CTX_TARGET_REFS } from '../../context-tokens';
 
 
 export const ResovleServicesInClassAction = function (ctx: ResolveServicesContext, next: () => void): void {
-    let targetRefs = ctx.get(CTX_TARGET_REFS);
+    let targetRefs = ctx.getValue(CTX_TARGET_REFS);
     let injector = ctx.injector;
     if (targetRefs && targetRefs.length) {
         targetRefs.forEach(t => {

@@ -12,14 +12,14 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
         if (!ctx.tokens || !ctx.tokens.length) {
             return;
         }
-        ctx.services = ctx.get(PROVIDERS);
+        ctx.services = ctx.injector.get(PROVIDERS);
         super.execute(ctx);
 
         next && next();
         // after all.
         if (ctx.services.size < 1) {
             // after all resolve default.
-            let defaultTk = ctx.getOptions().default;
+            let defaultTk = ctx.default;
             if (defaultTk) {
                 let key = ctx.injector.getTokenKey(defaultTk);
                 if (ctx.injector.hasRegister(key)) {

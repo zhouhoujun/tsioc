@@ -6,8 +6,8 @@ import { CTX_TARGET_TOKEN } from '../../context-tokens';
 
 
 export const ResolvePrivateAction = function (ctx: ResolveActionContext, next: () => void): void {
-    if (ctx.has(CTX_TARGET_TOKEN)) {
-        let tk = new InjectReference(PROVIDERS, ctx.get(CTX_TARGET_TOKEN));
+    if (ctx.hasValue(CTX_TARGET_TOKEN)) {
+        let tk = new InjectReference(PROVIDERS, ctx.getValue(CTX_TARGET_TOKEN));
         let privPdr = ctx.injector.get(tk);
         if (privPdr && privPdr.has(ctx.token)) {
             ctx.instance = privPdr.get(ctx.token, ctx.providers);

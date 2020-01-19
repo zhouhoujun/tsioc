@@ -14,7 +14,7 @@ export class ResolveServiceScope extends IocResolveScope<ResolveServiceContext> 
 
         if (!ctx.instance) {
             // after all resolve default.
-            let defaultTk = ctx.getOptions().default;
+            let defaultTk = ctx.default;
             if (defaultTk) {
                 ctx.instance = ctx.injector.get(defaultTk, ctx.providers);
             }

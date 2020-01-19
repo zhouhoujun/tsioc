@@ -1,4 +1,4 @@
-import { LoadType, InjectToken, Type, Injectable, createRaiseContext, Token, isToken, isDefined } from '@tsdi/ioc';
+import { LoadType, Type, Injectable, createRaiseContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
 import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { Startup } from './runnable/Startup';
@@ -14,7 +14,7 @@ import { IModuleReflect } from './modules/IModuleReflect';
 /**
  *  current application boot context token.
  */
-export const ApplicationContextToken = new InjectToken<BootContext>('APP__CONTEXT');
+export const ApplicationContextToken = tokenId<BootContext>('APP__CONTEXT');
 
 /**
  * boot options
@@ -133,11 +133,12 @@ export class BootContext<T extends BootOption = BootOption,
      * @memberof BootContext
      */
     get baseURL(): string {
-        let url = this.get(ProcessRunRootToken)
+        let url = this.getValue(ProcessRunRootToken)
         if (!url) {
             url = this.getOptions().baseURL || (this.annoation ? this.annoation.baseURL : '');
             if (url) {
                 this.getContainer().registerValue(ProcessRunRootToken, url);
+                this.context.registerValue(ProcessRunRootToken, url);
             }
         }
         return url;
@@ -150,15 +151,15 @@ export class BootContext<T extends BootOption = BootOption,
      * @memberof BootContext
      */
     get configuration(): IMeta {
-        return this.get(CTX_APP_CONFIGURE) as IMeta;
+        return this.getValue(CTX_APP_CONFIGURE) as IMeta;
     }
 
     get args(): string[] {
-        return this.get(CTX_APP_ENVARGS) || [];
+        return this.getValue(CTX_APP_ENVARGS) || [];
     }
 
     get data(): any {
-        return this.get(CTX_DATA);
+        return this.getValue(CTX_DATA);
     }
 
     /**
@@ -168,25 +169,25 @@ export class BootContext<T extends BootOption = BootOption,
      * @memberof BootContext
      */
     get startup(): Startup {
-        return this.get(CTX_MODULE_STARTUP);
+        return this.getValue(CTX_MODULE_STARTUP);
     }
 
     /**
      * get template.
      */
     get template(): any {
-        return this.get(CTX_TEMPLATE);
+        return this.getValue(CTX_TEMPLATE);
     }
 
     get target() {
-        return this.get(CTX_MODULE_INST);
+        return this.getValue(CTX_MODULE_INST);
     }
 
     /**
      * boot instance.
      */
     get boot(): any {
-        return this.get(CTX_MODULE_BOOT);
+        return this.getValue(CTX_MODULE_BOOT);
     }
 
     /**
@@ -208,9 +209,6 @@ export class BootContext<T extends BootOption = BootOption,
             return;
         }
         super.setOptions(options);
-        // if (isTypeObject(options.target)) {
-        //     this.target = options.target;
-        // }
         if (options.template) {
             this.set(CTX_TEMPLATE, options.template);
         }

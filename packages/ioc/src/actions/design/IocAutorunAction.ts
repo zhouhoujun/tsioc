@@ -1,6 +1,5 @@
 import { AutorunMetadata } from '../../metadatas/AutorunMetadata';
 import { isFunction } from '../../utils/lang';
-import { IocDesignAction } from './IocDesignAction';
 import { DesignActionContext } from './DesignActionContext';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 
@@ -13,7 +12,7 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
  */
 export const IocAutorunAction = function (ctx: DesignActionContext, next: () => void) {
     let refs = ctx.reflects;
-    let currDec = ctx.get(CTX_CURR_DECOR);
+    let currDec = ctx.getValue(CTX_CURR_DECOR);
     if (!refs.hasMetadata(currDec, ctx.type)) {
         return;
     }

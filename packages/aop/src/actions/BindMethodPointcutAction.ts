@@ -18,7 +18,7 @@ export const BindMethodPointcutAction = function (ctx: RuntimeActionContext, nex
     }
     let injector = ctx.injector;
 
-    let proxy = injector.get(ProxyMethodToken);
+    let proxy = injector.getInstance(ProxyMethodToken);
     if (!proxy) {
         return next();
     }
@@ -28,7 +28,7 @@ export const BindMethodPointcutAction = function (ctx: RuntimeActionContext, nex
 
     let className = lang.getClassName(targetType);
     let decorators = ctx.targetReflect.defines.getPropertyDescriptors();
-    let advisor = injector.get(AdvisorToken);
+    let advisor = injector.getInstance(AdvisorToken);
     let advicesMap = advisor.getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {

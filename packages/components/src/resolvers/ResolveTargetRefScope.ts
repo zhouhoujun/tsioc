@@ -14,10 +14,10 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
         let annoation = ctx.annoation as IComponentMetadata;
         if (annoation.template) {
             await super.execute(ctx);
-            ctx.value = ctx.get(CTX_COMPONENT_REF);
+            ctx.value = ctx.getValue(CTX_COMPONENT_REF);
         } else {
             // current type is component.
-            let decorPdr = ctx.reflects.getActionInjector().get(DecoratorProvider);
+            let decorPdr = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
             let refSelector = decorPdr.resolve(ctx.decorator, ComponentProvider);
             if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
                 let elRef = refSelector.createElementRef(ctx, ctx.value);
@@ -26,7 +26,7 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
             }
 
             // is not compoent or element.
-            if (!ctx.has(CTX_ELEMENT_REF)) {
+            if (!ctx.hasValue(CTX_ELEMENT_REF)) {
                 ctx.getParent()?.removeChild(ctx);
                 ctx.setParent(null);
             }

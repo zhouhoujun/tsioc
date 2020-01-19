@@ -1,4 +1,4 @@
-import { ProviderTypes, Type, InjectToken } from '@tsdi/ioc';
+import { ProviderTypes, Type, tokenId } from '@tsdi/ioc';
 import { IBuilderService, IBuildOption } from '@tsdi/boot';
 import { ITemplateRef } from './ComponentRef';
 
@@ -17,7 +17,7 @@ export interface ITemplateOption extends IBuildOption {
 /**
  * component build token.
  */
-export const ComponentBuilderToken = new InjectToken<IComponentBuilder>('ComponentBuilder');
+export const ComponentBuilderToken = tokenId<IComponentBuilder>('ComponentBuilder');
 
 
 /**

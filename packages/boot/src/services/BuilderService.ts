@@ -70,7 +70,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         } else {
             rctx = BuildContext.parse(injector, options);
         }
-        await this.reflects.getActionInjector().get(ResolveMoudleScope)
+        await this.reflects.getActionInjector().getInstance(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
     }
@@ -86,7 +86,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @memberof BuilderService
      */
     run<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T> {
-        return this.execLifeScope<T, Topt>(null, this.reflects.getActionInjector().get(RunnableBuildLifeScope), target, ...args);
+        return this.execLifeScope<T, Topt>(null, this.reflects.getActionInjector().getInstance(RunnableBuildLifeScope), target, ...args);
     }
 
 
@@ -116,11 +116,11 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                     opt.contextInit(ctx as T);
                 }
             },
-            this.reflects.getActionInjector().get(BootLifeScope),
+            this.reflects.getActionInjector().getInstance(BootLifeScope),
             target,
             ...args);
 
-        if (isFunction(opt.regExports) && ctx.has(CTX_MODULE_EXPORTS)) {
+        if (isFunction(opt.regExports) && ctx.hasValue(CTX_MODULE_EXPORTS)) {
             opt.regExports(ctx as T, this.container);
         }
         return ctx as T;
@@ -143,7 +143,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                     application.onContextInit(ctx);
                 }
             },
-            this.reflects.getActionInjector().get(BootLifeScope),
+            this.reflects.getActionInjector().getInstance(BootLifeScope),
             application.target,
             ...args);
     }

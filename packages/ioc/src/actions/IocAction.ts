@@ -1,10 +1,10 @@
-import { Token, Type } from '../types';
+import { Token, Type, SymbolType } from '../types';
 import { lang, isArray } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
 import { ProviderTypes } from '../providers/types';
 import { IIocContainer } from '../IIocContainer';
-import { ITypeReflects, TypeReflectsToken, TypeReflectsProxy } from '../services/ITypeReflects';
+import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, INJECTOR, PROVIDERS, IProviders } from '../IInjector';
 import { isInjector } from '../BaseInjector';
@@ -42,7 +42,6 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
     return ctx;
 }
 
-const ReflectsProxyKey = TypeReflectsProxy.toString();
 /**
  * context with raise container.
  *
@@ -55,51 +54,45 @@ export abstract class IocRaiseContext<
     TJ extends IInjector = IInjector,
     TC extends IIocContainer = IIocContainer> extends IocActionContext {
 
-    private _injector: TJ;
+    public readonly context: IProviders;
+
     constructor(@Inject(INJECTOR) injector: TJ) {
         super();
-        this._injector = injector;
+        this.context = injector.get(PROVIDERS);
+        this.context.registerValue(INJECTOR, injector);
     }
 
     /**
      * raise injector of this context.
      */
     get injector(): TJ {
-        return this._injector;
+        return this.context.getSingleton(INJECTOR) as TJ;
     }
 
-    private _reflectsProxy: () => ITypeReflects;
     /**
      * get type reflects.
      */
     get reflects(): ITypeReflects {
-        if (!this._reflectsProxy) {
-            this._reflectsProxy = this.injector.getSingleton(ReflectsProxyKey);
+        if (!this.context.hasSingleton(TypeReflectsToken)) {
+            this.context.registerValue(TypeReflectsToken, this.injector.getSingleton(TypeReflectsToken));
         }
-        return this._reflectsProxy();
-    }
-
-    private _context: IProviders;
-    /**
-     * context providers of boot.
-     *
-     * @type {IInjector}
-     * @memberof BootContext
-     */
-    get contexts(): IProviders {
-        if (!this._context) {
-            this._context = this.injector.get(PROVIDERS);
-            this._context.registerValue(INJECTOR, this.injector);
-        }
-        return this._context;
+        return this.context.getSingleton(TypeReflectsToken);
     }
 
     /**
-     * has context or not.
+     * has register in context or not.
      * @param token
      */
     has(token: Token): boolean {
-        return this.contexts ? this.contexts.has(token) : false;
+        return this.context.hasRegister(token);
+    }
+
+    /**
+     * has value in context or not.
+     * @param token
+     */
+    hasValue(token: SymbolType): boolean {
+        return this.context.hasSingleton(token);
     }
 
     /**
@@ -108,7 +101,7 @@ export abstract class IocRaiseContext<
      */
     remove(...tokens: Token[]) {
         tokens.forEach(tk => {
-            this.contexts.unregister(tk);
+            this.context.unregister(tk);
         });
     }
     /**
@@ -120,7 +113,15 @@ export abstract class IocRaiseContext<
      * @memberof BootContext
      */
     get<T>(token: Token<T>): T {
-        return this.contexts.get(token);
+        return this.context.get(token);
+    }
+
+    /**
+     * get value from context.
+     * @param key token key
+     */
+    getValue<T>(key: SymbolType<T>): T {
+        return this.context.getSingleton(key);
     }
 
     /**
@@ -142,12 +143,9 @@ export abstract class IocRaiseContext<
         if (providers.length === 2 && isToken(providers[0])) {
             let provde = providers[0];
             let value = providers[1];
-            if (provde === INJECTOR) {
-                this._injector = value;
-            }
-            this.contexts.registerValue(provde, value);
+            this.context.registerValue(provde, value);
         } else {
-            this.contexts.inject(...providers);
+            this.context.inject(...providers);
         }
     }
 
@@ -160,7 +158,6 @@ export abstract class IocRaiseContext<
         return this.injector.getContainer() as T;
     }
 
-    protected _options: T;
     /**
      * set options for context.
      * @param options options.
@@ -171,18 +168,13 @@ export abstract class IocRaiseContext<
         }
         if (options.contexts) {
             if (isInjector(options.contexts)) {
-                if (this._context) {
-                    this._context.copy(options.contexts);
-                } else {
-                    this._context = options.contexts;
-                }
-                this._context.registerValue(INJECTOR, this.injector);
+                this.context.copy(options.contexts);
             } else if (isArray(options.contexts)) {
-                this.contexts.inject(...options.contexts);
+                this.context.inject(...options.contexts);
             }
         }
-        this._options = this._options ? Object.assign(this._options, options) : options;
-        this.contexts.registerValue(CTX_OPTIONS, this._options);
+        options = this.context.hasSingleton(CTX_OPTIONS) ? Object.assign(this.getOptions(), options) : options;
+        this.context.registerValue(CTX_OPTIONS, options);
     }
 
     /**
@@ -192,18 +184,11 @@ export abstract class IocRaiseContext<
      * @memberof IocRaiseContext
      */
     getOptions(): T {
-        if (!this._options) {
-            this._options = this.get(CTX_OPTIONS) as T;
-            if (!this._options) {
-                this._options = {} as T;
-                this.set(CTX_OPTIONS, this._options);
-            }
-        }
-        return this._options;
+        return this.context.getSingleton(CTX_OPTIONS) as T;
     }
 
     cloneContext(filter?: (key: Token) => boolean) {
-        return this.contexts.clone(filter || (k => !k.toString().startsWith('CTX_')));
+        return this.context.clone(filter || (k => !k.toString().startsWith('CTX_')));
     }
 
     /**
@@ -214,12 +199,7 @@ export abstract class IocRaiseContext<
     }
 
     protected destroying() {
-        this._context.destroy();
-        delete this._context;
-        delete this._options;
-        delete this._reflectsProxy;
-        delete this._injector;
-        delete this._options;
+        this.context.destroy();
     }
 
 }
@@ -242,11 +222,11 @@ export abstract class IocProvidersContext<
      * get providers of options.
      */
     get providers(): IProviders {
-        if (!this.has(CTX_PROVIDERS)) {
+        if (!this.context.hasSingleton(CTX_PROVIDERS)) {
             this._originPdr = true;
             this.set(CTX_PROVIDERS, this.injector.get(PROVIDERS));
         }
-        return this.get(CTX_PROVIDERS);
+        return this.context.getSingleton(CTX_PROVIDERS);
     }
 
     setOptions(options: T) {

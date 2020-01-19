@@ -1,14 +1,14 @@
-import { Type, ObjectMap, InjectToken, ParamProviders, IInjector } from '@tsdi/ioc';
+import { Type, ObjectMap, ParamProviders, tokenId } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { AdviceMetadata } from './metadatas/AdviceMetadata';
 
 
-export const AOP_EXTEND_TARGET_TOKEN = new InjectToken<(target: any) => void>('AOP_EXTEND_TARGET_TOKEN')
+export const AOP_EXTEND_TARGET_TOKEN = tokenId<(target: any) => void>('AOP_EXTEND_TARGET_TOKEN')
 /**
  * Aop IAdvisor interface token.
  * it is a token id, you can register yourself IAdvisor for this.
  */
-export const AdvisorToken = new InjectToken<IAdvisor>('DI_IAdvisor');
+export const AdvisorToken = tokenId<IAdvisor>('DI_IAdvisor');
 
 /**
  * aspect and advices manager.

@@ -1,7 +1,7 @@
 import { Type, Token } from '../types';
 import { IocProvidersContext, IocProvidersOption } from './IocAction';
 import { ITypeReflect } from '../services/ITypeReflect';
-import { CTX_CURR_DECOR } from '../context-tokens';
+import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON } from '../context-tokens';
 
 /**
  * register action option.
@@ -51,7 +51,7 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
      * @memberof RegisterActionContext
      */
     get token(): Token {
-        return this.getOptions().token;
+        return this.getValue(CTX_TOKEN);
     }
 
     /**
@@ -61,11 +61,11 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
      * @memberof RegisterActionContext
      */
     get type(): Type {
-        return this.getOptions().type;
+        return this.getValue(CTX_TYPE);
     }
 
     get currDecoractor(): string {
-        return this.get(CTX_CURR_DECOR);
+        return this.getValue(CTX_CURR_DECOR);
     }
 
     /**
@@ -75,14 +75,30 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
      * @memberof RegisterActionOption
      */
     get singleton(): boolean {
-        return this.getOptions().singleton === true;
+        return this.getValue(CTX_SINGLETON) === true;
     }
 
-    private _targetReflect: ITypeReflect;
     get targetReflect(): ITypeReflect {
-        if (!this._targetReflect) {
-            this._targetReflect = this.reflects.get(this.type);
+        if (!this.context.hasSingleton(CTX_TARGET_RELF)) {
+            this.context.registerValue(CTX_TARGET_RELF, this.reflects.get(this.type));
         }
-        return this._targetReflect;
+        return this.context.getSingleton(CTX_TARGET_RELF);
+    }
+
+    setOptions(options: T) {
+        if (!options) {
+            return;
+        }
+        super.setOptions(options);
+        if (options.token) {
+            this.context.registerValue(CTX_TOKEN, options.token);
+        }
+
+        if (options.type) {
+            this.context.registerValue(CTX_TYPE, options.type);
+        }
+        if (options.singleton) {
+            this.context.registerValue(CTX_SINGLETON, options.singleton);
+        }
     }
 }

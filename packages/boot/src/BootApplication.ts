@@ -100,7 +100,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     async run(...args: string[]): Promise<T> {
         await this.getContainer().load(...this.getBootDeps());
         await this.getContainer().load(...this.getTargetDeps(this.target));
-        let ctx = await this.getContainer().get(BuilderServiceToken).bootApp(this, ...args);
+        let ctx = await this.getContainer().getInstance(BuilderServiceToken).bootApp(this, ...args);
         return ctx as T;
     }
 

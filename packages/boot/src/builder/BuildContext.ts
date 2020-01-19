@@ -24,7 +24,7 @@ export class BuildContext<
      * get template.
      */
     get template(): any {
-        return this.get(CTX_TEMPLATE);
+        return this.getValue(CTX_TEMPLATE);
     }
 
     static parse(injector: ICoreInjector, options: IBuildOption): BuildContext {

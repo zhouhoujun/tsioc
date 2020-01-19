@@ -1,4 +1,4 @@
-import { Token, ObjectMap, InjectToken } from '@tsdi/ioc';
+import { Token, ObjectMap, tokenId } from '@tsdi/ioc';
 import { ILoggerManager } from './ILoggerManager';
 import { LOGFormater } from './LogFormater';
 
@@ -6,7 +6,7 @@ import { LOGFormater } from './LogFormater';
  * Log configure interface symbol.
  * it is a symbol id, you can register yourself LogConfigure for this.
  */
-export const LogConfigureToken = new InjectToken<LogConfigure>('DI_LogConfigure');
+export const LogConfigureToken = tokenId<LogConfigure>('DI_LogConfigure');
 
 /**
  * log configure. config logger format, looger adapter.

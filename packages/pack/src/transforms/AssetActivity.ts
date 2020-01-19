@@ -85,7 +85,7 @@ export interface AssetActivityOption extends TemplateOption {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, activity) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, activity.result, framework.init())
+                    return ctx.injector.getInstance(TransformService).executePipe(ctx, activity.result, framework.init())
                 }
             }
         },

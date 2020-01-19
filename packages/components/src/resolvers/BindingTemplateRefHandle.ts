@@ -21,7 +21,7 @@ export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?
         if (dpr.has(ctx.decorator, ComponentProvider)) {
             // todo ref child view
             let refSelector = dpr.resolve(ctx.decorator, ComponentProvider);
-            let cref = ctx.get(CTX_COMPONENT_REF);
+            let cref = ctx.getValue(CTX_COMPONENT_REF);
             ref.propRefChildBindings.forEach(b => {
                 let result = refSelector.select(cref, b.bindingName || b.name);
                 if (result) {

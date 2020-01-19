@@ -2,7 +2,7 @@ import {
     Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap, isDefined
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuilderService, BuilderServiceToken } from '@tsdi/boot';
+import { BuilderServiceToken } from '@tsdi/boot';
 import { ComponentBuilderToken, ComponentBuilder, ELEMENT_REFS } from '@tsdi/components';
 import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
@@ -53,7 +53,7 @@ export class ActivityExecutor implements IActivityExecutor {
                     return nctx as T;
                 });
         } else if (isClass(activity)) {
-            return injector.get(BuilderServiceToken).run<T, ActivityOption>({ type: activity, data: data });
+            return injector.getInstance(BuilderServiceToken).run<T, ActivityOption>({ type: activity, data: data });
         } else if (isFunction(activity)) {
             let nctx = ctx.clone() as T;
             return activity(nctx).then(() => nctx);
@@ -71,7 +71,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 data: data
             };
 
-            return injector.get(BuilderServiceToken).run<T>(option);
+            return injector.getInstance(BuilderServiceToken).run<T>(option);
         }
     }
 
@@ -89,7 +89,7 @@ export class ActivityExecutor implements IActivityExecutor {
         let ctx = this.context;
         injector = injector || this.context.injector;
         if (isClass(express)) {
-            let bctx = await injector.getInstance(BuilderService).run({ type: express, parent: ctx, injector: injector });
+            let bctx = await injector.getInstance(BuilderServiceToken).run({ type: express, parent: ctx, injector: injector });
             return bctx.data;
         } else if (isFunction(express)) {
             return await express(ctx);
@@ -139,10 +139,10 @@ export class ActivityExecutor implements IActivityExecutor {
             isDefined(input) && activity.context.set(ACTIVITY_INPUT, input);
             return activity.toAction();
         } else if (activity instanceof Activity) {
-            let ref = this.context.injector.get(ELEMENT_REFS).get(activity) as IActivityElementRef ?? new ActivityElementRef(this.context, activity);
+            let ref = this.context.injector.getSingleton(ELEMENT_REFS).get(activity) as IActivityElementRef ?? new ActivityElementRef(this.context, activity);
             return ref.toAction();
         } else if (isClass(activity)) {
-            let aref = await ctx.injector.get(ComponentBuilderToken).resolve(activity) as IActivityRef;
+            let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(activity) as IActivityRef;
             aref.context.set(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {

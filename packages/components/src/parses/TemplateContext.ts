@@ -1,16 +1,15 @@
-import { Injectable, Type, InjectToken, createRaiseContext, isArray, lang, DecoratorProvider } from '@tsdi/ioc';
+import { Injectable, Type, createRaiseContext, isArray, lang, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IComponentContext } from '@tsdi/boot';
 import { ITemplateOption } from '../IComponentBuilder';
 import { ComponentContext } from './ComponentContext';
 import { CTX_TEMPLATE_REF, ContextNode, CTX_COMPONENT_DECTOR } from '../ComponentRef';
-import { ComponentProvider } from '../ComponentProvider';
 
 
 /**
  * Template option token.
  */
-export const TemplateOptionToken = new InjectToken<ITemplateOption>('COMPONENT_TEMPLATE_OPTION');
+export const TemplateOptionToken = tokenId<ITemplateOption>('COMPONENT_TEMPLATE_OPTION');
 
 /**
  * template context.
@@ -26,7 +25,7 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
     selector?: Type;
 
     getResultRef() {
-        if (this.value && !this.has(CTX_TEMPLATE_REF)) {
+        if (this.value && !this.hasValue(CTX_TEMPLATE_REF)) {
             if (!this.componentDecorator) {
                 let node = (isArray(this.value) ? lang.first(this.value) : this.value) as ContextNode;
                 let decor = (node.context as ComponentContext)?.componentDecorator;
@@ -38,7 +37,7 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
                 this.set(CTX_TEMPLATE_REF, tempRef);
             }
         }
-        return this.get(CTX_TEMPLATE_REF) ?? this.value;
+        return this.getValue(CTX_TEMPLATE_REF) ?? this.value;
     }
 
     static parse(injector: ICoreInjector, options: ITemplateOption): TemplateContext {

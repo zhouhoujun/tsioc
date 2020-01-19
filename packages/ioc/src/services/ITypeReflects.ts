@@ -4,7 +4,7 @@ import { ITypeReflect } from './ITypeReflect';
 import { DefineClassTypes } from '../factories/DecoratorType';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
-import { InjectToken } from '../InjectToken';
+import { tokenId } from '../InjectToken';
 import { IInjector } from '../IInjector';
 import { IActionInjector } from '../actions/Action';
 import { IIocContainer } from '../IIocContainer';
@@ -12,9 +12,8 @@ import { IIocContainer } from '../IIocContainer';
 /**
  * type reflects token.
  */
-export const TypeReflectsToken = new InjectToken<ITypeReflects>('IOC_TYPEREFLECTS');
+export const TypeReflectsToken = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
 
-export const TypeReflectsProxy = new InjectToken<() => ITypeReflects>('IOC_TYPEREFLECTS_PROXY');
 /**
  *  type reflects interface.
  */

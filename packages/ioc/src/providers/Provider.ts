@@ -278,7 +278,7 @@ export class InvokeProvider extends Provider {
 
     resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
         if (this.method) {
-            return injector.get(MethodAccessorToken).invoke<T>(injector, this.type, this.method, ...providers);
+            return injector.getInstance(MethodAccessorToken).invoke<T>(injector, this.type, this.method, ...providers);
         }
         return super.resolve(injector, ...providers);
     }

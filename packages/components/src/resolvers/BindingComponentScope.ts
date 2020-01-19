@@ -22,7 +22,7 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
             let mdref = ctx.getModuleRef();
             if (mdref && mdref.reflect.componentDectors) {
                 let componentDectors = mdref.reflect.componentDectors;
-                let decorPdr = ctx.reflects.getActionInjector().get(DecoratorProvider);
+                let decorPdr = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
                 componentDectors.some(decor => {
                     let refSelector = decorPdr.resolve(decor, ComponentProvider);
                     if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
@@ -33,8 +33,8 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
                     return false;
                 });
             }
-            if (ctx.has(CTX_ELEMENT_REF)) {
-                ctx.value = ctx.get(CTX_ELEMENT_REF);
+            if (ctx.hasValue(CTX_ELEMENT_REF)) {
+                ctx.value = ctx.getValue(CTX_ELEMENT_REF);
             } else {
                 ctx.destroy();
             }

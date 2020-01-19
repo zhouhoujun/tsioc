@@ -16,7 +16,7 @@ export const InvokeAfterConstructorAction = function (ctx: RuntimeActionContext,
     }
 
     let container = ctx.getContainer();
-    let advisor = container.get(AdvisorToken);
+    let advisor = container.getInstance(AdvisorToken);
     let className = lang.getClassName(ctx.type);
     let advices = advisor.getAdvices(ctx.type, 'constructor');
     if (!advices) {
@@ -32,8 +32,8 @@ export const InvokeAfterConstructorAction = function (ctx: RuntimeActionContext,
             state: JoinpointState.After,
             fullName: className + '.constructor',
             target: target,
-            args: ctx.get(CTX_ARGS),
-            params: ctx.get(CTX_PARAMS),
+            args: ctx.getValue(CTX_ARGS),
+            params: ctx.getValue(CTX_PARAMS),
             targetType: targetType,
             originProvider: ctx.providers
         }

@@ -1,4 +1,4 @@
-import { InjectToken, IInjector, Type } from '@tsdi/ioc';
+import { IInjector, Type, tokenId } from '@tsdi/ioc';
 import { ModuleConfigure } from './ModuleConfigure';
 import { ModuleRef } from './ModuleRef';
 import { IAnnoationReflect } from '../annotations/IAnnoationReflect';
@@ -6,7 +6,7 @@ import { IAnnoationReflect } from '../annotations/IAnnoationReflect';
 /**
  * parent injector token.
  */
-export const ParentInjectorToken = new InjectToken<IInjector>('IOC_PARENT_INJECTOR')
+export const ParentInjectorToken = tokenId<IInjector>('IOC_PARENT_INJECTOR')
 
 export interface IModuleReflect extends IAnnoationReflect {
     /**

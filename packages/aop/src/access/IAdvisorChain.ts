@@ -1,4 +1,4 @@
-import { Express, InjectToken } from '@tsdi/ioc';
+import { Express, tokenId } from '@tsdi/ioc';
 import { Joinpoint } from '../joinpoints/Joinpoint';
 import { IocRecognizer } from './IocRecognizer';
 
@@ -6,7 +6,7 @@ import { IocRecognizer } from './IocRecognizer';
  * Aop IAdvisorChain interface token.
  * it is a token id, you can register yourself IAdvisorChain for this.
  */
-export const AdvisorChainToken = new InjectToken<IAdvisorChain>('DI_IAdvisorChain');
+export const AdvisorChainToken = tokenId<IAdvisorChain>('DI_IAdvisorChain');
 
 /**
  * advisor chain.

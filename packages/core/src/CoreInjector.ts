@@ -23,7 +23,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.tryGetSingletonInRoot(ContainerBuilderToken.toString());
+        return this.tryGetSingletonInRoot(ContainerBuilderToken);
     }
 
     /**

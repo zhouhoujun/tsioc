@@ -12,7 +12,7 @@ import { InjectableMetadata } from '../../metadatas/InjectableMetadata';
 export const BindProviderAction = function (ctx: DesignActionContext, next: () => void) {
     let tgReflect = ctx.targetReflect;
     let injector = ctx.injector;
-    let currDecor = ctx.get(CTX_CURR_DECOR);
+    let currDecor = ctx.getValue(CTX_CURR_DECOR);
     if (!tgReflect.decorator) {
         tgReflect.decorator = currDecor;
     }

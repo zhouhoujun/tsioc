@@ -13,7 +13,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
 
 
     getResultRef() {
-        return this.get(CTX_COMPONENT_REF) ?? this.get(CTX_TEMPLATE_REF) ?? this.get(CTX_ELEMENT_REF) ?? this.value;
+        return this.getValue(CTX_COMPONENT_REF) ?? this.getValue(CTX_TEMPLATE_REF) ?? this.getValue(CTX_ELEMENT_REF) ?? this.value;
     }
 
     private _scope: any;
@@ -21,7 +21,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
         if (!this._scope) {
             let ctx: AnnoationContext = this;
             while (ctx && !this._scope) {
-                this._scope = ctx.get(CTX_COMPONENT);
+                this._scope = ctx.getValue(CTX_COMPONENT);
                 ctx = ctx.getParent();
             }
         }
@@ -31,20 +31,20 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
     private _prvoider: ComponentProvider;
     get componentProvider(): ComponentProvider {
         if (!this._prvoider && this.componentDecorator) {
-            this._prvoider = this.reflects.getActionInjector().get(DecoratorProvider).resolve(this.componentDecorator, ComponentProvider);
+            this._prvoider = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(this.componentDecorator, ComponentProvider);
         }
         return this._prvoider;
     }
 
     get componentDecorator() {
-        if (!this.has(CTX_COMPONENT_DECTOR)) {
+        if (!this.hasValue(CTX_COMPONENT_DECTOR)) {
             let dector: string;
             if (this.type) {
                 dector = this.decorator;
             } else {
                 let ctx: AnnoationContext = this;
                 while (ctx && !dector) {
-                    dector = ctx.get(CTX_COMPONENT_DECTOR);
+                    dector = ctx.getValue(CTX_COMPONENT_DECTOR);
                     ctx = ctx.getParent();
                 }
             }
@@ -52,7 +52,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
                 this.set(CTX_COMPONENT_DECTOR, dector);
             }
         }
-        return this.get(CTX_COMPONENT_DECTOR);
+        return this.getValue(CTX_COMPONENT_DECTOR);
     }
 }
 

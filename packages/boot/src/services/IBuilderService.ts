@@ -1,4 +1,4 @@
-import { IocCoreService, InjectToken, ClassType } from '@tsdi/ioc';
+import { IocCoreService, ClassType, tokenId } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
@@ -90,4 +90,4 @@ export interface IBuilderService extends IocCoreService {
 }
 
 
-export const BuilderServiceToken = new InjectToken<IBuilderService>('BOOT_BuilderService');
+export const BuilderServiceToken = tokenId<IBuilderService>('BOOT_BuilderService');

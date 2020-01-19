@@ -24,7 +24,7 @@ export const BootConfigureLoadHandle = async function (ctx: BootContext, next: (
             injector.registerValue(ProcessRunRootToken, ctx.baseURL)
         }
     }
-    let mgr = injector.get(ConfigureManager);
+    let mgr = injector.getInstance(ConfigureManager);
     if (options.configures && options.configures.length) {
         options.configures.forEach(config => {
             mgr.useConfiguration(config);

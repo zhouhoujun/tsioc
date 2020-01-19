@@ -6,13 +6,13 @@ import { ModuleInjector } from '../modules/ModuleInjector';
 import { ModuleRef } from '../modules/ModuleRef';
 
 export const RegModuleExportsAction = function (ctx: DesignActionContext, next: () => void): void {
-    if (ctx.has(CTX_MODULE_EXPORTS) && ctx.targetReflect.regIn !== 'root') {
-        let parent = ctx.injector.get(ParentInjectorToken);
+    if (ctx.hasValue(CTX_MODULE_EXPORTS) && ctx.targetReflect.regIn !== 'root') {
+        let parent = ctx.injector.getInstance(ParentInjectorToken);
         if (parent) {
             if (parent instanceof ModuleInjector) {
-                parent.export(ctx.get(ModuleRef));
+                parent.export(ctx.getValue(ModuleRef));
             } else {
-                parent.copy(ctx.get(CTX_MODULE_EXPORTS));
+                parent.copy(ctx.getValue(CTX_MODULE_EXPORTS));
             }
         }
     }

@@ -14,7 +14,7 @@ import { RegModuleExportsAction } from './RegModuleExportsAction';
  */
 export class AnnoationRegisterScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
     execute(ctx: DesignActionContext, next?: () => void): void {
-        if (ctx.has(CTX_MODULE_ANNOATION)) {
+        if (ctx.hasValue(CTX_MODULE_ANNOATION)) {
             super.execute(ctx, next);
         }
     }

@@ -98,7 +98,7 @@ export const TranslateExpressionHandle = async function (ctx: ParseContext, next
             providers: ctx.providers
         });
         await ctx.reflects.getActionInjector()
-            .get(TemplateParseScope)
+            .getInstance(TemplateParseScope)
             .execute(tpCtx);
 
         if (!isNullOrUndefined(tpCtx.value)) {
@@ -126,17 +126,18 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
     if (!isNullOrUndefined(ctx.bindExpression)) {
         let pdr = ctx.binding.provider;
         let selector: ClassType;
-        let refSelector = ctx.componentDecorator ? ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.componentDecorator, ComponentProvider) : null;
+        let reflects = ctx.reflects;
+        let refSelector = ctx.componentDecorator ? reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.componentDecorator, ComponentProvider) : null;
         if (isString(pdr) && refSelector && injector.hasRegister(refSelector.toAttrSelectorToken(pdr))) {
             selector = injector.getTokenProvider(refSelector.toAttrSelectorToken(pdr));
         } else if (ctx.binding.type !== Array) {
             if (isClassType(ctx.binding.provider)) {
-                if (ctx.reflects.get<IComponentReflect>(ctx.binding.provider).component) {
+                if (reflects.get<IComponentReflect>(ctx.binding.provider).component) {
                     selector = ctx.binding.provider;
                 }
             }
             if (!selector && isClassType(ctx.binding.type)) {
-                if (ctx.reflects.get<IComponentReflect>(ctx.binding.type).component) {
+                if (reflects.get<IComponentReflect>(ctx.binding.type).component) {
                     selector = ctx.binding.type;
                 }
             }
@@ -145,7 +146,7 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
         if (selector) {
             let template = ctx.getExtenalTemplate();
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
-            ctx.value = await injector.get(ComponentBuilderToken).resolve({
+            ctx.value = await injector.getInstance(ComponentBuilderToken).resolve({
                 type: selector,
                 parent: ctx,
                 template: template,
@@ -165,7 +166,7 @@ export const AssignBindValueHandle = async function (ctx: ParseContext, next: ()
     if (!isNullOrUndefined(ctx.bindExpression)) {
         let type = ctx.binding.type;
         if (isBaseType(type)) {
-            ctx.value = ctx.get(BaseTypeParser).parse(type, ctx.bindExpression);
+            ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, ctx.bindExpression);
         } else if (isClassType(type)) {
             let ttype = lang.getClass(ctx.bindExpression);
             if (ctx.reflects.isExtends(ttype, type)) {

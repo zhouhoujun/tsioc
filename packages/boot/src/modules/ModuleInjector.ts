@@ -26,14 +26,14 @@ export class ModuleInjector extends CoreInjector {
         return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
     }
 
-    hasSingleton<T>(key: SymbolType<T>): boolean {
-        return super.hasSingleton(key) || this.exports.some(r => r.exports.hasSingleton(key));
+    hasRegisterSingleton<T>(key: SymbolType<T>): boolean {
+        return super.hasRegisterSingleton(key) || this.exports.some(r => r.exports.hasRegisterSingleton(key));
     }
 
 
     protected tryGetSingleton<T>(key: SymbolType<T>): T {
         return this.singletons.has(key) ? this.singletons.get(key)
-            : this.exports.find(r => r.exports.hasSingleton(key))?.exports.getSingleton(key);
+            : this.exports.find(r => r.exports.hasRegisterSingleton(key))?.exports.getSingleton(key);
     }
 
 

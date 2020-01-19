@@ -38,7 +38,7 @@ export class Injector extends BaseInjector implements IInjector {
     }
 
     protected hasSingletonInRoot(key: SymbolType): boolean {
-        return this.getContainer().hasSingleton(key);
+        return this.getContainer().hasRegisterSingleton(key);
     }
 
     protected tryGetFactoryInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {

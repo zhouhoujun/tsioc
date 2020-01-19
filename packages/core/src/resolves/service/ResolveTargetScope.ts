@@ -8,8 +8,8 @@ import { CTX_TARGET_REFS, CTX_CURR_TOKEN } from '../../context-tokens';
 export class ResolveTargetScope extends IocResolveScope<ResolveServiceContext> implements IActionSetup {
 
     execute(ctx: ResolveServiceContext, next?: () => void): void {
-        if (ctx.has(CTX_TARGET_REFS)) {
-            ctx.get(CTX_TARGET_REFS).some(t => {
+        if (ctx.hasValue(CTX_TARGET_REFS)) {
+            ctx.getValue(CTX_TARGET_REFS).some(t => {
                 let tgtk = isToken(t) ? t : lang.getClass(t);
                 ctx.set(CTX_TARGET_TOKEN, tgtk);
                 return ctx.tokens.some(tk => {

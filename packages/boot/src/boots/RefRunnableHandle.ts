@@ -15,7 +15,7 @@ export const RefRunnableHandle = async function (ctx: BootContext, next: () => P
 
     startup && ctx.set(CTX_MODULE_STARTUP, startup);
 
-    if (!ctx.has(CTX_MODULE_STARTUP)) {
+    if (!ctx.hasValue(CTX_MODULE_STARTUP)) {
         await next();
     }
 };

@@ -76,7 +76,7 @@ export class ComponentsModule {
 
         actInjector.regAction(BindingScope)
             .regAction(TemplateParseScope)
-            .get(ResolveMoudleScope)
+            .getInstance(ResolveMoudleScope)
             .use(BindingComponentScope)
             .use(ParseTemplateHandle);
 

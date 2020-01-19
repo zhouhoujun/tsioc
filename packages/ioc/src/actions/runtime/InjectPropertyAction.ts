@@ -17,7 +17,7 @@ export const InjectPropertyAction = function (ctx: RuntimeActionContext, next: (
 
     props.forEach((token, propertyKey) => {
         let key = `${propertyKey}_INJECTED`
-        if (isToken(token) && !ctx.has(key)) {
+        if (isToken(token) && !ctx.hasValue(key)) {
             ctx.target[propertyKey] = injector.resolve({ token, target: ctx.type }, providers);
             ctx.set(key, true);
         }

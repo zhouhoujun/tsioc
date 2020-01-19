@@ -15,7 +15,7 @@ export class UglifyActivity extends TransformActivity {
         let enable = await this.resolveExpression(this.uglify, ctx);
         if (enable) {
             let options = await this.resolveExpression(this.options, ctx);
-            this.result = await ctx.injector.get(TransformService).executePipe(ctx, this.result, options ? uglify(options) : uglify());
+            this.result = await ctx.injector.getInstance(TransformService).executePipe(ctx, this.result, options ? uglify(options) : uglify());
         }
     }
 }

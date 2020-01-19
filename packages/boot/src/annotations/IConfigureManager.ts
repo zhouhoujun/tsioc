@@ -1,15 +1,15 @@
-import { InjectToken } from '@tsdi/ioc';
+import { tokenId } from '@tsdi/ioc';
 import { RunnableConfigure } from './RunnableConfigure';
 
 /**
  * configure manager token.
  */
-export const ConfigureMgrToken = new InjectToken<IConfigureManager>('CONFIG-MGR');
+export const ConfigureMgrToken = tokenId<IConfigureManager>('CONFIG-MGR');
 
 /**
  * default configuration token.
  */
-export const DefaultConfigureToken = new InjectToken<RunnableConfigure>('BOOT_DEFAULT_CONFIG');
+export const DefaultConfigureToken = tokenId<RunnableConfigure>('BOOT_DEFAULT_CONFIG');
 
 
 /**
@@ -32,7 +32,7 @@ export interface IConfigureLoader<T extends RunnableConfigure = RunnableConfigur
 /**
  * configure loader token.
  */
-export const ConfigureLoaderToken = new InjectToken<IConfigureLoader>('DI_Configure_Loader');
+export const ConfigureLoaderToken = tokenId<IConfigureLoader>('DI_Configure_Loader');
 
 /**
  * configure manager.

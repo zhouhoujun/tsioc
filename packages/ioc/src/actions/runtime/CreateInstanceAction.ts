@@ -11,7 +11,7 @@ import { CTX_ARGS } from '../../context-tokens';
  */
 export const CreateInstanceAction = function (ctx: RuntimeActionContext, next: () => void): void {
     if (!ctx.target) {
-        ctx.target = new ctx.type(...ctx.get(CTX_ARGS));
+        ctx.target = new ctx.type(...ctx.getValue(CTX_ARGS));
     }
     next();
 };

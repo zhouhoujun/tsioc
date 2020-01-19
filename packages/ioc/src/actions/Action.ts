@@ -2,7 +2,7 @@ import { Token, Type } from '../types';
 import { lang } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';
 import { IInjector, IProviders } from '../IInjector';
-import { InjectToken } from '../InjectToken';
+import { tokenId } from '../InjectToken';
 
 /**
  * action context option.
@@ -36,7 +36,7 @@ export interface IActionInjector extends IInjector {
     getAction<T extends Function>(target: Token<Action> | Action | Function): T;
 }
 
-export const ActionInjectorToken = new InjectToken<IActionInjector>('ACTION_INJECTOR');
+export const ActionInjectorToken = tokenId<IActionInjector>('ACTION_INJECTOR');
 
 
 /**

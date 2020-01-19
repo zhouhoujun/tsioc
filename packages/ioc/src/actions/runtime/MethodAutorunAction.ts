@@ -11,7 +11,7 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
  * @extends {IocRuntimeAction}
  */
 export const MethodAutorunAction = function (ctx: RuntimeActionContext, next: () => void) {
-    let currDec = ctx.get(CTX_CURR_DECOR);
+    let currDec = ctx.getValue(CTX_CURR_DECOR);
     let injector = ctx.injector;
     if (ctx.reflects.hasMethodMetadata(currDec, ctx.type)) {
         let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(currDec, ctx.type);

@@ -26,7 +26,7 @@ export const BindParameterTypeAction = function (ctx: RuntimeActionContext, next
 
     let refs = ctx.reflects;
     let injector = ctx.injector;
-    let currDecoractor = ctx.get(CTX_CURR_DECOR);
+    let currDecoractor = ctx.getValue(CTX_CURR_DECOR);
     let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
     if (isArray(parameters) && parameters.length) {
         parameters.forEach(params => {

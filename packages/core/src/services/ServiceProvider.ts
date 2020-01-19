@@ -27,7 +27,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
             { provide: INJECTOR, useValue: injector },
             { provide: InjectorProxyToken, useValue: injector.getProxy() });
         this.proxy().getActionInjector()
-            .get(ResolveServiceScope)
+            .getInstance(ResolveServiceScope)
             .execute(context);
         return context.instance as T || null;
     }
@@ -64,7 +64,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProviders {
         let context = ResolveServicesContext.parse(injector, isToken(target) ? { token: target } : target);
         this.proxy().getActionInjector()
-            .get(ResolveServicesScope)
+            .getInstance(ResolveServicesScope)
             .execute(context);
 
         return context.services;

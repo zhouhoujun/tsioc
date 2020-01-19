@@ -1,4 +1,5 @@
 import { ActionContextOption, Type, Modules, IocRaiseContext, createRaiseContext, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
+import { CTX_INJ_MODULE } from '../context-tokens';
 
 
 /**
@@ -27,11 +28,11 @@ export class InjectActionContext extends IocRaiseContext<InjectActionOption> {
      * @memberof InjectorActionContext
      */
     get module(): Modules {
-        return this.getOptions().module;
+        return this.getValue(CTX_INJ_MODULE);
     }
 
     get currDecoractor(): string {
-        return this.get(CTX_CURR_DECOR);
+        return this.getValue(CTX_CURR_DECOR);
     }
 
     /**
@@ -61,5 +62,14 @@ export class InjectActionContext extends IocRaiseContext<InjectActionOption> {
      */
     static parse(injector: IInjector, options: InjectActionOption): InjectActionContext {
         return createRaiseContext(injector, InjectActionContext, options);
+    }
+
+    setOptions(options: InjectActionOption) {
+        if (!options) {
+            return;
+        }
+        if (options.module) {
+            this.context.registerValue(CTX_INJ_MODULE, options.module);
+        }
     }
 }
