@@ -20,5 +20,5 @@ export class InjectToken<T> extends Registration<T> {
  * @param key id
  */
 export function tokenId<T>(key: string): TokenId<T> {
-    return key;
+    return Symbol(key);
 }
