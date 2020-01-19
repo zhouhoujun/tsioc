@@ -8,8 +8,8 @@ export abstract class IocDecoratorScope<T extends RegisterActionContext> extends
     execute(ctx: T, next?: () => void): void {
         this.getDecorators(ctx)
             .forEach(dec => {
-                ctx.set(CTX_CURR_DECOR, dec);
-                ctx.set(CTX_CURR_DECOR_SCOPE, this.getDecorScope());
+                ctx.setValue(CTX_CURR_DECOR, dec);
+                ctx.setValue(CTX_CURR_DECOR_SCOPE, this.getDecorScope());
                 super.execute(ctx);
             });
         next && next();

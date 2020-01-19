@@ -3,7 +3,7 @@ import { ICoreInjector } from '@tsdi/core';
 import { IComponentContext } from './ComponentContext';
 import { AnnoationContext } from '../AnnoationContext';
 import { IBuildOption } from './IBuildOption';
-import { CTX_TEMPLATE } from '../context-tokens';
+import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '../context-tokens';
 import { IAnnoationReflect, IAnnotationMetadata } from '../annotations/IAnnoationReflect';
 
 @Injectable
@@ -36,8 +36,11 @@ export class BuildContext<
             return;
         }
         super.setOptions(options);
+        if (options.name) {
+            this.setValue(CTX_ELEMENT_NAME, options.name)
+        }
         if (options.template) {
-            this.set(CTX_TEMPLATE, options.template);
+            this.setValue(CTX_TEMPLATE, options.template);
         }
     }
 }

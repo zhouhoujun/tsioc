@@ -103,7 +103,7 @@ export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootA
     }
 
     protected bindContextToken(ctx: T) {
-        ctx.injector.registerValue(WorkflowContextToken, ctx);
+        ctx.injector.setValue(WorkflowContextToken, ctx);
     }
 
     protected getBootDeps() {

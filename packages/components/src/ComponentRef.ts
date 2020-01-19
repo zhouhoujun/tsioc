@@ -96,7 +96,7 @@ export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContex
         super(context);
         let injector = context.injector;
         if (!injector.has(ELEMENT_REFS)) {
-            injector.registerValue(ELEMENT_REFS, new WeakMap());
+            injector.setValue(ELEMENT_REFS, new WeakMap());
         }
         injector.getSingleton(ELEMENT_REFS).set(nativeElement, this);
         this.onDestroy(() => injector.getSingleton(ELEMENT_REFS)?.delete(nativeElement));
@@ -129,7 +129,7 @@ export class ComponentRef<T = any, TN = NodeType, TCtx extends AnnoationContext 
     ) {
         super(context);
         if (!context.injector.has(COMPONENT_REFS)) {
-            context.injector.registerValue(COMPONENT_REFS, new WeakMap());
+            context.injector.setValue(COMPONENT_REFS, new WeakMap());
         }
         let injector = context.injector;
         injector.getSingleton(COMPONENT_REFS).set(instance, this);

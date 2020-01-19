@@ -13,12 +13,12 @@ export const ConstructorArgsAction = function (ctx: RuntimeActionContext, next: 
     if (!ctx.hasValue(CTX_ARGS)) {
         let injector = ctx.injector;
         if (ctx.targetReflect.methodParams.has('constructor')) {
-            ctx.set(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
+            ctx.setValue(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
         } else {
             ctx.reflects.getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
-            ctx.set(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
+            ctx.setValue(CTX_PARAMS, ctx.targetReflect.methodParams.get('constructor'));
         }
-        ctx.set(CTX_ARGS, injector.createParams(ctx.get(CTX_PARAMS), ctx.providers));
+        ctx.setValue(CTX_ARGS, injector.createParams(ctx.get(CTX_PARAMS), ctx.providers));
     }
     next();
 };

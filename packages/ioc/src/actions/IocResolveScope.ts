@@ -26,7 +26,7 @@ export class IocResolveScope<T extends ResolveActionContext = ResolveActionConte
         if (!ctx.instance) {
             let target = ctx.getOptions().target;
             if (target) {
-                ctx.set(CTX_TARGET_TOKEN, isToken(target) ? target : lang.getClass(target));
+                ctx.setValue(CTX_TARGET_TOKEN, isToken(target) ? target : lang.getClass(target));
             }
             super.execute(ctx);
         }

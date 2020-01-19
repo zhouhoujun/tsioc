@@ -11,9 +11,9 @@ export class ResolveTargetScope extends IocResolveScope<ResolveServiceContext> i
         if (ctx.hasValue(CTX_TARGET_REFS)) {
             ctx.getValue(CTX_TARGET_REFS).some(t => {
                 let tgtk = isToken(t) ? t : lang.getClass(t);
-                ctx.set(CTX_TARGET_TOKEN, tgtk);
+                ctx.setValue(CTX_TARGET_TOKEN, tgtk);
                 return ctx.tokens.some(tk => {
-                    ctx.set(CTX_CURR_TOKEN, tk);
+                    ctx.setValue(CTX_CURR_TOKEN, tk);
                     super.execute(ctx);
                     return !!ctx.instance;
                 });

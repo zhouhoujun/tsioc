@@ -20,7 +20,7 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
             injector: ctx.injector
         });
 
-        boot && ctx.set(CTX_MODULE_BOOT, boot);
+        boot && ctx.setValue(CTX_MODULE_BOOT, boot);
 
     }
     await next();

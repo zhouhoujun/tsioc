@@ -14,7 +14,7 @@ export class ModuleBuildScope extends BuildHandles<BootContext> implements IActi
             await super.execute(ctx);
         }
         if (!ctx.hasValue(CTX_MODULE_BOOT) && ctx.hasValue(CTX_MODULE_INST)) {
-            ctx.set(CTX_MODULE_BOOT, ctx.target)
+            ctx.setValue(CTX_MODULE_BOOT, ctx.target)
         }
         if (next) {
             await next();

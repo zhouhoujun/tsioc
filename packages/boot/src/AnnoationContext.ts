@@ -69,7 +69,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         if (!this.hasValue(CTX_MODULE_DECTOR) && this.type) {
             let dec = this.targetReflect?.decorator;
             if (dec) {
-                this.set(CTX_MODULE_DECTOR, dec);
+                this.setValue(CTX_MODULE_DECTOR, dec);
             }
         }
         return this.getValue(CTX_MODULE_DECTOR);
@@ -92,7 +92,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         if (context === null) {
             this.remove(CTX_PARENT_CONTEXT);
         } else {
-            this.set(CTX_PARENT_CONTEXT, context);
+            this.setValue(CTX_PARENT_CONTEXT, context);
         }
         return this;
     }
@@ -104,7 +104,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     addChild(contex: AnnoationContext) {
         let chiledren = this.getChildren();
         chiledren.push(contex);
-        this.set(CTX_SUB_CONTEXT, chiledren);
+        this.setValue(CTX_SUB_CONTEXT, chiledren);
     }
 
     removeChild(contex: AnnoationContext) {
@@ -134,7 +134,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         if (!this.hasValue(CTX_MODULE_ANNOATION) && this.type) {
             let tgRef = this.targetReflect;
             if ((tgRef && tgRef.getAnnoation)) {
-                this.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation<TMeta>())
+                this.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation<TMeta>())
             }
         }
         return this.getValue(CTX_MODULE_ANNOATION) as TMeta;
@@ -147,7 +147,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         }
         options.type = options.type || options.module;
         if (options.type) {
-            this.set(CTX_MODULE, options.type);
+            this.setValue(CTX_MODULE, options.type);
         }
         super.setOptions(options);
         if (options.parent instanceof AnnoationContext) {

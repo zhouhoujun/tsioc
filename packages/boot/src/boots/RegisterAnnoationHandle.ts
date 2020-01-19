@@ -10,11 +10,11 @@ export const RegisterAnnoationHandle = async function (ctx: BootContext, next: (
         ctx.injector.registerType(ctx.type);
     }
     let annoation = ctx.targetReflect.getAnnoation ? ctx.targetReflect.getAnnoation() : null;
-    ctx.set(INJECTOR, ctx.targetReflect.getInjector());
+    ctx.setValue(INJECTOR, ctx.targetReflect.getInjector());
     if (annoation) {
-        ctx.set(CTX_MODULE_ANNOATION, annoation);
+        ctx.setValue(CTX_MODULE_ANNOATION, annoation);
         if (annoation.baseURL) {
-            ctx.injector.registerValue(ProcessRunRootToken, ctx.annoation.baseURL);
+            ctx.injector.setValue(ProcessRunRootToken, ctx.annoation.baseURL);
         }
         next();
     } else {

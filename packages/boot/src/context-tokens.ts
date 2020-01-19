@@ -31,6 +31,8 @@ export const CTX_APP_CONFIGURE = tokenId<RunnableConfigure>('CTX_APP_CONFIGURE')
 export const CTX_DATA = tokenId<any>('CTX_DATA');
 export const CTX_TEMPLATE = tokenId<any>('CTX_TEMPLATE');
 
+export const CTX_ELEMENT_NAME = tokenId<any>('CTX_ELEMENT_NAME');
+
 // message.
 export const CTX_MSG_TARGET = tokenId<any>('CTX_MSG_TARGET');
 export const CTX_MSG_TYPE = tokenId<string>('CTX_MSG_TYPE');

@@ -21,7 +21,7 @@ export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements
             let refSelector = decorPdr.resolve(ctx.decorator, ComponentProvider);
             if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
                 let elRef = refSelector.createElementRef(ctx, ctx.value);
-                ctx.set(CTX_ELEMENT_REF, elRef);
+                ctx.setValue(CTX_ELEMENT_REF, elRef);
                 ctx.value = elRef;
             }
 

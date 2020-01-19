@@ -18,7 +18,7 @@ export abstract class InjectRegisterScope extends InjectScope implements IAction
         if (isArray(types) && types.length) {
             types.forEach(ty => {
                 if (!ctx.injector.has(ty)) {
-                    ctx.set(CTX_CURR_TYPE, ty);
+                    ctx.setValue(CTX_CURR_TYPE, ty);
                     super.execute(ctx);
                 }
             });

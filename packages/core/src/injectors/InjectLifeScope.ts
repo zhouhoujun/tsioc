@@ -17,7 +17,7 @@ export class InjectLifeScope extends LifeScope<InjectActionContext> {
         this.actInjector.regAction(IocExtRegisterScope);
         this.actInjector.getInstance(DesignRegisterer)
             .setRegisterer(DecoratorScopes.Inject, ijdr);
-        this.actInjector.registerValue(InjectDecoratorRegisterer, ijdr);
+        this.actInjector.setValue(InjectDecoratorRegisterer, ijdr);
 
         ijdr.register(IocExt, IocExtRegisterScope);
 

@@ -55,9 +55,9 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     protected init() {
-        this.registerValue(INJECTOR, this, lang.getClass(this));
-        this.registerValue(InjectorProxyToken, () => this);
-        this.registerValue(IocCacheManager, new IocCacheManager(this));
+        this.setValue(INJECTOR, this, lang.getClass(this));
+        this.setValue(InjectorProxyToken, () => this);
+        this.setValue(IocCacheManager, new IocCacheManager(this));
     }
 
     get size(): number {
@@ -106,6 +106,17 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return this;
     }
 
+    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>) {
+        if (provider && isClass(provider)) {
+            this.singletons.set(provider, value);
+            this.singletons.set(key, value);
+            this.provideTypes.set(key, provider);
+        } else {
+            this.singletons.set(key, value);
+        }
+        return this;
+    }
+
     /**
      * register value.
      *
@@ -117,14 +128,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      */
     registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
         let key = this.getTokenKey(token);
-        if (isClass(provider)) {
-            this.singletons.set(provider, value);
-            this.singletons.set(key, value);
-            this.provideTypes.set(key, provider);
-        } else {
-            this.singletons.set(key, value);
-        }
-        return this;
+        return this.setValue(key, value, provider);
     }
 
     /**

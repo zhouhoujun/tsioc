@@ -87,7 +87,7 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
 
     get status(): ActivityStatus {
         if (!this.hasValue(CTX_ACTIVITYSTATUS)) {
-            this.set(CTX_ACTIVITYSTATUS, this.injector.get(ActivityStatus));
+            this.setValue(CTX_ACTIVITYSTATUS, this.injector.get(ActivityStatus));
         }
         return this.getValue(CTX_ACTIVITYSTATUS);
     }
@@ -98,7 +98,7 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
         }
         super.setOptions(options);
         if (isDefined(options.data)) {
-            this.set(ACTIVITY_INPUT, options.data);
+            this.setValue(ACTIVITY_INPUT, options.data);
         }
     }
 }
@@ -124,19 +124,19 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
     async start(data?: any): Promise<TCtx> {
         let injector = this.getInjector();
         if (isDefined(data)) {
-            this.context.set(ACTIVITY_INPUT, data);
+            this.context.setValue(ACTIVITY_INPUT, data);
         }
-        this.context.set(WorkflowInstance, this);
+        this.context.setValue(WorkflowInstance, this);
 
         if (this.context.id && !injector.has(this.context.id)) {
-            injector.registerValue(this.context.id, this);
+            injector.setValue(this.context.id, this);
         }
 
         let target = this.getBoot() as IActivityRef;
         await target.run(this.context, async () => {
             this.state = RunState.complete;
             console.log(target.name, target.context);
-            this.context.set(ACTIVITY_OUTPUT, target.context.output);
+            this.context.setValue(ACTIVITY_OUTPUT, target.context.output);
         });
 
         return this.context;

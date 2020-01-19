@@ -11,15 +11,15 @@ import { CoreInjector } from './CoreInjector';
 
 export function registerCores(container: IContainer) {
 
-    container.registerValue(ContainerToken, container);
+    container.setValue(ContainerToken, container);
     if (!container.has(ModuleLoader)) {
         container.registerType(ModuleLoader);
     }
 
     let fac = container.getInstance(ContainerProxyToken);
     container.set(InjectorFactoryToken, () => new CoreInjector(fac), CoreInjector);
-    container.registerValue(ModuleProvider, new ModuleProvider(fac));
-    container.registerValue(ServiceProvider, new ServiceProvider(fac));
+    container.setValue(ModuleProvider, new ModuleProvider(fac));
+    container.setValue(ServiceProvider, new ServiceProvider(fac));
 
     let actInjector = container.getActionInjector();
     // register action

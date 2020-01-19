@@ -93,7 +93,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
     }
 
     set data(data: any) {
-        this.set(CTX_DATA, data);
+        this.setValue(CTX_DATA, data);
     }
 
     setOptions(options: T) {
@@ -102,16 +102,16 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
         }
         super.setOptions(options);
         if (isDefined(options.data)) {
-            this.set(CTX_DATA, options.data);
+            this.setValue(CTX_DATA, options.data);
         }
         if (options.target) {
-            this.set(CTX_MSG_TARGET, options.target)
+            this.setValue(CTX_MSG_TARGET, options.target)
         }
         if (options.type) {
-            this.set(CTX_MSG_TYPE, options.type);
+            this.setValue(CTX_MSG_TYPE, options.type);
         }
         if (options.event) {
-            this.set(CTX_MSG_EVENT, options.event);
+            this.setValue(CTX_MSG_EVENT, options.event);
         }
     }
 

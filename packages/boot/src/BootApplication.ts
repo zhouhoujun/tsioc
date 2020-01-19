@@ -51,7 +51,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
             container.registerType(BootContext);
         }
 
-        container.registerValue(BootApplication, this);
+        container.setValue(BootApplication, this);
 
     }
 
@@ -71,7 +71,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     }
 
     protected bindContextToken(ctx: T) {
-        this.getContainer().registerValue(ApplicationContextToken, ctx);
+        this.getContainer().setValue(ApplicationContextToken, ctx);
     }
 
     /**

@@ -30,7 +30,7 @@ export class ActionInjector extends Injector implements IActionInjector {
             }
 
             let instance = new type(this) as Action & IActionSetup;
-            this.registerValue(type, instance);
+            this.setValue(type, instance);
             if (instance instanceof Action && isFunction(instance.setup)) {
                 instance.setup();
             }

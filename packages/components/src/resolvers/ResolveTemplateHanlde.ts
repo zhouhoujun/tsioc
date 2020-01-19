@@ -10,7 +10,7 @@ import { ComponentProvider } from '../ComponentProvider';
 export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
 
     let annoation = ctx.annoation as IComponentMetadata;
-    ctx.set(CTX_COMPONENT, ctx.value);
+    ctx.setValue(CTX_COMPONENT, ctx.value);
     let pCtx = TemplateContext.parse(ctx.injector, {
         parent: ctx,
         template: annoation.template
@@ -24,7 +24,7 @@ export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: ()
     if (!isNullOrUndefined(pCtx.value)) {
         ctx.addChild(pCtx);
         let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, ComponentProvider)
-        ctx.set(CTX_COMPONENT_REF, isArray(pCtx.value) ?
+        ctx.setValue(CTX_COMPONENT_REF, isArray(pCtx.value) ?
             refSeltor.createComponentRef(ctx.type, ctx.value, ctx, ...pCtx.value)
             : refSeltor.createComponentRef(ctx.type, ctx.value, ctx, pCtx.value));
         await next();

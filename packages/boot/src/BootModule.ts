@@ -47,10 +47,10 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.registerValue(ModuleInjector, new ModuleInjector(container.getContainerProxy()));
+        container.setValue(ModuleInjector, new ModuleInjector(container.getContainerProxy()));
         let actInjector = container.getActionInjector();
 
-        actInjector.registerValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
+        actInjector.setValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .regAction(AnnoationRegisterScope)
             .regAction(DIModuleInjectScope)
             .regAction(ResolveMoudleScope)

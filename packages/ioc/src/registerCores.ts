@@ -23,20 +23,20 @@ import { ActionInjectorToken } from './actions/Action';
 export function registerCores(container: IIocContainer) {
     let fac = container.getInstance(InjectorProxyToken) as ContainerProxy;
     container.set(IocContainerToken, fac);
-    container.registerValue(ContainerProxyToken, fac);
-    container.registerValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
+    container.setValue(ContainerProxyToken, fac);
+    container.setValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
     container.set(PROVIDERS, () => new InjectorProvider(fac), InjectorProvider);
-    container.registerValue(ProviderParser, new ProviderParser(container));
-    container.registerValue(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
+    container.setValue(ProviderParser, new ProviderParser(container));
+    container.setValue(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);
-    container.registerValue(ActionInjectorToken, actInjector, ActionInjector);
+    container.setValue(ActionInjectorToken, actInjector, ActionInjector);
 
-    actInjector.registerValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
-    actInjector.registerValue(DesignRegisterer, new DesignRegisterer(actInjector));
-    actInjector.registerValue(DecoratorProvider, new DecoratorProvider(container));
+    actInjector.setValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
+    actInjector.setValue(DesignRegisterer, new DesignRegisterer(actInjector));
+    actInjector.setValue(DecoratorProvider, new DecoratorProvider(container));
 
     // bing action.
     actInjector

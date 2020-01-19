@@ -12,7 +12,7 @@ export class ResolveRunnableScope extends BuildHandles<BootContext> implements I
         if (!(boot instanceof Startup)) {
             super.execute(ctx);
         } else if (boot) {
-            ctx.set(CTX_MODULE_STARTUP, boot);
+            ctx.setValue(CTX_MODULE_STARTUP, boot);
         }
 
         if (ctx.startup) {

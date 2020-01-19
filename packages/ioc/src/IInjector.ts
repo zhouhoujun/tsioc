@@ -192,6 +192,13 @@ export interface IInjector extends IDestoryable {
      */
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this;
     /**
+     * set value.
+     * @param key token key.
+     * @param value value.
+     *  @param {Type<T>} [provider] the value provider.
+     */
+    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
+    /**
      * register type.
      *
      * @template T

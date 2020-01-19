@@ -59,7 +59,7 @@ export abstract class IocRaiseContext<
     constructor(@Inject(INJECTOR) injector: TJ) {
         super();
         this.context = injector.get(PROVIDERS);
-        this.context.registerValue(INJECTOR, injector);
+        this.context.setValue(INJECTOR, injector);
     }
 
     /**
@@ -74,7 +74,7 @@ export abstract class IocRaiseContext<
      */
     get reflects(): ITypeReflects {
         if (!this.context.hasSingleton(TypeReflectsToken)) {
-            this.context.registerValue(TypeReflectsToken, this.injector.getSingleton(TypeReflectsToken));
+            this.context.setValue(TypeReflectsToken, this.injector.getSingleton(TypeReflectsToken));
         }
         return this.context.getSingleton(TypeReflectsToken);
     }
@@ -122,6 +122,11 @@ export abstract class IocRaiseContext<
      */
     getValue<T>(key: SymbolType<T>): T {
         return this.context.getSingleton(key);
+    }
+
+    setValue<T>(key: SymbolType<T>, value: T) {
+        this.context.setValue(key, value);
+        // return this;
     }
 
     /**
@@ -174,7 +179,7 @@ export abstract class IocRaiseContext<
             }
         }
         options = this.context.hasSingleton(CTX_OPTIONS) ? Object.assign(this.getOptions(), options) : options;
-        this.context.registerValue(CTX_OPTIONS, options);
+        this.context.setValue(CTX_OPTIONS, options);
     }
 
     /**
@@ -224,7 +229,7 @@ export abstract class IocProvidersContext<
     get providers(): IProviders {
         if (!this.context.hasSingleton(CTX_PROVIDERS)) {
             this._originPdr = true;
-            this.set(CTX_PROVIDERS, this.injector.get(PROVIDERS));
+            this.setValue(CTX_PROVIDERS, this.injector.get(PROVIDERS));
         }
         return this.context.getSingleton(CTX_PROVIDERS);
     }
@@ -233,7 +238,7 @@ export abstract class IocProvidersContext<
         super.setOptions(options);
         if (options && options.providers) {
             if (isInjector(options.providers)) {
-                this.set(CTX_PROVIDERS, options.providers)
+                this.setValue(CTX_PROVIDERS, options.providers)
             } else if (isArray(options.providers)) {
                 this.providers.inject(...options.providers);
             }

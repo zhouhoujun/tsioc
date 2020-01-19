@@ -1,9 +1,10 @@
-import { BuildContext, IBuildOption, AnnoationContext } from '@tsdi/boot';
+import { DecoratorProvider } from '@tsdi/ioc';
+import { BuildContext, IBuildOption, AnnoationContext, CTX_ELEMENT_NAME } from '@tsdi/boot';
 import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF } from '../ComponentRef';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
 import { ComponentProvider } from '../ComponentProvider';
-import { DecoratorProvider } from '@tsdi/ioc';
+
 
 
 export class ComponentContext<T extends IBuildOption = IBuildOption,
@@ -11,6 +12,9 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
     TRefl extends IComponentReflect = IComponentReflect>
     extends BuildContext<T, TMeta, TRefl> {
 
+    get name() {
+        return this.getValue(CTX_ELEMENT_NAME);
+    }
 
     getResultRef() {
         return this.getValue(CTX_COMPONENT_REF) ?? this.getValue(CTX_TEMPLATE_REF) ?? this.getValue(CTX_ELEMENT_REF) ?? this.value;
@@ -49,7 +53,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
                 }
             }
             if (dector) {
-                this.set(CTX_COMPONENT_DECTOR, dector);
+                this.setValue(CTX_COMPONENT_DECTOR, dector);
             }
         }
         return this.getValue(CTX_COMPONENT_DECTOR);

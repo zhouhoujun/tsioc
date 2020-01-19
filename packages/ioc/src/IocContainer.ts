@@ -125,7 +125,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                     return injector.getSingleton(key);
                 }
                 let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-                injector.registerValue(key, instance);
+                injector.setValue(key, instance);
                 return instance;
             }
             : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));

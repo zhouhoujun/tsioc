@@ -14,6 +14,7 @@ import { ParamProviders } from '../../providers/types';
 import { RuntimeActionContext } from '../runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from '../RuntimeLifeScope';
 import { CTX_TYPE_REGIN } from '../../context-tokens';
+import { INJECTOR } from '../../IInjector';
 
 export class DesignClassScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
@@ -43,8 +44,8 @@ export const AnnoationRegInAction = function (ctx: DesignActionContext, next: ()
         return regIn;
     });
     if (regIn === 'root') {
-        ctx.set(CTX_TYPE_REGIN, regIn);
-        ctx.set(InjectToken, ctx.getContainer());
+        ctx.setValue(CTX_TYPE_REGIN, regIn);
+        ctx.setValue(INJECTOR, ctx.getContainer());
     }
     next();
 };

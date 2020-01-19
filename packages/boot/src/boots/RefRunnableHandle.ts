@@ -13,7 +13,7 @@ export const RefRunnableHandle = async function (ctx: BootContext, next: () => P
         { provide: BootContext, useValue: ctx },
         { provide: lang.getClass(ctx), useValue: ctx });
 
-    startup && ctx.set(CTX_MODULE_STARTUP, startup);
+    startup && ctx.setValue(CTX_MODULE_STARTUP, startup);
 
     if (!ctx.hasValue(CTX_MODULE_STARTUP)) {
         await next();

@@ -32,7 +32,7 @@ export class ActivityStatus {
     set current(activity: IActivityRef) {
         this._current = activity;
         if (activity.isScope) {
-            activity.context.set(STATUS_SUB_TRACK, []);
+            activity.context.setValue(STATUS_SUB_TRACK, []);
             // clean parent scope control state.
             this.scopes.unshift(activity);
         } else if (this.currentScope) {

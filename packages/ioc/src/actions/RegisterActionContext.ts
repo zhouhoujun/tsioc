@@ -80,7 +80,7 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
 
     get targetReflect(): ITypeReflect {
         if (!this.context.hasSingleton(CTX_TARGET_RELF)) {
-            this.context.registerValue(CTX_TARGET_RELF, this.reflects.get(this.type));
+            this.context.setValue(CTX_TARGET_RELF, this.reflects.get(this.type));
         }
         return this.context.getSingleton(CTX_TARGET_RELF);
     }
@@ -91,14 +91,14 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
         }
         super.setOptions(options);
         if (options.token) {
-            this.context.registerValue(CTX_TOKEN, options.token);
+            this.context.setValue(CTX_TOKEN, options.token);
         }
 
         if (options.type) {
-            this.context.registerValue(CTX_TYPE, options.type);
+            this.context.setValue(CTX_TYPE, options.type);
         }
         if (options.singleton) {
-            this.context.registerValue(CTX_SINGLETON, options.singleton);
+            this.context.setValue(CTX_SINGLETON, options.singleton);
         }
     }
 }

@@ -16,7 +16,7 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
 
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.value && (<IComponentReflect>ctx.targetReflect)?.component) {
-            ctx.set(CTX_COMPONENT_DECTOR, ctx.decorator);
+            ctx.setValue(CTX_COMPONENT_DECTOR, ctx.decorator);
             await super.execute(ctx);
         } else if (ctx.value) {
             let mdref = ctx.getModuleRef();
@@ -27,7 +27,7 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
                     let refSelector = decorPdr.resolve(decor, ComponentProvider);
                     if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
                         let elRef = refSelector.createElementRef(ctx, ctx.value);
-                        ctx.set(CTX_ELEMENT_REF, elRef);
+                        ctx.setValue(CTX_ELEMENT_REF, elRef);
                         return true;
                     }
                     return false;

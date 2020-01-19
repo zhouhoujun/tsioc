@@ -28,7 +28,7 @@ export class IfActivity extends ControlActivity {
 
     protected async tryExec(ctx: ActivityContext) {
         let result = await this.condition.execute(ctx);
-        ctx.workflow.status.currentScope.context.set(IFStateKey, result);
+        ctx.workflow.status.currentScope.context.setValue(IFStateKey, result);
         if (result) {
             await ctx.getExector().runActivity(this.body);
         }

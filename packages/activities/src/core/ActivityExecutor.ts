@@ -42,14 +42,14 @@ export class ActivityExecutor implements IActivityExecutor {
         let injector = ctx.injector;
         if (isAcitvityRef(activity)) {
             let nctx = ctx.clone() as T;
-            activity.context.set(ACTIVITY_INPUT, data);
+            activity.context.setValue(ACTIVITY_INPUT, data);
             return activity.run(nctx).then(() => nctx);
         } else if (activity instanceof Activity) {
             let actx = this.context.clone();
             return activity.execute(actx)
                 .then(v => {
                     let nctx = ctx.clone();
-                    nctx.set(ACTIVITY_OUTPUT, v);
+                    nctx.setValue(ACTIVITY_OUTPUT, v);
                     return nctx as T;
                 });
         } else if (isClass(activity)) {
@@ -136,17 +136,17 @@ export class ActivityExecutor implements IActivityExecutor {
     protected async buildActivity<T extends WorkflowContext>(activity: ActivityType, input: any): Promise<PromiseUtil.ActionHandle<T>> {
         let ctx = this.context;
         if (isAcitvityRef(activity)) {
-            isDefined(input) && activity.context.set(ACTIVITY_INPUT, input);
+            isDefined(input) && activity.context.setValue(ACTIVITY_INPUT, input);
             return activity.toAction();
         } else if (activity instanceof Activity) {
             let ref = this.context.injector.getSingleton(ELEMENT_REFS).get(activity) as IActivityElementRef ?? new ActivityElementRef(this.context, activity);
             return ref.toAction();
         } else if (isClass(activity)) {
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(activity) as IActivityRef;
-            aref.context.set(ACTIVITY_INPUT, input);
+            aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {
-            this.context.set(ACTIVITY_INPUT, input);
+            this.context.setValue(ACTIVITY_INPUT, input);
             return activity;
         } else if (activity) {
             let md: Type;
@@ -161,7 +161,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 parent: ctx
             };
             let aref = await ctx.injector.getInstance(ComponentBuilder).resolve(option) as IActivityRef;
-            aref.context.set(ACTIVITY_INPUT, input);
+            aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         }
     }

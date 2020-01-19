@@ -91,11 +91,11 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
             this.target = options.target;
         }
         if (options.args) {
-            this.context.registerValue(CTX_ARGS, options.args);
+            this.context.setValue(CTX_ARGS, options.args);
         }
         if (options.params) {
-            this.context.registerValue(CTX_PARAMS, options.params);
+            this.context.setValue(CTX_PARAMS, options.params);
         }
-        this.context.registerValue(CTX_PROPERTYKEY, options.propertyKey || 'constructor')
+        this.context.setValue(CTX_PROPERTYKEY, options.propertyKey || 'constructor')
     }
 }

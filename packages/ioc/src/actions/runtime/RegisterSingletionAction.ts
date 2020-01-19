@@ -10,7 +10,7 @@ import { RuntimeActionContext } from './RuntimeActionContext';
 export const RegisterSingletionAction = function (ctx: RuntimeActionContext, next: () => void): void {
     if (ctx.type && ctx.target && ctx.targetReflect.singleton) {
         if (!ctx.injector.hasSingleton(ctx.type)) {
-            ctx.injector.registerValue(ctx.type, ctx.target);
+            ctx.injector.setValue(ctx.type, ctx.target);
         }
     }
     next();

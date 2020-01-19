@@ -9,6 +9,10 @@ import { AnnoationOption } from '../AnnoationContext';
  * @interface IModuleResolveOption
  */
 export interface IBuildOption<T = any> extends AnnoationOption<T> {
+    /**
+     * name of component.
+     */
+    name?: string;
 
     template?: any;
 

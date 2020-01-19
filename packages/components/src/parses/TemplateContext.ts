@@ -29,12 +29,12 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
             if (!this.componentDecorator) {
                 let node = (isArray(this.value) ? lang.first(this.value) : this.value) as ContextNode;
                 let decor = (node.context as ComponentContext)?.componentDecorator;
-                decor && this.set(CTX_COMPONENT_DECTOR, decor);
+                decor && this.setValue(CTX_COMPONENT_DECTOR, decor);
             }
             let compPdr = this.componentProvider;
             if (compPdr) {
                 let tempRef = isArray(this.value) ? compPdr.createTemplateRef(this, ...this.value) : compPdr.createTemplateRef(this, this.value);
-                this.set(CTX_TEMPLATE_REF, tempRef);
+                this.setValue(CTX_TEMPLATE_REF, tempRef);
             }
         }
         return this.getValue(CTX_TEMPLATE_REF) ?? this.value;

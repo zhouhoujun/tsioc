@@ -43,7 +43,7 @@ export const TranslateElementHandle = async function (ctx: TemplateContext, next
         let decorators = ctx.getModuleRef()?.reflect.componentDectors ?? ['@Component'];
         PromiseUtil.runInChain(decorators.map(decor => async (ctx: TemplateContext, next) => {
             if (reg.has(decor)) {
-                ctx.set(CTX_COMPONENT_DECTOR, decor);
+                ctx.setValue(CTX_COMPONENT_DECTOR, decor);
                 await PromiseUtil.runInChain(reg.getFuncs(actInjector, decor), ctx);
             }
             if (!ctx.selector) {

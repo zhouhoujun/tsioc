@@ -7,8 +7,8 @@ export const RegModuleRefAction = function (ctx: DesignActionContext, next: () =
     let reflect = ctx.targetReflect as IModuleReflect;
     if (reflect) {
         let mdRef = new ModuleRef(ctx.type, reflect, ctx.getValue(CTX_MODULE_EXPORTS));
-        ctx.injector.registerValue(ModuleRef, mdRef);
-        ctx.set(ModuleRef, mdRef);
+        ctx.injector.setValue(ModuleRef, mdRef);
+        ctx.setValue(ModuleRef, mdRef);
         reflect.getModuleRef = () => mdRef;
     }
     next();

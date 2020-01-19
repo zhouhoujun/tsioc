@@ -21,7 +21,7 @@ export const BootConfigureLoadHandle = async function (ctx: BootContext, next: (
     if (isClass(ctx.type)) {
         let baseURL = ctx.baseURL;
         if (baseURL) {
-            injector.registerValue(ProcessRunRootToken, ctx.baseURL)
+            injector.setValue(ProcessRunRootToken, ctx.baseURL)
         }
     }
     let mgr = injector.getInstance(ConfigureManager);
@@ -39,15 +39,15 @@ export const BootConfigureLoadHandle = async function (ctx: BootContext, next: (
         config = merger ? merger.merge([config, ctx.annoation]) : Object.assign({}, config, ctx.annoation);
     }
 
-    ctx.set(CTX_APP_CONFIGURE, config);
+    ctx.setValue(CTX_APP_CONFIGURE, config);
 
     if (config.deps && config.deps.length) {
         let container = ctx.getContainer();
         await container.load(injector, ...config.deps);
     }
     if (config.baseURL && !ctx.baseURL) {
-        ctx.set(ProcessRunRootToken, config.baseURL);
-        injector.registerValue(ProcessRunRootToken, ctx.baseURL);
+        ctx.setValue(ProcessRunRootToken, config.baseURL);
+        injector.setValue(ProcessRunRootToken, ctx.baseURL);
     }
 
     await next();

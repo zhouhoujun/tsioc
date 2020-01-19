@@ -48,7 +48,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         super(context);
         let injector = context.injector;
         if (!injector.has(ELEMENT_REFS)) {
-            injector.registerValue(ELEMENT_REFS, new WeakMap());
+            injector.setValue(ELEMENT_REFS, new WeakMap());
         }
         injector.getSingleton(ELEMENT_REFS).set(nativeElement, this);
         this.onDestroy(() => injector.getSingleton(ELEMENT_REFS)?.delete(nativeElement));
@@ -64,8 +64,8 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         this.context.remove(ACTIVITY_OUTPUT);
         let result = await this.nativeElement.execute(this.context);
         if (isDefined(result)) {
-            this.context.set(ACTIVITY_OUTPUT, result);
-            ctx.status.currentScope?.context.set(ACTIVITY_OUTPUT, result);
+            this.context.setValue(ACTIVITY_OUTPUT, result);
+            ctx.status.currentScope?.context.setValue(ACTIVITY_OUTPUT, result);
         }
 
         if (next) {
@@ -85,7 +85,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
 export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef<T> implements IActivityTemplateRef<T> {
     readonly isScope = true;
     get name(): string {
-        return this.context.getOptions()?.name;
+        return this.context.name;
     }
 
     get template() {
@@ -114,8 +114,8 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         let result = await this.context.getExector().runActivity(this.rootNodes);
         ctx.status.scopeEnd();
         if (isDefined(result)) {
-            this.context.set(ACTIVITY_OUTPUT, result);
-            ctx.status.currentScope?.context.set(ACTIVITY_OUTPUT, result);
+            this.context.setValue(ACTIVITY_OUTPUT, result);
+            ctx.status.currentScope?.context.setValue(ACTIVITY_OUTPUT, result);
         }
 
         if (next) {
@@ -143,7 +143,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
 export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends ActivityRef<T> implements IActivityComponentRef<T, TN> {
 
     get name(): string {
-        return this.context.getOptions()?.name || lang.getClassName(this.componentType);
+        return this.context.name || lang.getClassName(this.componentType);
     }
 
     constructor(
@@ -154,7 +154,7 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
     ) {
         super(context);
         if (!context.injector.has(COMPONENT_REFS)) {
-            context.injector.registerValue(COMPONENT_REFS, new WeakMap());
+            context.injector.setValue(COMPONENT_REFS, new WeakMap());
         }
         let injector = context.injector;
         injector.getSingleton(COMPONENT_REFS).set(instance, this);

@@ -74,10 +74,10 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
         if (options.target) {
             let targets = (isArray(options.target) ? options.target : [options.target]).filter(t => t);
             if (targets.length) {
-                this.context.registerValue(CTX_TARGET_REFS, targets);
+                this.context.setValue(CTX_TARGET_REFS, targets);
             }
         }
-        this.context.registerValue(CTX_TOKENS, tokens);
+        this.context.setValue(CTX_TOKENS, tokens);
     }
 
 }

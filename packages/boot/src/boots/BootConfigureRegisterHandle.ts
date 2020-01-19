@@ -13,7 +13,7 @@ export const BootConfigureRegisterHandle = async function (ctx: BootContext, nex
     if (regs && regs.length) {
         await Promise.all(regs.map(reg => reg.register(config, ctx)));
         if (config.logConfig && !ctx.injector.has(LogConfigureToken) && !ctx.getContainer().has(LogConfigureToken)) {
-            ctx.injector.registerValue(LogConfigureToken, config.logConfig);
+            ctx.injector.setValue(LogConfigureToken, config.logConfig);
         }
     }
     await next();

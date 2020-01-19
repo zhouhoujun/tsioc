@@ -11,7 +11,7 @@ export const ResolveTypeHandle = async function (ctx: BootContext, next: () => P
             providers: ctx.providers,
             injector: ctx.injector
         });
-        target && ctx.set(CTX_MODULE_INST, target);
+        target && ctx.setValue(CTX_MODULE_INST, target);
     }
     await next();
 };

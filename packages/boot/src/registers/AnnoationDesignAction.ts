@@ -9,7 +9,7 @@ import { CTX_MODULE_ANNOATION } from '../context-tokens';
 export const AnnoationDesignAction = function (ctx: DesignActionContext, next: () => void): void {
     let tgRef = ctx.targetReflect as IModuleReflect;
     if (tgRef.getAnnoation) {
-        ctx.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
+        ctx.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
         return next();
     }
 
@@ -39,7 +39,7 @@ export const AnnoationDesignAction = function (ctx: DesignActionContext, next: (
             return annon as T;
         };
 
-        ctx.set(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
+        ctx.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
     }
     next();
 };

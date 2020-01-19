@@ -48,6 +48,6 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
             });
         }
     });
-    map.size && ctx.set(CTX_MODULE_EXPORTS, map);
+    map.size && ctx.setValue(CTX_MODULE_EXPORTS, map);
     next();
 };

@@ -24,10 +24,10 @@ export class UnitTestConfigureRegister extends ConfigureRegister {
         }
 
         if (!ctx.injector.has(Assert)) {
-            ctx.injector.set(Assert, () => assert);
+            ctx.injector.setValue(Assert, assert);
         }
         if (!ctx.injector.has(ExpectToken)) {
-            ctx.injector.set(ExpectToken, () => expect);
+            ctx.injector.setValue(ExpectToken, expect);
         }
         if (isArray(config.reporters) && config.reporters.length) {
             ctx.injector.use(...config.reporters);

@@ -10,7 +10,7 @@ export class DecoratorInjectScope extends InjectScope implements IActionSetup {
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
                 .some(dec => {
-                    ctx.set(CTX_CURR_DECOR, dec);
+                    ctx.setValue(CTX_CURR_DECOR, dec);
                     super.execute(ctx);
                     this.done(ctx);
                     return this.isCompleted(ctx);
@@ -25,7 +25,7 @@ export class DecoratorInjectScope extends InjectScope implements IActionSetup {
 
     protected getState(ctx: InjectActionContext): ObjectMap<boolean> {
         if (!ctx.hasValue(DECOR_STATE)) {
-            ctx.set(DECOR_STATE, this.getRegisterer()
+            ctx.setValue(DECOR_STATE, this.getRegisterer()
                 .getDecorators()
                 .reduce((obj, dec) => {
                     obj[dec] = false;

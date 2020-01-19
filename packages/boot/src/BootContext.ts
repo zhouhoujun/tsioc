@@ -135,10 +135,10 @@ export class BootContext<T extends BootOption = BootOption,
     get baseURL(): string {
         let url = this.getValue(ProcessRunRootToken)
         if (!url) {
-            url = this.getOptions().baseURL || (this.annoation ? this.annoation.baseURL : '');
+            url = this.annoation?.baseURL;
             if (url) {
-                this.getContainer().registerValue(ProcessRunRootToken, url);
-                this.context.registerValue(ProcessRunRootToken, url);
+                this.getContainer().setValue(ProcessRunRootToken, url);
+                this.context.setValue(ProcessRunRootToken, url);
             }
         }
         return url;
@@ -210,13 +210,16 @@ export class BootContext<T extends BootOption = BootOption,
         }
         super.setOptions(options);
         if (options.template) {
-            this.set(CTX_TEMPLATE, options.template);
+            this.setValue(CTX_TEMPLATE, options.template);
         }
         if (options.bootstrap) {
-            this.set(CTX_MODULE_BOOT_TOKEN, options.bootstrap);
+            this.setValue(CTX_MODULE_BOOT_TOKEN, options.bootstrap);
         }
         if (isDefined(options.data)) {
-            this.set(CTX_DATA, options.data);
+            this.setValue(CTX_DATA, options.data);
+        }
+        if (options.baseURL) {
+            this.setValue(ProcessRunRootToken, options.baseURL);
         }
     }
 }
