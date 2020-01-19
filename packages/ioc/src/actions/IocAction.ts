@@ -4,7 +4,7 @@ import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
 import { ProviderTypes } from '../providers/types';
 import { IIocContainer } from '../IIocContainer';
-import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
+import { ITypeReflects, TypeReflectsToken, TypeReflectsProxy } from '../services/ITypeReflects';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, INJECTOR, PROVIDERS, IProviders } from '../IInjector';
 import { isInjector } from '../BaseInjector';
@@ -42,7 +42,7 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
     return ctx;
 }
 
-const TypeReflectsKey = TypeReflectsToken.toString();
+const ReflectsProxyKey = TypeReflectsProxy.toString();
 /**
  * context with raise container.
  *
@@ -68,12 +68,15 @@ export abstract class IocRaiseContext<
         return this._injector;
     }
 
-    // private _reflects: ITypeReflects;
+    private _reflectsProxy: () => ITypeReflects;
     /**
      * get type reflects.
      */
     get reflects(): ITypeReflects {
-        return this.injector.getSingleton(TypeReflectsKey);
+        if (!this._reflectsProxy) {
+            this._reflectsProxy = this.injector.getSingleton(ReflectsProxyKey);
+        }
+        return this._reflectsProxy();
     }
 
     private _context: IProviders;
@@ -214,6 +217,7 @@ export abstract class IocRaiseContext<
         this._context.destroy();
         delete this._context;
         delete this._options;
+        delete this._reflectsProxy;
         delete this._injector;
         delete this._options;
     }

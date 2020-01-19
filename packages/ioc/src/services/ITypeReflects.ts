@@ -14,6 +14,7 @@ import { IIocContainer } from '../IIocContainer';
  */
 export const TypeReflectsToken = new InjectToken<ITypeReflects>('IOC_TYPEREFLECTS');
 
+export const TypeReflectsProxy = new InjectToken<() => ITypeReflects>('IOC_TYPEREFLECTS_PROXY');
 /**
  *  type reflects interface.
  */

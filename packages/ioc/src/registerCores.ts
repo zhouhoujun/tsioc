@@ -1,6 +1,6 @@
 import { IIocContainer, IocContainerToken, ContainerProxyToken, ContainerProxy } from './IIocContainer';
 import { TypeReflects } from './services/TypeReflects';
-import { TypeReflectsToken } from './services/ITypeReflects';
+import { TypeReflectsToken, TypeReflectsProxy } from './services/ITypeReflects';
 import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionInjector } from './actions/ActionInjector';
 import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
@@ -24,7 +24,9 @@ export function registerCores(container: IIocContainer) {
     let fac = container.get(InjectorProxyToken) as ContainerProxy;
     container.set(IocContainerToken, fac);
     container.registerValue(ContainerProxyToken, fac);
-    container.registerValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
+    let reflects = new TypeReflects(fac);
+    container.registerValue(TypeReflectsToken, reflects, TypeReflects);
+    container.registerValue(TypeReflectsProxy, () => reflects);
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
     container.set(PROVIDERS, () => new InjectorProvider(fac), InjectorProvider);
