@@ -249,7 +249,7 @@ export abstract class IocProvidersContext<
         if (this._originPdr) {
             this.providers?.destroy();
         }
-        super.destroy();
+        super.destroying();
     }
 }
 

@@ -80,7 +80,8 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
 
     get targetReflect(): ITypeReflect {
         if (!this.context.hasSingleton(CTX_TARGET_RELF)) {
-            this.context.setValue(CTX_TARGET_RELF, this.reflects.get(this.type));
+            let refl = this.reflects.get(this.type);
+            refl && this.context.setValue(CTX_TARGET_RELF, refl);
         }
         return this.context.getSingleton(CTX_TARGET_RELF);
     }

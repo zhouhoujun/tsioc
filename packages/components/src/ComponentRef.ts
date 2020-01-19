@@ -85,7 +85,7 @@ export class NodeRef<T = NodeType, TCtx extends AnnoationContext = AnnoationCont
             });
         this._rootNodes.length = 0;
         delete this._rootNodes;
-        super.destroy();
+        super.destroying();
     }
 }
 
@@ -107,7 +107,7 @@ export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContex
         if (element && isFunction(element.destroy)) {
             element.destroy();
         }
-        super.destroy();
+        super.destroying();
     }
 }
 

@@ -78,7 +78,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         if (element && isFunction(element.destroy)) {
             element.destroy();
         }
-        super.destroy();
+        super.destroying();
     }
 }
 
@@ -132,7 +132,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
             });
         this._rootNodes.length = 0;
         delete this._rootNodes;
-        super.destroy();
+        super.destroying();
     }
 }
 

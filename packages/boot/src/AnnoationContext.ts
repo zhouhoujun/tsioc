@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, lang, tokenId
+    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
@@ -79,12 +79,13 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         return this.injector.getSingleton(ModuleRef);
     }
 
-    private _targetReflect: TRefl;
+
     get targetReflect(): TRefl {
-        if (!this._targetReflect && this.type) {
-            this._targetReflect = this.reflects.get(this.type);
+        if (!this.hasValue(CTX_TARGET_RELF) && this.type) {
+            let refls = this.reflects.get(this.type);
+            refls && this.setValue(CTX_TARGET_RELF, refls);
         }
-        return this._targetReflect;
+        return this.getValue(CTX_TARGET_RELF) as TRefl;
     }
 
 
