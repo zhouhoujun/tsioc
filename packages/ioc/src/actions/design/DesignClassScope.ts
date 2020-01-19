@@ -9,7 +9,6 @@ import { Providers } from '../../decorators/Providers';
 import { Refs } from '../../decorators/Refs';
 import { IActionSetup } from '../Action';
 import { InjectableMetadata } from '../../metadatas/InjectableMetadata';
-import { InjectToken } from '../../InjectToken';
 import { ParamProviders } from '../../providers/types';
 import { RuntimeActionContext } from '../runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from '../RuntimeLifeScope';
