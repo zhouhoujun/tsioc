@@ -1,4 +1,4 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, DecoratorProvider } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
 import { ParsersHandle } from './ParseHandle';
 import { ParseContext } from './ParseContext';
@@ -12,7 +12,6 @@ import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
-import { ComponentProvider } from '../ComponentProvider';
 
 
 /**
@@ -90,8 +89,7 @@ export const BindingScopeHandle = async function (ctx: ParseContext, next?: () =
 
 
 export const TranslateExpressionHandle = async function (ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-    let options = ctx.getOptions();
-    if (!isNullOrUndefined(ctx.bindExpression)) {
+    if (ctx.componentProvider.isTemplate(ctx.bindExpression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
             parent: ctx,
             template: ctx.bindExpression,
@@ -105,7 +103,7 @@ export const TranslateExpressionHandle = async function (ctx: ParseContext, next
             if (ctx.reflects.isExtends(lang.getClass(tpCtx.value), ctx.binding.type)) {
                 ctx.value = tpCtx.value;
             } else {
-                options.bindExpression = tpCtx.value;
+                ctx.getOptions().bindExpression = tpCtx.value;
             }
         }
     }
@@ -122,14 +120,14 @@ export const TranslateExpressionHandle = async function (ctx: ParseContext, next
  * @extends {ParseHandle}
  */
 export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () => Promise<void>): Promise<void> {
-    let injector = ctx.injector;
     if (!isNullOrUndefined(ctx.bindExpression)) {
+        let injector = ctx.injector;
         let pdr = ctx.binding.provider;
         let selector: ClassType;
         let reflects = ctx.reflects;
-        let refSelector = ctx.componentDecorator ? reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.componentDecorator, ComponentProvider) : null;
-        if (isString(pdr) && refSelector && injector.hasRegister(refSelector.toAttrSelectorToken(pdr))) {
-            selector = injector.getTokenProvider(refSelector.toAttrSelectorToken(pdr));
+        let compdr = ctx.componentProvider;
+        if (isString(pdr) && compdr && injector.hasRegister(compdr.toAttrSelectorToken(pdr))) {
+            selector = injector.getTokenProvider(compdr.toAttrSelectorToken(pdr));
         } else if (ctx.binding.type !== Array) {
             if (isClassType(ctx.binding.provider)) {
                 if (reflects.get<IComponentReflect>(ctx.binding.provider).component) {

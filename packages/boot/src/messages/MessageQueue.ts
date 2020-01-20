@@ -1,8 +1,10 @@
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, IInjector, Inject } from '@tsdi/ioc';
+import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
+
 
 
 /**
@@ -18,7 +20,7 @@ import { Handles } from '../handles/Handles';
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
     @Inject(INJECTOR)
-    injector: IInjector;
+    injector: ICoreInjector;
 
     /**
      * send message

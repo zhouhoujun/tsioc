@@ -1,4 +1,4 @@
-import { IParameter, Type, Injector, TypeMetadata } from '@tsdi/ioc';
+import { IParameter, Type, TypeMetadata, IProviders } from '@tsdi/ioc';
 import { IPointcut } from './IPointcut';
 import { JoinpointState } from './JoinpointState';
 import { Advicer } from '../advices/Advicer';
@@ -96,8 +96,8 @@ export interface IJoinpoint extends IPointcut {
      */
     targetType: Type;
 
-    originProvider: Injector;
+    originProvider: IProviders;
 
-    currProvider: Injector;
+    currProvider: IProviders;
 
 }

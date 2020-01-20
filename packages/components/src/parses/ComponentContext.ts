@@ -23,11 +23,12 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
     get scope(): any {
         if (!this.hasValue(CTX_COMPONENT)) {
             let ctx: AnnoationContext = this;
-            while (ctx && !this.hasValue(CTX_COMPONENT)) {
-                let scope = ctx.getValue(CTX_COMPONENT);
-                scope && ctx.setValue(CTX_COMPONENT, scope);
+            let scope;
+            while (ctx && !scope) {
+                scope = ctx.getValue(CTX_COMPONENT);
                 ctx = ctx.getParent();
             }
+            scope && this.setValue(CTX_COMPONENT, scope);
         }
         return this.getValue(CTX_COMPONENT);
     }

@@ -111,7 +111,6 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
         this.context.remove(ACTIVITY_OUTPUT);
         ctx.status.current = this;
-        console.log(this.context);
         let result = await this.context.getExector().runActivity(this.rootNodes);
         ctx.status.scopeEnd();
         if (isDefined(result)) {
@@ -192,6 +191,6 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
  * @returns {target is Activity}
  */
 export function isAcitvityRef(target: any): target is IActivityRef {
-    return target instanceof ActivityTemplateRef || target instanceof ActivityComponentRef;
+    return target instanceof ActivityRef;
 }
 

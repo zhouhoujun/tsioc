@@ -3,7 +3,7 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuilderServiceToken } from '@tsdi/boot';
-import { ComponentBuilderToken, ComponentBuilder, ELEMENT_REFS } from '@tsdi/components';
+import { ComponentBuilderToken, ELEMENT_REFS } from '@tsdi/components';
 import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
@@ -160,8 +160,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 injector: ctx.injector,
                 parent: ctx
             };
-            let aref = await ctx.injector.getInstance(ComponentBuilder).resolve(option) as IActivityRef;
-            console.log(option, ctx.injector.getContainer());
+            let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(option) as IActivityRef;
             aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         }

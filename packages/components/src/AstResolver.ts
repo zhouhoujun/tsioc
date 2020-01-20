@@ -1,7 +1,9 @@
-import { IInjector, Injectable } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { pipeExp } from './bindings/exps';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { ComponentProvider } from './ComponentProvider';
+
 
 @Injectable()
 export class AstResolver {
@@ -13,12 +15,12 @@ export class AstResolver {
      * resolve expression.
      *
      * @param {string} expression
-     * @param {IInjector} [injector]
+     * @param {ICoreInjector} [injector]
      * @param {*} [envOptions]
      * @returns {*}
      * @memberof AstResolver
      */
-    resolve(expression: string, injector: IInjector, envOptions?: any): any {
+    resolve(expression: string, injector: ICoreInjector, envOptions?: any): any {
         if (!expression) {
             return expression;
         }

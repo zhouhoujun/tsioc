@@ -1,10 +1,12 @@
-import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider, tokenId } from '@tsdi/ioc';
+import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
+
 
 
 const attrSelPrefix = /^ATTR__/;
@@ -54,6 +56,10 @@ export abstract class ComponentProvider {
         return this.ast;
     }
 
+    isTemplate(target): boolean {
+        return isMetadataObject(target, this.getSelectorKey());
+    }
+
     createComponentRef<T>(type: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): IComponentRef<T, any> {
         return new ComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
     }
@@ -66,17 +72,17 @@ export abstract class ComponentProvider {
         return new ElementRef(context, target);
     }
 
-    getElementRef(target: any, injector?: IInjector): IElementRef {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
+    getElementRef(target: any, injector?: ICoreInjector): IElementRef {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as ICoreInjector;
         return injector.getSingleton(ELEMENT_REFS)?.get(target);
     }
 
-    getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T, any> {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector();
+    getComponentRef<T>(target: T, injector?: ICoreInjector): IComponentRef<T, any> {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as ICoreInjector;
         return injector.getSingleton(COMPONENT_REFS)?.get(target);
     }
 
-    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {
+    getPipe<T extends IPipeTransform>(token: Token<T>, injector: ICoreInjector): T {
         if (isString(token)) {
             token = this.toPipeToken(token) ?? token;
         }
@@ -124,7 +130,7 @@ export abstract class ComponentProvider {
     }
 
     isComponentType(element: any): boolean {
-        return isClass(element) && this.reflects.get<IComponentReflect>(element).component;
+        return isClass(element) && this.reflects.get<IComponentReflect>(element)?.component;
     }
 
     abstract isElementType(element: any): boolean;
