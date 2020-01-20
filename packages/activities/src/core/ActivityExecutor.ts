@@ -161,6 +161,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 parent: ctx
             };
             let aref = await ctx.injector.getInstance(ComponentBuilder).resolve(option) as IActivityRef;
+            console.log(option, ctx.injector.getContainer());
             aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         }

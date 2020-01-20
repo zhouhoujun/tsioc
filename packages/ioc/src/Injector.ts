@@ -49,6 +49,10 @@ export class Injector extends BaseInjector implements IInjector {
         return this.getContainer().getSingleton(key);
     }
 
+    protected tryGetTokenProviderInRoot<T>(tokenKey: SymbolType<T>): Type<T> {
+        return this.getContainer().getTokenProvider(tokenKey);
+    }
+
     /**
      * register provider.
      *

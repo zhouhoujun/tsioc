@@ -1,10 +1,10 @@
 import {
-    Inject, BindProviderAction, DecoratorScopes, InjectReference, ProviderTypes,
+    Inject, BindProviderAction, DecoratorScopes,
     DecoratorProvider, DesignRegisterer, IocExt
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
-import { ComponentRegisterAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle, AstResolver } from '@tsdi/components';
+import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
+import { ComponentRegisterAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle, AstResolver, DefaultComponets } from '@tsdi/components';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop/RunAspect';
 import * as activites from './activities';
@@ -34,31 +34,24 @@ export class ActivityModule {
         actInjector.getInstance(DesignRegisterer)
             .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction, ActivityDepsRegister);
 
+        actInjector.regAction(ComponentSelectorHandle);
         actInjector.getInstance(StartupDecoratorRegisterer)
             .register(Task, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
 
+        container.inject(WorkflowContext, ActivityStatus, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect);
+
+        actInjector.getSingleton(DefaultComponets).push('@Task');
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Task,
-                {
-                    provide: BootContext,
-                    deps: [ContainerToken],
-                    useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
-                        let ref = new InjectReference(BootContext, Task.toString());
-                        if (container.has(ref)) {
-                            return container.get(ref, ...providers);
-                        } else {
-                            return container.getInstance(ActivityContext, ...providers);
-                        }
-                    }
-                },
+                { provide: BootContext, useClass: WorkflowContext },
+                { provide: BuildContext, useClass: ActivityContext },
                 AstResolver,
                 { provide: ComponentProvider, useClass: ActivityProvider },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner }
             );
 
 
-        container.inject(WorkflowContext, ActivityStatus, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect)
-            .use(activites);
+        container.use(activites);
     }
 }

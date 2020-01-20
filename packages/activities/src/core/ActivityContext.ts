@@ -1,13 +1,13 @@
 import { Injectable, Type, Refs, createRaiseContext, isToken, Token, isNullOrUndefined, SymbolType } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuildContext, AnnoationContext, ApplicationContextToken } from '@tsdi/boot';
+import { BuildContext, AnnoationContext } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ComponentContext } from '@tsdi/components';
-import { WorkflowContext } from './WorkflowInstance';
-import { ActivityExecutor } from './ActivityExecutor';
+import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
 import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
+import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 
 
 /**
@@ -18,7 +18,6 @@ import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
  */
 @Injectable
 @Refs(Activity, BuildContext)
-@Refs('@Task', BuildContext)
 export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
 
     get input() {
@@ -32,7 +31,7 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
     private _workflow: WorkflowContext;
     get workflow(): WorkflowContext {
         if (!this._workflow) {
-            this._workflow = this.injector.getSingleton(ApplicationContextToken) as WorkflowContext;
+            this._workflow = this.injector.getSingleton(WorkflowContextToken) as WorkflowContext;
         }
         return this._workflow;
     }
@@ -58,12 +57,12 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
 
     getValue<T>(key: SymbolType<T>): T {
         return this.context.getSingleton(key) ?? this.workflow?.context.getSingleton(key) ?? null;
-    }
+    }I
 
-    private _executor: ActivityExecutor;
-    getExector(): ActivityExecutor {
+    private _executor: IActivityExecutor;
+    getExector(): IActivityExecutor {
         if (!this._executor) {
-            this._executor = this.injector.getInstance(ActivityExecutor, { provide: ActivityContext, useValue: this });
+            this._executor = this.injector.getInstance(ActivityExecutorToken, { provide: ActivityContext, useValue: this });
         }
         return this._executor;
     }

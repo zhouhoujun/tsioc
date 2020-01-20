@@ -126,7 +126,7 @@ export abstract class IocRaiseContext<
 
     setValue<T>(key: SymbolType<T>, value: T) {
         this.context.setValue(key, value);
-        // return this;
+        return this;
     }
 
     /**
@@ -152,6 +152,7 @@ export abstract class IocRaiseContext<
         } else {
             this.context.inject(...providers);
         }
+        return this;
     }
 
     /**

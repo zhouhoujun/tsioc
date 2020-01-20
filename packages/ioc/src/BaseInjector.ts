@@ -12,7 +12,7 @@ import { ResolveActionOption } from './actions/ResolveActionContext';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
-import { ActionInjectorToken, IActionInjector } from './actions/Action';
+import { ActionInjectorToken } from './actions/Action';
 import { IocDestoryable } from './Destoryable';
 import { TypeReflectsToken } from './services/ITypeReflects';
 

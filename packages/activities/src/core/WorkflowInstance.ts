@@ -59,7 +59,6 @@ export const CTX_ACTIVITYSTATUS = tokenId<ActivityStatus>('CTX_ACTIVITYSTATUS');
 
 @Injectable
 @Refs(Activity, BootContext)
-@Refs('@Task', BootContext)
 export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadata> {
     /**
     * workflow id.

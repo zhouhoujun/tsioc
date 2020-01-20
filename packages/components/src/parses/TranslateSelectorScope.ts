@@ -3,6 +3,8 @@ import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplatesHandle } from './TemplateHandle';
 import { TemplateContext } from './TemplateContext';
 import { CTX_COMPONENT_DECTOR } from '../ComponentRef';
+import { DefaultComponets } from '../IComponentReflect';
+import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
 
 
 
@@ -40,9 +42,10 @@ export const TranslateElementHandle = async function (ctx: TemplateContext, next
             await PromiseUtil.runInChain(reg.getFuncs(actInjector, ctx.componentDecorator), ctx);
         }
     } else {
-        let decorators = ctx.getModuleRef()?.reflect.componentDectors ?? ['@Component'];
+        let decorators = ctx.getModuleRef()?.reflect.componentDectors ?? actInjector.getSingleton(DefaultComponets);
         PromiseUtil.runInChain(decorators.map(decor => async (ctx: TemplateContext, next) => {
             if (reg.has(decor)) {
+                ctx.remove(CTX_COMPONENT_PROVIDER);
                 ctx.setValue(CTX_COMPONENT_DECTOR, decor);
                 await PromiseUtil.runInChain(reg.getFuncs(actInjector, decor), ctx);
             }

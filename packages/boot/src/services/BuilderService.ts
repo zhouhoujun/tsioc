@@ -56,9 +56,9 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             options = { type: target };
             md = target;
         } else {
+            md = target.type || target.module;
             injector = target.injector;
             if (!injector) {
-                md = target.type || target.module;
                 injector = md ? this.reflects.getInjector(md) : this.container;
             };
             options = target;

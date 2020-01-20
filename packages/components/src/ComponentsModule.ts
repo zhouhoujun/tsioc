@@ -25,7 +25,7 @@ import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
 import { PipeRegisterAction } from './registers/PipeRegisterAction';
 import { BindingComponentScope } from './resolvers/BindingComponentScope';
 import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
-import { ComponentProvider } from './ComponentProvider';
+import { DefaultComponets } from './IComponentReflect';
 
 
 /**
@@ -41,6 +41,7 @@ export class ComponentsModule {
         container.registerType(ComponentAnnotationCloner);
         let actInjector = container.getActionInjector();
 
+        actInjector.setValue(DefaultComponets, ['@Component']);
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Input, {
                 provide: BindingCache,

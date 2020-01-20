@@ -79,12 +79,12 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         return this.injector.getSingleton(ModuleRef);
     }
 
-    private _targetReflect: TRefl;
     get targetReflect(): TRefl {
-        if (!this._targetReflect && this.type) {
-            this._targetReflect = this.reflects.get(this.type);
+        if (!this.hasValue(CTX_TARGET_RELF) && this.type) {
+            let refls = this.reflects.get(this.type);
+            refls && this.setValue(CTX_TARGET_RELF, refls);
         }
-        return this._targetReflect;
+        return this.getValue(CTX_TARGET_RELF) as TRefl;
     }
 
     setParent(context: AnnoationContext): this {

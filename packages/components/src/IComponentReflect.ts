@@ -1,5 +1,10 @@
-import { ITypeReflect } from '@tsdi/ioc';
+import { ITypeReflect, tokenId } from '@tsdi/ioc';
 import { IBinding, IPropertyVaildate } from './bindings/IBinding';
+
+/**
+ * default components.
+ */
+export const DefaultComponets = tokenId<string[]>('DefaultComponets');
 
 /**
  * binding type reflect data.

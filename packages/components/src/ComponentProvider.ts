@@ -1,4 +1,4 @@
-import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider } from '@tsdi/ioc';
+import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider, tokenId } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef } from './ComponentRef';
@@ -10,6 +10,9 @@ import { AstResolver } from './AstResolver';
 const attrSelPrefix = /^ATTR__/;
 const seletPrefix = /^SELTR_/;
 const pipePrefix = /^PIPE_/;
+
+
+export const CTX_COMPONENT_PROVIDER = tokenId<ComponentProvider>('CTX_COMPONENT_PROVIDER');
 /**
  * ref element identfy selector.
  *

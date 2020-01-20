@@ -3,7 +3,7 @@ import { BuildContext, IBuildOption, AnnoationContext, CTX_ELEMENT_NAME } from '
 import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF } from '../ComponentRef';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
-import { ComponentProvider } from '../ComponentProvider';
+import { ComponentProvider, CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
 
 
 
@@ -20,24 +20,24 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
         return this.getValue(CTX_COMPONENT_REF) ?? this.getValue(CTX_TEMPLATE_REF) ?? this.getValue(CTX_ELEMENT_REF) ?? this.value;
     }
 
-    private _scope: any;
     get scope(): any {
-        if (!this._scope) {
+        if (!this.hasValue(CTX_COMPONENT)) {
             let ctx: AnnoationContext = this;
-            while (ctx && !this._scope) {
-                this._scope = ctx.getValue(CTX_COMPONENT);
+            while (ctx && !this.hasValue(CTX_COMPONENT)) {
+                let scope = ctx.getValue(CTX_COMPONENT);
+                scope && ctx.setValue(CTX_COMPONENT, scope);
                 ctx = ctx.getParent();
             }
         }
-        return this._scope;
+        return this.getValue(CTX_COMPONENT);
     }
 
-    private _prvoider: ComponentProvider;
     get componentProvider(): ComponentProvider {
-        if (!this._prvoider && this.componentDecorator) {
-            this._prvoider = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(this.componentDecorator, ComponentProvider);
+        if (!this.hasValue(CTX_COMPONENT_PROVIDER) && this.componentDecorator) {
+            let pdr = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(this.componentDecorator, ComponentProvider);
+            pdr && this.setValue(CTX_COMPONENT_PROVIDER, pdr);
         }
-        return this._prvoider;
+        return this.getValue(CTX_COMPONENT_PROVIDER);
     }
 
     get componentDecorator() {
@@ -58,5 +58,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
         }
         return this.getValue(CTX_COMPONENT_DECTOR);
     }
+
+
 }
 
