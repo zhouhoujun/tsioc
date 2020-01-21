@@ -7,6 +7,8 @@ import { ServiceOption } from './resolves/service/ResolveServiceContext';
 import { ServicesOption } from './resolves/services/ResolveServicesContext';
 import { ModuleProvider } from './services/ModuleProvider';
 import { ServiceProvider } from './services/ServiceProvider';
+import { ICoreInjector } from './ICoreInjector';
+import { CoreInjector } from './CoreInjector';
 
 
 
@@ -129,4 +131,9 @@ export class Container extends IocContainer implements IContainer {
  */
 export function isContainer(target: any): target is Container {
     return target && target instanceof Container;
+}
+
+
+export function isCoreInjector(target: any): target is ICoreInjector {
+    return target && (target instanceof CoreInjector || target instanceof Container);
 }

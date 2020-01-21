@@ -108,13 +108,6 @@ export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootA
 
     protected getBootDeps() {
         let deps = super.getBootDeps();
-        // if (!isClassType(this.target)) {
-        //     deps = [];
-        //     let options = this.target instanceof WorkflowContext ? this.target.getOptions() : this.target;
-        //     options.template.forEach(t => {
-        //         deps.push(... this.getTargetDeps(t));
-        //     });
-        // }
         if (this.getContainer().has(ActivityModule)) {
             return deps;
         }

@@ -1,8 +1,8 @@
 import {
     IocCoreService, Inject, Singleton, isFunction, isString, isClassType,
-    ClassType, TypeReflectsToken, ITypeReflects, INJECTOR
+    ClassType, TypeReflectsToken, ITypeReflects, INJECTOR, lang
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
+import { IContainer, ContainerToken, ICoreInjector, isCoreInjector } from '@tsdi/core';
 import { BootContext, BootOption } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
 import { RunnableBuildLifeScope } from '../boots/RunnableBuildLifeScope';
@@ -60,7 +60,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             injector = target.injector;
             if (!injector) {
                 injector = md ? this.reflects.getInjector(md) : this.container;
-            };
+            }
             options = target;
         }
         let rctx: BuildContext;
