@@ -42,7 +42,6 @@ export class AstResolver {
                 let func = eval(`(${Object.keys(envOptions).join(',')}) => {
                     return ${expression};
                 }`);
-                console.log(func);
                 value = func(...Object.values(envOptions));
 
             } else {
