@@ -1,4 +1,4 @@
-import { IocCoreService, IInjector, Token, ProviderTypes, isToken, IProviders, ContainerProxy, INJECTOR, InjectorProxyToken } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, ProviderTypes, isToken, IProviders, ContainerProxy, INJECTOR, InjectorProxyToken, PROVIDERS } from '@tsdi/ioc';
 import { ServiceOption, ResolveServiceContext } from '../resolves/service/ResolveServiceContext';
 import { ResolveServiceScope } from '../resolves/service/ResolveServiceScope';
 import { ServicesOption, ResolveServicesContext } from '../resolves/services/ResolveServicesContext';
@@ -22,10 +22,15 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
         let context = ResolveServiceContext.parse(injector, isToken(target) ? { token: target } : target);
-        providers.length && context.providers.inject(...providers);
-        context.providers.inject(
-            { provide: INJECTOR, useValue: injector },
-            { provide: InjectorProxyToken, useValue: injector.getProxy() });
+        let pdr = context.providers;
+        providers.length && pdr.inject(...providers);
+        if (!pdr.hasTokenKey(INJECTOR)) {
+            pdr.inject(
+                { provide: INJECTOR, useValue: injector },
+                { provide: InjectorProxyToken, useValue: injector.getProxy() }
+            );
+        }
+
         this.proxy().getActionInjector()
             .getInstance(ResolveServiceScope)
             .execute(context);
@@ -44,10 +49,14 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[] {
         let maps = this.getServiceProviders(injector, target);
         let services = [];
-        maps.iterator((fac) => {
-            services.push(fac(...providers,
+        let pdr = injector.get(PROVIDERS).inject(...providers);
+        if (!pdr.hasTokenKey(INJECTOR)) {
+            pdr.inject(
                 { provide: INJECTOR, useValue: injector },
-                { provide: InjectorProxyToken, useValue: injector.getProxy()}));
+                { provide: InjectorProxyToken, useValue: injector.getProxy() });
+        }
+        maps.iterator((fac) => {
+            services.push(fac(pdr));
         });
         return services;
     }

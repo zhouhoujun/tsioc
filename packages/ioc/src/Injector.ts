@@ -1,5 +1,5 @@
 import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
-import { IInjector, IProviders } from './IInjector';
+import { IInjector, IProviders, INJECTOR } from './IInjector';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
 import { InjectTypes } from './providers/types';

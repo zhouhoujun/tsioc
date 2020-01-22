@@ -40,10 +40,13 @@ export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>
      */
     resolve<T>(injector: IInjector, token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
         let ctx = ResolveActionContext.parse(injector, isToken(token) ? { token: token } : token);
-        providers.length && ctx.providers.inject(...providers);
-        ctx.providers.inject(
-            { provide: INJECTOR, useValue: injector },
-            { provide: InjectorProxyToken, useValue: injector.getProxy() });
+        let pdr = ctx.providers;
+        providers.length && pdr.inject(...providers);
+        if (!pdr.hasTokenKey(INJECTOR)) {
+            pdr.inject(
+                { provide: INJECTOR, useValue: injector },
+                { provide: InjectorProxyToken, useValue: injector.getProxy() });
+        }
         this.execute(ctx);
         return ctx.instance;
     }

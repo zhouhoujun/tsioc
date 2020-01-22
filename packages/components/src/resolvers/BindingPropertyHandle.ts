@@ -68,6 +68,5 @@ export const BindingPropertyHandle = async function (ctx: BuildContext, next: ()
             }
         }));
     }
-
     await next();
 };

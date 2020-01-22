@@ -8,7 +8,7 @@ import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 declare let window: any;
 declare let global: any;
 
-let gls = {
+const gls = {
     describe: undefined,
     suite: undefined,
     it: undefined,
@@ -18,6 +18,7 @@ let gls = {
     after: undefined,
     afterEach: undefined
 };
+const testkeys = Object.keys(gls);
 
 const globals = typeof window !== 'undefined' ? window : global;
 
@@ -68,7 +69,7 @@ export class OldTestRunner implements ISuiteRunner {
 
     registerGlobalScope() {
         // isUndefined(window) ? global : window;
-        Object.keys(gls).forEach(k => {
+        testkeys.forEach(k => {
             gls[k] = globals[k];
         });
 
@@ -171,7 +172,7 @@ export class OldTestRunner implements ISuiteRunner {
 
     unregisterGlobalScope() {
         // reset to default.
-        Object.keys(gls).forEach(k => {
+        testkeys.forEach(k => {
             globals[k] = gls[k];
         })
 

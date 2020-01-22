@@ -11,13 +11,13 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
             { provide: BootContext, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx }
         )
-
-        let boot = await ctx.injector.getInstance(BuilderServiceToken).resolve({
-            type: ctx.injector.getTokenProvider(bootModule),
+        let injector = ctx.injector;
+        let boot = await injector.getInstance(BuilderServiceToken).resolve({
+            type: injector.getTokenProvider(bootModule),
             parent: ctx,
             template: ctx.template,
             providers: ctx.providers,
-            injector: ctx.injector
+            injector: injector
         });
 
         boot && ctx.setValue(CTX_MODULE_BOOT, boot);

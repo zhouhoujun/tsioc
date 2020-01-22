@@ -5,11 +5,12 @@ import { CTX_MODULE_INST } from '../context-tokens';
 
 export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.type && !ctx.hasValue(CTX_MODULE_INST)) {
-        let target = await ctx.injector.getInstance(BuilderServiceToken).resolve({
+        let injector =  ctx.injector;
+        let target = await injector.getInstance(BuilderServiceToken).resolve({
             type: ctx.type,
             parent: ctx.getParent(),
             providers: ctx.providers,
-            injector: ctx.injector
+            injector: injector
         });
         target && ctx.setValue(CTX_MODULE_INST, target);
     }
