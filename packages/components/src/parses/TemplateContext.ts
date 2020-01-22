@@ -33,7 +33,14 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
             }
             let compPdr = this.componentProvider;
             if (compPdr) {
-                let tempRef = isArray(this.value) ? compPdr.createTemplateRef(this, ...this.value) : compPdr.createTemplateRef(this, this.value);
+                let ctx: TemplateContext;
+                if (compPdr.isTemplateContext(this)) {
+                    ctx = this;
+                } else {
+                    ctx = compPdr.createTemplateContext(ctx.injector);
+                    ctx.context.copy(this.context);
+                }
+                let tempRef = isArray(this.value) ? compPdr.createTemplateRef(ctx, ...this.value) : compPdr.createTemplateRef(ctx, this.value);
                 this.setValue(CTX_TEMPLATE_REF, tempRef);
             }
         }

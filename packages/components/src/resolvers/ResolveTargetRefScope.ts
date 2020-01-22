@@ -12,6 +12,13 @@ import { CTX_ELEMENT_REF, CTX_COMPONENT_REF } from '../ComponentRef';
 export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements IActionSetup {
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         let annoation = ctx.annoation as IComponentMetadata;
+        if (ctx.getOptions().attr) {
+            if (annoation.template) {
+                throw new Error('template component can not set as attr of oathor component')
+            } else {
+                return await next();
+            }
+        }
         if (annoation.template) {
             await super.execute(ctx);
             ctx.value = ctx.getValue(CTX_COMPONENT_REF);

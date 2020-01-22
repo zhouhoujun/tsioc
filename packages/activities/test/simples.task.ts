@@ -97,16 +97,6 @@ export class WorkTask extends Activity<string> {
 })
 export class SimpleCTask {
 
-    // async execute(ctx: ActivityContext): Promise<void> {
-    //     console.log('execute SimpleCTask........');
-    //     await super.execute(ctx);
-    //     // console.log('before component task:', this.name);
-    //     this.result = await Promise.resolve('component task')
-    //         .then(val => {
-    //             console.log('return component task:', val);
-    //             return val;
-    //         });
-    // }
 }
 
 

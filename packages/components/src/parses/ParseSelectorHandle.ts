@@ -18,7 +18,6 @@ export const ParseSelectorHandle = async function (ctx: TemplateContext, next: (
             .resolve({
                 type: selector,
                 parent: ctx,
-                // parsing: true,
                 template: template,
                 injector: ctx.injector,
                 providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions() })

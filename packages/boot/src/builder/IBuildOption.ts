@@ -16,7 +16,10 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
 
     template?: any;
 
-    parsing?: boolean;
+    /**
+     * build as attr or not.
+     */
+    attr?: boolean;
 
     /**
      * module reslove in the injector.

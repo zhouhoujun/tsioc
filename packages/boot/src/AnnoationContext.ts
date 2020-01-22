@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF
+    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, isNullOrUndefined
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
@@ -85,6 +85,21 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
             refls && this.setValue(CTX_TARGET_RELF, refls);
         }
         return this.getValue(CTX_TARGET_RELF) as TRefl;
+    }
+
+    /**
+     * resolve token route in root contexts.
+     * @param token
+     */
+    resolve<T>(token: Token<T>): T {
+        let value: T;
+        let key = this.injector.getTokenKey(token);
+        let ctx: AnnoationContext = this;
+        while (ctx && isNullOrUndefined(value)) {
+            value = ctx.getValue(key);
+            ctx = ctx.getParent();
+        }
+        return value ?? null;
     }
 
     setParent(context: AnnoationContext): this {

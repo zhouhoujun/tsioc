@@ -146,6 +146,7 @@ export const TranslateAtrrHandle = async function (ctx: ParseContext, next: () =
             template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
             ctx.value = await injector.getInstance(ComponentBuilderToken).resolve({
                 type: selector,
+                attr: true,
                 parent: ctx,
                 template: template,
                 providers: ctx.providers,

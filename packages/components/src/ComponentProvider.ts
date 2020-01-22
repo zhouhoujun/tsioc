@@ -6,6 +6,8 @@ import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IC
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
+import { TemplateContext } from './parses/TemplateContext';
+import { ITemplateOption } from './IComponentBuilder';
 
 
 
@@ -62,6 +64,14 @@ export abstract class ComponentProvider {
 
     createComponentRef<T>(type: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): IComponentRef<T, any> {
         return new ComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
+    }
+
+    isTemplateContext(context: AnnoationContext) {
+        return context instanceof TemplateContext;
+    }
+
+    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): TemplateContext {
+        return TemplateContext.parse(injector, options);
     }
 
     createTemplateRef(context: AnnoationContext, ...nodes: any[]): ITemplateRef {

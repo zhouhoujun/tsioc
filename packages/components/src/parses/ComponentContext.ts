@@ -22,12 +22,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
 
     get scope(): any {
         if (!this.hasValue(CTX_COMPONENT)) {
-            let ctx: AnnoationContext = this;
-            let scope;
-            while (ctx && !scope) {
-                scope = ctx.getValue(CTX_COMPONENT);
-                ctx = ctx.getParent();
-            }
+            let scope = this.resolve(CTX_COMPONENT)
             scope && this.setValue(CTX_COMPONENT, scope);
         }
         return this.getValue(CTX_COMPONENT);
@@ -43,23 +38,10 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
 
     get componentDecorator() {
         if (!this.hasValue(CTX_COMPONENT_DECTOR)) {
-            let dector: string;
-            if (this.type) {
-                dector = this.decorator;
-            } else {
-                let ctx: AnnoationContext = this;
-                while (ctx && !dector) {
-                    dector = ctx.getValue(CTX_COMPONENT_DECTOR);
-                    ctx = ctx.getParent();
-                }
-            }
-            if (dector) {
-                this.setValue(CTX_COMPONENT_DECTOR, dector);
-            }
+            let dector = this.resolve(CTX_COMPONENT_DECTOR);
+            dector && this.setValue(CTX_COMPONENT_DECTOR, dector);
         }
         return this.getValue(CTX_COMPONENT_DECTOR);
     }
-
-
 }
 

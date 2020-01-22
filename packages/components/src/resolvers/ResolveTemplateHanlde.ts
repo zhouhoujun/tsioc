@@ -1,7 +1,6 @@
 import { isNullOrUndefined, DecoratorProvider, isArray } from '@tsdi/ioc';
 import { BuildContext } from '@tsdi/boot';
 import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
-import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { ComponentProvider } from '../ComponentProvider';
@@ -11,22 +10,21 @@ export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: ()
 
     let annoation = ctx.annoation as IComponentMetadata;
     ctx.setValue(CTX_COMPONENT, ctx.value);
-    let pCtx = TemplateContext.parse(ctx.injector, {
+    let actInjector = ctx.reflects.getActionInjector();
+    let compPdr = actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, ComponentProvider);
+    let pCtx = compPdr.createTemplateContext(ctx.injector, {
         parent: ctx,
         template: annoation.template
     });
-
-    let actInjector = ctx.reflects.getActionInjector();
 
     await actInjector.getInstance(TemplateParseScope)
         .execute(pCtx);
 
     if (!isNullOrUndefined(pCtx.value)) {
         ctx.addChild(pCtx);
-        let refSeltor = actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, ComponentProvider)
         ctx.setValue(CTX_COMPONENT_REF, isArray(pCtx.value) ?
-            refSeltor.createComponentRef(ctx.type, ctx.value, ctx, ...pCtx.value)
-            : refSeltor.createComponentRef(ctx.type, ctx.value, ctx, pCtx.value));
+            compPdr.createComponentRef(ctx.type, ctx.value, ctx, ...pCtx.value)
+            : compPdr.createComponentRef(ctx.type, ctx.value, ctx, pCtx.value));
         await next();
     } else {
         ctx.remove(CTX_COMPONENT)

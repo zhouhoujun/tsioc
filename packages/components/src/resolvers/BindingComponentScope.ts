@@ -15,10 +15,14 @@ import { ComponentProvider } from '../ComponentProvider';
 export class BindingComponentScope extends BuildHandles<BuildContext> implements IActionSetup {
 
     async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.value && (<IComponentReflect>ctx.targetReflect)?.component) {
+        if (!ctx.value) {
+            return next();
+        }
+
+        if ((<IComponentReflect>ctx.targetReflect)?.component) {
             ctx.setValue(CTX_COMPONENT_DECTOR, ctx.decorator);
             await super.execute(ctx);
-        } else if (ctx.value) {
+        } else if (!ctx.getOptions().attr) {
             let mdref = ctx.getModuleRef();
             if (mdref && mdref.reflect.componentDectors) {
                 let componentDectors = mdref.reflect.componentDectors;
@@ -39,7 +43,7 @@ export class BindingComponentScope extends BuildHandles<BuildContext> implements
                 ctx.destroy();
             }
         }
-        await next();
+        return next();
     }
 
     setup() {
