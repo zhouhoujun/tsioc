@@ -1,7 +1,7 @@
 import { IActionSetup, PromiseUtil } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { TemplatesHandle } from './TemplateHandle';
-import { TemplateContext } from './TemplateContext';
+import { ITemplateContext } from './TemplateContext';
 import { CTX_COMPONENT_DECTOR } from '../ComponentRef';
 import { DefaultComponets } from '../IComponentReflect';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
@@ -16,7 +16,7 @@ import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
  * @extends {TemplatesHandle}
  */
 export class TranslateSelectorScope extends TemplatesHandle implements IActionSetup {
-    async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: ITemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         if (next) {
             await next();
@@ -34,7 +34,7 @@ export class TranslateSelectorScope extends TemplatesHandle implements IActionSe
  * @class TranslateElementHandle
  * @extends {TemplateHandle}
  */
-export const TranslateElementHandle = async function (ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
+export const TranslateElementHandle = async function (ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
     let actInjector = ctx.reflects.getActionInjector();
     let reg = actInjector.getInstance(StartupDecoratorRegisterer).getRegisterer(StartupScopes.TranslateTemplate);
     if (ctx.componentDecorator) {
@@ -43,7 +43,7 @@ export const TranslateElementHandle = async function (ctx: TemplateContext, next
         }
     } else {
         let decorators = ctx.getModuleRef()?.reflect.componentDectors ?? actInjector.getSingleton(DefaultComponets);
-        PromiseUtil.runInChain(decorators.map(decor => async (ctx: TemplateContext, next) => {
+        PromiseUtil.runInChain(decorators.map(decor => async (ctx: ITemplateContext, next) => {
             if (reg.has(decor)) {
                 ctx.remove(CTX_COMPONENT_PROVIDER);
                 ctx.setValue(CTX_COMPONENT_DECTOR, decor);

@@ -1,9 +1,9 @@
-import { Injectable, createRaiseContext, lang } from '@tsdi/ioc';
+import { Injectable, createRaiseContext, lang, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IBuildOption, IComponentContext } from '@tsdi/boot';
+import { IBuildOption } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
-import { ComponentContext } from './ComponentContext';
+import { ComponentContext, IComponentContext } from './ComponentContext';
 
 /**
  * binding parse option.
@@ -18,6 +18,18 @@ export interface IBindingParseOption extends IBuildOption {
 }
 
 /**
+ * parse context interface.
+ */
+export interface IParseContext extends IComponentContext<IBindingParseOption> {
+    readonly binding: IBinding;
+    readonly bindExpression: any;
+    readonly dataBinding: DataBinding;
+    getExtenalTemplate(): any;
+}
+
+export const CTX_DATABINDING = tokenId<DataBinding>('CTX_DATABINDING');
+
+/**
  * parse context.
  *
  * @export
@@ -26,7 +38,7 @@ export interface IBindingParseOption extends IBuildOption {
  * @implements {IComponentContext}
  */
 @Injectable
-export class ParseContext extends ComponentContext<IBindingParseOption> implements IComponentContext {
+export class ParseContext extends ComponentContext<IBindingParseOption> implements IParseContext {
 
     get binding(): IBinding {
         return this.getOptions().binding;
@@ -36,7 +48,9 @@ export class ParseContext extends ComponentContext<IBindingParseOption> implemen
         return this.getOptions().bindExpression;
     }
 
-    dataBinding?: DataBinding;
+    get dataBinding(): DataBinding {
+        return this.getValue(CTX_DATABINDING)
+    }
 
 
     getExtenalTemplate() {

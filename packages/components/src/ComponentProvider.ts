@@ -1,12 +1,12 @@
 import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { AnnoationContext } from '@tsdi/boot';
+import { IAnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
-import { TemplateContext } from './parses/TemplateContext';
+import { TemplateContext, ITemplateContext } from './parses/TemplateContext';
 import { ITemplateOption } from './IComponentBuilder';
 
 
@@ -62,23 +62,23 @@ export abstract class ComponentProvider {
         return isMetadataObject(target, this.getSelectorKey());
     }
 
-    createComponentRef<T>(type: Type<T>, target: T, context: AnnoationContext, ...nodes: any[]): IComponentRef<T, any> {
+    createComponentRef<T>(type: Type<T>, target: T, context: IAnnoationContext, ...nodes: any[]): IComponentRef<T, any> {
         return new ComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
     }
 
-    isTemplateContext(context: AnnoationContext) {
+    isTemplateContext(context: IAnnoationContext): boolean {
         return context instanceof TemplateContext;
     }
 
-    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): TemplateContext {
+    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext {
         return TemplateContext.parse(injector, options);
     }
 
-    createTemplateRef(context: AnnoationContext, ...nodes: any[]): ITemplateRef {
+    createTemplateRef(context: IAnnoationContext, ...nodes: any[]): ITemplateRef {
         return new TemplateRef(context, nodes);
     }
 
-    createElementRef(context: AnnoationContext, target: any): IElementRef {
+    createElementRef(context: IAnnoationContext, target: any): IElementRef {
         return new ElementRef(context, target);
     }
 

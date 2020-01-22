@@ -1,5 +1,5 @@
 import { Type, isFunction, Destoryable, IDestoryable, tokenId } from '@tsdi/ioc';
-import { AnnoationContext, CTX_TEMPLATE } from '@tsdi/boot';
+import { IAnnoationContext, CTX_TEMPLATE } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
 export const CTX_COMPONENT_DECTOR = tokenId<string>('CTX_COMPONENT_DECTOR');
@@ -12,12 +12,12 @@ export const COMPONENT_REFS = tokenId<WeakMap<any, IComponentRef<any, any>>>('CO
 export const ELEMENT_REFS = tokenId<WeakMap<any, IElementRef<any>>>('ELEMENT_REFS');
 
 
-export interface IContextNode<TCtx extends AnnoationContext = AnnoationContext> extends IDestoryable {
+export interface IContextNode<TCtx extends IAnnoationContext = IAnnoationContext> extends IDestoryable {
     readonly context: TCtx;
 }
 
 
-export class ContextNode<TCtx extends AnnoationContext = AnnoationContext> extends Destoryable {
+export class ContextNode<TCtx extends IAnnoationContext = IAnnoationContext> extends Destoryable {
     private _context: TCtx;
     get context(): TCtx {
         return this._context;
@@ -41,19 +41,19 @@ export interface IElement {
     destroy?();
 }
 
-export interface IElementRef<T = any, TCtx extends AnnoationContext = AnnoationContext> extends IContextNode<TCtx> {
+export interface IElementRef<T = any, TCtx extends IAnnoationContext = IAnnoationContext> extends IContextNode<TCtx> {
     readonly nativeElement: T;
 }
 
-export interface INodeRef<T = any, TCtx extends AnnoationContext = AnnoationContext> extends IContextNode<TCtx> {
+export interface INodeRef<T = any, TCtx extends IAnnoationContext = IAnnoationContext> extends IContextNode<TCtx> {
     readonly rootNodes: T[];
 }
 
-export interface ITemplateRef<T = any, TCtx extends AnnoationContext = AnnoationContext> extends INodeRef<T, TCtx> {
+export interface ITemplateRef<T = any, TCtx extends IAnnoationContext = IAnnoationContext> extends INodeRef<T, TCtx> {
     readonly template: any;
 }
 
-export interface IComponentRef<T = any, TN = NodeType, TCtx extends AnnoationContext = AnnoationContext> extends IContextNode<TCtx> {
+export interface IComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext = IAnnoationContext> extends IContextNode<TCtx> {
     readonly componentType: Type<T>;
     readonly instance: T;
     readonly nodeRef: ITemplateRef<TN>;
@@ -63,7 +63,7 @@ export interface IComponentRef<T = any, TN = NodeType, TCtx extends AnnoationCon
 export type NodeType = IElement | IElementRef | INodeRef | ITemplateRef | IComponentRef;
 
 
-export class NodeRef<T = NodeType, TCtx extends AnnoationContext = AnnoationContext>
+export class NodeRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoationContext>
     extends ContextNode<TCtx> implements INodeRef<T, TCtx> {
 
     private _rootNodes: T[]
@@ -89,7 +89,7 @@ export class NodeRef<T = NodeType, TCtx extends AnnoationContext = AnnoationCont
     }
 }
 
-export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContext>
+export class ElementRef<T = any, TCtx extends IAnnoationContext = IAnnoationContext>
     extends ContextNode<TCtx> implements IElementRef<T, TCtx> {
 
     constructor(context: TCtx, public readonly nativeElement: T) {
@@ -111,14 +111,14 @@ export class ElementRef<T = any, TCtx extends AnnoationContext = AnnoationContex
     }
 }
 
-export class TemplateRef<T = NodeType, TCtx extends AnnoationContext = AnnoationContext>
+export class TemplateRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoationContext>
     extends NodeRef<T, TCtx> implements ITemplateRef<T, TCtx> {
     get template() {
         return this.context.getValue(CTX_TEMPLATE);
     }
 }
 
-export class ComponentRef<T = any, TN = NodeType, TCtx extends AnnoationContext = AnnoationContext>
+export class ComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext = IAnnoationContext>
     extends ContextNode<TCtx> implements IComponentRef<T, TN, TCtx> {
 
     constructor(

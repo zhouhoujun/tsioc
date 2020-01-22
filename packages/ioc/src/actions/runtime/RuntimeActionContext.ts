@@ -84,9 +84,8 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
 
     setOptions(options: RuntimeActionOption) {
         if (!options) {
-            return;
+            return this;
         }
-        super.setOptions(options);
         if (options.target) {
             this.target = options.target;
         }
@@ -96,6 +95,7 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
         if (options.params) {
             this.context.setValue(CTX_PARAMS, options.params);
         }
-        this.context.setValue(CTX_PROPERTYKEY, options.propertyKey || 'constructor')
+        this.context.setValue(CTX_PROPERTYKEY, options.propertyKey || 'constructor');
+        return super.setOptions(options);
     }
 }

@@ -1,5 +1,5 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { TemplateContext, TemplateOptionToken } from './TemplateContext';
+import { ITemplateContext, TemplateOptionToken } from './TemplateContext';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 
 
@@ -10,7 +10,7 @@ import { ComponentBuilderToken } from '../IComponentBuilder';
  * @class ParseSelectorHandle
  * @extends {ParsersHandle}
  */
-export const ParseSelectorHandle = async function (ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
+export const ParseSelectorHandle = async function (ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
     if (ctx.selector) {
         let selector = ctx.selector;
         let template = ctx.template;

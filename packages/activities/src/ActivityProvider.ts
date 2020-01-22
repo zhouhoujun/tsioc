@@ -1,12 +1,14 @@
 import { Type, Singleton, SymbolType } from '@tsdi/ioc';
-import { ComponentProvider } from '@tsdi/components';
+import { ComponentProvider, ITemplateOption, ITemplateContext } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
 import {
     ActivityComponentRef, ActivityElementRef, ActivityTemplateRef, IActivityComponentRef,
     IActivityTemplateRef, IActivityElementRef, ActivityNodeType
 } from './core/ActivityRef';
-import { ActivityContext } from './core/ActivityContext';
+import { ActivityContext, ActivityTemplateContext } from './core/ActivityContext';
+import { AnnoationContext } from '@tsdi/boot';
+import { ICoreInjector } from '@tsdi/core';
 
 const attrSelPrefix = /^ACT_ATTR_/;
 const seletPrefix = /^ACT_SELT_/;
@@ -36,6 +38,15 @@ export class ActivityProvider extends ComponentProvider {
 
     createComponentRef<T>(type: Type<T>, target: T, context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityComponentRef<T> {
         return new ActivityComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
+    }
+
+
+    isTemplateContext(context: AnnoationContext): boolean {
+        return context instanceof ActivityContext;
+    }
+
+    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext {
+        return ActivityTemplateContext.parse(injector, options);
     }
 
     createTemplateRef(context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityTemplateRef<ActivityNodeType> {

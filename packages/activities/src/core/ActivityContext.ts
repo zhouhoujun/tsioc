@@ -1,10 +1,10 @@
 import { Injectable, Type, Refs, createRaiseContext, isToken, Token, isNullOrUndefined, SymbolType } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuildContext, AnnoationContext } from '@tsdi/boot';
+import { BuildContext, IAnnoationContext } from '@tsdi/boot';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
-import { ComponentContext } from '@tsdi/components';
+import { ComponentContext, ITemplateContext } from '@tsdi/components';
 import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
 import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
@@ -36,10 +36,10 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return this._workflow;
     }
 
-    resolve<T>(token: Token<T>): T {
+    getService<T>(token: Token<T>): T {
         let key = this.context.getTokenKey(token);
         let instance: T;
-        let ctx: AnnoationContext = this;
+        let ctx = this as IAnnoationContext;
         while (ctx && isNullOrUndefined(instance)) {
             instance = ctx.context.getInstance(key);
             ctx = ctx.getParent();
@@ -57,7 +57,7 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
 
     getValue<T>(key: SymbolType<T>): T {
         return this.context.getSingleton(key) ?? this.workflow?.context.getSingleton(key) ?? null;
-    }I
+    }
 
     private _executor: IActivityExecutor;
     getExector(): IActivityExecutor {
@@ -75,5 +75,9 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
     static parse(injector: ICoreInjector, target: Type | ActivityOption): ActivityContext {
         return createRaiseContext(injector, ActivityContext, isToken(target) ? { module: target } : target);
     }
+
+}
+
+export class ActivityTemplateContext extends ActivityContext implements ITemplateContext {
 
 }

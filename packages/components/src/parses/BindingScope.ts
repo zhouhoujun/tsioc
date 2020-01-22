@@ -1,7 +1,7 @@
 import { isArray, isNullOrUndefined, IActionSetup } from '@tsdi/ioc';
 import { ParsersHandle } from './ParseHandle';
 import { BindingValueScope } from './BindingValueScope';
-import { ParseContext } from './ParseContext';
+import { IParseContext } from './ParseContext';
 
 /**
  * binding scope.
@@ -12,7 +12,7 @@ import { ParseContext } from './ParseContext';
  */
 export class BindingScope extends ParsersHandle implements IActionSetup {
 
-    async execute(ctx: ParseContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: IParseContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.binding) {
             await super.execute(ctx);
         }
@@ -38,11 +38,11 @@ export class BindingScope extends ParsersHandle implements IActionSetup {
  * @class BindingArrayHandle
  * @extends {ParseHandle}
  */
-export const BindingArrayHandle = async function (ctx: ParseContext, next: () => Promise<void>): Promise<void> {
+export const BindingArrayHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
     if (ctx.binding.type === Array && isArray(ctx.bindExpression)) {
         let actInjector = ctx.reflects.getActionInjector();
         ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
-            let subCtx = ParseContext.parse(ctx.injector, {
+            let subCtx =  ctx.clone(true).setOptions({
                 type: ctx.type,
                 parent: ctx,
                 binding: ctx.binding,

@@ -59,9 +59,8 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
 
     setOptions(options: TOP) {
         if (!options) {
-            return;
+            return this;
         }
-        super.setOptions(options);
         let tokens = this.getValue(CTX_TOKENS) || [];
         if (options.token) {
             tokens.push(options.token)
@@ -78,6 +77,7 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
             }
         }
         this.context.setValue(CTX_TOKENS, tokens);
+        return super.setOptions(options);
     }
 
 }

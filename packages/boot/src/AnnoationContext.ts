@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, isNullOrUndefined
+    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, isNullOrUndefined, ITypeReflects, IProviders, IIocContext
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
@@ -32,12 +32,63 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
     /**
      *  parent context.
      */
-    parent?: AnnoationContext;
+    parent?: IAnnoationContext;
+}
+
+/**
+ * annoation context interface.
+ */
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption,
+TMeta extends IAnnotationMetadata = IAnnotationMetadata,
+TRefl extends IAnnoationReflect = IAnnoationReflect> extends IIocContext<T, ICoreInjector, IContainer> {
+     /**
+     * current build type.
+     */
+    readonly type: Type;
+    /**
+     * current annoation type decorator.
+     */
+    readonly decorator: string;
+
+    /**
+     * get current DI module ref.
+     */
+    getModuleRef(): ModuleRef;
+
+    readonly targetReflect?: TRefl;
+
+    readonly annoation: TMeta;
+
+    readonly providers: IProviders;
+
+    readonly injector: ICoreInjector;
+
+    /**
+     * set parent context
+     * @param context
+     */
+    setParent(context: IAnnoationContext): this;
+
+    getParent(): IAnnoationContext;
+
+    addChild(contex: IAnnoationContext);
+
+    removeChild(contex: IAnnoationContext);
+
+    hasChildren(): boolean;
+
+    getChildren<T extends IAnnoationContext>(): T[];
+
+    /**
+     * resolve token route in root contexts.
+     * @param token
+     */
+    resolve<T>(token: Token<T>): T
 }
 
 
-export const CTX_PARENT_CONTEXT = tokenId<AnnoationContext>('CTX_PARENT_CONTEXT');
-export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');
+export const CTX_PARENT_CONTEXT = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
+export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
 /**
  * annoation context.
  *
@@ -48,7 +99,7 @@ export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     TMeta extends IAnnotationMetadata = IAnnotationMetadata,
     TRefl extends IAnnoationReflect = IAnnoationReflect>
-    extends IocProvidersContext<T, ICoreInjector, IContainer> {
+    extends IocProvidersContext<T, ICoreInjector, IContainer> implements IAnnoationContext<T, TMeta, TRefl> {
 
     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createRaiseContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
@@ -94,7 +145,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     resolve<T>(token: Token<T>): T {
         let value: T;
         let key = this.injector.getTokenKey(token);
-        let ctx: AnnoationContext = this;
+        let ctx = this as IAnnoationContext;
         while (ctx && isNullOrUndefined(value)) {
             value = ctx.getValue(key);
             ctx = ctx.getParent();
@@ -102,7 +153,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         return value ?? null;
     }
 
-    setParent(context: AnnoationContext): this {
+    setParent(context: IAnnoationContext): this {
         if (context === null) {
             this.remove(CTX_PARENT_CONTEXT);
         } else {
@@ -111,17 +162,17 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         return this;
     }
 
-    getParent() {
+    getParent(): IAnnoationContext {
         return this.getValue(CTX_PARENT_CONTEXT);
     }
 
-    addChild(contex: AnnoationContext) {
+    addChild(contex: IAnnoationContext) {
         let chiledren = this.getChildren();
         chiledren.push(contex);
         this.setValue(CTX_SUB_CONTEXT, chiledren);
     }
 
-    removeChild(contex: AnnoationContext) {
+    removeChild(contex: IAnnoationContext) {
         let chiledren = this.getChildren();
         if (chiledren) {
             return lang.remove(chiledren, contex);
@@ -133,7 +184,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         return this.hasValue(CTX_SUB_CONTEXT);
     }
 
-    getChildren<T extends AnnoationContext>(): T[] {
+    getChildren<T extends IAnnoationContext>(): T[] {
         return (this.getValue(CTX_SUB_CONTEXT) || []) as T[];
     }
 
@@ -157,15 +208,15 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
 
     setOptions(options: T) {
         if (!options) {
-            return;
+            return this;
         }
         options.type = options.type || options.module;
         if (options.type) {
             this.setValue(CTX_MODULE, options.type);
         }
-        super.setOptions(options);
         if (options.parent instanceof AnnoationContext) {
             this.setParent(options.parent);
         }
+        return super.setOptions(options);
     }
 }

@@ -5,7 +5,7 @@ import { Startup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
 import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP } from './context-tokens';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
-import { IComponentContext } from './builder/ComponentContext';
+import { IBuildContext } from './builder/IBuildContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { AnnoationOption, AnnoationContext } from './AnnoationContext';
 import { IModuleReflect } from './modules/IModuleReflect';
@@ -107,9 +107,9 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
  */
 @Injectable
 export class BootContext<T extends BootOption = BootOption,
-    IMeta extends RunnableConfigure = RunnableConfigure,
+    TMeta extends RunnableConfigure = RunnableConfigure,
     TRefl extends IModuleReflect = IModuleReflect>
-    extends AnnoationContext<T, IMeta, TRefl> implements IComponentContext {
+    extends AnnoationContext<T, TMeta, TRefl> implements IBuildContext<T, TMeta, TRefl> {
 
 
     getLogManager(): ILoggerManager {
@@ -147,11 +147,11 @@ export class BootContext<T extends BootOption = BootOption,
     /**
      * configuration merge metadata config and all application config.
      *
-     * @type {IMeta}
+     * @type {TMeta}
      * @memberof BootContext
      */
-    get configuration(): IMeta {
-        return this.getValue(CTX_APP_CONFIGURE) as IMeta;
+    get configuration(): TMeta {
+        return this.getValue(CTX_APP_CONFIGURE) as TMeta;
     }
 
     get args(): string[] {
@@ -193,11 +193,11 @@ export class BootContext<T extends BootOption = BootOption,
     /**
      * get configure manager.
      *
-     * @returns {ConfigureManager<IMeta>}
+     * @returns {ConfigureManager<TMeta>}
      * @memberof BootContext
      */
-    getConfigureManager(): ConfigureManager<IMeta> {
-        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<IMeta>;
+    getConfigureManager(): ConfigureManager<TMeta> {
+        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<TMeta>;
     }
 
     static parse(injector: ICoreInjector, target: Type | BootOption): BootContext {
@@ -206,9 +206,8 @@ export class BootContext<T extends BootOption = BootOption,
 
     setOptions(options: T) {
         if (!options) {
-            return;
+            return this;
         }
-        super.setOptions(options);
         if (options.template) {
             this.setValue(CTX_TEMPLATE, options.template);
         }
@@ -221,5 +220,6 @@ export class BootContext<T extends BootOption = BootOption,
         if (options.baseURL) {
             this.setValue(ProcessRunRootToken, options.baseURL);
         }
+        return super.setOptions(options);
     }
 }

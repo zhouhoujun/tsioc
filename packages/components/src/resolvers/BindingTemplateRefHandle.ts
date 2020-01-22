@@ -1,5 +1,5 @@
 import { DecoratorProvider, PromiseUtil, lang } from '@tsdi/ioc';
-import { BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { IBuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { ComponentProvider } from '../ComponentProvider';
 import { CTX_COMPONENT_REF, ElementRef, ComponentRef } from '../ComponentRef';
@@ -12,7 +12,7 @@ import { CTX_COMPONENT_REF, ElementRef, ComponentRef } from '../ComponentRef';
  * @class BindingTemplateHandle
  * @extends {ResolveHandle}
  */
-export const BindingTemplateRefHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+export const BindingTemplateRefHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
     let reflects = ctx.reflects;
     let ref = ctx.targetReflect as IComponentReflect;
     let actInjector = reflects.getActionInjector();

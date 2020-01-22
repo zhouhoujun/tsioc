@@ -1,6 +1,6 @@
 import { isNullOrUndefined, isArray, IActionSetup } from '@tsdi/ioc';
 import { TemplatesHandle } from './TemplateHandle';
-import { TemplateContext } from './TemplateContext';
+import { ITemplateContext } from './TemplateContext';
 import { ParseSelectorHandle } from './ParseSelectorHandle';
 import { TranslateSelectorScope } from './TranslateSelectorScope';
 
@@ -13,7 +13,7 @@ import { TranslateSelectorScope } from './TranslateSelectorScope';
  * @extends {TemplatesHandle}
  */
 export class TemplateParseScope extends TemplatesHandle implements IActionSetup {
-    async execute(ctx: TemplateContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: ITemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         // after template parsed.
         if (isNullOrUndefined(ctx.value) && next) {
@@ -40,12 +40,12 @@ export class TemplateParseScope extends TemplatesHandle implements IActionSetup 
  * @class ElementsTemplateHandle
  * @extends {TemplateHandle}
  */
-export const ElementsTemplateHandle = async function (ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
+export const ElementsTemplateHandle = async function (ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
     let template = ctx.template;
     if (isArray(template)) {
         let actInjector = ctx.reflects.getActionInjector();
         ctx.value = await Promise.all(template.map(async tp => {
-            let subCtx = TemplateContext.parse(ctx.injector, {
+            let subCtx = ctx.clone(true).setOptions({
                 parent: ctx,
                 template: tp
             });

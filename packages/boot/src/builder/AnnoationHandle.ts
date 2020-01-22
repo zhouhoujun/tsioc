@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { BuildHandle } from './BuildHandles';
-import { AnnoationContext } from '../AnnoationContext';
+import { AnnoationContext, IAnnoationContext } from '../AnnoationContext';
 
 
 /**
@@ -12,15 +12,15 @@ import { AnnoationContext } from '../AnnoationContext';
  * @extends {BuildHandle<AnnoationContext>}
  */
 @Abstract()
-export abstract class AnnoationHandle extends BuildHandle<AnnoationContext> {
+export abstract class AnnoationHandle extends BuildHandle<IAnnoationContext> {
     /**
      * execute Handles.
      *
      * @abstract
-     * @param {AnnoationContext} ctx
+     * @param {IAnnoationContext} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      * @memberof AnnoationHandle
      */
-    abstract execute(ctx: AnnoationContext, next: () => Promise<void>): Promise<void>;
+    abstract execute(ctx: IAnnoationContext, next: () => Promise<void>): Promise<void>;
 }

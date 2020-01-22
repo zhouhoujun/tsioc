@@ -1,5 +1,5 @@
 import { BuildHandle, BuildHandles } from '@tsdi/boot';
-import { ParseContext } from './ParseContext';
+import { IParseContext } from './ParseContext';
 
 /**
  * parse handle.
@@ -9,17 +9,17 @@ import { ParseContext } from './ParseContext';
  * @class ParseHandle
  * @extends {BuildHandle<ParseContext>}
  */
-export abstract class ParseHandle extends BuildHandle<ParseContext> {
+export abstract class ParseHandle extends BuildHandle<IParseContext> {
     /**
      * execute binding Handle.
      *
      * @abstract
-     * @param {ParseContext} ctx
+     * @param {IParseContext} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      * @memberof BootHandle
      */
-    abstract execute(ctx: ParseContext, next: () => Promise<void>): Promise<void>;
+    abstract execute(ctx: IParseContext, next: () => Promise<void>): Promise<void>;
 }
 
 /**
@@ -27,8 +27,8 @@ export abstract class ParseHandle extends BuildHandle<ParseContext> {
  *
  * @export
  * @class ParsersHandle
- * @extends {BuildHandles<ParseContext>}
+ * @extends {BuildHandles<IParseContext>}
  */
-export class ParsersHandle extends BuildHandles<ParseContext> {
+export class ParsersHandle extends BuildHandles<IParseContext> {
 
 }

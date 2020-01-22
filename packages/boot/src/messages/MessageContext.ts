@@ -1,4 +1,4 @@
-import { Injectable, IocRaiseContext, ActionContextOption, isDefined, CTX_TYPE } from '@tsdi/ioc';
+import { Injectable, IocRaiseContext, ActionContextOption, isDefined } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { IHandleContext } from '../handles/Handle';
 import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT } from '../context-tokens';
@@ -98,9 +98,8 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
 
     setOptions(options: T) {
         if (!options) {
-            return;
+            return this;
         }
-        super.setOptions(options);
         if (isDefined(options.data)) {
             this.setValue(CTX_DATA, options.data);
         }
@@ -113,6 +112,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
         if (options.event) {
             this.setValue(CTX_MSG_EVENT, options.event);
         }
+        return super.setOptions(options);
     }
 
 }

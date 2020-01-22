@@ -1,6 +1,6 @@
-import { BuildContext } from '../BuildContext';
+import { IBuildContext } from '../IBuildContext';
 import { BuildHandle } from '../BuildHandles';
 
-export abstract class ResolveHandle extends BuildHandle<BuildContext> {
+export abstract class ResolveHandle extends BuildHandle<IBuildContext> {
 
 }

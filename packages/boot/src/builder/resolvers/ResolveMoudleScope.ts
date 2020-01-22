@@ -1,7 +1,7 @@
 import { IActionSetup, INJECTOR, isNullOrUndefined } from '@tsdi/ioc';
 import { BuildHandles } from '../BuildHandles';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
-import { BuildContext } from '../BuildContext';
+import { IBuildContext } from '../IBuildContext';
 
 
 /**
@@ -11,9 +11,9 @@ import { BuildContext } from '../BuildContext';
  * @class ResolveMoudleScope
  * @extends {BuildHandles<BuildContext>}
  */
-export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IActionSetup {
+export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements IActionSetup {
 
-    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.value) {
             return;
         }

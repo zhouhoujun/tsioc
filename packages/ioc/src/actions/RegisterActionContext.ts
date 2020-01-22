@@ -88,9 +88,8 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
 
     setOptions(options: T) {
         if (!options) {
-            return;
+            return this;
         }
-        super.setOptions(options);
         if (options.token) {
             this.context.setValue(CTX_TOKEN, options.token);
         }
@@ -101,5 +100,6 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
         if (options.singleton) {
             this.context.setValue(CTX_SINGLETON, options.singleton);
         }
+        return super.setOptions(options);
     }
 }

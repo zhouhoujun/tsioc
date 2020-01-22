@@ -1,11 +1,11 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { BuildContext } from '@tsdi/boot';
+import { IBuildContext } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScopeHandle } from '../parses/BindingValueScope';
 
 
-export const BindingOutputHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
+export const BindingOutputHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
 
     let ref = ctx.targetReflect as IComponentReflect;
     if (ref && ref.propOutBindings) {

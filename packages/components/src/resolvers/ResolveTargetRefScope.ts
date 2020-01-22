@@ -1,5 +1,5 @@
 import { IActionSetup, DecoratorProvider } from '@tsdi/ioc';
-import { BuildHandles, BuildContext } from '@tsdi/boot';
+import { BuildHandles, IBuildContext } from '@tsdi/boot';
 import { ResolveTemplateHanlde } from './ResolveTemplateHanlde';
 import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';
@@ -9,8 +9,8 @@ import { CTX_ELEMENT_REF, CTX_COMPONENT_REF } from '../ComponentRef';
 
 
 
-export class ResolveTargetRefScope extends BuildHandles<BuildContext> implements IActionSetup {
-    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+export class ResolveTargetRefScope extends BuildHandles<IBuildContext> implements IActionSetup {
+    async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
         let annoation = ctx.annoation as IComponentMetadata;
         if (ctx.getOptions().attr) {
             if (annoation.template) {

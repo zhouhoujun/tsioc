@@ -1,5 +1,5 @@
 import { isFunction } from '@tsdi/ioc';
-import { BuildContext } from '@tsdi/boot';
+import { IBuildContext } from '@tsdi/boot';
 import { AfterInit } from '../ComponentLifecycle';
 
 /**
@@ -9,7 +9,7 @@ import { AfterInit } from '../ComponentLifecycle';
  * @class ModuleAfterInitHandle
  * @extends {ResolveHandle}
  */
-export const ModuleAfterInitHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+export const ModuleAfterInitHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
     let target = ctx.value as AfterInit;
     if (target && isFunction(target.onAfterInit)) {
         await target.onAfterInit();

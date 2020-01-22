@@ -70,7 +70,7 @@ export * from './messages/RootMessageQueue';
 // builders
 export * from './builder/BuildHandles';
 export * from './builder/AnnoationHandle';
-export * from './builder/ComponentContext';
+export * from './builder/IBuildContext';
 export * from './builder/IBuildOption';
 export * from './builder/BuildContext';
 

@@ -1,5 +1,5 @@
 import { IActionSetup, DecoratorProvider } from '@tsdi/ioc';
-import { BuildHandles, BuildContext } from '@tsdi/boot';
+import { BuildHandles, IBuildContext } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { ModuleBeforeInitHandle } from './ModuleBeforeInitHandle';
 import { BindingPropertyHandle } from './BindingPropertyHandle';
@@ -12,9 +12,9 @@ import { CTX_COMPONENT_DECTOR, CTX_ELEMENT_REF } from '../ComponentRef';
 import { ComponentProvider } from '../ComponentProvider';
 
 
-export class BindingComponentScope extends BuildHandles<BuildContext> implements IActionSetup {
+export class BindingComponentScope extends BuildHandles<IBuildContext> implements IActionSetup {
 
-    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
         if (!ctx.value) {
             return next();
         }

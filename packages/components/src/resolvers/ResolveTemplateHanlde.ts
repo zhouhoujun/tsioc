@@ -4,6 +4,7 @@ import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { ComponentProvider } from '../ComponentProvider';
+import { TemplateContext } from '../parses/TemplateContext';
 
 
 export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {

@@ -1,5 +1,5 @@
 import { isFunction } from '@tsdi/ioc';
-import { BuildContext } from '@tsdi/boot';
+import { IBuildContext } from '@tsdi/boot';
 import { BeforeInit } from '../ComponentLifecycle';
 
 
@@ -10,7 +10,7 @@ import { BeforeInit } from '../ComponentLifecycle';
  * @class ModuleBeforeInitHandle
  * @extends {ResolveComponentHandle}
  */
-export const ModuleBeforeInitHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+export const ModuleBeforeInitHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
     let target = ctx.value as BeforeInit;
     if (target && isFunction(target.onBeforeInit)) {
         await target.onBeforeInit();

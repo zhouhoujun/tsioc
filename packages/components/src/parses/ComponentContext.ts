@@ -1,16 +1,25 @@
 import { DecoratorProvider } from '@tsdi/ioc';
-import { BuildContext, IBuildOption, AnnoationContext, CTX_ELEMENT_NAME } from '@tsdi/boot';
-import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF } from '../ComponentRef';
+import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext } from '@tsdi/boot';
+import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef } from '../ComponentRef';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
 import { ComponentProvider, CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
 
+export interface IComponentContext<T extends IBuildOption = IBuildOption,
+    TMeta extends IComponentMetadata = IComponentMetadata,
+    TRefl extends IComponentReflect = IComponentReflect> extends IBuildContext<T, TMeta, TRefl> {
+    readonly name: string;
+    getResultRef(): IComponentRef | ITemplateRef;
+    readonly scope: any;
+    readonly componentProvider: ComponentProvider;
+    readonly componentDecorator: string;
 
+}
 
 export class ComponentContext<T extends IBuildOption = IBuildOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
     TRefl extends IComponentReflect = IComponentReflect>
-    extends BuildContext<T, TMeta, TRefl> {
+    extends BuildContext<T, TMeta, TRefl> implements IComponentContext<T, TMeta, TRefl> {
 
     get name() {
         return this.getValue(CTX_ELEMENT_NAME);

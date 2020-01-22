@@ -1,5 +1,5 @@
 import { Token, Type, SymbolType } from '../types';
-import { lang, isArray } from '../utils/lang';
+import { lang, isArray, isBoolean } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { Inject } from '../decorators/Inject';
 import { ProviderTypes } from '../providers/types';
@@ -9,7 +9,7 @@ import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 import { IInjector, INJECTOR, PROVIDERS, IProviders } from '../IInjector';
 import { isInjector } from '../BaseInjector';
 import { ActionContextOption, Action } from './Action';
-import { IocDestoryable } from '../Destoryable';
+import { IocDestoryable, IDestoryable } from '../Destoryable';
 
 /**
  * ioc action context.
@@ -43,6 +43,95 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
 }
 
 /**
+ * context interface.
+ */
+export interface IIocContext<
+    T extends ActionContextOption = ActionContextOption,
+    TJ extends IInjector = IInjector,
+    TC extends IIocContainer = IIocContainer> extends IDestoryable {
+    /**
+     * current injector.
+     */
+    readonly injector: TJ;
+
+    /**
+     * current context providers.
+     */
+    readonly context: IProviders;
+    /**
+     * reflects.
+     */
+    readonly reflects: ITypeReflects;
+    /**
+     * has register in context or not.
+     * @param token
+     */
+    has(token: Token): boolean;
+    /**
+    * has value in context or not.
+    * @param token
+    */
+    hasValue(token: SymbolType): boolean;
+    /**
+     * remove contexts.
+     * @param tokens
+     */
+    remove(...tokens: Token[]);
+    /**
+     * get context provider of boot application.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {T}
+     */
+    get<T>(token: Token<T>): T;
+    /**
+     * get value from context.
+     * @param key token key
+     */
+    getValue<T>(key: SymbolType<T>): T;
+    setValue<T>(key: SymbolType<T>, value: T);
+    /**
+     * set provider of this context.
+     *
+     * @param {Token} token context provider token.
+     * @param {*} value context value.
+     */
+    set(token: Token, value: any);
+    /**
+     * set context provider of boot application.
+     *
+     * @param {...ProviderTypes[]} providers
+     */
+    set(...providers: ProviderTypes[]);
+    /**
+     * get root container.
+     */
+    getContainer<T extends TC>(): T;
+    /**
+     * get options of context.
+     *
+     * @returns {T}
+     * @memberof IocRaiseContext
+     */
+    getOptions(): T;
+
+    /**
+     * set options for context.
+     * @param options options.
+     */
+    setOptions(options: T): this;
+
+    clone(): this;
+    /**
+     * clone the context.
+     * @param empty empty context or not.
+     */
+    clone(empty: boolean): this;
+    clone(options: T): this;
+}
+
+/**
  * context with raise container.
  *
  * @export
@@ -52,7 +141,7 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
 export abstract class IocRaiseContext<
     T extends ActionContextOption = ActionContextOption,
     TJ extends IInjector = IInjector,
-    TC extends IIocContainer = IIocContainer> extends IocActionContext {
+    TC extends IIocContainer = IIocContainer> extends IocActionContext implements IIocContext<T, TJ, TC> {
 
     public readonly context: IProviders;
 
@@ -134,14 +223,12 @@ export abstract class IocRaiseContext<
      *
      * @param {Token} token context provider token.
      * @param {*} value context value.
-     * @memberof BootContext
      */
     set(token: Token, value: any);
     /**
      * set context provider of boot application.
      *
      * @param {...ProviderTypes[]} providers
-     * @memberof BootContext
      */
     set(...providers: ProviderTypes[]);
     set(...providers: any[]) {
@@ -157,8 +244,6 @@ export abstract class IocRaiseContext<
 
     /**
      * get root container.
-     *
-     * @memberof ResovleContext
      */
     getContainer<T extends TC>(): T {
         return this.injector.getContainer() as T;
@@ -168,7 +253,7 @@ export abstract class IocRaiseContext<
      * set options for context.
      * @param options options.
      */
-    setOptions(options: T) {
+    setOptions(options: T): this {
         if (!options) {
             return;
         }
@@ -181,6 +266,7 @@ export abstract class IocRaiseContext<
         }
         options = this.context.hasSingleton(CTX_OPTIONS) ? Object.assign(this.getOptions(), options) : options;
         this.context.setValue(CTX_OPTIONS, options);
+        return this;
     }
 
     /**
@@ -193,15 +279,16 @@ export abstract class IocRaiseContext<
         return this.context.getSingleton(CTX_OPTIONS) as T;
     }
 
-    cloneContext(filter?: (key: Token) => boolean) {
-        return this.context.clone(filter || (k => !k.toString().startsWith('CTX_')));
-    }
-
     /**
      * clone contexts.
      */
-    clone(options?: T, filter?: (key: Token) => boolean): this {
-        return createRaiseContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.cloneContext(filter), ...options || {} });
+    clone(options?: T | boolean): this {
+        if (isBoolean(options)) {
+            return options ? createRaiseContext(this.injector, lang.getClass(this), null)
+                : createRaiseContext(this.injector, lang.getClass(this), this.getOptions());
+        } else {
+            return createRaiseContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.context.clone(), ...options || {} });
+        }
     }
 
     protected destroying() {
@@ -236,7 +323,6 @@ export abstract class IocProvidersContext<
     }
 
     setOptions(options: T) {
-        super.setOptions(options);
         if (options && options.providers) {
             if (isInjector(options.providers)) {
                 this.setValue(CTX_PROVIDERS, options.providers)
@@ -244,6 +330,7 @@ export abstract class IocProvidersContext<
                 this.providers.inject(...options.providers);
             }
         }
+        return super.setOptions(options);
     }
 
     protected destroying() {

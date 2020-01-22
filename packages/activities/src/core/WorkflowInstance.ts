@@ -93,12 +93,12 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
 
     setOptions(options: ActivityOption) {
         if (!options) {
-            return;
+            return this;
         }
-        super.setOptions(options);
         if (isDefined(options.data)) {
             this.setValue(ACTIVITY_INPUT, options.data);
         }
+        return super.setOptions(options);
     }
 }
 

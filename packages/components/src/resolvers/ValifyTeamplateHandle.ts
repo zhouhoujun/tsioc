@@ -1,7 +1,7 @@
-import { BuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { IBuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 
 
-export const ValifyTeamplateHandle = async function (ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+export const ValifyTeamplateHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
 
     let actInjector = ctx.reflects.getActionInjector();
     let startupRegr = actInjector.getInstance(StartupDecoratorRegisterer);

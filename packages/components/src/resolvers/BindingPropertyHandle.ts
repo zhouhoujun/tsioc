@@ -1,5 +1,5 @@
 import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
-import { BuildContext } from '@tsdi/boot';
+import { IBuildContext } from '@tsdi/boot';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
 import { IComponentReflect } from '../IComponentReflect';
@@ -15,7 +15,7 @@ import { DataBinding } from '../bindings/DataBinding';
  * @class BindingPropertyHandle
  * @extends {ResolveHandle}
  */
-export const BindingPropertyHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
+export const BindingPropertyHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
 
     let ref = ctx.targetReflect as IComponentReflect;
     if (ref && ref.propInBindings) {

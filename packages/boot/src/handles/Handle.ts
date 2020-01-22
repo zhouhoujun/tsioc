@@ -9,13 +9,6 @@ import { IContainer } from '@tsdi/core';
  * @interface IHandleContext
  */
 export interface IHandleContext {
-    /**
-     * get raise container.
-     *
-     * @returns {IContainer}
-     * @memberof IHandleContext
-     */
-    getContainer(): IContainer;
 
 }
 
