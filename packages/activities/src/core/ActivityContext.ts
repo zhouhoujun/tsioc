@@ -21,11 +21,11 @@ import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
 
     get input() {
-        return this.resolve(ACTIVITY_INPUT);
+        return this.getContextValue(ACTIVITY_INPUT);
     }
 
     get output() {
-        return this.resolve(ACTIVITY_OUTPUT);
+        return this.getContextValue(ACTIVITY_OUTPUT);
     }
 
     private _workflow: WorkflowContext;
@@ -34,20 +34,6 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
             this._workflow = this.injector.getSingleton(WorkflowContextToken) as WorkflowContext;
         }
         return this._workflow;
-    }
-
-    getService<T>(token: Token<T>): T {
-        let key = this.context.getTokenKey(token);
-        let instance: T;
-        let ctx = this as IAnnoationContext;
-        while (ctx && isNullOrUndefined(instance)) {
-            instance = ctx.context.getInstance(key);
-            ctx = ctx.getParent();
-        }
-        if (isNullOrUndefined(instance)) {
-            instance = this.workflow.context.getInstance(key);
-        }
-        return instance;
     }
 
     get<T>(token: Token<T>): T {

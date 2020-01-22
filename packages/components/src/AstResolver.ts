@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isFunction } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { pipeExp } from './bindings/exps';
 import { IPipeTransform } from './bindings/IPipeTransform';
@@ -42,6 +42,7 @@ export class AstResolver {
                 let func = eval(`(${Object.keys(envOptions).join(',')}) => {
                     return ${expression};
                 }`);
+                console.log(func);
                 value = func(...Object.values(envOptions));
 
             } else {

@@ -9,7 +9,7 @@ export const ParseTemplateHandle = async function (ctx: BuildContext, next: () =
             parent: ctx,
             template: ctx.template
         };
-        let pCtx = ctx.resolve(CTX_COMPONENT_PROVIDER)?.createTemplateContext(ctx.injector, options) as TemplateContext ?? TemplateContext.parse(ctx.injector, options) ;
+        let pCtx = ctx.getContextValue(CTX_COMPONENT_PROVIDER)?.createTemplateContext(ctx.injector, options) ?? TemplateContext.parse(ctx.injector, options) ;
 
         let actInjector = ctx.reflects.getActionInjector();
 

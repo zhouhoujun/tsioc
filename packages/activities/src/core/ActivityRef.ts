@@ -61,11 +61,12 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
      */
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<any> {
         ctx.status.current = this;
-        this.context.remove(ACTIVITY_OUTPUT);
         let result = await this.nativeElement.execute(this.context);
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_OUTPUT, result);
             ctx.status.currentScope?.context.setValue(ACTIVITY_OUTPUT, result);
+        } else {
+            this.context.remove(ACTIVITY_OUTPUT);
         }
 
         if (next) {
@@ -116,6 +117,8 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_OUTPUT, result);
             ctx.status.currentScope?.context.setValue(ACTIVITY_OUTPUT, result);
+        } else {
+            this.context.remove(ACTIVITY_OUTPUT);
         }
 
         if (next) {

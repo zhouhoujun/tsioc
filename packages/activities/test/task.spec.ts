@@ -63,7 +63,7 @@ describe('activity test', () => {
             expect(ctx.result).toEqual('component task');
             let activity = ctx.boot as ActivityComponentRef;
             let ifact = activity.nodeRef.rootNodes[0] as ActivityElementRef;
-            console.log(ifact);
+            // console.log(ifact);
             expect(ifact.nativeElement instanceof IfActivity).toBeTruthy();
             expect(ifact.name).toEqual('test---task---3');
             expect((<IfActivity>ifact.nativeElement).condition.name).not.toEqual('test---task---3');

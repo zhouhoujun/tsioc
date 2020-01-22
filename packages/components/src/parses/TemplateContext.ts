@@ -43,7 +43,7 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
                     ctx = this;
                 } else {
                     ctx = compPdr.createTemplateContext(this.injector);
-                    ctx.context.copy(this.context);
+                    ctx.setParent(this);
                 }
                 let tempRef = isArray(this.value) ? compPdr.createTemplateRef(ctx, ...this.value) : compPdr.createTemplateRef(ctx, this.value);
                 this.setValue(CTX_TEMPLATE_REF, tempRef);

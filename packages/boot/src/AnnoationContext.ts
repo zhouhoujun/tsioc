@@ -33,17 +33,18 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
      *  parent context.
      */
     parent?: IAnnoationContext;
+
 }
 
 /**
  * annoation context interface.
  */
 export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption,
-TMeta extends IAnnotationMetadata = IAnnotationMetadata,
-TRefl extends IAnnoationReflect = IAnnoationReflect> extends IIocContext<T, ICoreInjector, IContainer> {
-     /**
-     * current build type.
-     */
+    TMeta extends IAnnotationMetadata = IAnnotationMetadata,
+    TRefl extends IAnnoationReflect = IAnnoationReflect> extends IIocContext<T, ICoreInjector, IContainer> {
+    /**
+    * current build type.
+    */
     readonly type: Type;
     /**
      * current annoation type decorator.
@@ -78,12 +79,17 @@ TRefl extends IAnnoationReflect = IAnnoationReflect> extends IIocContext<T, ICor
     hasChildren(): boolean;
 
     getChildren<T extends IAnnoationContext>(): T[];
-
     /**
-     * resolve token route in root contexts.
+     * get token providers service route in root contexts.
      * @param token
      */
-    resolve<T>(token: Token<T>): T
+    getContext<T>(token: Token<T>): T
+    /**
+     * resolve token value route in root contexts.
+     * @param token
+     */
+    getContextValue<T>(token: Token<T>): T;
+
 }
 
 
@@ -139,10 +145,25 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     /**
+     * get token providers service route in root contexts.
+     * @param token
+     */
+    getContext<T>(token: Token<T>): T {
+        let value: T;
+        let key = this.injector.getTokenKey(token);
+        let ctx = this as IAnnoationContext;
+        while (ctx && isNullOrUndefined(value)) {
+            value = ctx.get(key);
+            ctx = ctx.getParent();
+        }
+        return value ?? null;
+    }
+
+    /**
      * resolve token route in root contexts.
      * @param token
      */
-    resolve<T>(token: Token<T>): T {
+    getContextValue<T>(token: Token<T>): T {
         let value: T;
         let key = this.injector.getTokenKey(token);
         let ctx = this as IAnnoationContext;

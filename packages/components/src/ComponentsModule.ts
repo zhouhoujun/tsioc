@@ -26,6 +26,7 @@ import { PipeRegisterAction } from './registers/PipeRegisterAction';
 import { BindingComponentScope } from './resolvers/BindingComponentScope';
 import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
 import { DefaultComponets } from './IComponentReflect';
+import { ComponentProvider } from './ComponentProvider';
 
 
 /**
@@ -72,7 +73,7 @@ export class ComponentsModule {
             })
             .bindProviders(Component,
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner },
-                AstResolver
+                { provide: AstResolver, useFactory: (prd) => new AstResolver(prd), deps: [ComponentProvider] }
             );
 
         actInjector.regAction(BindingScope)

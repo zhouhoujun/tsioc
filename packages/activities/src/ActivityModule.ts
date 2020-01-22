@@ -46,7 +46,7 @@ export class ActivityModule {
             .bindProviders(Task,
                 { provide: BootContext, useClass: WorkflowContext },
                 { provide: BuildContext, useClass: ActivityContext },
-                AstResolver,
+                { provide: AstResolver, useFactory: (prd) => new AstResolver(prd), deps: [ComponentProvider] },
                 { provide: ComponentProvider, useClass: ActivityProvider },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner }
             );

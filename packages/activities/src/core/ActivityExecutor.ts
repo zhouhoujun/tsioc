@@ -81,7 +81,7 @@ export class ActivityExecutor implements IActivityExecutor {
         }
         envOptions = envOptions || {};
         envOptions['ctx'] = this.context;
-        this.context.componentProvider.getAstResolver()
+        return this.context.componentProvider.getAstResolver()
             .resolve(expression, this.context.injector, envOptions);
     }
 

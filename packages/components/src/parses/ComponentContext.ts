@@ -31,7 +31,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
 
     get scope(): any {
         if (!this.hasValue(CTX_COMPONENT)) {
-            let scope = this.resolve(CTX_COMPONENT)
+            let scope = this.getContextValue(CTX_COMPONENT)
             scope && this.setValue(CTX_COMPONENT, scope);
         }
         return this.getValue(CTX_COMPONENT);
@@ -47,7 +47,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
 
     get componentDecorator() {
         if (!this.hasValue(CTX_COMPONENT_DECTOR)) {
-            let dector = this.resolve(CTX_COMPONENT_DECTOR);
+            let dector = this.getContextValue(CTX_COMPONENT_DECTOR);
             dector && this.setValue(CTX_COMPONENT_DECTOR, dector);
         }
         return this.getValue(CTX_COMPONENT_DECTOR);

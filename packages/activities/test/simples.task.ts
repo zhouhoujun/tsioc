@@ -24,7 +24,7 @@ export class LoadData extends Activity<any> {
     @Input() getParams: string | ((ctx: ActivityContext) => any[]);
     @Input() params: any[];
     async execute(ctx: ActivityContext): Promise<any> {
-        let service = ctx.resolve(this.service);
+        let service = ctx.getContextValue(this.service);
         if (service && service[this.action]) {
 
             let params: any[];
