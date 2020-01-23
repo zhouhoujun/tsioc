@@ -101,7 +101,6 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
     constructor(context: ActivityContext, nodes: T[]) {
         super(context);
         this._rootNodes = nodes;
-        context.setValue(CTX_RUN_SCOPE, context);
     }
 
 
@@ -111,10 +110,11 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
      * @param next next work.
      */
     async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
+        let pRunScope = this.context.runScope;
         this.context.setValue(CTX_RUN_SCOPE, this.context);
         let result = await this.context.getExector().runActivity(this.rootNodes);
+        this.context.setValue(CTX_RUN_SCOPE, pRunScope);
         if (isDefined(result)) {
-            this.context.setValue(ACTIVITY_OUTPUT, result);
             this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_OUTPUT, result);
             this.context.runScope?.setValue(ACTIVITY_OUTPUT, result);
         } else {
