@@ -8,9 +8,9 @@ import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
-import { isAcitvityRef, ActivityElementRef, IActivityElementRef } from './ActivityRef';
+import { isAcitvityRef, ActivityElementRef, IActivityElementRef, ActivityRef } from './ActivityRef';
 import { WorkflowContext } from './WorkflowInstance';
-import { ActivityContext } from './ActivityContext';
+import { ActivityContext, CTX_RUN_SCOPE } from './ActivityContext';
 import { Activity } from './Activity';
 
 
@@ -117,7 +117,7 @@ export class ActivityExecutor implements IActivityExecutor {
             }
             return;
         }
-        return await PromiseUtil.runInChain(actions.filter(f => f), this.context.workflow, next);
+        await PromiseUtil.runInChain(actions.filter(f => f), this.context.workflow, next);
     }
 
     parseAction<T extends WorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> {
@@ -136,13 +136,20 @@ export class ActivityExecutor implements IActivityExecutor {
     protected async buildActivity<T extends WorkflowContext>(activity: ActivityType, input: any): Promise<PromiseUtil.ActionHandle<T>> {
         let ctx = this.context;
         if (isAcitvityRef(activity)) {
+            activity.context.setValue(CTX_RUN_SCOPE, ctx);
             isDefined(input) && activity.context.setValue(ACTIVITY_INPUT, input);
             return activity.toAction();
         } else if (activity instanceof Activity) {
-            let ref = this.context.injector.getSingleton(ELEMENT_REFS).get(activity) as IActivityElementRef ?? new ActivityElementRef(this.context, activity);
+            let ref = this.context.injector.getSingleton(ELEMENT_REFS).get(activity) as IActivityElementRef;
+            if (ref instanceof ActivityRef) {
+                ref.context.setValue(CTX_RUN_SCOPE, ctx);
+            } else {
+                ref = new ActivityElementRef(this.context, activity);
+            }
             return ref.toAction();
         } else if (isClass(activity)) {
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(activity) as IActivityRef;
+            aref.context.setValue(CTX_RUN_SCOPE, ctx);
             aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {
@@ -161,6 +168,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 parent: ctx
             };
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(option) as IActivityRef;
+            aref.context.setValue(CTX_RUN_SCOPE, ctx);
             aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         }

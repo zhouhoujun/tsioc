@@ -1,7 +1,7 @@
 import { PromiseUtil, lang, isDefined, Abstract, IDestoryable, isFunction, Type } from '@tsdi/ioc';
-import { CTX_TEMPLATE } from '@tsdi/boot';
+import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '@tsdi/boot';
 import { IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS, NodeSelector } from '@tsdi/components';
-import { ActivityContext } from './ActivityContext';
+import { ActivityContext, CTX_RUN_SCOPE } from './ActivityContext';
 import { IActivityRef, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
@@ -41,7 +41,7 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
 export class ActivityElementRef<T extends Activity = Activity> extends ActivityRef<T> implements IActivityElementRef<T> {
 
     get name(): string {
-        return this.nativeElement.name ?? lang.getClassName(this.nativeElement);
+        return this.context.name ?? this.nativeElement.name ?? lang.getClassName(this.nativeElement);
     }
 
     constructor(context: ActivityContext, public readonly nativeElement: T) {
@@ -64,6 +64,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         let result = await this.nativeElement.execute(this.context);
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_OUTPUT, result);
+            this.context.getValue(CTX_RUN_SCOPE)?.setValue(ACTIVITY_OUTPUT, result);
             ctx.status.currentScope?.context.setValue(ACTIVITY_OUTPUT, result);
         } else {
             this.context.remove(ACTIVITY_OUTPUT);
@@ -86,7 +87,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
 export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef<T> implements IActivityTemplateRef<T> {
     readonly isScope = true;
     get name(): string {
-        return this.context.name;
+        return this.context.name ?? 'template';
     }
 
     get template() {
@@ -116,6 +117,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         ctx.status.scopeEnd();
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_OUTPUT, result);
+            this.context.getValue(CTX_RUN_SCOPE)?.setValue(ACTIVITY_OUTPUT, result);
             ctx.status.currentScope?.context.setValue(ACTIVITY_OUTPUT, result);
         } else {
             this.context.remove(ACTIVITY_OUTPUT);
@@ -146,7 +148,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
 export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends ActivityRef<T> implements IActivityComponentRef<T, TN> {
 
     get name(): string {
-        return this.context.name || lang.getClassName(this.componentType);
+        return this.context?.name ?? lang.getClassName(this.componentType);
     }
 
     constructor(
@@ -159,6 +161,7 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
         if (!context.injector.has(COMPONENT_REFS)) {
             context.injector.setValue(COMPONENT_REFS, new WeakMap());
         }
+        context.set(CTX_ELEMENT_NAME, this.name);
         let injector = context.injector;
         injector.getSingleton(COMPONENT_REFS).set(instance, this);
         this.onDestroy(() => injector.getSingleton(COMPONENT_REFS)?.delete(this.instance));

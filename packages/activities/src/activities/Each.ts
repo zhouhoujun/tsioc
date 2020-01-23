@@ -13,7 +13,7 @@ export class EachActicity<T> extends ControlActivity<T> {
 
     @Input() each: Expression<any[]>;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<T>;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType;
 
     @Input() parallel: boolean;
 

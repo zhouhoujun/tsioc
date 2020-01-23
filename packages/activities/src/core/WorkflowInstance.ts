@@ -113,9 +113,8 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
 @Refs(ActivityRef, Startup)
 export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx extends WorkflowContext = WorkflowContext> extends Service<T, TCtx> {
 
-    private _result: any;
     get result(): any {
-        return this._result;
+        return this.context.getValue(ACTIVITY_OUTPUT);
     }
 
     state: RunState;
@@ -139,7 +138,6 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
         });
 
         return this.context;
-
     }
 
     async stop(): Promise<any> {

@@ -1,14 +1,16 @@
-import { Injectable, Type, Refs, createRaiseContext, isToken, Token, isNullOrUndefined, SymbolType } from '@tsdi/ioc';
+import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuildContext, IAnnoationContext } from '@tsdi/boot';
+import { BuildContext } from '@tsdi/boot';
+import { ComponentContext, ITemplateContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
-import { ComponentContext, ITemplateContext } from '@tsdi/components';
 import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
 import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 
+
+export const CTX_RUN_SCOPE = tokenId<ActivityContext>('CTX_RUN_SCOPE');
 
 /**
  * activity execute context.ß
