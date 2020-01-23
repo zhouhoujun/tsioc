@@ -95,24 +95,13 @@ export class AdviceMatcher implements IAdviceMatcher {
             let decorators = refs.create(targetType).defines.getPropertyDescriptors();
             // match method.
             for (let name in decorators) {
-                points.push({
-                    name: name,
-                    fullName: `${className}.${name}`
-                });
-            }
-
-            let allmethods = refs.getParamerterNames(targetType);
-            lang.forIn(allmethods, (item, name) => {
-                if (name === 'constructor') {
-                    return;
-                }
-                if (isUndefined(decorators[name])) {
+                if (name !== 'constructor') {
                     points.push({
                         name: name,
                         fullName: `${className}.${name}`
                     });
                 }
-            });
+            }
 
             Object.getOwnPropertyNames(adviceMetas).forEach(name => {
                 let advices = adviceMetas[name];
