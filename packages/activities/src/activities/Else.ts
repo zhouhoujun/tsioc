@@ -19,8 +19,8 @@ export class ElseActivity extends ControlActivity {
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
     async execute(ctx: ActivityContext): Promise<void> {
-        let currScope = ctx.workflow.status.currentScope;
-        if (currScope.context.hasValue(IFStateKey) && !currScope.context.getValue(IFStateKey)) {
+        let currScope = ctx.runScope;
+        if (currScope.hasValue(IFStateKey) && !currScope.getValue(IFStateKey)) {
             await ctx.getExector().runActivity(this.body);
         }
     }

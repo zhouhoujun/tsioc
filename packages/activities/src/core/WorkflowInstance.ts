@@ -4,8 +4,8 @@ import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { ActivityOption } from './ActivityOption';
 import { ActivityMetadata } from './ActivityMetadata';
-import { ActivityStatus } from './ActivityStatus';
 import { ActivityRef } from './ActivityRef';
+import { CTX_RUN_PARENT } from './ActivityContext';
 
 
 
@@ -55,8 +55,6 @@ export enum RunState {
  */
 export const WorkflowContextToken = tokenId<WorkflowContext>('WorkflowContext');
 
-export const CTX_ACTIVITYSTATUS = tokenId<ActivityStatus>('CTX_ACTIVITYSTATUS');
-
 @Injectable
 @Refs(Activity, BootContext)
 export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadata> {
@@ -81,14 +79,6 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
 
     get startup(): WorkflowInstance {
         return this.getValue(CTX_MODULE_STARTUP) as WorkflowInstance;
-    }
-
-
-    get status(): ActivityStatus {
-        if (!this.hasValue(CTX_ACTIVITYSTATUS)) {
-            this.setValue(CTX_ACTIVITYSTATUS, this.injector.get(ActivityStatus));
-        }
-        return this.getValue(CTX_ACTIVITYSTATUS);
     }
 
     setOptions(options: ActivityOption) {
@@ -131,9 +121,9 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
         }
 
         let target = this.getBoot() as IActivityRef;
+        target.context.setValue(CTX_RUN_PARENT, this.context);
         await target.run(this.context, async () => {
             this.state = RunState.complete;
-            this.context.setValue(ACTIVITY_OUTPUT, target.context.output);
             target.destroy();
         });
 

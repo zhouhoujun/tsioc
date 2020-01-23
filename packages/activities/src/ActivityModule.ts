@@ -9,7 +9,6 @@ import { Task } from './decorators/Task';
 import { RunAspect } from './aop/RunAspect';
 import * as activites from './activities';
 import { ActivityProvider } from './ActivityProvider';
-import { ActivityStatus } from './core/ActivityStatus';
 import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
 import { WorkflowInstance, WorkflowContext } from './core/WorkflowInstance';
@@ -38,7 +37,7 @@ export class ActivityModule {
         actInjector.getInstance(StartupDecoratorRegisterer)
             .register(Task, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
 
-        container.inject(WorkflowContext, ActivityStatus, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect);
+        container.inject(WorkflowContext, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect);
 
         actInjector.getSingleton(DefaultComponets).push('@Task');
 

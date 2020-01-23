@@ -1,6 +1,6 @@
 import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuildContext } from '@tsdi/boot';
+import { BuildContext, IAnnoationContext } from '@tsdi/boot';
 import { ComponentContext, ITemplateContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
@@ -10,8 +10,8 @@ import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 
 
-export const CTX_RUN_SCOPE = tokenId<ActivityContext>('CTX_RUN_SCOPE');
-
+export const CTX_RUN_PARENT = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
+export const CTX_RUN_SCOPE = tokenId<IAnnoationContext>('CTX_RUN_SCOPE');
 /**
  * activity execute context.ß
  *
@@ -28,6 +28,14 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
 
     get output() {
         return this.getContextValue(ACTIVITY_OUTPUT);
+    }
+
+    get runScope(): IAnnoationContext {
+        if (!this.hasValue(CTX_RUN_SCOPE)) {
+            let runsp = this.getContextValue(CTX_RUN_SCOPE);
+            runsp && this.setValue(CTX_RUN_SCOPE, runsp);
+        }
+        return this.getValue(CTX_RUN_SCOPE);
     }
 
     private _workflow: WorkflowContext;

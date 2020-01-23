@@ -10,7 +10,6 @@ export * from './utils/types';
 export * from './core/IActivityRef';
 export * from './core/Activity';
 export * from './core/ActivityRef';
-export * from './core/ActivityStatus';
 export * from './core/ControlActivity';
 export * from './core/IActivityExecutor';
 export * from './core/ActivityExecutor';

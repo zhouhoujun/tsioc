@@ -1,7 +1,7 @@
 import { tokenId } from '@tsdi/ioc';
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core/ActivityContext';
+import { ActivityContext, CTX_RUN_PARENT } from '../core/ActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ConditionActivity } from './ConditionActivity';
 import { ActivityType } from '../core/ActivityMetadata';
@@ -28,7 +28,7 @@ export class IfActivity extends ControlActivity {
 
     protected async tryExec(ctx: ActivityContext) {
         let result = await this.condition.execute(ctx);
-        ctx.workflow.status.currentScope.context.setValue(IFStateKey, result);
+        ctx.runScope.setValue(IFStateKey, result);
         if (result) {
             await ctx.getExector().runActivity(this.body);
         }

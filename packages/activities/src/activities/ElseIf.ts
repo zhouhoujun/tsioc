@@ -13,8 +13,8 @@ import { IfActivity, IFStateKey } from './If';
 @Task('elseif')
 export class ElseIfActivity extends IfActivity {
     async execute(ctx: ActivityContext): Promise<void> {
-        let currScope = ctx.workflow.status.currentScope;
-        if (currScope.context.hasValue(IFStateKey) && !currScope.context.getValue(IFStateKey)) {
+        let currScope = ctx.runScope;
+        if (currScope.hasValue(IFStateKey) && !currScope.getValue(IFStateKey)) {
             await this.tryExec(ctx);
         }
     }

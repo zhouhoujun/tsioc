@@ -10,7 +10,7 @@ import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvityRef, ActivityElementRef, IActivityElementRef, ActivityRef } from './ActivityRef';
 import { WorkflowContext } from './WorkflowInstance';
-import { ActivityContext, CTX_RUN_SCOPE } from './ActivityContext';
+import { ActivityContext, CTX_RUN_PARENT } from './ActivityContext';
 import { Activity } from './Activity';
 
 
@@ -95,7 +95,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return await express(ctx);
         } else if (isAcitvityRef(express)) {
             await express.run(ctx.workflow);
-            return ctx.workflow.status.current.context.output;
+            return ctx.workflow.result;
         } else if (isPromise(express)) {
             return await express;
         }
@@ -136,20 +136,20 @@ export class ActivityExecutor implements IActivityExecutor {
     protected async buildActivity<T extends WorkflowContext>(activity: ActivityType, input: any): Promise<PromiseUtil.ActionHandle<T>> {
         let ctx = this.context;
         if (isAcitvityRef(activity)) {
-            activity.context.setValue(CTX_RUN_SCOPE, ctx);
+            activity.context.setValue(CTX_RUN_PARENT, ctx);
             isDefined(input) && activity.context.setValue(ACTIVITY_INPUT, input);
             return activity.toAction();
         } else if (activity instanceof Activity) {
             let ref = this.context.injector.getSingleton(ELEMENT_REFS).get(activity) as IActivityElementRef;
             if (ref instanceof ActivityRef) {
-                ref.context.setValue(CTX_RUN_SCOPE, ctx);
+                ref.context.setValue(CTX_RUN_PARENT, ctx);
             } else {
                 ref = new ActivityElementRef(this.context, activity);
             }
             return ref.toAction();
         } else if (isClass(activity)) {
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(activity) as IActivityRef;
-            aref.context.setValue(CTX_RUN_SCOPE, ctx);
+            aref.context.setValue(CTX_RUN_PARENT, ctx);
             aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {
@@ -168,7 +168,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 parent: ctx
             };
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(option) as IActivityRef;
-            aref.context.setValue(CTX_RUN_SCOPE, ctx);
+            aref.context.setValue(CTX_RUN_PARENT, ctx);
             aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         }
