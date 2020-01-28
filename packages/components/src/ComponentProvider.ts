@@ -2,7 +2,7 @@ import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflect
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef, TEMPLATE_REF, CONTEXT_REF, ROOT_NODES, NATIVE_ELEMENT, COMPONENT_REF, COMPONENT_INST, COMPONENT_TYPE } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef, TEMPLATE_REF, CONTEXT_REF, ROOT_NODES, NATIVE_ELEMENT, COMPONENT_REF, COMPONENT_INST, COMPONENT_TYPE, ELEMENT_REF } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
@@ -93,7 +93,7 @@ export abstract class ComponentProvider {
     }
 
     createElementRef(context: IAnnoationContext, target: any): IElementRef {
-        return this.getProviders().getInstance(ElementRef,
+        return this.getProviders().getInstance(ELEMENT_REF,
             { provide: CONTEXT_REF, useValue: context },
             { provide: NATIVE_ELEMENT, useValue: target });
     }

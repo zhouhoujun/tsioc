@@ -44,23 +44,23 @@ export const MatchPointcutAction = function (ctx: RuntimeActionContext, next: ()
             }) as Advicer;
 
             if (advice.adviceName === 'Before') {
-                if (!advices.Before.some(a => this.equals(a, advicer))) {
+                if (!advices.Before.some(a => equals(a, advicer))) {
                     advices.Before.push(advicer);
                 }
             } else if (advice.adviceName === 'Pointcut') {
-                if (!advices.Pointcut.some(a => this.equals(a, advicer))) {
+                if (!advices.Pointcut.some(a => equals(a, advicer))) {
                     advices.Pointcut.push(advicer);
                 }
             } else if (advice.adviceName === 'Around') {
-                if (!advices.Around.some(a => this.equals(a, advicer))) {
+                if (!advices.Around.some(a => equals(a, advicer))) {
                     advices.Around.push(advicer);
                 }
             } else if (advice.adviceName === 'After') {
-                if (!advices.After.some(a => this.equals(a, advicer))) {
+                if (!advices.After.some(a => equals(a, advicer))) {
                     advices.After.push(advicer);
                 }
             } else if (advice.adviceName === 'AfterThrowing') {
-                if (!advices.AfterThrowing.some(a => this.equals(a, advicer))) {
+                if (!advices.AfterThrowing.some(a => equals(a, advicer))) {
                     advices.AfterThrowing.push(advicer);
                 }
             } else if (advice.adviceName === 'AfterReturning') {

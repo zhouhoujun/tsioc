@@ -1,4 +1,6 @@
 import { Type, Singleton, SymbolType } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
+import { AnnoationContext } from '@tsdi/boot';
 import { ComponentProvider, ITemplateOption, ITemplateContext } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
@@ -7,8 +9,7 @@ import {
     IActivityTemplateRef, IActivityElementRef, ActivityNodeType
 } from './core/ActivityRef';
 import { ActivityContext, ActivityTemplateContext } from './core/ActivityContext';
-import { AnnoationContext } from '@tsdi/boot';
-import { ICoreInjector } from '@tsdi/core';
+
 
 const attrSelPrefix = /^ACT_ATTR_/;
 const seletPrefix = /^ACT_SELT_/;
