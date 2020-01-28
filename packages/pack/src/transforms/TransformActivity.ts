@@ -1,6 +1,9 @@
 import { isDefined, Singleton } from '@tsdi/ioc';
 import { Expression } from '@tsdi/activities';
-import { NodeActivity, ITransform, NodeActivityContext, isTransform } from '../core';
+import { NodeActivity } from '../NodeActivity';
+import { ITransform, isTransform } from '../ITransform';
+import { NodeActivityContext } from '../NodeActivityContext';
+
 
 /**
  * transform activity.

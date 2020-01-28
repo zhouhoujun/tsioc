@@ -2,7 +2,7 @@ import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { Src, Task, TemplateOption, Activity } from '@tsdi/activities';
-import { NodeActivityContext, NodeExpression } from '../core';
+import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 
 
 /**
@@ -97,13 +97,13 @@ export class ShellActivity extends Activity<void> {
     @Input() parallel: boolean;
 
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
+    async execute(ctx: NodeActivityContext): Promise<void> {
 
-        let shell = await this.resolveExpression(this.shell, ctx);
-        let options = await this.resolveExpression(this.options, ctx);
-        let args = await this.resolveExpression(this.args, ctx);
+        let shell = await ctx.resolveExpression(this.shell);
+        let options = await ctx.resolveExpression(this.options);
+        let args = await ctx.resolveExpression(this.formatArgs);
         let argstrs = isArray(args) ? args : this.formatArgs(args);
-        let allowError = await this.resolveExpression(this.allowError, ctx);
+        let allowError = await ctx.resolveExpression(this.allowError);
         let shells = isArray(shell) ? shell : [shell];
         if (this.parallel) {
             await Promise.all(shells.map(sh => this.execShell(sh, argstrs, options, allowError)));

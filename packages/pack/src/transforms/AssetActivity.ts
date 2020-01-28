@@ -1,9 +1,10 @@
 import { isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { Src, Task, TemplateOption, ActivityType, Activities } from '@tsdi/activities';
-import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 import { StreamActivity } from './StreamActivity';
 import { TransformService } from './TransformActivity';
+import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import { ITransform } from '../ITransform';
 
 
 /**
@@ -83,9 +84,9 @@ export interface AssetActivityOption extends TemplateOption {
             condition: ctx => ctx.scope.sourcemap,
             body: {
                 activity: Activities.execute,
-                action: (ctx: NodeActivityContext, activity) => {
+                action: (ctx: NodeActivityContext) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.getInstance(TransformService).executePipe(ctx, activity.result, framework.init())
+                    return ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, framework.init())
                 }
             }
         },
@@ -102,9 +103,9 @@ export interface AssetActivityOption extends TemplateOption {
             condition: ctx => ctx.scope.sourcemap,
             body: {
                 activity: Activities.execute,
-                action: (ctx: NodeActivityContext, activity) => {
+                action: (ctx: NodeActivityContext) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, activity.result, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
                 }
             }
         },

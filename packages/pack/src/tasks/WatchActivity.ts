@@ -1,9 +1,9 @@
 import { PromiseUtil } from '@tsdi/ioc';
-import { Input, Binding } from '@tsdi/components';
-import { Activity, Task, Src, BodyActivity, BodyTemplate } from '@tsdi/activities';
+import { Input, Binding, BindingTypes } from '@tsdi/components';
+import { Activity, Task, Src, BodyTemplate, ActivityType } from '@tsdi/activities';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, filter } from 'rxjs/operators';
-import { NodeActivityContext, NodeExpression } from '../core';
+import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 const chokidar = require('chokidar');
 
 
@@ -34,7 +34,7 @@ export interface WatchActivityOption extends BodyTemplate {
  * @extends {BuildHandleActivity}
  */
 @Task('watch')
-export class WatchActivity extends Activity<Src> {
+export class WatchActivity extends Activity<void> {
 
     @Input()
     watch: NodeExpression<Src>;
@@ -42,13 +42,13 @@ export class WatchActivity extends Activity<Src> {
     @Input('watchOptions')
     options:  NodeExpression;
 
-    @Input()
-    body: BodyActivity;
+    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
 
-    protected async execute(ctx: NodeActivityContext) {
-        let watchSrc = await this.resolveExpression(this.watch, ctx);
-        let options = await this.resolveExpression(this.options, ctx);
+
+    async execute(ctx: NodeActivityContext) {
+        let watchSrc = await ctx.resolveExpression(this.watch);
+        let options = await ctx.resolveExpression(this.options);
         let watcher = chokidar.watch(ctx.platform.normalizeSrc(watchSrc), Object.assign({ ignored: /[\/\\]\./, ignoreInitial: true, cwd: ctx.platform.getRootPath() }, options));
 
         let defer = PromiseUtil.defer();
@@ -67,7 +67,7 @@ export class WatchActivity extends Activity<Src> {
                 filter(c => c.length > 0)
             )
             .subscribe(chg => {
-                this.body.run(ctx);
+                ctx.getExector().runActivity(this.body);
             });
 
         defer.promise;

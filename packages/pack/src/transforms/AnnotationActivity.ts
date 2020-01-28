@@ -1,8 +1,9 @@
 import { classAnnotations } from '@tsdi/annotations';
 import { Input } from '@tsdi/components';
 import { Task } from '@tsdi/activities';
-import { NodeActivityContext, ITransform, NodeExpression } from '../core';
 import { TransformActivity, TransformService } from './TransformActivity';
+import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import { ITransform } from '../ITransform';
 
 @Task('annotation, [annotation]')
 export class AnnotationActivity extends TransformActivity {
@@ -10,10 +11,10 @@ export class AnnotationActivity extends TransformActivity {
     @Input('annotationFramework', classAnnotations) framework: NodeExpression<ITransform>;
     @Input() annotation: NodeExpression<boolean>;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let enable = await this.resolveExpression(this.annotation, ctx);
+    async execute(ctx: NodeActivityContext): Promise<ITransform> {
+        let enable = await ctx.resolveExpression(this.annotation);
         if (enable) {
-            this.result = await ctx.injector.getInstance(TransformService).executePipe(ctx, this.result, this.framework);
+           return await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, this.framework);
         }
     }
 

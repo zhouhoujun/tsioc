@@ -18,7 +18,7 @@ import { BaseTypeParser } from './services/BaseTypeParser';
 import { StartupServices } from './services/StartupServices';
 import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
-import { ModuleInjector } from './modules/ModuleInjector';
+import { ModuleInjector, ModuleProviders } from './modules/ModuleInjector';
 import { AnnoationInjectorCheck } from './registers/AnnoationInjectorCheck';
 import { AnnoationRegisterScope } from './registers/AnnoationRegisterScope';
 import { ResolveMoudleScope } from './builder/resolvers/ResolveMoudleScope';
@@ -47,7 +47,8 @@ export class BootModule {
      */
     setup(@Inject(ContainerToken) container: IContainer) {
 
-        container.setValue(ModuleInjector, new ModuleInjector(container.getContainerProxy()));
+        container.set(ModuleInjector, () => new ModuleInjector(container.getContainerProxy()));
+        container.set(ModuleProviders, () => new ModuleProviders(container.getContainerProxy()));
         let actInjector = container.getActionInjector();
 
         actInjector.setValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))

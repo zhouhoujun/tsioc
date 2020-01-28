@@ -1,7 +1,9 @@
 import { Binding, Input } from '@tsdi/components';
 import { Task, TemplateOption, Src } from '@tsdi/activities';
-import { NodeExpression, NodeActivity, NodeActivityContext } from '../core';
 import { CompilerOptions } from 'typescript';
+import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import { NodeActivity } from '../NodeActivity';
+import { ITransform } from '../ITransform';
 
 /**
  * tsc build option.
@@ -42,23 +44,23 @@ export interface TscBuilderOption extends TemplateOption {
 const jsChkExp = /.js/;
 
 @Task('tsc')
-export class TscBuilder extends NodeActivity<void> {
+export class TscBuilder extends NodeActivity<ITransform> {
 
     @Input() src: NodeExpression<Src>;
     @Input() dist: NodeExpression<string>;
     @Input() tsconfig: NodeExpression<string>;
     @Input() compilerOptions: NodeExpression<CompilerOptions>;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let compilerOptions = await this.resolveExpression(this.compilerOptions, ctx);
+    async execute(ctx: NodeActivityContext): Promise<ITransform> {
+        let compilerOptions = await ctx.resolveExpression(this.compilerOptions);
         compilerOptions = compilerOptions || {};
-        let src = await this.resolveExpression(this.src, ctx);
+        let src = await ctx.resolveExpression(this.src);
         src = src || compilerOptions.sourceRoot;
         let srcFiles: string[];
         if (src) {
             srcFiles = await ctx.platform.getFiles(src);
         }
-        let dist = await this.resolveExpression(this.dist, ctx);
+        let dist = await ctx.resolveExpression(this.dist);
         if (dist) {
             if (!jsChkExp.test(dist)) {
                 compilerOptions.outDir = dist;
@@ -67,7 +69,7 @@ export class TscBuilder extends NodeActivity<void> {
             }
         }
 
-        let tsconfig = await this.resolveExpression(this.tsconfig, ctx);
+        let tsconfig = await ctx.resolveExpression(this.tsconfig);
 
         let shell = '';
 
@@ -77,7 +79,7 @@ export class TscBuilder extends NodeActivity<void> {
             shell = `tsc ${this.formatCompileOptions(compilerOptions)} ${srcFiles.join(' ')}`;
         }
 
-        await this.runActivity(ctx, {
+        return await ctx.getExector().runActivity({
             activity: 'shell',
             parallel: true,
             shell: shell,

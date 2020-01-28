@@ -1,25 +1,30 @@
-import { Type, ProviderTypes, isArray, ProviderParser, DesignActionContext } from '@tsdi/ioc';
+import { Type, ProviderTypes, isArray, DesignActionContext } from '@tsdi/ioc';
 import { ModuleLoader, IContainer } from '@tsdi/core';
 import { CTX_MODULE_EXPORTS, CTX_MODULE_ANNOATION } from '../context-tokens';
 import { IModuleReflect } from '../modules/IModuleReflect';
+import { ModuleProviders, ModuleInjector } from '../modules/ModuleInjector';
 
 
 export const RegModuleProvidersAction = function (ctx: DesignActionContext, next: () => void): void {
     let reflects = ctx.reflects;
     let annoation = ctx.getValue(CTX_MODULE_ANNOATION);
 
-    let injector = ctx.injector;
+    let injector = ctx.injector as ModuleInjector;
     let continer = ctx.getContainer<IContainer>();
     let mdpr = continer.getModuleProvider();
     let mdReft = ctx.targetReflect as IModuleReflect;
     let components = annoation.components ? mdpr.use(injector, ...annoation.components) : null;
 
     // inject module providers
-    let map = injector.getInstance(ProviderParser)
-        .parse(...annoation.providers || []);
+    let map = injector.getInstance(ModuleProviders);
+    map.moduleInjector = injector;
+
+    if (annoation.providers?.length) {
+        map.inject(...annoation.providers);
+    }
 
     if (map.size) {
-        injector.copy(map);
+        injector.copy(map, k => injector.hasTokenKey(k));
     }
 
     if (components && components.length) {

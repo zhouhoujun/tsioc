@@ -1,6 +1,6 @@
 import { Input, Binding } from '@tsdi/components';
 import { Expression, Src, Task, Activity, TemplateOption } from '@tsdi/activities';
-import { NodeActivityContext, NodeExpression } from '../core';
+import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 
 /**
  * clean activity template option.
@@ -31,8 +31,8 @@ export class CleanActivity extends Activity<void> {
 
     @Input() clean: Expression<Src>;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let clean = await this.resolveExpression(this.clean, ctx);
+    async execute(ctx: NodeActivityContext): Promise<void> {
+        let clean = await ctx.resolveExpression(this.clean);
         if (clean) {
             await ctx.platform.del(ctx.platform.normalizeSrc(clean), { force: true, cwd: ctx.platform.getRootPath() });
         }

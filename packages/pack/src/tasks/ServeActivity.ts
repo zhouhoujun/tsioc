@@ -1,6 +1,6 @@
 import { Input, Binding } from '@tsdi/components';
 import { Task, Src, Activity, Expression, TemplateOption } from '@tsdi/activities';
-import { NodeExpression } from '../core';
+import { NodeExpression } from '../NodeActivityContext';
 
 
 /**
@@ -61,7 +61,7 @@ export class ServeActivity extends Activity<void> {
      * @returns {Promise<void>}
      * @memberof ServeActivity
      */
-    protected async execute(): Promise<void> {
+    async execute(): Promise<void> {
 
     }
 }

@@ -1,13 +1,12 @@
-import { Type, tokenId } from '@tsdi/ioc';
+import { Type, tokenId, IProviders } from '@tsdi/ioc';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { Startup } from './runnable/Startup';
-import { ICoreInjector } from '@tsdi/core';
 
 
 export const CTX_MODULE = tokenId<Type>('CTX_MODULE');
 export const CTX_MODULE_DECTOR = tokenId<string>('CTX_MODULE_DECTOR');
-export const CTX_MODULE_EXPORTS = tokenId<ICoreInjector>('CTX_MODULE_EXPORTS');
+export const CTX_MODULE_EXPORTS = tokenId<IProviders>('CTX_MODULE_EXPORTS');
 export const CTX_MODULE_ANNOATION = tokenId<ModuleConfigure>('CTX_MODULE_ANNOATION');
 /**
  * module target instance.

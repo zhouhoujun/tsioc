@@ -98,9 +98,11 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         let key = this.getTokenKey(provide);
         if (isClass(provider)) {
             this.factories.set(provider, fac);
-            this.factories.set(key, (...providers) => this.getInstance(provider, ...providers));
-            this.provideTypes.set(key, provider);
-        } else {
+            if (key) {
+                this.factories.set(key, (...providers) => this.getInstance(provider, ...providers));
+                this.provideTypes.set(key, provider);
+            }
+        } else if (key) {
             this.factories.set(key, fac);
         }
         return this;
@@ -539,27 +541,27 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @returns
      * @memberof ProviderMap
      */
-    copy(injector: IInjector, filter?: (key: Token) => boolean): this {
+    copy(injector: IInjector, filter?: (key: SymbolType) => boolean): this {
         if (!injector) {
             return this;
         }
-        this.mergeInjector(injector as BaseInjector, this, filter);
+        this.merge(injector as BaseInjector, this, filter);
         return this;
     }
 
     clone(to?: IInjector): IInjector;
-    clone(filter: (key: Token) => boolean, to?: IInjector): IInjector;
+    clone(filter: (key: SymbolType) => boolean, to?: IInjector): IInjector;
     clone(filter?: any, to?: IInjector): IInjector {
         if (!isFunction(filter)) {
             to = filter;
             filter = undefined;
         }
         to = to || new (lang.getClass(this))(this.getContainerProxy());
-        this.mergeInjector(this, to as BaseInjector, filter);
+        this.merge(this, to as BaseInjector, filter);
         return to;
     }
 
-    protected mergeInjector(from: BaseInjector, to: BaseInjector, filter?: (key: Token) => boolean) {
+    protected merge(from: BaseInjector, to: BaseInjector, filter?: (key: SymbolType) => boolean) {
         from.factories.forEach((fac, key) => {
             if (filter && !filter(key)) {
                 return;

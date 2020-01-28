@@ -1,7 +1,8 @@
 import { Injectable, Refs } from '@tsdi/ioc';
 import { BootContext } from '@tsdi/boot';
-import { ActivityContext, Activity, CtxExpression } from '@tsdi/activities';
+import { ActivityContext, CtxExpression } from '@tsdi/activities';
 import { IPlatformService, PlatformServiceToken } from './IPlatformService';
+import { NodeActivity } from './NodeActivity';
 
 
 
@@ -16,8 +17,7 @@ export type NodeExpression<T = any> = CtxExpression<T, NodeActivityContext>;
  * @implements {IActivityContext<ITransform>}
  */
 @Injectable
-@Refs(Activity, BootContext)
-@Refs('@Task', BootContext)
+@Refs(NodeActivity, BootContext)
 export class NodeActivityContext extends ActivityContext {
 
     private _platform: IPlatformService;

@@ -4,7 +4,8 @@ import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     rollup, WatcherOptions, RollupCache, ExternalOption, GlobalsOption, RollupOptions, OutputOptions
 } from 'rollup';
-import { NodeActivityContext, NodeActivity, NodeExpression } from '../core';
+import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeActivity } from '../NodeActivity';
 
 /**
  * rollup activity template option.
@@ -100,22 +101,22 @@ export class RollupActivity extends NodeActivity<void> {
 
     @Input() watch: NodeExpression<WatcherOptions>;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let opts = await this.resolveExpression(this.options, ctx);
+    async execute(ctx: NodeActivityContext): Promise<void> {
+        let opts = await ctx.resolveExpression(this.options);
         opts = opts || { input: '' };
         await Promise.all(this.getInputProps()
             .map(async n => {
-                let val = await this.resolveExpression(this[n], ctx);
+                let val = await ctx.resolveExpression(this[n]);
                 this.setOptions(ctx, opts, n, val);
             }));
         if (this.sourcemap) {
-            let sourceMap = await this.resolveExpression(this.sourcemap, ctx);
+            let sourceMap = await ctx.resolveExpression(this.sourcemap);
             if (sourceMap) {
                 opts.output.sourcemap = isString(sourceMap) ? true : sourceMap;
             }
         }
         if (this.globals) {
-            let globals = await this.resolveExpression(this.globals, ctx);
+            let globals = await ctx.resolveExpression(this.globals);
             opts.output.globals = globals;
         } else {
             opts.output.globals = {};

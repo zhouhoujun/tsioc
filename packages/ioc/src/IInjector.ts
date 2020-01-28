@@ -297,11 +297,11 @@ export interface IInjector extends IDestoryable {
      * copy injector to current injector.
      *
      * @param {IInjector} injector copy from
-     * @param {(key: Token) => boolean} filter token key filter
+     * @param {(key: SymbolType) => boolean} filter token key filter
      * @returns {this} current injector.
      * @memberof IInjector
      */
-    copy(injector: IInjector, filter?: (key: Token) => boolean): this;
+    copy(injector: IInjector, filter?: (key: SymbolType) => boolean): this;
     /**
      * clone this injector to.
      * @param to
@@ -309,10 +309,10 @@ export interface IInjector extends IDestoryable {
     clone(to?: IInjector): IInjector;
     /**
      * clone this injector to.
-     * @param {(key: Token) => boolean} filter token key filter
+     * @param {(key: SymbolType) => boolean} filter token key filter
      * @param to
      */
-    clone(filter: (key: Token) => boolean, to?: IInjector): IInjector;
+    clone(filter: (key: SymbolType) => boolean, to?: IInjector): IInjector;
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *

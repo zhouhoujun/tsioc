@@ -6,7 +6,7 @@ import { Plugin, RollupOptions } from 'rollup';
 import { CompilerOptions, nodeModuleNameResolver } from 'typescript';
 import * as ts from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
-import { NodeExpression, NodeActivityContext } from '../core';
+import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { RollupActivity, RollupOption } from './RollupActivity';
 import { TsComplie } from '../ts-complie';
 /**
@@ -93,7 +93,8 @@ export class RollupTsActivity extends RollupActivity {
         beforeCompile?: Plugin[];
         afterCompile?: Plugin[];
     }
-    protected async execute(ctx: NodeActivityContext) {
+
+    async execute(ctx: NodeActivityContext) {
         this.exeCache = {};
         await super.execute(ctx);
         delete this.exeCache;
@@ -128,7 +129,7 @@ export class RollupTsActivity extends RollupActivity {
             plugins.push(...beforeCompile);
         }
         if (this.tscompile) {
-            let compile = await this.resolveExpression(this.tscompile, ctx);
+            let compile = await ctx.resolveExpression(this.tscompile);
             plugins.push(compile);
         } else {
             plugins.push(await this.getDefaultTsCompiler(ctx));
@@ -143,7 +144,7 @@ export class RollupTsActivity extends RollupActivity {
         }
 
         if (this.uglify) {
-            let ugfy = await this.resolveExpression(this.uglify, ctx);
+            let ugfy = await ctx.resolveExpression(this.uglify);
             const uglify = syncRequire('rollup-plugin-uglify');
             if (isBoolean(ugfy)) {
                 ugfy && plugins.push(uglify());
@@ -157,15 +158,15 @@ export class RollupTsActivity extends RollupActivity {
     async getDefaultTsCompiler(ctx: NodeActivityContext): Promise<Plugin> {
         const tslib = syncRequire('tslib');
 
-        let include = await this.resolveExpression(this.include, ctx);
-        let exclude = await this.resolveExpression(this.exclude, ctx)
-        let annotation = await this.resolveExpression(this.annotation, ctx);
+        let include = await ctx.resolveExpression(this.include);
+        let exclude = await ctx.resolveExpression(this.exclude)
+        let annotation = await ctx.resolveExpression(this.annotation);
         const filter = createFilter(include, exclude);
         const tsdexp = /.d.ts$/;
-        let compile = this.getContainer().get(TsComplie);
+        let compile = ctx.injector.get(TsComplie);
         let projectDirectory = ctx.platform.getRootPath();
-        let settings: CompilerOptions = await this.resolveExpression(this.compileOptions, ctx);
-        let tsconfig = await this.resolveExpression(this.tsconfig, ctx);
+        let settings: CompilerOptions = await ctx.resolveExpression(this.compileOptions);
+        let tsconfig = await ctx.resolveExpression(this.tsconfig);
         tsconfig = ctx.platform.toRootPath(tsconfig);
 
         let compilerOptions = compile.createProject(projectDirectory, tsconfig, settings);

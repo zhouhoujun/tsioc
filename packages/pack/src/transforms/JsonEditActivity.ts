@@ -3,7 +3,8 @@ import { Input, Binding } from '@tsdi/components';
 import { Task, TemplateOption } from '@tsdi/activities';
 import * as through from 'through2';
 import { TransformActivity } from './TransformActivity';
-import { NodeActivityContext } from '../core';
+import { NodeActivityContext } from '../NodeActivityContext';
+import { ITransform } from '../ITransform';
 const jeditor = require('gulp-json-editor');
 const inplace = require('json-in-place');
 
@@ -34,15 +35,15 @@ export class JsonEditActivity extends TransformActivity {
     @Input()
     json: JsonEdit | ObjectMap;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
+    async execute(ctx: NodeActivityContext): Promise<ITransform> {
         if (!this.json) {
             return;
         }
         if (isFunction(this.json)) {
             let jsonFunc = this.json;
-            this.result = jeditor((json) => jsonFunc(json, ctx));
+            return jeditor((json) => jsonFunc(json, ctx));
         } else {
-            this.result = jeditor(this.json);
+            return jeditor(this.json);
         }
     }
 
@@ -72,12 +73,12 @@ export class JsonReplaceActivity extends TransformActivity {
 
     @Input() fields: JsonReplace;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
+    async execute(ctx: NodeActivityContext): Promise<ITransform> {
         let fields = this.fields;
         if (!isFunction(fields)) {
             return;
         }
-        this.result = through.obj(function (file, encoding, callback) {
+        return through.obj(function (file, encoding, callback) {
             if (file.isNull()) {
                 return callback(null, file);
             }

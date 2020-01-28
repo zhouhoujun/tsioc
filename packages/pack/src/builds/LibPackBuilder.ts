@@ -6,14 +6,14 @@ import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../t
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, GlobalsOption, Plugin, RollupOptions } from 'rollup';
 import { RollupOption } from '../rollups';
-import { NodeActivityContext, NodeExpression } from '../core';
+// import { rollupClassAnnotations } from '@tsdi/annotations';
+import { join } from 'path';
+import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 // const buildin = require('rollup-plugin-node-builtins');
 // const ts = require('rollup-plugin-typescript');
-// import { rollupClassAnnotations } from '@tsdi/annotations';
-import { join } from 'path';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
 // const grollup = require('gulp-rollup');

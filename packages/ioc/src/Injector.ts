@@ -104,7 +104,7 @@ export class Injector extends BaseInjector implements IInjector {
  * @extends {Injector}
  */
 export class InjectorProvider extends Injector implements IProviders {
-    init() {
+    protected init() {
     }
 }
 

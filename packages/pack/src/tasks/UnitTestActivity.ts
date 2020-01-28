@@ -2,7 +2,7 @@ import { Input, Binding } from '@tsdi/components';
 import { Task, Activity, Src, TemplateOption } from '@tsdi/activities';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
 import { ConsoleReporter } from '@tsdi/unit-console';
-import { NodeActivityContext, NodeExpression } from '../core';
+import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 
 
 /**
@@ -37,9 +37,9 @@ export class UnitTestActivity extends Activity<void> {
     @Input() test: NodeExpression<Src>;
     @Input('testOptions') options: NodeExpression<UnitTestConfigure>;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
-        let test = await this.resolveExpression(this.test, ctx);
-        let options = await this.resolveExpression(this.options, ctx);
+    async execute(ctx: NodeActivityContext): Promise<void> {
+        let test = await ctx.resolveExpression(this.test);
+        let options = await ctx.resolveExpression(this.options);
         if (test) {
             await runTest(test, Object.assign({ baseURL: ctx.platform.getRootPath() }, options || {}), ConsoleReporter);
         }

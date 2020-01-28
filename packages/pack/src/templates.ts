@@ -15,6 +15,3 @@ export type PackTemplates = ControlTemplate | AssetActivityOption | CleanActivit
     | UnitTestActivityOption | WatchActivityOption | JsonEditActivityOption | JsonReplaceActivityOption
     | TsBuildOption | RollupOption | LibPackBuilderOption;
 
-export interface PackConfigure extends ActivityMetadata<PackTemplates> {
-
-}
