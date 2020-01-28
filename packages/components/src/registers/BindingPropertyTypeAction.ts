@@ -1,7 +1,6 @@
-import { DesignActionContext, isClassType, DecoratorProvider, isDefined, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { DesignActionContext, isClassType, isDefined, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { BindingPropertyMetadata } from '../decorators/BindingPropertyMetadata';
 import { IComponentReflect } from '../IComponentReflect';
-import { BindingCache } from './BindingCache';
 
 
 /**
@@ -10,12 +9,9 @@ import { BindingCache } from './BindingCache';
  * @export
  */
 export const BindingPropertyTypeAction = function (ctx: DesignActionContext, next: () => void) {
-    let ref = ctx.targetReflect as IComponentReflect;
+    let refl = ctx.targetReflect as IComponentReflect;
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
-    let propBindings = ctx.reflects.getActionInjector().getInstance(DecoratorProvider)
-        .resolve(currDecor, BindingCache)
-        .getCache(ref);
-
+    let propBindings = refl?.getBindings(currDecor);
     if (propBindings) {
         ctx.targetReflect.defines.extendTypes.forEach(ty => {
             let propMetas = ctx.reflects.getPropertyMetadata<BindingPropertyMetadata>(currDecor, ty);

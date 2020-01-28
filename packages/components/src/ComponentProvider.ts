@@ -1,8 +1,8 @@
-import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject } from '@tsdi/ioc';
+import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ActionInjectorToken, IActionInjector, IProviders } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef } from './ComponentRef';
+import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef, TEMPLATE_REF, CONTEXT_REF, ROOT_NODES, NATIVE_ELEMENT, COMPONENT_REF, COMPONENT_INST, COMPONENT_TYPE } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
@@ -33,6 +33,15 @@ export abstract class ComponentProvider {
 
     @Inject(TypeReflectsToken) reflects: ITypeReflects;
 
+
+    private providers: IProviders;
+    getProviders(): IProviders {
+        if (!this.providers) {
+            this.providers = this.reflects.getActionInjector().get(DecoratorProvider).getProviders(this.dectorator);
+        }
+        return this.providers;
+    }
+
     abstract getSelectorKey(): string;
 
     abstract getRefSelectKey(): string;
@@ -52,8 +61,7 @@ export abstract class ComponentProvider {
     private ast: AstResolver;
     getAstResolver(): AstResolver {
         if (!this.ast) {
-            this.ast = this.reflects.getActionInjector().getInstance(DecoratorProvider)
-                .resolve(this.dectorator, AstResolver) ?? this.reflects.getContainer().getInstance(AstResolver);
+            this.ast = this.getProviders().getInstance(AstResolver) ?? this.reflects.getContainer().getInstance(AstResolver);
         }
         return this.ast;
     }
@@ -63,7 +71,11 @@ export abstract class ComponentProvider {
     }
 
     createComponentRef<T>(type: Type<T>, target: T, context: IAnnoationContext, ...nodes: any[]): IComponentRef<T, any> {
-        return new ComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
+        return this.getProviders().getInstance(COMPONENT_REF,
+            { provide: CONTEXT_REF, useValue: context },
+            { provide: COMPONENT_TYPE, useValue: type },
+            { provide: COMPONENT_INST, useValue: target },
+            { provide: TEMPLATE_REF, useValue: this.createTemplateRef(context, ...nodes) });
     }
 
     isTemplateContext(context: IAnnoationContext): boolean {
@@ -75,11 +87,15 @@ export abstract class ComponentProvider {
     }
 
     createTemplateRef(context: IAnnoationContext, ...nodes: any[]): ITemplateRef {
-        return new TemplateRef(context, nodes);
+        return this.getProviders().getInstance(TEMPLATE_REF,
+            { provide: CONTEXT_REF, useValue: context },
+            { provide: ROOT_NODES, useValue: nodes });
     }
 
     createElementRef(context: IAnnoationContext, target: any): IElementRef {
-        return new ElementRef(context, target);
+        return this.getProviders().getInstance(ElementRef,
+            { provide: CONTEXT_REF, useValue: context },
+            { provide: NATIVE_ELEMENT, useValue: target });
     }
 
     getElementRef(target: any, injector?: ICoreInjector): IElementRef {

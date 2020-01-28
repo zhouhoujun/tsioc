@@ -1,4 +1,4 @@
-import { Type, isFunction, Destoryable, IDestoryable, tokenId } from '@tsdi/ioc';
+import { Type, isFunction, Destoryable, IDestoryable, tokenId, Injectable, Inject } from '@tsdi/ioc';
 import { IAnnoationContext, CTX_TEMPLATE } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 
@@ -41,6 +41,12 @@ export interface IElement {
     destroy?();
 }
 
+export const CONTEXT_REF = tokenId<IAnnoationContext>('CONTEXT_REF');
+
+export const ELEMENT_REF = tokenId<IElementRef>('ELEMENT_REF');
+
+export const NATIVE_ELEMENT = tokenId<IElement>('NATIVE_ELEMENT');
+
 export interface IElementRef<T = any, TCtx extends IAnnoationContext = IAnnoationContext> extends IContextNode<TCtx> {
     readonly nativeElement: T;
 }
@@ -49,9 +55,16 @@ export interface INodeRef<T = any, TCtx extends IAnnoationContext = IAnnoationCo
     readonly rootNodes: T[];
 }
 
+export const TEMPLATE_REF = tokenId<ITemplateRef>('TEMPLATE_REF');
+export const ROOT_NODES = tokenId<any[]>('ROOT_NODES');
+
 export interface ITemplateRef<T = any, TCtx extends IAnnoationContext = IAnnoationContext> extends INodeRef<T, TCtx> {
     readonly template: any;
 }
+
+export const COMPONENT_REF = tokenId<IComponentRef>('COMPONENT_REF');
+export const COMPONENT_TYPE = tokenId<Type>('COMPONENT_TYPE');
+export const COMPONENT_INST = tokenId<object>('COMPONENT_INST');
 
 export interface IComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext = IAnnoationContext> extends IContextNode<TCtx> {
     readonly componentType: Type<T>;
@@ -71,7 +84,9 @@ export class NodeRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoationCo
         return this._rootNodes;
     }
 
-    constructor(context: TCtx, nodes: T[]) {
+    constructor(
+        @Inject(CONTEXT_REF) context: TCtx,
+        @Inject(ROOT_NODES) nodes: T[]) {
         super(context);
         this._rootNodes = nodes;
     }
@@ -89,11 +104,17 @@ export class NodeRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoationCo
     }
 }
 
+
+
+@Injectable
 export class ElementRef<T = any, TCtx extends IAnnoationContext = IAnnoationContext>
     extends ContextNode<TCtx> implements IElementRef<T, TCtx> {
 
-    constructor(context: TCtx, public readonly nativeElement: T) {
+    constructor(
+        @Inject(CONTEXT_REF) context: TCtx,
+        @Inject(NATIVE_ELEMENT) public readonly nativeElement: T) {
         super(context);
+
         let injector = context.injector;
         if (!injector.has(ELEMENT_REFS)) {
             injector.setValue(ELEMENT_REFS, new WeakMap());
@@ -111,6 +132,7 @@ export class ElementRef<T = any, TCtx extends IAnnoationContext = IAnnoationCont
     }
 }
 
+@Injectable
 export class TemplateRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoationContext>
     extends NodeRef<T, TCtx> implements ITemplateRef<T, TCtx> {
     get template() {
@@ -118,14 +140,16 @@ export class TemplateRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoati
     }
 }
 
+
+@Injectable
 export class ComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext = IAnnoationContext>
     extends ContextNode<TCtx> implements IComponentRef<T, TN, TCtx> {
 
     constructor(
-        public readonly componentType: Type<T>,
-        public readonly instance: T,
-        context: TCtx,
-        public readonly nodeRef: ITemplateRef<TN>
+        @Inject(COMPONENT_TYPE) public readonly componentType: Type<T>,
+        @Inject(COMPONENT_INST)  public readonly instance: T,
+        @Inject(CONTEXT_REF) context: TCtx,
+        @Inject(TEMPLATE_REF) public readonly nodeRef: ITemplateRef<TN>
     ) {
         super(context);
         if (!context.injector.has(COMPONENT_REFS)) {

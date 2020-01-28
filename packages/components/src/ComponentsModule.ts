@@ -20,13 +20,14 @@ import { AstResolver } from './AstResolver';
 
 import { ComponentRegisterAction } from './registers/ComponentRegisterAction';
 import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
-import { BindingCache, BindingCacheFactory } from './registers/BindingCache';
+import { BindingsCache } from './registers/BindingsCache';
 import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
 import { PipeRegisterAction } from './registers/PipeRegisterAction';
 import { BindingComponentScope } from './resolvers/BindingComponentScope';
 import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
 import { DefaultComponets } from './IComponentReflect';
 import { ComponentProvider } from './ComponentProvider';
+import { TEMPLATE_REF, TemplateRef, COMPONENT_REF, ComponentRef, ELEMENT_REF, ElementRef } from './ComponentRef';
 
 
 /**
@@ -44,35 +45,19 @@ export class ComponentsModule {
 
         actInjector.setValue(DefaultComponets, ['@Component']);
         actInjector.getInstance(DecoratorProvider)
-            .bindProviders(Input, {
-                provide: BindingCache,
-                useFactory: () => new BindingCacheFactory(ref => {
-                    if (!ref.propInBindings) {
-                        ref.propInBindings = new Map();
-                    }
-                    return ref.propInBindings;
-                })
-            })
-            .bindProviders(Output, {
-                provide: BindingCache,
-                useFactory: () => new BindingCacheFactory(ref => {
-                    if (!ref.propOutBindings) {
-                        ref.propOutBindings = new Map();
-                    }
-                    return ref.propOutBindings;
-                })
-            })
-            .bindProviders(RefChild, {
-                provide: BindingCache,
-                useFactory: () => new BindingCacheFactory(ref => {
-                    if (!ref.propRefChildBindings) {
-                        ref.propRefChildBindings = new Map();
-                    }
-                    return ref.propRefChildBindings;
-                })
-            })
             .bindProviders(Component,
+                {
+                    provide: BindingsCache,
+                    useFactory: () => new BindingsCache()
+                        .register(Input)
+                        .register(Output)
+                        .register(RefChild)
+                        .register(Vaildate)
+                },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner },
+                { provide: ELEMENT_REF, useClass: ElementRef },
+                { provide: TEMPLATE_REF, useClass: TemplateRef },
+                { provide: COMPONENT_REF, useClass: ComponentRef },
                 { provide: AstResolver, useFactory: (prd) => new AstResolver(prd), deps: [ComponentProvider] }
             );
 

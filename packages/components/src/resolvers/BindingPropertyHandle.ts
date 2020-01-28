@@ -3,9 +3,11 @@ import { IBuildContext } from '@tsdi/boot';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
 import { IComponentReflect } from '../IComponentReflect';
-import { BindingTypes } from '../bindings/IBinding';
+import { BindingTypes, IPropertyVaildate } from '../bindings/IBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { DataBinding } from '../bindings/DataBinding';
+import { Input } from '../decorators/Input';
+import { Vaildate } from '../decorators/Vaildate';
 
 
 /**
@@ -17,12 +19,13 @@ import { DataBinding } from '../bindings/DataBinding';
  */
 export const BindingPropertyHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
 
-    let ref = ctx.targetReflect as IComponentReflect;
-    if (ref && ref.propInBindings) {
+    let refl = ctx.targetReflect as IComponentReflect;
+    let propInBindings = refl?.getBindings(Input.toString());
+    if (propInBindings) {
         let template = ctx.template;
         let actInjector = ctx.reflects.getActionInjector();
-        await Promise.all(Array.from(ref.propInBindings.keys()).map(async n => {
-            let binding = ref.propInBindings.get(n);
+        await Promise.all(Array.from(propInBindings.keys()).map(async n => {
+            let binding = propInBindings.get(n);
             let filed = binding.bindingName || binding.name;
             let expression = template ? template[filed] : null;
             if (!isNullOrUndefined(expression)) {
@@ -52,7 +55,7 @@ export const BindingPropertyHandle = async function (ctx: IBuildContext, next: (
                 ctx.value[binding.name] = binding.defaultValue;
             }
 
-            let bvailds = ref.propVaildates ? ref.propVaildates.get(binding.name) : null;
+            let bvailds = refl?.getBindings<IPropertyVaildate[]>(Vaildate.toString()).get(binding.name);
             if (bvailds && bvailds.length) {
                 await Promise.all(bvailds.map(async bvaild => {
                     if (bvaild.required && !isNullOrUndefined(ctx.value[binding.name])) {

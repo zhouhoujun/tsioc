@@ -50,7 +50,7 @@ export * from './resolvers/ParseTemplateHandle';
 
 
 // registers
-export * from './registers/BindingCache';
+export * from './registers/BindingsCache';
 export * from './registers/BindingPropertyTypeAction';
 export * from './registers/ComponentRegisterAction';
 export * from './registers/PipeRegisterAction';

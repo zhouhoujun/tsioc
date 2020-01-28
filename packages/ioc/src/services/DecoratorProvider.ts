@@ -1,10 +1,11 @@
 import { Token, Factory } from '../types';
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
-import { IIocContainer } from '../IIocContainer';
+import { ContainerProxy } from '../IIocContainer';
 import { ProviderTypes, InjectTypes } from '../providers/types';
-import { IInjector, PROVIDERS } from '../IInjector';
+import { IInjector, PROVIDERS, IProviders } from '../IInjector';
 import { tokenId } from '../InjectToken';
+import { ITypeReflects } from './ITypeReflects';
 
 /**
  * current decorator provide token key
@@ -20,9 +21,17 @@ export const DECORATOR = tokenId<string>('DECORATOR_KEY')
 export class DecoratorProvider extends IocCoreService {
     protected map: Map<string, IInjector>;
 
-    constructor(private container: IIocContainer) {
+    constructor(private proxy: ContainerProxy) {
         super()
         this.map = new Map();
+    }
+
+    private reflects: ITypeReflects;
+    getTypeReflects() {
+        if (!this.reflects) {
+            this.reflects = this.proxy().getTypeReflects();
+        }
+        return this.reflects;
     }
 
     /**
@@ -53,7 +62,7 @@ export class DecoratorProvider extends IocCoreService {
         } else if (isFunction(decorator)) {
             return decorator.toString();
         } else if (decorator) {
-            let refmate = this.container.getTypeReflects().get(lang.getClass(decorator));
+            let refmate = this.getTypeReflects().get(lang.getClass(decorator));
             if (refmate && refmate.decorator) {
                 return refmate.decorator;
             }
@@ -97,10 +106,14 @@ export class DecoratorProvider extends IocCoreService {
         return this;
     }
 
-    existify(decorator: string | Function): IInjector {
+    getProviders(decorator: string | Function): IProviders {
+        return this.map.get(this.getKey(decorator));
+    }
+
+    existify(decorator: string | Function): IProviders {
         decorator = this.getKey(decorator);
         if (!this.map.has(decorator)) {
-            this.map.set(decorator, this.container.getInstance(PROVIDERS).inject({ provide: DECORATOR, useValue: decorator }));
+            this.map.set(decorator, this.proxy().getInstance(PROVIDERS).inject({ provide: DECORATOR, useValue: decorator }));
         }
         return this.map.get(decorator);
     }

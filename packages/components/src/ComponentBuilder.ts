@@ -10,6 +10,7 @@ import { CTX_COMPONENT_REF, CTX_ELEMENT_REF, CTX_TEMPLATE_REF, ITemplateRef } fr
 import { NonSerialize } from './decorators/NonSerialize';
 import { TemplateContext } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
+import { Input } from './decorators/Input';
 
 
 /**
@@ -51,9 +52,9 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
             let refs = reflects.get(compClass) as IComponentReflect;
             if (refs && refs.selector) {
                 let json = {};
-                let refselector = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(refs.decorator, ComponentProvider);
+                let refselector = refs.getDecorProviders().getInstance(ComponentProvider);
                 json[refselector.getSelectorKey()] = refs.selector;
-                refs.propInBindings.forEach((v, key) => {
+                refs.getBindings(Input.toString()).forEach((v, key) => {
                     if (reflects.hasMetadata(NonSerialize, compClass, key, 'property')) {
                         return;
                     }

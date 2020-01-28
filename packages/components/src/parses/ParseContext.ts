@@ -4,6 +4,9 @@ import { IBuildOption } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
 import { ComponentContext, IComponentContext } from './ComponentContext';
+import { Input } from '../decorators/Input';
+import { Output } from '../decorators/Output';
+import { RefChild } from '../decorators/RefChild';
 
 /**
  * binding parse option.
@@ -58,9 +61,9 @@ export class ParseContext extends ComponentContext<IBindingParseOption> implemen
         if (parent) {
             if (parent.template && parent.targetReflect) {
                 return lang.omit(parent.template,
-                    ...Array.from(parent.targetReflect.propInBindings?.keys() ?? []),
-                    ...Array.from(parent.targetReflect.propOutBindings?.keys() ?? []),
-                    ...Array.from(parent.targetReflect.propRefChildBindings?.keys() ?? []))
+                    ...Array.from(parent.targetReflect.getBindings(Input.toString())?.keys() ?? []),
+                    ...Array.from(parent.targetReflect.getBindings(Output.toString())?.keys() ?? []),
+                    ...Array.from(parent.targetReflect.getBindings(RefChild.toString())?.keys() ?? []))
             }
         }
         return {};

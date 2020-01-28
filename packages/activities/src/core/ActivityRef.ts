@@ -1,6 +1,6 @@
-import { PromiseUtil, lang, isDefined, Abstract, IDestoryable, isFunction, Type } from '@tsdi/ioc';
+import { PromiseUtil, lang, isDefined, Abstract, IDestoryable, isFunction, Type, Inject, Injectable } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '@tsdi/boot';
-import { IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS, NodeSelector } from '@tsdi/components';
+import { IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS, NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF } from '@tsdi/components';
 import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT } from './ActivityContext';
 import { IActivityRef, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
@@ -38,13 +38,16 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
     }
 }
 
+@Injectable
 export class ActivityElementRef<T extends Activity = Activity> extends ActivityRef<T> implements IActivityElementRef<T> {
 
     get name(): string {
         return this.context.name ?? this.nativeElement.name ?? lang.getClassName(this.nativeElement);
     }
 
-    constructor(context: ActivityContext, public readonly nativeElement: T) {
+    constructor(
+        @Inject(CONTEXT_REF) context: ActivityContext,
+        @Inject(NATIVE_ELEMENT)  public readonly nativeElement: T) {
         super(context);
         let injector = context.injector;
         if (!injector.has(ELEMENT_REFS)) {
@@ -83,6 +86,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
     }
 }
 
+@Injectable
 export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef<T> implements IActivityTemplateRef<T> {
     readonly isScope = true;
     get name(): string {
@@ -98,7 +102,9 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         return this._rootNodes;
     }
 
-    constructor(context: ActivityContext, nodes: T[]) {
+    constructor(
+        @Inject(CONTEXT_REF) context: ActivityContext,
+        @Inject(ROOT_NODES) nodes: T[]) {
         super(context);
         this._rootNodes = nodes;
     }
@@ -142,6 +148,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
 /**
  *  activity ref for runtime.
  */
+@Injectable
 export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends ActivityRef<T> implements IActivityComponentRef<T, TN> {
 
     get name(): string {
@@ -149,10 +156,10 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
     }
 
     constructor(
-        public readonly componentType: Type<T>,
-        public readonly instance: T,
-        context: ActivityContext,
-        public readonly nodeRef: IActivityTemplateRef<TN>
+        @Inject(COMPONENT_TYPE) public readonly componentType: Type<T>,
+        @Inject(COMPONENT_INST) public readonly instance: T,
+        @Inject(CONTEXT_REF) context: ActivityContext,
+        @Inject(TEMPLATE_REF) public readonly nodeRef: IActivityTemplateRef<TN>
     ) {
         super(context);
         if (!context.injector.has(COMPONENT_REFS)) {

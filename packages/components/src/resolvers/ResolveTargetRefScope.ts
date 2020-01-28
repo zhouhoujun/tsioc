@@ -6,6 +6,7 @@ import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { ComponentProvider } from '../ComponentProvider';
 import { CTX_ELEMENT_REF, CTX_COMPONENT_REF } from '../ComponentRef';
+import { IComponentReflect } from '../IComponentReflect';
 
 
 
@@ -24,10 +25,10 @@ export class ResolveTargetRefScope extends BuildHandles<IBuildContext> implement
             ctx.value = ctx.getValue(CTX_COMPONENT_REF);
         } else {
             // current type is component.
-            let decorPdr = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
-            let refSelector = decorPdr.resolve(ctx.decorator, ComponentProvider);
-            if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
-                let elRef = refSelector.createElementRef(ctx, ctx.value);
+            let refl = ctx.targetReflect as IComponentReflect;
+            let compdr = refl.getDecorProviders().getInstance(ComponentProvider);
+            if (compdr.parseElementRef && compdr?.isElementType(ctx.type)) {
+                let elRef = compdr.createElementRef(ctx, ctx.value);
                 ctx.setValue(CTX_ELEMENT_REF, elRef);
                 ctx.value = elRef;
             }

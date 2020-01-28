@@ -1,4 +1,4 @@
-import { DecoratorProvider, isClass } from '@tsdi/ioc';
+import { isClass } from '@tsdi/ioc';
 import { BootContext } from '../BootContext';
 import { AnnotationMerger } from '../services/AnnotationMerger';
 import { CTX_APP_CONFIGURE } from '../context-tokens';
@@ -35,7 +35,7 @@ export const BootConfigureLoadHandle = async function (ctx: BootContext, next: (
     }
     let config = await mgr.getConfig();
     if (ctx.annoation) {
-        let merger = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(ctx.decorator, AnnotationMerger);
+        let merger = ctx.targetReflect.getDecorProviders()?.getInstance(AnnotationMerger);
         config = merger ? merger.merge([config, ctx.annoation]) : Object.assign({}, config, ctx.annoation);
     }
 

@@ -36,7 +36,7 @@ export function registerCores(container: IIocContainer) {
 
     actInjector.setValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
     actInjector.setValue(DesignRegisterer, new DesignRegisterer(actInjector));
-    actInjector.setValue(DecoratorProvider, new DecoratorProvider(container));
+    actInjector.setValue(DecoratorProvider, new DecoratorProvider(fac));
 
     // bing action.
     actInjector

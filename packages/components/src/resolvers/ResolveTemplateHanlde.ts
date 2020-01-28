@@ -4,7 +4,6 @@ import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { ComponentProvider } from '../ComponentProvider';
-import { TemplateContext } from '../parses/TemplateContext';
 
 
 export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
@@ -12,7 +11,7 @@ export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: ()
     let annoation = ctx.annoation as IComponentMetadata;
     ctx.setValue(CTX_COMPONENT, ctx.value);
     let actInjector = ctx.reflects.getActionInjector();
-    let compPdr = actInjector.getInstance(DecoratorProvider).resolve(ctx.decorator, ComponentProvider);
+    let compPdr = ctx.targetReflect.getDecorProviders().getInstance(ComponentProvider);
     let pCtx = compPdr.createTemplateContext(ctx.injector, {
         parent: ctx,
         template: annoation.template

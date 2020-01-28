@@ -1,4 +1,4 @@
-import { ITypeReflect, tokenId } from '@tsdi/ioc';
+import { ITypeReflect, tokenId, IProviders } from '@tsdi/ioc';
 import { IBinding, IPropertyVaildate } from './bindings/IBinding';
 
 /**
@@ -31,35 +31,14 @@ export interface IComponentReflect extends ITypeReflect {
      */
     selectKey?: string;
     /**
-     * property input binding metadata.
-     *
-     * @type {Map<string, IBinding>}
-     * @memberof IBindingTypeReflect
+     * get decorator providers.
      */
-    propInBindings: Map<string, IBinding>;
+    getDecorProviders?(): IProviders;
 
     /**
-     * property output binding metadata.
-     *
-     * @type {Map<string, IBinding>}
-     * @memberof IBindingTypeReflect
+     * get bindings.
+     * @param decor decorator
      */
-    propOutBindings: Map<string, IBinding>;
-
-    /**
-     * property output binding metadata.
-     *
-     * @type {Map<string, IBinding>}
-     * @memberof IBindingTypeReflect
-     */
-    propRefChildBindings: Map<string, IBinding>;
-
-    /**
-     * property vaildate metadata.
-     *
-     * @type {Map<string, IPropertyVaildate>}
-     * @memberof IBindingTypeReflect
-     */
-    propVaildates: Map<string, IPropertyVaildate[]>;
+    getBindings?<T = IBinding>(decor: string): Map<string, T>;
 
 }

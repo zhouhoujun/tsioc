@@ -36,9 +36,9 @@ export class ActivityProvider extends ComponentProvider {
 
     parseElementRef = true;
 
-    createComponentRef<T>(type: Type<T>, target: T, context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityComponentRef<T> {
-        return new ActivityComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
-    }
+    // createComponentRef<T>(type: Type<T>, target: T, context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityComponentRef<T> {
+    //     return new ActivityComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
+    // }
 
 
     isTemplateContext(context: AnnoationContext): boolean {
@@ -49,13 +49,13 @@ export class ActivityProvider extends ComponentProvider {
         return ActivityTemplateContext.parse(injector, options);
     }
 
-    createTemplateRef(context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityTemplateRef<ActivityNodeType> {
-        return new ActivityTemplateRef(context, nodes);
-    }
+    // createTemplateRef(context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityTemplateRef<ActivityNodeType> {
+    //     return new ActivityTemplateRef(context, nodes);
+    // }
 
-    createElementRef(context: ActivityContext, target: Activity): IActivityElementRef {
-        return new ActivityElementRef(context, target);
-    }
+    // createElementRef(context: ActivityContext, target: Activity): IActivityElementRef {
+    //     return new ActivityElementRef(context, target);
+    // }
 
     toSelectorToken(selector: string): SymbolType {
         return seletPrefix.test(selector) ? selector : `ACT_SELT_${selector}`;
