@@ -52,11 +52,14 @@ export class ActivityModule {
                 { provide: TEMPLATE_REF, useClass: ActivityTemplateRef },
                 { provide: COMPONENT_REF, useClass: ActivityComponentRef },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner },
-                { provide: BindingsCache, useFactory: () => new BindingsCache()
-                    .register(Input)
-                    .register(Output)
-                    .register(RefChild)
-                    .register(Vaildate) }
+                {
+                    provide: BindingsCache,
+                    useFactory: () => new BindingsCache()
+                        .register(Input)
+                        .register(Output)
+                        .register(RefChild)
+                        .register(Vaildate)
+                }
             );
 
 
