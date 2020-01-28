@@ -7,7 +7,9 @@ import { RunnerLogAspect } from './aop/RunnerLogAspect';
 @DIModule({
     regIn: 'root',
     imports: [
-        BrowserModule,
+        BrowserModule
+    ],
+    providers: [
         TaskLogAspect,
         RunnerLogAspect,
         WorkflowConfigureRegister

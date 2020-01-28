@@ -52,10 +52,10 @@ export class ConfigureFileLoader implements IConfigureLoader<RunnableConfigure> 
 @DIModule({
     regIn: 'root',
     imports: [
-        ServerModule,
-        ConfigureFileLoader
+        ServerModule
     ],
     providers: [
+        ConfigureFileLoader,
         { provide: ProcessRunRootToken, useValue: runMainPath() }
     ]
 })

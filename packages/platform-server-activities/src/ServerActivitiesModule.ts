@@ -13,14 +13,14 @@ import { ServerParallelExecutor } from './ServerParallelExecutor';
     regIn: 'root',
     imports: [
         ServerModule,
-        ServerLogsModule,
+        ServerLogsModule
+    ],
+    providers: [
         RunnerLogAspect,
         TaskLogAspect,
         ServerParallelExecutor,
         ServerBootstrapModule,
-        WorkflowConfigureRegister
-    ],
-    providers: [
+        WorkflowConfigureRegister,
         { provide: ParallelExecutor, useExisting: ServerParallelExecutor }
     ]
 })
