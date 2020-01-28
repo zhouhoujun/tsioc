@@ -9,7 +9,7 @@ import { InjectTypes } from '../providers/types';
  */
 export interface ProvidersMetadata {
     /**
-     * add ref service to the class.
+     * provider services of the class.
      *
      * @type {KeyValue<Token, Token>}
      * @memberof ProvidersMetadata
