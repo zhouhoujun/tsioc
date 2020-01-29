@@ -1,4 +1,4 @@
-import { IActionSetup, DecoratorProvider } from '@tsdi/ioc';
+import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles, IBuildContext } from '@tsdi/boot';
 import { ResolveTemplateHanlde } from './ResolveTemplateHanlde';
 import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';

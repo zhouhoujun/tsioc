@@ -1,4 +1,4 @@
-import { DecoratorProvider, PromiseUtil, lang } from '@tsdi/ioc';
+import { PromiseUtil, lang } from '@tsdi/ioc';
 import { IBuildContext, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { ComponentProvider } from '../ComponentProvider';

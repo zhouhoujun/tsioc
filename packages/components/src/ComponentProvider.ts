@@ -1,8 +1,15 @@
-import { Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, SymbolType, isClass, IInjector, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ActionInjectorToken, IActionInjector, IProviders } from '@tsdi/ioc';
+import {
+    Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProviders,
+    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject
+} from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
-import { COMPONENT_REFS, ComponentRef, ElementRef, TemplateRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef, TEMPLATE_REF, CONTEXT_REF, ROOT_NODES, NATIVE_ELEMENT, COMPONENT_REF, COMPONENT_INST, COMPONENT_TYPE, ELEMENT_REF } from './ComponentRef';
+import {
+    COMPONENT_REFS, ComponentRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef,
+    TEMPLATE_REF, CONTEXT_REF, ROOT_NODES, NATIVE_ELEMENT, COMPONENT_REF, COMPONENT_INST,
+    COMPONENT_TYPE, ELEMENT_REF
+} from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';

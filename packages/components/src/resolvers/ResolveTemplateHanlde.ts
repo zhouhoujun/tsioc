@@ -1,4 +1,4 @@
-import { isNullOrUndefined, DecoratorProvider, isArray } from '@tsdi/ioc';
+import { isNullOrUndefined, isArray } from '@tsdi/ioc';
 import { BuildContext } from '@tsdi/boot';
 import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateParseScope } from '../parses/TemplateParseScope';

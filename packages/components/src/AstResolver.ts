@@ -1,4 +1,4 @@
-import { Injectable, isFunction } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { pipeExp } from './bindings/exps';
 import { IPipeTransform } from './bindings/IPipeTransform';

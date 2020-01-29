@@ -1,5 +1,5 @@
-import { ParameterMetadata } from '../metadatas/ParameterMetadata';
 import { Token } from '../types';
+import { ParameterMetadata } from '../metadatas/ParameterMetadata';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { DecoratorType } from './DecoratorType';
 import { isToken } from '../utils/isToken';

@@ -1,6 +1,6 @@
 import {
     Singleton, ProviderTypes, lang, isNullOrUndefined, isString,
-    isBoolean, isDate, isObject, isArray, isNumber, DecoratorProvider
+    isBoolean, isDate, isObject, isArray, isNumber
 } from '@tsdi/ioc';
 import { BuilderService, BuildContext } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
