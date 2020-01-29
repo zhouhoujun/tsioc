@@ -109,16 +109,12 @@ export const MODULE_INJECTOR = tokenId<ModuleInjector>('MODULE_INJECTOR');
 
 export class ModuleProviders extends InjectorProvider implements IProviders {
 
-    get moduleInjector() {
-        return this.getSingleton(MODULE_INJECTOR);
-    }
-    set moduleInjector(value: ModuleInjector) {
-        this.setValue(MODULE_INJECTOR, value);
-    }
+    moduleInjector: ModuleInjector;
 
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
         this.getContainer().registerIn(this.moduleInjector, type, provide, singleton);
-        this.set(provide, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs), type)
+        this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
+        provide && this.set(provide, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs))
         return this;
     }
 }

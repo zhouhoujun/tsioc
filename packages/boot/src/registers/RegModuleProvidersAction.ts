@@ -24,7 +24,7 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
     }
 
     if (map.size) {
-        injector.copy(map, k => injector.hasTokenKey(k));
+        injector.copy(map, k => !injector.hasTokenKey(k));
     }
 
     if (components && components.length) {

@@ -92,7 +92,7 @@ export function registerModule(decorator: string | Function, registerer: DesignR
     return registerer.register(decorator,
         { scope: DecoratorScopes.Inject, action: DIModuleInjectScope },
         { scope: DecoratorScopes.BeforeAnnoation, action: AnnoationInjectorCheck },
-        { scope: DecoratorScopes.Class, action: [BindProviderAction, AnnoationDesignAction] },
+        { scope: DecoratorScopes.Class, action: AnnoationDesignAction },
         { scope: DecoratorScopes.Annoation, action: AnnoationRegisterScope },
         { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }
     );

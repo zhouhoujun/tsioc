@@ -17,7 +17,9 @@ import { TestReport } from './reports/TestReport';
    imports: [
       AopModule,
       LogModule,
-      UnitSetup,
+      UnitSetup
+   ],
+   providers: [
       UnitTestContext,
       UnitTestConfigureRegister,
       RunAspect,
