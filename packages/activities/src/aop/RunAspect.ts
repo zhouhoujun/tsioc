@@ -9,7 +9,7 @@ import { ActivityRef } from '../core/ActivityRef';
  * @class TaskLogAspect
  */
 @Aspect({
-    within: [ActivityRef],
+    within: ActivityRef,
     singleton: true
 })
 export class RunAspect {
