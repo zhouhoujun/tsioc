@@ -1,14 +1,12 @@
 import { Type, Singleton, SymbolType } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnoationContext } from '@tsdi/boot';
-import { ComponentProvider, ITemplateOption, ITemplateContext } from '@tsdi/components';
+import { ComponentProvider, ITemplateOption, ITemplateContext, CONTEXT_REF, NATIVE_ELEMENT } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
-import {
-    ActivityComponentRef, ActivityElementRef, ActivityTemplateRef, IActivityComponentRef,
-    IActivityTemplateRef, IActivityElementRef, ActivityNodeType
-} from './core/ActivityRef';
+import {  IActivityElementRef, ControlActivityElementRef } from './core/ActivityRef';
 import { ActivityContext, ActivityTemplateContext } from './core/ActivityContext';
+import { ControlActivity } from './core/ControlActivity';
 
 
 const attrSelPrefix = /^ACT_ATTR_/;
@@ -37,11 +35,6 @@ export class ActivityProvider extends ComponentProvider {
 
     parseElementRef = true;
 
-    // createComponentRef<T>(type: Type<T>, target: T, context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityComponentRef<T> {
-    //     return new ActivityComponentRef(type, target, context, this.createTemplateRef(context, ...nodes));
-    // }
-
-
     isTemplateContext(context: AnnoationContext): boolean {
         return context instanceof ActivityContext;
     }
@@ -50,13 +43,14 @@ export class ActivityProvider extends ComponentProvider {
         return ActivityTemplateContext.parse(injector, options);
     }
 
-    // createTemplateRef(context: ActivityContext, ...nodes: ActivityNodeType[]): IActivityTemplateRef<ActivityNodeType> {
-    //     return new ActivityTemplateRef(context, nodes);
-    // }
-
-    // createElementRef(context: ActivityContext, target: Activity): IActivityElementRef {
-    //     return new ActivityElementRef(context, target);
-    // }
+    createElementRef(context: ActivityContext, target: Activity): IActivityElementRef {
+        if (target instanceof ControlActivity) {
+            return this.getProviders().getInstance(ControlActivityElementRef,
+                { provide: CONTEXT_REF, useValue: context },
+                { provide: NATIVE_ELEMENT, useValue: target })
+        }
+        return super.createElementRef(context, target) as IActivityElementRef;
+    }
 
     toSelectorToken(selector: string): SymbolType {
         return seletPrefix.test(selector) ? selector : `ACT_SELT_${selector}`;

@@ -13,7 +13,7 @@ import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
 import { WorkflowInstance, WorkflowContext } from './core/WorkflowInstance';
 import { ActivityDepsRegister } from './registers/ActivityDepsRegister';
-import { ActivityElementRef, ActivityTemplateRef, ActivityComponentRef } from './core/ActivityRef';
+import { ActivityElementRef, ActivityTemplateRef, ActivityComponentRef, ControlActivityElementRef } from './core/ActivityRef';
 
 
 /**
@@ -44,6 +44,7 @@ export class ActivityModule {
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Task,
+                ControlActivityElementRef,
                 { provide: BootContext, useClass: WorkflowContext },
                 { provide: BuildContext, useClass: ActivityContext },
                 { provide: AstResolver, useFactory: (prd) => new AstResolver(prd), deps: [ComponentProvider] },

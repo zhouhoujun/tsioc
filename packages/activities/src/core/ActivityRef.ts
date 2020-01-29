@@ -5,6 +5,7 @@ import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT } from './ActivityContex
 import { IActivityRef, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
+import { ControlActivity } from './ControlActivity';
 
 
 
@@ -84,6 +85,11 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         }
         super.destroying();
     }
+}
+
+@Injectable
+export class ControlActivityElementRef<T extends ControlActivity = ControlActivity> extends ActivityElementRef<T> {
+
 }
 
 @Injectable
