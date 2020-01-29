@@ -3,9 +3,7 @@ import {
     Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import {
-    ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner
-} from '@tsdi/boot';
+import { ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
 import { Input } from './decorators/Input';
 import { Output } from './decorators/Output';
 import { RefChild } from './decorators/RefChild';
