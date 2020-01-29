@@ -5,7 +5,6 @@ import { MethodAccessorToken } from './IMethodAccessor';
 import { ActionInjector } from './actions/ActionInjector';
 import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
 import { Injector, InjectorProvider } from './Injector';
-import { ProviderParser } from './providers/ProviderParser';
 import { DecoratorProvider } from './services/DecoratorProvider';
 import { MethodAccessor } from './actions/MethodAccessor';
 import { DesignLifeScope } from './actions/DesignLifeScope';
@@ -28,7 +27,6 @@ export function registerCores(container: IIocContainer) {
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
     container.set(PROVIDERS, () => new InjectorProvider(fac), InjectorProvider);
-    container.setValue(ProviderParser, new ProviderParser(container));
     container.setValue(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);

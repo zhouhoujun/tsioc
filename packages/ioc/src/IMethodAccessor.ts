@@ -2,7 +2,7 @@ import { Type, Token } from './types';
 import { ParamProviders } from './providers/types';
 import { IParameter } from './IParameter';
 import { tokenId } from './InjectToken';
-import { IInjector } from './IInjector';
+import { IInjector, IProviders } from './IInjector';
 
 
 export type MethodType<T> = string | ((tag: T) => Function);
@@ -62,14 +62,14 @@ export interface IMethodAccessor {
     createParams(injector: IInjector, params: IParameter[], ...providers: ParamProviders[]): any[];
 
     /**
-     * get target invoked provider.
+     * get target invoked providers.
      *
      * @param {*} target
      * @param {MethodType} propertyKey
      * @returns {IInjector}
      * @memberof IMethodAccessor
      */
-    invokedProvider(target: any, propertyKey: MethodType<any>): IInjector;
+    invokedProvider(target: any, propertyKey: MethodType<any>): IProviders;
 }
 
 /**

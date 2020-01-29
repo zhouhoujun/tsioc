@@ -5,10 +5,9 @@ import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
 import { DesignActionContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
-import { IInjector, InjectorFactoryToken } from './IInjector';
+import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
-import { ProviderParser } from './providers/ProviderParser';
 import { InjectToken } from './InjectToken';
 import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
 
@@ -115,7 +114,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     }
 
     protected parse(...providers: InjectTypes[]): IInjector {
-        return this.getInstance(ProviderParser).parse(...providers);
+        return this.getInstance(PROVIDERS).inject(...providers);
     }
 
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
