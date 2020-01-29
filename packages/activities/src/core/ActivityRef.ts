@@ -96,7 +96,7 @@ export class ControlActivityElementRef<T extends ControlActivity = ControlActivi
 export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef<T> implements IActivityTemplateRef<T> {
     readonly isScope = true;
     get name(): string {
-        return this.context.name ?? 'template';
+        return `${this.context.name}.template`;
     }
 
     get template() {
