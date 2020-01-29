@@ -1,7 +1,7 @@
 import { lang } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
-import { ControlActivity, IActivityRef, ActivityRef } from '@tsdi/activities';
+import { IActivityRef, ActivityRef, ControlActivityElementRef } from '@tsdi/activities';
 
 /**
  * Task Log process.
@@ -52,8 +52,8 @@ export class TaskLogProcess extends LogProcess {
  * @extends {TaskLogProcess}
  */
 @Aspect({
-    within: [ActivityRef],
-    without: ControlActivity,
+    within: ActivityRef,
+    without: ControlActivityElementRef,
     singleton: true
 })
 export class TaskLogAspect extends TaskLogProcess {
@@ -72,7 +72,7 @@ export class TaskLogAspect extends TaskLogProcess {
  * @extends {TaskLogProcess}
  */
 @Aspect({
-    within: ControlActivity,
+    within: ControlActivityElementRef,
     singleton: true
 })
 export class TaskControlLogAspect extends TaskLogProcess {
