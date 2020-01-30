@@ -108,5 +108,11 @@ export class InjectorProvider extends Injector implements IProviders {
     }
 }
 
-export const ProviderMap = InjectorProvider;
+/**
+ * invoked providers
+ */
+export class InvokedProviders extends Injector implements IProviders {
+    protected init() {
+    }
+}
 

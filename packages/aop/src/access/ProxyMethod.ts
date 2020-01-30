@@ -1,6 +1,9 @@
 import {
     Singleton, Inject, Type, isFunction, IocContainerToken, IIocContainer,
-    MethodAccessorToken
+    MethodAccessorToken,
+    lang,
+    IProviders,
+    InvokedProviders
 } from '@tsdi/ioc';
 import { Advices, AdvicesToken } from '../advices/Advices';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
@@ -50,6 +53,7 @@ export class ProxyMethod implements IProxyMethod {
             } else if (isFunction(target[methodName])) {
                 let propertyMethod = target[methodName].bind(target);
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint);
+                target[methodName]['_proxy'] = true;
             }
         }
     }
@@ -60,7 +64,12 @@ export class ProxyMethod implements IProxyMethod {
         let container = this.container;
         let reflects = container.getTypeReflects();
         return (...args: any[]) => {
-            let cuurPrd = container.getInjector(targetType).getInstance(MethodAccessorToken).invokedProvider(target, methodName);
+            let larg = lang.last(args);
+            let cuurPrd: IProviders = null;
+            if (larg instanceof InvokedProviders) {
+                args = args.slice(0, args.length - 1);
+                cuurPrd = larg;
+            }
             let joinPoint = container.getInstance(Joinpoint, {
                 provide: JoinpointOptionToken,
                 useValue: <JoinpointOption>{

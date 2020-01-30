@@ -60,19 +60,11 @@ export interface IMethodAccessor {
      * @memberof IMethodAccessor
      */
     createParams(injector: IInjector, params: IParameter[], ...providers: ParamProviders[]): any[];
-
-    /**
-     * get target invoked providers.
-     *
-     * @param {*} target
-     * @param {MethodType} propertyKey
-     * @returns {IInjector}
-     * @memberof IMethodAccessor
-     */
-    invokedProvider(target: any, propertyKey: MethodType<any>): IProviders;
 }
 
 /**
  * method accessor.
  */
 export const MethodAccessorToken = tokenId<IMethodAccessor>('DI_METHOD_ACCESSOR');
+
+export const INVOKED_PROVIDERS = tokenId<IProviders>('INVOKED_PROVIDERS');

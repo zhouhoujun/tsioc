@@ -1,9 +1,9 @@
-import { Token, Type, ObjectMap } from '../types';
+import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
 import { lang, isFunction, isBaseType } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { IInjector, PROVIDERS, IProviders } from '../IInjector';
-import { IMethodAccessor, MethodType } from '../IMethodAccessor';
+import { IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
 import { ParamProviders } from '../providers/types';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
@@ -19,9 +19,7 @@ import { TypeReflectsToken } from '../services/ITypeReflects';
  */
 export class MethodAccessor implements IMethodAccessor {
 
-    private caches: WeakMap<any, Map<string, IProviders>>;
     constructor() {
-        this.caches = new WeakMap();
     }
 
     /**
@@ -62,26 +60,14 @@ export class MethodAccessor implements IMethodAccessor {
         let pds = tgRefl.methodParamProviders.get(key) || [];
         providers = providers.concat(pds);
         let parameters = tgRefl.methodParams.has(key) ? tgRefl.methodParams.get(key) : this.getParameters(injector, targetClass, instance, key);
-        let providerMap = injector.getInstance(PROVIDERS).inject(...providers);
+        let providerMap = injector.getInstance(INVOKED_PROVIDERS).inject(...providers);
         let paramInstances = this.resolveParams(injector, parameters, providerMap);
-        if (!this.caches.has(target)) {
-            this.caches.set(target, new Map().set(key, providerMap));
+        if (providerMap.size && instance[key]['_proxy']) {
+            paramInstances.push(providerMap);
         } else {
-            this.caches.get(target).set(key, providerMap);
+            providerMap.destroy();
         }
         return instance[key](...paramInstances) as TR;
-    }
-
-    /**
-     * get target invoked providers.
-     *
-     * @param {*} target
-     * @param {string} propertyKey
-     * @returns {Injector}
-     * @memberof IMethodAccessor
-     */
-    invokedProvider(target: any, propertyKey: string): IProviders {
-        return this.caches.get(target)?.get(propertyKey) ?? null;
     }
 
     /**
@@ -94,10 +80,10 @@ export class MethodAccessor implements IMethodAccessor {
      * @memberof MethodAccessor
      */
     createParams(injector: IInjector, params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.resolveParams(injector, params, injector.getInstance(PROVIDERS).inject(...providers));
+        return this.resolveParams(injector, params, injector.getInstance(INVOKED_PROVIDERS).inject(...providers));
     }
 
-    protected resolveParams(injector: IInjector, params: IParameter[], providers: IInjector): any[] {
+    protected resolveParams(injector: IInjector, params: IParameter[], providers: IProviders): any[] {
         return params.map((param, index) => {
             if (param.provider && providers.has(param.provider)) {
                 return providers.get(param.provider);
