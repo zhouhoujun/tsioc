@@ -1,9 +1,6 @@
 import {
     Singleton, Inject, Type, isFunction, IocContainerToken, IIocContainer,
-    MethodAccessorToken,
-    lang,
-    IProviders,
-    InvokedProviders
+    lang, IProviders, InvokedProviders
 } from '@tsdi/ioc';
 import { Advices, AdvicesToken } from '../advices/Advices';
 import { IProxyMethod, ProxyMethodToken } from './IProxyMethod';
