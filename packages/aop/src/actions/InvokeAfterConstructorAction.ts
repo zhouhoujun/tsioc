@@ -1,8 +1,6 @@
-import { ParamProviders, lang, RuntimeActionContext, CTX_ARGS, CTX_PARAMS } from '@tsdi/ioc';
-import { AdvisorToken } from '../IAdvisor';
-import { Joinpoint, JoinpointOptionToken, JoinpointOption } from '../joinpoints/Joinpoint';
-import { JoinpointState } from '../joinpoints/JoinpointState';
+import { RuntimeActionContext, CTX_ARGS, CTX_PARAMS, ActionInjectorToken } from '@tsdi/ioc';
 import { isValideAspectTarget } from './isValideAspectTarget';
+import { ProceedingScope } from '../proceeding/ProceedingScope';
 
 /**
  * invoke after constructor action.
@@ -11,45 +9,14 @@ import { isValideAspectTarget } from './isValideAspectTarget';
  */
 export const InvokeAfterConstructorAction = function (ctx: RuntimeActionContext, next: () => void): void {
     // aspect class do nothing.
-    if (!ctx.target || !isValideAspectTarget(ctx.type, ctx.reflects)) {
+    let reflects = ctx.reflects;
+    if (!ctx.target || !isValideAspectTarget(ctx.type, reflects)) {
         return next();
     }
 
-    let container = ctx.getContainer();
-    let advisor = container.getInstance(AdvisorToken);
-    let className = lang.getClassName(ctx.type);
-    let advices = advisor.getAdvices(ctx.type, 'constructor');
-    if (!advices) {
-        return next();
-    }
-    let targetType = ctx.type;
-    let target = ctx.target;
+    reflects.getActionInjector().getInstance(ActionInjectorToken)
+        .getInstance(ProceedingScope)
+        .afterConstr(ctx.target, ctx.type, ctx.getValue(CTX_PARAMS), ctx.getValue(CTX_ARGS), ctx.providers);
 
-    let joinPoint = container.getInstance(Joinpoint, {
-        provide: JoinpointOptionToken,
-        useValue: <JoinpointOption>{
-            name: 'constructor',
-            state: JoinpointState.After,
-            fullName: className + '.constructor',
-            target: target,
-            args: ctx.getValue(CTX_ARGS),
-            params: ctx.getValue(CTX_PARAMS),
-            targetType: targetType,
-            originProvider: ctx.providers
-        }
-    });
-    let providers: ParamProviders[] = [];
-    if (ctx.providers.size) {
-        providers.push(ctx.providers);
-    }
-    providers.push({ provide: Joinpoint, useValue: joinPoint });
-
-    advices.After.forEach(advicer => {
-        container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
-    });
-
-    advices.Around.forEach(advicer => {
-        container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, ...providers);
-    });
     next();
 };

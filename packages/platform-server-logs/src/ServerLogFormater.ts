@@ -38,7 +38,7 @@ export class ServerLogFormater implements ILogFormater {
                 messages = [
                     `Invoke method ${chalk.cyan(joinPoint.fullName)}.`,
                     chalk.gray('returning value:'),
-                    joinPoint.returningValue,
+                    joinPoint.returning,
                     ...messages
                 ]
                 break;

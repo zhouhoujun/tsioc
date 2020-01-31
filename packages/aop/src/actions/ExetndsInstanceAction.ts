@@ -9,8 +9,8 @@ import { AOP_EXTEND_TARGET_TOKEN } from '../IAdvisor';
 export const ExetndsInstanceAction = function (ctx: RuntimeActionContext, next: () => void): void {
     // aspect class do nothing.
     let providers = ctx.providers;
-    if (providers.has(AOP_EXTEND_TARGET_TOKEN)) {
-        providers.getInstance(AOP_EXTEND_TARGET_TOKEN)(ctx.target);
-    }
+    // if (providers.has(AOP_EXTEND_TARGET_TOKEN)) {
+    //     providers.getInstance(AOP_EXTEND_TARGET_TOKEN)(ctx.target);
+    // }
     next();
 };

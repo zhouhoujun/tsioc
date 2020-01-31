@@ -12,13 +12,13 @@ import { isValideAspectTarget } from './isValideAspectTarget';
  */
 export const MatchPointcutAction = function (ctx: RuntimeActionContext, next: () => void): void {
     // aspect class do nothing.
-    if (!isValideAspectTarget(ctx.type, ctx.reflects)) {
+    let reflects = ctx.reflects;
+    if (!isValideAspectTarget(ctx.type, reflects)) {
         return next();
     }
 
-    let injector = ctx.injector;
-    let advisor = injector.getInstance(AdvisorToken);
-    let matcher = injector.getInstance(AdviceMatcherToken);
+    let advisor = reflects.getActionInjector().getInstance(AdvisorToken);
+    let matcher = reflects.getActionInjector().getInstance(AdviceMatcherToken);
     let targetType = ctx.type;
 
     advisor.aspects.forEach((adviceMetas, type) => {

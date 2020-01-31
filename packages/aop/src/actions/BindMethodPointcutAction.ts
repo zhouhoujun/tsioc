@@ -1,7 +1,7 @@
 import { RuntimeActionContext, lang } from '@tsdi/ioc';
 import { isValideAspectTarget } from './isValideAspectTarget';
-import { ProxyMethodToken } from '../access/IProxyMethod';
 import { AdvisorToken } from '../IAdvisor';
+import { ProceedingScope } from '../proceeding/ProceedingScope';
 
 
 /**
@@ -13,22 +13,19 @@ import { AdvisorToken } from '../IAdvisor';
  */
 export const BindMethodPointcutAction = function (ctx: RuntimeActionContext, next: () => void): void {
     // aspect class do nothing.
-    if (!ctx.target || !isValideAspectTarget(ctx.type, ctx.reflects)) {
+    let reflects = ctx.reflects;
+    if (!ctx.target || !isValideAspectTarget(ctx.type, reflects)) {
         return next();
     }
-    let injector = ctx.injector;
 
-    let proxy = injector.getInstance(ProxyMethodToken);
-    if (!proxy) {
-        return next();
-    }
+    let scope = reflects.getActionInjector().getInstance(ProceedingScope);
 
     let target = ctx.target;
     let targetType = ctx.type;
 
     let className = lang.getClassName(targetType);
     let decorators = ctx.targetReflect.defines.getPropertyDescriptors();
-    let advisor = injector.getInstance(AdvisorToken);
+    let advisor = reflects.getActionInjector().getInstance(AdvisorToken);
     let advicesMap = advisor.getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
@@ -41,7 +38,7 @@ export const BindMethodPointcutAction = function (ctx: RuntimeActionContext, nex
                 fullName: `${className}.${name}`,
                 descriptor: decorators[name]
             }
-            proxy.proceed(target, targetType, advices, pointcut, target['_cache_JoinPoint'])
+            scope.proceed(target, targetType, advices, pointcut)
         });
     }
 

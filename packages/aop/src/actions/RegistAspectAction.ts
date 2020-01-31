@@ -1,5 +1,5 @@
 import { DesignActionContext } from '@tsdi/ioc';
-import { IAdvisor, AdvisorToken } from '../IAdvisor';
+import { AdvisorToken } from '../IAdvisor';
 
 /**
  * regist aspect action.
@@ -8,7 +8,7 @@ import { IAdvisor, AdvisorToken } from '../IAdvisor';
  */
 export const RegistAspectAction = function (ctx: DesignActionContext, next: () => void): void {
     let type = ctx.type;
-    let aspectMgr = ctx.injector.getInstance(AdvisorToken);
+    let aspectMgr = ctx.reflects.getActionInjector().getInstance(AdvisorToken);
     aspectMgr.add(type);
     next();
 };

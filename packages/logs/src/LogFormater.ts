@@ -67,7 +67,7 @@ export class LogFormater implements ILogFormater {
                 messages = [
                     `Invoke method "${joinPoint.fullName}".`,
                     'returning value:',
-                    joinPoint.returningValue,
+                    joinPoint.returning,
                     ...messages
                 ];
                 break;
