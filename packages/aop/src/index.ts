@@ -4,7 +4,6 @@ export * from './actions/BindMethodPointcutAction';
 export * from './actions/InvokeBeforeConstructorAction';
 export * from './actions/InvokeAfterConstructorAction';
 export * from './actions/MatchPointcutAction';
-export * from './actions/ExetndsInstanceAction'
 
 // decorators
 export * from './decorators/Advice';

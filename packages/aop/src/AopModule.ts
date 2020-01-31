@@ -6,10 +6,8 @@ import {
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
-import { Joinpoint } from './joinpoints/Joinpoint';
 import { RegistAspectAction } from './actions/RegistAspectAction';
 import { InvokeBeforeConstructorAction } from './actions/InvokeBeforeConstructorAction';
-import { ExetndsInstanceAction } from './actions/ExetndsInstanceAction';
 import { InvokeAfterConstructorAction } from './actions/InvokeAfterConstructorAction';
 import { BindMethodPointcutAction } from './actions/BindMethodPointcutAction';
 import { MatchPointcutAction } from './actions/MatchPointcutAction';
@@ -46,7 +44,7 @@ export class AopModule {
             .useBefore(InvokeBeforeConstructorAction);
 
         actInjector.getInstance(IocAfterConstructorScope)
-            .use(ExetndsInstanceAction)
+            // .use(ExetndsInstanceAction)
             .use(InvokeAfterConstructorAction);
 
         actInjector.getInstance(RuntimeMethodScope)
