@@ -1,6 +1,7 @@
 import { Input, Binding } from '@tsdi/components';
-import { Expression, Src, Task, Activity, TemplateOption } from '@tsdi/activities';
+import { Expression, Src, Task, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeActivity } from '../NodeActivity';
 
 /**
  * clean activity template option.
@@ -27,7 +28,7 @@ export interface CleanActivityOption extends TemplateOption {
  * @extends {Activity}
  */
 @Task('clean, [clean]')
-export class CleanActivity extends Activity<void> {
+export class CleanActivity extends NodeActivity<void> {
 
     @Input() clean: Expression<Src>;
 

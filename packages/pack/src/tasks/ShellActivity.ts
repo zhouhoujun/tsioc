@@ -1,8 +1,9 @@
 import { ExecOptions, exec } from 'child_process';
 import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
-import { Src, Task, TemplateOption, Activity } from '@tsdi/activities';
+import { Src, Task, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeActivity } from '../NodeActivity';
 
 
 /**
@@ -59,7 +60,7 @@ const preWordExp = /^[a-zA-Z]/;
  * @implements {ITask}
  */
 @Task('shell')
-export class ShellActivity extends Activity<void> {
+export class ShellActivity extends NodeActivity<void> {
     /**
      * shell cmd.
      *

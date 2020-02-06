@@ -3,7 +3,6 @@ import { Task, TemplateOption, Src } from '@tsdi/activities';
 import { CompilerOptions } from 'typescript';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
-import { ITransform } from '../ITransform';
 
 /**
  * tsc build option.
@@ -44,14 +43,14 @@ export interface TscBuilderOption extends TemplateOption {
 const jsChkExp = /.js/;
 
 @Task('tsc')
-export class TscBuilder extends NodeActivity<ITransform> {
+export class TscBuilder extends NodeActivity<void> {
 
     @Input() src: NodeExpression<Src>;
     @Input() dist: NodeExpression<string>;
     @Input() tsconfig: NodeExpression<string>;
     @Input() compilerOptions: NodeExpression<CompilerOptions>;
 
-    async execute(ctx: NodeActivityContext): Promise<ITransform> {
+    async execute(ctx: NodeActivityContext): Promise<void> {
         let compilerOptions = await ctx.resolveExpression(this.compilerOptions);
         compilerOptions = compilerOptions || {};
         let src = await ctx.resolveExpression(this.src);

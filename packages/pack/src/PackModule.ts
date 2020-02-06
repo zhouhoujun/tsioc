@@ -23,9 +23,6 @@ import { PlatformService } from './PlatformService';
         rollups,
         transforms,
         builds
-    ],
-    exports: [
-        ServerBootstrapModule
     ]
 })
 export class PackModule {

@@ -59,14 +59,14 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
             let dataBinding: DataBinding;
             if (ctx.binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(bindPref, '').trim());
+                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(twobindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(two2bindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(two2bindPref, '').trim());
                 }
             } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.scope, ctx.binding, exp.replace(eventBindPref, '').trim());
+                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(eventBindPref, '').trim());
             }
             dataBinding && ctx.setValue(CTX_DATABINDING, dataBinding);
         }
@@ -74,12 +74,12 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
 
     if (ctx.dataBinding instanceof ParseBinding) {
         if (!ctx.dataBinding.source) {
-            ctx.dataBinding.source = ctx.scope;
+            ctx.dataBinding.source = ctx.component;
         }
         options.bindExpression = ctx.dataBinding.resolveExression();
     } else if (ctx.dataBinding instanceof DataBinding) {
         if (!ctx.dataBinding.source) {
-            ctx.dataBinding.source = ctx.scope;
+            ctx.dataBinding.source = ctx.component;
         }
         ctx.value = ctx.dataBinding.resolveExression();
     }
@@ -94,6 +94,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
     if (ctx.componentProvider.isTemplate(ctx.bindExpression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
             parent: ctx,
+            sub: true,
             template: ctx.bindExpression,
             providers: ctx.providers
         });
@@ -101,7 +102,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
             .getInstance(TemplateParseScope)
             .execute(tpCtx);
 
-        if (!isNullOrUndefined(tpCtx.value)) {
+        if (!tpCtx.destroyed) {
             if (ctx.reflects.isExtends(lang.getClass(tpCtx.value), ctx.binding.type)) {
                 ctx.value = tpCtx.value;
             } else {

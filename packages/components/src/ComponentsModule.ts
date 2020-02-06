@@ -3,7 +3,7 @@ import {
     Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner } from '@tsdi/boot';
+import { ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
 import { Input } from './decorators/Input';
 import { Output } from './decorators/Output';
 import { RefChild } from './decorators/RefChild';
@@ -26,6 +26,7 @@ import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
 import { DefaultComponets } from './IComponentReflect';
 import { ComponentProvider } from './ComponentProvider';
 import { TEMPLATE_REF, TemplateRef, COMPONENT_REF, ComponentRef, ELEMENT_REF, ElementRef } from './ComponentRef';
+import { ComponentContext } from './ComponentContext';
 
 
 /**
@@ -52,6 +53,7 @@ export class ComponentsModule {
                         .register(RefChild)
                         .register(Vaildate)
                 },
+                { provide: BuildContext, useClass: ComponentContext },
                 { provide: AnnotationCloner, useClass: ComponentAnnotationCloner },
                 { provide: ELEMENT_REF, useClass: ElementRef },
                 { provide: TEMPLATE_REF, useClass: TemplateRef },

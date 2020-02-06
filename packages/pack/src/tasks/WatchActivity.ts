@@ -1,9 +1,10 @@
 import { PromiseUtil } from '@tsdi/ioc';
 import { Input, Binding, BindingTypes } from '@tsdi/components';
-import { Activity, Task, Src, BodyTemplate, ActivityType } from '@tsdi/activities';
+import { Task, Src, BodyTemplate, ActivityType } from '@tsdi/activities';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, filter } from 'rxjs/operators';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeActivity } from '../NodeActivity';
 const chokidar = require('chokidar');
 
 
@@ -34,7 +35,7 @@ export interface WatchActivityOption extends BodyTemplate {
  * @extends {BuildHandleActivity}
  */
 @Task('watch')
-export class WatchActivity extends Activity<void> {
+export class WatchActivity extends NodeActivity<void> {
 
     @Input()
     watch: NodeExpression<Src>;

@@ -1,9 +1,9 @@
-import { BuildContext } from '@tsdi/boot';
+import { IBuildContext } from '@tsdi/boot';
 import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
 
-export const ParseTemplateHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
+export const ParseTemplateHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
     if (!ctx.value && !ctx.type && ctx.template) {
         let options = {
             parent: ctx,

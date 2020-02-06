@@ -1,8 +1,7 @@
 import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject, isFunction } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { toAbsolutePath, runMainPath, syncRequire } from '@tsdi/platform-server';
-import { ProcessRunRootToken } from '@tsdi/boot';
-import { Src, WorkflowContextToken } from '@tsdi/activities';
+import { toAbsolutePath, syncRequire } from '@tsdi/platform-server';
+import { Src, WorkflowContextToken, WorkflowContext } from '@tsdi/activities';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative, basename, extname } from 'path';
 import {
@@ -10,7 +9,6 @@ import {
     /* ls, test, cd, ShellString, pwd, ShellArray, find, mv, TestOptions, cat, sed */
 } from 'shelljs';
 import { CompilerOptions } from 'typescript';
-import { NodeActivityContext } from './NodeActivityContext';
 import { PlatformServiceToken, CmdOptions } from './IPlatformService';
 import { GlobbyOptions } from 'globby';
 import * as globby from 'globby';
@@ -26,7 +24,7 @@ const replNodeMdlExp = /(node_modules)[\\\/]/g;
 @Injectable(PlatformServiceToken)
 export class PlatformService {
 
-    constructor(@Inject(WorkflowContextToken) private ctx: NodeActivityContext) {
+    constructor(@Inject(WorkflowContextToken) private ctx: WorkflowContext) {
 
     }
 
@@ -45,7 +43,7 @@ export class PlatformService {
      */
     getEnvArgs(): ObjectMap {
         if (!this.envArgs) {
-            this.envArgs = minimist([...this.ctx.workflow.args, ...process.argv.slice(2)]);
+            this.envArgs = minimist([...this.ctx.args, ...process.argv.slice(2)]);
         }
         return this.envArgs;
     }
@@ -217,8 +215,7 @@ export class PlatformService {
     }
 
     getRootPath(): string {
-        let root = this.ctx.getCurrBaseURL()
-        return root || this.container.getSingleton(ProcessRunRootToken) || runMainPath();
+        return this.ctx.baseURL;
     }
 
     toRootSrc(src: Src): Src {

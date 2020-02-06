@@ -1,12 +1,12 @@
 import {
     Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProviders,
-    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject
+    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ClassType
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import {
-    COMPONENT_REFS, ComponentRef, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef,
+    COMPONENT_REFS, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef,
     TEMPLATE_REF, CONTEXT_REF, ROOT_NODES, NATIVE_ELEMENT, COMPONENT_REF, COMPONENT_INST,
     COMPONENT_TYPE, ELEMENT_REF
 } from './ComponentRef';
@@ -116,9 +116,6 @@ export abstract class ComponentProvider {
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: ICoreInjector): T {
-        if (isString(token)) {
-            token = this.toPipeToken(token) ?? token;
-        }
         return injector.get(token);
     }
 
@@ -129,11 +126,6 @@ export abstract class ComponentProvider {
     toAttrSelectorToken(selector: string): SymbolType {
         return attrSelPrefix.test(selector) ? selector : `ATTR_${selector}`;
     }
-
-    toPipeToken(name: string): SymbolType {
-        return pipePrefix.test(name) ? name : `PIPE_${name}`;
-    }
-
 
     /**
      * select ref tag in element.
@@ -146,27 +138,42 @@ export abstract class ComponentProvider {
     select(element: any, selector: string | ((e: any) => boolean)): any {
         let selFunc: (e: any) => boolean;
         if (isString(selector)) {
-            let id = this.getRefSelectKey();
-            selFunc = e => e[id] === selector;
+            let idkey = this.getRefSelectKey();
+            selFunc = e => this.match(e, selector, idkey);
         } else {
             selFunc = selector;
         }
-        let cmpSelector = element instanceof ComponentRef ? element.getNodeSelector() : this.createNodeSelector(element);
+        let cmpSelector = this.isComponentRef(element) ? element.getNodeSelector() : this.createNodeSelector(element);
         if (cmpSelector) {
             return cmpSelector.find(e => selFunc(e));
         }
         return null;
     }
 
-    isNodeType(element: any): boolean {
+    protected match(e: any, selector: string, idkey: string) {
+        if (this.isComponentRef(e)) {
+            return e.selector === selector;
+        }
+        return e[idkey] === selector;
+    }
+
+    abstract isElementRef(target: any): target is IElementRef;
+
+    abstract isComponentRef(target: any): target is IComponentRef;
+
+    abstract isElementRefType(target: ClassType): boolean;
+
+    abstract isComponentRefType(target: ClassType): boolean;
+
+    isNodeType(element: ClassType): boolean {
         return this.isComponentType(element) || this.isElementType(element);
     }
 
-    isComponentType(element: any): boolean {
+    isComponentType(element: ClassType): boolean {
         return isClass(element) && this.reflects.get<IComponentReflect>(element)?.component;
     }
 
-    abstract isElementType(element: any): boolean;
+    abstract isElementType(element: ClassType): boolean;
 
 }
 

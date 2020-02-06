@@ -1,6 +1,7 @@
 import { Input, Binding } from '@tsdi/components';
-import { Task, Src, Activity, Expression, TemplateOption } from '@tsdi/activities';
+import { Task, Src, Expression, TemplateOption } from '@tsdi/activities';
 import { NodeExpression } from '../NodeActivityContext';
+import { NodeActivity } from '../NodeActivity';
 
 
 /**
@@ -34,7 +35,7 @@ export interface ServeConfigure extends TemplateOption {
  * @extends {BuildActivity}
  */
 @Task('serve')
-export class ServeActivity extends Activity<void> {
+export class ServeActivity extends NodeActivity<void> {
 
     /**
      * serve port.

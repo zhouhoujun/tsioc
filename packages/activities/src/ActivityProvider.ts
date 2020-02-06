@@ -1,10 +1,10 @@
-import { Type, Singleton, SymbolType } from '@tsdi/ioc';
+import { Type, Singleton, SymbolType, ClassType } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnoationContext } from '@tsdi/boot';
-import { ComponentProvider, ITemplateOption, ITemplateContext, CONTEXT_REF, NATIVE_ELEMENT } from '@tsdi/components';
+import { ComponentProvider, ITemplateOption, ITemplateContext, CONTEXT_REF, NATIVE_ELEMENT, IElementRef, IComponentRef } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
-import {  IActivityElementRef, ControlActivityElementRef } from './core/ActivityRef';
+import { IActivityElementRef, ControlActivityElementRef, ActivityElementRef, ActivityComponentRef } from './core/ActivityRef';
 import { ActivityContext, ActivityTemplateContext } from './core/ActivityContext';
 import { ControlActivity } from './core/ControlActivity';
 
@@ -20,6 +20,20 @@ const seletPrefix = /^ACT_SELT_/;
  */
 @Singleton()
 export class ActivityProvider extends ComponentProvider {
+    isElementRef(target: any): target is IElementRef {
+        return target instanceof ActivityElementRef;
+    }
+    isComponentRef(target: any): target is IComponentRef {
+        return target instanceof ActivityComponentRef;
+    }
+
+    isElementRefType(target: ClassType): boolean {
+        return target === ActivityElementRef;
+    }
+
+    isComponentRefType(target: ClassType): boolean {
+        return target === ActivityComponentRef;
+    }
 
     getSelectorKey(): string {
         return 'activity';
@@ -60,7 +74,7 @@ export class ActivityProvider extends ComponentProvider {
         return attrSelPrefix.test(selector) ? selector : `ACT_ATTR_${selector}`;
     }
 
-    isElementType(element: any): boolean {
+    isElementType(element: ClassType): boolean {
         return this.reflects.isExtends(element, Activity);
     }
 }

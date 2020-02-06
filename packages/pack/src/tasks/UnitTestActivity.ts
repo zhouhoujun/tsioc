@@ -3,6 +3,7 @@ import { Task, Activity, Src, TemplateOption } from '@tsdi/activities';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
 import { ConsoleReporter } from '@tsdi/unit-console';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeActivity } from '../NodeActivity';
 
 
 /**
@@ -32,7 +33,7 @@ export interface UnitTestActivityOption extends TemplateOption {
 
 
 @Task('test, [test]')
-export class UnitTestActivity extends Activity<void> {
+export class UnitTestActivity extends NodeActivity<void> {
 
     @Input() test: NodeExpression<Src>;
     @Input('testOptions') options: NodeExpression<UnitTestConfigure>;

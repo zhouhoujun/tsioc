@@ -115,6 +115,9 @@ export class NodeSelector<T = any> {
      *@memberOf IComponent
      */
     routeUp(node: INodeRef<T>, express: Express<T, void | boolean>) {
+        if (!node) {
+            return true;
+        }
         if (this.currNode(node, express) === false) {
             return false;
         }
@@ -132,6 +135,9 @@ export class NodeSelector<T = any> {
      *@memberOf IComponent
      */
     trans(node: INodeRef<T>, express: Express<T, void | boolean>) {
+        if (!node) {
+            return true;
+        }
         if (this.currNode(node, express) === false) {
             return false;
         }
@@ -145,6 +151,9 @@ export class NodeSelector<T = any> {
     }
 
     transAfter(node: INodeRef<T>, express: Express<T, void | boolean>) {
+        if (!node) {
+            return true;
+        }
         let children = this.getChildren(node);
         if (children.some(r => this.transAfter(r, express) === false)) {
             return false;
@@ -162,16 +171,13 @@ export class NodeSelector<T = any> {
             if (n instanceof NodeRef) {
                 return this.currNode(n, express);
             } else if (n instanceof ComponentRef) {
-                if (express(n.instance) === false) {
+                if (express(n) === false) {
                     return true;
                 }
                 return this.currNode(n.nodeRef, express);
             } else if (n instanceof ElementRef) {
                 return express(n.nativeElement) === false;
             }
-            // else if (isArray(n)) {
-            //     return n.some(l => express(l) === false);
-            // }
             return express(n) === false
         })) {
             return false;

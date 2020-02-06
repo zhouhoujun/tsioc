@@ -1,4 +1,4 @@
-import { ControlTemplate, ActivityMetadata } from '@tsdi/activities';
+import { ControlTemplate } from '@tsdi/activities';
 import {
     CleanActivityOption, ServeConfigure, WatchActivityOption,
     ShellActivityOption, UnitTestActivityOption

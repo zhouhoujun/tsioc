@@ -1,26 +1,24 @@
-import { isNullOrUndefined, isArray } from '@tsdi/ioc';
-import { BuildContext } from '@tsdi/boot';
+import { isArray } from '@tsdi/ioc';
 import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
-import { IComponentMetadata } from '../decorators/IComponentMetadata';
-import { ComponentProvider } from '../ComponentProvider';
+import { IComponentContext } from '../ComponentContext';
 
 
-export const ResolveTemplateHanlde = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
+export const ResolveTemplateHanlde = async function (ctx: IComponentContext, next: () => Promise<void>): Promise<void> {
 
-    let annoation = ctx.annoation as IComponentMetadata;
-    ctx.setValue(CTX_COMPONENT, ctx.value);
+    let annoation = ctx.annoation;
     let actInjector = ctx.reflects.getActionInjector();
-    let compPdr = ctx.targetReflect.getDecorProviders().getInstance(ComponentProvider);
+    let compPdr = ctx.componentProvider;
     let pCtx = compPdr.createTemplateContext(ctx.injector, {
         parent: ctx,
         template: annoation.template
     });
 
+    pCtx.setValue(CTX_COMPONENT, ctx.value);
     await actInjector.getInstance(TemplateParseScope)
         .execute(pCtx);
 
-    if (!isNullOrUndefined(pCtx.value)) {
+    if (!pCtx.destroyed) {
         ctx.addChild(pCtx);
         ctx.setValue(CTX_COMPONENT_REF, isArray(pCtx.value) ?
             compPdr.createComponentRef(ctx.type, ctx.value, ctx, ...pCtx.value)

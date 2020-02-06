@@ -1,6 +1,9 @@
 import { Singleton } from '@tsdi/ioc';
 import { iocAnnotations } from '@tsdi/annotations';
-import { CompilerOptions, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory, convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic } from 'typescript';
+import {
+    CompilerOptions, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory,
+    convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic
+} from 'typescript';
 import * as ts from 'typescript';
 import * as path from 'path';
 

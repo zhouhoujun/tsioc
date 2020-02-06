@@ -1,9 +1,11 @@
 import { Type, isFunction, Destoryable, IDestoryable, tokenId, Injectable, Inject } from '@tsdi/ioc';
 import { IAnnoationContext, CTX_TEMPLATE } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
+import { IComponentContext } from './ComponentContext';
 
 export const CTX_COMPONENT_DECTOR = tokenId<string>('CTX_COMPONENT_DECTOR');
 export const CTX_COMPONENT = tokenId<any>('CTX_COMPONENT');
+export const CTX_COMPONENT_PARENT = tokenId<IComponentContext>('CTX_COMPONENT_PARENT');
 export const CTX_ELEMENT_REF = tokenId<any | any[]>('CTX_ELEMENT_REF');
 export const CTX_TEMPLATE_REF = tokenId<any | any[]>('CTX_TEMPLATE_REF');
 export const CTX_COMPONENT_REF = tokenId<ComponentRef>('CTX_COMPONENT_REF');
@@ -62,6 +64,7 @@ export interface ITemplateRef<T = any, TCtx extends IAnnoationContext = IAnnoati
     readonly template: any;
 }
 
+export const REFCHILD_SELECTOR = tokenId<string>('REFCHILD_SELECTOR');
 export const COMPONENT_REF = tokenId<IComponentRef>('COMPONENT_REF');
 export const COMPONENT_TYPE = tokenId<Type>('COMPONENT_TYPE');
 export const COMPONENT_INST = tokenId<object>('COMPONENT_INST');
@@ -69,6 +72,7 @@ export const COMPONENT_INST = tokenId<object>('COMPONENT_INST');
 export interface IComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext = IAnnoationContext> extends IContextNode<TCtx> {
     readonly componentType: Type<T>;
     readonly instance: T;
+    readonly selector: string;
     readonly nodeRef: ITemplateRef<TN>;
     getNodeSelector(): NodeSelector;
 }
@@ -145,9 +149,12 @@ export class TemplateRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoati
 export class ComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext = IAnnoationContext>
     extends ContextNode<TCtx> implements IComponentRef<T, TN, TCtx> {
 
+    get selector() {
+        return this.context.getValue(REFCHILD_SELECTOR);
+    }
     constructor(
         @Inject(COMPONENT_TYPE) public readonly componentType: Type<T>,
-        @Inject(COMPONENT_INST)  public readonly instance: T,
+        @Inject(COMPONENT_INST) public readonly instance: T,
         @Inject(CONTEXT_REF) context: TCtx,
         @Inject(TEMPLATE_REF) public readonly nodeRef: ITemplateRef<TN>
     ) {

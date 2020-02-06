@@ -2,7 +2,7 @@ import { Activity } from '@tsdi/activities';
 import { NodeActivityContext } from './NodeActivityContext';
 
 /**
- * activity for Nodejs server side.
+ * activity for server side.
  *
  * @export
  * @abstract

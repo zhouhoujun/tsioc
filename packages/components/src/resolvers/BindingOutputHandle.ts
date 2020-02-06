@@ -1,14 +1,13 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { IBuildContext } from '@tsdi/boot';
-import { IComponentReflect } from '../IComponentReflect';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScopeHandle } from '../parses/BindingValueScope';
 import { Output } from '../decorators/Output';
+import { IComponentContext } from '../ComponentContext';
 
 
-export const BindingOutputHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
+export const BindingOutputHandle = async function (ctx: IComponentContext, next: () => Promise<void>): Promise<void> {
 
-    let refl = ctx.targetReflect as IComponentReflect;
+    let refl = ctx.targetReflect;
     let propOutBindings = refl?.getBindings(Output.toString());
     if (propOutBindings) {
         let template = ctx.template;

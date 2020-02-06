@@ -1,8 +1,7 @@
 import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
-import { IBuildContext } from '@tsdi/boot';
+import { IComponentContext } from '../ComponentContext';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
-import { IComponentReflect } from '../IComponentReflect';
 import { BindingTypes, IPropertyVaildate } from '../bindings/IBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { DataBinding } from '../bindings/DataBinding';
@@ -10,6 +9,7 @@ import { Input } from '../decorators/Input';
 import { Vaildate } from '../decorators/Vaildate';
 
 
+const inputDector = Input.toString();
 /**
  * binding property handle.
  *
@@ -17,10 +17,10 @@ import { Vaildate } from '../decorators/Vaildate';
  * @class BindingPropertyHandle
  * @extends {ResolveHandle}
  */
-export const BindingPropertyHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
+export const BindingPropertyHandle = async function (ctx: IComponentContext, next: () => Promise<void>): Promise<void> {
 
-    let refl = ctx.targetReflect as IComponentReflect;
-    let propInBindings = refl?.getBindings(Input.toString());
+    let refl = ctx.targetReflect;
+    let propInBindings = refl?.getBindings(inputDector);
     if (propInBindings) {
         let template = ctx.template;
         let actInjector = ctx.reflects.getActionInjector();
@@ -39,16 +39,18 @@ export const BindingPropertyHandle = async function (ctx: IBuildContext, next: (
                         binding: binding
                     });
                     await actInjector.getInstance(BindingScope).execute(pctx);
-                    if (pctx.dataBinding instanceof ParseBinding) {
-                        if (pctx.dataBinding.resolveExression() === pctx.value || isBaseValue(pctx.value)) {
+                    if (!pctx.destroyed) {
+                        if (pctx.dataBinding instanceof ParseBinding) {
+                            if (pctx.dataBinding.resolveExression() === pctx.value || isBaseValue(pctx.value)) {
+                                pctx.dataBinding.bind(ctx.value);
+                            } else if (isTypeObject(pctx.value)) {
+                                pctx.dataBinding.bind(pctx.value, ctx.value);
+                            }
+                        } else if (pctx.dataBinding instanceof DataBinding) {
                             pctx.dataBinding.bind(ctx.value);
-                        } else if (isTypeObject(pctx.value)) {
-                            pctx.dataBinding.bind(pctx.value, ctx.value);
+                        } else {
+                            ctx.value[binding.name] = pctx.value;
                         }
-                    } else if (pctx.dataBinding instanceof DataBinding) {
-                        pctx.dataBinding.bind(ctx.value);
-                    } else {
-                        ctx.value[binding.name] = pctx.value;
                     }
                 }
             } else if (!isNullOrUndefined(binding.defaultValue)) {

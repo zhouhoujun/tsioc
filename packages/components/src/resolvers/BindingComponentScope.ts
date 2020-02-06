@@ -10,6 +10,7 @@ import { ResolveTargetRefScope } from './ResolveTargetRefScope';
 import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
 import { CTX_COMPONENT_DECTOR, CTX_ELEMENT_REF } from '../ComponentRef';
 import { ComponentProvider } from '../ComponentProvider';
+import { ComponentContext } from '../ComponentContext';
 
 
 export class BindingComponentScope extends BuildHandles<IBuildContext> implements IActionSetup {
@@ -20,8 +21,12 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
         }
 
         if ((<IComponentReflect>ctx.targetReflect)?.component) {
-            ctx.setValue(CTX_COMPONENT_DECTOR, ctx.decorator);
-            await super.execute(ctx);
+            if (!(ctx instanceof ComponentContext)) {
+                throw Error(`Component decorator '${ctx.decorator}' is not provide component builder`);
+            } else {
+                ctx.setValue(CTX_COMPONENT_DECTOR, ctx.decorator);
+                await super.execute(ctx);
+            }
         } else if (!ctx.getOptions().attr) {
             let mdref = ctx.getModuleRef();
             if (mdref && mdref.reflect.componentDectors) {

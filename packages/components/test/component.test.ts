@@ -75,21 +75,36 @@ class CustomeService {
 }
 
 @DIModule({
-    imports: [
-        Components,
-        Component3,
+    providers: [
         CustomeService
     ],
-    exports: [
-        Component3,
-        CustomeService
+    components: [
+        Components,
+        Component3
     ]
 })
 class SubModule {
 
 }
 
+@Component({
+    selector: 'obj-comp',
+    template: `
+        <selector1 #comp1 [(name)]="options.name"></selector1>
+        <selector2 #cmp2 [(name)]="options.name" [(address)]="options.address"></selector2>
+        <comp #cmps [(name)]="options.name" [(address)]="options.address"></comp>
+    `
+})
+class ObjectComponent1 {
 
+    @Input() options: any;
+
+    @RefChild('comp1') cmp1: Component1;
+
+    @RefChild() cmp2: Component2;
+
+    @RefChild('cmps') cmps: Components;
+}
 
 @Component({
     selector: 'obj-comp',
@@ -104,6 +119,12 @@ class SubModule {
             selector: 'cmp2',
             name: 'binding: options.name',
             address: 'binding: options.address'
+        },
+        {
+            element: 'comp',
+            selector: 'cmps',
+            name: 'binding: options.name',
+            address: 'binding: options.address'
         }
     ]
 })
@@ -115,6 +136,7 @@ class ObjectComponent {
 
     @RefChild() cmp2: Component2;
 
+    @RefChild('cmps') cmps: Components;
 }
 
 @DIModule({
@@ -135,10 +157,12 @@ class ComponentTestMd {
     imports: [
         ComponentsModule,
         ElementModule,
+        SubModule
+    ],
+    components: [
         Component1,
         Component2,
-        // Component3,
-        SubModule
+        Component3
     ],
     exports: [
         SubModule
@@ -382,9 +406,13 @@ export class CTest {
         // console.log('comp:', comp);
         expect(comp.instance.cmp1 instanceof Component1).toBeTruthy();
         expect(comp.instance.cmp2 instanceof Component2).toBeTruthy();
+        // console.log(comp.nodeRef.rootNodes[2]);
+        console.log(comp.instance.cmps);
+        expect(comp.instance.cmps instanceof Components).toBeTruthy();
         expect(comp.instance.cmp1.name).toEqual('testobject');
         expect(comp.instance.cmp2.name).toEqual('testobject');
         expect(comp.instance.cmp2.address).toEqual('chengdu');
+        expect(comp.instance.cmps.name).toEqual('testobject');
         comp.instance.cmp1.name = 'twoway-bind';
         expect(comp.instance.options.name).toEqual('twoway-bind');
         expect(comp.instance.cmp2.name).toEqual('twoway-bind');

@@ -2,11 +2,11 @@ import { isArray } from '@tsdi/ioc';
 import { AfterInit, Binding, Input } from '@tsdi/components';
 import { Task, Activities, ActivityTemplate } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
-import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
+import { AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { Plugin } from 'rollup';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 import { LibPackBuilderOption, LibPackBuilder } from './LibPackBuilder';
-import { RollupOption } from '../rollups';
+import { RollupOption, RollupTsOption } from '../rollups';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
 
@@ -57,7 +57,7 @@ const tsFileExp = /.ts$/;
                 // {
                 //     activity: Activities.if,
                 //     condition: ctx => {
-                //         let body = ctx.body;
+                //         let body = ctx.input;
                 //         if (!body.target) {
                 //             return false;
                 //         }
@@ -69,25 +69,25 @@ const tsFileExp = /.ts$/;
                 //     body: <TsBuildOption>{
                 //         activity: 'ts',
                 //         src: 'binding: src',
-                //         dist: ctx => ctx.scope.getTargetPath(ctx.body),
-                //         dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.body.dtsMain ? './' : null),
+                //         dist: ctx => ctx.scope.getTargetPath(ctx.input),
+                //         dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.input.dtsMain ? './' : null),
                 //         annotation: 'binding: annotation',
                 //         sourcemap: 'binding: sourcemap',
-                //         tsconfig: ctx => ctx.scope.getCompileOptions(ctx.body.target)
+                //         tsconfig: ctx => ctx.scope.getCompileOptions(ctx.input.target)
                 //     }
                 // },
                 {
                     activity: Activities.if,
                     condition: ctx => {
-                        let input = ctx.body.input || ctx.scope.mainFile;
+                        let input = ctx.input.input || ctx.component.mainFile;
                         if (input) {
                             return isArray(input) ? input.some(i => tsFileExp.test(i)) : tsFileExp.test(input)
                         }
                         return false
                     },
-                    body: {
+                    body: <RollupTsOption>{
                         activity: 'rts',
-                        input: (ctx: NodeActivityContext) => ctx.body.input || ctx.scope.mainFile,
+                        input: (ctx: NodeActivityContext) => ctx.input.input || ctx.component.mainFile,
                         sourcemap: 'binding: sourcemap',
                         beforeCompilePlugins: 'binding: beforeCompile',
                         afterCompilePlugins: 'binding: plugins',
@@ -95,45 +95,45 @@ const tsFileExp = /.ts$/;
                         options: 'binding: options',
                         globals: 'binding: globals',
                         annotation: 'binding: annotation',
-                        compileOptions: ctx => ctx.scope.getCompileOptions(ctx.body.target),
-                        // uglify: ctx => ctx.body.uglify,
+                        compileOptions: ctx => ctx.component.getCompileOptions(ctx.input.target),
+                        // uglify: ctx => ctx.input.uglify,
                         output: ctx => {
                             return {
-                                format: ctx.body.format || 'cjs',
-                                file: ctx.body.outputFile ? ctx.scope.toModulePath(ctx.body, ctx.body.outputFile) : undefined,
-                                dir: ctx.body.outputFile ? undefined : ctx.scope.toModulePath(ctx.body),
+                                format: ctx.input.format || 'cjs',
+                                file: ctx.input.outputFile ? ctx.component.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
+                                dir: ctx.input.outputFile ? undefined : ctx.component.toModulePath(ctx.input),
                             }
                         }
                     }
                 },
                 {
                     activity: Activities.elseif,
-                    condition: ctx => ctx.body.input,
+                    condition: ctx => ctx.input.input,
                     body: <RollupOption>{
                         activity: 'rollup',
-                        input: ctx => ctx.scope.toOutputPath(ctx.body.input),
+                        input: ctx => ctx.component.toOutputPath(ctx.input.input),
                         sourcemap: 'binding: sourcemap',
                         plugins: 'binding: plugins',
                         external: 'binding: external',
                         options: 'binding: options',
                         globals: 'binding: globals',
                         output: ctx => {
-                            let body = ctx.body;
+                            let body = ctx.input;
                             return {
                                 format: body.format || 'cjs',
-                                file: body.outputFile ? ctx.scope.toModulePath(body, body.outputFile) : undefined,
-                                dir: body.outputFile ? undefined : ctx.scope.toModulePath(body),
+                                file: body.outputFile ? ctx.component.toModulePath(body, body.outputFile) : undefined,
+                                dir: body.outputFile ? undefined : ctx.component.toModulePath(body),
                             }
                         }
                     }
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.body.uglify,
+                    condition: ctx => ctx.input.uglify,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: ctx => isArray(ctx.body.input) ? ctx.scope.toModulePath(ctx.body, '/**/*.js') : ctx.scope.toModulePath(ctx.body, ctx.body.outputFile),
-                        dist: ctx => ctx.scope.toModulePath(ctx.body),
+                        src: ctx => isArray(ctx.input.input) ? ctx.component.toModulePath(ctx.input, '/**/*.js') : ctx.component.toModulePath(ctx.input, ctx.input.outputFile),
+                        dist: ctx => ctx.component.toModulePath(ctx.input),
                         sourcemap: 'binding: zipMapsource',
                         pipes: [
                             ctx => uglify(),
@@ -144,20 +144,20 @@ const tsFileExp = /.ts$/;
 
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.body.moduleName || ctx.body.target,
+                    condition: ctx => ctx.input.moduleName || ctx.input.target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: ctx => ctx.scope.toOutputPath('package.json'),
-                        dist: ctx => ctx.scope.outDir,
+                        src: ctx => ctx.$parent.component.toOutputPath('package.json'),
+                        dist: ctx => ctx.component.outDir,
                         pipes: [
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
                                 json: (json, ctx) => {
-                                    let body = ctx.body;                                 // to replace module export.
+                                    let body = ctx.input;                                 // to replace module export.
                                     if (body.target) {
-                                        json[body.target] = ['.', ctx.scope.getTargetFolder(body), body.main || 'index.js'].join('/');
+                                        json[body.target] = ['.', ctx.$parent.component.getTargetFolder(body), body.main || 'index.js'].join('/');
                                     }
-                                    let outmain = ['.', ctx.scope.getModuleFolder(body), body.outputFile || 'index.js'].join('/');
+                                    let outmain = ['.', ctx.$parent.component.getModuleFolder(body), body.outputFile || 'index.js'].join('/');
                                     if (isArray(body.moduleName)) {
                                         body.moduleName.forEach(n => {
                                             json[n] = outmain;
@@ -166,7 +166,7 @@ const tsFileExp = /.ts$/;
                                         json[body.moduleName] = outmain;
                                     }
                                     if (body.dtsMain) {
-                                        json['typings'] = ['.', ctx.scope.getTargetFolder(body), body.dtsMain].join('/');
+                                        json['typings'] = ['.', ctx.$parent.component.getTargetFolder(body), body.dtsMain].join('/');
                                     }
                                     return json;
                                 }
