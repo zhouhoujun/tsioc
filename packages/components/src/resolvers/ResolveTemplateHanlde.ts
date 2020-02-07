@@ -6,12 +6,11 @@ import { IComponentContext } from '../ComponentContext';
 
 export const ResolveTemplateHanlde = async function (ctx: IComponentContext, next: () => Promise<void>): Promise<void> {
 
-    let annoation = ctx.annoation;
     let actInjector = ctx.reflects.getActionInjector();
     let compPdr = ctx.componentProvider;
     let pCtx = compPdr.createTemplateContext(ctx.injector, {
         parent: ctx,
-        template: annoation.template
+        template: ctx.annoation.template
     });
 
     pCtx.setValue(CTX_COMPONENT, ctx.value);

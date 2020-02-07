@@ -10,11 +10,11 @@ export const BindingOutputHandle = async function (ctx: IComponentContext, next:
     let refl = ctx.targetReflect;
     let propOutBindings = refl?.getBindings(Output.toString());
     if (propOutBindings) {
-        let template = ctx.template;
+        let bindings = ctx.template;
         await Promise.all(Array.from(propOutBindings.keys()).map(async n => {
             let binding = propOutBindings.get(n);
             let filed = binding.bindingName || binding.name;
-            let expression = template ? template[filed] : null;
+            let expression = bindings ? bindings[filed] : null;
             if (!isNullOrUndefined(expression)) {
                 let pctx = ParseContext.parse(ctx.injector, {
                     type: ctx.type,
@@ -24,6 +24,7 @@ export const BindingOutputHandle = async function (ctx: IComponentContext, next:
                 });
                 await BindingScopeHandle(pctx);
                 pctx.dataBinding.bind(ctx.value);
+                pctx.destroy();
             }
         }));
     }

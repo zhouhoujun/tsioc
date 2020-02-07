@@ -16,7 +16,7 @@ export class TemplateParseScope extends TemplatesHandle implements IActionSetup 
     async execute(ctx: ITemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         // after template parsed.
-        if (isNullOrUndefined(ctx.value) && next) {
+        if (next) {
             await next();
         }
 

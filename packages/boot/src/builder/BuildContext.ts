@@ -21,7 +21,7 @@ export class BuildContext<
     value: any;
 
     /**
-     * get template.
+     * current type attr data to binding.
      */
     get template(): any {
         return this.getValue(CTX_TEMPLATE);

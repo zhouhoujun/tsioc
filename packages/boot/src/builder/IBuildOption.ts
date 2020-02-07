@@ -13,9 +13,10 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
      * name of component.
      */
     name?: string;
-
+    /**
+     * current type attr data to binding.
+     */
     template?: any;
-
     /**
      * build as attr or not.
      */

@@ -1,8 +1,8 @@
-import { isString, Type, isArray, DecoratorProvider, Token } from '@tsdi/ioc';
+import { isString, Type, isArray, Token } from '@tsdi/ioc';
+import { CTX_TEMPLATE } from '@tsdi/boot';
 import { ComponentProvider } from '../../ComponentProvider';
 import { TemplateHandle } from '../../parses/TemplateHandle';
 import { TemplateContext } from '../../parses/TemplateContext';
-import { CTX_TEMPLATE } from '@tsdi/boot';
 
 /**
  * component selector handle.

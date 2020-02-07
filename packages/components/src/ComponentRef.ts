@@ -1,5 +1,5 @@
 import { Type, isFunction, Destoryable, IDestoryable, tokenId, Injectable, Inject } from '@tsdi/ioc';
-import { IAnnoationContext, CTX_TEMPLATE } from '@tsdi/boot';
+import { IAnnoationContext, CTX_TEMPLATE,  } from '@tsdi/boot';
 import { NodeSelector } from './NodeSelector';
 import { IComponentContext } from './ComponentContext';
 

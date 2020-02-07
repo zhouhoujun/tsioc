@@ -22,11 +22,7 @@ export interface IBuildContext<
     value?: any;
 
     /**
-     * template.
-     *
-     * @type {*}
-     * @memberof IBuildContext
+     * current type attr data to binding.
      */
     readonly template?: any;
-
 }

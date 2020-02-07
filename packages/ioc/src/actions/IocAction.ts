@@ -90,7 +90,7 @@ export interface IIocContext<
      * @param key token key
      */
     getValue<T>(key: SymbolType<T>): T;
-    setValue<T>(key: SymbolType<T>, value: T);
+    setValue<T>(key: SymbolType<T>, value: T): this;
     /**
      * set provider of this context.
      *

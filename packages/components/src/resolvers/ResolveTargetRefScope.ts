@@ -1,5 +1,5 @@
 import { IActionSetup } from '@tsdi/ioc';
-import { BuildHandles } from '@tsdi/boot';
+import { BuildHandles, CTX_TEMPLATE } from '@tsdi/boot';
 import { ResolveTemplateHanlde } from './ResolveTemplateHanlde';
 import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';

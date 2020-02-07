@@ -19,8 +19,8 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
         if (!ctx.value) {
             return next();
         }
-
-        if ((<IComponentReflect>ctx.targetReflect)?.component) {
+        let cmpRef = ctx.targetReflect as IComponentReflect;
+        if (cmpRef?.component) {
             if (!(ctx instanceof ComponentContext)) {
                 throw Error(`Component decorator '${ctx.decorator}' is not provide component builder`);
             } else {

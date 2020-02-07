@@ -8,7 +8,6 @@ import { DataBinding } from '../bindings/DataBinding';
 import { Input } from '../decorators/Input';
 import { Vaildate } from '../decorators/Vaildate';
 
-
 const inputDector = Input.toString();
 /**
  * binding property handle.
@@ -22,12 +21,12 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
     let refl = ctx.targetReflect;
     let propInBindings = refl?.getBindings(inputDector);
     if (propInBindings) {
-        let template = ctx.template;
+        let bindings = ctx.template;
         let actInjector = ctx.reflects.getActionInjector();
         await Promise.all(Array.from(propInBindings.keys()).map(async n => {
             let binding = propInBindings.get(n);
             let filed = binding.bindingName || binding.name;
-            let expression = template ? template[filed] : null;
+            let expression = bindings ? bindings[filed] : null;
             if (!isNullOrUndefined(expression)) {
                 if (binding.bindingType === BindingTypes.dynamic) {
                     ctx.value[binding.name] = expression;
@@ -38,8 +37,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
                         bindExpression: expression,
                         binding: binding
                     });
-                    await actInjector.getInstance(BindingScope).execute(pctx);
-                    if (!pctx.destroyed) {
+                    await actInjector.getInstance(BindingScope).execute(pctx, async () => {
                         if (pctx.dataBinding instanceof ParseBinding) {
                             if (pctx.dataBinding.resolveExression() === pctx.value || isBaseValue(pctx.value)) {
                                 pctx.dataBinding.bind(ctx.value);
@@ -51,7 +49,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
                         } else {
                             ctx.value[binding.name] = pctx.value;
                         }
-                    }
+                    });
                 }
             } else if (!isNullOrUndefined(binding.defaultValue)) {
                 ctx.value[binding.name] = binding.defaultValue;

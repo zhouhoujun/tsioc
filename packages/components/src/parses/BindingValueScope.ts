@@ -1,7 +1,5 @@
 import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil } from '@tsdi/ioc';
-import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser } from '@tsdi/boot';
-import { ParsersHandle } from './ParseHandle';
-import { IParseContext, CTX_DATABINDING } from './ParseContext';
+import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser, BuildHandles } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
 import { ComponentBuilderToken } from '../IComponentBuilder';
@@ -12,6 +10,7 @@ import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
+import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING } from './ParseContext';
 
 
 /**
@@ -21,7 +20,7 @@ import { IComponentReflect } from '../IComponentReflect';
  * @class BindingValueScope
  * @extends {ParsersHandle}
  */
-export class BindingValueScope extends ParsersHandle {
+export class BindingValueScope extends BuildHandles<IParseContext> {
     setup() {
         this.use(BindingScopeHandle)
             .use(TranslateExpressionHandle)
@@ -43,45 +42,48 @@ const eventBindPref = '(binding):'
  * @extends {ParseHandle}
  */
 export const BindingScopeHandle = async function (ctx: IParseContext, next?: () => Promise<void>): Promise<void> {
-    if (!ctx.dataBinding && ctx.bindExpression instanceof DataBinding) {
-        ctx.setValue(CTX_DATABINDING, ctx.bindExpression);
+    let expression = ctx.bindExpression;
+    if (!ctx.hasValue(CTX_BIND_DATABINDING) && expression instanceof DataBinding) {
+        ctx.setValue(CTX_BIND_DATABINDING, expression);
     }
-    let options = ctx.getOptions();
-    if (!ctx.dataBinding && isString(ctx.bindExpression)) {
+    let binding = ctx.binding;
+    if (!ctx.hasValue(CTX_BIND_DATABINDING) && isString(expression)) {
         let actInjector = ctx.reflects.getActionInjector();
         let regs = actInjector.getInstance(StartupDecoratorRegisterer)
             .getRegisterer(StartupScopes.BindExpression);
+        let compdect = ctx.componentDecorator;
         // translate binding expression via current decorator.
-        if (regs.has(ctx.componentDecorator)) {
-            await PromiseUtil.runInChain(regs.getFuncs(actInjector, ctx.componentDecorator), ctx);
+        if (regs.has(compdect)) {
+            await PromiseUtil.runInChain(regs.getFuncs(actInjector, compdect), ctx);
         } else {
-            let exp = ctx.bindExpression.trim();
+            let exp = expression.trim();
             let dataBinding: DataBinding;
-            if (ctx.binding.direction === BindingDirection.input) {
+            if (binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(bindPref, '').trim());
+                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(twobindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(two2bindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(two2bindPref, '').trim());
                 }
-            } else if (ctx.binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.component, ctx.binding, exp.replace(eventBindPref, '').trim());
+            } else if (binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
+                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(eventBindPref, '').trim());
             }
-            dataBinding && ctx.setValue(CTX_DATABINDING, dataBinding);
+            dataBinding && ctx.setValue(CTX_BIND_DATABINDING, dataBinding);
         }
     }
 
-    if (ctx.dataBinding instanceof ParseBinding) {
-        if (!ctx.dataBinding.source) {
-            ctx.dataBinding.source = ctx.component;
+    let dataBinding = ctx.dataBinding;
+    if (dataBinding instanceof ParseBinding) {
+        if (!dataBinding.source) {
+            dataBinding.source = ctx.component;
         }
-        options.bindExpression = ctx.dataBinding.resolveExression();
-    } else if (ctx.dataBinding instanceof DataBinding) {
-        if (!ctx.dataBinding.source) {
-            ctx.dataBinding.source = ctx.component;
+        ctx.setValue(CTX_BIND_EXPRESSION, dataBinding.resolveExression());
+    } else if (dataBinding instanceof DataBinding) {
+        if (!dataBinding.source) {
+            dataBinding.source = ctx.component;
         }
-        ctx.value = ctx.dataBinding.resolveExression();
+        ctx.value = dataBinding.resolveExression();
     }
 
     if (next && isNullOrUndefined(ctx.value)) {
@@ -91,11 +93,13 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
 
 
 export const TranslateExpressionHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.componentProvider.isTemplate(ctx.bindExpression)) {
+    let expression = ctx.bindExpression;
+    let binding = ctx.binding;
+    if (ctx.componentProvider.isTemplate(expression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
-            parent: ctx,
+            parent: ctx.getParent(),
             sub: true,
-            template: ctx.bindExpression,
+            template: expression,
             providers: ctx.providers
         });
         await ctx.reflects.getActionInjector()
@@ -103,10 +107,10 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
             .execute(tpCtx);
 
         if (!tpCtx.destroyed) {
-            if (ctx.reflects.isExtends(lang.getClass(tpCtx.value), ctx.binding.type)) {
+            if (ctx.reflects.isExtends(lang.getClass(tpCtx.value), binding.type)) {
                 ctx.value = tpCtx.value;
             } else {
-                ctx.getOptions().bindExpression = tpCtx.value;
+                ctx.setValue(CTX_BIND_EXPRESSION, tpCtx.value);
             }
         }
     }
@@ -123,37 +127,39 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
  * @extends {ParseHandle}
  */
 export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
-    if (!isNullOrUndefined(ctx.bindExpression)) {
+    let expression = ctx.bindExpression;
+    let binding = ctx.binding;
+    if (!isNullOrUndefined(expression)) {
         let injector = ctx.injector;
-        let pdr = ctx.binding.provider;
+        let pdr = binding.provider;
         let selector: ClassType;
         let reflects = ctx.reflects;
         let compdr = ctx.componentProvider;
         if (isString(pdr) && compdr && injector.hasRegister(compdr.toAttrSelectorToken(pdr))) {
             selector = injector.getTokenProvider(compdr.toAttrSelectorToken(pdr));
-        } else if (ctx.binding.type !== Array) {
-            if (isClassType(ctx.binding.provider)) {
-                if (reflects.get<IComponentReflect>(ctx.binding.provider).component) {
-                    selector = ctx.binding.provider;
+        } else if (binding.type !== Array) {
+            if (isClassType(binding.provider)) {
+                if (reflects.get<IComponentReflect>(binding.provider).component) {
+                    selector = binding.provider;
                 }
             }
-            if (!selector && isClassType(ctx.binding.type)) {
-                if (reflects.get<IComponentReflect>(ctx.binding.type).component) {
-                    selector = ctx.binding.type;
+            if (!selector && isClassType(binding.type)) {
+                if (reflects.get<IComponentReflect>(binding.type).component) {
+                    selector = binding.type;
                 }
             }
         }
 
         if (selector) {
-            let template = ctx.getExtenalTemplate();
-            template[ctx.binding.bindingName || ctx.binding.name] = ctx.bindExpression;
+            let bindings = ctx.getExtenalBindings();
+            bindings[binding.bindingName || binding.name] = expression;
             ctx.value = await injector.getInstance(ComponentBuilderToken).resolve({
                 type: selector,
                 attr: true,
                 parent: ctx,
-                template: template,
+                template: bindings,
                 providers: ctx.providers,
-                injector: ctx.injector
+                injector: injector
             });
         }
     }
@@ -165,17 +171,19 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
 
 
 export const AssignBindValueHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
-    if (!isNullOrUndefined(ctx.bindExpression)) {
-        let type = ctx.binding.type;
+    let expression = ctx.bindExpression;
+    let binding = ctx.binding;
+    if (!isNullOrUndefined(expression)) {
+        let type = binding.type;
         if (isBaseType(type)) {
-            ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, ctx.bindExpression);
+            ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, expression);
         } else if (isClassType(type)) {
-            let ttype = lang.getClass(ctx.bindExpression);
+            let ttype = lang.getClass(expression);
             if (ctx.reflects.isExtends(ttype, type)) {
-                ctx.value = ctx.bindExpression;
+                ctx.value = expression;
             }
         } else {
-            ctx.value = ctx.bindExpression;
+            ctx.value = expression;
         }
     }
 
@@ -185,7 +193,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
 };
 
 export const AssignDefaultValueHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
-    ctx.value = ctx.binding.defaultValue;
+    ctx.value = ctx.binding?.defaultValue;
     if (isNullOrUndefined(ctx.value)) {
         await next();
     }

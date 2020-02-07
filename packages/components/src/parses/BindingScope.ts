@@ -1,7 +1,7 @@
 import { isArray, isNullOrUndefined, IActionSetup } from '@tsdi/ioc';
-import { ParsersHandle } from './ParseHandle';
 import { BindingValueScope } from './BindingValueScope';
-import { IParseContext } from './ParseContext';
+import { BuildHandles } from '@tsdi/boot';
+import { IParseContext, CTX_BIND_BINDING, CTX_BIND_EXPRESSION } from './ParseContext';
 
 /**
  * binding scope.
@@ -10,19 +10,17 @@ import { IParseContext } from './ParseContext';
  * @class BindingScope
  * @extends {ParsersHandle}
  */
-export class BindingScope extends ParsersHandle implements IActionSetup {
+export class BindingScope extends BuildHandles<IParseContext> implements IActionSetup {
 
     async execute(ctx: IParseContext, next?: () => Promise<void>): Promise<void> {
-        if (ctx.binding) {
+        if (ctx.hasValue(CTX_BIND_BINDING)) {
             await super.execute(ctx);
         }
         if (next) {
             await next();
         }
         // after all clean.
-        if (isNullOrUndefined(ctx.value)) {
-            ctx.destroy();
-        }
+        ctx.destroy();
     }
 
     setup() {
@@ -30,6 +28,7 @@ export class BindingScope extends ParsersHandle implements IActionSetup {
             .use(BindingValueScope)
     }
 }
+
 
 /**
  * binding array handle.
@@ -39,13 +38,15 @@ export class BindingScope extends ParsersHandle implements IActionSetup {
  * @extends {ParseHandle}
  */
 export const BindingArrayHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.binding.type === Array && isArray(ctx.bindExpression)) {
+    let binding = ctx.getValue(CTX_BIND_BINDING);
+    let expression = ctx.getValue(CTX_BIND_EXPRESSION);
+    if (binding.type === Array && isArray(expression)) {
         let actInjector = ctx.reflects.getActionInjector();
-        ctx.value = await Promise.all(ctx.bindExpression.map(async tp => {
-            let subCtx =  ctx.clone(true).setOptions({
+        ctx.value = await Promise.all(expression.map(async tp => {
+            let subCtx = ctx.clone(true).setOptions({
                 type: ctx.type,
                 parent: ctx,
-                binding: ctx.binding,
+                binding: binding,
                 bindExpression: tp,
                 template: tp
             });
