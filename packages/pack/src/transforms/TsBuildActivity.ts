@@ -29,14 +29,14 @@ export interface TsBuildOption extends AssetActivityOption {
 @Task({
     selector: 'ts',
     template: [
-        {
-            activity: 'test',
-            src: 'binding: test'
-        },
-        {
-            activity: 'clean',
-            clean: 'binding: dist'
-        },
+        // {
+        //     activity: 'test',
+        //     src: 'binding: test'
+        // },
+        // {
+        //     activity: 'clean',
+        //     clean: 'binding: dist'
+        // },
         {
             activity: 'src',
             src: 'binding: src',
@@ -58,6 +58,7 @@ export interface TsBuildOption extends AssetActivityOption {
             activity: Activities.if,
             condition: ctx => ctx.scope.sourcemap,
             body: {
+                name: 'sourcemap-init',
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, activity) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
@@ -110,6 +111,7 @@ export interface TsBuildOption extends AssetActivityOption {
                     activity: Activities.if,
                     condition: ctx => ctx.scope.sourcemap,
                     body: {
+                        name: 'sourcemap-write',
                         activity: Activities.execute,
                         action: (ctx: NodeActivityContext) => {
                             let framework = ctx.scope.framework || require('gulp-sourcemaps');
