@@ -33,7 +33,6 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
         return this.getValue(CTX_COMPONENT_REF) ?? this.getValue(CTX_TEMPLATE_REF) ?? this.getValue(CTX_ELEMENT_REF) ?? this.value;
     }
 
-    private _comp: any;
     /**
      * component instance, template scope.
      *
@@ -42,10 +41,11 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
      * @memberof ComponentContext
      */
     get component(): any {
-        if (!this._comp) {
-            this._comp = this.getContextValue(CTX_COMPONENT)
+        if (!this.hasValue(CTX_COMPONENT)) {
+            let comp = this.getContextValue(CTX_COMPONENT);
+            comp && this.setValue(CTX_COMPONENT, comp);
         }
-        return this._comp;
+        return this.getValue(CTX_COMPONENT);
     }
 
     get $parent(): IComponentContext {

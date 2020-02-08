@@ -97,7 +97,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
     let binding = ctx.binding;
     if (ctx.componentProvider.isTemplate(expression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
-            parent: ctx.getParent(),
+            parent: ctx,
             sub: true,
             template: expression,
             providers: ctx.providers
@@ -112,6 +112,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
             } else {
                 ctx.setValue(CTX_BIND_EXPRESSION, tpCtx.value);
             }
+            tpCtx.destroy();
         }
     }
     if (isNullOrUndefined(ctx.value)) {
