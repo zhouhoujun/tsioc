@@ -1,8 +1,6 @@
 import { PromiseUtil, lang } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { IComponentReflect } from '../IComponentReflect';
-import { ComponentProvider } from '../ComponentProvider';
-import { CTX_COMPONENT_REF } from '../ComponentRef';
+import { CTX_COMPONENT_REF, REFCHILD_SELECTOR } from '../ComponentRef';
 import { RefChild } from '../decorators/RefChild';
 import { IComponentContext } from '../ComponentContext';
 
@@ -16,10 +14,14 @@ const RefChildStr = RefChild.toString();
  */
 export const BindingTemplateRefHandle = async function (ctx: IComponentContext, next?: () => Promise<void>): Promise<void> {
     let refl = ctx.targetReflect;
+    let cmpdr = ctx.componentProvider;
+    let refkey = ctx.template?.[cmpdr.getRefSelectKey()];
+    if (refkey) {
+        ctx.setValue(REFCHILD_SELECTOR, refkey);
+    }
     let propRefChildBindings = refl?.getBindings(RefChildStr);
     if (propRefChildBindings) {
         // todo ref child view
-        let cmpdr = ctx.componentProvider;
         let cref = ctx.getValue(CTX_COMPONENT_REF);
         propRefChildBindings.forEach(b => {
             let result = cmpdr.select(cref, b.bindingName || b.name);

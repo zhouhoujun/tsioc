@@ -406,7 +406,6 @@ export class CTest {
         // console.log('comp:', comp);
         expect(comp.instance.cmp1 instanceof Component1).toBeTruthy();
         expect(comp.instance.cmp2 instanceof Component2).toBeTruthy();
-        // console.log(comp.nodeRef.rootNodes[2]);
         console.log(comp.instance.cmps);
         expect(comp.instance.cmps instanceof Components).toBeTruthy();
         expect(comp.instance.cmp1.name).toEqual('testobject');

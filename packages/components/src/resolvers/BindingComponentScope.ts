@@ -25,6 +25,7 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
                 throw Error(`Component decorator '${ctx.decorator}' is not provide component builder`);
             } else {
                 ctx.setValue(CTX_COMPONENT_DECTOR, ctx.decorator);
+                ctx.getParent()?.addChild(ctx);
                 await super.execute(ctx);
             }
         } else if (!ctx.getOptions().attr) {
@@ -43,6 +44,7 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
                 });
             }
             if (ctx.hasValue(CTX_ELEMENT_REF)) {
+                ctx.getParent()?.addChild(ctx);
                 ctx.value = ctx.getValue(CTX_ELEMENT_REF);
             } else {
                 ctx.destroy();
