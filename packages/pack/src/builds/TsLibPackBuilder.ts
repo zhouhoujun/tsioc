@@ -79,7 +79,7 @@ const tsFileExp = /.ts$/;
                 {
                     activity: Activities.if,
                     condition: ctx => {
-                        let input = ctx.input.input || ctx.component.mainFile;
+                        let input = ctx.input.input || ctx.scope.mainFile;
                         if (input) {
                             return isArray(input) ? input.some(i => tsFileExp.test(i)) : tsFileExp.test(input)
                         }
@@ -87,7 +87,7 @@ const tsFileExp = /.ts$/;
                     },
                     body: <RollupTsOption>{
                         activity: 'rts',
-                        input: (ctx: NodeActivityContext) => ctx.input.input || ctx.component.mainFile,
+                        input: (ctx: NodeActivityContext) => ctx.input.input || ctx.scope.mainFile,
                         sourcemap: 'binding: sourcemap',
                         beforeCompilePlugins: 'binding: beforeCompile',
                         afterCompilePlugins: 'binding: plugins',
@@ -95,13 +95,13 @@ const tsFileExp = /.ts$/;
                         options: 'binding: options',
                         globals: 'binding: globals',
                         annotation: 'binding: annotation',
-                        compileOptions: ctx => ctx.component.getCompileOptions(ctx.input.target),
+                        compileOptions: ctx => ctx.scope.getCompileOptions(ctx.input.target),
                         // uglify: ctx => ctx.input.uglify,
                         output: ctx => {
                             return {
                                 format: ctx.input.format || 'cjs',
-                                file: ctx.input.outputFile ? ctx.component.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
-                                dir: ctx.input.outputFile ? undefined : ctx.component.toModulePath(ctx.input),
+                                file: ctx.input.outputFile ? ctx.scope.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
+                                dir: ctx.input.outputFile ? undefined : ctx.scope.toModulePath(ctx.input),
                             }
                         }
                     }
@@ -111,7 +111,7 @@ const tsFileExp = /.ts$/;
                     condition: ctx => ctx.input.input,
                     body: <RollupOption>{
                         activity: 'rollup',
-                        input: ctx => ctx.component.toOutputPath(ctx.input.input),
+                        input: ctx => ctx.scope.toOutputPath(ctx.input.input),
                         sourcemap: 'binding: sourcemap',
                         plugins: 'binding: plugins',
                         external: 'binding: external',
@@ -121,8 +121,8 @@ const tsFileExp = /.ts$/;
                             let body = ctx.input;
                             return {
                                 format: body.format || 'cjs',
-                                file: body.outputFile ? ctx.component.toModulePath(body, body.outputFile) : undefined,
-                                dir: body.outputFile ? undefined : ctx.component.toModulePath(body),
+                                file: body.outputFile ? ctx.scope.toModulePath(body, body.outputFile) : undefined,
+                                dir: body.outputFile ? undefined : ctx.scope.toModulePath(body),
                             }
                         }
                     }
@@ -132,8 +132,8 @@ const tsFileExp = /.ts$/;
                     condition: ctx => ctx.input.uglify,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: ctx => isArray(ctx.input.input) ? ctx.component.toModulePath(ctx.input, '/**/*.js') : ctx.component.toModulePath(ctx.input, ctx.input.outputFile),
-                        dist: ctx => ctx.component.toModulePath(ctx.input),
+                        src: ctx => isArray(ctx.input.input) ? ctx.scope.toModulePath(ctx.input, '/**/*.js') : ctx.scope.toModulePath(ctx.input, ctx.input.outputFile),
+                        dist: ctx => ctx.scope.toModulePath(ctx.input),
                         sourcemap: 'binding: zipMapsource',
                         pipes: [
                             ctx => uglify(),
@@ -148,7 +148,7 @@ const tsFileExp = /.ts$/;
                     body: <AssetActivityOption>{
                         activity: 'asset',
                         src: ctx => ctx.$parent.component.toOutputPath('package.json'),
-                        dist: ctx => ctx.component.outDir,
+                        dist: ctx => ctx.scope.outDir,
                         pipes: [
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',

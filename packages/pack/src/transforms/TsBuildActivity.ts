@@ -49,18 +49,18 @@ export interface TsBuildOption extends AssetActivityOption {
         {
             activity: Activities.execute,
             action: ctx => {
-                if (ctx.component.beforePipes) {
-                    return ctx.component.beforePipes.run(ctx);
+                if (ctx.scope.beforePipes) {
+                    return ctx.scope.beforePipes.run(ctx);
                 }
             }
         },
         {
             activity: Activities.if,
-            condition: ctx => ctx.component.sourcemap,
+            condition: ctx => ctx.scope.sourcemap,
             body: {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, activity) => {
-                    let framework = ctx.component.framework || require('gulp-sourcemaps');
+                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
                     return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.init())
                 }
             }
@@ -68,10 +68,10 @@ export interface TsBuildOption extends AssetActivityOption {
         {
             activity: Activities.execute,
             action: async (ctx: NodeActivityContext, activity) => {
-                if (!ctx.component.tsconfig) {
+                if (!ctx.scope.tsconfig) {
                     return;
                 }
-                let tsconfig = await ctx.resolveExpression(ctx.component.tsconfig);
+                let tsconfig = await ctx.resolveExpression(ctx.scope.tsconfig);
                 let tsCompile;
                 if (isString(tsconfig)) {
                     let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig));
@@ -90,14 +90,14 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
-            condition: ctx => ctx.component.js,
+            condition: ctx => ctx.scope.js,
             input: 'ctx.input | tsjs',
             body: [
                 {
                     activity: Activities.execute,
                     action: ctx => {
-                        if (ctx.component.streamPipes) {
-                            return ctx.component.streamPipes.run(ctx);
+                        if (ctx.scope.streamPipes) {
+                            return ctx.scope.streamPipes.run(ctx);
                         }
                     }
                 },
@@ -108,12 +108,12 @@ export interface TsBuildOption extends AssetActivityOption {
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.component.sourcemap,
+                    condition: ctx => ctx.scope.sourcemap,
                     body: {
                         activity: Activities.execute,
                         action: (ctx: NodeActivityContext) => {
-                            let framework = ctx.component.framework || require('gulp-sourcemaps');
-                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.component.sourcemap) ? ctx.component.sourcemap : './sourcemaps'))
+                            let framework = ctx.scope.framework || require('gulp-sourcemaps');
+                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
                         }
                     }
                 },

@@ -61,7 +61,7 @@ export interface AssetActivityOption extends TemplateOption {
     template: [
         {
             activity: Activities.if,
-            condition: ctx => ctx.component.autoClean,
+            condition: ctx => ctx.scope.autoClean,
             body: {
                 activity: 'clean',
                 clean: 'binding: dist'
@@ -74,18 +74,18 @@ export interface AssetActivityOption extends TemplateOption {
         {
             activity: Activities.execute,
             action: ctx => {
-                if (ctx.component.beforePipes) {
-                    return ctx.component.beforePipes.run(ctx);
+                if (ctx.scope.beforePipes) {
+                    return ctx.scope.beforePipes.run(ctx);
                 }
             }
         },
         {
             activity: Activities.if,
-            condition: ctx => ctx.component.sourcemap,
+            condition: ctx => ctx.scope.sourcemap,
             body: {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext) => {
-                    let framework = ctx.component.framework || require('gulp-sourcemaps');
+                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
                     return ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, framework.init())
                 }
             }
@@ -93,19 +93,19 @@ export interface AssetActivityOption extends TemplateOption {
         {
             activity: Activities.execute,
             action: ctx => {
-                if (ctx.component.streamPipes) {
-                    return ctx.component.streamPipes.run(ctx);
+                if (ctx.scope.streamPipes) {
+                    return ctx.scope.streamPipes.run(ctx);
                 }
             }
         },
         {
             activity: Activities.if,
-            condition: ctx => ctx.component.sourcemap,
+            condition: ctx => ctx.scope.sourcemap,
             body: {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext) => {
-                    let framework = ctx.component.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.component.sourcemap) ? ctx.component.sourcemap : './sourcemaps'))
+                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
                 }
             }
         },

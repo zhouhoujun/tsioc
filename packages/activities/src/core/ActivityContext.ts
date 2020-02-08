@@ -1,7 +1,7 @@
 import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuildContext, IAnnoationContext } from '@tsdi/boot';
-import { ComponentContext, ITemplateContext } from '@tsdi/components';
+import { ComponentContext, ITemplateContext, IComponentContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
@@ -30,12 +30,16 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return this.getContextValue(ACTIVITY_OUTPUT);
     }
 
-    get runScope(): IAnnoationContext {
+    get scope() {
+        return this.runScope?.component;
+    }
+
+    get runScope(): IComponentContext {
         if (!this.hasValue(CTX_RUN_SCOPE)) {
             let runsp = this.getContextValue(CTX_RUN_SCOPE);
             runsp && this.setValue(CTX_RUN_SCOPE, runsp);
         }
-        return this.getValue(CTX_RUN_SCOPE);
+        return this.getValue(CTX_RUN_SCOPE) as IComponentContext;
     }
 
     private _workflow: WorkflowContext;

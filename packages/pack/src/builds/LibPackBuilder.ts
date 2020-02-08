@@ -233,11 +233,11 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: <TsBuildOption>{
                         activity: 'ts',
                         src: 'binding: src',
-                        dist: ctx =>  ctx.component.getTargetPath(ctx.input),
-                        dts: ctx => ctx.component.dts ? ctx.component.dts : (ctx.input.dtsMain ? './' : null),
+                        dist: ctx =>  ctx.scope.getTargetPath(ctx.input),
+                        dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.input.dtsMain ? './' : null),
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
-                        tsconfig: ctx => ctx.component.getCompileOptions(ctx.input.target)
+                        tsconfig: ctx => ctx.scope.getCompileOptions(ctx.input.target)
                     }
                 },
                 {
@@ -246,7 +246,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
-                            input: ctx => ctx.component.toOutputPath(ctx.input.input),
+                            input: ctx => ctx.scope.toOutputPath(ctx.input.input),
                             sourcemap: 'binding: sourcemap',
                             plugins: 'binding: plugins',
                             external: 'binding: external',
@@ -255,8 +255,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                             output: ctx => {
                                 return {
                                     format: ctx.input.format || 'cjs',
-                                    file: ctx.input.outputFile ? ctx.component.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
-                                    dir: ctx.input.outputFile ? undefined : ctx.component.toModulePath(ctx.input),
+                                    file: ctx.input.outputFile ? ctx.scope.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
+                                    dir: ctx.input.outputFile ? undefined : ctx.scope.toModulePath(ctx.input),
                                 }
                             }
                         },
@@ -265,8 +265,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                             condition: ctx => ctx.input.uglify,
                             body: <AssetActivityOption>{
                                 activity: 'asset',
-                                src: ctx => isArray(ctx.input.input) ? ctx.component.toModulePath(ctx.input, '/**/*.js') : ctx.component.toModulePath(ctx.input, ctx.input.outputFile),
-                                dist: ctx => ctx.component.toModulePath(ctx.input),
+                                src: ctx => isArray(ctx.input.input) ? ctx.scope.toModulePath(ctx.input, '/**/*.js') : ctx.scope.toModulePath(ctx.input, ctx.input.outputFile),
+                                dist: ctx => ctx.scope.toModulePath(ctx.input),
                                 sourcemap: 'binding: zipMapsource',
                                 pipes: [
                                     ctx => uglify(),
@@ -281,17 +281,17 @@ export interface LibPackBuilderOption extends TemplateOption {
                     condition: ctx => ctx.input.moduleName || ctx.input.target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: ctx => ctx.component.toOutputPath('package.json'),
-                        dist: ctx => ctx.component.outDir,
+                        src: ctx => ctx.scope.toOutputPath('package.json'),
+                        dist: ctx => ctx.scope.outDir,
                         pipes: [
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
                                 json: (json, ctx) => {
                                     // to replace module export.
                                     if (ctx.input.target) {
-                                        json[ctx.input.target] = ['.', ctx.component.getTargetFolder(ctx.input), ctx.input.main || 'index.js'].join('/');
+                                        json[ctx.input.target] = ['.', ctx.scope.getTargetFolder(ctx.input), ctx.input.main || 'index.js'].join('/');
                                     }
-                                    let outmain = ['.', ctx.component.getModuleFolder(ctx.input), ctx.input.outputFile || 'index.js'].join('/');
+                                    let outmain = ['.', ctx.scope.getModuleFolder(ctx.input), ctx.input.outputFile || 'index.js'].join('/');
                                     if (isArray(ctx.input.moduleName)) {
                                         ctx.input.moduleName.forEach(n => {
                                             json[n] = outmain;
@@ -300,7 +300,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                                         json[ctx.input.moduleName] = outmain;
                                     }
                                     if (ctx.input.dtsMain) {
-                                        json['typings'] = ['.', ctx.component.getTargetFolder(ctx.input), ctx.input.dtsMain].join('/');
+                                        json['typings'] = ['.', ctx.scope.getTargetFolder(ctx.input), ctx.input.dtsMain].join('/');
                                     }
                                     return json;
                                 }
