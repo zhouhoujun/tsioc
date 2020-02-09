@@ -66,7 +66,7 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @memberof ComponentContext
      */
     get scope() {
-        return this.getValue(CTX_TEMPLATE_SCOPE);
+        return this.getValue(CTX_TEMPLATE_SCOPE) || this.component;
     }
 
     get $parent(): IComponentContext {

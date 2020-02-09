@@ -60,7 +60,7 @@ export interface TsBuildOption extends AssetActivityOption {
             body: {
                 name: 'sourcemap-init',
                 activity: Activities.execute,
-                action: (ctx: NodeActivityContext, activity) => {
+                action: (ctx: NodeActivityContext) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
                     return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.init())
                 }
@@ -68,7 +68,7 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.execute,
-            action: async (ctx: NodeActivityContext, activity) => {
+            action: async (ctx: NodeActivityContext) => {
                 if (!ctx.scope.tsconfig) {
                     return;
                 }

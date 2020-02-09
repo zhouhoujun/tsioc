@@ -30,10 +30,6 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return this.getContextValue(ACTIVITY_OUTPUT);
     }
 
-    get scope() {
-        return this.runScope?.component;
-    }
-
     get runScope(): IComponentContext {
         if (!this.hasValue(CTX_RUN_SCOPE)) {
             let runsp = this.getContextValue(CTX_RUN_SCOPE);
