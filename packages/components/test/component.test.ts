@@ -30,19 +30,19 @@ class Component2 extends Component1 {
         {
             element: 'selector1',
             selector: 'comp1',
-            name: 'binding=: name'
+            name: 'binding=: cname'
         },
         {
             element: 'selector2',
             selector: 'cmp2',
-            name: 'binding: name',
+            name: 'binding: cname',
             address: 'binding: address'
         }
     ]
 })
 class Components {
 
-    @Input() name: string;
+    @Input('name') cname: string;
 
     @NonSerialize()
     @Input()
@@ -347,7 +347,7 @@ export class CTest {
         let comp = compRef.rootNodes[0] as ComponentRef<Components>;
         // console.log('comp:', comp);
         expect(comp.instance instanceof Components).toBeTruthy();
-        expect(comp.instance.name).toEqual('test111');
+        expect(comp.instance.cname).toEqual('test111');
         expect(comp.instance.address).toEqual('cd111');
 
         expect(comp.instance.cmp1.nativeElement instanceof Component1).toBeTruthy();
@@ -373,7 +373,7 @@ export class CTest {
 
         let comp = compRef.rootNodes[0] as ComponentRef<Components>;
         expect(comp.instance instanceof Components).toBeTruthy();
-        expect(comp.instance.name).toEqual('test111');
+        expect(comp.instance.cname).toEqual('test111');
         expect(comp.instance.address).toEqual('cd111');
         // console.log('comp:', comp);
         expect(comp.instance.cmp1.nativeElement instanceof Component1).toBeTruthy();
@@ -382,10 +382,10 @@ export class CTest {
         expect(comp.instance.cmp2.name).toEqual('test111');
         expect(comp.instance.cmp2.address).toEqual('cd111');
         comp.instance.cmp1.nativeElement.name = 'twoway-bind';
-        expect(comp.instance.name).toEqual('twoway-bind');
+        expect(comp.instance.cname).toEqual('twoway-bind');
         expect(comp.instance.cmp2.name).toEqual('twoway-bind');
         comp.instance.cmp2.name = 'oneway-bind';
-        expect(comp.instance.name).toEqual('twoway-bind');
+        expect(comp.instance.cname).toEqual('twoway-bind');
         expect(comp.instance.cmp2.name).toEqual('oneway-bind');
     }
 
@@ -411,7 +411,7 @@ export class CTest {
         expect(comp.instance.cmp1.name).toEqual('testobject');
         expect(comp.instance.cmp2.name).toEqual('testobject');
         expect(comp.instance.cmp2.address).toEqual('chengdu');
-        expect(comp.instance.cmps.name).toEqual('testobject');
+        expect(comp.instance.cmps.cname).toEqual('testobject');
         comp.instance.cmp1.name = 'twoway-bind';
         expect(comp.instance.options.name).toEqual('twoway-bind');
         expect(comp.instance.cmp2.name).toEqual('twoway-bind');

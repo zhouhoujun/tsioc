@@ -59,17 +59,8 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
                         return;
                     }
                     let val = this.serialize(component[key]);
-                    if (isNullOrUndefined(val)) {
-                        if (v) {
-                            try {
-                                json[key] = JSON.parse(JSON.stringify(v));
-                            } catch (er) {
-                                console.log(er);
-                            }
-                        }
-                    } else {
-                        json[key] = val;
-                    }
+                    let field = v.bindingName || key;
+                    json[field] = val;
                 });
                 return JSON.parse(JSON.stringify(json));
             } else {
