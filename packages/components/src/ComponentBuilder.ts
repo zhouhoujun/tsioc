@@ -1,6 +1,6 @@
 import {
-    Singleton, ProviderTypes, lang, isNullOrUndefined, isString,
-    isBoolean, isDate, isObject, isArray, isNumber
+    Singleton, ProviderTypes, lang, isString,
+    isBoolean, isDate, isObject, isArray, isNumber, isUndefined
 } from '@tsdi/ioc';
 import { BuilderService, BuildContext } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken } from './IComponentBuilder';
@@ -59,8 +59,9 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
                         return;
                     }
                     let val = this.serialize(component[key]);
-                    let field = v.bindingName || key;
-                    json[field] = val;
+                    if (!isUndefined(val)) {
+                        json[v.bindingName || key] = val;
+                    }
                 });
                 return JSON.parse(JSON.stringify(json));
             } else {
