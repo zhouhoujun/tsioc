@@ -47,6 +47,7 @@ export const ElementsTemplateHandle = async function (ctx: ITemplateContext, nex
         ctx.value = await Promise.all(template.map(async tp => {
             let subCtx = ctx.clone(true).setOptions({
                 parent: ctx,
+                scope: ctx.scope,
                 template: tp
             });
             await actInjector.getInstance(TemplateParseScope).execute(subCtx);

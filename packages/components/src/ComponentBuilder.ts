@@ -3,12 +3,12 @@ import {
     isBoolean, isDate, isObject, isArray, isNumber
 } from '@tsdi/ioc';
 import { BuilderService, BuildContext } from '@tsdi/boot';
-import { IComponentBuilder, ComponentBuilderToken, ITemplateOption } from './IComponentBuilder';
+import { IComponentBuilder, ComponentBuilderToken } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider } from './ComponentProvider';
 import { CTX_COMPONENT_REF, CTX_ELEMENT_REF, CTX_TEMPLATE_REF, ITemplateRef } from './ComponentRef';
 import { NonSerialize } from './decorators/NonSerialize';
-import { TemplateContext } from './parses/TemplateContext';
+import { TemplateContext, ITemplateOption } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
 import { Input } from './decorators/Input';
 

@@ -8,6 +8,7 @@ export const CTX_COMPONENT = tokenId<any>('CTX_COMPONENT');
 export const CTX_COMPONENT_PARENT = tokenId<IComponentContext>('CTX_COMPONENT_PARENT');
 export const CTX_ELEMENT_REF = tokenId<any | any[]>('CTX_ELEMENT_REF');
 export const CTX_TEMPLATE_REF = tokenId<any | any[]>('CTX_TEMPLATE_REF');
+export const CTX_TEMPLATE_SCOPE = tokenId<any>('CTX_TEMPLATE_SCOPE');
 export const CTX_COMPONENT_REF = tokenId<ComponentRef>('CTX_COMPONENT_REF');
 
 export const COMPONENT_REFS = tokenId<WeakMap<any, IComponentRef<any, any>>>('COMPONENT_REFS');

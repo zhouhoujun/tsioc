@@ -1,6 +1,7 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
 import { ITemplateContext, TemplateOptionToken } from './TemplateContext';
 import { ComponentBuilderToken } from '../IComponentBuilder';
+import { IComponentOption } from '../ComponentContext';
 
 
 /**
@@ -15,10 +16,11 @@ export const ParseSelectorHandle = async function (ctx: ITemplateContext, next: 
         let selector = ctx.selector;
         let template = ctx.template;
         ctx.value = await ctx.getContainer().getInstance(ComponentBuilderToken)
-            .resolve({
+            .resolve(<IComponentOption>{
                 type: selector,
                 parent: ctx,
                 sub: true,
+                scope: ctx.scope,
                 template: template,
                 injector: ctx.injector,
                 providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions() })

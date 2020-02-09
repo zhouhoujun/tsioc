@@ -1,9 +1,20 @@
 import { Injectable, Type, createRaiseContext, isArray, lang, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { ITemplateOption } from '../IComponentBuilder';
-import { ComponentContext, IComponentContext } from '../ComponentContext';
+import { ComponentContext, IComponentContext, IComponentOption } from '../ComponentContext';
 import { CTX_TEMPLATE_REF, ContextNode, CTX_COMPONENT_DECTOR, ITemplateRef } from '../ComponentRef';
 
+
+
+/**
+ * template option.
+ *
+ * @export
+ * @interface ITemplateOption
+ * @extends {IBuildOption}
+ */
+export interface ITemplateOption extends IComponentOption {
+    selector?: Type;
+}
 
 /**
  * Template option token.

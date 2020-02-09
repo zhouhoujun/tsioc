@@ -1,18 +1,9 @@
-import { ProviderTypes, Type, tokenId } from '@tsdi/ioc';
-import { IBuilderService, IBuildOption } from '@tsdi/boot';
+import { ProviderTypes, tokenId } from '@tsdi/ioc';
+import { IBuilderService } from '@tsdi/boot';
 import { ITemplateRef } from './ComponentRef';
+import { ITemplateOption } from './parses/TemplateContext';
 
 
-/**
- * template option.
- *
- * @export
- * @interface ITemplateOption
- * @extends {IBuildOption}
- */
-export interface ITemplateOption extends IBuildOption {
-    selector?: Type;
-}
 
 /**
  * component build token.

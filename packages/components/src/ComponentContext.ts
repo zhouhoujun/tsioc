@@ -1,26 +1,37 @@
 import { DecoratorProvider } from '@tsdi/ioc';
 import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext } from '@tsdi/boot';
-import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_COMPONENT_PARENT } from './ComponentRef';
+import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_COMPONENT_PARENT, CTX_TEMPLATE_SCOPE } from './ComponentRef';
 import { IComponentMetadata } from './decorators/IComponentMetadata';
 import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider, CTX_COMPONENT_PROVIDER } from './ComponentProvider';
 
-export interface IComponentContext<T extends IBuildOption = IBuildOption,
+export interface IComponentOption extends IBuildOption {
+    /**
+     * template scope.
+     */
+    scope?: any;
+}
+
+export interface IComponentContext<T extends IComponentOption = IComponentOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
     TRefl extends IComponentReflect = IComponentReflect> extends IBuildContext<T, TMeta, TRefl> {
     readonly name: string;
     getResultRef(): IComponentRef | ITemplateRef;
     /**
-     * component instance, template scope.
+     * component instance.
      */
     readonly component: any;
+    /**
+     * template scope.
+     */
+    readonly scope: any;
     readonly $parent: IComponentContext;
     readonly componentProvider: ComponentProvider;
     readonly componentDecorator: string;
 
 }
 
-export class ComponentContext<T extends IBuildOption = IBuildOption,
+export class ComponentContext<T extends IComponentOption = IComponentOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
     TRefl extends IComponentReflect = IComponentReflect>
     extends BuildContext<T, TMeta, TRefl> implements IComponentContext<T, TMeta, TRefl> {
@@ -34,7 +45,7 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
     }
 
     /**
-     * component instance, template scope.
+     * component instance.
      *
      * @readonly
      * @type {*}
@@ -46,6 +57,16 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
             comp && this.setValue(CTX_COMPONENT, comp);
         }
         return this.getValue(CTX_COMPONENT);
+    }
+
+    /**
+     * template scope.
+     *
+     * @readonly
+     * @memberof ComponentContext
+     */
+    get scope() {
+        return this.getValue(CTX_TEMPLATE_SCOPE);
     }
 
     get $parent(): IComponentContext {
@@ -79,6 +100,17 @@ export class ComponentContext<T extends IBuildOption = IBuildOption,
             dector && this.setValue(CTX_COMPONENT_DECTOR, dector);
         }
         return this.getValue(CTX_COMPONENT_DECTOR);
+    }
+
+
+    setOptions(options: T) {
+        if (!options) {
+            return this;
+        }
+        if (options.scope) {
+            this.setValue(CTX_TEMPLATE_SCOPE, options.scope)
+        }
+        return super.setOptions(options);
     }
 }
 

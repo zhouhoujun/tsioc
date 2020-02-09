@@ -13,8 +13,8 @@ import {
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
-import { TemplateContext, ITemplateContext } from './parses/TemplateContext';
-import { ITemplateOption } from './IComponentBuilder';
+import { TemplateContext, ITemplateContext, ITemplateOption } from './parses/TemplateContext';
+
 
 
 
