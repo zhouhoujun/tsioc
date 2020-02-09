@@ -42,10 +42,11 @@ export const BindingArrayHandle = async function (ctx: IParseContext, next: () =
     let expression = ctx.getValue(CTX_BIND_EXPRESSION);
     if (binding.type === Array && isArray(expression)) {
         let actInjector = ctx.reflects.getActionInjector();
+        let parent = ctx.getParent();
         ctx.value = await Promise.all(expression.map(async tp => {
             let subCtx = ctx.clone(true).setOptions({
                 type: ctx.type,
-                parent: ctx,
+                parent: parent,
                 binding: binding,
                 bindExpression: tp,
                 template: tp

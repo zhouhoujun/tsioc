@@ -412,6 +412,10 @@ export class CTest {
         expect(comp.instance.cmp2.name).toEqual('testobject');
         expect(comp.instance.cmp2.address).toEqual('chengdu');
         expect(comp.instance.cmps.cname).toEqual('testobject');
+        expect(comp.instance.cmps.cmp1.nativeElement.name).toEqual('testobject');
+        expect(comp.instance.cmps.cmp2.address).toEqual('chengdu');
+        expect(comp.instance.cmps.cmp2.name).toEqual('testobject');
+        expect(comp.instance.cmps.cmp2.address).toEqual('chengdu');
         comp.instance.cmp1.name = 'twoway-bind';
         expect(comp.instance.options.name).toEqual('twoway-bind');
         expect(comp.instance.cmp2.name).toEqual('twoway-bind');

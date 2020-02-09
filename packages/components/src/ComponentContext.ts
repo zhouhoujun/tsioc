@@ -25,7 +25,6 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
      * template scope.
      */
     readonly scope: any;
-    readonly $parent: IComponentContext;
     readonly componentProvider: ComponentProvider;
     readonly componentDecorator: string;
 
@@ -69,10 +68,6 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
         return this.getValue(CTX_TEMPLATE_SCOPE) || this.component;
     }
 
-    get $parent(): IComponentContext {
-        return this.getContextValue(CTX_COMPONENT_PARENT);
-    }
-
     getScopes() {
         let scopes = [];
         let ctx = this as IComponentContext;
@@ -81,7 +76,7 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
             if (comp && scopes.indexOf(comp) < 0) {
                 scopes.push(comp);
             }
-            ctx = ctx.$parent;
+            ctx = ctx.getParent() as IComponentContext;
         }
         return scopes;
     }

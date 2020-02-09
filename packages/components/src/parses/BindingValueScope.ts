@@ -60,14 +60,14 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
             let dataBinding: DataBinding;
             if (binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(bindPref, '').trim());
+                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(twobindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(two2bindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(two2bindPref, '').trim());
                 }
             } else if (binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.component, binding, exp.replace(eventBindPref, '').trim());
+                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(eventBindPref, '').trim());
             }
             dataBinding && ctx.setValue(CTX_BIND_DATABINDING, dataBinding);
         }
@@ -99,6 +99,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
         let tpCtx = TemplateContext.parse(ctx.injector, {
             parent: ctx,
             sub: true,
+            scope: ctx.scope,
             template: expression,
             providers: ctx.providers
         });
