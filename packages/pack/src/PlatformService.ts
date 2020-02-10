@@ -1,5 +1,4 @@
-import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject, isFunction } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { Injectable, ObjectMap, Express2, isArray, isString, lang, isFunction } from '@tsdi/ioc';
 import { toAbsolutePath, syncRequire } from '@tsdi/platform-server';
 import { Src } from '@tsdi/activities';
 import { existsSync, readdirSync, lstatSync } from 'fs';
@@ -28,9 +27,6 @@ export class PlatformService {
     constructor(private ctx: NodeActivityContext) {
 
     }
-
-    @Inject(ContainerToken)
-    container: IContainer;
 
     packageFile = 'package.json';
 

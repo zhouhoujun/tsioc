@@ -32,7 +32,6 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return this.getContextValue(ACTIVITY_OUTPUT);
     }
 
-
     get baseURL() {
         return this.context.getValue(CTX_BASEURL) ?? this.getBaseURL();
     }
