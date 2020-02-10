@@ -23,11 +23,6 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
     attr?: boolean;
 
     /**
-     * sub build or not.
-     */
-    sub?: boolean;
-
-    /**
      * module reslove in the injector.
      */
     injector?: ICoreInjector;

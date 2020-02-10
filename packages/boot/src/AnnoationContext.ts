@@ -152,8 +152,11 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         let value: T;
         let key = this.injector.getTokenKey(token);
         let ctx = this as IAnnoationContext;
-        while (ctx && isNullOrUndefined(value)) {
+        while (ctx && !ctx.destroyed) {
             value = ctx.get(key);
+            if (!isNullOrUndefined(value)) {
+                break;
+            }
             ctx = ctx.getParent();
         }
         return value ?? null;
@@ -167,8 +170,11 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         let value: T;
         let key = this.injector.getTokenKey(token);
         let ctx = this as IAnnoationContext;
-        while (ctx && isNullOrUndefined(value)) {
+        while (ctx && !ctx.destroyed) {
             value = ctx.getValue(key);
+            if (!isNullOrUndefined(value)) {
+                break;
+            }
             ctx = ctx.getParent();
         }
         return value ?? null;

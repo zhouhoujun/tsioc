@@ -1,19 +1,18 @@
 import { isArray } from '@tsdi/ioc';
-import { CTX_COMPONENT_REF, CTX_COMPONENT } from '../ComponentRef';
+import { CTX_COMPONENT_REF, CTX_COMPONENT, CTX_TEMPLATE_SCOPE } from '../ComponentRef';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { IComponentContext } from '../ComponentContext';
 
 
 export const ResolveTemplateHanlde = async function (ctx: IComponentContext, next: () => Promise<void>): Promise<void> {
-    ctx.setValue(CTX_COMPONENT, ctx.value);
     let actInjector = ctx.reflects.getActionInjector();
     let compPdr = ctx.componentProvider;
     let pCtx = compPdr.createTemplateContext(ctx.injector, {
         parent: ctx,
-        scope: ctx.scope || ctx.value,
         template: ctx.annoation.template
     });
 
+    pCtx.setValue(CTX_TEMPLATE_SCOPE, ctx.value);
     await actInjector.getInstance(TemplateParseScope)
         .execute(pCtx);
 

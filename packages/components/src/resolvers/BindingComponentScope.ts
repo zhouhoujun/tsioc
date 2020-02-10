@@ -8,7 +8,7 @@ import { ModuleAfterInitHandle } from './ModuleAfterInitHandle';
 import { BindingOutputHandle } from './BindingOutputHandle';
 import { ResolveTargetRefScope } from './ResolveTargetRefScope';
 import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
-import { CTX_COMPONENT_DECTOR, CTX_ELEMENT_REF } from '../ComponentRef';
+import { CTX_COMPONENT_DECTOR, CTX_ELEMENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { ComponentProvider } from '../ComponentProvider';
 import { ComponentContext } from '../ComponentContext';
 
@@ -25,6 +25,7 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
                 throw Error(`Component decorator '${ctx.decorator}' is not provide component builder`);
             } else {
                 ctx.setValue(CTX_COMPONENT_DECTOR, ctx.decorator);
+                ctx.setValue(CTX_COMPONENT, ctx.value);
                 ctx.getParent()?.addChild(ctx);
                 await super.execute(ctx);
             }

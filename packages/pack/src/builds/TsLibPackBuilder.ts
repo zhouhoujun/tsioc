@@ -147,7 +147,7 @@ const tsFileExp = /.ts$/;
                     condition: ctx => ctx.input.moduleName || ctx.input.target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: ctx => ctx.$parent.component.toOutputPath('package.json'),
+                        src: ctx => ctx.scope.toOutputPath('package.json'),
                         dist: ctx => ctx.scope.outDir,
                         pipes: [
                             <JsonEditActivityOption>{
@@ -155,9 +155,9 @@ const tsFileExp = /.ts$/;
                                 json: (json, ctx) => {
                                     let body = ctx.input;                                 // to replace module export.
                                     if (body.target) {
-                                        json[body.target] = ['.', ctx.$parent.component.getTargetFolder(body), body.main || 'index.js'].join('/');
+                                        json[body.target] = ['.', ctx.scope.getTargetFolder(body), body.main || 'index.js'].join('/');
                                     }
-                                    let outmain = ['.', ctx.$parent.component.getModuleFolder(body), body.outputFile || 'index.js'].join('/');
+                                    let outmain = ['.', ctx.scope.getModuleFolder(body), body.outputFile || 'index.js'].join('/');
                                     if (isArray(body.moduleName)) {
                                         body.moduleName.forEach(n => {
                                             json[n] = outmain;
@@ -166,7 +166,7 @@ const tsFileExp = /.ts$/;
                                         json[body.moduleName] = outmain;
                                     }
                                     if (body.dtsMain) {
-                                        json['typings'] = ['.', ctx.$parent.component.getTargetFolder(body), body.dtsMain].join('/');
+                                        json['typings'] = ['.', ctx.scope.getTargetFolder(body), body.dtsMain].join('/');
                                     }
                                     return json;
                                 }

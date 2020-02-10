@@ -1,15 +1,12 @@
-import { DecoratorProvider } from '@tsdi/ioc';
-import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext } from '@tsdi/boot';
+import { DecoratorProvider, tokenId } from '@tsdi/ioc';
+import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext, IAnnoationContext } from '@tsdi/boot';
 import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_COMPONENT_PARENT, CTX_TEMPLATE_SCOPE } from './ComponentRef';
 import { IComponentMetadata } from './decorators/IComponentMetadata';
 import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider, CTX_COMPONENT_PROVIDER } from './ComponentProvider';
 
 export interface IComponentOption extends IBuildOption {
-    /**
-     * template scope.
-     */
-    scope?: any;
+
 }
 
 export interface IComponentContext<T extends IComponentOption = IComponentOption,
@@ -25,10 +22,13 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
      * template scope.
      */
     readonly scope: any;
+    readonly $parent: IComponentContext;
     readonly componentProvider: ComponentProvider;
     readonly componentDecorator: string;
 
 }
+
+export const CTX_PARCOMPONENTCTX = tokenId<IComponentContext>('CTX_PARCOMPONENTCTX');
 
 export class ComponentContext<T extends IComponentOption = IComponentOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
@@ -65,18 +65,39 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @memberof ComponentContext
      */
     get scope() {
-        return this.getValue(CTX_TEMPLATE_SCOPE) || this.component;
+        if (!this.hasValue(CTX_TEMPLATE_SCOPE)) {
+            let comp = this.getContextValue(CTX_TEMPLATE_SCOPE);
+            comp && this.setValue(CTX_TEMPLATE_SCOPE, comp);
+        }
+        return this.getValue(CTX_TEMPLATE_SCOPE);
+    }
+
+    get $parent() {
+        if (!this.hasValue(CTX_PARCOMPONENTCTX)) {
+            let scope = this.scope;
+            let ctx = this as IAnnoationContext;
+            let parctx: IComponentContext;
+            while (ctx && !ctx.destroyed) {
+                if (ctx.getValue(CTX_COMPONENT) === scope) {
+                    parctx = ctx as IComponentContext;
+                    break;
+                }
+                ctx = ctx.getParent();
+            }
+            parctx && this.setValue(CTX_PARCOMPONENTCTX, parctx);
+        }
+        return this.getValue(CTX_PARCOMPONENTCTX);
     }
 
     getScopes() {
         let scopes = [];
         let ctx = this as IComponentContext;
-        while (ctx) {
+        while (ctx && !ctx.destroyed) {
             let comp = ctx.getValue(CTX_COMPONENT);
             if (comp && scopes.indexOf(comp) < 0) {
                 scopes.push(comp);
             }
-            ctx = ctx.getParent() as IComponentContext;
+            ctx = ctx.$parent;
         }
         return scopes;
     }
@@ -97,15 +118,5 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
         return this.getValue(CTX_COMPONENT_DECTOR);
     }
 
-
-    setOptions(options: T) {
-        if (!options) {
-            return this;
-        }
-        if (options.scope) {
-            this.setValue(CTX_TEMPLATE_SCOPE, options.scope)
-        }
-        return super.setOptions(options);
-    }
 }
 

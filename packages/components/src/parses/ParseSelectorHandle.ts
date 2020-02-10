@@ -16,11 +16,9 @@ export const ParseSelectorHandle = async function (ctx: ITemplateContext, next: 
         let selector = ctx.selector;
         let template = ctx.template;
         ctx.value = await ctx.getContainer().getInstance(ComponentBuilderToken)
-            .resolve(<IComponentOption>{
+            .resolve({
                 type: selector,
                 parent: ctx,
-                sub: true,
-                scope: ctx.scope,
                 template: template,
                 injector: ctx.injector,
                 providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions() })
