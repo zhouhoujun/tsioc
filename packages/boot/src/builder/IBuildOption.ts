@@ -17,10 +17,6 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
      * current type attr data to binding.
      */
     template?: any;
-    /**
-     * build as attr or not.
-     */
-    attr?: boolean;
 
     /**
      * module reslove in the injector.

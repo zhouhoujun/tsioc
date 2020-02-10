@@ -10,7 +10,7 @@ import { ResolveTargetRefScope } from './ResolveTargetRefScope';
 import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
 import { CTX_COMPONENT_DECTOR, CTX_ELEMENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { ComponentProvider } from '../ComponentProvider';
-import { ComponentContext } from '../ComponentContext';
+import { ComponentContext, IComponentOption } from '../ComponentContext';
 
 
 export class BindingComponentScope extends BuildHandles<IBuildContext> implements IActionSetup {
@@ -29,7 +29,7 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
                 ctx.getParent()?.addChild(ctx);
                 await super.execute(ctx);
             }
-        } else if (!ctx.getOptions().attr) {
+        } else if (!(<IComponentOption>ctx.getOptions()).attr) {
             let mdref = ctx.getModuleRef();
             if (mdref && mdref.reflect.componentDectors) {
                 let componentDectors = mdref.reflect.componentDectors;

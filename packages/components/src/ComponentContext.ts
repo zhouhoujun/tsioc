@@ -6,7 +6,15 @@ import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider, CTX_COMPONENT_PROVIDER } from './ComponentProvider';
 
 export interface IComponentOption extends IBuildOption {
+    /**
+     * build as attr or not.
+     */
+    attr?: boolean;
 
+    /**
+     * sub build or not.
+     */
+    sub?: boolean;
 }
 
 export interface IComponentContext<T extends IComponentOption = IComponentOption,

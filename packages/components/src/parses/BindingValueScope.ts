@@ -11,6 +11,7 @@ import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
 import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING } from './ParseContext';
+import { IComponentOption } from '../ComponentContext';
 
 
 /**
@@ -97,7 +98,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
     let binding = ctx.binding;
     if (ctx.componentProvider.isTemplate(expression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
-            parent: ctx.getParent(),
+            parent: ctx,
             template: expression,
             providers: ctx.providers
         });
@@ -153,7 +154,7 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
         if (selector) {
             let bindings = ctx.getExtenalBindings();
             bindings[binding.bindingName || binding.name] = expression;
-            ctx.value = await injector.getInstance(ComponentBuilderToken).resolve({
+            ctx.value = await injector.getInstance(ComponentBuilderToken).resolve(<IComponentOption>{
                 type: selector,
                 attr: true,
                 parent: ctx.getParent(),
