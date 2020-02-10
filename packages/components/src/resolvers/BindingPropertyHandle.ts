@@ -34,6 +34,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
                     let pctx = ParseContext.parse(ctx.injector, {
                         type: ctx.type,
                         parent: ctx,
+                        scope: ctx.scope,
                         bindExpression: expression,
                         binding: binding
                     });

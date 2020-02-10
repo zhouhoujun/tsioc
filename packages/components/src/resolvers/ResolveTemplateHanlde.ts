@@ -9,10 +9,10 @@ export const ResolveTemplateHanlde = async function (ctx: IComponentContext, nex
     let compPdr = ctx.componentProvider;
     let pCtx = compPdr.createTemplateContext(ctx.injector, {
         parent: ctx,
+        scope: ctx.value,
         template: ctx.annoation.template
     });
 
-    pCtx.setValue(CTX_TEMPLATE_SCOPE, ctx.value);
     await actInjector.getInstance(TemplateParseScope)
         .execute(pCtx);
 

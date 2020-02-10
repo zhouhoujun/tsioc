@@ -3,7 +3,7 @@ import { ICoreInjector } from '@tsdi/core';
 import { IBuildOption } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
-import { ComponentContext, IComponentContext } from '../ComponentContext';
+import { ComponentContext, IComponentContext, IComponentOption } from '../ComponentContext';
 import { Input } from '../decorators/Input';
 import { Output } from '../decorators/Output';
 import { RefChild } from '../decorators/RefChild';
@@ -16,7 +16,7 @@ import { RefChild } from '../decorators/RefChild';
  * @interface IBindingParseOption
  * @extends {IBuildOption}
  */
-export interface IBindingParseOption extends IBuildOption {
+export interface IBindingParseOption extends IComponentOption {
     bindExpression?: any;
     binding: IBinding;
 }
