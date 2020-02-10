@@ -133,7 +133,7 @@ export class BootContext<T extends BootOption = BootOption,
      * @memberof BootContext
      */
     get baseURL(): string {
-        let url = this.getValue(ProcessRunRootToken)
+        let url = this.context.getValue(ProcessRunRootToken)
         if (!url) {
             url = this.annoation?.baseURL;
             if (url) {
@@ -151,15 +151,15 @@ export class BootContext<T extends BootOption = BootOption,
      * @memberof BootContext
      */
     get configuration(): TMeta {
-        return this.getValue(CTX_APP_CONFIGURE) as TMeta;
+        return this.context.getValue(CTX_APP_CONFIGURE) as TMeta;
     }
 
     get args(): string[] {
-        return this.getValue(CTX_APP_ENVARGS) || [];
+        return this.context.getValue(CTX_APP_ENVARGS) || [];
     }
 
     get data(): any {
-        return this.getValue(CTX_DATA);
+        return this.context.getValue(CTX_DATA);
     }
 
     /**
@@ -169,25 +169,25 @@ export class BootContext<T extends BootOption = BootOption,
      * @memberof BootContext
      */
     get startup(): Startup {
-        return this.getValue(CTX_MODULE_STARTUP);
+        return this.context.getValue(CTX_MODULE_STARTUP);
     }
 
     /**
      * get template.
      */
     get template(): any {
-        return this.getValue(CTX_TEMPLATE);
+        return this.context.getValue(CTX_TEMPLATE);
     }
 
     get target() {
-        return this.getValue(CTX_MODULE_INST);
+        return this.context.getValue(CTX_MODULE_INST);
     }
 
     /**
      * boot instance.
      */
     get boot(): any {
-        return this.getValue(CTX_MODULE_BOOT);
+        return this.context.getValue(CTX_MODULE_BOOT);
     }
 
     /**

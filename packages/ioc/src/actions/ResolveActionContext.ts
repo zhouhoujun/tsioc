@@ -88,10 +88,10 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
             return this;
         }
         if (options.token) {
-            this.context.setValue(CTX_TOKEN, options.token);
+            this.setValue(CTX_TOKEN, options.token);
         }
         if (options.default) {
-            this.context.setValue(CTX_DEFAULT_TOKEN, options.default);
+            this.setValue(CTX_DEFAULT_TOKEN, options.default);
         }
         return super.setOptions(options);
     }

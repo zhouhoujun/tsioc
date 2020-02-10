@@ -32,7 +32,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
     }
 
     protected getRefInCtx(ctx: BuildContext) {
-        return ctx.getValue(CTX_COMPONENT_REF) ?? ctx.getValue(CTX_TEMPLATE_REF) ?? ctx.getValue(CTX_ELEMENT_REF) ?? ctx.value;
+        return ctx.context.getFirstValue(CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF) ?? ctx.value;
     }
 
     serialize<T = any>(component: T): any {

@@ -2,7 +2,7 @@ import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } fro
 import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
-import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isClassType } from './utils/lang';
+import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
@@ -350,12 +350,25 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return this.getSingleton(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
     }
 
+    getValue<T>(key: SymbolType<T>): T {
+        return this.tryGetSingleton(key);
+    }
+
+    getFirstValue<T>(...keys: SymbolType<T>[]): T {
+        let value: T;
+        keys.some(k => {
+            value = this.getValue(k);
+            return !isNullOrUndefined(value);
+        })
+        return value;
+    }
+
     getSingleton<T>(key: SymbolType<T>): T {
         return this.tryGetSingleton(key) ?? this.tryGetSingletonInRoot(key);
     }
 
     protected tryGetSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.has(key) ? this.singletons.get(key) : null;
+        return this.singletons.get(key) ?? null;
     }
 
     protected tryGetSingletonInRoot<T>(key: SymbolType<T>): T {

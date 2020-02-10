@@ -41,12 +41,14 @@ export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, Se
     }
 
     get types(): ClassType[] {
-        if (!this.hasValue(CTX_TYPES)) {
-            let types = this.tokens.map(t => this.injector.getTokenProvider(t))
-                .filter(t => t);
-            this.setValue(CTX_TYPES, types);
-        }
-        return this.getValue(CTX_TYPES);
+        return this.getValue(CTX_TYPES) ?? this.getTypes();
+    }
+
+    protected getTypes() {
+        let types = this.tokens.map(t => this.injector.getTokenProvider(t))
+            .filter(t => t);
+        this.setValue(CTX_TYPES, types);
+        return types;
     }
 
     /**

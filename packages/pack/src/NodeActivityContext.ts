@@ -20,10 +20,13 @@ export type NodeExpression<T = any> = CtxExpression<T, NodeActivityContext>;
 export class NodeActivityContext extends ActivityContext {
 
     get platform(): IPlatformService {
-        if (!this.hasValue(PlatformServiceToken)) {
-            this.setValue(PlatformServiceToken, this.injector.getInstance(PlatformServiceToken));
-        }
-        return this.getValue(PlatformServiceToken);
+        return this.context.getValue(PlatformServiceToken) ?? this.getPlatform();
+    }
+
+    protected getPlatform() {
+        let pf = this.injector.getInstance(PlatformServiceToken);
+        pf && this.setValue(PlatformServiceToken, pf);
+        return pf;
     }
 
 }

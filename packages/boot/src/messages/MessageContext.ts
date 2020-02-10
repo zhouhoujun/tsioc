@@ -60,7 +60,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get target(): any {
-        return this.getValue(CTX_MSG_TARGET);
+        return this.context.getValue(CTX_MSG_TARGET);
     }
 
     /**
@@ -70,7 +70,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get type(): string {
-        return this.getValue(CTX_MSG_TYPE);
+        return this.context.getValue(CTX_MSG_TYPE);
     }
     /**
      * message event
@@ -79,7 +79,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get event(): string {
-        return this.getValue(CTX_MSG_EVENT);
+        return this.context.getValue(CTX_MSG_EVENT);
     }
 
     /**
@@ -89,7 +89,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ioc
      * @memberof MessageContext
      */
     get data(): any {
-        return this.getValue(CTX_DATA);
+        return this.context.getValue(CTX_DATA);
     }
 
     set data(data: any) {

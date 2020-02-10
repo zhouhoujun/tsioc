@@ -155,17 +155,20 @@ export abstract class IocRaiseContext<
      * raise injector of this context.
      */
     get injector(): TJ {
-        return this.context.getSingleton(INJECTOR) as TJ;
+        return this.context.getValue(INJECTOR) as TJ;
     }
 
     /**
      * get type reflects.
      */
     get reflects(): ITypeReflects {
-        if (!this.context.hasSingleton(TypeReflectsToken)) {
-            this.context.setValue(TypeReflectsToken, this.injector.getSingleton(TypeReflectsToken));
-        }
-        return this.context.getSingleton(TypeReflectsToken);
+        return this.context.getValue(TypeReflectsToken) ?? this.getReflects();
+    }
+
+    protected getReflects() {
+        let reflects = this.injector.getSingleton(TypeReflectsToken);
+        this.context.setValue(TypeReflectsToken, reflects);
+        return reflects;
     }
 
     /**
@@ -210,7 +213,7 @@ export abstract class IocRaiseContext<
      * @param key token key
      */
     getValue<T>(key: SymbolType<T>): T {
-        return this.context.getSingleton(key);
+        return this.context.getValue(key);
     }
 
     setValue<T>(key: SymbolType<T>, value: T) {
@@ -276,7 +279,7 @@ export abstract class IocRaiseContext<
      * @memberof IocRaiseContext
      */
     getOptions(): T {
-        return this.context.getSingleton(CTX_OPTIONS) as T;
+        return this.context.getValue(CTX_OPTIONS) as T;
     }
 
     /**
@@ -310,16 +313,19 @@ export abstract class IocProvidersContext<
     TJ extends IInjector = IInjector,
     TC extends IIocContainer = IIocContainer> extends IocRaiseContext<T, TJ, TC> {
 
-    private _originPdr: boolean;
     /**
      * get providers of options.
      */
     get providers(): IProviders {
-        if (!this.context.hasSingleton(CTX_PROVIDERS)) {
-            this._originPdr = true;
-            this.setValue(CTX_PROVIDERS, this.injector.get(PROVIDERS));
-        }
-        return this.context.getSingleton(CTX_PROVIDERS);
+        return this.context.getValue(CTX_PROVIDERS) ?? this.getProviders();
+    }
+
+    private _originPdr: boolean;
+    protected getProviders() {
+        this._originPdr = true;
+        let providers = this.injector.get(PROVIDERS);
+        this.setValue(CTX_PROVIDERS, providers);
+        return providers;
     }
 
     setOptions(options: T) {

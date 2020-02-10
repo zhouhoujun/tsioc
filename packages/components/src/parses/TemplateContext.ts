@@ -61,7 +61,7 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
                 this.setValue(CTX_TEMPLATE_REF, tempRef);
             }
         }
-        return this.getValue(CTX_TEMPLATE_REF) ?? this.value;
+        return this.context.getValue(CTX_TEMPLATE_REF) ?? this.value;
     }
 
     static parse(injector: ICoreInjector, options: ITemplateOption): TemplateContext {

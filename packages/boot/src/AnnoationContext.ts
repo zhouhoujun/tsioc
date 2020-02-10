@@ -112,7 +112,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     get type(): Type {
-        return this.getValue(CTX_MODULE);
+        return this.context.getValue(CTX_MODULE);
     }
 
     /**
@@ -123,13 +123,13 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @memberof AnnoationContext
      */
     get decorator(): string {
-        if (!this.hasValue(CTX_MODULE_DECTOR) && this.type) {
-            let dec = this.targetReflect?.decorator;
-            if (dec) {
-                this.setValue(CTX_MODULE_DECTOR, dec);
-            }
-        }
-        return this.getValue(CTX_MODULE_DECTOR);
+        return this.context.getValue(CTX_MODULE_DECTOR) ?? this.getDecorator();
+    }
+
+    protected getDecorator() {
+        let dec = this.type ? this.targetReflect?.decorator : null;
+        dec && this.setValue(CTX_MODULE_DECTOR, dec);
+        return dec;
     }
 
     getModuleRef(): ModuleRef {
@@ -137,11 +137,13 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     get targetReflect(): TRefl {
-        if (!this.hasValue(CTX_TARGET_RELF) && this.type) {
-            let refls = this.reflects.get(this.type);
-            refls && this.setValue(CTX_TARGET_RELF, refls);
-        }
-        return this.getValue(CTX_TARGET_RELF) as TRefl;
+        return this.context.getValue<TRefl>(CTX_TARGET_RELF) ?? this.getTargetReflect();
+    }
+
+    protected getTargetReflect(): TRefl {
+        let refl = this.type ? this.reflects.get(this.type) : null;
+        refl && this.setValue(CTX_TARGET_RELF, refl);
+        return refl as TRefl;
     }
 
     /**
@@ -171,7 +173,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         let key = this.injector.getTokenKey(token);
         let ctx = this as IAnnoationContext;
         while (ctx && !ctx.destroyed) {
-            value = ctx.getValue(key);
+            value = ctx.context.getValue(key);
             if (!isNullOrUndefined(value)) {
                 break;
             }
@@ -190,7 +192,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     getParent(): IAnnoationContext {
-        return this.getValue(CTX_PARENT_CONTEXT);
+        return this.context.getValue(CTX_PARENT_CONTEXT);
     }
 
     addChild(contex: IAnnoationContext) {
@@ -212,7 +214,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     getChildren<T extends IAnnoationContext>(): T[] {
-        return (this.getValue(CTX_SUB_CONTEXT) || []) as T[];
+        return (this.context.getValue(CTX_SUB_CONTEXT) || []) as T[];
     }
 
 
@@ -223,13 +225,13 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @memberof AnnoationContext
      */
     get annoation(): TMeta {
-        if (!this.hasValue(CTX_MODULE_ANNOATION) && this.type) {
-            let tgRef = this.targetReflect;
-            if ((tgRef && tgRef.getAnnoation)) {
-                this.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation<TMeta>())
-            }
-        }
-        return this.getValue(CTX_MODULE_ANNOATION) as TMeta;
+        return this.context.getValue<TMeta>(CTX_MODULE_ANNOATION) ?? this.getAnnoation();
+    }
+
+    protected getAnnoation() {
+        let anno = this.type ? this.targetReflect?.getAnnoation?.<TMeta>() : null;
+        anno && this.setValue(CTX_MODULE_ANNOATION, anno);
+        return anno;
     }
 
 

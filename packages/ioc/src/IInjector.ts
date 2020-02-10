@@ -131,12 +131,21 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
-
     /**
      * get singleton instance.
      * @param key token key.
      */
     getSingleton<T>(key: SymbolType<T>): T;
+    /**
+     * get singleton value instance, the injector registered.
+     * @param key token key.
+     */
+    getValue<T>(key: SymbolType<T>): T;
+    /**
+     * get the first singleton value instance, the injector registered.
+     * @param key token keys.
+     */
+    getFirstValue<T>(...keys: SymbolType<T>[]): T;
     /**
      * resolve token instance with token and param provider.
      *

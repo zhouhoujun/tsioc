@@ -24,7 +24,7 @@ export class BuildContext<
      * current type attr data to binding.
      */
     get template(): any {
-        return this.getValue(CTX_TEMPLATE);
+        return this.context.getValue(CTX_TEMPLATE);
     }
 
     static parse(injector: ICoreInjector, options: IBuildOption): BuildContext {

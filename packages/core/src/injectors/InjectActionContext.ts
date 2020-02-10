@@ -69,7 +69,7 @@ export class InjectActionContext extends IocRaiseContext<InjectActionOption> {
             return this;
         }
         if (options.module) {
-            this.context.setValue(CTX_INJ_MODULE, options.module);
+            this.setValue(CTX_INJ_MODULE, options.module);
         }
         return super.setOptions(options);
     }

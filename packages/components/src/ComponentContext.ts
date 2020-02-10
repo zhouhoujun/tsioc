@@ -48,11 +48,11 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
     extends BuildContext<T, TMeta, TRefl> implements IComponentContext<T, TMeta, TRefl> {
 
     get name() {
-        return this.getValue(CTX_ELEMENT_NAME);
+        return this.context.getValue(CTX_ELEMENT_NAME);
     }
 
     getResultRef() {
-        return this.getValue(CTX_COMPONENT_REF) ?? this.getValue(CTX_TEMPLATE_REF) ?? this.getValue(CTX_ELEMENT_REF) ?? this.value;
+        return this.context.getFirstValue(CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF) ?? this.value;
     }
 
     /**
@@ -63,7 +63,7 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @memberof ComponentContext
      */
     get component(): any {
-        return this.getValue(CTX_COMPONENT) ?? this.getContextComponent();
+        return this.context.getValue(CTX_COMPONENT) ?? this.getContextComponent();
     }
 
     protected getContextComponent() {
@@ -79,25 +79,25 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @memberof ComponentContext
      */
     get scope() {
-        return this.getValue(CTX_TEMPLATE_SCOPE) ?? this.getContextScope();
+        return this.context.getValue(CTX_TEMPLATE_SCOPE) ?? this.getScope();
     }
 
-    protected getContextScope() {
+    protected getScope() {
         let scope = this.getParent()?.getContextValue(CTX_TEMPLATE_SCOPE);
         scope && this.setValue(CTX_TEMPLATE_SCOPE, scope);
         return scope;
     }
 
     get $parent() {
-        return this.getValue(CTX_PARCOMPONENTCTX) ?? this.getContext$Parent();
+        return this.context.getValue(CTX_PARCOMPONENTCTX) ?? this.get$Parent();
     }
 
-    protected getContext$Parent() {
+    protected get$Parent() {
         let scope = this.scope;
         let ctx = this as IAnnoationContext;
         let parctx: IComponentContext;
         while (ctx && !ctx.destroyed) {
-            if (ctx.getValue(CTX_COMPONENT) === scope) {
+            if (ctx.context.getValue(CTX_COMPONENT) === scope) {
                 parctx = ctx as IComponentContext;
                 break;
             }
@@ -121,19 +121,25 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
     }
 
     get componentProvider(): ComponentProvider {
-        if (!this.hasValue(CTX_COMPONENT_PROVIDER) && this.componentDecorator) {
-            let pdr = this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(this.componentDecorator, ComponentProvider);
-            pdr && this.setValue(CTX_COMPONENT_PROVIDER, pdr);
-        }
-        return this.getValue(CTX_COMPONENT_PROVIDER);
+        return this.context.getValue(CTX_COMPONENT_PROVIDER) ?? this.getComponentProvider();
     }
 
+    protected getComponentProvider() {
+        let dector = this.componentDecorator;
+        let pdr = dector ? this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(dector, ComponentProvider) : null;
+        pdr && this.setValue(CTX_COMPONENT_PROVIDER, pdr);
+        return pdr;
+    }
+
+
     get componentDecorator() {
-        if (!this.hasValue(CTX_COMPONENT_DECTOR)) {
-            let dector = this.getContextValue(CTX_COMPONENT_DECTOR);
-            dector && this.setValue(CTX_COMPONENT_DECTOR, dector);
-        }
-        return this.getValue(CTX_COMPONENT_DECTOR);
+        return this.context.getValue(CTX_COMPONENT_DECTOR) ?? this.getComponentDecorator();
+    }
+
+    protected getComponentDecorator() {
+        let dector = this.getContextValue(CTX_COMPONENT_DECTOR);
+        dector && this.setValue(CTX_COMPONENT_DECTOR, dector);
+        return dector;
     }
 
     setOptions(options: T) {
