@@ -12,6 +12,8 @@ import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 
 export const CTX_RUN_PARENT = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
 export const CTX_RUN_SCOPE = tokenId<IAnnoationContext>('CTX_RUN_SCOPE');
+export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
+
 /**
  * activity execute context.ß
  *
@@ -30,12 +32,23 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return this.getContextValue(ACTIVITY_OUTPUT);
     }
 
+
+    get baseURL() {
+        return this.context.getValue(CTX_BASEURL) ?? this.workflow?.baseURL;
+    }
+
     get runScope(): IComponentContext {
         if (!this.hasValue(CTX_RUN_SCOPE)) {
             let runsp = this.getContextValue(CTX_RUN_SCOPE);
             runsp && this.setValue(CTX_RUN_SCOPE, runsp);
         }
-        return this.getValue(CTX_RUN_SCOPE) as IComponentContext;
+        return this.context.getValue<IComponentContext>(CTX_RUN_SCOPE) ?? this.getRunScope();
+    }
+
+    protected getRunScope() {
+        let runsp = this.getContextValue(CTX_RUN_SCOPE);
+        runsp && this.setValue(CTX_RUN_SCOPE, runsp);
+        return runsp as IComponentContext;
     }
 
     private _workflow: WorkflowContext;
@@ -48,6 +61,10 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
 
     get<T>(token: Token<T>): T {
         let key = this.context.getTokenKey(token);
+        return this.getInstance(key);
+    }
+
+    getInstance<T>(key: SymbolType<T>): T {
         return this.context.getInstance(key) ?? this.workflow?.context.getInstance(key) ?? null;
     }
 

@@ -1,7 +1,7 @@
 import { Injectable, ObjectMap, Express2, isArray, isString, lang, Inject, isFunction } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { toAbsolutePath, syncRequire } from '@tsdi/platform-server';
-import { Src, WorkflowContextToken, WorkflowContext } from '@tsdi/activities';
+import { Src } from '@tsdi/activities';
 import { existsSync, readdirSync, lstatSync } from 'fs';
 import { join, dirname, normalize, relative, basename, extname } from 'path';
 import {
@@ -12,6 +12,7 @@ import { CompilerOptions } from 'typescript';
 import { PlatformServiceToken, CmdOptions } from './IPlatformService';
 import { GlobbyOptions } from 'globby';
 import * as globby from 'globby';
+import { NodeActivityContext } from './NodeActivityContext';
 
 const minimist = require('minimist');
 const del = require('del');
@@ -24,7 +25,7 @@ const replNodeMdlExp = /(node_modules)[\\\/]/g;
 @Injectable(PlatformServiceToken)
 export class PlatformService {
 
-    constructor(@Inject(WorkflowContextToken) private ctx: WorkflowContext) {
+    constructor(private ctx: NodeActivityContext) {
 
     }
 
@@ -43,7 +44,7 @@ export class PlatformService {
      */
     getEnvArgs(): ObjectMap {
         if (!this.envArgs) {
-            this.envArgs = minimist([...this.ctx.args, ...process.argv.slice(2)]);
+            this.envArgs = minimist([...this.ctx.workflow.args, ...process.argv.slice(2)]);
         }
         return this.envArgs;
     }

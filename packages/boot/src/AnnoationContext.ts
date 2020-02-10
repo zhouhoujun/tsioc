@@ -151,11 +151,14 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @param token
      */
     getContext<T>(token: Token<T>): T {
-        let value: T;
         let key = this.injector.getTokenKey(token);
-        let ctx = this as IAnnoationContext;
+        let value = this.getInstance(key);
+        if (!isNullOrUndefined(value)) {
+            return value;
+        }
+        let ctx = this.getParent() as IAnnoationContext;
         while (ctx && !ctx.destroyed) {
-            value = ctx.get(key);
+            value = ctx.getInstance(key);
             if (!isNullOrUndefined(value)) {
                 break;
             }
@@ -169,9 +172,12 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @param token
      */
     getContextValue<T>(token: Token<T>): T {
-        let value: T;
         let key = this.injector.getTokenKey(token);
-        let ctx = this as IAnnoationContext;
+        let value = this.context.getValue(key);
+        if (!isNullOrUndefined(value)) {
+            return value;
+        }
+        let ctx = this.getParent() as IAnnoationContext;
         while (ctx && !ctx.destroyed) {
             value = ctx.context.getValue(key);
             if (!isNullOrUndefined(value)) {

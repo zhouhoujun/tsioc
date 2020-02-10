@@ -1,7 +1,7 @@
 import { PromiseUtil, lang, isDefined, Abstract, IDestoryable, isFunction, Type, Inject, Injectable } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '@tsdi/boot';
 import { IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS, NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR } from '@tsdi/components';
-import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT } from './ActivityContext';
+import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL } from './ActivityContext';
 import { IActivityRef, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
@@ -176,6 +176,8 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
             context.injector.setValue(COMPONENT_REFS, new WeakMap());
         }
         context.set(CTX_ELEMENT_NAME, this.name);
+        let baseURL = context.annoation?.baseURL;
+        baseURL && context.setValue(CTX_BASEURL, baseURL);
         let injector = context.injector;
         injector.getSingleton(COMPONENT_REFS).set(instance, this);
         this.onDestroy(() => injector.getSingleton(COMPONENT_REFS)?.delete(this.instance));

@@ -85,6 +85,7 @@ export interface IIocContext<
      * @returns {T}
      */
     get<T>(token: Token<T>): T;
+    getInstance<T>(token: SymbolType<T>): T;
     /**
      * get value from context.
      * @param key token key
@@ -206,6 +207,18 @@ export abstract class IocRaiseContext<
      */
     get<T>(token: Token<T>): T {
         return this.context.get(token);
+    }
+
+    /**
+     * get context provider of boot application.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {T}
+     * @memberof BootContext
+     */
+    getInstance<T>(token: SymbolType<T>): T {
+        return this.context.getInstance(token);
     }
 
     /**

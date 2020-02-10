@@ -4,7 +4,6 @@ import { ActivityContext, CtxExpression, Activity } from '@tsdi/activities';
 import { IPlatformService, PlatformServiceToken } from './IPlatformService';
 
 
-
 export type NodeExpression<T = any> = CtxExpression<T, NodeActivityContext>;
 
 /**
@@ -24,7 +23,7 @@ export class NodeActivityContext extends ActivityContext {
     }
 
     protected getPlatform() {
-        let pf = this.injector.getInstance(PlatformServiceToken);
+        let pf = this.injector.getInstance(PlatformServiceToken, {provide: NodeActivityContext, useValue: this});
         pf && this.setValue(PlatformServiceToken, pf);
         return pf;
     }
