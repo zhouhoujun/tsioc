@@ -34,14 +34,16 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
 
 
     get baseURL() {
-        return this.context.getValue(CTX_BASEURL) ?? this.workflow?.baseURL;
+        return this.context.getValue(CTX_BASEURL) ?? this.getBaseURL();
+    }
+
+    protected getBaseURL() {
+        let url = this.getContextValue(CTX_BASEURL) ?? this.workflow?.baseURL;
+        url && this.setValue(CTX_BASEURL, url);
+        return url;
     }
 
     get runScope(): IComponentContext {
-        if (!this.hasValue(CTX_RUN_SCOPE)) {
-            let runsp = this.getContextValue(CTX_RUN_SCOPE);
-            runsp && this.setValue(CTX_RUN_SCOPE, runsp);
-        }
         return this.context.getValue<IComponentContext>(CTX_RUN_SCOPE) ?? this.getRunScope();
     }
 
