@@ -63,10 +63,10 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @memberof ComponentContext
      */
     get component(): any {
-        return this.context.getValue(CTX_COMPONENT) ?? this.getContextComponent();
+        return this.context.getValue(CTX_COMPONENT) ?? this.getComponent();
     }
 
-    protected getContextComponent() {
+    protected getComponent() {
         let comp = this.getParent()?.getContextValue(CTX_COMPONENT);
         comp && this.setValue(CTX_COMPONENT, comp);
         return comp;
