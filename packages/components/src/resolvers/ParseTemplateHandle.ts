@@ -2,6 +2,7 @@ import { IBuildContext } from '@tsdi/boot';
 import { TemplateContext } from '../parses/TemplateContext';
 import { TemplateParseScope } from '../parses/TemplateParseScope';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
+import { IComponentOption } from '../ComponentContext';
 
 export const ParseTemplateHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
     if (!ctx.value && !ctx.type && ctx.template) {
@@ -17,7 +18,7 @@ export const ParseTemplateHandle = async function (ctx: IBuildContext, next: () 
             .execute(pCtx);
 
         if (pCtx.value) {
-            ctx.value = ctx.getOptions().attr ? pCtx.value : pCtx.getResultRef();
+            ctx.value = (<IComponentOption>ctx.getOptions()).attr ? pCtx.value : pCtx.getResultRef();
         }
     }
     await next();
