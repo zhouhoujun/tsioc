@@ -120,11 +120,12 @@ export class ActivityExecutor implements IActivityExecutor {
         await PromiseUtil.runInChain(actions.filter(f => f), this.context.workflow, next);
     }
 
-    parseAction<T extends WorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> {
+    parseAction<T extends WorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[] {
         if (isArray(activity)) {
-            return async (ctx: T, next?: () => Promise<void>) => {
-                await this.execAction(await Promise.all(activity.map(act => this.buildActivity<T>(act, input))), next);
-            }
+            return activity.map(act => async (ctx: T, next?: () => Promise<void>) => {
+                let handle = await this.buildActivity<T>(act, input);
+                await handle(ctx, next);
+            });
         } else {
             return async (ctx: T, next?: () => Promise<void>) => {
                 let handle = await this.buildActivity(activity, input);

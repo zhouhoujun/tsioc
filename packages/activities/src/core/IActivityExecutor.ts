@@ -67,7 +67,7 @@ export interface IActivityExecutor {
      * @returns {PromiseUtil.ActionHandle<T>}
      * @memberof IActivityExecutor
      */
-    parseAction<T extends WorkflowContext>(activities: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T>;
+    parseAction<T extends WorkflowContext>(activities: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[];
 }
 
 export const ActivityExecutorToken = tokenId<IActivityExecutor>('ActivityExecutor');
