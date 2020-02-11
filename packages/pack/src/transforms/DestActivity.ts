@@ -1,5 +1,5 @@
 import { Input, Binding } from '@tsdi/components';
-import { Task, ActivityType, TemplateOption } from '@tsdi/activities';
+import { Task, TemplateOption } from '@tsdi/activities';
 import { TransformActivity, TransformService } from './TransformActivity';
 import { DestOptions, dest } from 'vinyl-fs';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
@@ -21,14 +21,6 @@ export interface DistActivityOption extends TemplateOption {
      * @memberof DistActivityOption
      */
     dist: Binding<NodeExpression<string>>;
-
-    /**
-     * dist stream pipes.
-     *
-     * @type {GActivityType<ITransform>[]}
-     * @memberof DistActivityOption
-     */
-    destPipes?: Binding<ActivityType<ITransform>[]>
 
     /**
      * dist option
