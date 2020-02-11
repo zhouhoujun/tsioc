@@ -1,8 +1,7 @@
 import { isString, Type, isArray, Token } from '@tsdi/ioc';
-import { CTX_TEMPLATE } from '@tsdi/boot';
+import { CTX_TEMPLATE, BuildHandle } from '@tsdi/boot';
 import { ComponentProvider } from '../../ComponentProvider';
-import { TemplateHandle } from '../../parses/TemplateHandle';
-import { TemplateContext } from '../../parses/TemplateContext';
+import { ITemplateContext } from '../../parses/TemplateContext';
 
 /**
  * component selector handle.
@@ -11,8 +10,8 @@ import { TemplateContext } from '../../parses/TemplateContext';
  * @class ComponentSelectorHandle
  * @extends {TemplateHandle}
  */
-export class ComponentSelectorHandle extends TemplateHandle {
-    async execute(ctx: TemplateContext, next: () => Promise<void>): Promise<void> {
+export class ComponentSelectorHandle extends BuildHandle<ITemplateContext> {
+    async execute(ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
         let compPdr = ctx.componentProvider;
         let template = ctx.template;
         if (isArray(template) && ctx.annoation.template === template) {
@@ -37,7 +36,7 @@ export class ComponentSelectorHandle extends TemplateHandle {
         return refSelector.toSelectorToken(selector);
     }
 
-    protected getComponent(ctx: TemplateContext, template: any, refSelector: ComponentProvider): Type {
+    protected getComponent(ctx: ITemplateContext, template: any, refSelector: ComponentProvider): Type {
         let selector = this.getSelector(template, refSelector);
         if (selector) {
             if (isString(selector)) {

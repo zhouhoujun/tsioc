@@ -26,11 +26,9 @@ export * from './elements';
 // parses
 export * from './ComponentContext';
 export * from './parses/ParseContext';
-export * from './parses/ParseSelectorHandle';
 export * from './parses/BindingValueScope';
 export * from './parses/BindingScope';
 export * from './parses/TemplateContext';
-export * from './parses/TemplateHandle'
 export * from './parses/TemplateParseScope';
 export * from './parses/TranslateSelectorScope';
 

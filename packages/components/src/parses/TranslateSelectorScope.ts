@@ -1,10 +1,11 @@
-import { IActionSetup, PromiseUtil } from '@tsdi/ioc';
-import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { TemplatesHandle } from './TemplateHandle';
-import { ITemplateContext } from './TemplateContext';
+import { IActionSetup, PromiseUtil, isNullOrUndefined } from '@tsdi/ioc';
+import { BuildHandles, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { ITemplateContext, TemplateOptionToken } from './TemplateContext';
 import { CTX_COMPONENT_DECTOR } from '../ComponentRef';
 import { DefaultComponets } from '../IComponentReflect';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
+import { ComponentBuilderToken } from '../IComponentBuilder';
+import { IComponentOption } from '../ComponentContext';
 
 
 
@@ -15,7 +16,7 @@ import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
  * @class TranslateSelectorScope
  * @extends {TemplatesHandle}
  */
-export class TranslateSelectorScope extends TemplatesHandle implements IActionSetup {
+export class TranslateSelectorScope extends BuildHandles<ITemplateContext> implements IActionSetup {
     async execute(ctx: ITemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         if (next) {
@@ -58,5 +59,37 @@ export const TranslateElementHandle = async function (ctx: ITemplateContext, nex
     if (!ctx.selector) {
         await next();
     }
-};
+}
 
+/**
+ * parse selector handle.
+ *
+ * @export
+ * @class ParseSelectorHandle
+ * @extends {ParsersHandle}
+ */
+export const ParseSelectorHandle = async function (ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
+    if (ctx.selector) {
+        let selector = ctx.selector;
+        let template = ctx.template;
+        let compCtx = await ctx.getContainer().getInstance(ComponentBuilderToken)
+            .build(<IComponentOption>{
+                type: selector,
+                parent: ctx,
+                sub: true,
+                template: template,
+                injector: ctx.injector,
+                providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions() })
+            });
+        if (compCtx.value) {
+            if (!ctx.hasValue(CTX_COMPONENT_PROVIDER)) {
+                let pdr = compCtx.getValue(CTX_COMPONENT_PROVIDER);
+                pdr && ctx.setValue(CTX_COMPONENT_PROVIDER, pdr);
+            }
+            ctx.value = compCtx.value;
+        }
+    }
+    if (isNullOrUndefined(ctx.value)) {
+        await next();
+    }
+}

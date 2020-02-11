@@ -18,7 +18,7 @@ import { RefChild } from '../decorators/RefChild';
  */
 export interface IBindingParseOption extends IComponentOption {
     bindExpression?: any;
-    binding: IBinding;
+    binding?: IBinding;
 }
 
 /**
