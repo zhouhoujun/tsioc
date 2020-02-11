@@ -1,7 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { Src, Task, TemplateOption, ActivityType, Activities, Expression } from '@tsdi/activities';
-import { StreamActivity } from './StreamActivity';
 import { TransformService } from './TransformActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform } from '../ITransform';
@@ -72,47 +71,58 @@ export interface AssetActivityOption extends TemplateOption {
             src: 'binding: src'
         },
         {
-            activity: Activities.if,
-            condition: ctx => ctx.scope.beforePipes?.length > 0,
-            body: {
-                activity: 'pipes',
-                pipes: 'binding: beforePipes'
-            }
-        },
-        {
             activity: 'pipes',
-            pipes: 'binding: beforePipes'
-        },
-        {
-            activity: Activities.if,
-            condition: ctx => ctx.scope.sourcemap,
-            body: {
-                activity: Activities.execute,
-                action: (ctx: NodeActivityContext) => {
+            pipes: ctx => [
+                ...(ctx.scope.beforePipes || []),
+                ctx.scope.sourcemap ? (ctx: NodeActivityContext) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
                     return ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, framework.init())
-                }
-            }
-        },
-        {
-            activity: Activities.if,
-            condition: ctx => ctx.scope.pipes?.length > 0,
-            body: {
-                activity: 'pipes',
-                pipes: 'binding: pipes'
-            }
-        },
-        {
-            activity: Activities.if,
-            condition: ctx => ctx.scope.sourcemap,
-            body: {
-                activity: Activities.execute,
-                action: (ctx: NodeActivityContext) => {
+                } : null,
+                ...(ctx.scope.pipes || []),
+                ctx.scope.sourcemap ? (ctx: NodeActivityContext) => {
                     let framework = ctx.scope.framework || require('gulp-sourcemaps');
                     return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
-                }
-            }
+                } : null
+            ]
         },
+        // {
+        //     activity: Activities.if,
+        //     condition: ctx => ctx.scope.beforePipes?.length > 0,
+        //     body: {
+        //         activity: 'pipes',
+        //         pipes: 'binding: beforePipes'
+        //     }
+        // },
+        // {
+        //     activity: Activities.if,
+        //     condition: ctx => ctx.scope.sourcemap,
+        //     body: {
+        //         activity: Activities.execute,
+        //         action: (ctx: NodeActivityContext) => {
+        //             let framework = ctx.scope.framework || require('gulp-sourcemaps');
+        //             return ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, framework.init())
+        //         }
+        //     }
+        // },
+        // {
+        //     activity: Activities.if,
+        //     condition: ctx => ctx.scope.pipes?.length > 0,
+        //     body: {
+        //         activity: 'pipes',
+        //         pipes: 'binding: pipes'
+        //     }
+        // },
+        // {
+        //     activity: Activities.if,
+        //     condition: ctx => ctx.scope.sourcemap,
+        //     body: {
+        //         activity: Activities.execute,
+        //         action: (ctx: NodeActivityContext) => {
+        //             let framework = ctx.scope.framework || require('gulp-sourcemaps');
+        //             return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
+        //         }
+        //     }
+        // },
         {
             activity: 'dist',
             src: 'binding: dist',
@@ -125,6 +135,6 @@ export class AssetActivity {
     @Input() dist: NodeExpression<string>;
     @Input() sourcemap: string | boolean;
     @Input('sourceMapFramework') framework: any
-    @Input('beforePipes') beforePipes: Expression<ITransform>[];
-    @Input('pipes') pipes: Expression<ITransform>[];
+    @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
+    @Input('pipes') pipes: ActivityType<ITransform>[];
 }
