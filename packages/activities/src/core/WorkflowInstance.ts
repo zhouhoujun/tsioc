@@ -122,11 +122,9 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
 
         let target = this.getBoot() as IActivityRef;
         target.context.setValue(CTX_RUN_PARENT, this.context);
-        await target.run(this.context, async () => {
-            this.state = RunState.complete;
-            target.destroy();
-        });
-
+        await target.run(this.context)
+        this.state = RunState.complete;
+        target.destroy();
         return this.context;
     }
 

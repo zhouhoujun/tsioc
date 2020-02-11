@@ -28,12 +28,17 @@ export type ActivityNodeType = Activity | IActivityElementRef | IActivityTemplat
 export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implements IActivityRef<T> {
     isScope?: boolean;
     abstract readonly name: string;
-    abstract run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void>;
+    abstract run(ctx: WorkflowContext): Promise<void>;
 
     private _actionFunc: PromiseUtil.ActionHandle;
     toAction(): PromiseUtil.ActionHandle<WorkflowContext> {
         if (!this._actionFunc) {
-            this._actionFunc = (ctx: WorkflowContext, next?: () => Promise<void>) => this.run(ctx, next);
+            this._actionFunc = async (ctx: WorkflowContext, next?: () => Promise<void>) => {
+                await this.run(ctx);
+                if (next) {
+                    await next()
+                }
+            }
         }
         return this._actionFunc;
     }
@@ -61,9 +66,8 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
     /**
      * run activity.
      * @param ctx root context.
-     * @param next next work.
      */
-    async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<any> {
+    async run(ctx: WorkflowContext): Promise<any> {
         let result = await this.nativeElement.execute(this.context);
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_OUTPUT, result);
@@ -71,10 +75,6 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
             this.context.runScope?.setValue(ACTIVITY_OUTPUT, result);
         } else {
             this.context.remove(ACTIVITY_OUTPUT);
-        }
-
-        if (next) {
-            await next();
         }
     }
 
@@ -119,9 +119,8 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
     /**
      * run activity.
      * @param ctx root context.
-     * @param next next work.
      */
-    async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: WorkflowContext): Promise<void> {
         this.context.setValue(CTX_RUN_SCOPE, this.context);
         let result = await this.context.getExector().runActivity(this.rootNodes);
         this.context.remove(CTX_RUN_SCOPE);
@@ -130,10 +129,6 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
             this.context.runScope?.setValue(ACTIVITY_OUTPUT, result);
         } else {
             this.context.remove(ACTIVITY_OUTPUT);
-        }
-
-        if (next) {
-            await next();
         }
     }
 
@@ -192,14 +187,10 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
      * @param ctx root context.
      * @param next next work.
      */
-    async run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void> {
+    async run(ctx: WorkflowContext): Promise<void> {
         let nodeRef = this.nodeRef;
         await nodeRef.run(ctx);
-        if (next) {
-            await next();
-        }
     }
-
 }
 
 

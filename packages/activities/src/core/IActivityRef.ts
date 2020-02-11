@@ -9,6 +9,6 @@ export interface IActivityRef<T = any> extends IDestoryable {
     name?: string;
     readonly isScope?: boolean;
     readonly context: ActivityContext;
-    run(ctx: WorkflowContext, next?: () => Promise<void>): Promise<void>;
+    run(ctx: WorkflowContext): Promise<void>;
     toAction(): PromiseUtil.ActionHandle<WorkflowContext>;
 }
