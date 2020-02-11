@@ -4,7 +4,7 @@ import { ITransform } from '../ITransform';
 import { NodeActivityContext } from '../NodeActivityContext';
 import { TransformService, TransformActivity } from './TransformActivity';
 
-@Task('[pipes]')
+@Task('pipes, [pipes]')
 export class StreamActivity extends TransformActivity {
 
     @Input('pipes') protected pipes: Expression<ITransform>[];

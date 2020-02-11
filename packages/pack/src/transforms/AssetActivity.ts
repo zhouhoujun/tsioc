@@ -1,6 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
-import { Src, Task, TemplateOption, ActivityType, Activities } from '@tsdi/activities';
+import { Src, Task, TemplateOption, ActivityType, Activities, Expression } from '@tsdi/activities';
 import { StreamActivity } from './StreamActivity';
 import { TransformService } from './TransformActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
@@ -69,15 +69,19 @@ export interface AssetActivityOption extends TemplateOption {
         },
         {
             activity: 'src',
-            src: 'binding: src',
+            src: 'binding: src'
         },
         {
-            activity: Activities.execute,
-            action: ctx => {
-                if (ctx.scope.beforePipes) {
-                    return ctx.scope.beforePipes.run(ctx);
-                }
+            activity: Activities.if,
+            condition: ctx => ctx.scope.beforePipes?.length > 0,
+            body: {
+                activity: 'pipes',
+                pipes: 'binding: beforePipes'
             }
+        },
+        {
+            activity: 'pipes',
+            pipes: 'binding: beforePipes'
         },
         {
             activity: Activities.if,
@@ -91,11 +95,11 @@ export interface AssetActivityOption extends TemplateOption {
             }
         },
         {
-            activity: Activities.execute,
-            action: ctx => {
-                if (ctx.scope.streamPipes) {
-                    return ctx.scope.streamPipes.run(ctx);
-                }
+            activity: Activities.if,
+            condition: ctx => ctx.scope.pipes?.length > 0,
+            body: {
+                activity: 'pipes',
+                pipes: 'binding: pipes'
             }
         },
         {
@@ -121,6 +125,6 @@ export class AssetActivity {
     @Input() dist: NodeExpression<string>;
     @Input() sourcemap: string | boolean;
     @Input('sourceMapFramework') framework: any
-    @Input('beforePipes') beforePipes: StreamActivity;
-    @Input('pipes') streamPipes: StreamActivity;
+    @Input('beforePipes') beforePipes: Expression<ITransform>[];
+    @Input('pipes') pipes: Expression<ITransform>[];
 }
