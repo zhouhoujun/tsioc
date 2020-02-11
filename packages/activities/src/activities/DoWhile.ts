@@ -23,13 +23,13 @@ export class DoWhileActivity extends ControlActivity {
 
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    private action: PromiseUtil.ActionHandle<WorkflowContext>;
+    private action: PromiseUtil.ActionHandle<WorkflowContext> | PromiseUtil.ActionHandle<WorkflowContext>[];
 
     async execute(ctx: ActivityContext): Promise<void> {
         if (!this.action) {
             this.action = ctx.getExector().parseAction(this.body);
         }
-        await this.action(ctx.workflow, async () => {
+        await ctx.getExector().execAction(this.action, async () => {
             let condition = await this.condition.execute(ctx);
             if (condition) {
                 await this.execute(ctx);

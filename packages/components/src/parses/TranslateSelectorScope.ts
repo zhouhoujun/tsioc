@@ -5,7 +5,7 @@ import { CTX_COMPONENT_DECTOR } from '../ComponentRef';
 import { DefaultComponets } from '../IComponentReflect';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
 import { ComponentBuilderToken } from '../IComponentBuilder';
-import { IComponentOption } from '../ComponentContext';
+import { IComponentOption, IComponentContext } from '../ComponentContext';
 
 
 
@@ -80,11 +80,10 @@ export const ParseSelectorHandle = async function (ctx: ITemplateContext, next: 
                 template: template,
                 injector: ctx.injector,
                 providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions() })
-            });
+            }) as IComponentContext;
         if (compCtx.value) {
             if (!ctx.hasValue(CTX_COMPONENT_PROVIDER)) {
-                let pdr = compCtx.getValue(CTX_COMPONENT_PROVIDER);
-                pdr && ctx.setValue(CTX_COMPONENT_PROVIDER, pdr);
+                ctx.setValue(CTX_COMPONENT_PROVIDER, compCtx.componentProvider);
             }
             ctx.value = compCtx.value;
         }

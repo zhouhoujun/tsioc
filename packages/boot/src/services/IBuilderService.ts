@@ -4,6 +4,7 @@ import { BootContext, BootOption } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
 import { IBuildOption } from '../builder/IBuildOption';
 import { BuildContext } from '../builder/BuildContext';
+import { IBuildContext } from '../builder/IBuildContext';
 
 export interface BootSubAppOption<T extends BootContext> {
     /**
@@ -35,10 +36,10 @@ export interface IBuilderService extends IocCoreService {
      *
      * @template T
      * @param {(ClassType<T> | IBuildOption<T>)} target
-     * @returns {Promise<BuildContext>}
+     * @returns {Promise<IBuildContext>}
      * @memberof IBuilderService
      */
-    build<T>(target: ClassType<T> | IBuildOption<T>): Promise<BuildContext>;
+    build<T>(target: ClassType<T> | IBuildOption<T>): Promise<IBuildContext>;
 
     /**
      * resolve binding module.

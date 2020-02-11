@@ -51,15 +51,15 @@ const refDect = RefChild.toString();
 export class ParseContext extends ComponentContext<IBindingParseOption> implements IParseContext {
 
     get binding(): IBinding {
-        return this.context.getValue(CTX_BIND_BINDING);
+        return this.getValue(CTX_BIND_BINDING);
     }
 
     get bindExpression(): any {
-        return this.context.getValue(CTX_BIND_EXPRESSION);
+        return this.getValue(CTX_BIND_EXPRESSION);
     }
 
     get dataBinding(): DataBinding {
-        return this.context.getValue(CTX_BIND_DATABINDING)
+        return this.getValue(CTX_BIND_DATABINDING)
     }
 
     getExtenalBindings() {

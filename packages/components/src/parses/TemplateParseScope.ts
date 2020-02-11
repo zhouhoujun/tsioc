@@ -1,8 +1,9 @@
 import { isNullOrUndefined, isArray, IActionSetup } from '@tsdi/ioc';
-import { TemplatesHandle } from './TemplateHandle';
+import { BuildHandles } from '@tsdi/boot';
 import { ITemplateContext } from './TemplateContext';
-import { ParseSelectorHandle } from './ParseSelectorHandle';
-import { TranslateSelectorScope } from './TranslateSelectorScope';
+import { TranslateSelectorScope, ParseSelectorHandle } from './TranslateSelectorScope';
+import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
+
 
 
 /**
@@ -12,12 +13,27 @@ import { TranslateSelectorScope } from './TranslateSelectorScope';
  * @class TemplateParseScope
  * @extends {TemplatesHandle}
  */
-export class TemplateParseScope extends TemplatesHandle implements IActionSetup {
+export class TemplateParseScope extends BuildHandles<ITemplateContext> implements IActionSetup {
     async execute(ctx: ITemplateContext, next?: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         // after template parsed.
         if (next) {
             await next();
+        }
+
+        if (ctx.value && ctx.getOptions().tempRef) {
+            let compPdr = ctx.componentProvider;
+            if (compPdr) {
+                let compCtx: ITemplateContext;
+                if (compPdr.isTemplateContext(ctx)) {
+                    compCtx = ctx;
+                } else {
+                    ctx = compPdr.createTemplateContext(ctx.injector);
+                    ctx.setParent(ctx);
+                }
+                ctx.value = isArray(ctx.value) ? compPdr.createTemplateRef(compCtx, ...ctx.value)
+                    : compPdr.createTemplateRef(compCtx, ctx.value);
+            }
         }
 
         // after all clean.
@@ -45,12 +61,18 @@ export const ElementsTemplateHandle = async function (ctx: ITemplateContext, nex
     if (isArray(template)) {
         let actInjector = ctx.reflects.getActionInjector();
         ctx.value = await Promise.all(template.map(async tp => {
-            let subCtx = ctx.clone(true).setOptions({
-                parent: ctx,
+            let subCtx = ctx.clone().setOptions({
                 template: tp
             });
             await actInjector.getInstance(TemplateParseScope).execute(subCtx);
-            return isNullOrUndefined(subCtx.value) ? tp : subCtx.value;
+            if (isNullOrUndefined(subCtx.value)) {
+                return tp;
+            } else {
+                if (!ctx.hasValue(CTX_COMPONENT_PROVIDER)) {
+                    ctx.setValue(CTX_COMPONENT_PROVIDER, subCtx.componentProvider);
+                }
+                return subCtx.value;
+            }
         }));
     }
 

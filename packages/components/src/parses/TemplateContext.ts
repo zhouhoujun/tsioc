@@ -14,6 +14,7 @@ import { CTX_TEMPLATE_REF, ContextNode, CTX_COMPONENT_DECTOR, ITemplateRef } fro
  */
 export interface ITemplateOption extends IComponentOption {
     selector?: Type;
+    tempRef?: boolean;
 }
 
 /**
@@ -42,11 +43,11 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
 
     getResultRef() {
         if (this.value && !this.hasValue(CTX_TEMPLATE_REF)) {
-            if (!this.componentDecorator) {
-                let node = (isArray(this.value) ? lang.first(this.value) : this.value) as ContextNode;
-                let decor = (node.context as IComponentContext)?.componentDecorator;
-                decor && this.setValue(CTX_COMPONENT_DECTOR, decor);
-            }
+            // if (!this.componentDecorator) {
+            //     let node = (isArray(this.value) ? lang.first(this.value) : this.value) as ContextNode;
+            //     let decor = (node.context as IComponentContext)?.componentDecorator;
+            //     decor && this.setValue(CTX_COMPONENT_DECTOR, decor);
+            // }
             let compPdr = this.componentProvider;
             if (compPdr) {
                 let ctx: ITemplateContext;

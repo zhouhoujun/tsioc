@@ -1,13 +1,14 @@
 import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuildContext, IAnnoationContext } from '@tsdi/boot';
-import { ComponentContext, ITemplateContext, IComponentContext } from '@tsdi/components';
+import { ComponentContext, ITemplateContext, IComponentContext, CTX_TEMPLATE_REF, ITemplateRef } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
 import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
+import { IActivityTemplateRef } from './ActivityRef';
 
 
 export const CTX_RUN_PARENT = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
@@ -93,5 +94,5 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
 }
 
 export class ActivityTemplateContext extends ActivityContext implements ITemplateContext {
-
+    selector?: Type<any>;
 }

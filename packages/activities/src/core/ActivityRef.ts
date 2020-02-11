@@ -1,7 +1,7 @@
 import { PromiseUtil, lang, isDefined, Abstract, IDestoryable, isFunction, Type, Inject, Injectable } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '@tsdi/boot';
 import { IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS, NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR } from '@tsdi/components';
-import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL } from './ActivityContext';
+import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL, ActivityTemplateContext } from './ActivityContext';
 import { IActivityRef, ACTIVITY_OUTPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
@@ -48,7 +48,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
 
     constructor(
         @Inject(CONTEXT_REF) context: ActivityContext,
-        @Inject(NATIVE_ELEMENT)  public readonly nativeElement: T) {
+        @Inject(NATIVE_ELEMENT) public readonly nativeElement: T) {
         super(context);
         let injector = context.injector;
         if (!injector.has(ELEMENT_REFS)) {
@@ -109,7 +109,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
     }
 
     constructor(
-        @Inject(CONTEXT_REF) context: ActivityContext,
+        @Inject(CONTEXT_REF) context: ActivityTemplateContext,
         @Inject(ROOT_NODES) nodes: T[]) {
         super(context);
         this._rootNodes = nodes;

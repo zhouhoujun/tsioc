@@ -13,6 +13,7 @@ import { ResolveMoudleScope } from '../builder/resolvers/ResolveMoudleScope';
 import { BuildContext } from '../builder/BuildContext';
 import { BuildHandles } from '../builder/BuildHandles';
 import { IBuildOption } from '../builder/IBuildOption';
+import { IBuildContext } from '../builder/IBuildContext';
 
 
 
@@ -47,7 +48,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         return ctx.value;
     }
 
-    async build<T>(target: ClassType<T> | IBuildOption<T>): Promise<BuildContext> {
+    async build<T>(target: ClassType<T> | IBuildOption<T>): Promise<IBuildContext> {
         let injector: ICoreInjector;
         let options: IBuildOption;
         let md: ClassType;

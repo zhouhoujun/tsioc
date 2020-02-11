@@ -122,7 +122,7 @@ export class ActivityExecutor implements IActivityExecutor {
 
     parseAction<T extends WorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[] {
         if (isArray(activity)) {
-            return activity.map(act => async (ctx: T, next?: () => Promise<void>) => {
+            return activity.filter(a => a).map(act => async (ctx: T, next?: () => Promise<void>) => {
                 let handle = await this.buildActivity<T>(act, input);
                 await handle(ctx, next);
             });
@@ -161,7 +161,6 @@ export class ActivityExecutor implements IActivityExecutor {
             if (isClass(activity.activity)) {
                 md = activity.activity;
             }
-
             let option = {
                 type: md,
                 template: activity,

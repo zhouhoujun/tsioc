@@ -20,13 +20,12 @@ export class IntervalActivity extends ControlActivity {
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
     async execute(ctx: ActivityContext): Promise<void> {
-        let interval = await this.timer.execute(ctx);
-        let action = ctx.getExector().parseAction(this.body);
-        if (!action) {
+        if (!this.body) {
             return;
         }
+        let interval = await this.timer.execute(ctx);
         setInterval(() => {
-            action(ctx.workflow);
+            ctx.getExector().runActivity(this.body);
         }, interval);
     }
 }
