@@ -6,10 +6,7 @@ import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider, CTX_COMPONENT_PROVIDER } from './ComponentProvider';
 
 export interface IComponentOption extends IBuildOption {
-    /**
-     * template scope.
-     */
-    scope?: any;
+
     /**
      * build as attr or not.
      */
@@ -140,16 +137,6 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
         let dector = this.getContextValue(CTX_COMPONENT_DECTOR);
         dector && this.setValue(CTX_COMPONENT_DECTOR, dector);
         return dector;
-    }
-
-    setOptions(options: T) {
-        if (!options) {
-            return this;
-        }
-        if (options.scope) {
-            this.setValue(CTX_TEMPLATE_SCOPE, options.scope)
-        }
-        return super.setOptions(options);
     }
 
 }

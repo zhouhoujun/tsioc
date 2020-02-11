@@ -19,7 +19,6 @@ export const BindingOutputHandle = async function (ctx: IComponentContext, next:
                 let pctx = ParseContext.parse(ctx.injector, {
                     type: ctx.type,
                     parent: ctx,
-                    scope: ctx.scope,
                     bindExpression: expression,
                     binding: binding
                 });
