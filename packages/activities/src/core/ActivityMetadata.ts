@@ -249,7 +249,7 @@ export type ActivityTemplate<T extends TemplateOption = ControlTemplate> = Templ
 /**
  * context expression.
  */
-export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | ((ctx: TC) => T | Promise<T>) | Type;
+export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | ((ctx: TC, scope?: any) => T | Promise<T>) | Type;
 
 /**
  * expression.

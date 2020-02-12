@@ -233,11 +233,11 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: <TsBuildOption>{
                         activity: 'ts',
                         src: 'binding: src',
-                        dist: ctx =>  ctx.scope.getTargetPath(ctx.input),
-                        dts: ctx => ctx.scope.dts ? ctx.scope.dts : (ctx.input.dtsMain ? './' : null),
+                        dist: (ctx, scope: LibPackBuilder) =>  scope.getTargetPath(ctx.input),
+                        dts: (ctx, scope: LibPackBuilder) => ctx.input.dts ? ctx.input.dts : (ctx.input.dtsMain ? './' : null),
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
-                        tsconfig: ctx => ctx.scope.getCompileOptions(ctx.input.target)
+                        tsconfig: (ctx, scope: LibPackBuilder) => scope.getCompileOptions(ctx.input.target)
                     }
                 },
                 {
@@ -246,17 +246,17 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
-                            input: ctx => ctx.scope.toOutputPath(ctx.input.input),
+                            input: (ctx, scope: LibPackBuilder) => scope.toOutputPath(ctx.input.input),
                             sourcemap: 'binding: sourcemap',
                             plugins: 'binding: plugins',
                             external: 'binding: external',
                             options: 'binding: options',
                             globals: 'binding: globals',
-                            output: ctx => {
+                            output: (ctx, scope: LibPackBuilder) => {
                                 return {
                                     format: ctx.input.format || 'cjs',
-                                    file: ctx.input.outputFile ? ctx.scope.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
-                                    dir: ctx.input.outputFile ? undefined : ctx.scope.toModulePath(ctx.input),
+                                    file: ctx.input.outputFile ? scope.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
+                                    dir: ctx.input.outputFile ? undefined : scope.toModulePath(ctx.input),
                                 }
                             }
                         },

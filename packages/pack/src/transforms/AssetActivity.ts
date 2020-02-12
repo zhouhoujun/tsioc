@@ -72,60 +72,22 @@ export interface AssetActivityOption extends TemplateOption {
         },
         {
             activity: 'pipes',
-            pipes: ctx => [
-                ...(ctx.scope.beforePipes || []),
-                ctx.scope.sourcemap ? (ctx: NodeActivityContext) => {
-                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
+            pipes: (ctx: NodeActivityContext, scope: AssetActivity) => [
+                ...(scope.beforePipes || []),
+                scope.sourcemap ? () => {
+                    let framework = scope.framework || require('gulp-sourcemaps');
                     return ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, framework.init())
                 } : null,
-                ...(ctx.scope.pipes || []),
-                ctx.scope.sourcemap ? (ctx: NodeActivityContext) => {
-                    let framework = ctx.scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
+                ...(scope.pipes || []),
+                scope.sourcemap ? () => {
+                    let framework = scope.framework || require('gulp-sourcemaps');
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
                 } : null
             ]
         },
-        // {
-        //     activity: Activities.if,
-        //     condition: ctx => ctx.scope.beforePipes?.length > 0,
-        //     body: {
-        //         activity: 'pipes',
-        //         pipes: 'binding: beforePipes'
-        //     }
-        // },
-        // {
-        //     activity: Activities.if,
-        //     condition: ctx => ctx.scope.sourcemap,
-        //     body: {
-        //         activity: Activities.execute,
-        //         action: (ctx: NodeActivityContext) => {
-        //             let framework = ctx.scope.framework || require('gulp-sourcemaps');
-        //             return ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, framework.init())
-        //         }
-        //     }
-        // },
-        // {
-        //     activity: Activities.if,
-        //     condition: ctx => ctx.scope.pipes?.length > 0,
-        //     body: {
-        //         activity: 'pipes',
-        //         pipes: 'binding: pipes'
-        //     }
-        // },
-        // {
-        //     activity: Activities.if,
-        //     condition: ctx => ctx.scope.sourcemap,
-        //     body: {
-        //         activity: Activities.execute,
-        //         action: (ctx: NodeActivityContext) => {
-        //             let framework = ctx.scope.framework || require('gulp-sourcemaps');
-        //             return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(ctx.scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
-        //         }
-        //     }
-        // },
         {
             activity: 'dist',
-            src: 'binding: dist',
+            dist: 'binding: dist',
         }
     ]
 })

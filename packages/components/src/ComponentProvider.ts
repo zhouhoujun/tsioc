@@ -128,6 +128,20 @@ export abstract class ComponentProvider {
     }
 
     /**
+     * bind function scope.
+     * @param func func
+     * @param scope scope to bind.
+     */
+    bindScope(func: Function, scope: any): Function {
+        if (!func['__binded']) {
+            func = func.bind ? func.bind(scope) :
+                (...args) => func( ...args, scope);
+            func['__binded'] = true;
+        }
+        return func;
+    }
+
+    /**
      * select ref tag in element.
      *
      * @param {*} element

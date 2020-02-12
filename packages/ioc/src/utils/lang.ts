@@ -625,7 +625,8 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: ClassType): boolean {
-    return isFunction(target) && (isPrimitiveType(target)
+    return isFunction(target) && (
+        isPrimitiveType(target)
         || target === Date
         || target === Array);
 }

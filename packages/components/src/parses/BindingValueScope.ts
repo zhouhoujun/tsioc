@@ -1,4 +1,4 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, isFunction } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser, BuildHandles } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { TemplateContext } from './TemplateContext';
@@ -177,12 +177,18 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
     if (!isNullOrUndefined(expression)) {
         let type = binding.type;
         if (isBaseType(type)) {
-            ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, expression);
+            if (isFunction(expression)) {
+                ctx.value = ctx.componentProvider.bindScope(expression, ctx.scope);
+            } else {
+                ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, expression);
+            }
         } else if (isClassType(type)) {
             let ttype = lang.getClass(expression);
             if (ctx.reflects.isExtends(ttype, type)) {
                 ctx.value = expression;
             }
+        } else if (isFunction(expression)) {
+            ctx.value = ctx.componentProvider.bindScope(expression, ctx.scope);
         } else {
             ctx.value = expression;
         }
