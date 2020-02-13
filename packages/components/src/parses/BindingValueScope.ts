@@ -178,7 +178,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
         let type = binding.type;
         if (isBaseType(type)) {
             if (isFunction(expression)) {
-                ctx.value = ctx.componentProvider.bindScope(expression, ctx.scope);
+                ctx.value = isClassType(expression) ? expression : ctx.componentProvider.bindScope(expression, ctx.scope);
             } else {
                 ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, expression);
             }
@@ -187,10 +187,12 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
             if (ctx.reflects.isExtends(ttype, type)) {
                 ctx.value = expression;
             }
-        } else if (isFunction(expression)) {
-            ctx.value = ctx.componentProvider.bindScope(expression, ctx.scope);
         } else {
-            ctx.value = expression;
+            if (isFunction(expression) && !isClassType(expression)) {
+                ctx.value = ctx.componentProvider.bindScope(expression, ctx.scope);
+            } else {
+                ctx.value = expression;
+            }
         }
     }
 

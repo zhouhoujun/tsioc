@@ -1,9 +1,8 @@
 import { ObjectMap, isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
-import { Task, Src, Activities, ActivityType } from '@tsdi/activities';
+import { Task, Src, Activities } from '@tsdi/activities';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
-import { StreamActivity } from './StreamActivity';
 import { TransformService } from './TransformActivity';
 import { classAnnotations } from '@tsdi/annotations';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
@@ -29,18 +28,6 @@ export interface TsBuildOption extends AssetActivityOption {
 @Task({
     selector: 'ts',
     template: [
-        // {
-        //     activity: 'test',
-        //     src: 'binding: test'
-        // },
-        {
-            activity: Activities.if,
-            condition: (ctx, scope) => scope.autoClean,
-            body: {
-                activity: 'clean',
-                clean: 'binding: dist'
-            }
-        },
         {
             activity: 'src',
             src: 'binding: src',

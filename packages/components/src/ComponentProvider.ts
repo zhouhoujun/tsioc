@@ -20,7 +20,7 @@ import { TemplateContext, ITemplateContext, ITemplateOption } from './parses/Tem
 
 const attrSelPrefix = /^ATTR__/;
 const seletPrefix = /^SELTR_/;
-const pipePrefix = /^PIPE_/;
+// const pipePrefix = /^PIPE_/;
 
 
 export const CTX_COMPONENT_PROVIDER = tokenId<ComponentProvider>('CTX_COMPONENT_PROVIDER');
@@ -133,12 +133,14 @@ export abstract class ComponentProvider {
      * @param scope scope to bind.
      */
     bindScope(func: Function, scope: any): Function {
+        let bindFunc: Function
         if (!func['__binded']) {
-            func = func.bind ? func.bind(scope) :
-                (...args) => func( ...args, scope);
-            func['__binded'] = true;
+            bindFunc = (...args) => func(...args, scope);
+            bindFunc['__binded'] = true;
+        } else {
+            bindFunc = func;
         }
-        return func;
+        return bindFunc;
     }
 
     /**

@@ -1,6 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
-import { Src, Task, TemplateOption, ActivityType, Activities } from '@tsdi/activities';
+import { Src, Task, TemplateOption, ActivityType } from '@tsdi/activities';
 import { TransformService } from './TransformActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform } from '../ITransform';
@@ -59,14 +59,6 @@ export interface AssetActivityOption extends TemplateOption {
     selector: 'asset',
     template: [
         {
-            activity: Activities.if,
-            condition: ctx => ctx.scope.autoClean,
-            body: {
-                activity: 'clean',
-                clean: 'binding: dist'
-            }
-        },
-        {
             activity: 'src',
             src: 'binding: src'
         },
@@ -92,7 +84,6 @@ export interface AssetActivityOption extends TemplateOption {
     ]
 })
 export class AssetActivity {
-    @Input() autoClean: boolean;
     @Input() src: NodeExpression<Src>;
     @Input() dist: NodeExpression<string>;
     @Input() sourcemap: string | boolean;
