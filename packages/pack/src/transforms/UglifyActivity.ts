@@ -10,13 +10,9 @@ const uglify = require('gulp-uglify');
 export class UglifyActivity extends TransformActivity {
 
     @Input('uglifyOptions') options: NodeExpression;
-    @Input() uglify: NodeExpression<boolean>;
 
     async execute(ctx: NodeActivityContext): Promise<ITransform> {
-        let enable = await ctx.resolveExpression(this.uglify);
-        if (enable) {
-            let options = await ctx.resolveExpression(this.options);
-            return await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, options ? uglify(options) : uglify());
-        }
+        let options = await ctx.resolveExpression(this.options);
+        return await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, options ? uglify(options) : uglify());
     }
 }

@@ -84,7 +84,7 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
-            condition: ctx => ctx.scope.js,
+            condition: ctx => ctx.input,
             input: 'ctx.input | tsjs',
             body: [
                 {
@@ -92,13 +92,16 @@ export interface TsBuildOption extends AssetActivityOption {
                     pipes: 'binding: pipes'
                 },
                 {
-                    activity: 'uglify',
-                    uglify: 'binding: uglify',
-                    uglifyOptions: 'binding: uglifyOptions'
+                    activity: 'if',
+                    condition: 'binding: uglify',
+                    body: {
+                        activity: 'uglify',
+                        uglifyOptions: 'binding: uglifyOptions'
+                    }
                 },
                 {
                     activity: Activities.if,
-                    condition: (ctx, scope: TsBuildActivity) => scope.sourcemap,
+                    condition: 'binding: sourcemap',
                     body: {
                         name: 'sourcemap-write',
                         activity: Activities.execute,
