@@ -1,11 +1,11 @@
-import { PromiseUtil, lang, isDefined, Abstract, IDestoryable, isFunction, Type, Inject, Injectable } from '@tsdi/ioc';
+import { PromiseUtil, lang, isDefined, Abstract, IDestoryable, isFunction, Type, Inject, Injectable, isString } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
     NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
 } from '@tsdi/components';
 import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL, ActivityTemplateContext } from './ActivityContext';
-import { IActivityRef, ACTIVITY_OUTPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
 import { ControlActivity } from './ControlActivity';
@@ -31,7 +31,31 @@ export type ActivityNodeType = Activity | IActivityElementRef | IActivityTemplat
 export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implements IActivityRef<T> {
     isScope?: boolean;
     abstract readonly name: string;
-    abstract run(ctx: WorkflowContext): Promise<void>;
+    protected abstract execute(ctx: WorkflowContext): Promise<any>;
+
+    /**
+     * run activity.
+     * @param ctx root context.
+     */
+    async run(ctx: WorkflowContext): Promise<void> {
+        if (!this.context.hasValue(ACTIVITY_INPUT)) {
+            let input = this.context.template?.input;
+            if (isDefined(input)) {
+                if (isString(input)) {
+                    input = this.context.getExector().eval(input);
+                }
+            } else {
+                input = this.context.output;
+            }
+            this.context.setValue(ACTIVITY_INPUT, input);
+        }
+        let result = await this.execute(ctx);
+        if (isDefined(result)) {
+            this.context.setValue(ACTIVITY_OUTPUT, result);
+            this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_OUTPUT, result);
+            this.context.runScope?.setValue(ACTIVITY_OUTPUT, result);
+        }
+    }
 
     private _actionFunc: PromiseUtil.ActionHandle;
     toAction(): PromiseUtil.ActionHandle<WorkflowContext> {
@@ -70,15 +94,8 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
      * run activity.
      * @param ctx root context.
      */
-    async run(ctx: WorkflowContext): Promise<any> {
-        let result = await this.nativeElement.execute(this.context);
-        if (isDefined(result)) {
-            this.context.setValue(ACTIVITY_OUTPUT, result);
-            this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_OUTPUT, result);
-            this.context.runScope?.setValue(ACTIVITY_OUTPUT, result);
-        } else {
-            this.context.remove(ACTIVITY_OUTPUT);
-        }
+    protected execute(ctx: WorkflowContext): Promise<any> {
+        return this.nativeElement.execute(this.context);
     }
 
     protected destroying(): void {
@@ -123,16 +140,11 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
      * run activity.
      * @param ctx root context.
      */
-    async run(ctx: WorkflowContext): Promise<void> {
+    protected async execute(ctx: WorkflowContext): Promise<any> {
         this.context.setValue(CTX_RUN_SCOPE, this.context);
-        let result = await this.context.getExector().runActivity(this.rootNodes);
+        await this.context.getExector().runActivity(this.rootNodes);
         this.context.remove(CTX_RUN_SCOPE);
-        if (isDefined(result)) {
-            this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_OUTPUT, result);
-            this.context.runScope?.setValue(ACTIVITY_OUTPUT, result);
-        } else {
-            this.context.remove(ACTIVITY_OUTPUT);
-        }
+        return this.context.output;
     }
 
     protected destroying(): void {
@@ -190,9 +202,8 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
      * @param ctx root context.
      * @param next next work.
      */
-    async run(ctx: WorkflowContext): Promise<void> {
-        let nodeRef = this.nodeRef;
-        await nodeRef.run(ctx);
+    protected async execute(ctx: WorkflowContext): Promise<void> {
+        await this.nodeRef.run(ctx);
     }
 }
 

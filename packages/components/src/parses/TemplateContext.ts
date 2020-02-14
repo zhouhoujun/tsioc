@@ -43,11 +43,6 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
 
     getResultRef() {
         if (this.value && !this.hasValue(CTX_TEMPLATE_REF)) {
-            // if (!this.componentDecorator) {
-            //     let node = (isArray(this.value) ? lang.first(this.value) : this.value) as ContextNode;
-            //     let decor = (node.context as IComponentContext)?.componentDecorator;
-            //     decor && this.setValue(CTX_COMPONENT_DECTOR, decor);
-            // }
             let compPdr = this.componentProvider;
             if (compPdr) {
                 let ctx: ITemplateContext;
@@ -55,9 +50,8 @@ export class TemplateContext extends ComponentContext<ITemplateOption> implement
                     ctx = this;
                 } else {
                     ctx = compPdr.createTemplateContext(this.injector);
-                    ctx.setParent(this);
                 }
-                ctx.setParent(this);
+                ctx.setParent(this.$parent);
                 let tempRef = isArray(this.value) ? compPdr.createTemplateRef(ctx, ...this.value) : compPdr.createTemplateRef(ctx, this.value);
                 this.setValue(CTX_TEMPLATE_REF, tempRef);
             }

@@ -98,7 +98,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
     let binding = ctx.binding;
     if (ctx.componentProvider.isTemplate(expression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
-            parent: ctx.getParent(),
+            parent: ctx.$parent,
             template: expression,
             providers: ctx.providers
         });
@@ -157,7 +157,7 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
             ctx.value = await injector.getInstance(ComponentBuilderToken).resolve(<IComponentOption>{
                 type: selector,
                 attr: true,
-                parent: ctx.getParent(),
+                parent: ctx.$parent,
                 template: bindings,
                 providers: ctx.providers,
                 injector: injector
