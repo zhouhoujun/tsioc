@@ -1,9 +1,10 @@
 import { Input, Binding } from '@tsdi/components';
 import { Task, TemplateOption } from '@tsdi/activities';
-import { TransformActivity, TransformService } from './TransformActivity';
+import { NodeActivity } from '../NodeActivity';
+import { TransformService } from './TransformActivity';
 import { DestOptions, dest } from 'vinyl-fs';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
-import { ITransform } from '../ITransform';
+
 
 
 /**
@@ -40,17 +41,17 @@ export interface DistActivityOption extends TemplateOption {
  * @extends {TransformActivity}
  */
 @Task('dist, [dist]')
-export class DestActivity extends TransformActivity {
+export class DestActivity extends NodeActivity<void> {
 
     @Input() dist: NodeExpression<string>;
 
     @Input('destOptions') options: NodeExpression<DestOptions>;
 
-    async execute(ctx: NodeActivityContext): Promise<ITransform> {
+    async execute(ctx: NodeActivityContext): Promise<void> {
         let dist = await ctx.resolveExpression(this.dist);
         if (dist) {
             let options = await ctx.resolveExpression(this.options);
-            return await ctx.injector.get(TransformService).executePipe(ctx, ctx.output, dest(ctx.platform.toRootPath(dist), options), true);
+            await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, dest(ctx.platform.toRootPath(dist), options), true);
         }
     }
 }

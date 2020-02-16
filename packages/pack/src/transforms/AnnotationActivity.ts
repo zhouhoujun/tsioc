@@ -14,7 +14,7 @@ export class AnnotationActivity extends TransformActivity {
     async execute(ctx: NodeActivityContext): Promise<ITransform> {
         let enable = await ctx.resolveExpression(this.annotation);
         if (enable) {
-           return await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, this.framework);
+           return await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.input, this.framework);
         }
     }
 

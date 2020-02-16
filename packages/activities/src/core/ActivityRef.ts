@@ -9,6 +9,7 @@ import { IActivityRef, ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
 import { ControlActivity } from './ControlActivity';
+import { expExp } from '../utils/exps';
 
 
 
@@ -41,7 +42,7 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
         if (!this.context.hasValue(ACTIVITY_INPUT)) {
             let input = this.context.template?.input;
             if (isDefined(input)) {
-                if (isString(input)) {
+                if (isString(input) && expExp.test(input)) {
                     input = this.context.getExector().eval(input);
                 }
             } else {
