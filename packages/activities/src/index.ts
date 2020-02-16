@@ -3,8 +3,6 @@ export * from './ActivityProvider';
 export * from './ActivityModule';
 export * from './decorators/Task';
 
-
-export * from './utils/objectUtil';
 export * from './utils/types';
 // core
 export * from './core/IActivityRef';

@@ -57,7 +57,6 @@ export interface TsBuildOption extends AssetActivityOption {
                 pipes: 'binding: beforePipes'
             }
         },
-
         {
             activity: Activities.execute,
             name: 'tscompile',
@@ -74,7 +73,7 @@ export interface TsBuildOption extends AssetActivityOption {
                     let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
                     tsCompile = tsProject();
                 }
-                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.output, tsCompile);
+                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.input, tsCompile);
             }
         },
         {

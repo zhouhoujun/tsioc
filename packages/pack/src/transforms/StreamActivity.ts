@@ -1,8 +1,10 @@
+import { isArray } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task, Expression } from '@tsdi/activities';
 import { ITransform } from '../ITransform';
 import { NodeActivityContext } from '../NodeActivityContext';
 import { TransformService, TransformActivity } from './TransformActivity';
+
 
 @Task('pipes, [pipes]')
 export class StreamActivity extends TransformActivity {
@@ -11,7 +13,9 @@ export class StreamActivity extends TransformActivity {
 
     async execute(ctx: NodeActivityContext): Promise<ITransform> {
         let pipes = await ctx.resolveExpression(this.pipes);
-        pipes = pipes.filter(p => p);
+        if (isArray(pipes)) {
+            pipes = pipes.filter(p => p);
+        }
         if (pipes && pipes.length) {
             return await this.pipeStream(ctx, ctx.input, ...pipes);
         }

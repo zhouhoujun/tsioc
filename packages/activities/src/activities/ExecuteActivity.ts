@@ -21,7 +21,7 @@ export class ExecuteActivity<T> extends Activity<T> {
     async execute(ctx: ActivityContext): Promise<T> {
         let action = isString(this.action) ? ctx.getExector().eval(this.action) : this.action;
         if (isFunction(action)) {
-            return await action(ctx, this);
+            return await action(ctx);
         }
     }
 }
