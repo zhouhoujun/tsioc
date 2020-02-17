@@ -24,13 +24,13 @@ export class WhileActivity extends ControlActivity {
     private action: PromiseUtil.ActionHandle<WorkflowContext> | PromiseUtil.ActionHandle<WorkflowContext>[];
 
     async execute(ctx: ActivityContext): Promise<void> {
-        let condition = await this.condition.execute(ctx);
+        let condition = await this.condition?.execute(ctx);
         if (condition) {
             if (!this.action) {
                 this.action = ctx.getExector().parseAction(this.body);
             }
             await ctx.getExector().execAction(this.action, async () => {
-                condition = await this.condition.execute(ctx);
+                condition = await this.condition?.execute(ctx);
                 if (condition) {
                     await this.execute(ctx);
                 }

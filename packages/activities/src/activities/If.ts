@@ -27,7 +27,7 @@ export class IfActivity extends ControlActivity {
     }
 
     protected async tryExec(ctx: ActivityContext) {
-        let result = await this.condition.execute(ctx);
+        let result = await this.condition?.execute(ctx);
         ctx.runScope.setValue(IFStateKey, result);
         if (result) {
             await ctx.getExector().runActivity(this.body);

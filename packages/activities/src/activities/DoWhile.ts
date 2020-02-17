@@ -30,7 +30,7 @@ export class DoWhileActivity extends ControlActivity {
             this.action = ctx.getExector().parseAction(this.body);
         }
         await ctx.getExector().execAction(this.action, async () => {
-            let condition = await this.condition.execute(ctx);
+            let condition = await this.condition?.execute(ctx);
             if (condition) {
                 await this.execute(ctx);
             }
