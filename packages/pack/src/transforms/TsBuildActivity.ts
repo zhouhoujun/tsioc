@@ -6,7 +6,7 @@ import { AssetActivityOption, AssetActivity } from './AssetActivity';
 import { TransformService } from './TransformActivity';
 import { classAnnotations } from '@tsdi/annotations';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
-import { ITransform } from '../ITransform';
+import { ITransform, isTransform } from '../ITransform';
 const ts = require('gulp-typescript');
 
 /**
@@ -80,7 +80,7 @@ export interface TsBuildOption extends AssetActivityOption {
         {
             activity: Activities.if,
             input: 'ctx.output | dts',
-            condition: (ctx, bind) => ctx.input && bind.getScope<TsBuildActivity>().dts,
+            condition: (ctx, bind) => isTransform(ctx.input) && bind.getScope<TsBuildActivity>().dts,
             body: {
                 name: 'write-dts',
                 activity: 'dist',
@@ -90,7 +90,7 @@ export interface TsBuildOption extends AssetActivityOption {
         {
             activity: Activities.if,
             input: 'ctx.output | tsjs',
-            condition: ctx => ctx.input,
+            condition: ctx => isTransform(ctx.input),
             body: [
                 {
                     activity: 'pipes',

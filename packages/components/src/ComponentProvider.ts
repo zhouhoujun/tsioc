@@ -26,7 +26,6 @@ const seletPrefix = /^SELTR_/;
 
 export interface BindFunc extends Function {
     __binded?: boolean;
-    context?: IComponentContext;
 }
 
 export const CTX_COMPONENT_PROVIDER = tokenId<ComponentProvider>('CTX_COMPONENT_PROVIDER');
@@ -143,7 +142,6 @@ export abstract class ComponentProvider {
         if (!bindFunc.__binded) {
             bindFunc = (...args) => func(...args, ctx);
             bindFunc.__binded = true;
-            bindFunc.context = ctx;
         }
         return bindFunc;
     }
