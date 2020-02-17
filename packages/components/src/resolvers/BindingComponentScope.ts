@@ -10,7 +10,7 @@ import { ResolveTargetRefScope } from './ResolveTargetRefScope';
 import { ModuleAfterContentInitHandle } from './ModuleAfterContentInitHandle';
 import { CTX_COMPONENT_DECTOR, CTX_ELEMENT_REF, CTX_COMPONENT } from '../ComponentRef';
 import { ComponentProvider } from '../ComponentProvider';
-import { ComponentContext, IComponentOption } from '../ComponentContext';
+import { ComponentContext, IComponentOption, CTX_COMPONENT_CONTEXT } from '../ComponentContext';
 
 
 export class BindingComponentScope extends BuildHandles<IBuildContext> implements IActionSetup {
@@ -26,6 +26,7 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
             } else {
                 ctx.setValue(CTX_COMPONENT_DECTOR, ctx.decorator);
                 ctx.setValue(CTX_COMPONENT, ctx.value);
+                ctx.setValue(CTX_COMPONENT_CONTEXT, ctx);
                 ctx.getParent()?.addChild(ctx);
                 await super.execute(ctx);
             }

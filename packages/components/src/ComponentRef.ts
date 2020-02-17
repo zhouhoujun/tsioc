@@ -4,7 +4,6 @@ import { NodeSelector } from './NodeSelector';
 
 export const CTX_COMPONENT_DECTOR = tokenId<string>('CTX_COMPONENT_DECTOR');
 export const CTX_COMPONENT = tokenId<any>('CTX_COMPONENT');
-export const CTX_COMPONENT_SUB = tokenId<boolean>('CTX_COMPONENT_SUB');
 export const CTX_ELEMENT_REF = tokenId<any | any[]>('CTX_ELEMENT_REF');
 export const CTX_TEMPLATE_REF = tokenId<any | any[]>('CTX_TEMPLATE_REF');
 export const CTX_TEMPLATE_SCOPE = tokenId<any>('CTX_TEMPLATE_SCOPE');

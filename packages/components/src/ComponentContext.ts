@@ -1,6 +1,6 @@
 import { DecoratorProvider, tokenId } from '@tsdi/ioc';
-import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext, IAnnoationContext } from '@tsdi/boot';
-import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_TEMPLATE_SCOPE, CTX_COMPONENT_SUB } from './ComponentRef';
+import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext } from '@tsdi/boot';
+import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_TEMPLATE_SCOPE } from './ComponentRef';
 import { IComponentMetadata } from './decorators/IComponentMetadata';
 import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider, CTX_COMPONENT_PROVIDER } from './ComponentProvider';
@@ -18,6 +18,7 @@ export interface IComponentOption extends IBuildOption {
     sub?: boolean;
 }
 
+
 export interface IComponentContext<T extends IComponentOption = IComponentOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
     TRefl extends IComponentReflect = IComponentReflect> extends IBuildContext<T, TMeta, TRefl> {
@@ -27,10 +28,11 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
      * component instance.
      */
     readonly component: any;
-    // /**
-    //  * template scope.
-    //  */
-    // readonly scope: any;
+
+    readonly componentContext: IComponentContext;
+    /**
+     * template scope.
+     */
     getScope<T>(): T;
     getScopes(): any[];
     readonly componentProvider: ComponentProvider;
@@ -38,7 +40,8 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
 
 }
 
-export const CTX_PARCOMPONENTCTX = tokenId<IComponentContext>('CTX_PARCOMPONENTCTX');
+
+export const CTX_COMPONENT_CONTEXT = tokenId<IComponentContext>('CTX_COMPONENT_CONTEXT');
 
 export class ComponentContext<T extends IComponentOption = IComponentOption,
     TMeta extends IComponentMetadata = IComponentMetadata,
@@ -66,8 +69,16 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
 
     protected getComponent() {
         let comp = this.getParent()?.getContextValue(CTX_COMPONENT);
-        this.setValue(CTX_COMPONENT_SUB, true);
         comp && this.setValue(CTX_COMPONENT, comp);
+        return comp;
+    }
+
+    get componentContext() {
+        return this.context.getValue(CTX_COMPONENT_CONTEXT) ?? this.getComponentContext();
+    }
+    protected getComponentContext() {
+        let comp = this.getParent()?.getContextValue(CTX_COMPONENT_CONTEXT);
+        comp && this.setValue(CTX_COMPONENT_CONTEXT, comp);
         return comp;
     }
 
@@ -89,13 +100,13 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
 
     getScopes() {
         let scopes = [];
-        let ctx = this as IAnnoationContext;
+        let ctx = this.componentContext;
         while (ctx && !ctx.destroyed) {
-            let comp = ctx.getValue(CTX_COMPONENT_SUB) ? null : ctx.getValue(CTX_COMPONENT);
+            let comp = ctx.getValue(CTX_COMPONENT);
             if (comp) {
                 scopes.push(comp);
             }
-            ctx = ctx.getParent();
+            ctx = ctx.componentContext;
         }
         return scopes;
     }

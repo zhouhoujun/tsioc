@@ -172,6 +172,9 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @param token
      */
     getContextValue<T>(token: Token<T>): T {
+        if (this.destroyed) {
+            return null;
+        }
         let key = this.injector.getTokenKey(token);
         let value = this.context.getValue(key);
         if (!isNullOrUndefined(value)) {

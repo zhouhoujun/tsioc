@@ -98,7 +98,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
     let binding = ctx.binding;
     if (ctx.componentProvider.isTemplate(expression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
-            parent: ctx.getParent(),
+            parent: ctx.componentContext,
             template: expression,
             providers: ctx.providers
         });
@@ -157,7 +157,7 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
             ctx.value = await injector.getInstance(ComponentBuilderToken).resolve(<IComponentOption>{
                 type: selector,
                 attr: true,
-                parent: ctx.getParent(),
+                parent: ctx.componentContext,
                 template: bindings,
                 providers: ctx.providers,
                 injector: injector
@@ -178,7 +178,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
         let type = binding.type;
         if (isBaseType(type)) {
             if (isFunction(expression)) {
-                ctx.value = isClassType(expression) ? expression : ctx.componentProvider.bindContext(expression, ctx.getParent() as IComponentContext);
+                ctx.value = isClassType(expression) ? expression : ctx.componentProvider.bindContext(expression, ctx.componentContext);
             } else {
                 ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, expression);
             }
@@ -189,7 +189,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
             }
         } else {
             if (isFunction(expression) && !isClassType(expression)) {
-                ctx.value = ctx.componentProvider.bindContext(expression, ctx.getParent() as IComponentContext);
+                ctx.value = ctx.componentProvider.bindContext(expression, ctx.componentContext);
             } else {
                 ctx.value = expression;
             }

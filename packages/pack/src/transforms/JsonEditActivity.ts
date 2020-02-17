@@ -49,7 +49,7 @@ export class JsonEditActivity extends TransformActivity {
 
 }
 
-export type JsonReplace = (json: any, ctx?: NodeActivityContext) => ObjectMap | Map<string, any>;
+export type JsonReplace = (json: any, bind?: NodeActivityContext) => ObjectMap | Map<string, any>;
 
 export interface JsonReplaceActivityOption extends TemplateOption {
     /**
@@ -90,13 +90,13 @@ export class JsonReplaceActivity extends TransformActivity {
             let contents: string = file.contents.toString('utf8');
             let json = JSON.parse(contents);
             let replaced = inplace(contents);
-            let changs = fields(json, ctx);
+            let changs = fields(json);
             if (changs instanceof Map) {
                 changs.forEach((val, key) => {
                     replaced.set(key, val);
                 })
             } else {
-                lang.forIn(fields(json, ctx), (val, key) => {
+                lang.forIn(fields(json), (val, key) => {
                     replaced.set(key, val);
                 });
             }
