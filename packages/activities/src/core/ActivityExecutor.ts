@@ -94,8 +94,9 @@ export class ActivityExecutor implements IActivityExecutor {
         } else if (isFunction(express)) {
             return await express(ctx);
         } else if (isAcitvityRef(express)) {
+            express.context.setValue(CTX_RUN_PARENT, this.context);
             await express.run(ctx.workflow);
-            return ctx.workflow.result;
+            return ctx.getOutput();
         } else if (isPromise(express)) {
             return await express;
         }
