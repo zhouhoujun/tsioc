@@ -45,7 +45,7 @@ export interface TsBuildOption extends AssetActivityOption {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, bind) => {
                     let framework = bind.getScope<TsBuildActivity>().framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.input, framework.init())
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getInput(), framework.init())
                 }
             }
         },
@@ -74,13 +74,13 @@ export interface TsBuildOption extends AssetActivityOption {
                     let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
                     tsCompile = tsProject();
                 }
-                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.input, tsCompile);
+                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getInput(), tsCompile);
             }
         },
         {
             activity: Activities.if,
-            input: 'ctx.output | dts',
-            condition: (ctx, bind) => isTransform(ctx.input) && bind.getScope<TsBuildActivity>().dts,
+            input: 'ctx.getOutput() | dts',
+            condition: (ctx, bind) => isTransform(ctx.getInput()) && bind.getScope<TsBuildActivity>().dts,
             body: {
                 name: 'write-dts',
                 activity: 'dist',
@@ -89,8 +89,8 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
-            input: 'ctx.output | tsjs',
-            condition: ctx => isTransform(ctx.input),
+            input: 'ctx.getOutput() | tsjs',
+            condition: ctx => isTransform(ctx.getInput()),
             body: [
                 {
                     activity: 'pipes',
@@ -113,7 +113,7 @@ export interface TsBuildOption extends AssetActivityOption {
                         action: (ctx: NodeActivityContext, bind) => {
                             let scope = bind.getScope<TsBuildActivity>();
                             let framework = scope.framework || require('gulp-sourcemaps');
-                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
+                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.getOutput(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
                         }
                     }
                 },

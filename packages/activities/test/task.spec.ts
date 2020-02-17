@@ -135,7 +135,7 @@ describe('activity test', () => {
                         activity: Activities.execute,
                         action: ctx => {
                             // console.log(ctx.body);
-                            return `${ctx.get('data')}: ${ctx.input}`
+                            return `${ctx.get('data')}: ${ctx.getInput()}`
                         }
                     }
                 },

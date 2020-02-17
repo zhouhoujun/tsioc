@@ -13,6 +13,6 @@ export class UglifyActivity extends TransformActivity {
 
     async execute(ctx: NodeActivityContext): Promise<ITransform> {
         let options = await ctx.resolveExpression(this.options);
-        return await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.input, options ? uglify(options) : uglify());
+        return await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.getInput(), options ? uglify(options) : uglify());
     }
 }

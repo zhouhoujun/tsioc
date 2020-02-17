@@ -70,7 +70,7 @@ export interface AssetActivityOption extends TemplateOption {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, bind) => {
                     let framework = bind.getScope<AssetActivity>().framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.input, framework.init())
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getInput(), framework.init())
                 }
             }
         },
@@ -87,7 +87,7 @@ export interface AssetActivityOption extends TemplateOption {
                 action: (ctx: NodeActivityContext, bind) => {
                     let scope = bind.getScope<AssetActivity>();
                     let framework = scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getInput(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
                 }
             }
         },

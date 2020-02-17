@@ -229,24 +229,31 @@ export interface LibPackBuilderOption extends TemplateOption {
             body: [
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.input.target,
+                    condition: ctx => ctx.getInput<LibBundleOption>().target,
                     body: <TsBuildOption>{
                         activity: 'ts',
                         src: 'binding: src',
-                        dist: (ctx, bind) =>  bind.getScope<LibPackBuilder>().getTargetPath(bind.input),
-                        dts: (ctx, bind) => bind.input.dts ? bind.input.dts : (bind.input.dtsMain ? './' : null),
+                        dist: (ctx, bind) => bind.getScope<LibPackBuilder>().getTargetPath(bind.getInput()),
+                        dts: (ctx, bind) => {
+                            let input = bind.getInput<LibBundleOption>();
+                            return input.dtsMain ? bind.getScope<LibPackBuilder>().getTargetPath(input) : null
+                        },
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
-                        tsconfig: (ctx, bind) => bind.getScope<LibPackBuilder>().getCompileOptions(bind.input.target)
+                        tsconfig: (ctx, bind) => bind.getScope<LibPackBuilder>().getCompileOptions(bind.getInput<LibBundleOption>().target)
                     }
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.input.input,
+                    condition: ctx => ctx.getInput<LibBundleOption>().input,
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
-                            input: (ctx, bind) => bind.getScope<LibPackBuilder>().toOutputPath(bind.input.input),
+                            input: (ctx, bind) => {
+                                let inputs = bind.getInput<LibBundleOption>().input;
+                                let scope = bind.getScope<LibPackBuilder>();
+                                return isArray(inputs) ? inputs.map(i => scope.toOutputPath(i)) : scope.toOutputPath(inputs);
+                            },
                             sourcemap: 'binding: sourcemap',
                             plugins: 'binding: plugins',
                             external: 'binding: external',
@@ -254,7 +261,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                             globals: 'binding: globals',
                             output: (ctx, bind) => {
                                 let scope = bind.getScope<LibPackBuilder>();
-                                let input = bind.input;
+                                let input = bind.getInput<LibBundleOption>();
                                 return {
                                     format: input.format || 'cjs',
                                     file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
@@ -264,11 +271,14 @@ export interface LibPackBuilderOption extends TemplateOption {
                         },
                         {
                             activity: Activities.if,
-                            condition: ctx => ctx.input.uglify,
+                            condition: ctx => ctx.getInput<LibBundleOption>().uglify,
                             body: <AssetActivityOption>{
                                 activity: 'asset',
-                                src: (ctx, bind) => isArray(bind.input.input) ? bind.getScope<LibPackBuilder>().toModulePath(bind.input, '/**/*.js') : bind.getScope<LibPackBuilder>().toModulePath(bind.input, bind.input.outputFile),
-                                dist: (ctx, bind) => bind.getScope<LibPackBuilder>().toModulePath(bind.input),
+                                src: (ctx, bind) => {
+                                    let input = bind.getInput<LibBundleOption>();
+                                    return isArray(input.input) ? bind.getScope<LibPackBuilder>().toModulePath(input, '/**/*.js') : bind.getScope<LibPackBuilder>().toModulePath(input, input.outputFile)
+                                },
+                                dist: (ctx, bind) => bind.getScope<LibPackBuilder>().toModulePath(bind.getInput()),
                                 sourcemap: 'binding: zipMapsource',
                                 pipes: [
                                     ctx => uglify(),
@@ -280,7 +290,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.input.moduleName || ctx.input.target,
+                    condition: ctx => ctx.getInput<LibBundleOption>().moduleName || ctx.getInput<LibBundleOption>().target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
                         src: (ctx, bind) => bind.getScope<LibPackBuilder>().toOutputPath('package.json'),
@@ -289,7 +299,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
                                 json: (json, bind) => {
-                                    let input = bind.input;
+                                    let input = bind.getInput<LibBundleOption>();
                                     let scope = bind.getScope<LibPackBuilder>();
                                     // to replace module export.
                                     if (input.target) {
@@ -384,22 +394,22 @@ export class LibPackBuilder implements AfterInit {
         return join(...[this.outDir, ...mdpath.filter(f => f)]);
     }
 
-    toModulePath(input: any, ...paths: string[]): string {
+    toModulePath(input: LibBundleOption, ...paths: string[]): string {
         return join(...[
             this.outDir,
             this.getModuleFolder(input),
             ...paths.filter(f => f)]);
     }
 
-    getTargetPath(input) {
+    getTargetPath(input: LibBundleOption) {
         return this.toOutputPath(this.getTargetFolder(input));
     }
 
-    getTargetFolder(input: any): string {
+    getTargetFolder(input: LibBundleOption): string {
         return input.targetFolder || input.target;
     }
 
-    getModuleFolder(input: any): string {
+    getModuleFolder(input: LibBundleOption): string {
         return input.moduleFolder || (isArray(input.moduleName) ? lang.first(input.moduleName) : input.moduleName)
     }
 
@@ -430,12 +440,13 @@ export class LibPackBuilder implements AfterInit {
             this.sourcemap = true;
         }
         if (!this.plugins) {
-            this.plugins = async (ctx: NodeActivityContext) => {
-                let beforeResolve = await ctx.resolveExpression(this.beforeResolve);
-                let sourcemap = await ctx.resolveExpression(this.sourcemap);
+            this.plugins = async (ctx: NodeActivityContext, bind) => {
+                let beforeResolve = await bind.resolveExpression(this.beforeResolve);
+                let sourcemap = await bind.resolveExpression(this.sourcemap);
+                let input = bind.getInput<LibBundleOption>();
                 return [
                     ...(beforeResolve || []),
-                    resolve({ browser: ctx.input.format === 'umd' }),
+                    resolve({ browser: input.format === 'umd' }),
                     commonjs({ extensions: ['.js', '.ts', '.tsx'] }),
                     sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
                 ];

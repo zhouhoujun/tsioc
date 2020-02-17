@@ -24,21 +24,21 @@ export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 @Refs(Activity, BuildContext)
 export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
 
-    get input() {
-        return this.getValue(ACTIVITY_INPUT) ?? this.getInput();
+    getInput<T = any>(): T {
+        return this.getValue(ACTIVITY_INPUT) ?? this.getParentInput();
     }
 
-    protected getInput() {
+    protected getParentInput() {
         let input = this.getContextValue(ACTIVITY_INPUT);
         input && this.setValue(ACTIVITY_INPUT, input);
         return input;
     }
 
-    get output() {
-        return this.getValue(ACTIVITY_OUTPUT) ?? this.getOutput();
+    getOutput<T = any>(): T {
+        return this.getValue(ACTIVITY_OUTPUT) ?? this.getParentOutput();
     }
 
-    protected getOutput() {
+    protected getParentOutput() {
         let output = this.getContextValue(ACTIVITY_OUTPUT);
         output && this.setValue(ACTIVITY_OUTPUT, output);
         return output;

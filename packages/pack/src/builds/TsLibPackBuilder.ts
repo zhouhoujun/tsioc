@@ -5,7 +5,7 @@ import { BuilderTypes } from './BuilderTypes';
 import { AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { Plugin } from 'rollup';
 import { NodeExpression } from '../NodeActivityContext';
-import { LibPackBuilderOption, LibPackBuilder } from './LibPackBuilder';
+import { LibPackBuilderOption, LibPackBuilder, LibBundleOption } from './LibPackBuilder';
 import { RollupOption, RollupTsOption } from '../rollups';
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
@@ -57,7 +57,7 @@ const tsFileExp = /.ts$/;
                 {
                     activity: Activities.if,
                     condition: (ctx, bind) => {
-                        let input = bind.input.input || bind.getScope<TsLibPackBuilder>().mainFile;
+                        let input = bind.getInput<LibBundleOption>().input || bind.getScope<TsLibPackBuilder>().mainFile;
                         if (input) {
                             return isArray(input) ? input.some(i => tsFileExp.test(i)) : tsFileExp.test(input)
                         }
@@ -65,7 +65,7 @@ const tsFileExp = /.ts$/;
                     },
                     body: <RollupTsOption>{
                         activity: 'rts',
-                        input: (ctx, bind) => bind.input.input || bind.getScope<TsLibPackBuilder>().mainFile,
+                        input: (ctx, bind) => bind.getInput<LibBundleOption>().input || bind.getScope<TsLibPackBuilder>().mainFile,
                         sourcemap: 'binding: sourcemap',
                         beforeCompilePlugins: 'binding: beforeCompile',
                         afterCompilePlugins: 'binding: plugins',
@@ -73,11 +73,11 @@ const tsFileExp = /.ts$/;
                         options: 'binding: options',
                         globals: 'binding: globals',
                         annotation: 'binding: annotation',
-                        compileOptions: (ctx, bind) => bind.getScope<TsLibPackBuilder>().getCompileOptions(ctx.input.target),
+                        compileOptions: (ctx, bind) => bind.getScope<TsLibPackBuilder>().getCompileOptions(ctx.getInput<LibBundleOption>().target),
                         // uglify: ctx => ctx.input.uglify,
                         output: (ctx, bind) => {
                             let scope = bind.getScope<TsLibPackBuilder>();
-                            let input = bind.input;
+                            let input = bind.getInput<LibBundleOption>();
                             return {
                                 format: input.format || 'cjs',
                                 file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
@@ -88,17 +88,21 @@ const tsFileExp = /.ts$/;
                 },
                 {
                     activity: Activities.elseif,
-                    condition: ctx => ctx.input.input,
+                    condition: ctx => ctx.getInput<LibBundleOption>().input,
                     body: <RollupOption>{
                         activity: 'rollup',
-                        input: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toOutputPath(bind.input.input),
+                        input: (ctx, bind) => {
+                            let inputs = bind.getInput<LibBundleOption>().input;
+                            let scope = bind.getScope<LibPackBuilder>();
+                            return isArray(inputs) ? inputs.map(i => scope.toOutputPath(i)) : scope.toOutputPath(inputs);
+                        },
                         sourcemap: 'binding: sourcemap',
                         plugins: 'binding: plugins',
                         external: 'binding: external',
                         options: 'binding: options',
                         globals: 'binding: globals',
                         output: (ctx, bind) => {
-                            let input = bind.input;
+                            let input = bind.getInput<LibBundleOption>();
                             let scope = bind.getScope<TsLibPackBuilder>();
                             return {
                                 format: input.format || 'cjs',
@@ -110,11 +114,14 @@ const tsFileExp = /.ts$/;
                 },
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.input.uglify,
+                    condition: ctx => ctx.getInput<LibBundleOption>().uglify,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: (ctx, bind) => isArray(bind.input.input) ? bind.getScope<TsLibPackBuilder>().toModulePath(bind.input, '/**/*.js') : bind.getScope<TsLibPackBuilder>().toModulePath(bind.input, bind.input.outputFile),
-                        dist: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toModulePath(bind.input),
+                        src: (ctx, bind) => {
+                            let input = bind.getInput<LibBundleOption>();
+                            return isArray(input.input) ? bind.getScope<TsLibPackBuilder>().toModulePath(input, '/**/*.js') : bind.getScope<TsLibPackBuilder>().toModulePath(input, input.outputFile)
+                        },
+                        dist: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toModulePath(bind.getInput()),
                         sourcemap: 'binding: zipMapsource',
                         pipes: [
                             () => uglify(),
@@ -125,7 +132,7 @@ const tsFileExp = /.ts$/;
 
                 {
                     activity: Activities.if,
-                    condition: ctx => ctx.input.moduleName || ctx.input.target,
+                    condition: ctx => ctx.getInput<LibBundleOption>().moduleName || ctx.getInput<LibBundleOption>().target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
                         src: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toOutputPath('package.json'),
@@ -134,7 +141,7 @@ const tsFileExp = /.ts$/;
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
                                 json: (json, bind) => {
-                                    let input = bind.input;
+                                    let input = bind.getInput<LibBundleOption>();
                                     let scope = bind.getScope<TsLibPackBuilder>();
                                     // to replace module export.
                                     if (input.target) {

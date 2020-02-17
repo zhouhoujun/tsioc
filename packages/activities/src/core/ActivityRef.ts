@@ -46,7 +46,7 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
                     input = this.context.getExector().eval(input);
                 }
             } else {
-                input = this.context.output;
+                input = this.context.getOutput();
             }
             this.context.setValue(ACTIVITY_INPUT, input);
         }
@@ -145,7 +145,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         this.context.setValue(CTX_RUN_SCOPE, this.context);
         await this.context.getExector().runActivity(this.rootNodes);
         this.context.remove(CTX_RUN_SCOPE);
-        return this.context.output;
+        return this.context.getOutput();
     }
 
     protected destroying(): void {

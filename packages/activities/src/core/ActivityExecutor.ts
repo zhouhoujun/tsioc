@@ -104,7 +104,7 @@ export class ActivityExecutor implements IActivityExecutor {
 
     async runActivity(activities: ActivityType | ActivityType[], input?: any, next?: () => Promise<void>): Promise<any> {
         await this.execAction(this.parseAction(activities, input), next);
-        return this.context.output;
+        return this.context.getOutput();
     }
 
     async execAction<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {

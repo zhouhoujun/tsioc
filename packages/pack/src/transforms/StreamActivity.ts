@@ -17,7 +17,7 @@ export class StreamActivity extends TransformActivity {
             pipes = pipes.filter(p => p);
         }
         if (pipes && pipes.length) {
-            return await this.pipeStream(ctx, ctx.input, ...pipes);
+            return await this.pipeStream(ctx, ctx.getInput(), ...pipes);
         }
     }
 

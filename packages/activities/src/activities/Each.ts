@@ -39,7 +39,7 @@ export class EachActicity<T> extends ControlActivity<T> {
                         await next();
                     }
                 }));
-                return ctx.output as T;
+                return ctx.getOutput() as T;
             }
         }
         return null;

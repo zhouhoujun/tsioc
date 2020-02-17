@@ -18,6 +18,6 @@ export class SequenceActivity<T> extends ControlActivity<T> {
 
     async execute(ctx: ActivityContext): Promise<T> {
         await ctx.getExector().runActivity(this.activities);
-        return ctx.output;
+        return ctx.getOutput();
     }
 }
