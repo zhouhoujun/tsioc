@@ -11,7 +11,7 @@ import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
 import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING } from './ParseContext';
-import { IComponentOption } from '../ComponentContext';
+import { IComponentOption, IComponentContext } from '../ComponentContext';
 
 
 /**
@@ -61,14 +61,14 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
             let dataBinding: DataBinding;
             if (binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
-                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(bindPref, '').trim());
+                    dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(twobindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(twobindPref, '').trim());
                 } else if (exp.startsWith(two2bindPref)) {
-                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(two2bindPref, '').trim());
+                    dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(two2bindPref, '').trim());
                 }
             } else if (binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
-                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.scope, binding, exp.replace(eventBindPref, '').trim());
+                dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(eventBindPref, '').trim());
             }
             dataBinding && ctx.setValue(CTX_BIND_DATABINDING, dataBinding);
         }
@@ -178,7 +178,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
         let type = binding.type;
         if (isBaseType(type)) {
             if (isFunction(expression)) {
-                ctx.value = isClassType(expression) ? expression : ctx.componentProvider.bindScope(expression, ctx.scope);
+                ctx.value = isClassType(expression) ? expression : ctx.componentProvider.bindContext(expression, ctx.getParent() as IComponentContext);
             } else {
                 ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, expression);
             }
@@ -189,7 +189,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
             }
         } else {
             if (isFunction(expression) && !isClassType(expression)) {
-                ctx.value = ctx.componentProvider.bindScope(expression, ctx.scope);
+                ctx.value = ctx.componentProvider.bindContext(expression, ctx.getParent() as IComponentContext);
             } else {
                 ctx.value = expression;
             }

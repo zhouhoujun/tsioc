@@ -1,9 +1,10 @@
 import { Type, PromiseUtil, Token, ProviderTypes, ObjectMap, tokenId } from '@tsdi/ioc';
-import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
+import { Binding, ElementTemplate, IComponentMetadata, IComponentContext } from '@tsdi/components';
 import { Activity } from './Activity';
 import { ActivityContext } from './ActivityContext';
 import { WorkflowContext } from './WorkflowInstance';
 import { IActivityRef } from './IActivityRef';
+
 
 
 /**
@@ -111,7 +112,7 @@ export interface InvokeTemplate extends TemplateOption {
 }
 
 export interface ExecuteOption extends TemplateOption {
-    action: Binding<(ctx: ActivityContext, activity?: Activity) => void | Promise<void>>;
+    action: Binding<(ctx: ActivityContext, bind?: ActivityContext) => void | Promise<void>>;
 }
 
 
@@ -249,7 +250,7 @@ export type ActivityTemplate<T extends TemplateOption = ControlTemplate> = Templ
 /**
  * context expression.
  */
-export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | ((ctx: TC, scope?: any) => T | Promise<T>) | Type;
+export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | Type  | ((ctx: TC, bind?: ActivityContext) => T | Promise<T>)
 
 /**
  * expression.

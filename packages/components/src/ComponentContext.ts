@@ -1,6 +1,6 @@
 import { DecoratorProvider, tokenId } from '@tsdi/ioc';
 import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext, IAnnoationContext } from '@tsdi/boot';
-import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_COMPONENT_PARENT, CTX_TEMPLATE_SCOPE } from './ComponentRef';
+import { CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_TEMPLATE_SCOPE, CTX_COMPONENT_SUB } from './ComponentRef';
 import { IComponentMetadata } from './decorators/IComponentMetadata';
 import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider, CTX_COMPONENT_PROVIDER } from './ComponentProvider';
@@ -27,11 +27,12 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
      * component instance.
      */
     readonly component: any;
-    /**
-     * template scope.
-     */
-    readonly scope: any;
-    readonly $parent: IComponentContext;
+    // /**
+    //  * template scope.
+    //  */
+    // readonly scope: any;
+    getScope<T>(): T;
+    getScopes(): any[];
     readonly componentProvider: ComponentProvider;
     readonly componentDecorator: string;
 
@@ -65,6 +66,7 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
 
     protected getComponent() {
         let comp = this.getParent()?.getContextValue(CTX_COMPONENT);
+        this.setValue(CTX_COMPONENT_SUB, true);
         comp && this.setValue(CTX_COMPONENT, comp);
         return comp;
     }
@@ -75,44 +77,25 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @readonly
      * @memberof ComponentContext
      */
-    get scope() {
-        return this.context.getValue(CTX_TEMPLATE_SCOPE) ?? this.getScope();
+    getScope<T>(): T {
+        return this.context.getValue(CTX_TEMPLATE_SCOPE) ?? this.getRouteScope();
     }
 
-    protected getScope() {
+    protected getRouteScope() {
         let scope = this.getParent()?.getContextValue(CTX_TEMPLATE_SCOPE);
         scope && this.setValue(CTX_TEMPLATE_SCOPE, scope);
         return scope;
     }
 
-    get $parent() {
-        return this.context.getValue(CTX_PARCOMPONENTCTX) ?? this.get$Parent();
-    }
-
-    protected get$Parent() {
-        let scope = this.scope;
-        let ctx = this as IAnnoationContext;
-        let parctx: IComponentContext;
-        while (ctx && !ctx.destroyed) {
-            if (ctx.context.getValue(CTX_COMPONENT) === scope) {
-                parctx = ctx as IComponentContext;
-                break;
-            }
-            ctx = ctx.getParent();
-        }
-        parctx && this.setValue(CTX_PARCOMPONENTCTX, parctx);
-        return parctx;
-    }
-
     getScopes() {
         let scopes = [];
-        let ctx = this as IComponentContext;
+        let ctx = this as IAnnoationContext;
         while (ctx && !ctx.destroyed) {
-            let comp = ctx.getValue(CTX_COMPONENT);
-            if (comp && scopes.indexOf(comp) < 0) {
+            let comp = ctx.getValue(CTX_COMPONENT_SUB) ? null : ctx.getValue(CTX_COMPONENT);
+            if (comp) {
                 scopes.push(comp);
             }
-            ctx = ctx.$parent;
+            ctx = ctx.getParent();
         }
         return scopes;
     }

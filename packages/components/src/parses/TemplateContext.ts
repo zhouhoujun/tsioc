@@ -1,7 +1,7 @@
-import { Injectable, Type, createRaiseContext, isArray, lang, tokenId } from '@tsdi/ioc';
+import { Injectable, Type, createRaiseContext, isArray, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ComponentContext, IComponentContext, IComponentOption } from '../ComponentContext';
-import { CTX_TEMPLATE_REF, ContextNode, CTX_COMPONENT_DECTOR, ITemplateRef } from '../ComponentRef';
+import { CTX_TEMPLATE_REF, ITemplateRef } from '../ComponentRef';
 
 
 

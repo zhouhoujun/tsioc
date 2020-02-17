@@ -1,6 +1,6 @@
 import { ObjectMap, isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
-import { Task, Src, Activities } from '@tsdi/activities';
+import { Task, Src, Activities, ActivityType } from '@tsdi/activities';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
 import { TransformService } from './TransformActivity';
@@ -39,19 +39,19 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
-            condition: (ctx, scope: TsBuildActivity) => scope.sourcemap,
+            condition: (ctx, bind) => bind.getScope<TsBuildActivity>().sourcemap,
             body: {
                 name: 'sourcemap-init',
                 activity: Activities.execute,
-                action: (ctx: NodeActivityContext, scope: TsBuildActivity) => {
-                    let framework = scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.init())
+                action: (ctx: NodeActivityContext, bind) => {
+                    let framework = bind.getScope<TsBuildActivity>().framework || require('gulp-sourcemaps');
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.input, framework.init())
                 }
             }
         },
         {
             activity: Activities.if,
-            condition: (ctx, scope: TsBuildActivity) => scope.beforePipes?.length > 0,
+            condition: (ctx, bind) => bind.getScope<TsBuildActivity>().beforePipes?.length > 0,
             body: {
                 activity: 'pipes',
                 pipes: 'binding: beforePipes'
@@ -60,7 +60,8 @@ export interface TsBuildOption extends AssetActivityOption {
         {
             activity: Activities.execute,
             name: 'tscompile',
-            action: async (ctx: NodeActivityContext, scope: TsBuildActivity) => {
+            action: async (ctx: NodeActivityContext, bind) => {
+                let scope = bind.getScope<TsBuildActivity>();
                 if (!scope.tsconfig) {
                     return;
                 }
@@ -77,14 +78,19 @@ export interface TsBuildOption extends AssetActivityOption {
             }
         },
         {
-            activity: 'dist',
+            activity: Activities.if,
             input: 'ctx.output | dts',
-            dist: 'binding: dts',
+            condition: (ctx, bind) => ctx.input && bind.getScope<TsBuildActivity>().dts,
+            body: {
+                name: 'write-dts',
+                activity: 'dist',
+                dist: 'binding: dts',
+            }
         },
         {
             activity: Activities.if,
-            condition: ctx => ctx.input,
             input: 'ctx.output | tsjs',
+            condition: ctx => ctx.input,
             body: [
                 {
                     activity: 'pipes',
@@ -104,13 +110,15 @@ export interface TsBuildOption extends AssetActivityOption {
                     body: {
                         name: 'sourcemap-write',
                         activity: Activities.execute,
-                        action: (ctx: NodeActivityContext, scope: TsBuildActivity) => {
+                        action: (ctx: NodeActivityContext, bind) => {
+                            let scope = bind.getScope<TsBuildActivity>();
                             let framework = scope.framework || require('gulp-sourcemaps');
-                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(scope.sourcemap) ? ctx.scope.sourcemap : './sourcemaps'))
+                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.output, framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
                         }
                     }
                 },
                 {
+                    name: 'write-js',
                     activity: 'dist',
                     dist: 'binding: dist',
                 }
@@ -121,7 +129,7 @@ export interface TsBuildOption extends AssetActivityOption {
 export class TsBuildActivity extends AssetActivity {
     @Input() dts: NodeExpression<string>;
     @Input('annotationFramework', classAnnotations) annotationFramework: NodeExpression<ITransform>;
-
+    @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
     @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string | ObjectMap>;
     @Input() uglify: NodeExpression<boolean>;
     @Input('uglifyOptions') uglifyOptions: NodeExpression;

@@ -4,7 +4,7 @@ import { Task, Activities, ActivityTemplate } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { Plugin } from 'rollup';
-import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeExpression } from '../NodeActivityContext';
 import { LibPackBuilderOption, LibPackBuilder } from './LibPackBuilder';
 import { RollupOption, RollupTsOption } from '../rollups';
 const uglify = require('gulp-uglify');
@@ -56,8 +56,8 @@ const tsFileExp = /.ts$/;
             body: [
                 {
                     activity: Activities.if,
-                    condition: (ctx, scope: TsLibPackBuilder) => {
-                        let input = ctx.input.input || scope.mainFile;
+                    condition: (ctx, bind) => {
+                        let input = bind.input.input || bind.getScope<TsLibPackBuilder>().mainFile;
                         if (input) {
                             return isArray(input) ? input.some(i => tsFileExp.test(i)) : tsFileExp.test(input)
                         }
@@ -65,7 +65,7 @@ const tsFileExp = /.ts$/;
                     },
                     body: <RollupTsOption>{
                         activity: 'rts',
-                        input: (ctx, scope: TsLibPackBuilder) => ctx.input.input || scope.mainFile,
+                        input: (ctx, bind) => bind.input.input || bind.getScope<TsLibPackBuilder>().mainFile,
                         sourcemap: 'binding: sourcemap',
                         beforeCompilePlugins: 'binding: beforeCompile',
                         afterCompilePlugins: 'binding: plugins',
@@ -73,13 +73,15 @@ const tsFileExp = /.ts$/;
                         options: 'binding: options',
                         globals: 'binding: globals',
                         annotation: 'binding: annotation',
-                        compileOptions: (ctx, scope: TsLibPackBuilder) => scope.getCompileOptions(ctx.input.target),
+                        compileOptions: (ctx, bind) => bind.getScope<TsLibPackBuilder>().getCompileOptions(ctx.input.target),
                         // uglify: ctx => ctx.input.uglify,
-                        output: (ctx, scope: TsLibPackBuilder) => {
+                        output: (ctx, bind) => {
+                            let scope = bind.getScope<TsLibPackBuilder>();
+                            let input = bind.input;
                             return {
-                                format: ctx.input.format || 'cjs',
-                                file: ctx.input.outputFile ? scope.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
-                                dir: ctx.input.outputFile ? undefined : scope.toModulePath(ctx.input),
+                                format: input.format || 'cjs',
+                                file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
+                                dir: input.outputFile ? undefined : scope.toModulePath(input),
                             }
                         }
                     }
@@ -89,18 +91,19 @@ const tsFileExp = /.ts$/;
                     condition: ctx => ctx.input.input,
                     body: <RollupOption>{
                         activity: 'rollup',
-                        input: (ctx, scope: TsLibPackBuilder) => scope.toOutputPath(ctx.input.input),
+                        input: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toOutputPath(bind.input.input),
                         sourcemap: 'binding: sourcemap',
                         plugins: 'binding: plugins',
                         external: 'binding: external',
                         options: 'binding: options',
                         globals: 'binding: globals',
-                        output: (ctx, scope: TsLibPackBuilder) => {
-                            let body = ctx.input;
+                        output: (ctx, bind) => {
+                            let input = bind.input;
+                            let scope = bind.getScope<TsLibPackBuilder>();
                             return {
-                                format: body.format || 'cjs',
-                                file: body.outputFile ? scope.toModulePath(body, body.outputFile) : undefined,
-                                dir: body.outputFile ? undefined : scope.toModulePath(body),
+                                format: input.format || 'cjs',
+                                file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
+                                dir: input.outputFile ? undefined : scope.toModulePath(input),
                             }
                         }
                     }
@@ -110,12 +113,12 @@ const tsFileExp = /.ts$/;
                     condition: ctx => ctx.input.uglify,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: (ctx, scope: TsLibPackBuilder) => isArray(ctx.input.input) ? scope.toModulePath(ctx.input, '/**/*.js') : scope.toModulePath(ctx.input, ctx.input.outputFile),
-                        dist: (ctx, scope: TsLibPackBuilder) => scope.toModulePath(ctx.input),
+                        src: (ctx, bind) => isArray(bind.input.input) ? bind.getScope<TsLibPackBuilder>().toModulePath(bind.input, '/**/*.js') : bind.getScope<TsLibPackBuilder>().toModulePath(bind.input, bind.input.outputFile),
+                        dist: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toModulePath(bind.input),
                         sourcemap: 'binding: zipMapsource',
                         pipes: [
-                            ctx => uglify(),
-                            (ctx) => rename({ suffix: '.min' })
+                            () => uglify(),
+                            () => rename({ suffix: '.min' })
                         ]
                     }
                 },
@@ -125,13 +128,15 @@ const tsFileExp = /.ts$/;
                     condition: ctx => ctx.input.moduleName || ctx.input.target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: (ctx, scope: TsLibPackBuilder) => scope.toOutputPath('package.json'),
-                        dist: (ctx, scope: TsLibPackBuilder) => scope.outDir,
+                        src: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toOutputPath('package.json'),
+                        dist: (ctx, bind) => bind.getScope<TsLibPackBuilder>().outDir,
                         pipes: [
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
-                                json: (json, ctx, scope: TsLibPackBuilder) => {
-                                    let input = ctx.input;                                 // to replace module export.
+                                json: (json, bind) => {
+                                    let input = bind.input;
+                                    let scope = bind.getScope<TsLibPackBuilder>();
+                                    // to replace module export.
                                     if (input.target) {
                                         json[input.target] = ['.', scope.getTargetFolder(input), input.main || 'index.js'].join('/');
                                     }

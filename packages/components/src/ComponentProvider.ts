@@ -13,7 +13,9 @@ import {
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { AstResolver } from './AstResolver';
+import { IComponentContext } from './ComponentContext';
 import { TemplateContext, ITemplateContext, ITemplateOption } from './parses/TemplateContext';
+
 
 
 
@@ -22,6 +24,10 @@ const attrSelPrefix = /^ATTR__/;
 const seletPrefix = /^SELTR_/;
 // const pipePrefix = /^PIPE_/;
 
+export interface BindFunc extends Function {
+    __binded?: boolean;
+    context?: IComponentContext;
+}
 
 export const CTX_COMPONENT_PROVIDER = tokenId<ComponentProvider>('CTX_COMPONENT_PROVIDER');
 /**
@@ -128,17 +134,16 @@ export abstract class ComponentProvider {
     }
 
     /**
-     * bind function scope.
+     * bind function context.
      * @param func func
-     * @param scope scope to bind.
+     * @param ctx context to bind.
      */
-    bindScope(func: Function, scope: any): Function {
-        let bindFunc: Function
-        if (!func['__binded']) {
-            bindFunc = (...args) => func(...args, scope);
-            bindFunc['__binded'] = true;
-        } else {
-            bindFunc = func;
+    bindContext(func: Function, ctx: IComponentContext): BindFunc {
+        let bindFunc = func as BindFunc;
+        if (!bindFunc.__binded) {
+            bindFunc = (...args) => func(...args, ctx);
+            bindFunc.__binded = true;
+            bindFunc.context = ctx;
         }
         return bindFunc;
     }

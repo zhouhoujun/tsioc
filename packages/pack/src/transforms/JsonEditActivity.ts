@@ -9,7 +9,7 @@ const jeditor = require('gulp-json-editor');
 const inplace = require('json-in-place');
 
 
-export type JsonEdit = (json: any, ctx?: NodeActivityContext) => ObjectMap;
+export type JsonEdit = (json: any, bind?: NodeActivityContext) => ObjectMap;
 
 
 export interface JsonEditActivityOption extends TemplateOption {
@@ -41,7 +41,7 @@ export class JsonEditActivity extends TransformActivity {
         }
         if (isFunction(this.json)) {
             let jsonFunc = this.json;
-            return jeditor((json) => jsonFunc(json, ctx));
+            return jeditor((json) => jsonFunc(json));
         } else {
             return jeditor(this.json);
         }

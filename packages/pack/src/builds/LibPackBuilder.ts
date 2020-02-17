@@ -233,11 +233,11 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: <TsBuildOption>{
                         activity: 'ts',
                         src: 'binding: src',
-                        dist: (ctx, scope: LibPackBuilder) =>  scope.getTargetPath(ctx.input),
-                        dts: (ctx, scope: LibPackBuilder) => ctx.input.dts ? ctx.input.dts : (ctx.input.dtsMain ? './' : null),
+                        dist: (ctx, bind) =>  bind.getScope<LibPackBuilder>().getTargetPath(bind.input),
+                        dts: (ctx, bind) => bind.input.dts ? bind.input.dts : (bind.input.dtsMain ? './' : null),
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
-                        tsconfig: (ctx, scope: LibPackBuilder) => scope.getCompileOptions(ctx.input.target)
+                        tsconfig: (ctx, bind) => bind.getScope<LibPackBuilder>().getCompileOptions(bind.input.target)
                     }
                 },
                 {
@@ -246,17 +246,19 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
-                            input: (ctx, scope: LibPackBuilder) => scope.toOutputPath(ctx.input.input),
+                            input: (ctx, bind) => bind.getScope<LibPackBuilder>().toOutputPath(bind.input.input),
                             sourcemap: 'binding: sourcemap',
                             plugins: 'binding: plugins',
                             external: 'binding: external',
                             options: 'binding: options',
                             globals: 'binding: globals',
-                            output: (ctx, scope: LibPackBuilder) => {
+                            output: (ctx, bind) => {
+                                let scope = bind.getScope<LibPackBuilder>();
+                                let input = bind.input;
                                 return {
-                                    format: ctx.input.format || 'cjs',
-                                    file: ctx.input.outputFile ? scope.toModulePath(ctx.input, ctx.input.outputFile) : undefined,
-                                    dir: ctx.input.outputFile ? undefined : scope.toModulePath(ctx.input),
+                                    format: input.format || 'cjs',
+                                    file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
+                                    dir: input.outputFile ? undefined : scope.toModulePath(input),
                                 }
                             }
                         },
@@ -265,8 +267,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                             condition: ctx => ctx.input.uglify,
                             body: <AssetActivityOption>{
                                 activity: 'asset',
-                                src: (ctx, scope: LibPackBuilder) => isArray(ctx.input.input) ? scope.toModulePath(ctx.input, '/**/*.js') : scope.toModulePath(ctx.input, ctx.input.outputFile),
-                                dist: (ctx, scope: LibPackBuilder) => scope.toModulePath(ctx.input),
+                                src: (ctx, bind) => isArray(bind.input.input) ? bind.getScope<LibPackBuilder>().toModulePath(bind.input, '/**/*.js') : bind.getScope<LibPackBuilder>().toModulePath(bind.input, bind.input.outputFile),
+                                dist: (ctx, bind) => bind.getScope<LibPackBuilder>().toModulePath(bind.input),
                                 sourcemap: 'binding: zipMapsource',
                                 pipes: [
                                     ctx => uglify(),
@@ -281,26 +283,28 @@ export interface LibPackBuilderOption extends TemplateOption {
                     condition: ctx => ctx.input.moduleName || ctx.input.target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: (ctx, scope: LibPackBuilder) => scope.toOutputPath('package.json'),
-                        dist: (ctx, scope: LibPackBuilder) => scope.outDir,
-                        pipes: (ctx, scope: LibPackBuilder) => [
+                        src: (ctx, bind) => bind.getScope<LibPackBuilder>().toOutputPath('package.json'),
+                        dist: (ctx, bind) => bind.getScope<LibPackBuilder>().outDir,
+                        pipes: [
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
-                                json: (json) => {
+                                json: (json, bind) => {
+                                    let input = bind.input;
+                                    let scope = bind.getScope<LibPackBuilder>();
                                     // to replace module export.
-                                    if (ctx.input.target) {
-                                        json[ctx.input.target] = ['.', scope.getTargetFolder(ctx.input), ctx.input.main || 'index.js'].join('/');
+                                    if (input.target) {
+                                        json[input.target] = ['.', scope.getTargetFolder(input), input.main || 'index.js'].join('/');
                                     }
-                                    let outmain = ['.', scope.getModuleFolder(ctx.input), ctx.input.outputFile || 'index.js'].join('/');
-                                    if (isArray(ctx.input.moduleName)) {
-                                        ctx.input.moduleName.forEach(n => {
+                                    let outmain = ['.', scope.getModuleFolder(input), input.outputFile || 'index.js'].join('/');
+                                    if (isArray(input.moduleName)) {
+                                        input.moduleName.forEach(n => {
                                             json[n] = outmain;
                                         })
-                                    } else if (ctx.input.moduleName) {
-                                        json[ctx.input.moduleName] = outmain;
+                                    } else if (input.moduleName) {
+                                        json[input.moduleName] = outmain;
                                     }
-                                    if (ctx.input.dtsMain) {
-                                        json['typings'] = ['.', scope.getTargetFolder(ctx.input), ctx.input.dtsMain].join('/');
+                                    if (input.dtsMain) {
+                                        json['typings'] = ['.', scope.getTargetFolder(input), input.dtsMain].join('/');
                                     }
                                     return json;
                                 }

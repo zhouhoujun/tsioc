@@ -51,7 +51,7 @@ export class DestActivity extends NodeActivity<void> {
         let dist = await ctx.resolveExpression(this.dist);
         if (dist) {
             let options = await ctx.resolveExpression(this.options);
-            await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.output, dest(ctx.platform.toRootPath(dist), options), true);
+            await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.input, dest(ctx.platform.toRootPath(dist), options), true);
         }
     }
 }
