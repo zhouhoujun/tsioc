@@ -70,7 +70,7 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption,
      */
     setParent(context: IAnnoationContext): this;
 
-    getParent(): IAnnoationContext;
+    getParent<T extends IAnnoationContext>(): T;
 
     addChild(contex: IAnnoationContext);
 
@@ -200,8 +200,8 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         return this;
     }
 
-    getParent(): IAnnoationContext {
-        return this.context.getValue(CTX_PARENT_CONTEXT);
+    getParent<T extends IAnnoationContext>(): T {
+        return this.context.getValue(CTX_PARENT_CONTEXT) as T;
     }
 
     addChild(contex: IAnnoationContext) {

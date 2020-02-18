@@ -11,7 +11,7 @@ import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
 import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING } from './ParseContext';
-import { IComponentOption, IComponentContext } from '../ComponentContext';
+import { IComponentOption } from '../ComponentContext';
 
 
 /**
@@ -77,12 +77,12 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
     let dataBinding = ctx.dataBinding;
     if (dataBinding instanceof ParseBinding) {
         if (!dataBinding.source) {
-            dataBinding.source = ctx.component;
+            dataBinding.source = ctx.getComponent();
         }
         ctx.setValue(CTX_BIND_EXPRESSION, dataBinding.resolveExression());
     } else if (dataBinding instanceof DataBinding) {
         if (!dataBinding.source) {
-            dataBinding.source = ctx.component;
+            dataBinding.source = ctx.getComponent();
         }
         ctx.value = dataBinding.resolveExression();
     }
@@ -98,7 +98,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
     let binding = ctx.binding;
     if (ctx.componentProvider.isTemplate(expression)) {
         let tpCtx = TemplateContext.parse(ctx.injector, {
-            parent: ctx.componentContext,
+            parent: ctx.getComponentContext(),
             template: expression,
             providers: ctx.providers
         });
@@ -157,7 +157,7 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
             ctx.value = await injector.getInstance(ComponentBuilderToken).resolve(<IComponentOption>{
                 type: selector,
                 attr: true,
-                parent: ctx.componentContext,
+                parent: ctx.getComponentContext(),
                 template: bindings,
                 providers: ctx.providers,
                 injector: injector
@@ -178,7 +178,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
         let type = binding.type;
         if (isBaseType(type)) {
             if (isFunction(expression)) {
-                ctx.value = isClassType(expression) ? expression : ctx.componentProvider.bindContext(expression, ctx.componentContext);
+                ctx.value = isClassType(expression) ? expression : ctx.componentProvider.bindContext(expression, ctx.getComponentContext());
             } else {
                 ctx.value = ctx.injector.getInstance(BaseTypeParser).parse(type, expression);
             }
@@ -189,7 +189,7 @@ export const AssignBindValueHandle = async function (ctx: IParseContext, next: (
             }
         } else {
             if (isFunction(expression) && !isClassType(expression)) {
-                ctx.value = ctx.componentProvider.bindContext(expression, ctx.componentContext);
+                ctx.value = ctx.componentProvider.bindContext(expression, ctx.getComponentContext());
             } else {
                 ctx.value = expression;
             }

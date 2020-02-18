@@ -27,9 +27,9 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
     /**
      * component instance.
      */
-    readonly component: any;
+    getComponent<T = any>(): T;
 
-    readonly componentContext: IComponentContext;
+    getComponentContext<T extends IComponentContext>(): T;
     /**
      * template scope.
      */
@@ -63,20 +63,19 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @type {*}
      * @memberof ComponentContext
      */
-    get component(): any {
-        return this.context.getValue(CTX_COMPONENT) ?? this.getComponent();
+    getComponent<T = any>(): T {
+        return this.context.getValue(CTX_COMPONENT) ?? this.getParentComponent();
     }
-
-    protected getComponent() {
+    protected getParentComponent() {
         let comp = this.getParent()?.getContextValue(CTX_COMPONENT);
         comp && this.setValue(CTX_COMPONENT, comp);
         return comp;
     }
 
-    get componentContext() {
-        return this.context.getValue(CTX_COMPONENT_CONTEXT) ?? this.getComponentContext();
+    getComponentContext<T extends IComponentContext>(): T {
+        return (this.context.getValue(CTX_COMPONENT_CONTEXT) ?? this.getParentCompContext()) as T;
     }
-    protected getComponentContext() {
+    protected getParentCompContext() {
         let comp = this.getParent()?.getContextValue(CTX_COMPONENT_CONTEXT);
         comp && this.setValue(CTX_COMPONENT_CONTEXT, comp);
         return comp;
@@ -91,7 +90,6 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
     getScope<T>(): T {
         return this.context.getValue(CTX_TEMPLATE_SCOPE) ?? this.getRouteScope();
     }
-
     protected getRouteScope() {
         let scope = this.getParent()?.getContextValue(CTX_TEMPLATE_SCOPE);
         scope && this.setValue(CTX_TEMPLATE_SCOPE, scope);
@@ -100,13 +98,13 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
 
     getScopes() {
         let scopes = [];
-        let ctx = this.componentContext;
+        let ctx = this.getComponentContext();
         while (ctx && !ctx.destroyed) {
             let comp = ctx.getValue(CTX_COMPONENT);
             if (comp) {
                 scopes.push(comp);
             }
-            ctx = ctx.componentContext;
+            ctx = ctx.getComponentContext();
         }
         return scopes;
     }
