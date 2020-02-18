@@ -64,21 +64,13 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @memberof ComponentContext
      */
     getComponent<T = any>(): T {
-        return this.context.getValue(CTX_COMPONENT) ?? this.getParentComponent();
-    }
-    protected getParentComponent() {
-        let comp = this.getParent()?.getContextValue(CTX_COMPONENT);
-        comp && this.setValue(CTX_COMPONENT, comp);
-        return comp;
+        return this.context.getValue(CTX_COMPONENT)
+            ?? this.getParent()?.getContextValue(CTX_COMPONENT, com => this.setValue(CTX_COMPONENT, com));
     }
 
     getComponentContext<T extends IComponentContext>(): T {
-        return (this.context.getValue(CTX_COMPONENT_CONTEXT) ?? this.getParentCompContext()) as T;
-    }
-    protected getParentCompContext() {
-        let comp = this.getParent()?.getContextValue(CTX_COMPONENT_CONTEXT);
-        comp && this.setValue(CTX_COMPONENT_CONTEXT, comp);
-        return comp;
+        return (this.context.getValue(CTX_COMPONENT_CONTEXT)
+            ?? this.getParent()?.getContextValue(CTX_COMPONENT_CONTEXT, ctx => this.setValue(CTX_COMPONENT_CONTEXT, ctx))) as T;
     }
 
     /**
@@ -88,12 +80,8 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
      * @memberof ComponentContext
      */
     getScope<T>(): T {
-        return this.context.getValue(CTX_TEMPLATE_SCOPE) ?? this.getRouteScope();
-    }
-    protected getRouteScope() {
-        let scope = this.getParent()?.getContextValue(CTX_TEMPLATE_SCOPE);
-        scope && this.setValue(CTX_TEMPLATE_SCOPE, scope);
-        return scope;
+        return this.context.getValue(CTX_TEMPLATE_SCOPE)
+            ?? this.getParent()?.getContextValue(CTX_TEMPLATE_SCOPE, scope => this.setValue(CTX_TEMPLATE_SCOPE, scope));
     }
 
     getScopes() {
@@ -122,13 +110,8 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
 
 
     get componentDecorator() {
-        return this.context.getValue(CTX_COMPONENT_DECTOR) ?? this.getComponentDecorator();
-    }
-
-    protected getComponentDecorator() {
-        let dector = this.getContextValue(CTX_COMPONENT_DECTOR);
-        dector && this.setValue(CTX_COMPONENT_DECTOR, dector);
-        return dector;
+        return this.context.getValue(CTX_COMPONENT_DECTOR)
+            ?? this.getParent()?.getContextValue(CTX_COMPONENT_DECTOR, dector => this.setValue(CTX_COMPONENT_DECTOR, dector));
     }
 
 }

@@ -1,10 +1,10 @@
+import { PromiseUtil } from '@tsdi/ioc';
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
 import { ConditionActivity } from './ConditionActivity';
 import { WorkflowContext } from '../core/WorkflowInstance';
-import { PromiseUtil } from '@tsdi/ioc';
 import { ActivityType } from '../core/ActivityMetadata';
 
 
@@ -36,5 +36,4 @@ export class DoWhileActivity extends ControlActivity {
             }
         });
     }
-
 }

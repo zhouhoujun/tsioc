@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, isNullOrUndefined, IProviders, IIocContext
+    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, isNullOrUndefined, IProviders, IIocContext, isDefined
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
@@ -82,13 +82,15 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption,
     /**
      * get token providers service route in root contexts.
      * @param token
+     * @param success
      */
-    getContext<T>(token: Token<T>): T
+    getContext<T>(token: Token<T>, success?: (value: T) => void): T
     /**
      * resolve token value route in root contexts.
      * @param token
+     * @param success
      */
-    getContextValue<T>(token: Token<T>): T;
+    getContextValue<T>(token: Token<T>, success?: (value: T) => void): T;
 
 }
 
@@ -150,16 +152,18 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * get token providers service route in root contexts.
      * @param token
      */
-    getContext<T>(token: Token<T>): T {
+    getContext<T>(token: Token<T>, success?: (value: T) => void): T {
         let key = this.injector.getTokenKey(token);
         let value = this.getInstance(key);
-        if (!isNullOrUndefined(value)) {
+        if (isDefined(value)) {
+            success && success(value);
             return value;
         }
         let ctx = this.getParent() as IAnnoationContext;
         while (ctx && !ctx.destroyed) {
             value = ctx.getInstance(key);
-            if (!isNullOrUndefined(value)) {
+            if (isDefined(value)) {
+                success && success(value);
                 break;
             }
             ctx = ctx.getParent();
@@ -171,19 +175,21 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * resolve token route in root contexts.
      * @param token
      */
-    getContextValue<T>(token: Token<T>): T {
+    getContextValue<T>(token: Token<T>, success?: (value: T) => void): T {
         if (this.destroyed) {
             return null;
         }
         let key = this.injector.getTokenKey(token);
         let value = this.context.getValue(key);
-        if (!isNullOrUndefined(value)) {
+        if (isDefined(value)) {
+            success && success(value);
             return value;
         }
         let ctx = this.getParent() as IAnnoationContext;
         while (ctx && !ctx.destroyed) {
             value = ctx.context.getValue(key);
-            if (!isNullOrUndefined(value)) {
+            if (isDefined(value)) {
+                success && success(value);
                 break;
             }
             ctx = ctx.getParent();

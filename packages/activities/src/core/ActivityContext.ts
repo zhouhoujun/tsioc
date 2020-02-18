@@ -25,51 +25,32 @@ export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
 
     getInput<T = any>(): T {
-        return this.context.getValue(ACTIVITY_INPUT) ?? this.getParentInput();
-    }
-
-    protected getParentInput() {
-        let input = this.getContextValue(ACTIVITY_INPUT);
-        input && this.setValue(ACTIVITY_INPUT, input);
-        return input;
+        return this.context.getValue(ACTIVITY_INPUT)
+            ?? this.getParent()?.getContextValue(ACTIVITY_INPUT, input => this.setValue(ACTIVITY_INPUT, input));
     }
 
     getData<T = any>(): T {
-        return this.context.getValue(ACTIVITY_DATA) ?? this.getParentData();
+        return this.context.getValue(ACTIVITY_DATA)
+            ?? this.getParent()?.getContextValue(ACTIVITY_DATA, data => this.setValue(ACTIVITY_DATA, data));
     }
 
-    protected getParentData() {
-        let output = this.getContextValue(ACTIVITY_DATA);
-        output && this.setValue(ACTIVITY_DATA, output);
-        return output;
-    }
 
     get baseURL() {
         return this.context.getValue(CTX_BASEURL) ?? this.getBaseURL();
     }
-
     protected getBaseURL() {
-        let url = this.getContextValue(CTX_BASEURL) ?? this.workflow?.baseURL;
+        let url = this.getParent()?.getContextValue(CTX_BASEURL) ?? this.workflow?.baseURL;
         url && this.setValue(CTX_BASEURL, url);
         return url;
     }
 
     get runScope(): IComponentContext {
-        return this.context.getValue<IComponentContext>(CTX_RUN_SCOPE) ?? this.getRunScope();
+        return this.context.getValue<IComponentContext>(CTX_RUN_SCOPE)
+            ?? this.getParent()?.getContextValue<IComponentContext>(CTX_RUN_SCOPE, runsp => this.setValue(CTX_RUN_SCOPE, runsp));
     }
 
-    protected getRunScope() {
-        let runsp = this.getContextValue(CTX_RUN_SCOPE);
-        runsp && this.setValue(CTX_RUN_SCOPE, runsp);
-        return runsp as IComponentContext;
-    }
-
-    private _workflow: WorkflowContext;
     get workflow(): WorkflowContext {
-        if (!this._workflow) {
-            this._workflow = this.injector.getSingleton(WorkflowContextToken) as WorkflowContext;
-        }
-        return this._workflow;
+        return this.injector.getSingleton(WorkflowContextToken)
     }
 
     get<T>(token: Token<T>): T {
