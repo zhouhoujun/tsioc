@@ -6,7 +6,7 @@ import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
-import { ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
+import { ACTIVITY_DATA, ACTIVITY_INPUT } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 
 
@@ -25,7 +25,7 @@ export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
 
     getInput<T = any>(): T {
-        return this.getValue(ACTIVITY_INPUT) ?? this.getParentInput();
+        return this.context.getValue(ACTIVITY_INPUT) ?? this.getParentInput();
     }
 
     protected getParentInput() {
@@ -34,13 +34,13 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return input;
     }
 
-    getOutput<T = any>(): T {
-        return this.getValue(ACTIVITY_OUTPUT) ?? this.getParentOutput();
+    getData<T = any>(): T {
+        return this.context.getValue(ACTIVITY_DATA) ?? this.getParentData();
     }
 
-    protected getParentOutput() {
-        let output = this.getContextValue(ACTIVITY_OUTPUT);
-        output && this.setValue(ACTIVITY_OUTPUT, output);
+    protected getParentData() {
+        let output = this.getContextValue(ACTIVITY_DATA);
+        output && this.setValue(ACTIVITY_DATA, output);
         return output;
     }
 

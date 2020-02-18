@@ -6,7 +6,8 @@ import { CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT } from '../context-tokens';
 
 export const ResolveBootHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     let bootModule = ctx.getValue(CTX_MODULE_BOOT_TOKEN) || ctx.annoation?.bootstrap;
-    if (!ctx.hasValue(CTX_MODULE_BOOT) && (ctx.template || bootModule)) {
+    let template = ctx.getTemplate();
+    if (!ctx.hasValue(CTX_MODULE_BOOT) && (template || bootModule)) {
         ctx.providers.inject(
             { provide: BootContext, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx }
@@ -15,7 +16,7 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
         let boot = await injector.getInstance(BuilderServiceToken).resolve({
             type: injector.getTokenProvider(bootModule),
             parent: ctx,
-            template: ctx.template,
+            template: template,
             providers: ctx.providers,
             injector: injector
         });

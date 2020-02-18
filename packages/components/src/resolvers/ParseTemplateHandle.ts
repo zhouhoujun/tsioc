@@ -5,10 +5,11 @@ import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
 import { IComponentOption } from '../ComponentContext';
 
 export const ParseTemplateHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
-    if (!ctx.value && !ctx.type && ctx.template) {
+    let template = ctx.getTemplate();
+    if (!ctx.value && !ctx.type && template) {
         let options = {
             parent: ctx,
-            template: ctx.template
+            template: template
         };
         let pCtx = ctx.getContextValue(CTX_COMPONENT_PROVIDER)?.createTemplateContext(ctx.injector, options) ?? TemplateContext.parse(ctx.injector, options) ;
 

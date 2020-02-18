@@ -24,5 +24,5 @@ export interface IBuildContext<
     /**
      * current type attr data to binding.
      */
-    readonly template?: any;
+    getTemplate<T = any>(): T;
 }

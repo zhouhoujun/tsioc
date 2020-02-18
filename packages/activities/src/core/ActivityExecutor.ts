@@ -5,7 +5,7 @@ import { ICoreInjector } from '@tsdi/core';
 import { BuilderServiceToken } from '@tsdi/boot';
 import { ComponentBuilderToken, ELEMENT_REFS } from '@tsdi/components';
 import { ActivityType, Expression } from './ActivityMetadata';
-import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_DATA } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
 import { isAcitvityRef, ActivityElementRef, IActivityElementRef, ActivityRef } from './ActivityRef';
@@ -49,7 +49,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity.execute(actx)
                 .then(v => {
                     let nctx = ctx.clone();
-                    nctx.setValue(ACTIVITY_OUTPUT, v);
+                    nctx.setValue(ACTIVITY_DATA, v);
                     return nctx as T;
                 });
         } else if (isClass(activity)) {
@@ -89,13 +89,18 @@ export class ActivityExecutor implements IActivityExecutor {
         let ctx = this.context;
         injector = injector || this.context.injector;
         if (isClass(express)) {
-            let bctx = await injector.getInstance(BuilderServiceToken).run({ type: express, parent: ctx, injector: injector });
-            return bctx.data;
+            let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(express);
+            if (isAcitvityRef(aref)) {
+                await aref.run(ctx.workflow);
+                return aref.context.getData();
+            } else {
+                return aref;
+            }
         } else if (isFunction(express)) {
             return await express(ctx);
         } else if (isAcitvityRef(express)) {
             await express.run(ctx.workflow);
-            return express.context.getOutput();
+            return express.context.getData();
         } else if (isPromise(express)) {
             return await express;
         }
@@ -104,7 +109,7 @@ export class ActivityExecutor implements IActivityExecutor {
 
     async runActivity(activities: ActivityType | ActivityType[], input?: any, next?: () => Promise<void>): Promise<any> {
         await this.execAction(this.parseAction(activities, input), next);
-        return this.context.getOutput();
+        return this.context.getData();
     }
 
     async execAction<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
@@ -147,14 +152,14 @@ export class ActivityExecutor implements IActivityExecutor {
             } else {
                 ref = new ActivityElementRef(this.context, activity);
             }
+            isDefined(input) && ref.context.setValue(ACTIVITY_INPUT, input);
             return ref.toAction();
         } else if (isClass(activity)) {
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(activity) as IActivityRef;
             aref.context.setValue(CTX_RUN_PARENT, ctx);
-            aref.context.setValue(ACTIVITY_INPUT, input);
+            isDefined(input) && aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {
-            this.context.setValue(ACTIVITY_INPUT, input);
             return activity;
         } else if (activity) {
             let md: Type;
@@ -169,7 +174,7 @@ export class ActivityExecutor implements IActivityExecutor {
             };
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(option) as IActivityRef;
             aref.context.setValue(CTX_RUN_PARENT, ctx);
-            aref.context.setValue(ACTIVITY_INPUT, input);
+            isDefined(input) && aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         }
     }

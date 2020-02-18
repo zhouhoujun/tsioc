@@ -23,7 +23,7 @@ export class BuildContext<
     /**
      * current type attr data to binding.
      */
-    get template(): any {
+    getTemplate<T = any>(): T {
         return this.context.getValue(CTX_TEMPLATE);
     }
 

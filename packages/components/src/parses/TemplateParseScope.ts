@@ -57,7 +57,7 @@ export class TemplateParseScope extends BuildHandles<ITemplateContext> implement
  * @extends {TemplateHandle}
  */
 export const ElementsTemplateHandle = async function (ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
-    let template = ctx.template;
+    let template = ctx.getTemplate();
     if (isArray(template)) {
         let actInjector = ctx.reflects.getActionInjector();
         ctx.value = await Promise.all(template.map(async tp => {

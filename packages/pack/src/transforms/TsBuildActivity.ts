@@ -8,6 +8,7 @@ import { classAnnotations } from '@tsdi/annotations';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform, isTransform } from '../ITransform';
 const ts = require('gulp-typescript');
+const sourcemaps = require('gulp-sourcemaps');
 
 /**
  * ts build option.
@@ -39,13 +40,14 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
-            condition: (ctx, bind) => bind.getScope<TsBuildActivity>().sourcemap,
+            condition: 'binding: sourcemap',
             body: {
                 name: 'sourcemap-init',
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, bind) => {
-                    let framework = bind.getScope<TsBuildActivity>().framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getInput(), framework.init())
+                    let scope = bind.getScope<TsBuildActivity>();
+                    let framework = scope.framework || sourcemaps;
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.init())
                 }
             }
         },
@@ -74,23 +76,15 @@ export interface TsBuildOption extends AssetActivityOption {
                     let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
                     tsCompile = tsProject();
                 }
-                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getInput(), tsCompile);
+                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), tsCompile);
             }
         },
         {
             activity: Activities.if,
-            input: 'ctx.getOutput() | dts',
-            condition: (ctx, bind) => isTransform(ctx.getInput()) && bind.getScope<TsBuildActivity>().dts,
-            body: {
-                name: 'write-dts',
-                activity: 'dist',
-                dist: 'binding: dts',
-            }
-        },
-        {
-            activity: Activities.if,
-            input: 'ctx.getOutput() | tsjs',
-            condition: ctx => isTransform(ctx.getInput()),
+            externals: {
+                data: 'ctx.getData() | tsjs'
+            },
+            condition: ctx => isTransform(ctx.getData()),
             body: [
                 {
                     activity: 'pipes',
@@ -112,17 +106,29 @@ export interface TsBuildOption extends AssetActivityOption {
                         activity: Activities.execute,
                         action: (ctx: NodeActivityContext, bind) => {
                             let scope = bind.getScope<TsBuildActivity>();
-                            let framework = scope.framework || require('gulp-sourcemaps');
-                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.getOutput(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
+                            let framework = scope.framework || sourcemaps;
+                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
                         }
                     }
                 },
                 {
                     name: 'write-js',
                     activity: 'dist',
-                    dist: 'binding: dist',
+                    dist: 'binding: dist'
                 }
             ]
+        },
+        {
+            activity: Activities.if,
+            externals: {
+                data: 'ctx.getData() | dts'
+            },
+            condition: (ctx, bind) => isTransform(ctx.getData()) && bind.getScope<TsBuildActivity>().dts,
+            body: {
+                name: 'write-dts',
+                activity: 'dist',
+                dist: 'binding: dts',
+            }
         }
     ]
 })

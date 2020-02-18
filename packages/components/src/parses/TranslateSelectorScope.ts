@@ -71,7 +71,7 @@ export const TranslateElementHandle = async function (ctx: ITemplateContext, nex
 export const ParseSelectorHandle = async function (ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
     if (ctx.selector) {
         let selector = ctx.selector;
-        let template = ctx.template;
+        let template = ctx.getTemplate();
         let compCtx = await ctx.getContainer().getInstance(ComponentBuilderToken)
             .build(<IComponentOption>{
                 type: selector,

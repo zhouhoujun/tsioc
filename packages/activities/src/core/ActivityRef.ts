@@ -5,11 +5,12 @@ import {
     NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
 } from '@tsdi/components';
 import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL, ActivityTemplateContext } from './ActivityContext';
-import { IActivityRef, ACTIVITY_OUTPUT, ACTIVITY_INPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_DATA, ACTIVITY_INPUT } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
 import { ControlActivity } from './ControlActivity';
 import { expExp } from '../utils/exps';
+import { TemplateOption } from './ActivityMetadata';
 
 
 
@@ -39,22 +40,28 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
      * @param ctx root context.
      */
     async run(ctx: WorkflowContext): Promise<void> {
-        if (!this.context.hasValue(ACTIVITY_INPUT)) {
-            let input = this.context.template?.input;
+        let externals = this.context.getTemplate<TemplateOption>()?.externals;
+        if (externals) {
+            let input = externals.input;
             if (isDefined(input)) {
                 if (isString(input) && expExp.test(input)) {
                     input = this.context.getExector().eval(input);
                 }
-            } else {
-                input = this.context.getOutput();
+                this.context.setValue(ACTIVITY_INPUT, input);
             }
-            this.context.setValue(ACTIVITY_INPUT, input);
+            let data = externals.data;
+            if (isDefined(data)) {
+                if (isString(data) && expExp.test(data)) {
+                    data = this.context.getExector().eval(data);
+                }
+                this.context.setValue(ACTIVITY_DATA, data);
+            }
         }
         let result = await this.execute(ctx);
         if (isDefined(result)) {
-            this.context.setValue(ACTIVITY_OUTPUT, result);
-            this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_OUTPUT, result);
-            this.context.runScope?.setValue(ACTIVITY_OUTPUT, result);
+            this.context.setValue(ACTIVITY_DATA, result);
+            this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_DATA, result);
+            this.context.runScope?.setValue(ACTIVITY_DATA, result);
         }
     }
 
@@ -145,7 +152,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
         this.context.setValue(CTX_RUN_SCOPE, this.context);
         await this.context.getExector().runActivity(this.rootNodes);
         this.context.remove(CTX_RUN_SCOPE);
-        return this.context.getOutput();
+        return this.context.getData();
     }
 
     protected destroying(): void {

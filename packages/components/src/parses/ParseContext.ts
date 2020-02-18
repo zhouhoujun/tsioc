@@ -1,6 +1,5 @@
 import { Injectable, createRaiseContext, lang, tokenId, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IBuildOption } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { DataBinding } from '../bindings/DataBinding';
 import { ComponentContext, IComponentContext, IComponentOption } from '../ComponentContext';
@@ -65,11 +64,13 @@ export class ParseContext extends ComponentContext<IBindingParseOption> implemen
     getExtenalBindings() {
         let parent = this.getParent() as ComponentContext;
         if (parent) {
-            if (parent.template && parent.targetReflect) {
-                return lang.omit(parent.template,
-                    ...Array.from(parent.targetReflect.getBindings(inputDect)?.keys() ?? []),
-                    ...Array.from(parent.targetReflect.getBindings(outputDect)?.keys() ?? []),
-                    ...Array.from(parent.targetReflect.getBindings(refDect)?.keys() ?? []))
+            let template = parent.getTemplate();
+            let targetReflect = parent.targetReflect;
+            if (template && targetReflect) {
+                return lang.omit(template,
+                    ...Array.from(targetReflect.getBindings(inputDect)?.keys() ?? []),
+                    ...Array.from(targetReflect.getBindings(outputDect)?.keys() ?? []),
+                    ...Array.from(targetReflect.getBindings(refDect)?.keys() ?? []))
             }
         }
         return {};

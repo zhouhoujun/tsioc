@@ -6,11 +6,13 @@ import { IComponentContext } from '../ComponentContext';
 
 
 export const BindingOutputHandle = async function (ctx: IComponentContext, next: () => Promise<void>): Promise<void> {
-
+    let bindings = ctx.getTemplate();
+    if (!bindings) {
+        return next();
+    }
     let refl = ctx.targetReflect;
     let propOutBindings = refl?.getBindings(Output.toString());
     if (propOutBindings) {
-        let bindings = ctx.template;
         await Promise.all(Array.from(propOutBindings.keys()).map(async n => {
             let binding = propOutBindings.get(n);
             let filed = binding.bindingName || binding.name;

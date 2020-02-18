@@ -175,7 +175,7 @@ export class BootContext<T extends BootOption = BootOption,
     /**
      * get template.
      */
-    get template(): any {
+    getTemplate<T = any>(): T {
         return this.context.getValue(CTX_TEMPLATE);
     }
 

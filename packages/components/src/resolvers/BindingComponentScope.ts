@@ -1,5 +1,5 @@
 import { IActionSetup, DecoratorProvider } from '@tsdi/ioc';
-import { BuildHandles, IBuildContext } from '@tsdi/boot';
+import { BuildHandles, IBuildContext, IModuleReflect } from '@tsdi/boot';
 import { IComponentReflect } from '../IComponentReflect';
 import { ModuleBeforeInitHandle } from './ModuleBeforeInitHandle';
 import { BindingPropertyHandle } from './BindingPropertyHandle';
@@ -16,10 +16,15 @@ import { ComponentContext, IComponentOption, CTX_COMPONENT_CONTEXT } from '../Co
 export class BindingComponentScope extends BuildHandles<IBuildContext> implements IActionSetup {
 
     async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
+        let refl = ctx.targetReflect;
+        if ((<IModuleReflect>refl)?.getModuleRef) {
+            return ctx.destroy();
+        }
         if (!ctx.value) {
             return next();
         }
-        let cmpRef = ctx.targetReflect as IComponentReflect;
+
+        let cmpRef = refl as IComponentReflect;
         if (cmpRef?.component) {
             if (!(ctx instanceof ComponentContext)) {
                 throw Error(`Component decorator '${ctx.decorator}' is not provide component builder`);

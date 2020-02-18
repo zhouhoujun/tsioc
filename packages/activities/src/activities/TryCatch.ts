@@ -14,7 +14,7 @@ export class CatchActivity extends ControlActivity {
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
     async execute(ctx: ActivityContext): Promise<void> {
-        let err = ctx.getInput<Error>();
+        let err = ctx.getData();
         if (this.error && err && lang.getClass(err) === this.error) {
             ctx.getExector().runActivity(this.body);
         } else if (!this.error) {

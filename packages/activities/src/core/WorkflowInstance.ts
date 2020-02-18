@@ -1,6 +1,6 @@
 import { Injectable, Refs, isDefined, tokenId } from '@tsdi/ioc';
 import { Service, Startup, BootContext, CTX_MODULE_STARTUP } from '@tsdi/boot';
-import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_OUTPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_DATA } from './IActivityRef';
 import { Activity } from './Activity';
 import { ActivityOption } from './ActivityOption';
 import { ActivityMetadata } from './ActivityMetadata';
@@ -74,7 +74,7 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
     name: string;
 
     get result() {
-        return this.getValue(ACTIVITY_OUTPUT);
+        return this.getValue(ACTIVITY_DATA);
     }
 
     get startup(): WorkflowInstance {
@@ -104,7 +104,7 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
 export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx extends WorkflowContext = WorkflowContext> extends Service<T, TCtx> {
 
     get result(): any {
-        return this.context.getValue(ACTIVITY_OUTPUT);
+        return this.context.getValue(ACTIVITY_DATA);
     }
 
     state: RunState;

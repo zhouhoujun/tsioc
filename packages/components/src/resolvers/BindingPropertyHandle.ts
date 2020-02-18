@@ -21,7 +21,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
     let refl = ctx.targetReflect;
     let propInBindings = refl?.getBindings(inputDector);
     if (propInBindings) {
-        let bindings = ctx.template;
+        let bindings = ctx.getTemplate();
         let actInjector = ctx.reflects.getActionInjector();
         await Promise.all(Array.from(propInBindings.keys()).map(async n => {
             let binding = propInBindings.get(n);

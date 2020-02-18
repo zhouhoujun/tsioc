@@ -13,7 +13,7 @@ import { ITemplateContext } from '../../parses/TemplateContext';
 export class ComponentSelectorHandle extends BuildHandle<ITemplateContext> {
     async execute(ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
         let compPdr = ctx.componentProvider;
-        let template = ctx.template;
+        let template = ctx.getTemplate();
         if (isArray(template) && ctx.annoation.template === template) {
             ctx.selector = compPdr.getDefaultCompose();
         } else if (compPdr.isNodeType(template)) {

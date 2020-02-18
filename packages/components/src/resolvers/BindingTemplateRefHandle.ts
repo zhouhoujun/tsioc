@@ -15,7 +15,7 @@ const RefChildStr = RefChild.toString();
 export const BindingTemplateRefHandle = async function (ctx: IComponentContext, next?: () => Promise<void>): Promise<void> {
     let refl = ctx.targetReflect;
     let cmpdr = ctx.componentProvider;
-    let refkey = ctx.template?.[cmpdr.getRefSelectKey()];
+    let refkey = ctx.getTemplate()?.[cmpdr.getRefSelectKey()];
     if (refkey) {
         ctx.setValue(REFCHILD_SELECTOR, refkey);
     }

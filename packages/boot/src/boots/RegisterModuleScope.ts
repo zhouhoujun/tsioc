@@ -12,7 +12,7 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
             return;
         }
         if (!ctx.type) {
-            if (ctx.getOptions().template && next) {
+            if (ctx.getTemplate() && next) {
                 return await next();
             }
             return;

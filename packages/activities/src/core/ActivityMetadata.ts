@@ -96,12 +96,25 @@ export interface TemplateOption extends ElementTemplate, ObjectMap {
     name?: Binding<string>;
 
     /**
-     * input data..
-     *
-     * @type {string}
-     * @memberof TemplateOption
+     * component external attrs.
      */
-    input?: Binding<any>;
+    externals?: {
+        /**
+         * input data.
+         *
+         * @type {string}
+         * @memberof TemplateOption
+         */
+        input?: Binding<any>;
+
+        /**
+         * input execute data.
+         *
+         * @type {string}
+         * @memberof TemplateOption
+         */
+        data?: Binding<any>;
+    }
 }
 
 
@@ -250,7 +263,7 @@ export type ActivityTemplate<T extends TemplateOption = ControlTemplate> = Templ
 /**
  * context expression.
  */
-export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | Type  | ((ctx: TC, bind?: ActivityContext) => T | Promise<T>)
+export type CtxExpression<T, TC extends ActivityContext> = T | Promise<T> | Type<Activity<T>> | IActivityRef<T> | Type | ((ctx: TC, bind?: ActivityContext) => T | Promise<T>)
 
 /**
  * expression.

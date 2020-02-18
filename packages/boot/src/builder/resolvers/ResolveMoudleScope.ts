@@ -23,7 +23,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
             ctx.targetReflect && ctx.setValue(INJECTOR, ctx.targetReflect.getInjector())
         }
 
-        if (ctx.targetReflect || ctx.template) {
+        if (ctx.targetReflect || ctx.getTemplate()) {
             // has build module instance.
             await super.execute(ctx);
         }

@@ -3,7 +3,7 @@ import { WorkflowContext } from './WorkflowInstance';
 import { ActivityContext } from './ActivityContext';
 
 export const ACTIVITY_INPUT = tokenId<any>('ACTIVITY_INPUT');
-export const ACTIVITY_OUTPUT = tokenId<any>('ACTIVITY_OUTPUT');
+export const ACTIVITY_DATA = tokenId<any>('ACTIVITY_DATA');
 
 export interface IActivityRef<T = any> extends IDestoryable {
     name?: string;
