@@ -1,7 +1,7 @@
 import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuildContext, IAnnoationContext } from '@tsdi/boot';
-import { ComponentContext, ITemplateContext, IComponentContext } from '@tsdi/components';
+import { ComponentContext, ITemplateContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
@@ -11,7 +11,7 @@ import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 
 
 export const CTX_RUN_PARENT = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
-export const CTX_RUN_SCOPE = tokenId<IAnnoationContext>('CTX_RUN_SCOPE');
+export const CTX_RUN_SCOPE = tokenId<ActivityContext>('CTX_RUN_SCOPE');
 export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 
 /**
@@ -44,9 +44,9 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return url;
     }
 
-    get runScope(): IComponentContext {
-        return this.context.getValue<IComponentContext>(CTX_RUN_SCOPE)
-            ?? this.getParent()?.getContextValue<IComponentContext>(CTX_RUN_SCOPE, runsp => this.setValue(CTX_RUN_SCOPE, runsp));
+    get runScope(): ActivityContext {
+        return this.context.getValue(CTX_RUN_SCOPE)
+            ?? this.getParent()?.getContextValue(CTX_RUN_SCOPE, runsp => this.setValue(CTX_RUN_SCOPE, runsp));
     }
 
     get workflow(): WorkflowContext {

@@ -100,14 +100,16 @@ export interface TsBuildOption extends AssetActivityOption {
                 },
                 {
                     activity: Activities.if,
-                    condition: 'binding: !sourcemap',
+                    condition: 'binding: sourcemap',
                     body: {
                         name: 'sourcemap-write',
                         activity: Activities.execute,
                         action: (ctx: NodeActivityContext, bind) => {
                             let scope = bind.getScope<TsBuildActivity>();
                             let framework = scope.framework || sourcemaps;
-                            return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
+                            let scopeData = ctx.runScope?.getData();
+                            scopeData.js = ctx.getData();
+                            return ctx.injector.get(TransformService).executePipe(ctx, scopeData, framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
                         }
                     }
                 },
