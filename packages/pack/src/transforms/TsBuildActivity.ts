@@ -100,7 +100,7 @@ export interface TsBuildOption extends AssetActivityOption {
                 },
                 {
                     activity: Activities.if,
-                    condition: 'binding: sourcemap',
+                    condition: 'binding: !sourcemap',
                     body: {
                         name: 'sourcemap-write',
                         activity: Activities.execute,

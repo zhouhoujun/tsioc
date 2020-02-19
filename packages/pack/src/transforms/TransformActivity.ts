@@ -31,42 +31,34 @@ export class TransformService {
      * @memberof TransformActivity
      */
     async executePipe(ctx: NodeActivityContext, stream: ITransform, transform: Expression<ITransform>, waitend = false): Promise<ITransform> {
-        let next: ITransform;
-        let transPipe = await ctx.resolveExpression(transform);
-        let vaild = false;
-        if (isTransform(stream)) {
-            if (isTransform(transPipe) && !transPipe.changeAsOrigin) {
-                vaild = true;
-            } else {
-                next = stream;
-            }
-        } else if (isTransform(transPipe) && transPipe.changeAsOrigin) {
-            next = transPipe;
-        }
 
-        if (vaild) {
-            next = stream.pipe(transPipe);
-            if (waitend) {
-                return await new Promise((r, j) => {
-                    next
-                        .once('end', r)
-                        .once('error', j);
-                }).then(() => {
-                    next.removeAllListeners('error');
-                    next.removeAllListeners('end');
-                    return next;
-                }, err => {
-                    next.removeAllListeners('error');
-                    next.removeAllListeners('end');
-                    if (isDefined(process)) {
-                        console.error(err);
-                        process.exit(1);
-                        return err;
-                    } else {
-                        return Promise.reject(new Error(err));
-                    }
-                });
-            }
+        let transPipe: ITransform;
+        if (isTransform(transform)) {
+            transPipe = transform as ITransform;
+        } else {
+            transPipe = await ctx.resolveExpression(transform);
+        }
+        let next: ITransform = stream.pipe(transPipe);
+        if (waitend) {
+            return await new Promise((r, j) => {
+                next
+                    .once('end', r)
+                    .once('error', j);
+            }).then(() => {
+                next.removeAllListeners('error');
+                next.removeAllListeners('end');
+                return next;
+            }, err => {
+                next.removeAllListeners('error');
+                next.removeAllListeners('end');
+                if (isDefined(process)) {
+                    console.error(err);
+                    process.exit(1);
+                    return err;
+                } else {
+                    return Promise.reject(new Error(err));
+                }
+            });
         }
         return next;
     }

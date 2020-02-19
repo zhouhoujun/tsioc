@@ -1,7 +1,6 @@
 import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, isFunction } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser, BuildHandles } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
-import { TemplateContext } from './TemplateContext';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 import { DataBinding } from '../bindings/DataBinding';
 import { BindingDirection } from '../bindings/IBinding';
@@ -96,8 +95,9 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
 export const TranslateExpressionHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
     let expression = ctx.bindExpression;
     let binding = ctx.binding;
-    if (ctx.componentProvider.isTemplate(expression)) {
-        let tpCtx = TemplateContext.parse(ctx.injector, {
+    let componentProvider = ctx.componentProvider;
+    if (componentProvider.isTemplate(expression)) {
+        let tpCtx = componentProvider.createTemplateContext(ctx.injector, {
             parent: ctx.getComponentContext(),
             template: expression,
             providers: ctx.providers
@@ -107,12 +107,14 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
             .execute(tpCtx);
 
         if (!tpCtx.destroyed) {
-            if (ctx.reflects.isExtends(lang.getClass(tpCtx.value), binding.type)) {
+            let type = lang.getClass(tpCtx.value);
+            let sub = ctx.getOptions().sub;
+            if ((sub && (!binding.provider || ctx.reflects.isExtends(type, binding.provider as ClassType)))
+                || (!sub && ctx.reflects.isExtends(type, binding.type))) {
                 ctx.value = tpCtx.value;
             } else {
                 ctx.setValue(CTX_BIND_EXPRESSION, tpCtx.value);
             }
-            tpCtx.destroy();
         }
     }
     if (isNullOrUndefined(ctx.value)) {

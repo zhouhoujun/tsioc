@@ -281,8 +281,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                                 dist: (ctx, bind) => bind.getScope<LibPackBuilder>().toModulePath(bind.getInput()),
                                 sourcemap: 'binding: zipMapsource',
                                 pipes: [
-                                    ctx => uglify(),
-                                    (ctx) => rename({ suffix: '.min' })
+                                    () => uglify(),
+                                    () => rename({ suffix: '.min' })
                                 ]
                             }
                         }

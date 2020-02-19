@@ -40,7 +40,6 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
 
 }
 
-
 export const CTX_COMPONENT_CONTEXT = tokenId<IComponentContext>('CTX_COMPONENT_CONTEXT');
 
 export class ComponentContext<T extends IComponentOption = IComponentOption,
@@ -72,6 +71,7 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
         return (this.context.getValue(CTX_COMPONENT_CONTEXT)
             ?? this.getParent()?.getContextValue(CTX_COMPONENT_CONTEXT, ctx => this.setValue(CTX_COMPONENT_CONTEXT, ctx))) as T;
     }
+
 
     /**
      * template scope.

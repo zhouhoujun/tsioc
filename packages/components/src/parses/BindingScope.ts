@@ -45,7 +45,8 @@ export const BindingArrayHandle = async function (ctx: IParseContext, next: () =
         ctx.value = await Promise.all(expression.map(async tp => {
             let subCtx = ctx.clone().setOptions({
                 bindExpression: tp,
-                template: tp
+                template: tp,
+                sub: true
             });
             await actInjector.getInstance(BindingScope).execute(subCtx);
             return subCtx.value ?? tp;

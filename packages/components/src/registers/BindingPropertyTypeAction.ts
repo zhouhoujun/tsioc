@@ -38,9 +38,10 @@ export const BindingPropertyTypeAction = function (ctx: DesignActionContext, nex
                         binding.direction = prop.direction;
                     }
 
-                    if (!binding.provider) {
+                    if (prop.alias) {
                         binding.provider = ctx.injector.getToken(prop.provider || prop.type, prop.alias);
                     }
+
                     if (prop.bindingType) {
                         binding.bindingType = prop.bindingType;
                     }
