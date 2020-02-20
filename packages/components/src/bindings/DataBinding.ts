@@ -38,7 +38,15 @@ export abstract class DataBinding<T = any> {
         return pathCkExp.test(this.expression) ? this.expression.substring(this.expression.lastIndexOf('.') + 1) : this.expression;
     }
 
-    abstract bind(target: any): void;
+    /**
+     * bind target.
+     *
+     * @abstract
+     * @param {*} target
+     * @param {*} [initVal]
+     * @memberof ParseBinding
+     */
+    abstract bind(target: any, initVal?: any): void;
 
     bindTagChange(field: string, target: any) {
         if (!isTypeObject(target)) {

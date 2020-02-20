@@ -5,7 +5,7 @@ import { TransformActivity, TransformService } from './TransformActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform } from '../ITransform';
 
-@Task('annotation, [annotation]')
+@Task('annotation')
 export class AnnotationActivity extends TransformActivity {
 
     @Input('annotationFramework', classAnnotations) framework: NodeExpression<ITransform>;

@@ -4,7 +4,6 @@ import { Task, Src, Activities, ActivityType } from '@tsdi/activities';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
 import { TransformService } from './TransformActivity';
-import { classAnnotations } from '@tsdi/annotations';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform, isTransform } from '../ITransform';
 const ts = require('gulp-typescript');
@@ -69,10 +68,12 @@ export interface TsBuildOption extends AssetActivityOption {
                 }
                 let tsconfig = await ctx.resolveExpression(scope.tsconfig);
                 let tsCompile;
+                let dts = await ctx.resolveExpression(scope.dts);
                 if (isString(tsconfig)) {
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig));
+                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
                     tsCompile = tsProject();
                 } else {
+                    tsconfig.declaration = !!dts;
                     let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
                     tsCompile = tsProject();
                 }
@@ -81,8 +82,11 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
-            externals: {
-                data: 'ctx.getData() | tsjs'
+            externals: async (ctx) => {
+                let tds = await ctx.resolveExpression(ctx.getScope<TsBuildActivity>().dts);
+                return tds ? {
+                    data: 'ctx.getData() | tsjs'
+                } : null;
             },
             condition: ctx => isTransform(ctx.getData()),
             body: [
@@ -104,12 +108,10 @@ export interface TsBuildOption extends AssetActivityOption {
                     body: {
                         name: 'sourcemap-write',
                         activity: Activities.execute,
-                        action: (ctx: NodeActivityContext, bind) => {
+                        action: async (ctx: NodeActivityContext, bind) => {
                             let scope = bind.getScope<TsBuildActivity>();
                             let framework = scope.framework || sourcemaps;
-                            let scopeData = ctx.runScope?.getData();
-                            scopeData.js = ctx.getData();
-                            return ctx.injector.get(TransformService).executePipe(ctx, scopeData, framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
+                            return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'));
                         }
                     }
                 },
@@ -125,7 +127,7 @@ export interface TsBuildOption extends AssetActivityOption {
             externals: {
                 data: 'ctx.getData() | dts'
             },
-            condition: (ctx, bind) => isTransform(ctx.getData()) && bind.getScope<TsBuildActivity>().dts,
+            condition: 'binding: dts',
             body: {
                 name: 'write-dts',
                 activity: 'dist',
@@ -136,7 +138,8 @@ export interface TsBuildOption extends AssetActivityOption {
 })
 export class TsBuildActivity extends AssetActivity {
     @Input() dts: NodeExpression<string>;
-    @Input('annotationFramework', classAnnotations) annotationFramework: NodeExpression<ITransform>;
+    @Input() annotation: NodeExpression<boolean>;
+    @Input('annotationFramework') annotationFramework: NodeExpression<ITransform>;
     @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
     @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string | ObjectMap>;
     @Input() uglify: NodeExpression<boolean>;

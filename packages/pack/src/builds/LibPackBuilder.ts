@@ -236,7 +236,9 @@ export interface LibPackBuilderOption extends TemplateOption {
                         dist: (ctx, bind) => bind.getScope<LibPackBuilder>().getTargetPath(bind.getInput()),
                         dts: (ctx, bind) => {
                             let input = bind.getInput<LibBundleOption>();
-                            return input.dtsMain ? bind.getScope<LibPackBuilder>().getTargetPath(input) : null
+                            let scope = bind.getScope<LibPackBuilder>();
+                            let targetpath = scope.getTargetPath(input);
+                            return scope.dts ? join(targetpath, scope.dts) : (input.dtsMain ? targetpath : null)
                         },
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
@@ -343,6 +345,7 @@ export class LibPackBuilder implements AfterInit {
     @Input() bundles: NodeExpression<LibBundleOption[]>;
     @Input() outDir: string;
     @Input() annotation: NodeExpression<boolean>;
+    @Input() dts: string;
 
     /**
      * rollup external setting.

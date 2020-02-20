@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId } from '@tsdi/ioc';
+import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuildContext, IAnnoationContext } from '@tsdi/boot';
 import { ComponentContext, ITemplateContext } from '@tsdi/components';
@@ -6,7 +6,7 @@ import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
-import { ACTIVITY_DATA, ACTIVITY_INPUT } from './IActivityRef';
+import { ACTIVITY_DATA, ACTIVITY_INPUT, ACTIVITY_ORIGIN_DATA } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 
 
@@ -24,14 +24,32 @@ export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 @Refs(Activity, BuildContext)
 export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
 
+    /**
+     * activity input data.
+     */
     getInput<T = any>(): T {
         return this.context.getValue(ACTIVITY_INPUT)
             ?? this.getParent()?.getContextValue(ACTIVITY_INPUT, input => this.setValue(ACTIVITY_INPUT, input));
     }
 
+    /**
+     * activity process data.
+     */
     getData<T = any>(): T {
-        return this.context.getValue(ACTIVITY_DATA)
-            ?? this.getParent()?.getContextValue(ACTIVITY_DATA, data => this.setValue(ACTIVITY_DATA, data));
+        return this.context.getValue(ACTIVITY_DATA) ?? this.getProcessData();
+    }
+
+    protected getProcessData() {
+        let data = this.runScope?.getData() ?? this.getParent()?.getContextValue(ACTIVITY_DATA);
+        isDefined(data) &&  this.setValue(ACTIVITY_DATA, data);
+        return data;
+    }
+
+    /**
+     * activity parent origin process data.
+     */
+    getOriginData<T = any>(): T {
+        return this.getContextValue(ACTIVITY_ORIGIN_DATA);
     }
 
 

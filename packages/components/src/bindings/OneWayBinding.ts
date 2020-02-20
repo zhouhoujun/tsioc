@@ -11,16 +11,12 @@ import { ParseBinding } from './ParseBinding';
  */
 export class OneWayBinding<T> extends ParseBinding<T> {
 
-    bind(target: any, obj?: any): T {
+    bind(target: any, initVal?: any): T {
         if (!target) {
             return;
         }
 
-        if (obj) {
-            obj[this.binding.name] = target;
-        }
-
-        target[this.binding.name] = this.resolveExression();
+        target[this.binding.name] = initVal ?? this.resolveExression();
         this.getFileds().forEach(field => {
             this.bindTagChange(field, target);
         });

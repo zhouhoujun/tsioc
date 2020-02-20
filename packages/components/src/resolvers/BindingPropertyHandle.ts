@@ -1,4 +1,4 @@
-import { isNullOrUndefined, isTypeObject, isBaseValue, lang } from '@tsdi/ioc';
+import { isTypeObject, lang, isDefined } from '@tsdi/ioc';
 import { IComponentContext } from '../ComponentContext';
 import { ParseContext } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
@@ -27,7 +27,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
             let binding = propInBindings.get(n);
             let filed = binding.bindingName || binding.name;
             let expression = bindings ? bindings[filed] : null;
-            if (!isNullOrUndefined(expression)) {
+            if (isDefined(expression)) {
                 if (binding.bindingType === BindingTypes.dynamic) {
                     ctx.value[binding.name] = expression;
                 } else {
@@ -39,26 +39,28 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
                     });
                     await actInjector.getInstance(BindingScope).execute(pctx, async () => {
                         if (pctx.dataBinding instanceof ParseBinding) {
-                            if (pctx.dataBinding.resolveExression() === pctx.value || isBaseValue(pctx.value)) {
-                                pctx.dataBinding.bind(ctx.value);
-                            } else if (isTypeObject(pctx.value)) {
-                                pctx.dataBinding.bind(pctx.value, ctx.value);
+                            let epVal = pctx.dataBinding.resolveExression();
+                            if (epVal !== pctx.value && isTypeObject(pctx.value)) {
+                                ctx.value[binding.name] = pctx.value;
+                                pctx.dataBinding.bind(pctx.value);
+                            } else {
+                                pctx.dataBinding.bind(ctx.value, pctx.value);
                             }
                         } else if (pctx.dataBinding instanceof DataBinding) {
-                            pctx.dataBinding.bind(ctx.value);
+                            pctx.dataBinding.bind(ctx.value, pctx.value);
                         } else {
                             ctx.value[binding.name] = pctx.value;
                         }
                     });
                 }
-            } else if (!isNullOrUndefined(binding.defaultValue)) {
+            } else if (isDefined(binding.defaultValue)) {
                 ctx.value[binding.name] = binding.defaultValue;
             }
 
             let bvailds = refl?.getBindings<IPropertyVaildate[]>(Vaildate.toString()).get(binding.name);
             if (bvailds && bvailds.length) {
                 await Promise.all(bvailds.map(async bvaild => {
-                    if (bvaild.required && !isNullOrUndefined(ctx.value[binding.name])) {
+                    if (bvaild.required && isDefined(ctx.value[binding.name])) {
                         throw new Error(`${lang.getClassName(ctx.value)}.${binding.name} is not vaild. ${bvaild.errorMsg}`)
                     }
                     if (bvaild.vaild) {

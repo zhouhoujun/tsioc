@@ -5,7 +5,7 @@ import {
     NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
 } from '@tsdi/components';
 import { ActivityContext, CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL, ActivityTemplateContext } from './ActivityContext';
-import { IActivityRef, ACTIVITY_DATA, ACTIVITY_INPUT } from './IActivityRef';
+import { IActivityRef, ACTIVITY_DATA, ACTIVITY_INPUT, ACTIVITY_ORIGIN_DATA } from './IActivityRef';
 import { Activity } from './Activity';
 import { WorkflowContext } from './WorkflowInstance';
 import { ControlActivity } from './ControlActivity';
@@ -30,7 +30,7 @@ export interface IActivityComponentRef<T = any, TN = ActivityNodeType> extends I
 export type ActivityNodeType = Activity | IActivityElementRef | IActivityTemplateRef | IActivityComponentRef;
 
 @Abstract()
-export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implements IActivityRef<T> {
+export abstract class ActivityRef extends ContextNode<ActivityContext> implements IActivityRef {
     isScope?: boolean;
     abstract readonly name: string;
     protected abstract execute(ctx: WorkflowContext): Promise<any>;
@@ -40,7 +40,7 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
      * @param ctx root context.
      */
     async run(ctx: WorkflowContext): Promise<void> {
-        let externals = this.context.getTemplate<TemplateOption>()?.externals;
+        let externals = await this.context.resolveExpression(this.context.getTemplate<TemplateOption>()?.externals);
         if (externals) {
             let input = externals.input;
             if (isDefined(input)) {
@@ -51,6 +51,7 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
             }
             let data = externals.data;
             if (isDefined(data)) {
+                this.context.setValue(ACTIVITY_ORIGIN_DATA, this.context.getData());
                 if (isString(data) && expExp.test(data)) {
                     data = this.context.getExector().eval(data);
                 }
@@ -60,8 +61,12 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
         let result = await this.execute(ctx);
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_DATA, result);
+            if (externals && externals.data) {
+                return;
+            }
             this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_DATA, result);
             this.context.runScope?.setValue(ACTIVITY_DATA, result);
+
         }
     }
 
@@ -80,7 +85,7 @@ export abstract class ActivityRef<T> extends ContextNode<ActivityContext> implem
 }
 
 @Injectable
-export class ActivityElementRef<T extends Activity = Activity> extends ActivityRef<T> implements IActivityElementRef<T> {
+export class ActivityElementRef<T extends Activity = Activity> extends ActivityRef implements IActivityElementRef<T> {
 
     get name(): string {
         return this.context.name ?? this.nativeElement.name ?? lang.getClassName(this.nativeElement);
@@ -121,7 +126,7 @@ export class ControlActivityElementRef<T extends ControlActivity = ControlActivi
 }
 
 @Injectable
-export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef<T> implements IActivityTemplateRef<T> {
+export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef implements IActivityTemplateRef<T> {
     readonly isScope = true;
     get name(): string {
         return `${this.context.name}.template`;
@@ -173,7 +178,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
  *  activity ref for runtime.
  */
 @Injectable
-export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends ActivityRef<T> implements IActivityComponentRef<T, TN> {
+export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends ActivityRef implements IActivityComponentRef<T, TN> {
 
     get name(): string {
         return this.context?.name ?? lang.getClassName(this.componentType);

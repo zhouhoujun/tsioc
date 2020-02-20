@@ -13,13 +13,9 @@ import { pathCkExp } from './exps';
  */
 export class TwoWayBinding<T> extends ParseBinding<T> {
 
-    bind(target: any, obj?: any): T {
+    bind(target: any, initVal?: any): T {
         if (!target) {
             return;
-        }
-
-        if (obj) {
-            obj[this.binding.name] = target;
         }
 
         let field = this.binding.name;
@@ -38,6 +34,6 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
             });
         }
 
-        target[field] = this.resolveExression();
+        target[field] = initVal ?? this.resolveExression();
     }
 }

@@ -101,7 +101,7 @@ export class WorkflowContext extends BootContext<ActivityOption, ActivityMetadat
  */
 @Injectable
 @Refs(ActivityRef, Startup)
-export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx extends WorkflowContext = WorkflowContext> extends Service<T, TCtx> {
+export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Service<T, WorkflowContext> {
 
     get result(): any {
         return this.context.getValue(ACTIVITY_DATA);
@@ -109,7 +109,7 @@ export class WorkflowInstance<T extends IActivityRef<TCtx> = IActivityRef, TCtx 
 
     state: RunState;
 
-    async start(data?: any): Promise<TCtx> {
+    async start(data?: any): Promise<WorkflowContext> {
         let injector = this.getInjector();
         if (isDefined(data)) {
             this.context.setValue(ACTIVITY_INPUT, data);
