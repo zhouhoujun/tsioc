@@ -10,7 +10,7 @@ export const BindingOutputHandle = async function (ctx: IComponentContext, next:
     if (!bindings) {
         return next();
     }
-    let refl = ctx.targetReflect;
+    let refl = ctx.getTargetReflect();
     let propOutBindings = refl?.getBindings(Output.toString());
     if (propOutBindings) {
         await Promise.all(Array.from(propOutBindings.keys()).map(async n => {

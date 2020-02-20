@@ -13,7 +13,7 @@ const RefChildStr = RefChild.toString();
  * @extends {ResolveHandle}
  */
 export const BindingTemplateRefHandle = async function (ctx: IComponentContext, next?: () => Promise<void>): Promise<void> {
-    let refl = ctx.targetReflect;
+    let refl = ctx.getTargetReflect();
     let cmpdr = ctx.componentProvider;
     let refkey = ctx.getTemplate()?.[cmpdr.getRefSelectKey()];
     if (refkey) {

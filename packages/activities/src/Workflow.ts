@@ -6,9 +6,10 @@ import { ComponentsModule } from '@tsdi/components';
 import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';
 import { ActivityOption } from './core/ActivityOption';
-import { WorkflowInstance, WorkflowContext, WorkflowContextToken } from './core/WorkflowInstance';
+import { WorkflowInstance, WorkflowContext } from './core/WorkflowContext';
 import { ActivityType } from './core/ActivityMetadata';
 import { UUIDToken, RandomUUIDFactory } from './core/uuid';
+import { WorkflowContextToken } from './core/IWorkflowContext';
 
 /**
  * workflow builder.

@@ -5,7 +5,7 @@ import { CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT } from '../context-tokens';
 
 
 export const ResolveBootHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    let bootModule = ctx.getValue(CTX_MODULE_BOOT_TOKEN) || ctx.annoation?.bootstrap;
+    let bootModule = ctx.getValue(CTX_MODULE_BOOT_TOKEN) || ctx.getAnnoation()?.bootstrap;
     let template = ctx.getTemplate();
     if (!ctx.hasValue(CTX_MODULE_BOOT) && (template || bootModule)) {
         ctx.providers.inject(

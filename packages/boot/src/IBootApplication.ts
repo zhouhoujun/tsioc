@@ -1,6 +1,6 @@
 import { LoadType, ClassType } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, BootOption } from './BootContext';
+import { IBootContext, BootOption } from './BootContext';
 
 
 /**
@@ -9,7 +9,7 @@ import { BootContext, BootOption } from './BootContext';
  * @export
  * @interface ContextInit
  */
-export interface ContextInit<T extends BootContext = BootContext> {
+export interface ContextInit<T extends IBootContext = IBootContext> {
     /**
      * on context init.
      *
@@ -27,7 +27,7 @@ export interface ContextInit<T extends BootContext = BootContext> {
  * @extends {ContextInit<T>}
  * @template T
  */
-export interface IBootApplication<T extends BootContext = BootContext> extends ContextInit<T> {
+export interface IBootApplication<T extends IBootContext = IBootContext> extends ContextInit<T> {
 
     /**
      * boot target.

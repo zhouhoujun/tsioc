@@ -9,6 +9,7 @@ import { IBuildContext } from './builder/IBuildContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { AnnoationOption, AnnoationContext } from './AnnoationContext';
 import { IModuleReflect } from './modules/IModuleReflect';
+import { BootstrapMetadata } from './decorators/Bootstrap';
 
 
 /**
@@ -98,6 +99,68 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
     injector?: ICoreInjector;
 }
 
+export interface IBootContext<T extends BootOption = BootOption> extends IBuildContext<T> {
+
+    getLogManager(): ILoggerManager;
+    /**
+     * startup services
+     *
+     * @type {Token[]}
+     */
+    readonly starupServices: StartupServices;
+
+    /**
+     * boot base url.
+     *
+     * @type {string}
+     */
+    readonly baseURL: string;
+
+    /**
+     * boot run env args.
+     *
+     * @type {string[]}
+     * @memberof BootOptions
+     */
+    readonly args: string[];
+    /**
+     *  custom boot data of `BuildOptions`
+     *
+     * @type {*}
+     * @memberof BootOptions
+     */
+    readonly data: any;
+
+    readonly target: any;
+
+    readonly boot: any;
+
+    readonly startup: Startup;
+
+    /**
+     * configuration merge metadata config and all application config.
+     *
+     * @type {T}
+     * @memberof BootContext
+     */
+    getConfiguration<T extends RunnableConfigure>(): T;
+
+    /**
+     * get configure manager.
+     *
+     * @returns {ConfigureManager<T>}
+     */
+    getConfigureManager<T extends RunnableConfigure>(): ConfigureManager<T>;
+
+    getTargetReflect<T extends IModuleReflect>(): T;
+
+    /**
+     * annoation metadata.
+     */
+    getAnnoation<T extends BootstrapMetadata>(): T;
+
+}
+
 /**
  * application boot context.
  *
@@ -106,10 +169,7 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
  * @extends {HandleContext}
  */
 @Injectable
-export class BootContext<T extends BootOption = BootOption,
-    TMeta extends RunnableConfigure = RunnableConfigure,
-    TRefl extends IModuleReflect = IModuleReflect>
-    extends AnnoationContext<T, TMeta, TRefl> implements IBuildContext<T, TMeta, TRefl> {
+export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T> implements IBootContext<T> {
 
 
     getLogManager(): ILoggerManager {
@@ -135,7 +195,7 @@ export class BootContext<T extends BootOption = BootOption,
     get baseURL(): string {
         let url = this.context.getValue(ProcessRunRootToken)
         if (!url) {
-            url = this.annoation?.baseURL;
+            url = this.getAnnoation()?.baseURL;
             if (url) {
                 this.getContainer().setValue(ProcessRunRootToken, url);
                 this.context.setValue(ProcessRunRootToken, url);
@@ -144,14 +204,21 @@ export class BootContext<T extends BootOption = BootOption,
         return url;
     }
 
+    getAnnoation<T extends BootstrapMetadata>(): T {
+        return super.getAnnoation() as T;
+    }
+
+    getTargetReflect<T extends IModuleReflect>(): T {
+        return super.getTargetReflect() as T;
+    }
+
     /**
      * configuration merge metadata config and all application config.
      *
-     * @type {TMeta}
      * @memberof BootContext
      */
-    get configuration(): TMeta {
-        return this.context.getValue(CTX_APP_CONFIGURE) as TMeta;
+    getConfiguration<T extends RunnableConfigure>(): T {
+        return this.context.getValue(CTX_APP_CONFIGURE) as T;
     }
 
     get args(): string[] {
@@ -193,11 +260,11 @@ export class BootContext<T extends BootOption = BootOption,
     /**
      * get configure manager.
      *
-     * @returns {ConfigureManager<TMeta>}
+     * @returns {ConfigureManager<T>}
      * @memberof BootContext
      */
-    getConfigureManager(): ConfigureManager<TMeta> {
-        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<TMeta>;
+    getConfigureManager<T extends RunnableConfigure>(): ConfigureManager<T> {
+        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
     static parse(injector: ICoreInjector, target: Type | BootOption): BootContext {
@@ -222,4 +289,9 @@ export class BootContext<T extends BootOption = BootOption,
         }
         return super.setOptions(options);
     }
+}
+
+
+export function isBootContext( target: any): target is IBootContext {
+    return target instanceof BootContext;
 }

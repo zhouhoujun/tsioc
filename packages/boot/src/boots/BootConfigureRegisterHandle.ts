@@ -8,7 +8,7 @@ import { ConfigureRegister } from '../annotations/ConfigureRegister';
  * @export
  */
 export const BootConfigureRegisterHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    let config = ctx.configuration;
+    let config = ctx.getConfiguration();
     let regs = ctx.injector.getServices(ConfigureRegister);
     if (regs && regs.length) {
         await Promise.all(regs.map(reg => reg.register(config, ctx)));

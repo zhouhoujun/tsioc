@@ -5,14 +5,13 @@ import { ValifyTeamplateHandle } from './ValifyTeamplateHandle';
 import { BindingTemplateRefHandle } from './BindingTemplateRefHandle';
 import { ComponentProvider } from '../ComponentProvider';
 import { CTX_ELEMENT_REF, CTX_COMPONENT_REF } from '../ComponentRef';
-import { IComponentReflect } from '../IComponentReflect';
 import { IComponentContext } from '../ComponentContext';
 
 
 
 export class ResolveTargetRefScope extends BuildHandles<IComponentContext> implements IActionSetup {
     async execute(ctx: IComponentContext, next?: () => Promise<void>): Promise<void> {
-        let annoation = ctx.annoation;
+        let annoation = ctx.getAnnoation();
         if (ctx.getOptions().attr) {
             if (annoation.template) {
                 throw new Error('template component can not set as attr of oathor component')
@@ -25,7 +24,7 @@ export class ResolveTargetRefScope extends BuildHandles<IComponentContext> imple
             ctx.value = ctx.getValue(CTX_COMPONENT_REF);
         } else {
             // current type is component.
-            let refl = ctx.targetReflect as IComponentReflect;
+            let refl = ctx.getTargetReflect();
             let compdr = refl.getDecorProviders().getInstance(ComponentProvider);
             if (compdr.parseElementRef && compdr?.isElementType(ctx.type)) {
                 let elRef = compdr.createElementRef(ctx, ctx.value);

@@ -1,7 +1,7 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { Expression } from '../core/ActivityMetadata';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 
 
@@ -11,7 +11,7 @@ export class TimerActivity extends ControlActivity<number> {
 
     @Input('timer') time: Expression<number>;
 
-    async execute(ctx: ActivityContext): Promise<number> {
+    async execute(ctx: IActivityContext): Promise<number> {
         return await ctx.getExector().resolveExpression(this.time);
     }
 }

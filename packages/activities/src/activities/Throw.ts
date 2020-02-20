@@ -1,7 +1,7 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { Expression } from '../core/ActivityMetadata';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 
 /**
@@ -16,7 +16,7 @@ export class ThrowActivity extends ControlActivity<Error> {
 
     @Input('throw') error: Expression<Error>;
 
-    execute(ctx: ActivityContext): Promise<Error> {
+    execute(ctx: IActivityContext): Promise<Error> {
         return ctx.resolveExpression(this.error);
     }
 }

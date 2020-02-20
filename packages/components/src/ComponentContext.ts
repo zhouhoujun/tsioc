@@ -19,11 +19,17 @@ export interface IComponentOption extends IBuildOption {
 }
 
 
-export interface IComponentContext<T extends IComponentOption = IComponentOption,
-    TMeta extends IComponentMetadata = IComponentMetadata,
-    TRefl extends IComponentReflect = IComponentReflect> extends IBuildContext<T, TMeta, TRefl> {
+export interface IComponentContext<T extends IComponentOption = IComponentOption> extends IBuildContext<T> {
     readonly name: string;
     getResultRef(): IComponentRef | ITemplateRef;
+
+    getTargetReflect<T extends IComponentReflect>(): T;
+
+    /**
+     * annoation metadata.
+     */
+    getAnnoation<T extends IComponentMetadata>(): T;
+
     /**
      * component instance.
      */
@@ -42,10 +48,8 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
 
 export const CTX_COMPONENT_CONTEXT = tokenId<IComponentContext>('CTX_COMPONENT_CONTEXT');
 
-export class ComponentContext<T extends IComponentOption = IComponentOption,
-    TMeta extends IComponentMetadata = IComponentMetadata,
-    TRefl extends IComponentReflect = IComponentReflect>
-    extends BuildContext<T, TMeta, TRefl> implements IComponentContext<T, TMeta, TRefl> {
+export class ComponentContext<T extends IComponentOption = IComponentOption>
+    extends BuildContext<T> implements IComponentContext<T> {
 
     get name() {
         return this.context.getValue(CTX_ELEMENT_NAME);
@@ -53,6 +57,17 @@ export class ComponentContext<T extends IComponentOption = IComponentOption,
 
     getResultRef() {
         return this.context.getFirstValue(CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF) ?? this.value;
+    }
+
+    getTargetReflect<T extends IComponentReflect>(): T {
+        return super.getTargetReflect();
+    }
+
+    /**
+     * annoation metadata.
+     */
+    getAnnoation<T extends IComponentMetadata>(): T {
+        return super.getAnnoation();
     }
 
     /**

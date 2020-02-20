@@ -24,7 +24,7 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
         if (!ctx.reflects.hasRegister(ctx.type)) {
             await super.execute(ctx);
         }
-        if (ctx.annoation && next) {
+        if (ctx.getAnnoation() && next) {
             await next();
         }
     }

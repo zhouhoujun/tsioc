@@ -2,9 +2,9 @@ import { PromiseUtil } from '@tsdi/ioc';
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { ConditionActivity } from './ConditionActivity';
-import { WorkflowContext } from '../core/WorkflowInstance';
+import { IWorkflowContext } from '../core/IWorkflowContext';
 import { ActivityType } from '../core/ActivityMetadata';
 
 
@@ -23,9 +23,9 @@ export class DoWhileActivity extends ControlActivity {
 
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    private action: PromiseUtil.ActionHandle<WorkflowContext> | PromiseUtil.ActionHandle<WorkflowContext>[];
+    private action: PromiseUtil.ActionHandle<IWorkflowContext> | PromiseUtil.ActionHandle<IWorkflowContext>[];
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: IActivityContext): Promise<void> {
         if (!this.action) {
             this.action = ctx.getExector().parseAction(this.body);
         }

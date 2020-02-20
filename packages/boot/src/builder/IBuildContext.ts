@@ -1,6 +1,5 @@
 import { IHandleContext } from '../handles/Handle';
 import { IBuildOption } from './IBuildOption';
-import { IAnnotationMetadata, IAnnoationReflect } from '../annotations/IAnnoationReflect';
 import { IAnnoationContext } from '../AnnoationContext';
 
 
@@ -11,10 +10,7 @@ import { IAnnoationContext } from '../AnnoationContext';
  * @interface IBuildContext
  * @extends {IHandleContext}
  */
-export interface IBuildContext<
-    T extends IBuildOption = IBuildOption,
-    TMeta extends IAnnotationMetadata = IAnnotationMetadata,
-    TRefl extends IAnnoationReflect = IAnnoationReflect> extends IAnnoationContext<T, TMeta, TRefl>, IHandleContext {
+export interface IBuildContext<T extends IBuildOption = IBuildOption> extends IAnnoationContext<T>, IHandleContext {
 
     /**
      * build instance.

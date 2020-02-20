@@ -1,11 +1,11 @@
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ConditionActivity } from './ConditionActivity';
 import { ActivityType } from '../core/ActivityMetadata';
 import { PromiseUtil } from '@tsdi/ioc';
-import { WorkflowContext } from '../core/WorkflowInstance';
+import { WorkflowContext } from '../core/WorkflowContext';
 
 /**
  * while control activity.
@@ -23,7 +23,7 @@ export class WhileActivity extends ControlActivity {
 
     private action: PromiseUtil.ActionHandle<WorkflowContext> | PromiseUtil.ActionHandle<WorkflowContext>[];
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: IActivityContext): Promise<void> {
         let condition = await this.condition?.execute(ctx);
         if (condition) {
             if (!this.action) {

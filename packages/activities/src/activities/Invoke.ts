@@ -2,7 +2,7 @@ import { Token, ProviderTypes } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { Expression } from '../core/ActivityMetadata';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { Activity } from '../core/Activity';
 
 
@@ -22,7 +22,7 @@ export class InvokeActivity<T = any> extends Activity<T> {
 
     @Input() args: Expression<ProviderTypes[]>;
 
-    async execute(ctx: ActivityContext): Promise<T> {
+    async execute(ctx: IActivityContext): Promise<T> {
         let target = await ctx.resolveExpression(this.target);
         let method = await ctx.resolveExpression(this.method);
         let args = await ctx.resolveExpression(this.args);

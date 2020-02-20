@@ -1,7 +1,7 @@
 import { tokenId } from '@tsdi/ioc';
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ConditionActivity } from './ConditionActivity';
 import { ActivityType } from '../core/ActivityMetadata';
@@ -22,11 +22,11 @@ export class IfActivity extends ControlActivity {
 
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: IActivityContext): Promise<void> {
         await this.tryExec(ctx);
     }
 
-    protected async tryExec(ctx: ActivityContext) {
+    protected async tryExec(ctx: IActivityContext) {
         let result = await this.condition?.execute(ctx);
         ctx.runScope.setValue(IFStateKey, result);
         if (result) {

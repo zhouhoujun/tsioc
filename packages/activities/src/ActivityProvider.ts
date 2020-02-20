@@ -4,7 +4,7 @@ import { AnnoationContext } from '@tsdi/boot';
 import { ComponentProvider, ITemplateOption, ITemplateContext, CONTEXT_REF, NATIVE_ELEMENT, IElementRef, IComponentRef } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
-import { IActivityElementRef, ControlActivityElementRef, ActivityElementRef, ActivityComponentRef } from './core/ActivityRef';
+import { IActivityElementRef, ControlActivityElementRef, ActivityElementRef, ActivityComponentRef } from './core/WorkflowContext';
 import { ActivityContext, ActivityTemplateContext } from './core/ActivityContext';
 import { ControlActivity } from './core/ControlActivity';
 

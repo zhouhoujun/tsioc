@@ -6,7 +6,7 @@ import { ConfigureManager } from '../annotations/ConfigureManager';
 export const ModuleConfigureRegisterHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     let regs = ctx.injector.getServices({ token: ConfigureRegister, target: ctx.type });
     if (regs && regs.length) {
-        let config = ctx.configuration;
+        let config = ctx.getConfiguration();
         if (!config) {
             let mgr = ctx.injector.resolve(ConfigureManager);
             config = await mgr.getConfig();

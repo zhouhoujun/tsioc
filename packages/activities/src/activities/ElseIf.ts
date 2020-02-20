@@ -1,5 +1,5 @@
 import { Task } from '../decorators/Task';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { IfActivity, IFStateKey } from './If';
 
 /**
@@ -12,7 +12,7 @@ import { IfActivity, IFStateKey } from './If';
  */
 @Task('elseif')
 export class ElseIfActivity extends IfActivity {
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: IActivityContext): Promise<void> {
         let currScope = ctx.runScope;
         if (currScope.hasValue(IFStateKey) && !currScope.getValue(IFStateKey)) {
             await this.tryExec(ctx);

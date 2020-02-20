@@ -1,7 +1,7 @@
 import { PromiseUtil, tokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { Expression, ActivityType } from './ActivityMetadata';
-import { WorkflowContext } from './WorkflowInstance';
+import { WorkflowContext } from './WorkflowContext';
 
 /**
  * activity executor.

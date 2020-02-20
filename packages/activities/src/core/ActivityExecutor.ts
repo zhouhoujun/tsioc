@@ -8,10 +8,11 @@ import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_DATA } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
 import { ActivityOption } from './ActivityOption';
-import { isAcitvityRef, ActivityElementRef, IActivityElementRef, ActivityRef } from './ActivityRef';
-import { WorkflowContext } from './WorkflowInstance';
-import { ActivityContext, CTX_RUN_PARENT } from './ActivityContext';
+import { isAcitvityRef, ActivityElementRef, IActivityElementRef, ActivityRef } from './WorkflowContext';
+import { ActivityContext } from './ActivityContext';
 import { Activity } from './Activity';
+import { IWorkflowContext } from './IWorkflowContext';
+import { CTX_RUN_PARENT } from './IActivityContext';
 
 
 /**
@@ -37,7 +38,7 @@ export class ActivityExecutor implements IActivityExecutor {
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    runWorkflow<T extends WorkflowContext>(activity: ActivityType, data?: any): Promise<T> {
+    runWorkflow<T extends IWorkflowContext>(activity: ActivityType, data?: any): Promise<T> {
         let ctx = this.context.workflow;
         let injector = ctx.injector;
         if (isAcitvityRef(activity)) {
@@ -112,7 +113,7 @@ export class ActivityExecutor implements IActivityExecutor {
         return this.context.getData();
     }
 
-    async execAction<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+    async execAction<T extends IWorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
         if (!isArray(actions)) {
             return await actions(this.context.workflow as T, next);
         }
@@ -125,7 +126,7 @@ export class ActivityExecutor implements IActivityExecutor {
         await PromiseUtil.runInChain(actions.filter(f => f), this.context.workflow, next);
     }
 
-    parseAction<T extends WorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[] {
+    parseAction<T extends IWorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[] {
         if (isArray(activity)) {
             return activity.filter(a => a).map(act => async (ctx: T, next?: () => Promise<void>) => {
                 let handle = await this.buildActivity<T>(act, input);
@@ -139,7 +140,7 @@ export class ActivityExecutor implements IActivityExecutor {
         }
     }
 
-    protected async buildActivity<T extends WorkflowContext>(activity: ActivityType, input: any): Promise<PromiseUtil.ActionHandle<T>> {
+    protected async buildActivity<T extends IWorkflowContext>(activity: ActivityType, input: any): Promise<PromiseUtil.ActionHandle<T>> {
         let ctx = this.context;
         if (isAcitvityRef(activity)) {
             activity.context.setValue(CTX_RUN_PARENT, ctx);

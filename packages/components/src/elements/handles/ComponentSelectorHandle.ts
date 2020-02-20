@@ -14,7 +14,7 @@ export class ComponentSelectorHandle extends BuildHandle<ITemplateContext> {
     async execute(ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
         let compPdr = ctx.componentProvider;
         let template = ctx.getTemplate();
-        if (isArray(template) && ctx.annoation.template === template) {
+        if (isArray(template) && ctx.getAnnoation().template === template) {
             ctx.selector = compPdr.getDefaultCompose();
         } else if (compPdr.isNodeType(template)) {
             ctx.selector = template;

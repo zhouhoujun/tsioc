@@ -1,18 +1,16 @@
-import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, tokenId, isDefined } from '@tsdi/ioc';
+import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuildContext, IAnnoationContext } from '@tsdi/boot';
+import { BuildContext } from '@tsdi/boot';
 import { ComponentContext, ITemplateContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
-import { WorkflowContext, WorkflowContextToken } from './WorkflowInstance';
 import { ACTIVITY_DATA, ACTIVITY_INPUT, ACTIVITY_ORIGIN_DATA } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
+import { IActivityContext, CTX_BASEURL, CTX_RUN_SCOPE } from './IActivityContext';
+import { IWorkflowContext, WorkflowContextToken } from './IWorkflowContext';
 
 
-export const CTX_RUN_PARENT = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
-export const CTX_RUN_SCOPE = tokenId<ActivityContext>('CTX_RUN_SCOPE');
-export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 
 /**
  * activity execute context.ß
@@ -22,7 +20,7 @@ export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
  */
 @Injectable
 @Refs(Activity, BuildContext)
-export class ActivityContext extends ComponentContext<ActivityOption, ActivityMetadata> {
+export class ActivityContext extends ComponentContext<ActivityOption> implements IActivityContext {
 
     /**
      * activity input data.
@@ -52,6 +50,13 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return this.getContextValue(ACTIVITY_ORIGIN_DATA);
     }
 
+    /**
+     * annoation metadata.
+     */
+    getAnnoation<T extends ActivityMetadata>(): T {
+        return super.getAnnoation();
+    }
+
 
     get baseURL() {
         return this.context.getValue(CTX_BASEURL) ?? this.getBaseURL();
@@ -62,12 +67,12 @@ export class ActivityContext extends ComponentContext<ActivityOption, ActivityMe
         return url;
     }
 
-    get runScope(): ActivityContext {
+    get runScope(): IActivityContext {
         return this.context.getValue(CTX_RUN_SCOPE)
             ?? this.getParent()?.getContextValue(CTX_RUN_SCOPE, runsp => this.setValue(CTX_RUN_SCOPE, runsp));
     }
 
-    get workflow(): WorkflowContext {
+    get workflow(): IWorkflowContext {
         return this.injector.getSingleton(WorkflowContextToken)
     }
 

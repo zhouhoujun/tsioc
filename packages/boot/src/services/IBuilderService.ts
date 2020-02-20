@@ -1,12 +1,11 @@
 import { IocCoreService, ClassType, tokenId } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { BootContext, BootOption } from '../BootContext';
+import { BootOption, IBootContext } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
 import { IBuildOption } from '../builder/IBuildOption';
-import { BuildContext } from '../builder/BuildContext';
 import { IBuildContext } from '../builder/IBuildContext';
 
-export interface BootSubAppOption<T extends BootContext> {
+export interface BootSubAppOption<T extends IBootContext> {
     /**
      * sub context init.
      *
@@ -53,9 +52,9 @@ export interface IBuilderService extends IocCoreService {
      */
     resolve<T>(target: ClassType<T> | IBuildOption<T>): Promise<T>;
 
-    run(target: ClassType | BootOption | BootContext, ...args: string[]): Promise<BootContext>
-    run<Topt extends BootOption>(target: ClassType | Topt | BootContext, ...args: string[]): Promise<BootContext>;
-    run<T extends BootContext>(target: ClassType | BootOption | T, ...args: string[]): Promise<T>;
+    run(target: ClassType | BootOption | IBootContext, ...args: string[]): Promise<IBootContext>
+    run<Topt extends BootOption>(target: ClassType | Topt | IBootContext, ...args: string[]): Promise<IBootContext>;
+    run<T extends IBootContext>(target: ClassType | BootOption | T, ...args: string[]): Promise<T>;
     /**
      * run module.
      *
@@ -66,7 +65,7 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof IBuilderService
      */
-    run<T extends BootContext, Topt extends BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T>;
+    run<T extends IBootContext, Topt extends BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *
@@ -78,7 +77,7 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<T>}
      * @memberof IBuilderService
      */
-    boot<T extends BootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
+    boot<T extends IBootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
     /**
      * boot application.
      *
@@ -87,7 +86,7 @@ export interface IBuilderService extends IocCoreService {
      * @returns {Promise<BootContext>}
      * @memberof IBuilderService
      */
-    bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext>;
+    bootApp(application: IBootApplication, ...args: string[]): Promise<IBootContext>;
 }
 
 

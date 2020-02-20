@@ -1,6 +1,6 @@
 import {
     Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
-    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, isNullOrUndefined, IProviders, IIocContext, isDefined
+    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, IProviders, IIocContext, isDefined
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
@@ -39,9 +39,7 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
 /**
  * annoation context interface.
  */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption,
-    TMeta extends IAnnotationMetadata = IAnnotationMetadata,
-    TRefl extends IAnnoationReflect = IAnnoationReflect> extends IIocContext<T, ICoreInjector, IContainer> {
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IIocContext<T, ICoreInjector, IContainer> {
     /**
     * current build type.
     */
@@ -56,9 +54,9 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption,
      */
     getModuleRef(): ModuleRef;
 
-    readonly targetReflect?: TRefl;
+    getTargetReflect<T extends IAnnoationReflect>(): T;
 
-    readonly annoation: TMeta;
+    getAnnoation<T extends IAnnotationMetadata>(): T;
 
     readonly providers: IProviders;
 
@@ -104,10 +102,8 @@ export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
-    TMeta extends IAnnotationMetadata = IAnnotationMetadata,
-    TRefl extends IAnnoationReflect = IAnnoationReflect>
-    extends IocProvidersContext<T, ICoreInjector, IContainer> implements IAnnoationContext<T, TMeta, TRefl> {
+export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
+    extends IocProvidersContext<T, ICoreInjector, IContainer> implements IAnnoationContext<T> {
 
     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createRaiseContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
@@ -129,7 +125,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
     }
 
     protected getDecorator() {
-        let dec = this.type ? this.targetReflect?.decorator : null;
+        let dec = this.type ? this.getTargetReflect()?.decorator : null;
         dec && this.setValue(CTX_MODULE_DECTOR, dec);
         return dec;
     }
@@ -138,14 +134,14 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
         return this.injector.getSingleton(ModuleRef);
     }
 
-    get targetReflect(): TRefl {
-        return this.context.getValue<TRefl>(CTX_TARGET_RELF) ?? this.getTargetReflect();
+    getTargetReflect<T extends IAnnoationReflect>(): T {
+        return this.context.getValue<T>(CTX_TARGET_RELF) ?? this.getParentTargetReflect();
     }
 
-    protected getTargetReflect(): TRefl {
+    protected getParentTargetReflect<T extends IAnnoationReflect>(): T {
         let refl = this.type ? this.reflects.get(this.type) : null;
         refl && this.setValue(CTX_TARGET_RELF, refl);
-        return refl as TRefl;
+        return refl as T;
     }
 
     /**
@@ -239,12 +235,12 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption,
      * @type {ModuleConfigure}
      * @memberof AnnoationContext
      */
-    get annoation(): TMeta {
-        return this.context.getValue<TMeta>(CTX_MODULE_ANNOATION) ?? this.getAnnoation();
+    getAnnoation<T extends IAnnotationMetadata>(): T {
+        return this.context.getValue<T>(CTX_MODULE_ANNOATION) ?? this.getParentAnnoation();
     }
 
-    protected getAnnoation() {
-        let anno = this.type ? this.targetReflect?.getAnnoation?.<TMeta>() : null;
+    protected getParentAnnoation<T extends IAnnotationMetadata>(): T  {
+        let anno = this.type ? this.getTargetReflect()?.getAnnoation?.<T>() : null;
         anno && this.setValue(CTX_MODULE_ANNOATION, anno);
         return anno;
     }

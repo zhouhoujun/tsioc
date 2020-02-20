@@ -2,7 +2,7 @@ import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityType } from '../core/ActivityMetadata';
 import { ControlActivity } from '../core/ControlActivity';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 
 /**
  * sequence activity.
@@ -16,7 +16,7 @@ export class SequenceActivity<T> extends ControlActivity<T> {
 
     @Input() activities: ActivityType[];
 
-    async execute(ctx: ActivityContext): Promise<T> {
+    async execute(ctx: IActivityContext): Promise<T> {
         await ctx.getExector().runActivity(this.activities);
         return ctx.getData();
     }

@@ -65,7 +65,7 @@ export class ParseContext extends ComponentContext<IBindingParseOption> implemen
         let parent = this.getParent() as ComponentContext;
         if (parent) {
             let template = parent.getTemplate();
-            let targetReflect = parent.targetReflect;
+            let targetReflect = parent.getTargetReflect();
             if (template && targetReflect) {
                 return lang.omit(template,
                     ...Array.from(targetReflect.getBindings(inputDect)?.keys() ?? []),

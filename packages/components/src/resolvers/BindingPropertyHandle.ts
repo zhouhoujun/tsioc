@@ -18,7 +18,7 @@ const inputDector = Input.toString();
  */
 export const BindingPropertyHandle = async function (ctx: IComponentContext, next: () => Promise<void>): Promise<void> {
 
-    let refl = ctx.targetReflect;
+    let refl = ctx.getTargetReflect();
     let propInBindings = refl?.getBindings(inputDector);
     if (propInBindings) {
         let bindings = ctx.getTemplate();

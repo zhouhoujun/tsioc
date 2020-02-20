@@ -32,7 +32,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
      */
     getSuiteDescribe(): ISuiteDescribe {
         let type = this.getBootType();
-        let meta = this.context.targetReflect.getAnnoation<SuiteMetadata>();
+        let meta = this.context.getTargetReflect().getAnnoation<SuiteMetadata>();
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
         this.describe = meta.describe || lang.getClassName(type);
         return {

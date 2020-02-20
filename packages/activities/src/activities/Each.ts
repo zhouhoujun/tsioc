@@ -5,7 +5,7 @@ import { Expression, ActivityType } from '../core/ActivityMetadata';
 import { ActivityContext } from '../core/ActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ParallelExecutor } from '../core/ParallelExecutor';
-import { WorkflowContext } from '../core/WorkflowInstance';
+import { WorkflowContext } from '../core/WorkflowContext';
 
 
 @Task('each')

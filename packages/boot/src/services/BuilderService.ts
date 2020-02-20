@@ -3,7 +3,7 @@ import {
     ClassType, TypeReflectsToken, ITypeReflects, INJECTOR
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
-import { BootContext, BootOption } from '../BootContext';
+import { BootContext, BootOption, IBootContext, isBootContext } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
 import { RunnableBuildLifeScope } from '../boots/RunnableBuildLifeScope';
 import { BootLifeScope } from '../boots/BootLifeScope';
@@ -86,7 +86,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    run<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T> {
+    run<T extends IBootContext = IBootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T> {
         return this.execLifeScope<T, Topt>(null, this.reflects.getActionInjector().getInstance(RunnableBuildLifeScope), target, ...args);
     }
 
@@ -101,7 +101,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async boot<T extends BootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
+    async boot<T extends IBootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T> {
         let opt: BootSubAppOption<T>;
         if (isFunction(options)) {
             opt = { contextInit: options };
@@ -137,7 +137,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @returns {Promise<T>}
      * @memberof BuilderService
      */
-    async bootApp(application: IBootApplication, ...args: string[]): Promise<BootContext> {
+    async bootApp(application: IBootApplication, ...args: string[]): Promise<IBootContext> {
         return await this.execLifeScope(
             (ctx) => {
                 if (isFunction(application.onContextInit)) {
@@ -149,13 +149,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ...args);
     }
 
-    protected async execLifeScope<T extends BootContext = BootContext, Topt extends BootOption = BootOption>(
+    protected async execLifeScope<T extends IBootContext = IBootContext, Topt extends BootOption = BootOption>(
         contextInit: (ctx: T) => void, scope: BuildHandles<T>,
         target: ClassType | Topt | T,
         ...args: string[]): Promise<T> {
 
         let ctx: T;
-        if (target instanceof BootContext) {
+        if (isBootContext(target)) {
             ctx = target as T;
         } else {
             let md: ClassType;
@@ -169,7 +169,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             if (!injector) {
                 injector = this.reflects.hasRegister(md) ? this.reflects.getInjector(md) : this.container;
             }
-            ctx = injector.getService({ token: BootContext, target: md, default: BootContext }) as T;
+            ctx = injector.getService<IBootContext>({ token: BootContext, target: md, default: BootContext }) as T;
             ctx.setValue(INJECTOR, injector);
             if (isClassType(target)) {
                 ctx.setOptions({ type: md });

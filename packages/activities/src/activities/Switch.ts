@@ -1,7 +1,7 @@
 import { Input, BindingTypes } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { Expression, ActivityType } from '../core/ActivityMetadata';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 
 
@@ -12,7 +12,7 @@ export class CaseActivity extends ControlActivity {
 
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: IActivityContext): Promise<void> {
         await ctx.getExector().runActivity(this.body);
     }
 }
@@ -35,7 +35,7 @@ export class SwitchActivity extends ControlActivity {
 
     @Input({ bindingType: BindingTypes.dynamic }) defaults: ActivityType<any>;
 
-    async execute(ctx: ActivityContext): Promise<void> {
+    async execute(ctx: IActivityContext): Promise<void> {
         let matchkey = await ctx.resolveExpression(this.switch);
 
         let activity = this.cases.find(c => c.caseKey === matchkey);

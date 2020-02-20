@@ -6,15 +6,17 @@ import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
 
 
 export const RegisterAnnoationHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    if (!ctx.targetReflect || !ctx.targetReflect.getInjector) {
+    let targetReflect = ctx.getTargetReflect();
+    if (!targetReflect || !targetReflect.getInjector) {
         ctx.injector.registerType(ctx.type);
+        targetReflect = ctx.getTargetReflect();
     }
-    let annoation = ctx.targetReflect.getAnnoation ? ctx.targetReflect.getAnnoation() : null;
-    ctx.setValue(INJECTOR, ctx.targetReflect.getInjector());
+    let annoation = targetReflect?.getAnnoation ? targetReflect.getAnnoation() : null;
+    ctx.setValue(INJECTOR, targetReflect.getInjector());
     if (annoation) {
         ctx.setValue(CTX_MODULE_ANNOATION, annoation);
         if (annoation.baseURL) {
-            ctx.injector.setValue(ProcessRunRootToken, ctx.annoation.baseURL);
+            ctx.injector.setValue(ProcessRunRootToken, annoation.baseURL);
         }
         next();
     } else {

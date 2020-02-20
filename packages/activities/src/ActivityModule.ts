@@ -11,9 +11,9 @@ import * as activites from './activities';
 import { ActivityProvider } from './ActivityProvider';
 import { ActivityContext } from './core/ActivityContext';
 import { ActivityExecutor } from './core/ActivityExecutor';
-import { WorkflowInstance, WorkflowContext } from './core/WorkflowInstance';
+import { WorkflowInstance, WorkflowContext, ActivityElementRef, ActivityTemplateRef, ActivityComponentRef, ControlActivityElementRef  } from './core/WorkflowContext';
 import { ActivityDepsRegister } from './registers/ActivityDepsRegister';
-import { ActivityElementRef, ActivityTemplateRef, ActivityComponentRef, ControlActivityElementRef } from './core/ActivityRef';
+
 
 
 /**

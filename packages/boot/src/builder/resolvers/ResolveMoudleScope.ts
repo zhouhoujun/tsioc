@@ -2,6 +2,7 @@ import { IActionSetup, INJECTOR, isNullOrUndefined } from '@tsdi/ioc';
 import { BuildHandles } from '../BuildHandles';
 import { ResolveModuleHandle } from './ResolveModuleHandle';
 import { IBuildContext } from '../IBuildContext';
+import { IAnnoationReflect } from '../../annotations/IAnnoationReflect';
 
 
 /**
@@ -18,12 +19,16 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
             return;
         }
 
+        let targetReflect: IAnnoationReflect;
         if (ctx.type && !ctx.reflects.hasRegister(ctx.type)) {
             ctx.injector.registerType(ctx.type);
-            ctx.targetReflect && ctx.setValue(INJECTOR, ctx.targetReflect.getInjector())
+            targetReflect = ctx.getTargetReflect();
+            targetReflect && ctx.setValue(INJECTOR, targetReflect.getInjector())
+        } else {
+            targetReflect = ctx.getTargetReflect();
         }
 
-        if (ctx.targetReflect || ctx.getTemplate()) {
+        if (targetReflect || ctx.getTemplate()) {
             // has build module instance.
             await super.execute(ctx);
         }

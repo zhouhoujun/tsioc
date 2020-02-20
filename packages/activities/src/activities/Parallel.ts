@@ -1,7 +1,7 @@
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ActivityType } from '../core/ActivityMetadata';
-import { ActivityContext } from '../core/ActivityContext';
+import { IActivityContext } from '../core/IActivityContext';
 import { ParallelExecutor } from '../core/ParallelExecutor';
 import { ControlActivity } from '../core/ControlActivity';
 
@@ -25,7 +25,7 @@ export class ParallelActivity<T> extends ControlActivity<T[]> {
      * @returns {Promise<void>}
      * @memberof ParallelActivity
      */
-    async execute(ctx: ActivityContext): Promise<T[]> {
+    async execute(ctx: IActivityContext): Promise<T[]> {
         if (ctx.injector.hasRegister(ParallelExecutor)) {
             return await ctx.injector.getInstance(ParallelExecutor).run<ActivityType>(act => ctx.getExector().runWorkflow(act).then(c => c.result), this.activities)
         } else {

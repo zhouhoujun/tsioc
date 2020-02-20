@@ -4,14 +4,9 @@ import { IBuildContext } from './IBuildContext';
 import { AnnoationContext } from '../AnnoationContext';
 import { IBuildOption } from './IBuildOption';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '../context-tokens';
-import { IAnnoationReflect, IAnnotationMetadata } from '../annotations/IAnnoationReflect';
 
 @Injectable
-export class BuildContext<
-    T extends IBuildOption = IBuildOption,
-    TMeta extends IAnnotationMetadata = IAnnotationMetadata,
-    TRefl extends IAnnoationReflect = IAnnoationReflect>
-    extends AnnoationContext<T, TMeta, TRefl> implements IBuildContext<T, TMeta, TRefl> {
+export class BuildContext<T extends IBuildOption = IBuildOption> extends AnnoationContext<T> implements IBuildContext<T> {
     /**
      * current target module
      *
