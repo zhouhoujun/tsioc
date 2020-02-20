@@ -14,7 +14,6 @@ import { BindingScope } from './parses/BindingScope';
 import { TemplateParseScope } from './parses/TemplateParseScope';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
-import { AstResolver } from './AstResolver';
 
 import { ComponentRegisterAction } from './registers/ComponentRegisterAction';
 import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
@@ -24,7 +23,7 @@ import { PipeRegisterAction } from './registers/PipeRegisterAction';
 import { BindingComponentScope } from './resolvers/BindingComponentScope';
 import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
 import { DefaultComponets } from './IComponentReflect';
-import { ComponentProvider } from './ComponentProvider';
+import { ComponentProvider, AstResolver } from './ComponentProvider';
 import { TEMPLATE_REF, TemplateRef, COMPONENT_REF, ComponentRef, ELEMENT_REF, ElementRef } from './ComponentRef';
 import { ComponentContext } from './ComponentContext';
 

@@ -2,6 +2,10 @@ import { Singleton, Type, ClassType } from '@tsdi/ioc';
 import { ComponentProvider } from '../ComponentProvider';
 import { ElementNode } from './ElementNode';
 import { ElementRef, IElementRef, IComponentRef, ComponentRef } from '../ComponentRef';
+import { IAnnoationContext } from '@tsdi/boot';
+import { TemplateContext } from '../parses/TemplateContext';
+import { ICoreInjector } from '@tsdi/core';
+import { ITemplateOption, ITemplateContext } from '../parses/ITemplateContext';
 
 /**
  * ref element selector.
@@ -29,6 +33,14 @@ export class ElementProvider extends ComponentProvider {
 
     isElementType(element: ClassType): boolean {
         return this.reflects.isExtends(element, ElementNode);
+    }
+
+    isTemplateContext(context: IAnnoationContext): boolean {
+        return context instanceof TemplateContext;
+    }
+
+    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext {
+        return TemplateContext.parse(injector, options);
     }
 
     getDefaultCompose(): Type<any> {

@@ -8,7 +8,8 @@ import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider } from './ComponentProvider';
 import { CTX_COMPONENT_REF, CTX_ELEMENT_REF, CTX_TEMPLATE_REF, ITemplateRef } from './ComponentRef';
 import { NonSerialize } from './decorators/NonSerialize';
-import { TemplateContext, ITemplateOption } from './parses/TemplateContext';
+import { ITemplateOption } from './parses/ITemplateContext';
+import { TemplateContext } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
 import { Input } from './decorators/Input';
 

@@ -7,7 +7,7 @@ import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
 import { ACTIVITY_DATA, ACTIVITY_INPUT, ACTIVITY_ORIGIN_DATA } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';
-import { IActivityContext, CTX_BASEURL, CTX_RUN_SCOPE } from './IActivityContext';
+import { IActivityContext, CTX_BASEURL, CTX_RUN_SCOPE, CTX_RUN_PARENT } from './IActivityContext';
 import { IWorkflowContext, WorkflowContextToken } from './IWorkflowContext';
 
 
@@ -38,7 +38,7 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
     }
 
     protected getProcessData() {
-        let data = this.runScope?.getData() ?? this.getParent()?.getContextValue(ACTIVITY_DATA);
+        let data = this.runScope?.getData() ?? this.context.getValue(CTX_RUN_PARENT)?.getValue(ACTIVITY_DATA); // ?? this.getParent()?.getContextValue(ACTIVITY_DATA);
         isDefined(data) &&  this.setValue(ACTIVITY_DATA, data);
         return data;
     }

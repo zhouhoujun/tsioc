@@ -1,20 +1,19 @@
 import {
     Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProviders,
-    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ClassType
+    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ClassType, Injectable
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
-import { NodeSelector } from './NodeSelector';
 import {
     COMPONENT_REFS, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef,
     TEMPLATE_REF, CONTEXT_REF, ROOT_NODES, NATIVE_ELEMENT, COMPONENT_REF, COMPONENT_INST,
-    COMPONENT_TYPE, ELEMENT_REF
+    COMPONENT_TYPE, ELEMENT_REF, NodeSelector
 } from './ComponentRef';
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
-import { AstResolver } from './AstResolver';
 import { IComponentContext } from './ComponentContext';
-import { TemplateContext, ITemplateContext, ITemplateOption } from './parses/TemplateContext';
+import { ITemplateContext, ITemplateOption } from './parses/ITemplateContext';
+import { pipeExp } from './bindings/exps';
 
 
 
@@ -90,13 +89,9 @@ export abstract class ComponentProvider {
             { provide: TEMPLATE_REF, useValue: this.createTemplateRef(context, ...nodes) });
     }
 
-    isTemplateContext(context: IAnnoationContext): boolean {
-        return context instanceof TemplateContext;
-    }
+    abstract isTemplateContext(context: IAnnoationContext): boolean;
 
-    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext {
-        return TemplateContext.parse(injector, options);
-    }
+    abstract createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext;
 
     createTemplateRef(context: IAnnoationContext, ...nodes: any[]): ITemplateRef {
         return this.getProviders().getInstance(TEMPLATE_REF,
@@ -194,5 +189,56 @@ export abstract class ComponentProvider {
 
     abstract isElementType(element: ClassType): boolean;
 
+}
+
+
+@Injectable()
+export class AstResolver {
+
+    constructor(protected provider: ComponentProvider) {
+    }
+
+    /**
+     * resolve expression.
+     *
+     * @param {string} expression
+     * @param {ICoreInjector} [injector]
+     * @param {*} [envOptions]
+     * @returns {*}
+     * @memberof AstResolver
+     */
+    resolve(expression: string, injector: ICoreInjector, envOptions?: any): any {
+        if (!expression) {
+            return expression;
+        }
+
+        try {
+            // xxx | pipename
+            let pipeTransf: IPipeTransform;
+            if (pipeExp.test(expression)) {
+                let idex = expression.lastIndexOf(' | ');
+                let pipename = expression.substring(idex + 3);
+                if (pipename) {
+                    pipeTransf = this.provider.getPipe(pipename, injector);
+                }
+                expression = expression.substring(0, idex);
+            }
+            let value;
+            if (envOptions) {
+                // tslint:disable-next-line:no-eval
+                let func = eval(`(${Object.keys(envOptions).join(',')}) => {
+                    return ${expression};
+                }`);
+                value = func(...Object.values(envOptions));
+
+            } else {
+                // tslint:disable-next-line:no-eval
+                value = eval(expression);
+            }
+            return pipeTransf ? pipeTransf.transform(value) : value;
+        } catch (err) {
+            return void 0;
+        }
+    }
 }
 

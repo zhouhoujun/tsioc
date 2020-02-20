@@ -1,6 +1,6 @@
 import { isNullOrUndefined, isArray, IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '@tsdi/boot';
-import { ITemplateContext } from './TemplateContext';
+import { ITemplateContext } from './ITemplateContext';
 import { TranslateSelectorScope, ParseSelectorHandle } from './TranslateSelectorScope';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
 
