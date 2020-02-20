@@ -1,6 +1,6 @@
 import { IActionSetup, PromiseUtil, isNullOrUndefined } from '@tsdi/ioc';
 import { BuildHandles, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
-import { ITemplateContext, TemplateOptionToken } from './ITemplateContext';
+import { ITemplateContext, TemplateOptionToken } from './TemplateContext';
 import { CTX_COMPONENT_DECTOR } from '../ComponentRef';
 import { DefaultComponets } from '../IComponentReflect';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';

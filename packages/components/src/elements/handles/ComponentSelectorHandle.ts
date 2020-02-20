@@ -1,7 +1,7 @@
 import { isString, Type, isArray, Token } from '@tsdi/ioc';
 import { CTX_TEMPLATE, BuildHandle } from '@tsdi/boot';
 import { ComponentProvider } from '../../ComponentProvider';
-import { ITemplateContext } from '../../parses/ITemplateContext';
+import { ITemplateContext } from '../../parses/TemplateContext';
 
 /**
  * component selector handle.

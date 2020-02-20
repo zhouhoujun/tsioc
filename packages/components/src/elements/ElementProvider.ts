@@ -5,7 +5,7 @@ import { ElementRef, IElementRef, IComponentRef, ComponentRef } from '../Compone
 import { IAnnoationContext } from '@tsdi/boot';
 import { TemplateContext } from '../parses/TemplateContext';
 import { ICoreInjector } from '@tsdi/core';
-import { ITemplateOption, ITemplateContext } from '../parses/ITemplateContext';
+import { ITemplateOption, ITemplateContext } from '../parses/TemplateContext';
 
 /**
  * ref element selector.

@@ -28,7 +28,6 @@ export * from './ComponentContext';
 export * from './parses/ParseContext';
 export * from './parses/BindingValueScope';
 export * from './parses/BindingScope';
-export * from './parses/ITemplateContext';
 export * from './parses/TemplateContext';
 export * from './parses/TemplateParseScope';
 export * from './parses/TranslateSelectorScope';
