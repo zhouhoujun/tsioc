@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProviders, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCoreService, IocCompositeAction, IParameter, IActionSetup
+    Type, isFunction, lang, IProviders, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction, IParameter, IActionSetup
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -8,6 +8,7 @@ import { JoinpointState } from '../joinpoints/JoinpointState';
 import { AdvisorToken } from '../IAdvisor';
 import { MethodAdvicesScope } from './MethodAdvicesScope';
 
+const proxyFlag = '_proxy';
 /**
  * Proxy method.
  *
@@ -86,19 +87,21 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
         let methodName = pointcut.name;
         if (advices && pointcut) {
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
-                if (pointcut.descriptor.get) {
+                if (pointcut.descriptor.get && !pointcut.descriptor.get[proxyFlag]) {
                     let getMethod = pointcut.descriptor.get.bind(target);
                     pointcut.descriptor.get = this.proxy(getMethod, advices, target, targetType, pointcut, provJoinpoint);
+                    pointcut.descriptor.get[proxyFlag] = true;
                 }
-                if (pointcut.descriptor.set) {
+                if (pointcut.descriptor.set && !pointcut.descriptor.set[proxyFlag]) {
                     let setMethod = pointcut.descriptor.set.bind(target);
                     pointcut.descriptor.set = this.proxy(setMethod, advices, target, targetType, pointcut, provJoinpoint);
+                    pointcut.descriptor.set[proxyFlag] = true;
                 }
                 Reflect.defineProperty(target, methodName, pointcut.descriptor);
-            } else if (isFunction(target[methodName])) {
+            } else if (isFunction(target[methodName]) && !target[methodName][proxyFlag]) {
                 let propertyMethod = target[methodName].bind(target);
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint);
-                target[methodName]['_proxy'] = true;
+                target[methodName][proxyFlag] = true;
             }
         }
     }
