@@ -1,6 +1,6 @@
 import { lang, Type, Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BootContext } from '../BootContext';
+import { BootContext, IBootContext } from '../BootContext';
 
 
 /**
@@ -11,7 +11,7 @@ import { BootContext } from '../BootContext';
  * @template T
  * @template TCtx default BootContext
  */
-export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
+export interface IStartup<T = any> {
     /**
      * get injector.
      *
@@ -26,7 +26,7 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
      * @type {TCtx}
      * @memberof IRunnable
      */
-    readonly context?: TCtx;
+    getContext(): IBootContext;
 
     /**
      * get boot instance.
@@ -51,7 +51,7 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
      * @returns {(Promise<void | TCtx>)}
      * @memberof IRunnable
      */
-    startup(ctx?: TCtx): Promise<void | TCtx>;
+    startup(ctx?: IBootContext): Promise<void | IBootContext>;
 
 }
 
@@ -65,15 +65,21 @@ export interface IStartup<T = any, TCtx extends BootContext = BootContext> {
  * @template T
  */
 @Abstract()
-export abstract class Startup<T = any, TCtx extends BootContext = BootContext> implements IStartup<T, TCtx> {
+export abstract class Startup<T = any> implements IStartup<T> {
 
-    protected _ctx: TCtx;
-    get context(): TCtx {
-        return this._ctx;
+    protected context: IBootContext;
+    constructor(@Inject(BootContext) ctx: IBootContext) {
+        this.context = ctx as IBootContext;
     }
 
-    constructor(@Inject(BootContext) ctx: TCtx) {
-        this._ctx = ctx as TCtx;
+    /**
+     * runable context.
+     *
+     * @type {TCtx}
+     * @memberof IRunnable
+     */
+    getContext(): IBootContext {
+        return this.context;
     }
 
 
@@ -97,7 +103,7 @@ export abstract class Startup<T = any, TCtx extends BootContext = BootContext> i
      * @returns {Promise<void|TCtx>>}
      * @memberof Runnable
      */
-    abstract startup(): Promise<void | TCtx>;
+    abstract startup(): Promise<void>;
 
 }
 

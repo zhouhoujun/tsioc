@@ -1,7 +1,7 @@
 import { LoadType, Type, Injectable, createRaiseContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
 import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
-import { Startup } from './runnable/Startup';
+import { Startup, IStartup } from './runnable/Startup';
 import { StartupServices } from './services/StartupServices';
 import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP } from './context-tokens';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
@@ -135,7 +135,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
 
     readonly boot: any;
 
-    getStartup(): Startup;
+    getStartup(): IStartup;
 
     /**
      * configuration merge metadata config and all application config.
@@ -235,7 +235,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @type {IStartup}
      * @memberof BootContext
      */
-    getStartup(): Startup {
+    getStartup(): IStartup {
         return this.context.getValue(CTX_MODULE_STARTUP);
     }
 

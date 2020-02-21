@@ -1,6 +1,5 @@
 import { Abstract, InjectReference, Token } from '@tsdi/ioc';
 import { Startup, IStartup } from './Startup';
-import { BootContext } from '../BootContext';
 
 
 /**
@@ -11,7 +10,7 @@ import { BootContext } from '../BootContext';
  * @template T
  * @template TCtx default BootContext
  */
-export interface IRenderer<T = any, TCtx extends BootContext = BootContext> extends IStartup<T, TCtx> {
+export interface IRenderer<T = any> extends IStartup<T> {
 
     /**
      * render component instance.
@@ -49,7 +48,7 @@ export interface AfterRendererInit {
  * @template T
  */
 @Abstract()
-export abstract class Renderer<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IRenderer<T, TCtx> {
+export abstract class Renderer<T = any> extends Startup<T> implements IRenderer<T> {
 
     async startup() {
         let host = this.context.getOptions().renderHost;

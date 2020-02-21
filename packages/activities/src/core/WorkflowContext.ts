@@ -1,11 +1,11 @@
-import { PromiseUtil, lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId  } from '@tsdi/ioc';
+import { PromiseUtil, lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
     NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
 } from '@tsdi/components';
 import { CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL } from './IActivityContext';
-import { ActivityContext,  ActivityTemplateContext } from './ActivityContext';
+import { ActivityContext, ActivityTemplateContext } from './ActivityContext';
 import { IActivityRef, ACTIVITY_DATA, ACTIVITY_INPUT, ACTIVITY_ORIGIN_DATA } from './IActivityRef';
 import { Activity } from './Activity';
 import { ControlActivity } from './ControlActivity';
@@ -325,7 +325,11 @@ export function isAcitvityRef(target: any): target is IActivityRef {
  */
 @Injectable
 @Refs(ActivityRef, Startup)
-export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Service<T, WorkflowContext> {
+export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Service<T> {
+
+    getContext(): WorkflowContext {
+        return this.context as WorkflowContext;
+    }
 
     get result(): any {
         return this.context.getValue(ACTIVITY_DATA);
@@ -333,23 +337,23 @@ export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Ser
 
     state: RunState;
 
-    async start(data?: any): Promise<WorkflowContext> {
+    async start(data?: any): Promise<void> {
         let injector = this.getInjector();
+        let context = this.getContext()
         if (isDefined(data)) {
-            this.context.setValue(ACTIVITY_INPUT, data);
+            context.setValue(ACTIVITY_INPUT, data);
         }
-        this.context.setValue(WorkflowInstance, this);
+        context.setValue(WorkflowInstance, this);
 
-        if (this.context.id && !injector.has(this.context.id)) {
-            injector.setValue(this.context.id, this);
+        if (context.id && !injector.has(context.id)) {
+            injector.setValue(context.id, this);
         }
 
         let target = this.getBoot() as IActivityRef;
-        target.context.setValue(CTX_RUN_PARENT, this.context);
-        await target.run(this.context);
+        target.context.setValue(CTX_RUN_PARENT, context);
+        await target.run(context);
         this.state = RunState.complete;
         target.destroy();
-        return this.context;
     }
 
     async stop(): Promise<any> {

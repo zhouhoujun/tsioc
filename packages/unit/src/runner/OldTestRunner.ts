@@ -43,6 +43,10 @@ export class OldTestRunner implements ISuiteRunner {
         return this.injector;
     }
 
+    getContext() {
+        return null;
+    }
+
     timeout: number;
     describe: string;
 
@@ -60,10 +64,6 @@ export class OldTestRunner implements ISuiteRunner {
     constructor(timeout?: number) {
         this.suites = new Map();
         this.timeout = timeout || (3 * 60 * 60 * 1000);
-    }
-
-    async onInit(): Promise<void> {
-
     }
 
 

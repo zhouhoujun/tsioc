@@ -14,10 +14,14 @@ import { UnitTestContext } from '../UnitTestContext';
  * @implements {IRunner<any>}
  */
 @Injectable
-export class UnitTestRunner extends Runnable<any, UnitTestContext> {
+export class UnitTestRunner extends Runnable<any> {
+
+    getContext(): UnitTestContext {
+        return this.context as UnitTestContext;
+    }
 
     async run(data?: any): Promise<any> {
-        let mgr = this.context.getConfigureManager();
+        let mgr = this.getContext().getConfigureManager();
         let config = await mgr.getConfig();
         let src = config.src;
         let injector = this.getInjector();

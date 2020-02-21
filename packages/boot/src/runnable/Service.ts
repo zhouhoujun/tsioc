@@ -1,5 +1,4 @@
 import { Abstract, InjectReference, Token } from '@tsdi/ioc';
-import { BootContext } from '../BootContext';
 import { IStartup, Startup } from './Startup';
 
 /**
@@ -8,7 +7,7 @@ import { IStartup, Startup } from './Startup';
  * @export
  * @interface IService
  */
-export interface IService<T = any, TCtx extends BootContext = BootContext> extends IStartup<T, TCtx> {
+export interface IService<T = any> extends IStartup<T> {
     /**
      * start application service.
      *
@@ -34,7 +33,7 @@ export interface IService<T = any, TCtx extends BootContext = BootContext> exten
  * @implements {IService}
  */
 @Abstract()
-export abstract class Service<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IService<T, TCtx> {
+export abstract class Service<T = any> extends Startup<T> implements IService<T> {
 
     async startup() {
         await this.start(this.context.data);

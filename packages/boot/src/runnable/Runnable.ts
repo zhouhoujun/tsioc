@@ -1,5 +1,4 @@
 import { Abstract, InjectReference, Token } from '@tsdi/ioc';
-import { BootContext } from '../BootContext';
 import { IStartup, Startup } from './Startup';
 
 
@@ -11,7 +10,7 @@ import { IStartup, Startup } from './Startup';
  * @template T
  * @template TCtx default BootContext
  */
-export interface IRunnable<T = any, TCtx extends BootContext = BootContext> extends IStartup<T, TCtx> {
+export interface IRunnable<T = any> extends IStartup<T> {
 
     /**
      * run application via boot instance.
@@ -33,7 +32,7 @@ export interface IRunnable<T = any, TCtx extends BootContext = BootContext> exte
  * @template T
  */
 @Abstract()
-export abstract class Runnable<T = any, TCtx extends BootContext = BootContext> extends Startup<T, TCtx> implements IRunnable<T, TCtx> {
+export abstract class Runnable<T = any> extends Startup<T> implements IRunnable<T> {
 
     async startup() {
         await this.run(this.context.data);
