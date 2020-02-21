@@ -22,10 +22,11 @@ export class RunAspect {
     afterRun(joinPoint: Joinpoint) {
 
         let ctx = joinPoint.args[0] as WorkflowContext;
-        if (!ctx.startup) {
+        let startup = ctx.getStartup();
+        if (!startup) {
             return;
         }
-        switch (ctx.startup.state) {
+        switch (startup.state) {
             case RunState.pause:
                 throw new Error('workflow paused!');
             case RunState.stop:

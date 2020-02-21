@@ -11,7 +11,7 @@ describe('activity test', () => {
         it('should bootstrap with single task.', async () => {
             let ctx = await Workflow.run(SimpleTask);
             // console.log(ctx.startup);
-            expect(ctx.startup instanceof WorkflowInstance).toBe(true);
+            expect(ctx.getStartup() instanceof WorkflowInstance).toBe(true);
             // console.log(result);
             expect(ctx.result).toEqual('simple task');
         });
@@ -119,7 +119,7 @@ describe('activity test', () => {
                     { provide: 'data', useValue: 'test data' }
                 ]
             });
-            expect(ctx.startup instanceof WorkflowInstance).toBeTruthy();
+            expect(ctx.getStartup() instanceof WorkflowInstance).toBeTruthy();
             // console.log(result);
             expect(ctx.result).toEqual('test data');
         });
@@ -143,7 +143,7 @@ describe('activity test', () => {
                     { provide: 'data', useValue: 'test data' }
                 ]
             });
-            expect(ctx.startup instanceof WorkflowInstance).toBeTruthy();
+            expect(ctx.getStartup() instanceof WorkflowInstance).toBeTruthy();
             expect(Array.isArray(ctx.result)).toBeTruthy();
             console.log(ctx.result);
             expect(ctx.result).toEqual([

@@ -15,7 +15,7 @@ export class ResolveRunnableScope extends BuildHandles<BootContext> implements I
             ctx.setValue(CTX_MODULE_STARTUP, boot);
         }
 
-        if (ctx.startup) {
+        if (ctx.getStartup()) {
             await next();
         }
     }

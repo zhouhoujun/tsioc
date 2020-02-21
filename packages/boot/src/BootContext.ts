@@ -135,7 +135,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
 
     readonly boot: any;
 
-    readonly startup: Startup;
+    getStartup(): Startup;
 
     /**
      * configuration merge metadata config and all application config.
@@ -235,7 +235,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @type {IStartup}
      * @memberof BootContext
      */
-    get startup(): Startup {
+    getStartup(): Startup {
         return this.context.getValue(CTX_MODULE_STARTUP);
     }
 
