@@ -26,6 +26,7 @@ import { TypeReflectsToken } from './services/ITypeReflects';
  * @implements {IInjector}
  */
 export abstract class BaseInjector extends IocDestoryable implements IInjector {
+    isInjector = true;
     /**
      * factories.
      *
@@ -594,16 +595,5 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
             to.provideTypes.set(key, fac);
         });
     }
-}
-
-/**
- * object is provider map or not.
- *
- * @export
- * @param {object} target
- * @returns {target is Injector}
- */
-export function isInjector(target: any): target is BaseInjector {
-    return target instanceof BaseInjector;
 }
 

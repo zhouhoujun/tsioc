@@ -1,7 +1,7 @@
 import { Token } from '../types';
 import { isToken } from '../utils/isToken';
 import { ProviderTypes } from '../providers/types';
-import { ResolveActionContext, ResolveActionOption } from './ResolveActionContext';
+import { ResolveActionContext, ResolveActionOption, IResolveActionContext } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
 import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { isNullOrUndefined } from '../utils/lang';
@@ -14,9 +14,9 @@ import { isNullOrUndefined } from '../utils/lang';
  * @extends {IocResolveScope<ResolveActionContext<T>>}
  * @template T
  */
-export class ResolveLifeScope<T> extends IocResolveScope<ResolveActionContext<T>> {
+export class ResolveLifeScope<T> extends IocResolveScope<IResolveActionContext<T>> {
 
-    execute(ctx: ResolveActionContext, next?: () => void): void {
+    execute(ctx: IResolveActionContext, next?: () => void): void {
         if (isNullOrUndefined(ctx.instance)) {
             super.execute(ctx, next);
         }

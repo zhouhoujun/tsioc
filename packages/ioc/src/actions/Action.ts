@@ -43,6 +43,9 @@ export const ActionInjectorToken = tokenId<IActionInjector>('ACTION_INJECTOR');
  * action interface.
  */
 export abstract class Action {
+    constructor(actInjector?: IActionInjector) {
+    }
+
     abstract toAction(): Function;
 }
 

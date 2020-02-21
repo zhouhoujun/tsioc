@@ -1,7 +1,8 @@
 import { Type, Token } from '../types';
-import { IocProvidersContext, IocProvidersOption } from './IocAction';
+import { IocProvidersContext, IocProvidersOption } from './IocActionContext';
 import { ITypeReflect } from '../services/ITypeReflect';
 import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON } from '../context-tokens';
+
 
 /**
  * register action option.

@@ -10,7 +10,7 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
     let annoation = ctx.getValue(CTX_MODULE_ANNOATION);
 
     let injector = ctx.injector as ModuleInjector;
-    let continer = ctx.getContainer<IContainer>();
+    let continer = ctx.getContainer() as IContainer;
     let mdpr = continer.getModuleProvider();
     let mdReft = ctx.targetReflect as IModuleReflect;
     let components = annoation.components ? mdpr.use(injector, ...annoation.components) : null;

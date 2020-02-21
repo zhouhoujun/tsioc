@@ -39,7 +39,7 @@ export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetad
 /**
  * annoation context interface.
  */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IIocContext<T, ICoreInjector, IContainer> {
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IIocContext<T, ICoreInjector> {
     /**
     * current build type.
     */
@@ -90,6 +90,11 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      */
     getContextValue<T>(token: Token<T>, success?: (value: T) => void): T;
 
+    /**
+     * get root container.
+     */
+    getContainer(): IContainer;
+
 }
 
 
@@ -103,7 +108,7 @@ export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
  * @extends {HandleContext}
  */
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
-    extends IocProvidersContext<T, ICoreInjector, IContainer> implements IAnnoationContext<T> {
+    extends IocProvidersContext<T, ICoreInjector> implements IAnnoationContext<T> {
 
     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createRaiseContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
@@ -191,6 +196,10 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
             ctx = ctx.getParent();
         }
         return value ?? null;
+    }
+
+    getContainer(): IContainer {
+        return super.getContainer() as IContainer;
     }
 
     setParent(context: IAnnoationContext): this {

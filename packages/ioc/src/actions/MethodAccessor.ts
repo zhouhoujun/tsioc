@@ -2,7 +2,7 @@ import { Token, Type } from '../types';
 import { IParameter } from '../IParameter';
 import { lang, isFunction, isBaseType } from '../utils/lang';
 import { isToken } from '../utils/isToken';
-import { IInjector, PROVIDERS, IProviders } from '../IInjector';
+import { IInjector, IProviders } from '../IInjector';
 import { IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
 import { ParamProviders } from '../providers/types';
 import { RuntimeActionContext } from './runtime/RuntimeActionContext';

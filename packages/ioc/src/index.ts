@@ -78,6 +78,7 @@ export * from './context-tokens';
 
 export * from './actions/Action';
 export * from './actions/IocAction';
+export * from './actions/IocActionContext';
 export * from './actions/ActionInjector';
 export * from './actions/IocCompositeAction';
 export * from './actions/IocCacheManager';
