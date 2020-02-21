@@ -11,13 +11,7 @@ const AOP_ADVICE_INVOKER = tokenId<(joinPoint: Joinpoint, advicer: Advicer) => a
 export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements IActionSetup {
 
     execute(ctx: Joinpoint, next?: () => void) {
-        ctx.providers.inject(
-            // {
-            //     provide: AOP_EXTEND_TARGET_TOKEN, useValue: (inst) => {
-            //         inst._cache_JoinPoint = ctx;
-            //     }
-            // },
-            ...ctx.getProvProviders());
+        ctx.providers.inject(...ctx.getProvProviders());
         ctx.setValue(AOP_ADVICE_INVOKER, (j, a) => this.invokeAdvice(j, a));
         super.execute(ctx, next);
     }
