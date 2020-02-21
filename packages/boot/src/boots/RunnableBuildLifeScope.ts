@@ -4,7 +4,7 @@ import { IAnnoationContext } from '../AnnoationContext';
 import { RegisterModuleScope } from './RegisterModuleScope';
 import { ModuleBuildScope } from './ModuleBuildScope';
 import { ResolveRunnableScope } from './ResolveRunnableScope';
-import { RunBootHandle } from './RunBootHandle';
+import { StartupBootHandle } from './StartupBootHandle';
 
 
 export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
@@ -13,6 +13,6 @@ export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> impl
         this.use(RegisterModuleScope)
             .use(ModuleBuildScope)
             .use(ResolveRunnableScope)
-            .use(RunBootHandle);
+            .use(StartupBootHandle);
     }
 }

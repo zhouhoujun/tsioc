@@ -15,7 +15,6 @@ import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { Bootstrap } from './decorators/Bootstrap';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
-import { StartupServices } from './services/StartupServices';
 import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
 import { ModuleInjector, ModuleProviders } from './modules/ModuleInjector';
@@ -75,7 +74,7 @@ export class BootModule {
             .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
             .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
-        container.inject(BuildContext, BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, StartupServices, MessageContext, MessageQueue);
+        container.inject(BuildContext, BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);

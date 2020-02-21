@@ -1,5 +1,5 @@
 import { isClass } from '@tsdi/ioc';
-import { BootContext } from '../BootContext';
+import { IBootContext } from '../BootContext';
 import { AnnotationMerger } from '../services/AnnotationMerger';
 import { CTX_APP_CONFIGURE } from '../context-tokens';
 import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
@@ -12,10 +12,8 @@ import { ConfigureManager } from '../annotations/ConfigureManager';
  * @class BootConfigureLoadHandle
  * @extends {BootHandle}
  */
-export const BootConfigureLoadHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    if (!(ctx instanceof BootContext)) {
-        return;
-    }
+export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+
     let options = ctx.getOptions();
     let injector = ctx.injector;
     if (isClass(ctx.type)) {

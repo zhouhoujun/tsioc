@@ -1,6 +1,6 @@
 import { Inject, PromiseUtil, Singleton, Type, INJECTOR } from '@tsdi/ioc';
-import { IContainer, ICoreInjector } from '@tsdi/core';
-import { BootContext } from '@tsdi/boot';
+import { ICoreInjector } from '@tsdi/core';
+import { BootContext, IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -32,16 +32,13 @@ const globals = typeof window !== 'undefined' ? window : global;
 @Singleton
 export class OldTestRunner implements ISuiteRunner {
 
+    async configureService(ctx: IBootContext): Promise<void> {
+
+    }
+
     @Inject(INJECTOR)
     private injector: ICoreInjector;
 
-    getContainer(): IContainer {
-        return this.injector.getContainer();
-    }
-
-    getInjector(): ICoreInjector {
-        return this.injector;
-    }
 
     getContext() {
         return null;
@@ -178,11 +175,11 @@ export class OldTestRunner implements ISuiteRunner {
 
     }
 
-    async startup(ctx: BootContext) {
-        return this.run(ctx.data);
+    async startup() {
+        return this.run();
     }
 
-    async run(data?: any): Promise<any> {
+    async run(): Promise<any> {
         try {
             await PromiseUtil.step(Array.from(this.suites.values()).map(desc => () => this.runSuite(desc)));
         } catch (err) {
@@ -201,7 +198,7 @@ export class OldTestRunner implements ISuiteRunner {
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = this.getInjector().resolve(Assert);
+                let assert = this.injector.resolve(Assert);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: fn,

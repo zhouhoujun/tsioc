@@ -1,4 +1,4 @@
-import { Type, tokenId, IProviders } from '@tsdi/ioc';
+import { Type, tokenId, IProviders, Token } from '@tsdi/ioc';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { IStartup } from './runnable/Startup';
@@ -27,6 +27,16 @@ export const CTX_MODULE_STARTUP = tokenId<IStartup>('CTX_MODULE_STARTUP');
 
 export const CTX_APP_ENVARGS = tokenId<string[]>('CTX_APP_ENVARGS');
 export const CTX_APP_CONFIGURE = tokenId<RunnableConfigure>('CTX_APP_CONFIGURE');
+
+/**
+ * application statup service
+ */
+export const CTX_APP_STARTUPS = tokenId<Token[]>('CTX_APP_STARTUPS');
+/**
+ * application boot
+ */
+export const CTX_APP_BOOT = tokenId<Token>('CTX_APP_BOOT');
+
 export const CTX_DATA = tokenId<any>('CTX_DATA');
 export const CTX_TEMPLATE = tokenId<any>('CTX_TEMPLATE');
 

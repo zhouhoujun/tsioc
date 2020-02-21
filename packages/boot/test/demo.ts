@@ -1,4 +1,4 @@
-import { DIModule, Startup, Message, MessageQueue } from '../src';
+import { DIModule, Startup, Message, MessageQueue, IBootContext } from '../src';
 import { Injectable, Inject, TypeReflectsToken } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
@@ -40,15 +40,17 @@ export class ModuleA {
 
 @Injectable
 export class ClassSevice extends Startup {
-    async onInit(): Promise<void> {
+    async configureService(ctx: IBootContext): Promise<void> {
+
     }
+
     @Inject('mark')
     mark: string;
     state: string;
 
     async startup(): Promise<any> {
         console.log('running.....');
-        let refs = this.getInjector().get(TypeReflectsToken);
+        let refs = this.getContext().reflects;
         console.log(refs.get(ClassSevice));
 
         // console.log(this.container);

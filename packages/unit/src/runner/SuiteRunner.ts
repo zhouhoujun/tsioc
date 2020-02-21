@@ -1,5 +1,5 @@
-import { isNumber, lang, PromiseUtil, Injectable } from '@tsdi/ioc';
-import { Runnable } from '@tsdi/boot';
+import { isNumber, lang, PromiseUtil, Injectable, Refs } from '@tsdi/ioc';
+import { Runnable, Startup, IBootContext } from '@tsdi/boot';
 import { Before } from '../decorators/Before';
 import { BeforeEach } from '../decorators/BeforeEach';
 import { Test } from '../decorators/Test';
@@ -7,7 +7,7 @@ import { AfterEach } from '../decorators/AfterEach';
 import { After } from '../decorators/After';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
-import { SuiteRunnerToken, ISuiteRunner } from './ISuiteRunner';
+import { ISuiteRunner } from './ISuiteRunner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
 import { SuiteMetadata } from '../metadata/SuiteMetadata';
 
@@ -18,12 +18,16 @@ import { SuiteMetadata } from '../metadata/SuiteMetadata';
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Injectable(SuiteRunnerToken)
+@Injectable()
+@Refs('@Suite', Startup)
 export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
 
     timeout: number;
     describe: string;
 
+    async configureService(ctx: IBootContext): Promise<void> {
+        this.context = ctx;
+    }
     /**
      * get suite describe.
      *
@@ -31,10 +35,9 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
      * @memberof SuiteRunner
      */
     getSuiteDescribe(): ISuiteDescribe {
-        let type = this.getBootType();
         let meta = this.context.getTargetReflect().getAnnoation<SuiteMetadata>();
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || lang.getClassName(type);
+        this.describe = meta.describe || lang.getClassName(this.getBootType());
         return {
             timeout: this.timeout,
             describe: this.describe,
@@ -60,10 +63,11 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
         let instance = this.getBoot();
         let defer = PromiseUtil.defer();
+        let injector = this.getContext().injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
-                let assert = this.getInjector().resolve(Assert);
+                let assert = injector.resolve(Assert);
                 let err = new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: instance[key],
@@ -73,7 +77,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.getInjector().invoke(instance, key,
+        Promise.resolve(injector.invoke(instance, key,
             { provide: RunCaseToken, useValue: instance[key] },
             { provide: RunSuiteToken, useValue: instance }))
             .then(r => {

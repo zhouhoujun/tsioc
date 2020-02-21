@@ -16,18 +16,23 @@ import { UnitTestContext } from '../UnitTestContext';
 @Injectable
 export class UnitTestRunner extends Runnable<any> {
 
+    async configureService(ctx: UnitTestContext): Promise<void> {
+        this.context = ctx;
+    }
+
     getContext(): UnitTestContext {
         return this.context as UnitTestContext;
     }
 
     async run(data?: any): Promise<any> {
-        let mgr = this.getContext().getConfigureManager();
-        let config = await mgr.getConfig();
+        let context = this.getContext();
+        let config = await context.getConfiguration();
         let src = config.src;
-        let injector = this.getInjector();
+        let injector = context.injector;
         let suites: any[] = [];
 
         let oldRunner = injector.resolve(OldTestRunner);
+        await oldRunner.configureService(context);
         let loader = injector.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {

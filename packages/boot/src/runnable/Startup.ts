@@ -1,6 +1,6 @@
-import { lang, Type, Abstract, Inject, InjectReference, Token } from '@tsdi/ioc';
+import { lang, Type, Abstract, Inject } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BootContext, IBootContext } from '../BootContext';
+import { IBootContext, BootContext } from '../BootContext';
 
 
 /**
@@ -12,13 +12,6 @@ import { BootContext, IBootContext } from '../BootContext';
  * @template TCtx default BootContext
  */
 export interface IStartup<T = any> {
-    /**
-     * get injector.
-     *
-     * @returns {IInjector}
-     * @memberof IStartup
-     */
-    getInjector(): ICoreInjector;
 
     /**
      * runable context.
@@ -36,22 +29,21 @@ export interface IStartup<T = any> {
      */
     getBoot(): T;
 
-    /**
-     * get boot type.
-     *
-     * @returns {Type<T>}
-     * @memberof IBoot
-     */
     getBootType(): Type<T>;
 
     /**
-     * startup runable service.
+     * configure startup service.
      *
-     * @param {TCtx} [ctx]
-     * @returns {(Promise<void | TCtx>)}
-     * @memberof IRunnable
+     * @param {IBootContext} [ctx]
+     * @returns {(Promise<void>)}
+     * @memberof IStartup
      */
-    startup(ctx?: IBootContext): Promise<void | IBootContext>;
+    configureService(ctx: IBootContext): Promise<void>;
+
+    /**
+     *  startup boot.
+     */
+    startup(): Promise<void>
 
 }
 
@@ -67,9 +59,9 @@ export interface IStartup<T = any> {
 @Abstract()
 export abstract class Startup<T = any> implements IStartup<T> {
 
-    protected context: IBootContext;
-    constructor(@Inject(BootContext) ctx: IBootContext) {
-        this.context = ctx as IBootContext;
+    @Inject(BootContext) protected context: IBootContext;
+
+    constructor() {
     }
 
     /**
@@ -82,12 +74,6 @@ export abstract class Startup<T = any> implements IStartup<T> {
         return this.context;
     }
 
-
-    getInjector(): ICoreInjector {
-        return this.context.injector;
-    }
-
-
     getBoot(): T {
         return this.context.boot;
     }
@@ -97,11 +83,16 @@ export abstract class Startup<T = any> implements IStartup<T> {
     }
 
     /**
-     * startup runnable.
+     * configure startup service.
      *
-     * @abstract
-     * @returns {Promise<void|TCtx>>}
-     * @memberof Runnable
+     * @param {IBootContext} [ctx]
+     * @returns {(Promise<void>)}
+     * @memberof IStartup
+     */
+    abstract configureService(ctx: IBootContext): Promise<void>;
+
+    /**
+     *  startup boot.
      */
     abstract startup(): Promise<void>;
 
@@ -119,19 +110,4 @@ export function isStartup(target: any): target is Startup {
         return true;
     }
     return false;
-}
-
-
-/**
- * module instance starup token.
- *
- * @export
- * @class InjectRunnerToken
- * @extends {Registration<Startup<T>>}
- * @template T
- */
-export class InjectStartupToken<T> extends InjectReference<Startup<T>> {
-    constructor(type: Token<T>) {
-        super(Startup, type);
-    }
 }

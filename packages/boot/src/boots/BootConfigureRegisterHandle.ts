@@ -1,5 +1,5 @@
 import { LogConfigureToken } from '@tsdi/logs';
-import { BootContext } from '../BootContext';
+import { IBootContext } from '../BootContext';
 import { ConfigureRegister } from '../annotations/ConfigureRegister';
 
 /**
@@ -7,7 +7,7 @@ import { ConfigureRegister } from '../annotations/ConfigureRegister';
  *
  * @export
  */
-export const BootConfigureRegisterHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
+export const BootConfigureRegisterHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let config = ctx.getConfiguration();
     let regs = ctx.injector.getServices(ConfigureRegister);
     if (regs && regs.length) {

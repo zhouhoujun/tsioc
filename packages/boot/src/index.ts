@@ -4,7 +4,6 @@ export * from './decorators/Bootstrap';
 export * from './services/IBaseTypeParser';
 export * from './services/BaseTypeParser';
 export * from './services/StartupService';
-export * from './services/StartupServices';
 export * from './services/AnnotationMerger';
 export * from './services/AnnotationCloner';
 
@@ -99,7 +98,7 @@ export * from './boots/ResolveTypeHandle';
 
 export * from './boots/ResolveRunnableScope';
 export * from './boots/RefRunnableHandle';
-export * from './boots/RunBootHandle';
+export * from './boots/StartupBootHandle';
 
 export * from './boots/RunnableBuildLifeScope';
 export * from './boots/BootLifeScope';

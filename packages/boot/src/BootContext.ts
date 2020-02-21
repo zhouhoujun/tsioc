@@ -1,9 +1,8 @@
 import { LoadType, Type, Injectable, createRaiseContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
 import { IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
-import { Startup, IStartup } from './runnable/Startup';
-import { StartupServices } from './services/StartupServices';
-import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP } from './context-tokens';
+import { IStartup } from './runnable/Startup';
+import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS } from './context-tokens';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
 import { IBuildContext } from './builder/IBuildContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
@@ -15,7 +14,7 @@ import { BootstrapMetadata } from './decorators/Bootstrap';
 /**
  *  current application boot context token.
  */
-export const ApplicationContextToken = tokenId<BootContext>('APP__CONTEXT');
+export const ApplicationContextToken = tokenId<IBootContext>('APP__CONTEXT');
 
 /**
  * boot options
@@ -80,13 +79,6 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
      */
     data?: any;
     /**
-     * auto run runnable or not.
-     *
-     * @type {boolean}
-     * @memberof BootOptions
-     */
-    autorun?: boolean;
-    /**
      * boot dependencies.
      *
      * @type {LoadType[]}
@@ -101,13 +93,19 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
 
 export interface IBootContext<T extends BootOption = BootOption> extends IBuildContext<T> {
 
+    /**
+     * get log manager.
+     */
     getLogManager(): ILoggerManager;
     /**
-     * startup services
-     *
-     * @type {Token[]}
+     * get service in context.
+     * @param token
      */
-    readonly starupServices: StartupServices;
+    getService<T>(token: Token<T>): T;
+    /**
+     * get statup service tokens.
+     */
+    getStarupTokens(): Token[];
 
     /**
      * boot base url.
@@ -135,6 +133,9 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
 
     readonly boot: any;
 
+    /**
+     * get boot statup.
+     */
     getStartup(): IStartup;
 
     /**
@@ -171,19 +172,26 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
 @Injectable
 export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T> implements IBootContext<T> {
 
-
+    /**
+     * get log manager.
+     */
     getLogManager(): ILoggerManager {
         return this.getContainer().resolve(ConfigureLoggerManger);
     }
 
     /**
-     * startup services
-     *
-     * @type {Token[]}
-     * @memberof BootContext
+     * get service in application context.
+     * @param token
      */
-    get starupServices(): StartupServices {
-        return this.get(StartupServices);
+    getService<T>(token: Token<T>): T {
+        return this.context.get(token);
+    }
+
+    /**
+     * get statup service tokens.
+     */
+    getStarupTokens(): Token[] {
+        return this.getValue(CTX_APP_STARTUPS);
     }
 
     /**
@@ -230,7 +238,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     }
 
     /**
-     * boot startup service instance.
+     * get boot startup instance.
      *
      * @type {IStartup}
      * @memberof BootContext
@@ -292,6 +300,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
 }
 
 
-export function isBootContext( target: any): target is IBootContext {
+export function isBootContext(target: any): target is IBootContext {
     return target instanceof BootContext;
 }

@@ -1,6 +1,5 @@
-import { Inject, Abstract, Token } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
-import { BootContext } from '../BootContext';
+import { Abstract, Token } from '@tsdi/ioc';
+import { IBootContext } from '../BootContext';
 
 
 /**
@@ -12,12 +11,9 @@ import { BootContext } from '../BootContext';
  * @template T
  */
 @Abstract()
-export abstract class StartupService<T extends BootContext = BootContext> {
+export abstract class StartupService<T extends IBootContext = IBootContext> {
 
     constructor() { }
-
-    @Inject(ContainerToken)
-    protected container: IContainer;
 
     /**
      * config core global service.

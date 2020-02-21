@@ -1,4 +1,4 @@
-import { Abstract, InjectReference, Token } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Startup, IStartup } from './Startup';
 
 
@@ -57,22 +57,14 @@ export abstract class Renderer<T = any> extends Startup<T> implements IRenderer<
         }
     }
 
-    protected abstract async renderProcess(host: any): Promise<void>;
 
     /**
      * render component instance.
      *
      * @param {*} [host]
      * @returns {Promise<any>}
-     * @memberof IRunner
      */
-    async render(host?: any): Promise<void> {
-        let node = this.getBoot() as T & AfterRendererInit;
-        await this.renderProcess(host);
-        if (node.afterRenderInit) {
-            await node.afterRenderInit();
-        }
-    }
+    abstract render(host?: any): Promise<void>;
 
 }
 
@@ -88,20 +80,5 @@ export function isRenderer(target: any): target is Renderer {
         return true;
     }
     return false;
-}
-
-
-/**
- * module instance renderer token.
- *
- * @export
- * @class InjectRendererToken
- * @extends {Registration<Startup<T>>}
- * @template T
- */
-export class InjectRendererToken<T> extends InjectReference<Startup<T>> {
-    constructor(type: Token<T>) {
-        super(Startup, type);
-    }
 }
 

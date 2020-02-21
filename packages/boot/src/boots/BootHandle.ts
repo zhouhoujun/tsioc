@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { BootContext } from '../BootContext';
+import { IBootContext } from '../BootContext';
 import { BuildHandle } from '../builder/BuildHandles';
 
 /**
@@ -11,7 +11,7 @@ import { BuildHandle } from '../builder/BuildHandles';
  * @extends {BuildHandle<BootContext>}
  */
 @Abstract()
-export abstract class BootHandle extends BuildHandle<BootContext> {
+export abstract class BootHandle extends BuildHandle<IBootContext> {
     /**
      * execute boot Handle.
      *
@@ -21,5 +21,5 @@ export abstract class BootHandle extends BuildHandle<BootContext> {
      * @returns {Promise<void>}
      * @memberof BootHandle
      */
-    abstract execute(ctx: BootContext, next: () => Promise<void>): Promise<void>;
+    abstract execute(ctx: IBootContext, next: () => Promise<void>): Promise<void>;
 }

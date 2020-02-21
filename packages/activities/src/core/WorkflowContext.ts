@@ -327,6 +327,10 @@ export function isAcitvityRef(target: any): target is IActivityRef {
 @Refs(ActivityRef, Startup)
 export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Service<T> {
 
+    async configureService(ctx: WorkflowContext): Promise<void> {
+        this.context = ctx;
+    }
+
     getContext(): WorkflowContext {
         return this.context as WorkflowContext;
     }
@@ -338,8 +342,8 @@ export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Ser
     state: RunState;
 
     async start(data?: any): Promise<void> {
-        let injector = this.getInjector();
-        let context = this.getContext()
+        let context = this.getContext();
+        let injector = context.injector;
         if (isDefined(data)) {
             context.setValue(ACTIVITY_INPUT, data);
         }
