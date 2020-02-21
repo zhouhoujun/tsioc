@@ -108,3 +108,4 @@ export * from './IBootApplication';
 export * from './BootApplication';
 export * from './context-tokens';
 export * from './BootContext';
+export * from './BootModule';
