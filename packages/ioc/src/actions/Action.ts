@@ -38,7 +38,6 @@ export interface IActionInjector extends IInjector {
 
 export const ActionInjectorToken = tokenId<IActionInjector>('ACTION_INJECTOR');
 
-
 /**
  * action interface.
  */

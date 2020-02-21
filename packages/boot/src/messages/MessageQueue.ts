@@ -1,4 +1,4 @@
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject } from '@tsdi/ioc';
+import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject, PromiseUtil, isToken, Action } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
@@ -18,6 +18,7 @@ import { Handles } from '../handles/Handles';
  */
 @Injectable
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
+
 
     @Inject(INJECTOR)
     injector: ICoreInjector;
@@ -144,9 +145,20 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
     }
 
     protected registerHandle(HandleType: HandleType<T>): this {
-        if (isClass(HandleType) && !this.injector.hasRegister(HandleType)) {
+        if (isClass(HandleType)) {
             this.injector.registerType(HandleType);
         }
         return this;
+    }
+
+    protected toHandle(handleType: HandleType<T>): PromiseUtil.ActionHandle<T> {
+        if (handleType instanceof Action) {
+            return handleType.toAction() as PromiseUtil.ActionHandle<T>;
+        } else if (isToken(handleType)) {
+            return this.injector.get<Action>(handleType)?.toAction?.() as PromiseUtil.ActionHandle<T>;
+        } else if (isFunction(handleType)) {
+            return handleType as PromiseUtil.ActionHandle<T>;
+        }
+        return null;
     }
 }

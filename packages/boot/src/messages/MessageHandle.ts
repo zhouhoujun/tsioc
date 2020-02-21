@@ -13,6 +13,7 @@ import { Handle } from '../handles/Handle';
  */
 @Abstract()
 export abstract class MessageHandle<T extends MessageContext> extends Handle<T> {
+
     /**
      * execute middleware.
      *

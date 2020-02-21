@@ -57,11 +57,6 @@ export type HandleType<T> = ActionType<IHandle<T>, PromiseUtil.ActionHandle<T>>;
  */
 export abstract class Handle<T extends IHandleContext = any> extends Action implements IHandle<T> {
 
-    constructor(@Inject(ActionInjectorToken) protected actInjector: IActionInjector) {
-        super();
-    }
-
-
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 
     protected execFuncs(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {

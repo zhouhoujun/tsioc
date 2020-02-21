@@ -27,15 +27,19 @@ export class ActionInjector extends Injector implements IActionInjector {
             if (this.hasTokenKey(type)) {
                 return true;
             }
-
-            let instance = new type(this) as Action & IActionSetup;
-            this.setValue(type, instance);
+            let instance = this.setupAction(type) as Action & IActionSetup;
             if (instance instanceof Action && isFunction(instance.setup)) {
                 instance.setup();
             }
             return true;
         }
         return false;
+    }
+
+    protected setupAction(type: Type<Action>): Action {
+        let instance = new type(this);
+        this.setValue(type, instance);
+        return instance;
     }
 
     getAction<T extends Function>(target: Token<Action> | Action | Function): T {

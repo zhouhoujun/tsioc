@@ -87,7 +87,7 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            this.funcs = this.handles.map(ac => this.actInjector.getAction<PromiseUtil.ActionHandle<T>>(ac)).filter(f => f);
+            this.funcs = this.handles.map(ac => this.toHandle(ac)).filter(f => f);
         }
         await this.execFuncs(ctx, this.funcs, next);
     }
@@ -95,6 +95,8 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
     protected resetFuncs() {
         this.funcs = null;
     }
+
+    protected abstract toHandle(handleType: HandleType<T>): PromiseUtil.ActionHandle<T>;
 
     protected abstract registerHandle(handleType: HandleType<T>): this;
 
