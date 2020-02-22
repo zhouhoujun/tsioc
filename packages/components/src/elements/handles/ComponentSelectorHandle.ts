@@ -28,21 +28,21 @@ export class ComponentSelectorHandle extends BuildHandle<ITemplateContext> {
         }
     }
 
-    protected getSelector(template: any, refSelector?: ComponentProvider): any {
-        return template ? template[refSelector.getSelectorKey()] : null
+    protected getSelector(template: any, compdr?: ComponentProvider): any {
+        return template ? template[compdr.getSelectorKey()] : null
     }
 
-    protected getSelectorToken(refSelector: ComponentProvider, selector: string): Token {
-        return refSelector.toSelectorToken(selector);
+    protected getSelectorToken(compdr: ComponentProvider, selector: string): Token {
+        return compdr.toSelectorToken(selector);
     }
 
-    protected getComponent(ctx: ITemplateContext, template: any, refSelector: ComponentProvider): Type {
-        let selector = this.getSelector(template, refSelector);
+    protected getComponent(ctx: ITemplateContext, template: any, compdr: ComponentProvider): Type {
+        let selector = this.getSelector(template, compdr);
         if (selector) {
             if (isString(selector)) {
-                let selkey = this.getSelectorToken(refSelector, selector);
+                let selkey = this.getSelectorToken(compdr, selector);
                 return ctx.injector.getTokenProvider(selkey);
-            } else if (refSelector.isNodeType(selector)) {
+            } else if (compdr.isNodeType(selector)) {
                 return selector;
             }
         }
