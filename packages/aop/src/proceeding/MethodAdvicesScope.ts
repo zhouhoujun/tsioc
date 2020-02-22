@@ -1,7 +1,6 @@
 import { Joinpoint, AOP_THROWING, AOP_RETURNING, AOP_STATE } from '../joinpoints/Joinpoint';
-import { IocCompositeAction, IActionSetup, isDefined, isArray, tokenId, isPromise, PromiseUtil } from '@tsdi/ioc';
+import { IocCompositeAction, IActionSetup, isDefined, isArray, tokenId, isPromise, PromiseUtil, TypeReflectsToken, INJECTOR, ITypeReflects } from '@tsdi/ioc';
 import { JoinpointState } from '../joinpoints/JoinpointState';
-import { AOP_EXTEND_TARGET_TOKEN } from '../IAdvisor';
 import { Advicer } from '../advices/Advicer';
 import { aExp } from '../regexps';
 
@@ -12,7 +11,8 @@ export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements
 
     execute(ctx: Joinpoint, next?: () => void) {
         ctx.providers.inject(...ctx.getProvProviders());
-        ctx.setValue(AOP_ADVICE_INVOKER, (j, a) => this.invokeAdvice(j, a));
+        let reflects = ctx.reflects;
+        ctx.setValue(AOP_ADVICE_INVOKER, (j, a) => this.invokeAdvice(j, a, reflects));
         super.execute(ctx, next);
     }
     setup() {
@@ -25,10 +25,9 @@ export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements
             .use(AfterThrowingAdvicesAction);
     }
 
-    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
+    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, reflects: ITypeReflects) {
         let metadata: any = advicer.advice;
         let providers = joinPoint.providers;
-        let injector = joinPoint.injector;
         if (isDefined(joinPoint.args) && metadata.args) {
             providers.inject({ provide: metadata.args, useValue: joinPoint.args })
         }
@@ -61,7 +60,7 @@ export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements
         if (joinPoint.throwing && metadata.throwing) {
             providers.inject({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
-        return injector.invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+        return reflects.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
     }
 
 }
