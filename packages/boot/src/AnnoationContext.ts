@@ -245,10 +245,10 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
      * @memberof AnnoationContext
      */
     getAnnoation<T extends IAnnotationMetadata>(): T {
-        return this.context.getValue<T>(CTX_MODULE_ANNOATION) ?? this.getParentAnnoation();
+        return this.context.getValue<T>(CTX_MODULE_ANNOATION) ?? this.getReflAnnoation();
     }
 
-    protected getParentAnnoation<T extends IAnnotationMetadata>(): T  {
+    protected getReflAnnoation<T extends IAnnotationMetadata>(): T  {
         let anno = this.type ? this.getTargetReflect()?.getAnnoation?.<T>() : null;
         anno && this.setValue(CTX_MODULE_ANNOATION, anno);
         return anno;

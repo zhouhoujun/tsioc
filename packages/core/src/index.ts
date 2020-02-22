@@ -1,3 +1,4 @@
+export * from './types';
 export * from './context-tokens';
 export * from './IContainer';
 export * from './Container';

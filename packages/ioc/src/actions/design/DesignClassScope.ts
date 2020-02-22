@@ -33,9 +33,10 @@ export class DesignClassScope extends IocRegisterScope<DesignActionContext> impl
 
 export const AnnoationRegInAction = function (ctx: DesignActionContext, next: () => void): void {
     let regIn: string;
+    let reflects = ctx.reflects;
     ctx.targetReflect.decorators.classDecors.some(d => {
-        if (ctx.reflects.hasMetadata(d, ctx.type)) {
-            let meta = ctx.reflects.getMetadata<InjectableMetadata>(d, ctx.type).find(m => m.regIn);
+        if (reflects.hasMetadata(d, ctx.type)) {
+            let meta = reflects.getMetadata<InjectableMetadata>(d, ctx.type).find(m => m.regIn);
             if (meta) {
                 regIn = meta.regIn;
             }

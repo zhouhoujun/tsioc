@@ -50,6 +50,7 @@ export * from './injectors/DIModuleInjectScope';
 // modules
 export * from './modules/IModuleReflect';
 export * from './modules/ModuleRef';
+export * from './modules/ModuleInjector';
 export * from './modules/ModuleConfigure';
 
 // handles

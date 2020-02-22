@@ -7,8 +7,9 @@ import { IocCacheManager } from '../IocCacheManager';
  * @export
  */
 export const IocGetCacheAction = function (ctx: RuntimeActionContext, next: () => void): void {
-    if (!ctx.target && !ctx.targetReflect.singleton && ctx.targetReflect.expires > 0) {
-        let cache = ctx.injector.getInstance(IocCacheManager).get(ctx.target, ctx.targetReflect.expires);
+    let targetReflect = ctx.targetReflect;
+    if (!ctx.target && !targetReflect.singleton && targetReflect.expires > 0) {
+        let cache = ctx.injector.getInstance(IocCacheManager).get(ctx.target, targetReflect.expires);
         if (cache) {
             ctx.target = cache;
             if (ctx.target) {

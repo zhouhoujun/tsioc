@@ -1,4 +1,4 @@
-import { ProviderTypes, IocContainer, Type, Token, Modules, LoadType, IProviders } from '@tsdi/ioc';
+import { ProviderTypes, IocContainer, Type, Token, Modules, IProviders } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
@@ -9,6 +9,7 @@ import { ModuleProvider } from './services/ModuleProvider';
 import { ServiceProvider } from './services/ServiceProvider';
 import { ICoreInjector } from './ICoreInjector';
 import { CoreInjector } from './CoreInjector';
+import { LoadType } from './types';
 
 
 
@@ -28,10 +29,6 @@ export class Container extends IocContainer implements IContainer {
 
     getServiceProvider(): ServiceProvider {
         return this.getSingleton(ServiceProvider)
-    }
-
-    getModuleProvider(): ModuleProvider {
-        return this.getSingleton(ModuleProvider);
     }
 
     /**
@@ -55,23 +52,6 @@ export class Container extends IocContainer implements IContainer {
     }
 
     /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     * @memberof Container
-     */
-    use(...modules: Modules[]): this {
-        if (!modules.length) {
-            return this;
-        }
-        (async () => {
-            return this.getModuleProvider().use(this, ...modules);
-        })();
-        return this;
-    }
-
-    /**
      * async use modules.
      *
      * @param {...LoadType[]} modules load modules.
@@ -79,7 +59,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof IContainer
      */
     load(...modules: LoadType[]): Promise<Type[]> {
-        return this.getModuleProvider().load(this, ...modules);
+        return this.getSingleton(ModuleProvider).load(this, ...modules);
     }
 
     /**
@@ -117,7 +97,7 @@ export class Container extends IocContainer implements IContainer {
      * @returns {Injector}
      * @memberof Container
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProviders  {
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProviders {
         return this.getServiceProvider().getServiceProviders(this, target);
     }
 }

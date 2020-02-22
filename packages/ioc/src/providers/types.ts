@@ -1,5 +1,5 @@
 import { ProviderType, ParamProvider, ObjectMapProvider, Provider } from './Provider';
-import { Type } from '../types';
+import { Type, Modules } from '../types';
 import { IProviders } from '../IInjector';
 import { InjectorProvider } from '../Injector';
 import { isMetadataObject } from '../utils/lang';
@@ -15,7 +15,7 @@ export type ProviderTypes = IProviders | ProviderType;
 /**
  * inject types
  */
-export type InjectTypes = Type | ProviderTypes;
+export type InjectTypes = Type | ProviderTypes | Modules[];
 
 /**
  * params providers.

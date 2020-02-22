@@ -16,8 +16,9 @@ export abstract class InjectRegisterScope extends InjectScope implements IAction
 
     protected registerTypes(ctx: InjectActionContext, types: Type[]) {
         if (isArray(types) && types.length) {
+            let injector = ctx.injector;
             types.forEach(ty => {
-                if (!ctx.injector.has(ty)) {
+                if (!injector.has(ty)) {
                     ctx.setValue(CTX_CURR_TYPE, ty);
                     super.execute(ctx);
                 }

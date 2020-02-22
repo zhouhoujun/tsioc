@@ -1,4 +1,4 @@
-import { IInjector, Token, ProviderTypes, IProviders, Modules, LoadType, Type } from '@tsdi/ioc';
+import { IInjector, Token, ProviderTypes, IProviders, Modules, Type } from '@tsdi/ioc';
 import { ServiceOption } from './resolves/service/ResolveServiceContext';
 import { ServicesOption } from './resolves/services/ResolveServicesContext';
 import { ServiceProvider } from './services/ServiceProvider';
@@ -6,6 +6,8 @@ import { ModuleProvider } from './services/ModuleProvider';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader } from './services/ModuleLoader';
 import { IContainer } from './IContainer';
+import { LoadType } from './types';
+
 
 export interface ICoreInjector extends IInjector {
     /**
@@ -14,8 +16,6 @@ export interface ICoreInjector extends IInjector {
     getContainer(): IContainer;
 
     getServiceProvider(): ServiceProvider;
-
-    getModuleProvider(): ModuleProvider;
     /**
      * get container builder of this container.
      */
@@ -28,15 +28,6 @@ export interface ICoreInjector extends IInjector {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader;
-
-    /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     * @memberof IContainer
-     */
-    use(...modules: Modules[]): this;
 
     /**
      * load modules.

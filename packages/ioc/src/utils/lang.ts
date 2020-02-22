@@ -1,5 +1,5 @@
 // use core-js in browser.
-import { ObjectMap, Type, AbstractType, Token, ClassType } from '../types';
+import { ObjectMap, Type, AbstractType, Token, ClassType, Modules } from '../types';
 import { clsUglifyExp, clsStartExp } from './exps';
 
 
@@ -323,6 +323,43 @@ export namespace lang {
         dispatch(0);
     }
 
+
+    /**
+     * get all class type in modules.
+     *
+     * @param {Modules[]} modules
+     * @param {...Express<Type, boolean>[]} filters
+     * @returns {Type[]}
+     * @memberof DefaultModuleLoader
+     */
+    export function getTypes(...modules: Modules[]): Type[] {
+        if (!modules.length) {
+            return [];
+        } else if (modules.length === 1) {
+            return getContentTypes(modules[0])
+        }
+        let types = [];
+        modules.forEach(m => {
+            types = types.concat(getContentTypes(m));
+        })
+        return types;
+    }
+
+    function getContentTypes(regModule: Modules): Type[] {
+        let regModules: Type[] = [];
+        if (isClass(regModule)) {
+            regModules.push(regModule);
+        } else if (regModule) {
+            let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
+            for (let p in rmodules) {
+                let type = rmodules[p];
+                if (isClass(type)) {
+                    regModules.push(type);
+                }
+            }
+        }
+        return regModules;
+    }
 }
 
 

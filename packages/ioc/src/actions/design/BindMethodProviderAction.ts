@@ -11,7 +11,8 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
  */
 export const BindMethodProviderAction = function (ctx: DesignActionContext, next: () => void) {
     let refs = ctx.reflects;
-    ctx.targetReflect.defines.extendTypes.forEach(ty => {
+    let targetReflect = ctx.targetReflect;
+    targetReflect.defines.extendTypes.forEach(ty => {
         let metas = refs.getMethodMetadata<MethodMetadata>(ctx.getValue(CTX_CURR_DECOR), ty);
         Object.keys(metas).forEach(propertyKey => {
             let metadatas = metas[propertyKey];
@@ -23,10 +24,10 @@ export const BindMethodProviderAction = function (ctx: DesignActionContext, next
                     }
                 });
             }
-            if (ctx.targetReflect.methodParamProviders.has(propertyKey)) {
-                ctx.targetReflect.methodParamProviders.get(propertyKey).push(...providers);
+            if (targetReflect.methodParamProviders.has(propertyKey)) {
+                targetReflect.methodParamProviders.get(propertyKey).push(...providers);
             } else {
-                ctx.targetReflect.methodParamProviders.set(propertyKey, providers);
+                targetReflect.methodParamProviders.set(propertyKey, providers);
             }
         });
     });

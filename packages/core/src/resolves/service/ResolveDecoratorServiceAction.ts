@@ -4,10 +4,12 @@ import { CTX_CURR_TOKEN } from '../../context-tokens';
 
 export const ResolveDecoratorServiceAction = function (ctx: ResolveServiceContext, next: () => void): void {
     let clasType = ctx.getValue(CTX_TARGET_TOKEN);
+    let reflects = ctx.reflects;
+    let injector = ctx.injector;
     if (isClassType(clasType)) {
-        let dprvoider = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
+        let dprvoider = reflects.getActionInjector().getInstance(DecoratorProvider);
         let tk = ctx.getValue(CTX_CURR_TOKEN);
-        ctx.reflects.getDecorators(clasType)
+        reflects.getDecorators(clasType)
             .some(dec => {
                 if (dprvoider.has(dec, tk)) {
                     ctx.instance = dprvoider.resolve(dec, tk, ctx.providers);
@@ -16,8 +18,8 @@ export const ResolveDecoratorServiceAction = function (ctx: ResolveServiceContex
                     return true;
                 }
                 let refDec = new InjectReference(tk, dec);
-                if (ctx.injector.hasRegister(refDec)) {
-                    ctx.instance = ctx.injector.get(refDec, ctx.providers);
+                if (injector.hasRegister(refDec)) {
+                    ctx.instance = injector.get(refDec, ctx.providers);
                 }
                 return !!ctx.instance;
             });

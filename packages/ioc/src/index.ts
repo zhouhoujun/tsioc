@@ -1,3 +1,4 @@
+export * from './types';
 export * from './Destoryable';
 export * from './IInjector';
 export * from './IIocContainer';
@@ -7,7 +8,6 @@ export * from './IocCoreService';
 export * from './BaseInjector';
 export * from './Injector';
 export * from './Registration';
-export * from './types';
 export * from './InjectReference';
 export * from './InjectToken';
 export * from './IParameter';

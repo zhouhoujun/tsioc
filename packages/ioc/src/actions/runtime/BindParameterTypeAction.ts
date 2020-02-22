@@ -14,8 +14,8 @@ import { createDesignParams } from './createDesignParams';
  */
 export const BindParameterTypeAction = function (ctx: RuntimeActionContext, next: () => void) {
     let propertyKey = ctx.propertyKey;
-
-    if (ctx.targetReflect.methodParams.has(propertyKey)) {
+    let targetReflect = ctx.targetReflect;
+    if (targetReflect.methodParams.has(propertyKey)) {
         return next();
     }
 
@@ -51,7 +51,7 @@ export const BindParameterTypeAction = function (ctx: RuntimeActionContext, next
 
     if (propertyKey === 'constructor') {
         if (designParams.some(pa => !pa.type && !pa.provider)) {
-            ctx.targetReflect.defines.extendTypes.forEach(ty => {
+            targetReflect.defines.extendTypes.forEach(ty => {
                 if (ty === ctx.type) {
                     return true;
                 }
@@ -90,7 +90,7 @@ export const BindParameterTypeAction = function (ctx: RuntimeActionContext, next
         }
     }
 
-    ctx.targetReflect.methodParams.set(propertyKey, designParams);
+    targetReflect.methodParams.set(propertyKey, designParams);
 
     next();
 };

@@ -1,4 +1,5 @@
-import { Type, isClass, LoadType, isArray } from '@tsdi/ioc';
+import { Type, isClass, isArray } from '@tsdi/ioc';
+import { LoadType } from '@tsdi/core';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';

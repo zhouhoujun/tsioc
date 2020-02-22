@@ -1,7 +1,8 @@
 import {
-    LoadType, Modules, Type, Token, IocCoreService, isString, lang,
-    isObject, PathModules, isArray, isClass, InjectReference, Singleton
+    Modules, Type, Token, IocCoreService, isString, lang,
+    isObject, isArray, isClass, InjectReference, Singleton
 } from '@tsdi/ioc';
+import { LoadType, PathModules } from '../types';
 
 
 /**
@@ -37,15 +38,6 @@ export interface IModuleLoader {
      * @memberof IModuleLoader
      */
     loadTypes(...modules: LoadType[]): Promise<Type[][]>;
-
-    /**
-     * get all class type in modules.
-     *
-     * @param {Modules} modules
-     * @returns {Type[]}
-     * @memberof IModuleLoader
-     */
-    getTypes(...modules: Modules[]): Type[];
 
 }
 
@@ -110,28 +102,7 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
      */
     async loadTypes(...modules: LoadType[]): Promise<Type[][]> {
         let mdls = await this.load(...modules);
-        return mdls.map(md => this.getTypes(md));
-    }
-
-    /**
-     * get all class type in modules.
-     *
-     * @param {Modules[]} modules
-     * @param {...Express<Type, boolean>[]} filters
-     * @returns {Type[]}
-     * @memberof DefaultModuleLoader
-     */
-    getTypes(...modules: Modules[]): Type[] {
-        if (!modules.length) {
-            return [];
-        } else if (modules.length === 1) {
-            return this.getContentTypes(modules[0])
-        }
-        let types = [];
-        modules.forEach(m => {
-            types = types.concat(this.getContentTypes(m));
-        })
-        return types;
+        return mdls.map(md => lang.getTypes(md));
     }
 
     async require(fileName: string): Promise<any> {
@@ -206,21 +177,6 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
         }
     }
 
-    protected getContentTypes(regModule: Modules): Type[] {
-        let regModules: Type[] = [];
-        if (isClass(regModule)) {
-            regModules.push(regModule);
-        } else if (regModule) {
-            let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
-            for (let p in rmodules) {
-                let type = rmodules[p];
-                if (isClass(type)) {
-                    regModules.push(type);
-                }
-            }
-        }
-        return regModules;
-    }
 }
 
 

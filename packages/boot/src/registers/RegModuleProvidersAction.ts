@@ -1,19 +1,38 @@
-import { Type, ProviderTypes, isArray, DesignActionContext } from '@tsdi/ioc';
-import { ModuleLoader, IContainer } from '@tsdi/core';
+import { Type, ProviderTypes, isArray, DesignActionContext, IProviders, tokenId, lang } from '@tsdi/ioc';
 import { CTX_MODULE_EXPORTS, CTX_MODULE_ANNOATION } from '../context-tokens';
 import { IModuleReflect } from '../modules/IModuleReflect';
 import { ModuleProviders, ModuleInjector } from '../modules/ModuleInjector';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
 
+/**
+ * module providers builder.
+ *
+ * @export
+ * @interface IModuleProvidersBuilder
+ */
+export interface IModuleProvidersBuilder {
+    /**
+     * build annoation providers in map.
+     *
+     * @param {ModuleInjector} injector module injector.
+     * @param {ModuleConfigure} annoation module metatdata annoation.
+     * @param {IProviders} map the providers map, build annoation providers in it.
+     * @memberof IModuleProvidersBuilder
+     */
+    build(injector: ModuleInjector, annoation: ModuleConfigure, map: IProviders): void;
+}
+/**
+ * module providers builder token. for module decorator provider.
+ */
+export const ModuleProvidersBuilderToken = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
 
 export const RegModuleProvidersAction = function (ctx: DesignActionContext, next: () => void): void {
     let reflects = ctx.reflects;
     let annoation = ctx.getValue(CTX_MODULE_ANNOATION);
 
     let injector = ctx.injector as ModuleInjector;
-    let continer = ctx.getContainer() as IContainer;
-    let mdpr = continer.getModuleProvider();
     let mdReft = ctx.targetReflect as IModuleReflect;
-    let components = annoation.components ? mdpr.use(injector, ...annoation.components) : null;
+    let components = annoation.components ? injector.injectModule(...annoation.components) : null;
 
     // inject module providers
     let map = injector.getInstance(ModuleProviders);
@@ -40,7 +59,12 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
         mdReft.componentDectors = componentDectors;
     }
 
-    let exptypes: Type[] = injector.getInstance(ModuleLoader).getTypes(...annoation.exports || []);
+    let builder = mdReft.getDecorProviders?.().getInstance(ModuleProvidersBuilderToken);
+    if (builder) {
+        builder.build(injector, annoation, map);
+    }
+
+    let exptypes: Type[] = lang.getTypes(...annoation.exports || []);
 
     exptypes.forEach(ty => {
         let reflect = reflects.get(ty);

@@ -1,5 +1,5 @@
-import { LoadType, Type, Injectable, createRaiseContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
-import { IModuleLoader, ICoreInjector } from '@tsdi/core';
+import { Type, Injectable, createRaiseContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
+import { LoadType, IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { IStartup } from './runnable/Startup';
 import { CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN, CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS } from './context-tokens';
@@ -78,6 +78,13 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
      * @memberof BootOptions
      */
     data?: any;
+    /**
+    * auto statupe or not. default true.
+    *
+    * @type {boolean}
+    * @memberof BootOptions
+    */
+    autorun?: boolean;
     /**
      * boot dependencies.
      *

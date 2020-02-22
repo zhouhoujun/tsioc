@@ -1,4 +1,4 @@
-import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
+import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './types';
 import { IParameter } from './IParameter';
 import { tokenId } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
@@ -282,6 +282,24 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     inject(...providers: InjectTypes[]): this;
+    /**
+     * inject modules
+     *
+     * @param {...Modules[]} modules
+     * @returns {Type[]} the class types in modules.
+     * @memberof IInjector
+     */
+    injectModule(...modules: Modules[]): Type[];
+    /**
+     * use modules.
+     *
+     * @param {...Modules[]} modules
+     * @returns {this}
+     * @memberof IInjector
+     */
+    use(...modules: Modules[]): this;
+
+
     /**
      * unregister the token
      *

@@ -10,7 +10,6 @@ import { IActionSetup } from '../Action';
 
 export class DesignMethodScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
     setup() {
-        // this.actInjector.regAction(BindMethodProviderAction);
 
         this.actInjector.getInstance(DesignRegisterer)
             .register(AutoWired, DecoratorScopes.Method, BindMethodProviderAction)

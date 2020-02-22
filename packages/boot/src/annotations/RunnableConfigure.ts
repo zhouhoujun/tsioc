@@ -1,4 +1,5 @@
-import { ObjectMap, LoadType, tokenId } from '@tsdi/ioc';
+import { ObjectMap, tokenId } from '@tsdi/ioc';
+import { LoadType } from '@tsdi/core';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**

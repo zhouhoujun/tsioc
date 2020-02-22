@@ -17,7 +17,7 @@ import { lang } from './utils/lang';
  */
 export class Injector extends BaseInjector implements IInjector {
 
-    constructor(private proxy: ContainerProxy) {
+    constructor(protected proxy: ContainerProxy) {
         super();
     }
 
@@ -29,8 +29,8 @@ export class Injector extends BaseInjector implements IInjector {
         return this.proxy as ContainerProxy<T>;
     }
 
-    getContainer<T extends IIocContainer>(): T {
-        return this.proxy() as T;
+    getContainer(): IIocContainer {
+        return this.proxy();
     }
 
     protected hasInRoot(key: SymbolType): boolean {

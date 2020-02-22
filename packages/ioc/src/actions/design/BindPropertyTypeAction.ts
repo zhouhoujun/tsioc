@@ -11,7 +11,8 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
 export const BindPropertyTypeAction = function (ctx: DesignActionContext, next: () => void) {
     let refs = ctx.reflects;
     let injector = ctx.injector;
-    ctx.targetReflect.defines.extendTypes.forEach(ty => {
+    let targetReflect = ctx.targetReflect;
+    targetReflect.defines.extendTypes.forEach(ty => {
         let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.getValue(CTX_CURR_DECOR), ty);
         Object.keys(propMetas).forEach(key => {
             let props = propMetas[key];
@@ -23,8 +24,8 @@ export const BindPropertyTypeAction = function (ctx: DesignActionContext, next: 
                     injector.registerType(prop.type);
                 }
 
-                if (!ctx.targetReflect.propProviders.has(key)) {
-                    ctx.targetReflect.propProviders.set(key, injector.getToken(prop.provider || prop.type, prop.alias));
+                if (!targetReflect.propProviders.has(key)) {
+                    targetReflect.propProviders.set(key, injector.getToken(prop.provider || prop.type, prop.alias));
                 }
             });
         });

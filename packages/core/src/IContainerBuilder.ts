@@ -1,5 +1,6 @@
-import { LoadType, Modules, tokenId } from '@tsdi/ioc';
+import { Modules, tokenId } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
+import { LoadType } from './types';
 
 /**
  * ContainerBuilder interface token.

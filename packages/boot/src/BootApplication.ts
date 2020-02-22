@@ -1,5 +1,5 @@
-import { LoadType, isArray, isString, isInjector, ClassType, isClassType } from '@tsdi/ioc';
-import { IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
+import { isArray, isString, isInjector, ClassType, isClassType } from '@tsdi/ioc';
+import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BuilderServiceToken } from './services/IBuilderService';

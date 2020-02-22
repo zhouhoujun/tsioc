@@ -8,12 +8,13 @@ import { IocCacheManager } from '../IocCacheManager';
  * @export
  */
 export const IocSetCacheAction = function (ctx: RuntimeActionContext, next: () => void) {
-    if (ctx.targetReflect.singleton || !ctx.targetReflect.expires || ctx.targetReflect.expires <= 0) {
+    let targetReflect = ctx.targetReflect;
+    if (targetReflect.singleton || !targetReflect.expires || targetReflect.expires <= 0) {
         return next();
     }
     let cacheManager = ctx.injector.getInstance(IocCacheManager);
     if (!cacheManager.hasCache(ctx.type)) {
-        cacheManager.cache(ctx.type, ctx.target, ctx.targetReflect.expires);
+        cacheManager.cache(ctx.type, ctx.target, targetReflect.expires);
     }
     next();
 };

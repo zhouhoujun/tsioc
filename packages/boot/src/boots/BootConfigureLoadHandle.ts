@@ -34,7 +34,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     let config = await mgr.getConfig();
     let annoation = ctx.getAnnoation();
     if (annoation) {
-        let merger = ctx.getTargetReflect().getDecorProviders()?.getInstance(AnnotationMerger);
+        let merger = ctx.getTargetReflect().getDecorProviders?.().getInstance(AnnotationMerger);
         config = merger ? merger.merge([config, annoation]) : Object.assign({}, config, annoation);
     }
 

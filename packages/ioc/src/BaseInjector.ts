@@ -1,5 +1,5 @@
 import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
-import { Token, InstanceFactory, SymbolType, Factory, Type } from './types';
+import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined } from './utils/lang';
@@ -200,12 +200,15 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      */
     protected abstract parse(...providers: InjectTypes[]): IInjector;
 
+
     inject(...providers: InjectTypes[]): this {
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
             }
-            if (p instanceof BaseInjector) {
+            if (isArray(p)) {
+                this.injectModule(...p);
+            } else if (p instanceof BaseInjector) {
                 this.copy(p);
             } else if (p instanceof Provider) {
                 if (p instanceof ParamProvider) {
@@ -261,6 +264,31 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
             }
         });
 
+        return this;
+    }
+
+    /**
+     * inject modules
+     *
+     * @param {...Modules[]} modules
+     * @returns {Type[]} the class types in modules.
+     * @memberof IInjector
+     */
+    injectModule(...modules: Modules[]): Type[] {
+        let types = lang.getTypes(...modules);
+        types.forEach(ty => this.registerType(ty));
+        return types;
+    }
+
+    /**
+     * use modules.
+     *
+     * @param {...Modules[]} modules
+     * @returns {this}
+     * @memberof IInjector
+     */
+    use(...modules: Modules[]): this {
+        this.injectModule(...modules);
         return this;
     }
 
