@@ -44,7 +44,7 @@ export class CleanActivity extends Activity<void> {
 
     @Input() clean: Expression<Src>;
 
-    protected async execute(ctx: NodeActivityContext): Promise<void> {
+    async execute(ctx: NodeActivityContext): Promise<void> {
         let clean = await this.resolveExpression(this.clean, ctx);
         if (clean) {
             await ctx.del(ctx.toRootSrc(clean), {force: true});
@@ -63,137 +63,142 @@ see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/package
 ### Define component Task
 
 ```ts
-export interface LibTaskOption {
-    clean?: Binding<Expression<Src>>;
-    src?: Binding<Expression<Src>>;
-    dist?: Binding<Expression<Src>>;
-    uglify?: Binding<Expression<boolean>>;
-    tsconfig?: Binding<Expression<string | CompilerOptions>>;
 
-    /**
-     * rollup input.
-     *
-     * @type {Binding<Expression<string>>}
-     * @memberof LibTaskOption
-     */
-    input?: Binding<Expression<string>>;
-    /**
-     * rollup output file.
-     *
-     * @type {Binding<string>}
-     * @memberof LibTaskOption
-     */
-    outputFile?: Binding<Expression<string>>;
-    /**
-     * rollup output dir.
-     *
-     * @type {Binding<string>}
-     * @memberof LibTaskOption
-     */
-    outputDir?: Binding<Expression<string>>;
-    /**
-     * rollup format option.
-     *
-     * @type {Binding<string>}
-     * @memberof LibTaskOption
-     */
-    format?: Binding<Expression<string>>;
+/**
+ * ts build option.
+ *
+ * @export
+ * @interface TsBuildOption
+ * @extends {AssetActivityOption}
+ */
+export interface TsBuildOption extends AssetActivityOption {
+    test?: Binding<NodeExpression<Src>>;
+    annotation?: Binding<NodeExpression<boolean>>;
+    tsconfig?: Binding<NodeExpression<string | CompilerOptions>>;
+    dts?: Binding<NodeExpression<string>>;
+    uglify?: Binding<NodeExpression<boolean>>;
+    uglifyOptions?: Binding<NodeExpression>;
 }
 
 @Task({
-    selector: 'libs',
-    template: {
-        activity: 'each',
-        each: 'binding: tasks'
-        body: [
-            {
-                activity: 'if',
-                condition: ctx => ctx.body.src,
-                body: <TsBuildOption>{
-                    activity: 'ts',
-                    clean: ctx => ctx.body.clean,
-                    src: ctx => ctx.body.src,
-                    test: ctx => ctx.body.test,
-                    uglify: ctx => ctx.body.uglify,
-                    dist: ctx => ctx.body.dist,
-                    annotation: true,
-                    sourcemaps: './sourcemaps',
-                    tsconfig: ctx => ctx.body.tsconfig
-                }
-            },
-            {
-                activity: Activities.if,
-                condition: ctx => ctx.body.input,
-                body: <RollupOption>{
-                    activity: 'rollup',
-                    input: ctx => ctx.body.input,
-                    plugins: 'binding: plugins',
-                    external: 'binding: external',
-                    options: 'binding: options',
-                    output: ctx => {
-                        return {
-                            format: ctx.body.format || 'cjs',
-                            file: ctx.body.outputFile,
-                            dir: ctx.body.outputDir,
-                            globals: ctx.scope.globals
-                        }
-                    }
+    selector: 'ts',
+    template: [
+        {
+            activity: 'src',
+            src: 'binding: src',
+        },
+        {
+            activity: 'annotation',
+            annotationFramework: 'binding: annotationFramework',
+            annotation: 'binding: annotation'
+        },
+        {
+            activity: Activities.if,
+            condition: 'binding: sourcemap',
+            body: {
+                name: 'sourcemap-init',
+                activity: Activities.execute,
+                action: (ctx: NodeActivityContext, bind) => {
+                    let scope = bind.getScope<TsBuildActivity>();
+                    let framework = scope.framework || sourcemaps;
+                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.init())
                 }
             }
-        ]
-    }
+        },
+        {
+            activity: Activities.if,
+            condition: (ctx, bind) => bind.getScope<TsBuildActivity>().beforePipes?.length > 0,
+            body: {
+                activity: 'pipes',
+                pipes: 'binding: beforePipes'
+            }
+        },
+        {
+            activity: Activities.execute,
+            name: 'tscompile',
+            action: async (ctx: NodeActivityContext, bind) => {
+                let scope = bind.getScope<TsBuildActivity>();
+                if (!scope.tsconfig) {
+                    return;
+                }
+                let tsconfig = await ctx.resolveExpression(scope.tsconfig);
+                let tsCompile;
+                let dts = await ctx.resolveExpression(scope.dts);
+                if (isString(tsconfig)) {
+                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
+                    tsCompile = tsProject();
+                } else {
+                    tsconfig.declaration = !!dts;
+                    let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
+                    tsCompile = tsProject();
+                }
+                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), tsCompile);
+            }
+        },
+        {
+            activity: Activities.if,
+            externals: async (ctx) => {
+                let tds = await ctx.resolveExpression(ctx.getScope<TsBuildActivity>().dts);
+                return tds ? {
+                    data: 'ctx.getData() | tsjs'
+                } : null;
+            },
+            condition: ctx => isTransform(ctx.getData()),
+            body: [
+                {
+                    activity: 'pipes',
+                    pipes: 'binding: pipes'
+                },
+                {
+                    activity: 'if',
+                    condition: 'binding: uglify',
+                    body: {
+                        activity: 'uglify',
+                        uglifyOptions: 'binding: uglifyOptions'
+                    }
+                },
+                {
+                    activity: Activities.if,
+                    condition: 'binding: sourcemap',
+                    body: {
+                        name: 'sourcemap-write',
+                        activity: Activities.execute,
+                        action: async (ctx: NodeActivityContext, bind) => {
+                            let scope = bind.getScope<TsBuildActivity>();
+                            let framework = scope.framework || sourcemaps;
+                            return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'));
+                        }
+                    }
+                },
+                {
+                    name: 'write-js',
+                    activity: 'dist',
+                    dist: 'binding: dist'
+                }
+            ]
+        },
+        {
+            activity: Activities.if,
+            externals: {
+                data: 'ctx.getData() | dts'
+            },
+            condition: 'binding: dts',
+            body: {
+                name: 'write-dts',
+                activity: 'dist',
+                dist: 'binding: dts',
+            }
+        }
+    ]
 })
-export class LibPackBuilder implements AfterInit {
-
-    constructor(private yourService: ServiceClass){
-
-    }
-    /**
-     * tasks
-     *
-     * @type {(Expression<LibTaskOption|LibTaskOption[]>)}
-     * @memberof LibPackBuilderOption
-     */
-    @Input()
-    tasks: Expression<LibTaskOption | LibTaskOption[]>;
-    /**
-     * rollup external setting.
-     *
-     * @type {Expression<ExternalOption>}
-     * @memberof RollupOption
-     */
-    @Input()
-    external?: Expression<ExternalOption>;
-    /**
-     * rollup plugins setting.
-     *
-     * @type {Expression<Plugin[]>}
-     * @memberof RollupOption
-     */
-    @Input()
-    plugins?: Expression<Plugin[]>;
-
-    @Input()
-    cache?: Expression<RollupCache>;
-
-    @Input()
-    watch?: Expression<WatcherOptions>;
-    /**
-     * custom setup rollup options.
-     *
-     * @type {(Expression<RollupFileOptions | RollupDirOptions>)}
-     * @memberof RollupOption
-     */
-    @Input()
-    options?: Expression<RollupFileOptions | RollupDirOptions>;
-
-
-    async onAfterInit(): Promise<void> {
-        // to do init you component
-        // this.yourService.
-    }
-
-
+export class TsBuildActivity {
+    @Input() dts: NodeExpression<string>;
+    @Input() annotation: NodeExpression<boolean>;
+    @Input('annotationFramework') annotationFramework: NodeExpression<ITransform>;
+    @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
+    @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string | ObjectMap>;
+    @Input() uglify: NodeExpression<boolean>;
+    @Input('uglifyOptions') uglifyOptions: NodeExpression;
 }
 
 ```
@@ -206,22 +211,25 @@ export class LibPackBuilder implements AfterInit {
 @Task({
     deps: [
         PackModule,
-        ServerActivitiesModule
+        ServerActivitiesModule,
+        TsBuildActivity
     ],
-    imports:[ LibPackBuilder ],
     baseURL: __dirname,
-    template: <LibPackBuilderOption>{
-        activity: 'libs',
-        tasks:[
-            { src: 'src/**/*.ts', clean: ['../../dist/pack/lib'], dist: '../../dist/pack/lib', uglify: false, tsconfig: './tsconfig.json' }
-        ]
+    template: <TsBuildOption>{
+        activity: 'ts',
+        annotation: true,
+        dist: 'dist',
+        dts: 'dist',
+        sourcemap: true
     }
 })
 export class PackBuilder implements AfterInit {
+
     onAfterInit(): void | Promise<void> {
-        console.log('pack build has inited...')
+        console.log('activities build has inited...')
     }
 }
+
 
 ```
 
@@ -251,8 +259,16 @@ Workflow.run({
 
 ## Documentation [github](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme)
 
+
+## Documentation
 Documentation is available on the
-[type-task docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
+[@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
+[@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
+[@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
+[@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
+[@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+[@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
+
 
 ## License
 

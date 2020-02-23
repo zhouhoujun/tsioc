@@ -112,33 +112,23 @@ export class Logger {
 @DIModule({
     imports: [
         AopModule,
-        Logger,
         ModuleA
     ],
-    exports: [
+    providers: [
+        Logger,
         ClassSevice
     ],
     bootstrap: ClassSevice
 })
 export class ModuleB {
-    constructor(test: TestService, @Inject(ContainerToken) private container: IContainer) {
+    constructor(test: TestService, @Inject(INJECTOR) private injector: ICoreInjector) {
+        // the injector is the module injected in.
         console.log(test);
         test.test();
-        // console.log(container);
-        // console.log('container pools..................\n');
-        let pools = container.get(ContainerPoolToken);
+        // console.log(injector);
         // console.log(pools);
-        console.log('container pools defaults..................\n');
-        console.log(pools.defaults);
-    }
-    mdOnStart(instance: ClassSevice): void | Promise<any> {
-        console.log('mdOnStart...');
-        console.log(this.container);
-        instance.start();
-        instance.state = 'started';
     }
 }
-
 
 
 BootApplication.run(ModuleB)
@@ -173,16 +163,15 @@ class MvcApi {
 ```
 
 
-## Container Interface
-
-see more interface. all document is typescript .d.ts.
-
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
+## document
 
 Documentation is available on the
-[@tsdi/core docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
+[@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
+[@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
+[@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
+[@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+[@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
 
 ## License
 

@@ -3,7 +3,12 @@
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/core` is AOP, Ioc container, via typescript decorator.
+`@tsdi/core` is Ioc container, Injector, via typescript decorator. extends `@tsdi/ioc`
+with features:
+* can load script and inject.
+* get service form injector tree.
+* get services form injector tree.
+
 
 version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
 
@@ -26,13 +31,8 @@ npm run build -- --setvs=4.0.0-beta
 
 ```shell
 
-npm install @tsdi/core
+npm install @tsdi/ioc
 
-// in browser
-npm install @tsdi/platform-browser
-
-// in server
-npm install @tsdi/platform-server
 ```
 
 ## add extends modules
@@ -47,7 +47,6 @@ npm install @tsdi/aop
 ```
 
 ```ts
-
 import { AopModule } from '@tsdi/aop';
 // in server
 import { ContainerBuilder } from '@tsdi/platform-server'
@@ -58,7 +57,14 @@ let builder = new ContainerBuilder();
 
 let container = build.create();
 
+// use aop.
 container.use(AopModule);
+// also can
+container.register(AopModule);
+// or
+container.inject(AopModule)
+//or
+container.injectModule(AopModule)
 
 ```
 
@@ -86,8 +92,6 @@ container.use(LogModule);
 ```
 
 # Documentation
-
-class name First char must be UpperCase.
 
 ## core
 
@@ -199,12 +203,12 @@ export class Logger {
 @DIModule({
     imports: [
         AopModule,
-        Logger,
         ModuleA
     ],
-    exports: [
+    providers:[
+        Logger,
         ClassSevice
-    ],
+    ]
     bootstrap: ClassSevice
 })
 export class ModuleB {
@@ -229,135 +233,58 @@ see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/maste
 
 ### create Container
 
-* in browser can not:
-    1. use syncBuild
-    2. syncLoadModule
-    3. can not use minimatch to match file.
-    4. support es5 uglify, [@tsdi/annotations](https://www.npmjs.com/package/@tsdi/annotations)  [] or [typescript-class-annotations](https://www.npmjs.com/package/typescript-class-annotations) to get class annotations before typescript compile.
-
 ```ts
-let builder = new ContainerBuilder();
 
-// 1. via create.
-let container = builder.create();
-
-// 2. via build.
-//with BuildOptions to auto register module.
-let container = await builder.build({
-  files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
-  moudles:['node-modules-name', ClassType]
-});
-
-// 3. via syncBuild
-let container = builder.syncBuild({
-  moudles:['node-modules-name', ClassType]
-});
+let container = new IocContainer();
 
 ```
 
-### init & register Container
+###  Container is ioc root.
 
-see interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
+see @tsdi/ioc interface [IIocContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IIocContainer.ts)
+
+see @tsdi/core interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
 
 ```ts
-// 1.  you can load modules by self
-await builder.loadModule(container, {
-  files: [__dirname +'/controller/**/*.ts', __dirname + '/*.model.js'],
-  moudles:['node-modules-name', ClassType]
-});
-// 2. load sync
-builder.syncLoadModule(container, {
-  moudles:['node-modules-name', ClassType]
-});
 
-// 3. use modules
-container.use(...modules);
-
-// 4. register a class
+// 1. register a class
 container.register(Person);
 
-// 5. register a factory;
+// 2. register a factory;
 container.register(Person, (container)=> {
     ...
     return new Person(...);
 });
 
-// 6. register with keyword
+// 3. register with keyword
 container.register('keyword', Perosn);
 
-// 8. register with alais
+// 4. register with alais
 container.register(new Registration(Person, aliasname));
+
+// register singleton
+container.registerSingleton(Person)
+
+// bind provider
+container.bindProvider
+// bind providers.
+container.bindProviders
 
 ```
 
-### get instance of type
+### Injector is basic ioc injector.
+
+see interface [IInjector](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IInjector.ts)
 
 ```ts
-// 8. get instance use get method of container.
-    /**
-     * resolve type instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IResolver
-     */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
-    /**
-     * Retrieves an instance from the container based on the provided token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    get<T>(token: Token<T>, alias?: string, ...providers: ProviderTypes[]): T;
 
-    /**
-     * get service or target reference service.
-     *
-     * @template T
-     * @param {(Token<T> | ServiceActionOption<T> | ResolveServiceContext<T>)} target servive token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof IContainer
-     */
-    getService<T>(target: Token<T> | ServiceActionOption<T> | ResolveServiceContext<T>, ...providers: ProviderTypes[]): T;
+// get the injector of Person class type injected.
+let injector =  container.getInjector(Person);
 
-    /**
-     * get all service extends type.
-     *
-     * @template T
-     * @param {(Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>)} target servive token or express match token.
-     * @param {...ProviderTypes[]} providers
-     * @returns {T[]} all service instance type of token type.
-     * @memberof IContainer
-     */
-    getServices<T>(target: Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>, ...providers: ProviderTypes[]): T[];
-
-    /**
-     * get all provider service.
-     *
-     * @template T
-     * @param {(Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>)} target
-     * @param {ResolveServicesContext<T>} [ctx]
-     * @returns {ProviderMap}
-     * @memberof IServicesResolver
-     */
-    getServiceProviders<T>(target: Token<T> | ServicesActionOption<T> | ResolveServicesContext<T>, ctx?: ResolveServicesContext<T>): ProviderMap;
-
-
-//get simple person
-let person = container.get(Person);
-//get colloge person
-let person = container.get(Person, 'Colloge');
-
-// resolve with providers
-container.resolve(Person, ...providers);
-
+// create new injector
+let injector = container.createInjector();
+// or create new injector via
+let injector = container.getInstance(InjectorFactoryToken);
 ```
 
 ### Invoke method
@@ -432,22 +359,11 @@ class Geet {
 
 container.register(Geet);
 
-container.invoke(Geet, gt=> gt.print,
- {hi: 'How are you.', name:'zhou' },
-{ hi: (container: IContainer)=> 'How are you.' }, ... },
-{ hi:{type: Token, value: any |(container: IContainer)=>any }},
-Provider.createParam('name', 'zhou'),
-Provider.create('hi', value:'Hello'),
-// or use ProviderMap.
-...
-)
+container.invoke(Geet, gt=> gt.print, ... //inject providers.)
 
-let instance = container.resolve(Geet,
-{name: 'zhou' },
-{ name: (container: IContainer)=>any } },
-{name:{type: Token, value: any|(container: IContainer)=>any }})
+let instance = container.resolve(Geet, )
 
-container.invoke(instance, gt=> gt.print, ...);
+container.invoke(instance, gt=> gt.print, ...//inject providers.);
 container.invoke(instance, 'print', ...);
 
 container.register(MethodTest);
@@ -702,177 +618,19 @@ builder.build({
 
 ```
 
-## Extend decorator
+## Extend decorator, Demo fo extends 
 
-see [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/LifeScope.ts)
-[RuntimeLifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/RuntimeLifeScope.ts)
-[DesignLifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/services/DesignLifeScope.ts)
+see AOP extends (https://github.com/zhouhoujun/tsioc/blob/master/packages/aop/src/AopModule.ts)
 You can extend yourself decorator via:
 
-1. `createClassDecorator`
-
-```ts
-/**
- * create class decorator
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {*}
- */
-export function createClassDecorator<T extends ClassMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassDecorator<T>
-```
-
-2. `createClassMethodDecorator`
-
-```ts
-/**
- * create method decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-export function createMethodDecorator<T extends MethodMetadata>
-```
-
-3. `createClassMethodDecorator`
-
-```ts
-/**
- * create decorator for class and method.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IClassMethodDecorator<T>}
- */
-export function createClassMethodDecorator<T extends TypeMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassMethodDecorator<T>
-```
-
-4. `createParamDecorator`
-
-```ts
-/**
- * create parameter decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-export function createParamDecorator<T extends ParameterMetadata>
-
-```
-
-5. `createPropDecorator`
-
-```ts
-/**
- * create property decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-export function createPropDecorator<T extends PropertyMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IPropertyDecorator<T>
-```
-
-6. `createParamPropDecorator`
-
-```ts
-/**
- * create parameter or property decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IParamPropDecorator<T>}
- */
-export function createParamPropDecorator<T extends ParamPropMetadata>(
-    name: string,
-    adapter?: MetadataAdapter,
-    metadataExtends?: MetadataExtends<T>): IParamPropDecorator<T>
-```
-
-7. `createDecorator`
-
-```ts
-/**
- * create dectorator for class params props methods.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {*}
- */
-export function createDecorator<T>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): any
-```
-
-### Demo fo extends yourself decorator
-
-```ts
-
-//eg.
-// 1. create decorator
-export interface IControllerDecorator<T extends ControllerMetadata> extends IClassDecorator<T> {
-    (routePrefix: string, provide?: Registration | string, alias?: string): ClassDecorator;
-    (target: Function): void;
-}
-export const Controller: IControllerDecorator<ControllerMetadata> =
-    createClassDecorator<ControllerMetadata>('Controller', (args: ArgsIterator) => {
-        args.next<ControllerMetadata>({
-            isMetadata: (arg) => isClassMetadata(arg, ['routePrefix']),
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.routePrefix = arg;
-            }
-        });
-    }) as IControllerDecorator<ControllerMetadata>;
-
-export const Aspect: IClassDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Aspect', null, (metadata) => {
-    metadata.singleton = true;
-    return metadata;
-});
-
-
-// 2. add decorator action
- let lifeScope = container.get(LifeScopeToken);
- let factory = new AopActionFactory();
- lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
-
-
-// 3. register decorator
-lifeScope.registerDecorator(Aspect, AopActions.registAspect);
-
-```
-
-## Container Interface
-
-see more interface. all document is typescript .d.ts.
-
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
 
 Documentation is available on the
-[@tsdi/core docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
+[@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
+[@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
+[@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
+[@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+[@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
 
 ## License
 

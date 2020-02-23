@@ -24,16 +24,16 @@ see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/maste
 
 
 
-## Container Interface
-
-see more interface. all document is typescript .d.ts.
-
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
+## document
 
 Documentation is available on the
-[@tsdi/core docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
+[@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
+[@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
+[@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
+[@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+[@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
+
 
 ## License
 
