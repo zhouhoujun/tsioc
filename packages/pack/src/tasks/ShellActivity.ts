@@ -102,7 +102,7 @@ export class ShellActivity extends NodeActivity<void> {
 
         let shell = await ctx.resolveExpression(this.shell);
         let options = await ctx.resolveExpression(this.options);
-        let args = await ctx.resolveExpression(this.formatArgs);
+        let args = await ctx.resolveExpression(this.args);
         let argstrs = isArray(args) ? args : this.formatArgs(args);
         let allowError = await ctx.resolveExpression(this.allowError);
         let shells = isArray(shell) ? shell : [shell];
