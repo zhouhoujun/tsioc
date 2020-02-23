@@ -19,7 +19,7 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
         // after all.
         if (ctx.services.size < 1) {
             // after all resolve default.
-            let defaultTk = ctx.default;
+            let defaultTk = ctx.defaultToken;
             if (defaultTk) {
                 let key = ctx.injector.getTokenKey(defaultTk);
                 if (ctx.injector.hasRegister(key)) {

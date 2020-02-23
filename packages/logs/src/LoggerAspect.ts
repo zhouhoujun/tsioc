@@ -90,7 +90,7 @@ export abstract class LoggerAspect extends LogProcess {
             let formater: ILogFormater;
             config.format = config.format || LogFormaterToken;
             if (isToken(config.format)) {
-                formater = this.injector.getService({ token: config.format, target: this, default: LogFormaterToken });
+                formater = this.injector.getService({ token: config.format, target: this, defaultToken: LogFormaterToken });
             } else if (isFunction(config.format)) {
                 formater = { format: config.format };
             } else if (isObject(config.format) && isFunction(config.format.format)) {

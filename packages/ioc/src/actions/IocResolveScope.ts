@@ -1,8 +1,9 @@
-import { ResolveActionContext, IResolveActionContext } from './ResolveActionContext';
+import { IResolveActionContext } from './ResolveActionContext';
 import { ResolveInInjectorAction } from './resolves/ResolveInInjectorAction';
 import { ResolveInRootAction } from './resolves/ResolveInRootAction';
 import { ResolvePrivateAction } from './resolves/ResolvePrivateAction';
 import { ResolveRefAction } from './resolves/ResolveRefAction';
+import { ResolveDefaultAction } from './resolves/ResolveDefaultAction';
 import { isNullOrUndefined, isClass, lang } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { CTX_TARGET_TOKEN } from '../context-tokens';
@@ -46,6 +47,7 @@ export class IocResolveScope<T extends IResolveActionContext = IResolveActionCon
         this.use(ResolvePrivateAction)
             .use(ResolveRefAction)
             .use(ResolveInInjectorAction)
-            .use(ResolveInRootAction);
+            .use(ResolveInRootAction)
+            .use(ResolveDefaultAction);
     }
 }

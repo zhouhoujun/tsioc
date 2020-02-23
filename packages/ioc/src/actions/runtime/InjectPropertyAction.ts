@@ -1,5 +1,6 @@
 import { RuntimeActionContext } from './RuntimeActionContext';
 import { isToken } from '../../utils/isToken';
+import { isDefined } from '../../utils/lang';
 
 
 /**
@@ -18,8 +19,11 @@ export const InjectPropertyAction = function (ctx: RuntimeActionContext, next: (
     props.forEach((token, propertyKey) => {
         let key = `${propertyKey}_INJECTED`
         if (isToken(token) && !ctx.hasValue(key)) {
-            ctx.target[propertyKey] = injector.resolve({ token, target: ctx.type }, providers);
-            ctx.set(key, true);
+            let val = injector.resolve({ token, target: ctx.type }, providers);
+            if (isDefined(val)) {
+                ctx.target[propertyKey] = val;
+                ctx.set(key, true);
+            }
         }
     });
 

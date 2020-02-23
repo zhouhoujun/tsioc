@@ -28,7 +28,7 @@ export interface ResolveActionOption<T = any> extends IocProvidersOption {
     /**
      * all faild use the default token to get instance.
      */
-    default?: Token<T>;
+    defaultToken?: Token<T>;
     /**
      * register token if has not register.
      *
@@ -41,7 +41,7 @@ export interface ResolveActionOption<T = any> extends IocProvidersOption {
 
 export interface IResolveActionContext<T = any, TOP extends ResolveActionOption<T> = ResolveActionOption<T>> extends IIocProvidersContext<TOP> {
     readonly token: Token<T>;
-    readonly default: Token<T>;
+    readonly defaultToken: Token<T>;
     /**
      * reslove result instance.
      *
@@ -69,7 +69,7 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
         return this.getValue(CTX_TOKEN);
     }
 
-    get default(): Token<T> {
+    get defaultToken(): Token<T> {
         return this.getValue(CTX_DEFAULT_TOKEN);
     }
 
@@ -101,8 +101,8 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
         if (options.token) {
             this.setValue(CTX_TOKEN, options.token);
         }
-        if (options.default) {
-            this.setValue(CTX_DEFAULT_TOKEN, options.default);
+        if (options.defaultToken) {
+            this.setValue(CTX_DEFAULT_TOKEN, options.defaultToken);
         }
         return super.setOptions(options);
     }

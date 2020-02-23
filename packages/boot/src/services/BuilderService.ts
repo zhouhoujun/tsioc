@@ -66,7 +66,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         }
         let rctx: BuildContext;
         if (md) {
-            rctx = injector.getService({ token: BuildContext, target: md, default: BuildContext });
+            rctx = injector.getService({ token: BuildContext, target: md, defaultToken: BuildContext });
             rctx.setOptions(options);
         } else {
             rctx = BuildContext.parse(injector, options);
@@ -169,7 +169,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             if (!injector) {
                 injector = this.reflects.hasRegister(md) ? this.reflects.getInjector(md) : this.container;
             }
-            ctx = injector.getService<IBootContext>({ token: BootContext, target: md, default: BootContext }) as T;
+            ctx = injector.getService<IBootContext>({ token: BootContext, target: md, defaultToken: BootContext }) as T;
             ctx.setValue(INJECTOR, injector);
             if (isClassType(target)) {
                 ctx.setOptions({ type: md });

@@ -107,6 +107,7 @@ export * from './actions/resolves/ResolvePrivateAction';
 export * from './actions/resolves/ResolveRefAction';
 export * from './actions/resolves/ResolveInInjectorAction';
 export * from './actions/resolves/ResolveInRootAction';
+export * from './actions/resolves/ResolveDefaultAction';
 export * from './actions/IocResolveScope';
 
 // runtime actions
