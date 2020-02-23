@@ -33,6 +33,7 @@
   "peerDependencies": {
     "@tsdi/ioc": "~5.3.13",
     "@tsdi/aop": "~5.3.13",
+    "@tsdi/core": "~5.3.13",
     "tslib": "^1.10.0"
   },
   "directories": {

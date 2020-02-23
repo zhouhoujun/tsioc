@@ -1,4 +1,5 @@
-import { Injectable, Inject, isString, Token, Registration, Type, isClass, IocContainerToken, IIocContainer } from '@tsdi/ioc';
+import { Injectable, Inject, isString, Token, Registration, Type, isClass, INJECTOR } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { NonePointcut } from '@tsdi/aop';
 import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
 import { LogConfigure, LogConfigureToken } from './LogConfigure';
@@ -20,15 +21,15 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
     private _config: LogConfigure;
     private _logManger: ILoggerManager;
 
-    constructor(@Inject(IocContainerToken) protected container: IIocContainer, config?: LogConfigure | Type<LogConfigure>) {
+    constructor(@Inject(INJECTOR) protected injector: ICoreInjector, config?: LogConfigure | Type<LogConfigure>) {
         this.setLogConfigure(config);
     }
 
 
     get config(): LogConfigure {
         if (!this._config) {
-            if (this.container.has(LogConfigureToken)) {
-                this._config = this.container.resolve(LogConfigureToken);
+            if (this.injector.has(LogConfigureToken)) {
+                this._config = this.injector.resolve(LogConfigureToken);
             } else {
                 this._config = { adapter: 'console' };
             }
@@ -41,12 +42,12 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
             return;
         }
         if (isClass(config)) {
-            if (!this.container.has(LogConfigureToken)) {
-                this.container.register(LogConfigureToken, config);
-                this._config = this.container.getInstance(LogConfigureToken);
-            } else if (!this.container.has(config)) {
-                this.container.register(config);
-                this._config = this.container.getInstance<LogConfigure>(config);
+            if (!this.injector.has(LogConfigureToken)) {
+                this.injector.register(LogConfigureToken, config);
+                this._config = this.injector.getInstance(LogConfigureToken);
+            } else if (!this.injector.has(config)) {
+                this.injector.register(config);
+                this._config = this.injector.getInstance<LogConfigure>(config);
             }
         } else {
             this._config = config;
@@ -66,7 +67,7 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
             } else {
                 token = adapter;
             }
-            this._logManger = this.container.get<ILoggerManager>(token);
+            this._logManger = this.injector.get<ILoggerManager>(token);
             if (cfg.config) {
                 this._logManger.configure(cfg.config);
             }

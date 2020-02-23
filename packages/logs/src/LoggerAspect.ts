@@ -4,7 +4,7 @@ import { LoggerMetadata } from './decorators/Logger';
 import { Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
-import { ILogFormater, LogFormaterToken } from './LogFormater';
+import { ILogFormater, LogFormaterToken, LogFormater } from './LogFormater';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -83,18 +83,26 @@ export abstract class LoggerAspect extends LogProcess {
         return (formater && formater.timestamp) ? formater.timestamp(now) : `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} ${now.getMilliseconds()}`;
     }
 
-    protected formatMessage(joinPoint: Joinpoint, ...messages: any[]): any[] {
-        let config = this.logManger.config;
-        let formater: ILogFormater;
-        config.format = config.format || LogFormaterToken;
-        if (isToken(config.format)) {
-            formater = this.injector.resolve({ token: config.format, target: this, default: LogFormaterToken });
-        } else if (isFunction(config.format)) {
-            formater = { format: config.format };
-        } else if (isObject(config.format) && isFunction(config.format.format)) {
-            formater = config.format;
+    _formater: ILogFormater;
+    getFormater() {
+        if (!this._formater) {
+            let config = this.logManger.config;
+            let formater: ILogFormater;
+            config.format = config.format || LogFormaterToken;
+            if (isToken(config.format)) {
+                formater = this.injector.getService({ token: config.format, target: this, default: LogFormaterToken });
+            } else if (isFunction(config.format)) {
+                formater = { format: config.format };
+            } else if (isObject(config.format) && isFunction(config.format.format)) {
+                formater = config.format;
+            }
+            this._formater = formater;
         }
+        return this._formater;
+    }
 
+    protected formatMessage(joinPoint: Joinpoint, ...messages: any[]): any[] {
+        let formater = this.getFormater();
         if (formater) {
             messages = formater.format(joinPoint, ...messages);
         }

@@ -4,7 +4,7 @@ import { Log4jsAdapter } from './Log4jsAdapter';
 
 @DIModule({
     regIn: 'root',
-    imports: [
+    providers: [
         ServerLogFormater,
         Log4jsAdapter
     ]

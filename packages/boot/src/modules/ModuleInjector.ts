@@ -1,4 +1,4 @@
-import { ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProviders, InjectorProvider } from '@tsdi/ioc';
+import { ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProviders, InjectorProvider, ITypeReflects, TypeReflectsToken } from '@tsdi/ioc';
 import { CoreInjector } from '@tsdi/core';
 import { ModuleRef } from './ModuleRef';
 
@@ -113,8 +113,15 @@ export class ModuleProviders extends InjectorProvider implements IProviders {
 
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
         this.getContainer().registerIn(this.moduleInjector, type, provide, singleton);
-        this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
-        provide && this.set(provide, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs))
+        provide && this.set(provide, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
+        this.export(type);
         return this;
+    }
+
+    export(type: Type) {
+        this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
+        this.tryGetSingletonInRoot(TypeReflectsToken).get(type).provides?.forEach(p => {
+            this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
+        });
     }
 }

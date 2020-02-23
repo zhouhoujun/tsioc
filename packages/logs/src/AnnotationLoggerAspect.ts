@@ -1,4 +1,4 @@
-import { Singleton, Inject, IocContainerToken, IIocContainer } from '@tsdi/ioc';
+import { Singleton } from '@tsdi/ioc';
 import { Aspect, Joinpoint, Pointcut } from '@tsdi/aop';
 import { LoggerMetadata } from './decorators/Logger';
 import { LoggerAspect } from './LoggerAspect';
@@ -13,11 +13,6 @@ import { LoggerAspect } from './LoggerAspect';
 @Singleton()
 @Aspect()
 export class AnnotationLoggerAspect extends LoggerAspect {
-
-    constructor(@Inject(IocContainerToken) container: IIocContainer) {
-        super(container)
-    }
-
 
     @Pointcut('@annotation(Logger)', 'annotation')
     logging(joinPoint: Joinpoint, annotation: LoggerMetadata[]) {

@@ -14,12 +14,11 @@ export interface IModuleProvidersBuilder {
     /**
      * build annoation providers in map.
      *
-     * @param {ModuleInjector} injector module injector.
+     * @param {ModuleProviders} providers the providers map, build annoation providers register in.
      * @param {ModuleConfigure} annoation module metatdata annoation.
-     * @param {IProviders} map the providers map, build annoation providers in it.
      * @memberof IModuleProvidersBuilder
      */
-    build(injector: ModuleInjector, annoation: ModuleConfigure, map: IProviders): void;
+    build(providers: ModuleProviders, annoation: ModuleConfigure): void;
 }
 /**
  * module providers builder token. for module decorator provider.
@@ -50,7 +49,7 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
         mdReft.components = components;
         let componentDectors = [];
         components.forEach(comp => {
-            map.set(comp, (...providers) => injector.getInstance(comp, ...providers));
+            map.export(comp);
             let decorator = reflects.get(comp)?.decorator;
             if (decorator && componentDectors.indexOf(decorator) < 0) {
                 componentDectors.push(decorator);
@@ -61,21 +60,13 @@ export const RegModuleProvidersAction = function (ctx: DesignActionContext, next
 
     let builder = mdReft.getDecorProviders?.().getInstance(ModuleProvidersBuilderToken);
     if (builder) {
-        builder.build(injector, annoation, map);
+        builder.build(map, annoation);
     }
 
     let exptypes: Type[] = lang.getTypes(...annoation.exports || []);
 
     exptypes.forEach(ty => {
-        let reflect = reflects.get(ty);
-        map.set(ty, (...pds: ProviderTypes[]) => injector.getInstance(ty, ...pds));
-        if (reflect && isArray(reflect.provides) && reflect.provides.length) {
-            reflect.provides.forEach(p => {
-                if (!map.has(p)) {
-                    map.set(p, (...pds: ProviderTypes[]) => injector.get(p, ...pds));
-                }
-            });
-        }
+        map.export(ty);
     });
     map.size && ctx.setValue(CTX_MODULE_EXPORTS, map);
     next();

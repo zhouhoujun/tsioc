@@ -1,4 +1,4 @@
-import { Singleton, Inject, IocContainerToken, IIocContainer } from '@tsdi/ioc';
+import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LoggerAspect } from '../LoggerAspect';
 import { Level } from '../Level';
@@ -13,10 +13,6 @@ import { Level } from '../Level';
 @Singleton
 @Aspect
 export class DebugLogAspect extends LoggerAspect {
-
-    constructor(@Inject(IocContainerToken) container: IIocContainer) {
-        super(container);
-    }
 
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {
