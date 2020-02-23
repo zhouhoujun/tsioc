@@ -182,7 +182,7 @@ function vaildifyFile(fileName, defaultFile = 'taskfile'): string {
 
 program
     .command('test [files]')
-    .description('run activity file.')
+    .description('run unit test.')
     .option('--config [string]', 'config file path.')
     .option('-b, --browser [bool]', 'test browser project or not.')
     .option('--debug [bool]', 'enable debug log or not')
@@ -234,7 +234,7 @@ program
 
 program
     .command('build [taskfile]')
-    .description('build the application')
+    .description('build project, run build activities')
     .option('--boot [bool]', 'target file with Workflow instace to boot activity.')
     .option('-e, --env [string]', 'use that particular environment.ts during the build, just like @angular/cli')
     .option('-c, --clean [bool]', 'destroy the build folder prior to compilation, default for prod')
