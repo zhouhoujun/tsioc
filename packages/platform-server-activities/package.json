@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-activities",
-  "version": "5.3.13",
+  "version": "6.0.0-beta1",
   "description": "workflow framework on node server, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "postinstall": "npm prune",
@@ -50,15 +50,15 @@
     "zone.js": "^0.8.27"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~5.3.13",
-    "@tsdi/core": "~5.3.13",
-    "@tsdi/aop": "~5.3.13",
-    "@tsdi/logs": "~5.3.13",
-    "@tsdi/boot": "~5.3.13",
-    "@tsdi/activities": "~5.3.13",
-    "@tsdi/platform-server": "~5.3.13",
-    "@tsdi/platform-server-boot": "~5.3.13",
-    "@tsdi/platform-server-logs": "~5.3.13"
+    "@tsdi/ioc": "~6.0.0-beta1",
+    "@tsdi/core": "~6.0.0-beta1",
+    "@tsdi/aop": "~6.0.0-beta1",
+    "@tsdi/logs": "~6.0.0-beta1",
+    "@tsdi/boot": "~6.0.0-beta1",
+    "@tsdi/activities": "~6.0.0-beta1",
+    "@tsdi/platform-server": "~6.0.0-beta1",
+    "@tsdi/platform-server-boot": "~6.0.0-beta1",
+    "@tsdi/platform-server-logs": "~6.0.0-beta1"
   },
   "directories": {
     "lib": "lib",
