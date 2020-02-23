@@ -3,17 +3,9 @@
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/core` is AOP, Ioc container, via typescript decorator.
+`@tsdi/ioc` is Ioc container, Injector, via typescript decorator.
 
 version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
-
-# build
-
-to fix lib error, use command
-```shell
-npm i ts-node@8.3.0 tslib@1.10.0 typescript@3.5.3
-
-```
 
 # builder
 
@@ -52,16 +44,18 @@ npm install @tsdi/aop
 ```ts
 
 import { AopModule } from '@tsdi/aop';
-// in server
-import { ContainerBuilder } from '@tsdi/platform-server'
-// in browser
-import { ContainerBuilder } from '@tsdi/platform-browser'
+import { IocContainer } from '@tsdi/ioc';
 
-let builder = new ContainerBuilder();
+let container = new IocContainer();
 
-let container = build.create();
-
+// use aop.
 container.use(AopModule);
+// also can
+container.register(AopModule);
+// or
+container.inject(AopModule)
+//or
+container.injectModule(AopModule)
 
 ```
 
@@ -200,12 +194,12 @@ export class Logger {
 @DIModule({
     imports: [
         AopModule,
-        Logger,
         ModuleA
     ],
-    exports: [
+    providers:[
+        Logger,
         ClassSevice
-    ],
+    ]
     bootstrap: ClassSevice
 })
 export class ModuleB {
@@ -219,11 +213,6 @@ BootApplication.run(ModuleB);
 ## components
 *  `@Component`  Component decorator,  use to defaine class as component with template.
 *  `@Input` Input decorator, use to define property or param as component binding field or args.
-*  `@Output` Output decorator, use to define property or param as component output field or args.
-*  `@RefChild` RefChild decorator, use to select child element and inject to the property in component.
-
-see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
-
 
 see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
 
@@ -231,7 +220,6 @@ see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/maste
 ## [Activites](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
 
 * [activities](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities)
-* [build](https://github.com/zhouhoujun/tsioc/tree/master/packages/build)
 * [pack](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack)
 
 ### create Container
@@ -242,13 +230,13 @@ let container = new IocContainer();
 
 ```
 
-### init & register Container
+###  Container is ioc root.
 
-see interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
+see @tsdi/ioc interface [IIocContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IIocContainer.ts)
+
+see @tsdi/core interface [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
 
 ```ts
-
-
 
 // 1. register a class
 container.register(Person);
@@ -274,7 +262,21 @@ container.bindProvider
 container.bindProviders
 
 ```
-more see inteface [IIocContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IIocContainer.ts)
+
+### Injector is basic ioc injector.
+
+see interface [IInjector](https://github.com/zhouhoujun/tsioc/blob/master/packages/ioc/src/IInjector.ts)
+
+```ts
+
+// get the injector of Person class type injected.
+let injector =  container.getInjector(Person);
+
+// create new injector
+let injector = container.createInjector();
+// or create new injector via
+let injector = container.getInstance(InjectorFactoryToken);
+```
 
 ### Invoke method
 
@@ -348,22 +350,11 @@ class Geet {
 
 container.register(Geet);
 
-container.invoke(Geet, gt=> gt.print,
- {hi: 'How are you.', name:'zhou' },
-{ hi: (container: IContainer)=> 'How are you.' }, ... },
-{ hi:{type: Token<any>, value: any |(container: IContainer)=>any }},
-Provider.createParam('name', 'zhou'),
-Provider.create('hi', value:'Hello'),
-// or use ProviderMap.
-...
-)
+container.invoke(Geet, gt=> gt.print, ... //inject providers.)
 
-let instance = container.resolve(Geet,
-{name: 'zhou' },
-{ name: (container: IContainer)=>any } },
-{name:{type: Token<any>, value: any|(container: IContainer)=>any }})
+let instance = container.resolve(Geet, )
 
-container.invoke(instance, gt=> gt.print, ...);
+container.invoke(instance, gt=> gt.print, ...//inject providers.);
 container.invoke(instance, 'print', ...);
 
 container.register(MethodTest);
@@ -618,175 +609,19 @@ builder.build({
 
 ```
 
-## Extend decorator
+## Extend decorator, Demo fo extends 
 
-see interface [LifeScope](https://github.com/zhouhoujun/@tsdi/core/blob/master/src/LifeScope.ts)
+see AOP extends (https://github.com/zhouhoujun/tsioc/blob/master/packages/aop/src/AopModule.ts)
 You can extend yourself decorator via:
 
-1. `createClassDecorator`
-
-```ts
-/**
- * create class decorator
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {*}
- */
-export function createClassDecorator<T extends ClassMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassDecorator<T>
-```
-
-2. `createClassMethodDecorator`
-
-```ts
-/**
- * create method decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-export function createMethodDecorator<T extends MethodMetadata>
-```
-
-3. `createClassMethodDecorator`
-
-```ts
-/**
- * create decorator for class and method.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IClassMethodDecorator<T>}
- */
-export function createClassMethodDecorator<T extends TypeMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IClassMethodDecorator<T>
-```
-
-4. `createParamDecorator`
-
-```ts
-/**
- * create parameter decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-export function createParamDecorator<T extends ParameterMetadata>
-
-```
-
-5. `createPropDecorator`
-
-```ts
-/**
- * create property decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns
- */
-export function createPropDecorator<T extends PropertyMetadata>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): IPropertyDecorator<T>
-```
-
-6. `createParamPropDecorator`
-
-```ts
-/**
- * create parameter or property decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {IParamPropDecorator<T>}
- */
-export function createParamPropDecorator<T extends ParamPropMetadata>(
-    name: string,
-    adapter?: MetadataAdapter,
-    metadataExtends?: MetadataExtends<T>): IParamPropDecorator<T>
-```
-
-7. `createDecorator`
-
-```ts
-/**
- * create dectorator for class params props methods.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {MetadataAdapter} [adapter]  metadata adapter
- * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
- * @returns {*}
- */
-export function createDecorator<T>(name: string, adapter?: MetadataAdapter, metadataExtends?: MetadataExtends<T>): any
-```
-
-### Demo fo extends yourself decorator
-
-```ts
-
-//eg.
-// 1. create decorator
-export interface IControllerDecorator<T extends ControllerMetadata> extends IClassDecorator<T> {
-    (routePrefix: string, provide?: Registration<any> | string, alias?: string): ClassDecorator;
-    (target: Function): void;
-}
-export const Controller: IControllerDecorator<ControllerMetadata> =
-    createClassDecorator<ControllerMetadata>('Controller', (args: ArgsIterator) => {
-        args.next<ControllerMetadata>({
-            isMetadata: (arg) => isClassMetadata(arg, ['routePrefix']),
-            match: (arg) => isString(arg),
-            setMetadata: (metadata, arg) => {
-                metadata.routePrefix = arg;
-            }
-        });
-    }) as IControllerDecorator<ControllerMetadata>;
-
-export const Aspect: IClassDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Aspect', null, (metadata) => {
-    metadata.singleton = true;
-    return metadata;
-});
-
-
-// 2. add decorator action
- let lifeScope = container.get(LifeScopeToken);
- let factory = new AopActionFactory();
- lifeScope.addAction(factory.create(AopActions.registAspect), DecoratorType.Class, IocState.design);
-
-
-// 3. register decorator
-lifeScope.registerDecorator(Aspect, AopActions.registAspect);
-
-```
-
-## Container Interface
-
-see more interface. all document is typescript .d.ts.
-
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
-
+## Documentation
 Documentation is available on the
-[@tsdi/core docs site](https://github.com/zhouhoujun/tsioc).
+[@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
+[@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
+[@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
+[@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
+[@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+[@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
 
 ## License
 

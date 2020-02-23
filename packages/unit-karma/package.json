@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit-karma",
-  "version": "6.0.0-beta1",
+  "version": "6.0.0-beta2",
   "description": "unit testing for karma",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -34,15 +34,15 @@
     "chalk": "^2.3.1"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.0-beta1",
-    "@tsdi/core": "~6.0.0-beta1",
-    "@tsdi/aop": "~6.0.0-beta1",
-    "@tsdi/boot": "~6.0.0-beta1",
-    "@tsdi/logs": "~6.0.0-beta1",
-    "@tsdi/platform-server": "~6.0.0-beta1",
-    "@tsdi/platform-server-logs": "~6.0.0-beta1",
-    "@tsdi/platform-server-boot": "~6.0.0-beta1",
-    "@tsdi/unit": "~6.0.0-beta1",
+    "@tsdi/ioc": "~6.0.0-beta2",
+    "@tsdi/core": "~6.0.0-beta2",
+    "@tsdi/aop": "~6.0.0-beta2",
+    "@tsdi/boot": "~6.0.0-beta2",
+    "@tsdi/logs": "~6.0.0-beta2",
+    "@tsdi/platform-server": "~6.0.0-beta2",
+    "@tsdi/platform-server-logs": "~6.0.0-beta2",
+    "@tsdi/platform-server-boot": "~6.0.0-beta2",
+    "@tsdi/unit": "~6.0.0-beta2",
     "tslib": "^1.10.0",
     "globby": "^10.0.1"
   },
