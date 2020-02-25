@@ -53,7 +53,7 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
     /**
      * annoation metadata.
      */
-    getAnnoation<T extends ActivityMetadata>(): T {
+    getAnnoation(): ActivityMetadata {
         return super.getAnnoation();
     }
 

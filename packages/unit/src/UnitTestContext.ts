@@ -7,11 +7,11 @@ import { UnitTestConfigure, UnitTestOptions } from './UnitTestConfigure';
 @Refs('@Suite', BootContext)
 export class UnitTestContext extends BootContext<BootOption> {
 
-    getConfiguration<T extends UnitTestConfigure>() {
-        return super.getConfiguration() as T;
+    getConfiguration(): UnitTestConfigure {
+        return super.getConfiguration();
     }
 
-    getConfigureManager<T extends UnitTestConfigure>(): ConfigureManager<T>{
+    getConfigureManager(): ConfigureManager<UnitTestConfigure> {
         return super.getConfigureManager();
     }
 

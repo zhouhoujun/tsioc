@@ -22,7 +22,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
      */
     protected context: T;
 
-    constructor(public target?: ClassType | BootOption | T, public deps?: LoadType[], protected baseURL?: string, protected loader?: IModuleLoader) {
+    constructor(public target?: ClassType | BootOption | T, public deps?: LoadType[], protected loader?: IModuleLoader) {
         this.onInit(target);
     }
 

@@ -151,21 +151,24 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
      * @type {T}
      * @memberof BootContext
      */
-    getConfiguration<T extends RunnableConfigure>(): T;
+    getConfiguration(): RunnableConfigure;
 
     /**
      * get configure manager.
      *
-     * @returns {ConfigureManager<T>}
+     * @returns {ConfigureManager<RunnableConfigure>}
      */
-    getConfigureManager<T extends RunnableConfigure>(): ConfigureManager<T>;
+    getConfigureManager(): ConfigureManager<RunnableConfigure>;
 
-    getTargetReflect<T extends IModuleReflect>(): T;
+    /**
+     * get target reflect.
+     */
+    getTargetReflect(): IModuleReflect;
 
     /**
      * annoation metadata.
      */
-    getAnnoation<T extends BootstrapMetadata>(): T;
+    getAnnoation(): BootstrapMetadata;
 
 }
 
@@ -219,12 +222,12 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return url;
     }
 
-    getAnnoation<T extends BootstrapMetadata>(): T {
-        return super.getAnnoation() as T;
+    getAnnoation(): BootstrapMetadata {
+        return super.getAnnoation();
     }
 
-    getTargetReflect<T extends IModuleReflect>(): T {
-        return super.getTargetReflect() as T;
+    getTargetReflect(): IModuleReflect {
+        return super.getTargetReflect();
     }
 
     /**
@@ -232,8 +235,18 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      *
      * @memberof BootContext
      */
-    getConfiguration<T extends RunnableConfigure>(): T {
-        return this.context.getValue(CTX_APP_CONFIGURE) as T;
+    getConfiguration(): RunnableConfigure {
+        return this.context.getValue(CTX_APP_CONFIGURE);
+    }
+
+    /**
+     * get configure manager.
+     *
+     * @returns {ConfigureManager<RunnableConfigure>}
+     * @memberof BootContext
+     */
+    getConfigureManager(): ConfigureManager<RunnableConfigure> {
+        return this.getContainer().resolve(ConfigureManager);
     }
 
     get args(): string[] {
@@ -270,16 +283,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      */
     get boot(): any {
         return this.context.getValue(CTX_MODULE_BOOT);
-    }
-
-    /**
-     * get configure manager.
-     *
-     * @returns {ConfigureManager<T>}
-     * @memberof BootContext
-     */
-    getConfigureManager<T extends RunnableConfigure>(): ConfigureManager<T> {
-        return this.getContainer().resolve(ConfigureManager) as ConfigureManager<T>;
     }
 
     static parse(injector: ICoreInjector, target: Type | BootOption): BootContext {

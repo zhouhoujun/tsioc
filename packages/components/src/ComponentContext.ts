@@ -23,19 +23,19 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
     readonly name: string;
     getResultRef(): IComponentRef | ITemplateRef;
 
-    getTargetReflect<T extends IComponentReflect>(): T;
+    getTargetReflect(): IComponentReflect;
 
     /**
      * annoation metadata.
      */
-    getAnnoation<T extends IComponentMetadata>(): T;
+    getAnnoation(): IComponentMetadata;
 
     /**
      * component instance.
      */
     getComponent<T = any>(): T;
 
-    getComponentContext<T extends IComponentContext>(): T;
+    getComponentContext(): IComponentContext;
     /**
      * template scope.
      */
@@ -59,14 +59,14 @@ export class ComponentContext<T extends IComponentOption = IComponentOption>
         return this.context.getFirstValue(CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF) ?? this.value;
     }
 
-    getTargetReflect<T extends IComponentReflect>(): T {
+    getTargetReflect(): IComponentReflect {
         return super.getTargetReflect();
     }
 
     /**
      * annoation metadata.
      */
-    getAnnoation<T extends IComponentMetadata>(): T {
+    getAnnoation(): IComponentMetadata {
         return super.getAnnoation();
     }
 
@@ -82,9 +82,9 @@ export class ComponentContext<T extends IComponentOption = IComponentOption>
             ?? this.getParent()?.getContextValue(CTX_COMPONENT, com => this.setValue(CTX_COMPONENT, com));
     }
 
-    getComponentContext<T extends IComponentContext>(): T {
+    getComponentContext(): IComponentContext {
         return (this.context.getValue(CTX_COMPONENT_CONTEXT)
-            ?? this.getParent()?.getContextValue(CTX_COMPONENT_CONTEXT, ctx => this.setValue(CTX_COMPONENT_CONTEXT, ctx))) as T;
+            ?? this.getParent()?.getContextValue(CTX_COMPONENT_CONTEXT, ctx => this.setValue(CTX_COMPONENT_CONTEXT, ctx)));
     }
 
 

@@ -36,7 +36,7 @@ export interface IActivityContext extends IComponentContext<ActivityOption> {
     /**
      * annoation metadata.
      */
-    getAnnoation<T extends ActivityMetadata>(): T;
+    getAnnoation(): ActivityMetadata;
 
     readonly workflow: IWorkflowContext;
 

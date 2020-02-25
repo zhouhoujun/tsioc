@@ -16,7 +16,7 @@ import { ComponentContext, IComponentOption, CTX_COMPONENT_CONTEXT } from '../Co
 export class BindingComponentScope extends BuildHandles<IBuildContext> implements IActionSetup {
 
     async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
-        let refl = ctx.getTargetReflect<IModuleReflect>();
+        let refl = ctx.getTargetReflect() as IModuleReflect;
         if (refl?.getModuleRef) {
             return ctx.destroy();
         }

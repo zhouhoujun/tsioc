@@ -54,9 +54,9 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      */
     getModuleRef(): ModuleRef;
 
-    getTargetReflect<T extends IAnnoationReflect>(): T;
+    getTargetReflect(): IAnnoationReflect;
 
-    getAnnoation<T extends IAnnotationMetadata>(): T;
+    getAnnoation(): IAnnotationMetadata;
 
     readonly providers: IProviders;
 
@@ -139,14 +139,14 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
         return this.injector.getSingleton(ModuleRef);
     }
 
-    getTargetReflect<T extends IAnnoationReflect>(): T {
-        return this.context.getValue<T>(CTX_TARGET_RELF) ?? this.getParentTargetReflect();
+    getTargetReflect(): IAnnoationReflect {
+        return this.context.getValue(CTX_TARGET_RELF) ?? this.getParentTargetReflect();
     }
 
-    protected getParentTargetReflect<T extends IAnnoationReflect>(): T {
+    protected getParentTargetReflect(): IAnnoationReflect {
         let refl = this.type ? this.reflects.get(this.type) : null;
         refl && this.setValue(CTX_TARGET_RELF, refl);
-        return refl as T;
+        return refl
     }
 
     /**
@@ -244,12 +244,12 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
      * @type {ModuleConfigure}
      * @memberof AnnoationContext
      */
-    getAnnoation<T extends IAnnotationMetadata>(): T {
-        return this.context.getValue<T>(CTX_MODULE_ANNOATION) ?? this.getReflAnnoation();
+    getAnnoation(): IAnnotationMetadata {
+        return this.context.getValue(CTX_MODULE_ANNOATION) ?? this.getReflAnnoation();
     }
 
-    protected getReflAnnoation<T extends IAnnotationMetadata>(): T  {
-        let anno = this.type ? this.getTargetReflect()?.getAnnoation?.<T>() : null;
+    protected getReflAnnoation(): IAnnotationMetadata  {
+        let anno = this.type ? this.getTargetReflect()?.getAnnoation?.() : null;
         anno && this.setValue(CTX_MODULE_ANNOATION, anno);
         return anno;
     }
