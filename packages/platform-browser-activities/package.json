@@ -36,7 +36,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-browser-activities#readme",
   "dependencies": {
-    "tslib": "^1.10.0"
+    "tslib": "^1.11.0"
   },
   "peerDependencies": {
     "@tsdi/ioc": "~6.0.0-beta2",
