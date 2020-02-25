@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser-boot",
-  "version": "6.0.0-beta2",
+  "version": "6.0.0-beta3",
   "description": "tsioc is AOP, Ioc container, via typescript decorator",
   "typings": "./lib/index.d.ts",
   "scripts": {
@@ -38,10 +38,10 @@
   },
   "peerDependencies": {
     "tslib": "^1.11.0",
-    "@tsdi/ioc": "~6.0.0-beta2",
-    "@tsdi/core": "~6.0.0-beta2",
-    "@tsdi/boot": "~6.0.0-beta2",
-    "@tsdi/platform-browser": "~6.0.0-beta2"
+    "@tsdi/ioc": "~6.0.0-beta3",
+    "@tsdi/core": "~6.0.0-beta3",
+    "@tsdi/boot": "~6.0.0-beta3",
+    "@tsdi/platform-browser": "~6.0.0-beta3"
   },
   "directories": {
     "lib": "lib"
