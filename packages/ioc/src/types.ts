@@ -11,7 +11,7 @@ export type Modules = Type | Object;
 /**
  *  token interface.
  */
-export interface IToken<T> {
+export interface IToken<T = any> {
     (): T;
     tokenId: true;
 }
@@ -85,19 +85,8 @@ export interface ClassAnnations {
      */
     params: ObjectMap<string[]>;
 }
-/**
- * class type
- * @export
- * @interface Type
- * @extends {Function}
- * @template T
- */
-export interface Type<T = any> extends Function {
-    new(...args: any[]): T;
-    classAnnations?: ClassAnnations;
-    getClassAnnations?(): ClassAnnations;
-    nonePointcut?: boolean;
-}
+
+
 
 /**
  * abstract type
@@ -111,6 +100,26 @@ export interface AbstractType<T = any> extends Function {
     new?(...args: any[]): T;
     classAnnations?: ClassAnnations;
     getClassAnnations?(): ClassAnnations;
+    /**
+     * class flag. none poincut for aop.
+     */
+    nonePointcut?: boolean;
+    /**
+     * class type flag.
+     */
+    classType?: number;
+}
+
+
+/**
+ * class type
+ * @export
+ * @interface Type
+ * @extends {Function}
+ * @template T
+ */
+export interface Type<T = any> extends AbstractType<T> {
+    new(...args: any[]): T;
 }
 
 /**

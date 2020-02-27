@@ -7,7 +7,7 @@ import { InjectReference } from './InjectReference';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
-import { isTypeObject } from './utils/lang';
+import { lang, classTypes } from './utils/lang';
 
 
 /**
@@ -17,10 +17,6 @@ import { isTypeObject } from './utils/lang';
  * @interface IInjector
  */
 export interface IInjector extends IDestoryable {
-    /**
-     * flag is injector or not.
-     */
-    isInjector: boolean;
     /**
      * resolver size.
      *
@@ -376,7 +372,7 @@ export interface IInjector extends IDestoryable {
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is IInjector {
-    return isTypeObject(target) && target.isInjector === true;
+    return lang.getClass(target)?.classType === classTypes.Injector;
 }
 
 

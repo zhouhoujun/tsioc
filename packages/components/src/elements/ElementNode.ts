@@ -1,5 +1,6 @@
 import { Input } from '../decorators/Input';
 import { Component } from '../decorators/Component';
+import { classTypes } from '@tsdi/ioc';
 
 /**
  * Element node.
@@ -10,6 +11,7 @@ import { Component } from '../decorators/Component';
  */
 @Component()
 export class ElementNode {
+    static classType = classTypes.Node;
     /**
      * element id.
      *

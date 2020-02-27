@@ -19,7 +19,7 @@ export class EachActicity<T> extends ControlActivity<T> {
 
     async execute(ctx: ActivityContext): Promise<T> {
         let items = await ctx.resolveExpression(this.each);
-        items = items.filter(i => !isNullOrUndefined(i));
+        items = items?.filter(i => !isNullOrUndefined(i));
         if (items && items.length) {
             if (this.parallel) {
                 if (ctx.injector.hasRegister(ParallelExecutor)) {
