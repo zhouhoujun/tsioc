@@ -1,6 +1,6 @@
-import { Token, ProvideToken, TokenId, IToken } from '../types';
+import { Token, ProvideToken, IToken } from '../types';
 import { Registration } from '../Registration';
-import { isSymbol, isString, isClassType, isBaseObject, isFunction } from './lang';
+import { isSymbol, isString, isClassType, isFunction } from './lang';
 
 /**
  * check target is token or not.
@@ -20,7 +20,7 @@ export function isToken(target: any): target is Token {
 }
 
 export function isTokenFunc(target: any): target is IToken<any> {
-    return isFunction(target) && (<IToken<any>>target).tokenId;
+    return isFunction(target) && (<IToken>target).tokenId;
 }
 
 

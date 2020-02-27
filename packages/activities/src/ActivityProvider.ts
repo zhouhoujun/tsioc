@@ -1,4 +1,4 @@
-import { Type, Singleton, SymbolType, ClassType } from '@tsdi/ioc';
+import { Type, Singleton, SymbolType, ClassType, classTypes } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnoationContext } from '@tsdi/boot';
 import { ComponentProvider, ITemplateOption, ITemplateContext, CONTEXT_REF, NATIVE_ELEMENT, IElementRef, IComponentRef } from '@tsdi/components';
@@ -75,6 +75,6 @@ export class ActivityProvider extends ComponentProvider {
     }
 
     isElementType(element: ClassType): boolean {
-        return this.reflects.isExtends(element, Activity);
+        return  element?.classType === classTypes.Activity;
     }
 }

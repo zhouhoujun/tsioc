@@ -362,6 +362,26 @@ export namespace lang {
     }
 }
 
+export namespace classTypes {
+
+    /**
+     * injector class type.
+     */
+    export const Injector = 1;
+    /**
+     * context type.
+     */
+    export const Context = 2;
+    /**
+     * class is activity.
+     */
+    export const Activity = 3;
+
+    /**
+     * class is element node.
+     */
+    export const Node = 4;
+}
 
 /**
  * check target is function or not.
