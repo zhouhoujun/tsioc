@@ -109,7 +109,7 @@ export class RollupActivity extends NodeActivity<void> {
                 let val = await ctx.resolveExpression(this[n]);
                 this.setOptions(ctx, opts, n, val);
             }));
-        await Promise.all((isArray(opts.output) ? opts.output : [opts.output]).map(output => async () => {
+        await Promise.all((isArray(opts.output) ? opts.output : [opts.output]).map(async output => {
             if (this.sourcemap) {
                 let sourceMap = await ctx.resolveExpression(this.sourcemap);
                 if (sourceMap) {
