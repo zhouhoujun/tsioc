@@ -109,43 +109,45 @@ export class RollupActivity extends NodeActivity<void> {
                 let val = await ctx.resolveExpression(this[n]);
                 this.setOptions(ctx, opts, n, val);
             }));
-        if (this.sourcemap) {
-            let sourceMap = await ctx.resolveExpression(this.sourcemap);
-            if (sourceMap) {
-                opts.output.sourcemap = isString(sourceMap) ? true : sourceMap;
-            }
-        }
-        if (this.globals) {
-            let globals = await ctx.resolveExpression(this.globals);
-            opts.output.globals = globals;
-        } else {
-            opts.output.globals = {};
-        }
-
-        if (isArray(opts.external) && opts.external.length) {
-            opts.external = this.vailfExternal(opts.external);
-            opts.external.forEach(k => {
-                if (!opts.output.globals[k]) {
-                    opts.output.globals[k] = k;
+        await Promise.all((isArray(opts.output) ? opts.output : [opts.output]).map(output => async () => {
+            if (this.sourcemap) {
+                let sourceMap = await ctx.resolveExpression(this.sourcemap);
+                if (sourceMap) {
+                    output.sourcemap = isString(sourceMap) ? true : sourceMap;
                 }
-            });
-        }
-        if (opts.output.file) {
-            opts.output.file = ctx.platform.toRootPath(opts.output.file);
-        }
-        if (opts.output.dir) {
-            opts.output.dir = ctx.platform.toRootPath(opts.output.dir);
-        }
-        if (!opts.output.name && opts.output.file) {
-            opts.output.name = ctx.platform.getFileName(opts.output.file);
-        }
-        await this.resolvePlugins(ctx, opts);
-        if (opts.plugins) {
-            opts.plugins = opts.plugins.filter(p => p);
-        }
+            }
+            if (this.globals) {
+                let globals = await ctx.resolveExpression(this.globals);
+                output.globals = globals;
+            } else {
+                output.globals = {};
+            }
 
-        let bundle = await rollup(opts);
-        await bundle.write(opts.output);
+            if (isArray(opts.external) && opts.external.length) {
+                opts.external = this.vailfExternal(opts.external);
+                opts.external.forEach(k => {
+                    if (!output.globals[k]) {
+                        output.globals[k] = k;
+                    }
+                });
+            }
+            if (output.file) {
+                output.file = ctx.platform.toRootPath(output.file);
+            }
+            if (output.dir) {
+                output.dir = ctx.platform.toRootPath(output.dir);
+            }
+            if (!output.name && output.file) {
+                output.name = ctx.platform.getFileName(output.file);
+            }
+            await this.resolvePlugins(ctx, opts);
+            if (opts.plugins) {
+                opts.plugins = opts.plugins.filter(p => p);
+            }
+
+            let bundle = await rollup(opts);
+            await bundle.write(output);
+        }));
     }
 
     protected getInputProps(): string[] {
