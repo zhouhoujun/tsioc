@@ -47,7 +47,7 @@ export class ActivityProvider extends ComponentProvider {
         return SequenceActivity;
     }
 
-    parseElementRef = true;
+    parseRef = true;
 
     isTemplateContext(context: AnnoationContext): boolean {
         return context instanceof ActivityContext;

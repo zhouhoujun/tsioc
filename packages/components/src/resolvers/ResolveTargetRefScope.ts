@@ -26,7 +26,7 @@ export class ResolveTargetRefScope extends BuildHandles<IComponentContext> imple
             // current type is component.
             let refl = ctx.getTargetReflect();
             let compdr = refl.getDecorProviders().getInstance(ComponentProvider);
-            if (compdr.parseElementRef && compdr?.isElementType(ctx.type)) {
+            if (compdr.parseRef && compdr?.isElementType(ctx.type)) {
                 let elRef = compdr.createElementRef(ctx, ctx.value);
                 ctx.setValue(CTX_ELEMENT_REF, elRef);
                 ctx.value = elRef;

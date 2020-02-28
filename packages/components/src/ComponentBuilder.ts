@@ -2,13 +2,13 @@ import {
     Singleton, ProviderTypes, lang, isString,
     isBoolean, isDate, isObject, isArray, isNumber, isUndefined
 } from '@tsdi/ioc';
-import { BuilderService, BuildContext } from '@tsdi/boot';
+import { BuilderService } from '@tsdi/boot';
 import { IComponentBuilder, ComponentBuilderToken } from './IComponentBuilder';
 import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider } from './ComponentProvider';
-import { CTX_COMPONENT_REF, CTX_ELEMENT_REF, CTX_TEMPLATE_REF, ITemplateRef } from './ComponentRef';
+import { ITemplateRef } from './ComponentRef';
 import { NonSerialize } from './decorators/NonSerialize';
-import { ITemplateOption } from './parses/TemplateContext';
+import { ITemplateOption, ITemplateContext } from './parses/TemplateContext';
 import { TemplateContext } from './parses/TemplateContext';
 import { TemplateParseScope } from './parses/TemplateParseScope';
 import { Input } from './decorators/Input';
@@ -24,16 +24,24 @@ import { Input } from './decorators/Input';
 @Singleton(ComponentBuilderToken)
 export class ComponentBuilder extends BuilderService implements IComponentBuilder {
 
-    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ITemplateRef> {
+    /**
+     * build template.
+     *
+     * @param {ITemplateOption} options
+     * @param {...ProviderTypes[]} providers
+     * @returns {Promise<ITemplateContext>}
+     */
+    async buildTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ITemplateContext> {
         let ctx = TemplateContext.parse(options.injector || this.container, options);
         providers.length && ctx.providers.inject(...providers);
         await this.reflects.getActionInjector().getInstance(TemplateParseScope)
             .execute(ctx);
-        return ctx.getResultRef();
+        return ctx;
     }
 
-    protected getRefInCtx(ctx: BuildContext) {
-        return ctx.context.getFirstValue(CTX_COMPONENT_REF, CTX_TEMPLATE_REF, CTX_ELEMENT_REF) ?? ctx.value;
+    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
+        let ctx = await this.buildTemplate(options, ...providers);
+        return ctx.getResultRef();
     }
 
     serialize<T = any>(component: T): any {

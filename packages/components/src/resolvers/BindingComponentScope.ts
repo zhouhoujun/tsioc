@@ -42,7 +42,7 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
                 let decorPdr = ctx.reflects.getActionInjector().getInstance(DecoratorProvider);
                 componentDectors.some(decor => {
                     let refSelector = decorPdr.resolve(decor, ComponentProvider);
-                    if (refSelector.parseElementRef && refSelector?.isElementType(ctx.type)) {
+                    if (refSelector.parseRef && refSelector?.isElementType(ctx.type)) {
                         let elRef = refSelector.createElementRef(ctx, ctx.value);
                         ctx.setValue(CTX_ELEMENT_REF, elRef);
                         return true;

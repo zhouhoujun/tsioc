@@ -59,7 +59,10 @@ export abstract class ComponentProvider {
 
     abstract getDefaultCompose(): Type;
 
-    parseElementRef = false;
+    /**
+     * parse element, template as ref or not.
+     */
+    parseRef = false;
 
     createNodeSelector(element): NodeSelector {
         return this.reflects.get(lang.getClass(element))

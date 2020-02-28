@@ -1,4 +1,4 @@
-import { DIModule, BootApplication, BootContext, BuilderService } from '@tsdi/boot';
+import { DIModule, BootApplication, BootContext } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
 import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode, ComponentRef, ElementRef, TemplateRef } from '../src';
 import expect = require('expect');
@@ -260,13 +260,11 @@ export class CTest {
     @Test('can resolve component template')
     async test2() {
         let container = this.ctx.getContainer();
-        let comp1Ref = await container.get(ComponentBuilder).resolve({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as TemplateRef;
+        let comp1 = await container.get(ComponentBuilder).resolve({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as Component1;
         let comp11 = await container.get(ComponentBuilder).resolve({ type: Component1, template: { name: 'test1' } });
-        // console.log('comp1:', comp1);
+        console.log('comp1:', comp1);
         console.log('comp11:', comp11);
-        expect(comp1Ref instanceof TemplateRef).toBeTruthy();
-        let comp1 = comp1Ref.rootNodes[0] as Component1;
-        expect(comp1.name).toEqual('test1')
+        expect(comp1.name).toEqual('test1');
         expect(comp11 instanceof Component1).toBeTruthy();
         expect(comp11.name).toEqual('test1');
     }
@@ -279,9 +277,9 @@ export class CTest {
             template: { element: 'selector1', name: 'test1' }
         });
 
-        let comp1 = ctx.boot as TemplateRef;
-        expect(comp1 instanceof TemplateRef).toBeTruthy();
-        expect((comp1.rootNodes[0] as Component1).name).toEqual('test1');
+        let comp1 = ctx.boot as Component1;
+        expect(comp1 instanceof Component1).toBeTruthy();
+        expect(comp1.name).toEqual('test1');
     }
 
 
@@ -289,8 +287,7 @@ export class CTest {
     async test3() {
         let service = this.ctx.injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
-        let cmpRef = await service.createComponent3() as TemplateRef;
-        let comp3 = cmpRef.rootNodes[0] as Component3;
+        let comp3 = await service.createComponent3() as Component3;
         console.log('comp3:', comp3);
         expect(comp3 instanceof Component3).toBeTruthy();
         expect(comp3.phone).toEqual('+86177000000010');
@@ -316,8 +313,7 @@ export class CTest {
         expect(ctx.boot.phone).toEqual('17000000000');
         let service = injector.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
-        let cmpRef = await service.createComponent3() as TemplateRef;
-        let comp3 = cmpRef.rootNodes[0] as Component3;
+        let comp3 = await service.createComponent3() as Component3;
         console.log('comp3 :', comp3);
         expect(comp3 instanceof Component3).toBeTruthy();
         expect(comp3.phone).toEqual('+86177000000010');
@@ -340,11 +336,9 @@ export class CTest {
         let injector = ctx.injector;
         expect(ctx.boot instanceof Component3).toBeTruthy();
         expect(ctx.boot.phone).toEqual('17000000000');
-        let compRef = await injector.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as TemplateRef;
+        let comp = await injector.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as  ComponentRef<Components>;
 
-        expect(compRef instanceof TemplateRef).toBeTruthy();
-        let comp = compRef.rootNodes[0] as ComponentRef<Components>;
         // console.log('comp:', comp);
         expect(comp.instance instanceof Components).toBeTruthy();
         expect(comp.instance.cname).toEqual('test111');
@@ -368,10 +362,9 @@ export class CTest {
         let injector = ctx.injector;
         expect(ctx.boot instanceof Component3).toBeTruthy();
         expect(ctx.boot.phone).toEqual('17000000000');
-        let compRef = await injector.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as TemplateRef;
+        let comp = await injector.get(ComponentBuilder)
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef<Components>;
 
-        let comp = compRef.rootNodes[0] as ComponentRef<Components>;
         expect(comp.instance instanceof Components).toBeTruthy();
         expect(comp.instance.cname).toEqual('test111');
         expect(comp.instance.address).toEqual('cd111');
@@ -392,14 +385,14 @@ export class CTest {
     @Test('can binding sub field')
     async test9() {
         let injector = this.ctx.injector;
-        let compRef = await injector.get(ComponentBuilder).resolveTemplate({
+        let value = await injector.get(ComponentBuilder).resolveTemplate({
             injector: injector,
             template: {
                 element: 'obj-comp',
                 options: { name: 'testobject', address: 'chengdu' }
             }
-        }) as TemplateRef;
-        let comp = compRef.rootNodes[0] as ComponentRef<ObjectComponent>;
+        });
+        let comp = value as ComponentRef<ObjectComponent>;
         // console.log('test9:', comp);
         expect(comp.instance.options.name).toEqual('testobject');
         expect(comp.instance.options.address).toEqual('chengdu');
@@ -460,9 +453,7 @@ export class CTest {
             }
         });
 
-        let tempRef = ctx.boot as TemplateRef;
-        expect(tempRef instanceof TemplateRef).toBeTruthy();
-        let comp1 = tempRef.rootNodes[0] as ListBox;
+        let comp1 = ctx.boot as ListBox;
         expect(comp1 instanceof ListBox).toBeTruthy();
         expect(comp1.items.length).toEqual(1);
         // console.log(comp1.items[0]);

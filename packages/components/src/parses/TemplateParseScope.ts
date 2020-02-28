@@ -3,6 +3,7 @@ import { BuildHandles } from '@tsdi/boot';
 import { ITemplateContext } from './TemplateContext';
 import { TranslateSelectorScope, ParseSelectorHandle } from './TranslateSelectorScope';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
+import { CTX_TEMPLATE_REF } from '../ComponentRef';
 
 
 
@@ -21,19 +22,18 @@ export class TemplateParseScope extends BuildHandles<ITemplateContext> implement
             await next();
         }
 
-        if (ctx.value && ctx.getOptions().tempRef) {
-            let compPdr = ctx.componentProvider;
-            if (compPdr) {
-                let compCtx: ITemplateContext;
-                if (compPdr.isTemplateContext(ctx)) {
-                    compCtx = ctx;
-                } else {
-                    ctx = compPdr.createTemplateContext(ctx.injector);
-                    ctx.setParent(ctx);
-                }
-                ctx.value = isArray(ctx.value) ? compPdr.createTemplateRef(compCtx, ...ctx.value)
-                    : compPdr.createTemplateRef(compCtx, ctx.value);
+        let compPdr = ctx.componentProvider;
+        if (ctx.value && compPdr && compPdr.parseRef && !ctx.getOptions().attr && !ctx.hasValue(CTX_TEMPLATE_REF)) {
+            let compCtx: ITemplateContext;
+            if (compPdr.isTemplateContext(ctx)) {
+                compCtx = ctx;
+            } else {
+                compCtx = compPdr.createTemplateContext(ctx.injector);
+                compCtx.context.copy(ctx.context);
             }
+            let tempref = isArray(ctx.value) ? compPdr.createTemplateRef(compCtx, ...ctx.value)
+                : compPdr.createTemplateRef(compCtx, ctx.value);
+            ctx.setValue(CTX_TEMPLATE_REF, tempref);
         }
 
         // after all clean.
@@ -79,6 +79,5 @@ export const ElementsTemplateHandle = async function (ctx: ITemplateContext, nex
     if (isNullOrUndefined(ctx.value)) {
         await next();
     }
-
 };
 
