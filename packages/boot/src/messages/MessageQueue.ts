@@ -23,6 +23,26 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
     @Inject(INJECTOR)
     injector: ICoreInjector;
 
+    private completed: ((ctx: T) => void)[];
+
+    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+        await super.execute(ctx, next);
+        this.completed && this.completed.map(cb => {
+            cb(ctx);
+        });
+    }
+
+    /**
+     * register completed callbacks.
+     * @param callback callback.T
+     */
+    done(callback: (ctx: T) => void) {
+        if (this.completed) {
+            this.completed = [];
+        }
+        this.completed.push(callback);
+    }
+
     /**
      * send message
      *

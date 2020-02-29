@@ -11,9 +11,10 @@ import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuild
 import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ResolveMoudleScope } from '../builder/resolvers/ResolveMoudleScope';
 import { BuildContext } from '../builder/BuildContext';
-import { BuildHandles } from '../builder/BuildHandles';
 import { IBuildOption } from '../builder/IBuildOption';
 import { IBuildContext } from '../builder/IBuildContext';
+import { Handles } from '../handles/Handles';
+import { IAnnoationContext } from '../AnnoationContext';
 
 
 
@@ -150,7 +151,8 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     protected async execLifeScope<T extends IBootContext = IBootContext, Topt extends BootOption = BootOption>(
-        contextInit: (ctx: T) => void, scope: BuildHandles<T>,
+        contextInit: (ctx: T) => void,
+        scope: Handles<IAnnoationContext>,
         target: ClassType | Topt | T,
         ...args: string[]): Promise<T> {
 
