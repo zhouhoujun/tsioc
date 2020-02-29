@@ -37,7 +37,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param callback callback.T
      */
     done(callback: (ctx: T) => void) {
-        if (this.completed) {
+        if (!this.completed) {
             this.completed = [];
         }
         this.completed.push(callback);
