@@ -13,7 +13,7 @@ export function registerCores(container: IContainer) {
 
     container.setValue(ContainerToken, container);
     if (!container.has(ModuleLoader)) {
-        container.registerType(ModuleLoader);
+        container.setValue(ModuleLoader, new ModuleLoader());
     }
 
     let fac = container.getInstance(ContainerProxyToken);

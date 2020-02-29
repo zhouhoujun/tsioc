@@ -1,6 +1,6 @@
 import {
     Modules, Type, Token, IocCoreService, isString, lang,
-    isObject, isArray, isClass, InjectReference, Singleton
+    isObject, isArray, InjectReference
 } from '@tsdi/ioc';
 import { LoadType, PathModules } from '../types';
 
@@ -52,7 +52,6 @@ const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
  * @class DefaultModuleLoader
  * @implements {IModuleLoader}
  */
-@Singleton
 export class ModuleLoader extends IocCoreService implements IModuleLoader {
 
     private _loader: (modulepath: string) => Promise<Modules[]>;

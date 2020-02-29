@@ -1,11 +1,10 @@
 import {
-    Singleton, Type, ObjectMap, lang, ParamProviders, Inject, TypeReflectsToken, ITypeReflects
+    Type, ObjectMap, ParamProviders, Inject, TypeReflectsToken, ITypeReflects
 } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { Advice } from './decorators/Advice';
-import { NonePointcut } from './decorators/NonePointcut';
 import { AdviceMetadata } from './metadatas/AdviceMetadata';
-import { IAdvisor, AdvisorToken } from './IAdvisor';
+import { IAdvisor } from './IAdvisor';
 
 /**
  * for global aop advisor.
@@ -13,8 +12,6 @@ import { IAdvisor, AdvisorToken } from './IAdvisor';
  * @export
  * @class Advisor
  */
-@NonePointcut()
-@Singleton(AdvisorToken)
 export class Advisor implements IAdvisor {
     /**
      * aspects.
@@ -31,9 +28,7 @@ export class Advisor implements IAdvisor {
      */
     advices: Map<Type, Map<string, Advices>>;
 
-    @Inject(TypeReflectsToken) reflects: ITypeReflects;
-
-    constructor() {
+    constructor(@Inject(TypeReflectsToken) private reflects: ITypeReflects) {
         this.aspects = new Map();
         this.advices = new Map();
     }

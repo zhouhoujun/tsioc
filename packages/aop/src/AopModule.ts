@@ -1,7 +1,7 @@
 import {
     Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer,
     RuntimeMethodScope, BindProviderAction, RegisterSingletionAction, DecoratorScopes, RuntimeLifeScope,
-    ConstructorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt
+    ConstructorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -12,6 +12,8 @@ import { InvokeAfterConstructorAction } from './actions/InvokeAfterConstructorAc
 import { BindMethodPointcutAction } from './actions/BindMethodPointcutAction';
 import { MatchPointcutAction } from './actions/MatchPointcutAction';
 import { ProceedingScope } from './proceeding/ProceedingScope';
+import { AdvisorToken } from './IAdvisor';
+import { AdviceMatcherToken } from './IAdviceMatcher';
 
 
 
@@ -34,10 +36,13 @@ export class AopModule {
      */
     setup(@Inject(IocContainerToken) container: IIocContainer) {
 
-        let actInjector = container.getInstance(ActionInjector);
+        const actInjector = container.getInstance(ActionInjector);
+        const reflects = container.getInstance(TypeReflectsToken);
 
-        actInjector.registerType(Advisor)
-            .registerType(AdviceMatcher);
+        actInjector
+            .setValue(AdvisorToken, new Advisor(reflects), Advisor)
+            .setValue(AdviceMatcherToken, new AdviceMatcher(reflects), AdviceMatcher);
+
         actInjector.regAction(ProceedingScope);
 
         actInjector.getInstance(IocBeforeConstructorScope)

@@ -1,15 +1,14 @@
 import {
-    Inject, Singleton, isString, isRegExp, isUndefined, isDefined,
-    Type, ObjectMap, lang, isArray, isFunction, TypeReflectsToken, ITypeReflects
+    Inject, isString, isRegExp, isDefined, Type, ObjectMap, lang, isArray,
+    isFunction, TypeReflectsToken, ITypeReflects
 } from '@tsdi/ioc';
-import { IAdviceMatcher, AdviceMatcherToken } from './IAdviceMatcher';
+import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas/AdviceMetadata';
 import { AspectMetadata } from './metadatas/AspectMetadata';
 import { IPointcut } from './joinpoints/IPointcut';
 import { MatchPointcut } from './joinpoints/MatchPointcut';
 import { Advice } from './decorators/Advice';
 import { Aspect } from './decorators/Aspect';
-import { NonePointcut } from './decorators/NonePointcut';
 import {
     annPreChkExp, executionChkExp, preParam, endParam, annContentExp, aExp, execContentExp,
     mthNameExp, tgMthChkExp, replAny, replAny1, replDot, replNav, withInChkExp, targetChkExp
@@ -29,8 +28,6 @@ export type MatchExpress = (method: string, fullName: string, targetType?: Type,
  * @class AdviceMatcher
  * @implements {IAdviceMatcher}
  */
-@NonePointcut()
-@Singleton(AdviceMatcherToken)
 export class AdviceMatcher implements IAdviceMatcher {
 
     constructor(@Inject(TypeReflectsToken) private reflects: ITypeReflects) {
