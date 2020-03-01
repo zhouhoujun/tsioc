@@ -39,23 +39,26 @@ export function iocAnnotations(contents: string): string {
     let sourceFile = ts.createSourceFile('cache.source.ts', contents, ts.ScriptTarget.Latest, true);
     let eachChild = (node: ts.Node, annations?: any) => {
         if (ts.isClassDeclaration(node)) {
-            let className = node.name.text;
-            let annations = {
-                name: className,
-                params: {}
-            }
+            if ((node.decorators && node.decorators.length) || (
+                node.getChildren()?.some(n => n.decorators && n.decorators.length))) {
+                let className = node.name.text;
+                let annations = {
+                    name: className,
+                    params: {}
+                }
 
-            let oldclass = node.getText();
-            ts.forEachChild(node, (node) => eachChild(node, annations));
 
-            let classAnnations = `
+                let oldclass = node.getText();
+                ts.forEachChild(node, (node) => eachChild(node, annations));
+
+                let classAnnations = `
                     static getClassAnnations():any  {
                         return ${JSON.stringify(annations)};
                     }
                `;
-            let end = oldclass.replace(replEmpty, '').length - 1;
-            contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end));
-
+                let end = oldclass.replace(replEmpty, '').length - 1;
+                contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end));
+            }
         } else if (ts.isConstructorDeclaration(node)) {
             if (annations) {
                 let paramNames = node.parameters.map(param => {

@@ -9,16 +9,17 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     ],
     baseURL: __dirname,
     template: [
+        {
+            activity: 'clean',
+            clean: ['../../dist/annotations']
+        },
         <TsBuildOption>{
             activity: 'ts',
-            clean: ['../../dist/annotations'],
             src: 'src/**/*.ts',
             dist: '../../dist/annotations/lib',
-            annotation: true,
-            sourcemaps: './sourcemaps',
-            jsValuePipe: true,
-            uglify: true,
-            tsconfig: './tsconfig.json'
+            dts: '../../dist/annotations/lib',
+            sourcemap: true,
+            uglify: true
         },
         <AssetActivityOption>{
             activity: 'asset',

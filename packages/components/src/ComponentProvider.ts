@@ -217,31 +217,48 @@ export class AstResolver {
 
         try {
             // xxx | pipename
-            let pipeTransf: IPipeTransform;
+            let pipes: string[];
             if (pipeExp.test(expression)) {
-                let idex = expression.lastIndexOf(' | ');
-                let pipename = expression.substring(idex + 3);
-                if (pipename) {
-                    pipeTransf = this.provider.getPipe(pipename, injector);
-                }
-                expression = expression.substring(0, idex);
+                const exps = expression.split(' | ');
+                expression = exps.shift();
+                pipes = exps;
             }
-            let value;
-            if (envOptions) {
-                // tslint:disable-next-line:no-eval
-                let func = eval(`(${Object.keys(envOptions).join(',')}) => {
-                    return ${expression};
-                }`);
-                value = func(...Object.values(envOptions));
-
-            } else {
-                // tslint:disable-next-line:no-eval
-                value = eval(expression);
-            }
-            return pipeTransf ? pipeTransf.transform(value) : value;
+            let value = this.eval(expression, envOptions);
+            return pipes ? this.transforms(value, pipes, injector, envOptions) : value;
         } catch (err) {
             return void 0;
         }
+    }
+
+    eval(expression: string, envOptions?: Object) {
+        if (envOptions) {
+            // tslint:disable-next-line:no-eval
+            let func = eval(`(${Object.keys(envOptions).join(',')}) => {
+                return ${expression};
+            }`);
+            return func(...Object.values(envOptions));
+
+        } else {
+            // tslint:disable-next-line:no-eval
+            return eval(expression);
+        }
+    }
+
+    transforms(value: any, pipes: string[], injector: ICoreInjector, envOptions?: any): any {
+        pipes.forEach(p => {
+            let [pipeName, args] = p.split(':');
+            let pipe = this.provider.getPipe(pipeName, injector);
+            if (args) {
+                if (args.indexOf(',') > 0) {
+                    value = pipe.transform(value, ...this.eval(`[${args}]`, envOptions), envOptions);
+                } else {
+                    value = pipe.transform(value, this.eval(args, envOptions), envOptions);
+                }
+            } else {
+                value = pipe.transform(value, envOptions);
+            }
+        });
+        return value;
     }
 }
 
