@@ -40,28 +40,17 @@ export class TransformService {
         }
 
         let next: ITransform = stream.pipe(transPipe);
+        next.once('error', err => {
+            console.error(err);
+            if (isDefined(process)) {
+                process.exit(1);
+            }
+            throw err;
+        });
         if (waitend) {
             let defer = PromiseUtil.defer();
-            transPipe
-                .once('end', defer.resolve)
-                .once('error', defer.reject);
-
-            await defer.promise
-                .catch(err => {
-                    console.error(err);
-                    if (isDefined(process)) {
-                        process.exit(1);
-                    }
-                    throw err;
-                });
-        } else {
-            transPipe.once('error', err => {
-                console.error(err);
-                if (isDefined(process)) {
-                    process.exit(1);
-                }
-                throw err;
-            });
+            next.once('end', defer.resolve);
+            await defer.promise;
         }
         return next;
     }
