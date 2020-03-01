@@ -124,6 +124,7 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
      */
     async run(ctx: IWorkflowContext): Promise<void> {
         let externals = await this.context.resolveExpression(this.context.getTemplate<TemplateOption>()?.externals);
+        let orginData = this.context.getData();
         if (externals) {
             let input = externals.input;
             if (isDefined(input)) {
@@ -134,7 +135,7 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
             }
             let data = externals.data;
             if (isDefined(data)) {
-                this.context.setValue(ACTIVITY_ORIGIN_DATA, this.context.getData());
+                this.context.setValue(ACTIVITY_ORIGIN_DATA, orginData);
                 if (isString(data) && expExp.test(data)) {
                     data = this.context.getExector().eval(data);
                 }
@@ -144,12 +145,10 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
         let result = await this.execute(ctx);
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_DATA, result);
-            if (externals && externals.data) {
-                return;
+            if (!(externals && externals.data)) {
+                this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_DATA, result);
+                this.context.runScope?.setValue(ACTIVITY_DATA, result);
             }
-            this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_DATA, result);
-            this.context.runScope?.setValue(ACTIVITY_DATA, result);
-
         }
     }
 

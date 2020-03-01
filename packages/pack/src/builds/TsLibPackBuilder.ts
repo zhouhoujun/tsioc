@@ -7,7 +7,7 @@ import { Plugin } from 'rollup';
 import { NodeExpression } from '../NodeActivityContext';
 import { LibPackBuilderOption, LibPackBuilder, LibBundleOption } from './LibPackBuilder';
 import { RollupOption, RollupTsOption } from '../rollups';
-const uglify = require('gulp-uglify');
+import uglify from 'gulp-uglify-es';
 const rename = require('gulp-rename');
 
 

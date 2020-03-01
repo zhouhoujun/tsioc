@@ -82,6 +82,18 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
+            externals: {
+                data: 'ctx.getData() | dts'
+            },
+            condition: 'binding: dts',
+            body: {
+                name: 'write-dts',
+                activity: 'dist',
+                dist: 'binding: dts',
+            }
+        },
+        {
+            activity: Activities.if,
             externals: async (ctx) => {
                 let tds = await ctx.resolveExpression(ctx.getScope<TsBuildActivity>().dts);
                 return tds ? {
@@ -121,18 +133,6 @@ export interface TsBuildOption extends AssetActivityOption {
                     dist: 'binding: dist'
                 }
             ]
-        },
-        {
-            activity: Activities.if,
-            externals: {
-                data: 'ctx.getData() | dts'
-            },
-            condition: 'binding: dts',
-            body: {
-                name: 'write-dts',
-                activity: 'dist',
-                dist: 'binding: dts',
-            }
         }
     ]
 })

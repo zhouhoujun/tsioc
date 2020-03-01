@@ -9,12 +9,13 @@ import { RollupOption } from '../rollups';
 // import { rollupClassAnnotations } from '@tsdi/annotations';
 import { join } from 'path';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import uglify from 'gulp-uglify-es';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 // const buildin = require('rollup-plugin-node-builtins');
 // const ts = require('rollup-plugin-typescript');
-const uglify = require('gulp-uglify');
+
 const rename = require('gulp-rename');
 // const grollup = require('gulp-rollup');
 // const postcss = require('rollup-plugin-postcss');

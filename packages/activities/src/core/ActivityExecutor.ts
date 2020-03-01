@@ -170,7 +170,6 @@ export class ActivityExecutor implements IActivityExecutor {
             let option = {
                 type: md,
                 template: activity,
-                injector: ctx.injector,
                 parent: ctx
             };
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(option) as IActivityRef;

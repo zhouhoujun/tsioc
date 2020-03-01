@@ -78,7 +78,6 @@ export const ParseSelectorHandle = async function (ctx: ITemplateContext, next: 
                 parent: ctx,
                 sub: true,
                 template: template,
-                injector: ctx.injector,
                 providers: ctx.providers.inject({ provide: TemplateOptionToken, useValue: ctx.getOptions() })
             }) as IComponentContext;
         if (compCtx.value) {

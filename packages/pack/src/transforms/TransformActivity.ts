@@ -1,4 +1,4 @@
-import { isDefined, Singleton } from '@tsdi/ioc';
+import { isDefined, Singleton, PromiseUtil, Defer } from '@tsdi/ioc';
 import { Expression } from '@tsdi/activities';
 import { NodeActivity } from '../NodeActivity';
 import { ITransform, isTransform } from '../ITransform';
@@ -38,26 +38,29 @@ export class TransformService {
         } else {
             transPipe = await ctx.resolveExpression(transform);
         }
+
         let next: ITransform = stream.pipe(transPipe);
         if (waitend) {
-            return await new Promise((r, j) => {
-                next
-                    .once('end', r)
-                    .once('error', j);
-            }).then(() => {
-                next.removeAllListeners('error');
-                next.removeAllListeners('end');
-                return next;
-            }, err => {
-                next.removeAllListeners('error');
-                next.removeAllListeners('end');
-                if (isDefined(process)) {
+            let defer = PromiseUtil.defer();
+            transPipe
+                .once('end', defer.resolve)
+                .once('error', defer.reject);
+
+            await defer.promise
+                .catch(err => {
                     console.error(err);
+                    if (isDefined(process)) {
+                        process.exit(1);
+                    }
+                    throw err;
+                });
+        } else {
+            transPipe.once('error', err => {
+                console.error(err);
+                if (isDefined(process)) {
                     process.exit(1);
-                    return err;
-                } else {
-                    return Promise.reject(new Error(err));
                 }
+                throw err;
             });
         }
         return next;

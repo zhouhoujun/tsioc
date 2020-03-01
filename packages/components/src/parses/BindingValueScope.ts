@@ -161,8 +161,7 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
                 attr: true,
                 parent: ctx.getComponentContext(),
                 template: bindings,
-                providers: ctx.providers,
-                injector: injector
+                providers: ctx.providers
             });
         }
     }

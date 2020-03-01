@@ -9,8 +9,7 @@ export const ResolveTypeHandle = async function (ctx: BootContext, next: () => P
         let target = await injector.getInstance(BuilderServiceToken).resolve({
             type: ctx.type,
             parent: ctx.getParent(),
-            providers: ctx.providers,
-            injector: injector
+            providers: ctx.providers
         });
         target && ctx.setValue(CTX_MODULE_INST, target);
     }

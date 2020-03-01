@@ -9,11 +9,14 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     ],
     baseURL: __dirname,
     template: [
+        {
+            activity: 'clean',
+            clean: '../../dist/cli'
+        },
         <TsBuildOption>{
             activity: 'ts',
             src: 'src/**/*.ts',
             dist: '../../dist/cli/lib',
-            clean: '../../dist/cli',
             test: 'test/**/*.spec.ts'
         },
         <AssetActivityOption>{

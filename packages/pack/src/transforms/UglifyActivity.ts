@@ -3,8 +3,7 @@ import { Task } from '@tsdi/activities';
 import { TransformActivity, TransformService } from './TransformActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform } from '../ITransform';
-const uglify = require('gulp-uglify');
-
+import uglify from 'gulp-uglify-es';
 
 @Task('uglify, [uglify]')
 export class UglifyActivity extends TransformActivity {

@@ -17,8 +17,7 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
             type: injector.getTokenProvider(bootModule),
             parent: ctx,
             template: template,
-            providers: ctx.providers,
-            injector: injector
+            providers: ctx.providers
         });
 
         boot && ctx.setValue(CTX_MODULE_BOOT, boot);
