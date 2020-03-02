@@ -6,11 +6,11 @@ import { AssetActivityOption, AssetActivity } from './AssetActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform, isTransform } from '../ITransform';
 const ts = require('gulp-typescript');
-// import * as through from 'through2';
-// import { TsComplie } from '../ts-complie';
-// import * as VFile from 'vinyl';
-// import { tsFileExp } from '../exps';
-// const rename = require('gulp-rename');
+import * as through from 'through2';
+import { TsComplie } from '../ts-complie';
+import * as VFile from 'vinyl';
+import { tsFileExp } from '../exps';
+const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
 const applySourceMap = require('vinyl-sourcemaps-apply');
 
@@ -64,28 +64,6 @@ export interface TsBuildOption extends AssetActivityOption {
                 pipes: 'binding: beforePipes'
             }
         },
-        {
-            activity: Activities.execute,
-            name: 'tscompile',
-            action: async (ctx: NodeActivityContext, bind) => {
-                let scope = bind.getScope<TsBuildActivity>();
-                if (!scope.tsconfig) {
-                    return;
-                }
-                let tsconfig = await ctx.resolveExpression(scope.tsconfig);
-                let tsCompile;
-                let dts = await ctx.resolveExpression(scope.dts);
-                if (isString(tsconfig)) {
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
-                    tsCompile = tsProject();
-                } else {
-                    tsconfig.declaration = !!dts;
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
-                    tsCompile = tsProject();
-                }
-                return ctx.getData().pipe(tsCompile);
-            }
-        },
         // {
         //     activity: Activities.execute,
         //     name: 'tscompile',
@@ -94,55 +72,77 @@ export interface TsBuildOption extends AssetActivityOption {
         //         if (!scope.tsconfig) {
         //             return;
         //         }
-        //         const compile = ctx.injector.get(TsComplie);
-        //         const tsconfig = await ctx.resolveExpression(scope.tsconfig);
-        //         const dts = await ctx.resolveExpression(scope.dts);
-        //         let setting: CompilerOptions;
-        //         let jsonFile: string;
-        //         if (!isString(tsconfig)) {
-        //             setting = tsconfig;
-        //             tsconfig.declaration = !!dts;
+        //         let tsconfig = await ctx.resolveExpression(scope.tsconfig);
+        //         let tsCompile;
+        //         let dts = await ctx.resolveExpression(scope.dts);
+        //         if (isString(tsconfig)) {
+        //             let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
+        //             tsCompile = tsProject();
         //         } else {
-        //             jsonFile = tsconfig;
-        //             setting = { declaration: !!dts };
+        //             tsconfig.declaration = !!dts;
+        //             let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
+        //             tsCompile = tsProject();
         //         }
-        //         const parsed = compile.createProject(ctx.platform.getRootPath(), ctx.platform.relativeRoot(jsonFile || './tsconfig.json'), setting);
-        //         return ctx.getData<ITransform>().pipe(through.obj(function (file, encoding, callback) {
-        //             if (file.isNull()) {
-        //                 return callback(null, file);
-        //             }
-
-        //             if (file.isStream()) {
-        //                 return callback('doesn\'t support Streams');
-        //             }
-        //             let contents: string = file.contents.toString('utf8');
-        //             const result = compile.compile(parsed, file.relative, contents);
-        //             if (result.dts) {
-        //                 this.push(new VFile({
-        //                     contents: Buffer.from(result.dts),
-        //                     cwd: file.cwd,
-        //                     base: file.base.replace(tsFileExp, '.dts'),
-        //                     path: file.path.replace(tsFileExp, '.dts')
-        //                 }));
-        //             }
-        //             if (file.sourceMap && result.map) {
-        //                 applySourceMap(file, JSON.parse(result.map));
-        //             }
-        //             if (!result.code) {
-        //                 console.log(file.path, contents);
-        //             }
-        //             file.contents = Buffer.from(result.code);
-        //             callback(null, file);
-        //         })).pipe(rename(path => {
-        //             if (path.extname === '.ts') {
-        //                 path.extname = '.js';
-        //             } else if (path.extname === '.dts') {
-        //                 path.extname = '.d.ts';
-        //             }
-        //             return path;
-        //         }));
+        //         return ctx.getData().pipe(tsCompile);
         //     }
         // },
+        {
+            activity: Activities.execute,
+            name: 'tscompile',
+            action: async (ctx: NodeActivityContext, bind) => {
+                let scope = bind.getScope<TsBuildActivity>();
+                if (!scope.tsconfig) {
+                    return;
+                }
+                const compile = ctx.injector.get(TsComplie);
+                const tsconfig = await ctx.resolveExpression(scope.tsconfig);
+                const dts = await ctx.resolveExpression(scope.dts);
+                let setting: CompilerOptions;
+                let jsonFile: string;
+                if (!isString(tsconfig)) {
+                    setting = tsconfig;
+                    tsconfig.declaration = !!dts;
+                } else {
+                    jsonFile = tsconfig;
+                    setting = { declaration: !!dts };
+                }
+                const parsed = compile.parseTsconfig(ctx.platform.getRootPath(), ctx.platform.relativeRoot(jsonFile || './tsconfig.json'), setting);
+                return ctx.getData<ITransform>().pipe(through.obj(function (file, encoding, callback) {
+                    if (file.isNull()) {
+                        return callback(null, file);
+                    }
+
+                    if (file.isStream()) {
+                        return callback('doesn\'t support Streams');
+                    }
+                    let contents: string = file.contents.toString('utf8');
+                    const result = compile.compile2(file.relative, contents, parsed.options);
+                    if (result.dts) {
+                        this.push(new VFile({
+                            contents: Buffer.from(result.dts),
+                            cwd: file.cwd,
+                            base: file.base.replace(tsFileExp, '.dts'),
+                            path: file.path.replace(tsFileExp, '.dts')
+                        }));
+                    }
+                    if (file.sourceMap && result.map) {
+                        applySourceMap(file, JSON.parse(result.map));
+                    }
+                    if (!result.code) {
+                        console.log(file.path, contents);
+                    }
+                    file.contents = Buffer.from(result.code);
+                    callback(null, file);
+                })).pipe(rename(path => {
+                    if (path.extname === '.ts') {
+                        path.extname = '.js';
+                    } else if (path.extname === '.dts') {
+                        path.extname = '.d.ts';
+                    }
+                    return path;
+                }));
+            }
+        },
         {
             activity: Activities.if,
             externals: {

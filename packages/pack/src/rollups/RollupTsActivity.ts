@@ -169,7 +169,7 @@ export class RollupTsActivity extends RollupActivity {
         let tsconfig = await ctx.resolveExpression(this.tsconfig);
         tsconfig = ctx.platform.toRootPath(tsconfig);
 
-        let compilerOptions = compile.createProject(projectDirectory, tsconfig, settings);
+        let parsed = compile.parseTsconfig(projectDirectory, tsconfig, settings);
         const allImportedFiles = new Set();
         return {
             name: 'typescript',
@@ -187,7 +187,7 @@ export class RollupTsActivity extends RollupActivity {
                     return;
                 }
 
-                const result = nodeModuleNameResolver(importee, importer, compilerOptions, sys);
+                const result = nodeModuleNameResolver(importee, importer, parsed.options, sys);
 
                 if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                     if (tsdexp.test(result.resolvedModule.resolvedFileName || '')) {
@@ -210,7 +210,7 @@ export class RollupTsActivity extends RollupActivity {
                     return undefined;
                 }
                 allImportedFiles.add(id.split('\\').join('/'));
-                return compile.compile(id, compilerOptions, code, annotation);
+                return compile.compile(parsed, id, code, annotation);
             }
         };
     }
