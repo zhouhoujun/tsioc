@@ -3,7 +3,6 @@ import * as through from 'through2';
 import { createFilter } from 'rollup-pluginutils';
 import { Plugin } from 'rollup';
 
-declare let Buffer: any;
 
 const tsChkExp = /\.ts$/;
 const replEmpty = /\s*$/;
@@ -27,9 +26,8 @@ export function classAnnotations() {
 
         let contents: string = file.contents.toString('utf8');
         contents = iocAnnotations(contents);
-        file.contents = new Buffer(contents);
-        this.push(file);
-        callback();
+        file.contents = Buffer.from(contents);
+        callback(null, file);
     });
 }
 

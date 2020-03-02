@@ -4,7 +4,7 @@ import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
     NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
 } from '@tsdi/components';
-import { CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL } from './IActivityContext';
+import { CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL, IActivityContext } from './IActivityContext';
 import { ActivityContext, ActivityTemplateContext } from './ActivityContext';
 import { IActivityRef, ACTIVITY_DATA, ACTIVITY_INPUT, ACTIVITY_ORIGIN_DATA } from './IActivityRef';
 import { Activity } from './Activity';
@@ -149,6 +149,8 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
             if (this.context.hasValue(ACTIVITY_ORIGIN_DATA)) {
                 this.context.remove(CTX_RUN_SCOPE);
             } else {
+                // console.log(this.context.name, 'set data to', this.context.getValue<IActivityContext>(CTX_RUN_PARENT)?.name);
+                // console.log(this.context.name, 'set data to', this.context.runScope?.name);
                 this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_DATA, result);
                 this.context.runScope?.setValue(ACTIVITY_DATA, result);
             }
@@ -173,7 +175,7 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
 export class ActivityElementRef<T extends Activity = Activity> extends ActivityRef implements IActivityElementRef<T> {
 
     get name(): string {
-        return this.context.name ?? this.nativeElement.name ?? lang.getClassName(this.nativeElement);
+        return this.context.name;
     }
 
     constructor(
@@ -183,6 +185,9 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         let injector = context.injector;
         if (!injector.has(ELEMENT_REFS)) {
             injector.setValue(ELEMENT_REFS, new WeakMap());
+        }
+        if (!this.context.name) {
+            this.context.setValue(CTX_ELEMENT_NAME, this.nativeElement.name ?? lang.getClassName(this.nativeElement));
         }
         injector.getSingleton(ELEMENT_REFS).set(nativeElement, this);
         this.onDestroy(() => injector.getSingleton(ELEMENT_REFS)?.delete(nativeElement));
@@ -214,7 +219,7 @@ export class ControlActivityElementRef<T extends ControlActivity = ControlActivi
 export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef implements IActivityTemplateRef<T> {
     readonly isScope = true;
     get name(): string {
-        return `${this.context.name}.template`;
+        return `${this.context.name || ''}.template`;
     }
 
     get template() {
@@ -266,7 +271,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
 export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends ActivityRef implements IActivityComponentRef<T, TN> {
 
     get name(): string {
-        return this.context?.name ?? lang.getClassName(this.componentType);
+        return this.context?.name;
     }
 
     get selector() {
@@ -283,7 +288,9 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
         if (!context.injector.has(COMPONENT_REFS)) {
             context.injector.setValue(COMPONENT_REFS, new WeakMap());
         }
-        context.set(CTX_ELEMENT_NAME, this.name);
+        if (!context.name) {
+            context.set(CTX_ELEMENT_NAME, lang.getClassName(this.componentType));
+        }
         let baseURL = context.getAnnoation()?.baseURL;
         baseURL && context.setValue(CTX_BASEURL, baseURL);
         let injector = context.injector;

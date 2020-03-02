@@ -15,6 +15,7 @@ import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
  * @extends {TemplateOption}
  */
 export interface DistActivityOption extends TemplateOption {
+    end: Binding<boolean>;
     /**
      * source stream to dist.
      *
@@ -43,6 +44,7 @@ export interface DistActivityOption extends TemplateOption {
 @Task('dist, [dist]')
 export class DestActivity extends NodeActivity<void> {
 
+    @Input() end: boolean;
     @Input() dist: NodeExpression<string>;
 
     @Input('destOptions') options: NodeExpression<DestOptions>;
@@ -52,7 +54,7 @@ export class DestActivity extends NodeActivity<void> {
         if (dist) {
             let options = await ctx.resolveExpression(this.options);
             dist = ctx.platform.toRootPath(dist);
-            await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.getData(), options ? dest(dist, options) : dest(dist), true);
+            await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.getData(), options ? dest(dist, options) : dest(dist), this.end !== false);
         }
     }
 }
