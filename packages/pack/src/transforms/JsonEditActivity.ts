@@ -101,8 +101,7 @@ export class JsonReplaceActivity extends TransformActivity {
             }
             contents = replaced.toString();
             file.contents = new Buffer(contents);
-            this.push(file);
-            callback();
+            callback(null, file);
         });
     }
 }

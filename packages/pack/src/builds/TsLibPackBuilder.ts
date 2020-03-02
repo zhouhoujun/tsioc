@@ -8,8 +8,8 @@ import { NodeExpression } from '../NodeActivityContext';
 import { LibPackBuilderOption, LibPackBuilder, LibBundleOption } from './LibPackBuilder';
 import { RollupOption, RollupTsOption } from '../rollups';
 import uglify from 'gulp-uglify-es';
+import { tsFileExp } from '../exps';
 const rename = require('gulp-rename');
-
 
 export interface TsLibPackBuilderOption extends LibPackBuilderOption {
 
@@ -23,8 +23,6 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
     beforeCompile?: Binding<NodeExpression<Plugin[]>>;
 }
 
-const esmChkExp = /^esm/;
-const tsFileExp = /.ts$/;
 
 /**
  * build ts project by rollup

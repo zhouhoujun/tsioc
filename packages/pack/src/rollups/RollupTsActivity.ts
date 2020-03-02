@@ -3,12 +3,13 @@ import { syncRequire } from '@tsdi/platform-server';
 import { Binding, Input } from '@tsdi/components';
 import { Task } from '@tsdi/activities';
 import { Plugin, RollupOptions } from 'rollup';
-import { CompilerOptions, nodeModuleNameResolver } from 'typescript';
-import * as ts from 'typescript';
+import { CompilerOptions, nodeModuleNameResolver, sys } from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { RollupActivity, RollupOption } from './RollupActivity';
 import { TsComplie } from '../ts-complie';
+import { tsdexp } from '../exps';
+
 /**
  * rollup activity template option.
  *
@@ -162,7 +163,6 @@ export class RollupTsActivity extends RollupActivity {
         let exclude = await ctx.resolveExpression(this.exclude)
         let annotation = await ctx.resolveExpression(this.annotation);
         const filter = createFilter(include, exclude);
-        const tsdexp = /.d.ts$/;
         let compile = ctx.injector.get(TsComplie);
         let projectDirectory = ctx.platform.getRootPath();
         let settings: CompilerOptions = await ctx.resolveExpression(this.compileOptions);
@@ -187,7 +187,7 @@ export class RollupTsActivity extends RollupActivity {
                     return;
                 }
 
-                const result = nodeModuleNameResolver(importee, importer, compilerOptions, ts.sys);
+                const result = nodeModuleNameResolver(importee, importer, compilerOptions, sys);
 
                 if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                     if (tsdexp.test(result.resolvedModule.resolvedFileName || '')) {

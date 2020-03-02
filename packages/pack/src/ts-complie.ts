@@ -1,54 +1,64 @@
 import { Singleton } from '@tsdi/ioc';
 import { iocAnnotations } from '@tsdi/annotations';
 import {
-    CompilerOptions, transpileModule, flattenDiagnosticMessageText, DiagnosticCategory,
-    convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, Diagnostic
+    CompilerOptions, sys, createSourceFile, ScriptTarget, createProgram, Diagnostic, DiagnosticCategory, formatDiagnostics,
+    convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, ParsedCommandLine, System, ParseConfigHost, transform,
 } from 'typescript';
-import * as ts from 'typescript';
 import * as path from 'path';
+import { tsdexp, jsFileExp, mapexp } from './exps';
 
 @Singleton()
 export class TsComplie {
 
-    compile(fileName: string, compilerOptions: CompilerOptions, code: string, annotation?: boolean): { code: string; map: string } {
+    compile(fileName: string, compilerOptions: CompilerOptions, sourceText: string, annotation?: boolean): { code: string; map: string, dts?: string, emitSkipped?: boolean } {
 
-        const transformed = transpileModule(annotation ? iocAnnotations(code) : code, {
-            fileName: fileName,
-            reportDiagnostics: true,
-            compilerOptions
+        const tempSourceFile = createSourceFile(
+            fileName,
+            annotation ? iocAnnotations(sourceText) : sourceText,
+            ScriptTarget.Latest
+        );
+
+        const outputs = new Map<string, string>();
+        const program = createProgram([fileName], compilerOptions, {
+            getSourceFile: (name) => {
+                if (name === fileName) {
+                    return tempSourceFile;
+                }
+            },
+            getDefaultLibFileName: () => 'lib.d.ts',
+            getCurrentDirectory: () => '',
+            getDirectories: () => [],
+            getCanonicalFileName: (fileName) => fileName,
+            useCaseSensitiveFileNames: () => true,
+            getNewLine: () => '\n',
+            fileExists: (fileName) => fileName === fileName,
+            readFile: (_fileName) => '',
+            writeFile: (fileName, text) => outputs.set(fileName, text),
         });
 
-        // All errors except `Cannot compile modules into 'es6' when targeting 'ES5' or lower.`
-        const diagnostics: Diagnostic[] = transformed.diagnostics ?
-            transformed.diagnostics.filter(diagnostic => diagnostic.code !== 1204) : [];
-
-        let fatalError = false;
-
-        diagnostics.forEach(diagnostic => {
-            const message = flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-
-            if (diagnostic.file) {
-                const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-
-                console.error(`${diagnostic.file.fileName}(${line + 1},${character + 1}): error TS${diagnostic.code}: ${message}`);
-            } else {
-                console.error(`Error: ${message}`);
-            }
-
-            if (diagnostic.category === DiagnosticCategory.Error) {
-                fatalError = true;
-            }
-        });
-
-        if (fatalError) {
-            throw new Error(`There were TypeScript errors transpiling`);
+        const diagnostics = program.getSyntacticDiagnostics(tempSourceFile);
+        if (!this.validateDiagnostics(diagnostics, true)) {
+            return {
+                code: null,
+                map: null,
+                emitSkipped: true,
+            };
         }
 
-        return {
-            code: transformed.outputText,
-            // Rollup expects `map` to be an object so we must parse the string
-            map: transformed.sourceMapText ? JSON.parse(transformed.sourceMapText) : null
-        };
+        program.emit();
+
+        let code: string, map: string = null, dts: string;
+        outputs.forEach((source, f) => {
+            if (tsdexp.test(f)) {
+                dts = source;
+            } else if (jsFileExp.test(f)) {
+                code = source;
+            } else if (mapexp.test(f)) {
+                map = source;
+            }
+        });
+        outputs.clear();
+        return { code, map, dts };
     }
 
     createProject(projectDirectory: string, tsconfig: string, settings: CompilerOptions): CompilerOptions {
@@ -60,15 +70,15 @@ export class TsComplie {
         // }
         compilerOptions = settingsResult.options;
 
-        let tsConfig = readConfigFile(tsconfig, ts.sys.readFile);
+        let tsConfig = readConfigFile(tsconfig, sys.readFile);
         if (tsConfig.error) {
             console.log(tsConfig.error.messageText);
         }
 
-        let parsed: ts.ParsedCommandLine =
+        let parsed: ParsedCommandLine =
             parseJsonConfigFileContent(
                 tsConfig.config || {},
-                this.getTsconfigSystem(ts),
+                this.getTsconfigSystem(sys),
                 path.resolve(projectDirectory),
                 compilerOptions,
                 tsconfig);
@@ -82,12 +92,37 @@ export class TsComplie {
         return compilerOptions;
     }
 
-    protected getTsconfigSystem(typescript: typeof ts): ts.ParseConfigHost {
+    protected getTsconfigSystem(sys: System): ParseConfigHost {
         return {
-            useCaseSensitiveFileNames: typescript.sys.useCaseSensitiveFileNames,
+            useCaseSensitiveFileNames: sys.useCaseSensitiveFileNames,
             readDirectory: () => [],
-            fileExists: typescript.sys.fileExists,
-            readFile: typescript.sys.readFile
+            fileExists: sys.fileExists,
+            readFile: sys.readFile
         };
+    }
+
+    validateDiagnostics(diagnostics: ReadonlyArray<Diagnostic>, strict?: boolean): boolean {
+        // Print error diagnostics.
+
+        const hasError = diagnostics.some(diag => diag.category === DiagnosticCategory.Error);
+        if (hasError) {
+            // Throw only if we're in strict mode, otherwise return original content.
+            if (strict) {
+                const errorMessages = formatDiagnostics(diagnostics, {
+                    getCurrentDirectory: () => sys.getCurrentDirectory(),
+                    getNewLine: () => sys.newLine,
+                    getCanonicalFileName: (f: string) => f,
+                });
+
+                throw new Error(`
+              TS failed with the following error messages:
+              ${errorMessages}
+            `);
+            } else {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -15,7 +15,6 @@ import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
  * @extends {TemplateOption}
  */
 export interface DistActivityOption extends TemplateOption {
-    end?: boolean;
     /**
      * source stream to dist.
      *
@@ -46,8 +45,6 @@ export class DestActivity extends NodeActivity<void> {
 
     @Input() dist: NodeExpression<string>;
 
-    @Input('end', true) end: boolean;
-
     @Input('destOptions') options: NodeExpression<DestOptions>;
 
     async execute(ctx: NodeActivityContext): Promise<void> {
@@ -55,7 +52,7 @@ export class DestActivity extends NodeActivity<void> {
         if (dist) {
             let options = await ctx.resolveExpression(this.options);
             dist = ctx.platform.toRootPath(dist);
-            await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.getData(), options ? dest(dist, options) : dest(dist), this.end !== false);
+            await ctx.injector.getInstance(TransformService).executePipe(ctx, ctx.getData(), options ? dest(dist, options) : dest(dist), true);
         }
     }
 }

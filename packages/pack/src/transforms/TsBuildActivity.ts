@@ -3,11 +3,16 @@ import { Input, Binding } from '@tsdi/components';
 import { Task, Src, Activities, ActivityType } from '@tsdi/activities';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
-import { TransformService } from './TransformActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform, isTransform } from '../ITransform';
-const ts = require('gulp-typescript');
+import * as through from 'through2';
+import { TsComplie } from '../ts-complie';
+import * as VFile from 'vinyl';
+import { tsFileExp } from '../exps';
+const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
+const applySourceMap = require('vinyl-sourcemaps-apply');
+
 
 /**
  * ts build option.
@@ -46,7 +51,7 @@ export interface TsBuildOption extends AssetActivityOption {
                 action: (ctx: NodeActivityContext, bind) => {
                     let scope = bind.getScope<TsBuildActivity>();
                     let framework = scope.framework || sourcemaps;
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.init())
+                    return ctx.getData().pipe(framework.init());
                 }
             }
         },
@@ -66,27 +71,56 @@ export interface TsBuildOption extends AssetActivityOption {
                 if (!scope.tsconfig) {
                     return;
                 }
-                let tsconfig = await ctx.resolveExpression(scope.tsconfig);
-                let tsCompile;
-                let dts = await ctx.resolveExpression(scope.dts);
-                if (isString(tsconfig)) {
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
-                    tsCompile = tsProject();
-                } else {
+                const compile = ctx.injector.get(TsComplie);
+                const tsconfig = await ctx.resolveExpression(scope.tsconfig);
+                const dts = await ctx.resolveExpression(scope.dts);
+                let setting: CompilerOptions;
+                let jsonFile: string;
+                if (!isString(tsconfig)) {
+                    setting = tsconfig;
                     tsconfig.declaration = !!dts;
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
-                    tsCompile = tsProject();
+                } else {
+                    jsonFile = tsconfig;
+                    setting = { declaration: !!dts };
                 }
-                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), tsCompile);
+                const compilerOptions = compile.createProject(ctx.platform.getRootPath(), ctx.platform.relativeRoot(jsonFile || './tsconfig.json'), setting);
+                return ctx.getData<ITransform>().pipe(through.obj(function (file, encoding, callback) {
+                    if (file.isNull()) {
+                        return callback(null, file);
+                    }
+
+                    if (file.isStream()) {
+                        return callback('doesn\'t support Streams');
+                    }
+                    let contents: string = file.contents.toString('utf8');
+                    const result = compile.compile(file.relative, compilerOptions, contents);
+                    if (result.dts) {
+                        this.push(new VFile({
+                            contents: new Buffer(result.dts),
+                            cwd: file.cwd,
+                            base: file.base.replace(tsFileExp, '.dts'),
+                            path: file.path.replace(tsFileExp, '.dts')
+                        }));
+                    }
+                    if (file.sourceMap && result.map) {
+                        applySourceMap(file, JSON.parse(result.map));
+                    }
+                    file.contents = new Buffer(result.code);
+                    callback(null, file);
+                })).pipe(rename(path => {
+                    if (path.extname === '.ts') {
+                        path.extname = '.js';
+                    } else if (path.extname === '.dts') {
+                        path.extname = '.d.ts';
+                    }
+                    return path;
+                }));
             }
         },
         {
             activity: Activities.if,
-            externals: async (ctx) => {
-                let tds = await ctx.resolveExpression(ctx.getScope<TsBuildActivity>().dts);
-                return tds ? {
-                    data: 'ctx.getData() | tsjs'
-                } : null;
+            externals: {
+                data: 'ctx.getData() | tsjs'
             },
             condition: ctx => isTransform(ctx.getData()),
             body: [
@@ -111,7 +145,7 @@ export interface TsBuildOption extends AssetActivityOption {
                         action: async (ctx: NodeActivityContext, bind) => {
                             let scope = bind.getScope<TsBuildActivity>();
                             let framework = scope.framework || sourcemaps;
-                            return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'));
+                            return ctx.getData<ITransform>().pipe(framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'));
                         }
                     }
                 },

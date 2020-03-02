@@ -39,7 +39,7 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
 
     protected getProcessData() {
         let data = this.context.getValue(CTX_RUN_PARENT)?.getValue(ACTIVITY_DATA) ?? this.runScope?.getValue(ACTIVITY_DATA)
-        isDefined(data) &&  this.setValue(ACTIVITY_DATA, data);
+        isDefined(data) && this.setValue(ACTIVITY_DATA, data);
         return data;
     }
 
@@ -47,7 +47,10 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
      * activity parent origin process data.
      */
     getOriginData<T = any>(): T {
-        return this.getContextValue(ACTIVITY_ORIGIN_DATA);
+        return this.context.getValue(ACTIVITY_ORIGIN_DATA)
+            ?? this.context.getValue(CTX_RUN_PARENT)?.getValue(ACTIVITY_ORIGIN_DATA)
+            ?? this.runScope?.getValue(ACTIVITY_ORIGIN_DATA)
+            ?? this.getParent()?.getContextValue(ACTIVITY_ORIGIN_DATA);
     }
 
     /**

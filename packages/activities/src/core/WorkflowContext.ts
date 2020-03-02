@@ -140,12 +140,15 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
                     data = this.context.getExector().eval(data);
                 }
                 this.context.setValue(ACTIVITY_DATA, data);
+                this.context.setValue(CTX_RUN_SCOPE, this.context);
             }
         }
         let result = await this.execute(ctx);
         if (isDefined(result)) {
             this.context.setValue(ACTIVITY_DATA, result);
-            if (!(externals && externals.data)) {
+            if (this.context.hasValue(ACTIVITY_ORIGIN_DATA)) {
+                this.context.remove(CTX_RUN_SCOPE);
+            } else {
                 this.context.getValue(CTX_RUN_PARENT)?.setValue(ACTIVITY_DATA, result);
                 this.context.runScope?.setValue(ACTIVITY_DATA, result);
             }
