@@ -1,102 +1,41 @@
-import { Singleton } from '@tsdi/ioc';
+import { Singleton, Injectable } from '@tsdi/ioc';
 import { iocAnnotations } from '@tsdi/annotations';
 import {
     CompilerOptions, sys, createSourceFile, ScriptTarget, createProgram, Diagnostic, DiagnosticCategory, formatDiagnostics,
-    convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, ParsedCommandLine, System, ParseConfigHost, transform, ProjectReference, transpileModule, flattenDiagnosticMessageText, getPreEmitDiagnostics, createCompilerHost,
+    convertCompilerOptionsFromJson, readConfigFile, parseJsonConfigFileContent, ParsedCommandLine, System, ParseConfigHost, transform, ProjectReference, transpileModule, flattenDiagnosticMessageText, getPreEmitDiagnostics, createCompilerHost, ScriptKind, Program,
 } from 'typescript';
 import * as path from 'path';
 import { tsdexp, jsFileExp, mapexp } from './exps';
 
-@Singleton()
+@Injectable()
 export class TsComplie {
 
-    compile(parsed: ParsedCommandLine, fileName: string, sourceText: string, annotation?: boolean): { code: string; map: string, dts?: string, emitSkipped?: boolean } {
 
-        const tempSourceFile = createSourceFile(
-            fileName,
-            annotation ? iocAnnotations(sourceText) : sourceText,
-            ScriptTarget.Latest
-        );
+    private program: Program;
 
-        const outputs = new Map<string, string>();
-        const host = {
-            getSourceFile: (name) => {
-                if (name === fileName) {
-                    return tempSourceFile;
-                }
-            },
-            getDefaultLibFileName: () => 'lib.d.ts',
-            getCurrentDirectory: () => '',
-            getDirectories: () => [],
-            getCanonicalFileName: (fileName) => fileName,
-            useCaseSensitiveFileNames: () => true,
-            getNewLine: () => '\n',
-            fileExists: (fileName) => fileName === fileName,
-            readFile: (_fileName) => '',
-            writeFile: (fileName, text) => outputs.set(fileName, text),
-        };
-        const program = (parsed.projectReferences && parsed.projectReferences.length) ?
-            createProgram({
-                rootNames: [fileName],
-                projectReferences: parsed.projectReferences,
-                host: host,
-                options: parsed.options
-            })
-            : createProgram([fileName], parsed.options, host);
-
-
-        const eRt = program.emit();
-
-        const diagnostics = program.getSyntacticDiagnostics(tempSourceFile)
-            .concat(eRt.diagnostics);
-        if (!this.validateDiagnostics(diagnostics, true)) {
-            return {
-                code: null,
-                map: null,
-                emitSkipped: true,
-            };
-        }
-
-
-        let emitSkipped = eRt.emitSkipped;
-        let code: string, map: string = null, dts: string;
-        outputs.forEach((source, f) => {
-            if (tsdexp.test(f)) {
-                dts = source;
-            } else if (jsFileExp.test(f)) {
-                code = source;
-            } else if (mapexp.test(f)) {
-                map = source;
-            }
-        });
-        outputs.clear();
-        return { code, map, dts, emitSkipped };
-    }
-
-    compile2(fileName: string, sourceText: string, options: CompilerOptions, annotation?: boolean): { code: string; map: string, dts?: string, emitSkipped?: boolean } {
+    compile(options: CompilerOptions, fileName: string, sourceText: string,  annotation?: boolean): { code: string; map: string, dts?: string, emitSkipped?: boolean } {
         const host = createCompilerHost(options);
         const outputs = new Map<string, string>();
+        console.log(fileName);
         const tempSourceFile = createSourceFile(
             fileName,
             annotation ? iocAnnotations(sourceText) : sourceText,
-            ScriptTarget.Latest
+            ScriptTarget.Latest,
+            false,
+            ScriptKind.TS
         );
 
-        let osrf = host.getSourceFile.bind(host);
-        host.getSourceFile = (name, langV, error) => {
+        host.getSourceFile = (name, languageVersion, error) => {
             if (name === fileName) {
                 return tempSourceFile;
             }
-            if (!tsdexp.test(name)) {
-                return osrf(name, langV, error);
-            }
         };
-        host.writeFile = (fileName: string, contents: string) => outputs.set(fileName, contents)
-        let program = createProgram([fileName], options, host);
-        let emitResult = program.emit();
+        host.writeFile = (fileName: string, contents: string) => outputs.set(fileName, contents);
+        const old = this.program;
+        const program = this.program = createProgram([fileName], options, host, old);
+        const emitResult = program.emit();
 
-        let allDiagnostics = program.getSyntacticDiagnostics(tempSourceFile)
-            .concat(emitResult.diagnostics);
+        const allDiagnostics = program.getSyntacticDiagnostics(tempSourceFile).concat(emitResult.diagnostics);
 
         if (!this.validateDiagnostics(allDiagnostics, true)) {
             return {
@@ -137,25 +76,7 @@ export class TsComplie {
         const diagnostics: Diagnostic[] = transformed.diagnostics ?
             transformed.diagnostics.filter(diagnostic => diagnostic.code !== 1204) : [];
 
-        let fatalError = false;
-
-        diagnostics.forEach(diagnostic => {
-            const message = flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-
-            if (diagnostic.file) {
-                const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-
-                console.error(`${diagnostic.file.fileName}(${line + 1},${character + 1}): error TS${diagnostic.code}: ${message}`);
-            } else {
-                console.error(`Error: ${message}`);
-            }
-
-            if (diagnostic.category === DiagnosticCategory.Error) {
-                fatalError = true;
-            }
-        });
-
-        if (fatalError) {
+        if (!this.validateDiagnostics(diagnostics, true)) {
             throw new Error(`There were TypeScript errors transpiling`);
         }
 
@@ -188,9 +109,7 @@ export class TsComplie {
                 compilerOptions,
                 tsconfig);
 
-        // if (parsed.errors) {
-        //     throw parsed.errors;
-        // }
+        this.validateDiagnostics(parsed.errors);
 
         return parsed;
     }

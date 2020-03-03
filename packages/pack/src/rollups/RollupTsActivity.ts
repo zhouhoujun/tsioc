@@ -210,7 +210,7 @@ export class RollupTsActivity extends RollupActivity {
                     return undefined;
                 }
                 allImportedFiles.add(id.split('\\').join('/'));
-                return compile.compile(parsed, id, code, annotation);
+                return compile.transpileModule(parsed.options, id, code, annotation);
             }
         };
     }
