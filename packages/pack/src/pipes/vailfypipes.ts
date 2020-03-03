@@ -5,7 +5,6 @@ import { isString } from '@tsdi/ioc';
 @Pipe('path')
 export class PathPipe implements IPipeTransform {
     transform(value: any, defaults: string): any {
-        console.log(value, defaults);
         if (isString(value)) {
             return value;
         }

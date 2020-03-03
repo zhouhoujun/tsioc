@@ -3,7 +3,7 @@ import { ICoreInjector } from '@tsdi/core';
 import { IBinding } from './IBinding';
 import { observe } from './onChange';
 import { BindEventType } from './Events';
-import { filedMatch, pathCkExp } from './exps';
+import { filedMatch, pathCkExp, pipeExp } from './exps';
 import { ComponentProvider } from '../ComponentProvider';
 
 
@@ -18,7 +18,7 @@ import { ComponentProvider } from '../ComponentProvider';
  */
 export abstract class DataBinding<T = any> {
 
-    constructor(protected injector: ICoreInjector, protected provider: ComponentProvider, public source: Object, public binding: IBinding, public expression: string) {
+    constructor(protected injector: ICoreInjector, protected provider: ComponentProvider, public source: any, public binding: IBinding, public expression: string) {
 
     }
 
@@ -45,8 +45,14 @@ export abstract class DataBinding<T = any> {
         return this.provider.getAstResolver().resolve(this.expression, this.injector, this.getScope());
     }
 
+    private fieldExps: string[];
     getFileds() {
-        return this.expression.match(filedMatch).map(v => v);
+        if (!this.fieldExps) {
+            let idx = this.expression.search(pipeExp);
+            let exp = idx > 0 ? this.expression.substring(0, idx) : this.expression;
+            this.fieldExps = exp.match(filedMatch).map(v => v);
+        }
+        return this.fieldExps;
     }
 
     /**

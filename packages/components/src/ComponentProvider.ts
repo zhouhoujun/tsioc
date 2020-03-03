@@ -218,12 +218,12 @@ export class AstResolver {
         try {
             // xxx | pipename
             let pipes: string[];
-            if (pipeExp.test(expression)) {
-                const exps = expression.split(' | ');
-                expression = exps.shift();
-                pipes = exps;
-            }
             let map = this.parseScope(expression, scope, envOptions);
+            let idx = expression.search(pipeExp);
+            if (idx > 0) {
+                pipes = expression.substring(idx + 3).split(' | ');
+                expression = expression.substring(0, idx);
+            }
             let value = this.eval(expression, map);
             return pipes ? this.transforms(value, pipes, injector, map, envOptions || scope) : value;
         } catch (err) {
