@@ -3,7 +3,7 @@ import { Input } from '@tsdi/components';
 import { Task, Expression } from '@tsdi/activities';
 import { ITransform } from '../ITransform';
 import { NodeActivityContext } from '../NodeActivityContext';
-import { TransformService, TransformActivity } from './TransformActivity';
+import { TransformActivity } from './TransformActivity';
 
 
 @Task('pipes, [pipes]')
@@ -17,7 +17,7 @@ export class StreamActivity extends TransformActivity {
             pipes = pipes.filter(p => p);
         }
         if (pipes && pipes.length) {
-            return await this.pipeStream(ctx, ctx.getData(), ...pipes);
+            return await this.pipeStreams(ctx, ctx.getData(), ...pipes);
         }
     }
 
@@ -31,14 +31,13 @@ export class StreamActivity extends TransformActivity {
      * @returns {Promise<ITransform>}
      * @memberof StreamActivity
      */
-    protected async pipeStream(ctx: NodeActivityContext, stream: ITransform, ...pipes: Expression<ITransform>[]): Promise<ITransform> {
+    protected async pipeStreams(ctx: NodeActivityContext, stream: ITransform, ...pipes: Expression<ITransform>[]): Promise<ITransform> {
         if (pipes.length < 1) {
             return stream;
         }
 
-        let service = ctx.injector.get(TransformService);
         if (pipes.length === 1) {
-            return await service.executePipe(ctx, stream, pipes[0]);
+            return await this.pipeStream(ctx, stream, pipes[0]);
         }
 
         let pstream = Promise.resolve(stream);
@@ -46,7 +45,7 @@ export class StreamActivity extends TransformActivity {
             if (transform) {
                 pstream = pstream
                     .then(stm => {
-                        return service.executePipe(ctx, stm, transform);
+                        return this.pipeStream(ctx, stm, transform);
                     });
             }
         });

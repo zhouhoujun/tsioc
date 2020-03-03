@@ -33,6 +33,9 @@ export interface IParseContext extends IComponentContext<IBindingParseOption> {
 export const CTX_BIND_DATABINDING = tokenId<DataBinding>('CTX_BIND_DATABINDING');
 export const CTX_BIND_BINDING = tokenId<IBinding>('CTX_BIND_BINDING');
 export const CTX_BIND_EXPRESSION = tokenId<any>('CTX_BIND_EXPRESSION');
+export const CTX_BIND_PARSED = tokenId<boolean>('CTX_BIND_PARSED');
+
+
 
 const inputDect = Input.toString();
 const outputDect = Output.toString();

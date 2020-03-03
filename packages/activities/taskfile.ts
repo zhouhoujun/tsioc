@@ -16,6 +16,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
         annotation: true,
+        // sourcemap: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts'},
             { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundles', outputFile: 'activities.umd.js', format: 'umd', uglify: true },

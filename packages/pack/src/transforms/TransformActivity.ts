@@ -13,12 +13,9 @@ import { NodeActivityContext } from '../NodeActivityContext';
  * @class TransfrmActivity
  * @extends {NodeActivity<ITransform>}
  */
-export abstract class TransformActivity extends NodeActivity<ITransform> {
+export abstract class TransformActivity<T = ITransform> extends NodeActivity<T> {
 
-}
 
-@Singleton()
-export class TransformService {
     /**
      * execute stream pipe.
      *
@@ -30,7 +27,7 @@ export class TransformService {
      * @returns {Promise<ITransform>}
      * @memberof TransformActivity
      */
-    async executePipe(ctx: NodeActivityContext, stream: ITransform, transform: Expression<ITransform>, waitend = false): Promise<ITransform> {
+    async pipeStream(ctx: NodeActivityContext, stream: ITransform, transform: Expression<ITransform>, waitend = false): Promise<ITransform> {
 
         let transPipe: ITransform;
         if (isTransform(transform)) {

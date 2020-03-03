@@ -1,4 +1,4 @@
-import { lang, isTypeObject } from '@tsdi/ioc';
+import { lang, isTypeObject, isFunction } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBinding } from './IBinding';
 import { observe } from './onChange';
@@ -22,8 +22,27 @@ export abstract class DataBinding<T = any> {
 
     }
 
+    private map: Map<string, any>;
+    private refreshkeys = [];
+    getEnvMap(): Map<string, any> {
+        if (!this.map) {
+            this.map = this.provider.getAstResolver().parseEnvMap(this.source);
+            this.map.forEach((v, k) => {
+                if (!isFunction(v)) {
+                    this.refreshkeys.push(k);
+                }
+            });
+            return this.map;
+        } else {
+            this.refreshkeys.forEach(k => {
+                this.map.set(k, this.source[k]);
+            });
+            return this.map;
+        }
+    }
+
     resolveExression(): T {
-        return this.provider.getAstResolver().resolve(this.expression, this.injector, this.source);
+        return this.provider.getAstResolver().resolve(this.expression, this.injector, this.getEnvMap());
     }
 
     getFileds() {
@@ -58,7 +77,7 @@ export abstract class DataBinding<T = any> {
             let paths = field.split('.');
             let idx = field.lastIndexOf('.');
             let scope = field.substring(0, idx);
-            let sub = astResolver.resolve(scope, this.injector, this.source);
+            let sub = astResolver.resolve(scope, this.injector, this.getEnvMap());
             let last = field.substring(idx + 1);
             observe.onPropertyChange(this.source, lang.first(paths), (value, oldVal) => {
                 target[fieldName] = this.resolveExression();

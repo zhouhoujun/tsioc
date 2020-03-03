@@ -135,10 +135,10 @@ export interface LibPackBuilderOption extends TemplateOption {
     /**
      * enable source maps or not.
      *
-     * @type {Binding<NodeExpression<boolean|string>>}
+     * @type {Binding<boolean|string>}
      * @memberof RollupOption
      */
-    sourcemap?: Binding<NodeExpression<boolean | string>>;
+    sourcemap?: Binding<boolean | string>;
 
     test?: Binding<Src>;
 
@@ -274,7 +274,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                         },
                         {
                             activity: Activities.if,
-                            condition: ctx => ctx.getInput<LibBundleOption>().uglify,
+                            condition: (ctx, bind) => bind.getInput<LibBundleOption>().uglify,
                             body: <AssetActivityOption>{
                                 activity: 'asset',
                                 src: (ctx, bind) => {
@@ -282,7 +282,7 @@ export interface LibPackBuilderOption extends TemplateOption {
                                     return isArray(input.input) ? bind.getScope<LibPackBuilder>().toModulePath(input, '/**/*.js') : bind.getScope<LibPackBuilder>().toModulePath(input, input.outputFile)
                                 },
                                 dist: (ctx, bind) => bind.getScope<LibPackBuilder>().toModulePath(bind.getInput()),
-                                sourcemap: 'binding: zipMapsource',
+                                sourcemap: 'binding: sourcemap | path:"./"',
                                 pipes: [
                                     () => uglify(),
                                     () => rename({ suffix: '.min' })
@@ -374,17 +374,10 @@ export class LibPackBuilder implements AfterInit {
      * @memberof RollupOption
      */
     @Input() options?: NodeExpression<RollupOptions>;
-    @Input() sourcemap?: NodeExpression<boolean | string>;
+    @Input({ defaultValue: true }) sourcemap?: boolean | string;
     @Input() postcssOption: NodeExpression;
 
     @Input() beforeResolve: NodeExpression<Plugin[]>
-
-    get zipMapsource() {
-        if (this.sourcemap && isBoolean(this.sourcemap)) {
-            return './';
-        }
-        return this.sourcemap;
-    }
 
     getCompileOptions(target: string) {
         if (target) {
@@ -440,9 +433,6 @@ export class LibPackBuilder implements AfterInit {
             }
         }
 
-        if (isNullOrUndefined(this.sourcemap)) {
-            this.sourcemap = true;
-        }
         if (!this.plugins) {
             this.plugins = async (ctx: NodeActivityContext, bind) => {
                 let beforeResolve = await bind.resolveExpression(this.beforeResolve);

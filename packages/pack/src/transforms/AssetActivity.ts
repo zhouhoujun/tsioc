@@ -1,10 +1,9 @@
 import { isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { Src, Task, TemplateOption, ActivityType, Activities } from '@tsdi/activities';
-import { TransformService } from './TransformActivity';
 import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { ITransform } from '../ITransform';
-
+const sourcemaps = require('gulp-sourcemaps');
 
 /**
  * shell activity config.
@@ -64,13 +63,13 @@ export interface AssetActivityOption extends TemplateOption {
         },
         {
             activity: Activities.if,
-            condition: (ctx, bind) => bind.getScope<AssetActivity>().sourcemap,
+            condition: 'binding: sourcemap',
             body: {
                 name: 'sourcemap-init',
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, bind) => {
-                    let framework = bind.getScope<AssetActivity>().framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.init())
+                    let framework = bind.getScope<AssetActivity>().framework || sourcemaps;
+                    return  ctx.getData<ITransform>().pipe(framework.init())
                 }
             }
         },
@@ -86,8 +85,8 @@ export interface AssetActivityOption extends TemplateOption {
                 activity: Activities.execute,
                 action: (ctx: NodeActivityContext, bind) => {
                     let scope = bind.getScope<AssetActivity>();
-                    let framework = scope.framework || require('gulp-sourcemaps');
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
+                    let framework = scope.framework || sourcemaps;
+                    return ctx.getData<ITransform>().pipe(framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
                 }
             }
         },

@@ -9,7 +9,7 @@ import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
-import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING } from './ParseContext';
+import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING, CTX_BIND_PARSED } from './ParseContext';
 import { IComponentOption } from '../ComponentContext';
 
 
@@ -107,6 +107,7 @@ export const TranslateExpressionHandle = async function (ctx: IParseContext, nex
             .execute(tpCtx);
 
         if (!tpCtx.destroyed) {
+            ctx.setValue(CTX_BIND_PARSED, !!tpCtx.value);
             let type = lang.getClass(tpCtx.value);
             let sub = ctx.getOptions().sub;
             if ((sub && (!binding.provider || ctx.reflects.isExtends(type, binding.provider as ClassType)))
@@ -163,6 +164,7 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
                 template: bindings,
                 providers: ctx.providers
             });
+            ctx.setValue(CTX_BIND_PARSED, !!ctx.value);
         }
     }
 

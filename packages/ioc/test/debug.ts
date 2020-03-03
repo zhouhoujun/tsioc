@@ -71,6 +71,7 @@ export class MClassRoom {
 }
 
 
+
 @Injectable(Student, 'college')
 export class CollegeStudent extends Student {
     constructor() {

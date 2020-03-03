@@ -1,6 +1,6 @@
 import {
     Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProviders,
-    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ClassType, Injectable
+    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ClassType, Injectable, isTypeObject, isFunction, isDefined
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
@@ -206,15 +206,15 @@ export class AstResolver {
      *
      * @param {string} expression
      * @param {ICoreInjector} [injector]
+     * @param {Object | Map<string, any>} [scope]
      * @param {*} [envOptions]
      * @returns {*}
      * @memberof AstResolver
      */
-    resolve(expression: string, injector: ICoreInjector, envOptions?: any): any {
+    resolve(expression: string, injector: ICoreInjector, scope?: Object | Map<string, any>, envOptions?: any): any {
         if (!expression) {
             return expression;
         }
-
         try {
             // xxx | pipename
             let pipes: string[];
@@ -223,36 +223,73 @@ export class AstResolver {
                 expression = exps.shift();
                 pipes = exps;
             }
-            let value = this.eval(expression, envOptions);
-            return pipes ? this.transforms(value, pipes, injector, envOptions) : value;
+            let map = this.parseEnvMap(scope, envOptions);
+            let value = this.eval(expression, map);
+            return pipes ? this.transforms(value, pipes, injector, map, envOptions || scope) : value;
         } catch (err) {
             return void 0;
         }
     }
 
-    eval(expression: string, envOptions?: Object) {
-        if (envOptions) {
+    parseEnvMap(scope?: Object | Map<string, any>, envOptions?: Object): Map<string, any> {
+        if (scope) {
+            if (scope instanceof Map) {
+                return scope;
+            }
+            const map = new Map<string, any>();
+            Object.keys(scope).forEach(k => {
+                map.set(k, scope[k]);
+            });
+            if (isTypeObject(scope)) {
+                let descps = Object.getOwnPropertyDescriptors(lang.getClass(scope).prototype);
+                Object.keys(descps).forEach(k => {
+                    if (k === 'constructor') {
+                        return;
+                    }
+                    let val: any;
+                    let de = descps[k];
+                    if (isFunction(de.value)) {
+                        val = (...args) => scope[k](...args);
+                    } else {
+                        val = scope[k];
+                    }
+                    if (isDefined(val)) {
+                        map.set(k, val);
+                    }
+                });
+            }
+            if (envOptions) {
+                Object.keys(envOptions).forEach(k => {
+                    map.set(k, envOptions[k]);
+                })
+            }
+            return map;
+        }
+        return null;
+    }
+
+    eval(expression: string, scopes?: Map<string, any>) {
+        if (scopes) {
             // tslint:disable-next-line:no-eval
-            let func = eval(`(${Object.keys(envOptions).join(',')}) => {
+            let func = eval(`(${Array.from(scopes.keys()).join(',')}) => {
                 return ${expression};
             }`);
-            return func(...Object.values(envOptions));
-
+            return func(...Array.from(scopes.values()));
         } else {
             // tslint:disable-next-line:no-eval
             return eval(expression);
         }
     }
 
-    transforms(value: any, pipes: string[], injector: ICoreInjector, envOptions?: any): any {
+    transforms(value: any, pipes: string[], injector: ICoreInjector, scope?: Map<string, any>, envOptions?: any): any {
         pipes.forEach(p => {
             let [pipeName, args] = p.split(':');
             let pipe = this.provider.getPipe(pipeName, injector);
             if (args) {
                 if (args.indexOf(',') > 0) {
-                    value = pipe.transform(value, ...this.eval(`[${args}]`, envOptions), envOptions);
+                    value = pipe.transform(value, ...this.eval(`[${args}]`, scope), envOptions);
                 } else {
-                    value = pipe.transform(value, this.eval(args, envOptions), envOptions);
+                    value = pipe.transform(value, this.eval(args, scope), envOptions);
                 }
             } else {
                 value = pipe.transform(value, envOptions);

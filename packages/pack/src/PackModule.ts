@@ -7,6 +7,7 @@ import * as builds from './builds';
 import { TsComplie } from './ts-complie';
 import { NodeActivityContext } from './NodeActivityContext';
 import { PlatformService } from './PlatformService';
+import * as pipes from './pipes';
 
 @DIModule({
     regIn: 'root',
@@ -14,6 +15,7 @@ import { PlatformService } from './PlatformService';
         ServerBootstrapModule,
     ],
     providers: [
+        [pipes],
         TsComplie,
         NodeActivityContext,
         PlatformService

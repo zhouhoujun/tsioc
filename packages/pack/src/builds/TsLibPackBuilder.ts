@@ -120,7 +120,7 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                             return isArray(input.input) ? bind.getScope<TsLibPackBuilder>().toModulePath(input, '/**/*.js') : bind.getScope<TsLibPackBuilder>().toModulePath(input, input.outputFile)
                         },
                         dist: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toModulePath(bind.getInput()),
-                        sourcemap: 'binding: zipMapsource',
+                        sourcemap: 'binding: sourcemap | path:"./"',
                         pipes: [
                             () => uglify(),
                             () => rename({ suffix: '.min' })
