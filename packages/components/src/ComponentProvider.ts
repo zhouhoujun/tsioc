@@ -223,7 +223,7 @@ export class AstResolver {
                 expression = exps.shift();
                 pipes = exps;
             }
-            let map = this.parseEnvMap(scope, envOptions);
+            let map = this.parseScope(expression, scope, envOptions);
             let value = this.eval(expression, map);
             return pipes ? this.transforms(value, pipes, injector, map, envOptions || scope) : value;
         } catch (err) {
@@ -231,19 +231,21 @@ export class AstResolver {
         }
     }
 
-    parseEnvMap(scope?: Object | Map<string, any>, envOptions?: Object): Map<string, any> {
+    parseScope(expression: string, scope?: Object | Map<string, any>, envOptions?: Object): Map<string, any> {
         if (scope) {
             if (scope instanceof Map) {
                 return scope;
             }
             const map = new Map<string, any>();
             Object.keys(scope).forEach(k => {
-                map.set(k, scope[k]);
+                if (expression.indexOf(k) >= 0) {
+                    map.set(k, scope[k]);
+                }
             });
             if (isTypeObject(scope)) {
-                let descps = Object.getOwnPropertyDescriptors(lang.getClass(scope).prototype);
+                let descps = this.provider.reflects.create(lang.getClass(scope)).defines.getPropertyDescriptors();
                 Object.keys(descps).forEach(k => {
-                    if (k === 'constructor') {
+                    if (k === 'constructor' || expression.indexOf(k) < 0) {
                         return;
                     }
                     let val: any;
@@ -260,7 +262,9 @@ export class AstResolver {
             }
             if (envOptions) {
                 Object.keys(envOptions).forEach(k => {
-                    map.set(k, envOptions[k]);
+                    if (expression.indexOf(k) >= 0) {
+                        map.set(k, envOptions[k]);
+                    }
                 })
             }
             return map;

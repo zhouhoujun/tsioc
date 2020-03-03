@@ -1,6 +1,6 @@
 import { isTypeObject, lang, isDefined } from '@tsdi/ioc';
 import { IComponentContext } from '../ComponentContext';
-import { ParseContext } from '../parses/ParseContext';
+import { ParseContext, CTX_BIND_PARSED } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
 import { BindingTypes, IPropertyVaildate } from '../bindings/IBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
@@ -39,8 +39,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
                     });
                     await actInjector.getInstance(BindingScope).execute(pctx, async () => {
                         if (pctx.dataBinding instanceof ParseBinding) {
-                            let epVal = pctx.dataBinding.resolveExression();
-                            if (epVal !== pctx.value && isTypeObject(pctx.value)) {
+                            if (pctx.getValue(CTX_BIND_PARSED) && isTypeObject(pctx.value)) {
                                 ctx.value[binding.name] = pctx.value;
                                 pctx.dataBinding.bind(pctx.value);
                             } else {

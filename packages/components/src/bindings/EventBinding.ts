@@ -9,7 +9,7 @@ export class EventBinding<T = any> extends DataBinding<T> {
         let outEvent = target[this.binding.name];
         if (outEvent && isObservable(this.binding.type)) {
             outEvent.subsrcibe($event => {
-                let result = this.provider.getAstResolver().resolve(this.expression, this.injector, this.getEnvMap(), { target: target, $scope: $scope, $event: $event });
+                let result = this.provider.getAstResolver().resolve(this.expression, this.injector, this.getScope(), { target: target, $scope: $scope, $event: $event });
                 if (isFunction(result)) {
                     result($event);
                 }

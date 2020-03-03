@@ -34,7 +34,6 @@ export class ElementNode {
      */
     @Input() name: string;
 
-
     /**
      * is equals or not.
      *

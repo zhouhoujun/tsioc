@@ -75,14 +75,8 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
 
     let dataBinding = ctx.dataBinding;
     if (dataBinding instanceof ParseBinding) {
-        if (!dataBinding.source) {
-            dataBinding.source = ctx.getComponent();
-        }
         ctx.setValue(CTX_BIND_EXPRESSION, dataBinding.resolveExression());
     } else if (dataBinding instanceof DataBinding) {
-        if (!dataBinding.source) {
-            dataBinding.source = ctx.getComponent();
-        }
         ctx.value = dataBinding.resolveExression();
     }
 
