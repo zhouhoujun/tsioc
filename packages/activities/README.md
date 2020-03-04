@@ -60,6 +60,35 @@ export class CleanActivity extends Activity<void> {
 see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/src/activities)
 
 
+### Define component pipe
+
+``` ts
+@Pipe('tsjs')
+export class TypeScriptJsPipe implements IPipeTransform  {
+    transform(value: any): any {
+        return value.js ?? value;
+    }
+}
+
+@Pipe('dts')
+export class TypeScriptDtsPipe implements IPipeTransform {
+    transform(value: any): any {
+        return value.dts;
+    }
+}
+
+@Pipe('path')
+export class PathPipe implements IPipeTransform {
+    transform(value: any, defaults: string): any {
+        if (isString(value)) {
+            return value;
+        }
+        return value ? defaults : null;
+    }
+}
+```
+
+
 ### Define component Task
 
 ```ts
@@ -137,11 +166,14 @@ export interface TsBuildOption extends AssetActivityOption {
         },
         {
             activity: Activities.if,
-            externals: async (ctx) => {
-                let tds = await ctx.resolveExpression(ctx.getScope<TsBuildActivity>().dts);
-                return tds ? {
-                    data: 'ctx.getData() | tsjs'
-                } : null;
+            // externals: async (ctx) => {
+            //     let tds = await ctx.resolveExpression(ctx.getScope<TsBuildActivity>().dts);
+            //     return tds ? {
+            //         data: 'ctx.getData() | tsjs'
+            //     } : null;
+            // },
+            externals: {
+                data: 'ctx.getData() | tsjs'
             },
             condition: ctx => isTransform(ctx.getData()),
             body: [
@@ -186,13 +218,13 @@ export interface TsBuildOption extends AssetActivityOption {
             body: {
                 name: 'write-dts',
                 activity: 'dist',
-                dist: 'binding: dts',
+                dist: 'binding: dts | path:dist',
             }
         }
     ]
 })
 export class TsBuildActivity {
-    @Input() dts: NodeExpression<string>;
+    @Input() dts: NodeExpression<string | bool>;
     @Input() annotation: NodeExpression<boolean>;
     @Input('annotationFramework') annotationFramework: NodeExpression<ITransform>;
     @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
@@ -219,7 +251,7 @@ export class TsBuildActivity {
         activity: 'ts',
         annotation: true,
         dist: 'dist',
-        dts: 'dist',
+        dts: 'dist', // or true
         sourcemap: true
     }
 })
