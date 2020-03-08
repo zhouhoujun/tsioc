@@ -1,4 +1,4 @@
-import { ObjectMap, tokenId } from '@tsdi/ioc';
+import { ObjectMap, tokenId, Type } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 
@@ -6,6 +6,23 @@ import { ModuleConfigure } from '../modules/ModuleConfigure';
  *  process run root.
  */
 export const ProcessRunRootToken = tokenId<string>('BOOT_PROCESS_ROOT');
+
+
+export interface IConnectionOptions {
+    asDefault?: boolean;
+    name?: string;
+    /**
+     * db type.
+     */
+    type: string;
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+    database: string;
+    entities?: Type[];
+    initDb?(connect: any): Promise<void>;
+}
 
 /**
  * runnable configure.
@@ -59,5 +76,10 @@ export interface RunnableConfigure extends ModuleConfigure {
      * @type {any}
      * @memberof AppConfigure
      */
-    connections?: any;
+    connections?: IConnectionOptions | IConnectionOptions[];
+
+    /**
+     * models of boot application.
+     */
+    models?: string[] | Type[];
 }

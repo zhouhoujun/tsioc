@@ -3,7 +3,7 @@ import { IBootContext } from '../BootContext';
 
 
 /**
- * startup and configure service.
+ * startup and configure services of application.
  *
  * @export
  * @abstract
@@ -16,10 +16,9 @@ export abstract class StartupService<T extends IBootContext = IBootContext> {
     constructor() { }
 
     /**
-     * config core global service.
+     * config service of application.
      *
      * @abstract
-     * @param {RunnableConfigure} config
      * @param {T} [ctx]
      * @returns {Promise<void | Token | Token[]>} startup service token
      * @memberof ConfigureRegister

@@ -45,6 +45,10 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
      */
     configures?: (string | RunnableConfigure)[];
     /**
+     * startups services of application in order by config.
+     */
+    startups?: Token[]
+    /**
      * bootstrap instance.
      *
      * @memberof BootOptions
@@ -298,6 +302,9 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         }
         if (options.bootstrap) {
             this.setValue(CTX_MODULE_BOOT_TOKEN, options.bootstrap);
+        }
+        if(options.startups) {
+            this.setValue(CTX_APP_STARTUPS, options.startups)
         }
         if (isDefined(options.data)) {
             this.setValue(CTX_DATA, options.data);

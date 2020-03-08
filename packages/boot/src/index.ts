@@ -67,6 +67,9 @@ export * from './messages/MessageHandle';
 export * from './messages/MessageQueue';
 export * from './messages/RootMessageQueue';
 
+// orm core
+export * from './orm';
+
 // builders
 export * from './builder/BuildHandles';
 export * from './builder/IBuildContext';
