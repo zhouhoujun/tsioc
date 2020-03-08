@@ -133,8 +133,7 @@ export class ProductionController {
         const r = await this.rep.search(keywords, skip, take);
         return ResponseResult.success(r[0], r[1]);
     }
-
-
+}
 
 // 1. use MvcHostBuilder to boot application.
 MvcApplication.run();
