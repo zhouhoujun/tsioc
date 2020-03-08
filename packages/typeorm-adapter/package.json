@@ -1,7 +1,7 @@
 {
   "name": "@tsdi/typeorm-adapter",
   "version": "6.0.0-beta6",
-  "description": "@tsdi/typeorm-adapter is typeorm adapter orm for mvc, type-mvc is base on koa. Decorator, Ioc, AOP mvc frameworker on server.",
+  "description": "@tsdi/typeorm-adapter is typeorm adapter orm for boot application, mvc frameworks on server.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
@@ -32,11 +32,11 @@
   "author": "houjun",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zhouhoujun/type-mvc/issues"
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zhouhoujun/type-mvc.git"
+    "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
   "dependencies": {
     "typeorm": "~0.2.24",
@@ -50,5 +50,5 @@
     "@tsdi/core": "~6.0.0-beta6",
     "tslib": "^1.11.0"
   },
-  "homepage": "https://github.com/zhouhoujun/type-mvc#readme"
+  "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter#readme#readme"
 }
