@@ -56,12 +56,12 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * send message
      *
      * @template TOpt
-     * @param {TOpt} options
+     * @param {MessageOption} options
      * @param {() => T} [fac]
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send<TOpt extends MessageOption>(options: TOpt, fac?: () => T): Promise<void>;
+    send(options: MessageOption, fac?: () => T): Promise<void>;
     /**
      * send message
      *
