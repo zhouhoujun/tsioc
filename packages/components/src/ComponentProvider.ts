@@ -1,6 +1,7 @@
 import {
     Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProviders,
-    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject, ClassType, Injectable, isTypeObject, isFunction, isDefined
+    SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject,
+    ClassType, Injectable, isTypeObject, isFunction, isDefined
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
