@@ -27,8 +27,6 @@ export class CaseActivity extends ControlActivity {
 @Task('switch')
 export class SwitchActivity extends ControlActivity {
 
-    isScope = true;
-
     @Input() switch: Expression;
 
     @Input(CaseActivity) cases: CaseActivity[];
