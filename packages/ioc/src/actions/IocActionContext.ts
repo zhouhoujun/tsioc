@@ -139,6 +139,11 @@ export abstract class IocRaiseContext<
         return this.context.getValue(key);
     }
 
+    /**
+     * set value to this contet.
+     * @param key token key
+     * @param value value of key.
+     */
     setValue<T>(key: SymbolType<T>, value: T) {
         this.context.setValue(key, value);
         return this;

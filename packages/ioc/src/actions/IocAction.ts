@@ -50,12 +50,21 @@ export interface IIocContext<
      * @returns {T}
      */
     get<T>(token: Token<T>): T;
+    /**
+     * get instance.
+     * @param token the token key of instance.
+     */
     getInstance<T>(token: SymbolType<T>): T;
     /**
      * get value from context.
      * @param key token key
      */
     getValue<T>(key: SymbolType<T>): T;
+    /**
+     * set value to this contet.
+     * @param key token key
+     * @param value value of key.
+     */
     setValue<T>(key: SymbolType<T>, value: T): this;
     /**
      * set provider of this context.
@@ -88,12 +97,19 @@ export interface IIocContext<
      */
     setOptions(options: T): this;
 
+    /**
+     * clone this context.
+     */
     clone(): this;
     /**
-     * clone the context.
+     * clone this context with out options.
      * @param empty empty context or not.
      */
     clone(empty: boolean): this;
+    /**
+     * clone this context with custom options.
+     * @param options custom options.
+     */
     clone(options: T): this;
 }
 

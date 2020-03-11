@@ -303,7 +303,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         if (options.bootstrap) {
             this.setValue(CTX_MODULE_BOOT_TOKEN, options.bootstrap);
         }
-        if(options.startups) {
+        if (options.startups) {
             this.setValue(CTX_APP_STARTUPS, options.startups)
         }
         if (isDefined(options.data)) {
