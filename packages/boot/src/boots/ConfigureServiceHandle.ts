@@ -17,7 +17,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
         }));
     }
 
-    let sers = []
+    let sers = [];
     prds.iterator((fac) => {
         sers.push(fac(ctx.providers));
     });
