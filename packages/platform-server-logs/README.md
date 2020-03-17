@@ -32,10 +32,18 @@ You can `import` modules:
 
 
 
-## Documentation [github](https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-logs#readme)
-
+## Documentation
 Documentation is available on the
-[type-task docs site](https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-logs#readme).
+* [@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
+* [@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
+* [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
+* [@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
+* [@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+* [@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
+* [@tsdi/typeorm-adapter document](https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter).
+* [@tsdi/unit document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit).
+* [@tsdi/unit-console document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit-console).
+* [@tsdi/cli document](https://github.com/zhouhoujun/tsioc/tree/master/packages/cli).
 
 ## License
 

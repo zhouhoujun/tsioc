@@ -101,16 +101,19 @@ export class DebugLog {
 
 ```
 
-## Container Interface
 
-see more interface. all document is typescript .d.ts.
-
-* [IMethodAccessor](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IMethodAccessor.ts).
-* [IContainer](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/IContainer.ts)
-* [LifeScope](https://github.com/zhouhoujun/tsioc/blob/master/packages/core/src/LifeScope.ts)
-
+## Documentation
 Documentation is available on the
-[@tsdi/aop docs site](https://github.com/zhouhoujun/tsioc).
+* [@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
+* [@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
+* [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
+* [@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
+* [@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+* [@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
+* [@tsdi/typeorm-adapter document](https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter).
+* [@tsdi/unit document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit).
+* [@tsdi/unit-console document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit-console).
+* [@tsdi/cli document](https://github.com/zhouhoujun/tsioc/tree/master/packages/cli).
 
 ## License
 
