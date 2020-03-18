@@ -41,8 +41,12 @@ export abstract class DataBinding<T = any> {
         }
     }
 
+    protected parser: (scope: Map<string, any>, envOptions?: any) => any
     resolveExression(): T {
-        return this.provider.getAstResolver().resolve(this.expression, this.injector, this.getScope());
+        if (!this.parser) {
+            this.parser = this.provider.getAstResolver().parse(this.expression, this.injector);
+        }
+        return this.parser(this.getScope());
     }
 
     private fieldExps: string[];

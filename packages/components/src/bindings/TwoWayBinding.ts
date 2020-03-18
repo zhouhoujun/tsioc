@@ -27,9 +27,10 @@ export class TwoWayBinding<T> extends ParseBinding<T> {
         if (fields.length === 1) {
             let fd = lang.first(fields);
             let scopeExp = pathCkExp.test(fd) ? fd.substring(0, fd.lastIndexOf('.')) : '';
+            let scopeParser = this.provider.getAstResolver().parse(scopeExp, this.injector);
             let scopeFile = pathCkExp.test(fd) ? fd.substring(fd.lastIndexOf('.') + 1) : fd;
             observe.onPropertyChange(target, field, (value, oldVal) => {
-                let scope = scopeExp ? this.provider.getAstResolver().resolve(scopeExp, this.injector, this.getScope()) : this.source;
+                let scope = scopeParser ? scopeParser(this.getScope()) : this.source;
                 scope[scopeFile] = value;
             });
         }

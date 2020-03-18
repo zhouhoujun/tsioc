@@ -15,6 +15,7 @@ import { IPipeTransform } from './bindings/IPipeTransform';
 import { IComponentContext } from './ComponentContext';
 import { ITemplateContext, ITemplateOption } from './parses/TemplateContext';
 import { pipeExp } from './bindings/exps';
+import { stringify } from 'querystring';
 
 
 
@@ -226,10 +227,60 @@ export class AstResolver {
                 expression = expression.substring(0, idx);
             }
             let value = this.eval(expression, map);
-            return pipes ? this.transforms(value, pipes, injector, map, envOptions || scope) : value;
+            if (pipes && pipes.length) {
+                let scopes = Array.from(map.keys());
+                let args = Array.from(map.values());
+                this.transforms(pipes, injector, scopes)
+                    .forEach(tsf => {
+                        value = tsf(value, args, envOptions);
+                    });
+            }
+            return value;
         } catch (err) {
             return void 0;
         }
+    }
+
+    parse(expression: string, injector: ICoreInjector): (scope: Map<string, any>, envOptions?: any) => any {
+        if (!expression) {
+            return null;
+        }
+        let self = this;
+        return (() => {
+            let pipes: string[];
+            let map: Map<string, any>;
+            let scopes: string[];
+            let transforms: ((value, args: any[], envOptions?: any) => any)[];
+            let expFunc: (...args: any[]) => any;
+            return (scope: Map<string, any>, envOptions?: any) => {
+                try {
+                    // xxx | pipename
+                    if (!map || !expFunc) {
+                        map = self.parseScope(expression, scope, envOptions);
+                        scopes = Array.from(map.keys());
+                        let idx = expression.search(pipeExp);
+                        if (idx > 0) {
+                            pipes = expression.substring(idx + 3).split(' | ');
+                            expression = expression.substring(0, idx);
+                        }
+                        if (pipes) {
+                            transforms = this.transforms(pipes, injector, scopes);
+                        }
+                        expFunc = this.toScopFunc(expression, scopes);
+                    }
+                    let args = Array.from(scope.values());
+                    let value = expFunc(...args);
+                    if (transforms && transforms.length) {
+                        transforms.forEach(tsf => {
+                            value = tsf(value, args, envOptions);
+                        });
+                    }
+                    return value;
+                } catch (err) {
+                    return void 0;
+                }
+            }
+        })();
     }
 
     parseScope(expression: string, scope?: Object | Map<string, any>, envOptions?: Object): Map<string, any> {
@@ -286,21 +337,31 @@ export class AstResolver {
         }
     }
 
-    transforms(value: any, pipes: string[], injector: ICoreInjector, scope?: Map<string, any>, envOptions?: any): any {
-        pipes.forEach(p => {
+    toScopFunc(expression: string, scopes: string[]) {
+        // tslint:disable-next-line:no-eval
+        return eval(`(${scopes.join(',')}) => {
+                return ${expression};
+            }`);
+    }
+
+    protected transforms(pipes: string[], injector: ICoreInjector, scopes: string[]): ((value, args: any[], envOptions?: any) => any)[] {
+        return pipes.map(p => {
             let [pipeName, args] = p.split(':');
             let pipe = this.provider.getPipe(pipeName, injector);
+            let pipeAg: Function;
+            let isArray: boolean;
             if (args) {
                 if (args.indexOf(',') > 0) {
-                    value = pipe.transform(value, ...this.eval(`[${args}]`, scope), envOptions);
+                    pipeAg = this.toScopFunc(`[${args}]`, scopes);
+                    isArray = true;
                 } else {
-                    value = pipe.transform(value, this.eval(args, scope), envOptions);
+                    pipeAg = this.toScopFunc(args, scopes);
                 }
-            } else {
-                value = pipe.transform(value, envOptions);
             }
+
+            return pipeAg ? (value, args: any[], envOptions?: any) => pipe.transform(value, ...(isArray ? pipeAg(...args) : [pipeAg(...args)]), envOptions)
+                : (value, args: any[], envOptions?: any) => pipe.transform(value, envOptions)
         });
-        return value;
     }
 }
 
