@@ -31,9 +31,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
             } else if (isToken(tks)) {
                 startups.push(tks);
             } else {
-                let type = lang.getClass(ser);
                 startups.push(lang.getClass(ser));
-                ctx.setValue(type, ser);
             }
         }));
     }
