@@ -224,13 +224,14 @@ export interface TsBuildOption extends AssetActivityOption {
     ]
 })
 export class TsBuildActivity {
-    @Input() dts: NodeExpression<string | bool>;
-    @Input() annotation: NodeExpression<boolean>;
+    @Input() dist: string;
+    @Input() dts: string | bool;
+    @Input() annotation: boolean;
     @Input('annotationFramework') annotationFramework: NodeExpression<ITransform>;
     @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
-    @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string | ObjectMap>;
+    @Input('tsconfig', './tsconfig.json') tsconfig: string | ObjectMap;
     @Input() uglify: NodeExpression<boolean>;
-    @Input('uglifyOptions') uglifyOptions: NodeExpression;
+    @Input('uglifyOptions') uglifyOptions: any;
 }
 
 ```
