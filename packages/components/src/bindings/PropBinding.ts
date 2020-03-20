@@ -9,14 +9,14 @@ import { ComponentProvider } from '../ComponentProvider';
 
 
 /**
- * data binding.
+ * property binding.
  *
  * @export
  * @abstract
  * @class DataBinding
  * @template T
  */
-export abstract class DataBinding<T = any> {
+export abstract class PropBinding<T = any> {
 
     constructor(protected injector: ICoreInjector, protected provider: ComponentProvider, public source: any, public binding: IBinding, public expression: string) {
 
@@ -117,5 +117,5 @@ export interface ElementTemplate {
 /**
  * binding
  */
-export type Binding<T, Temp extends ElementTemplate = ElementTemplate> = string | DataBinding<T> | T | Temp;
+export type Binding<T, Temp extends ElementTemplate = ElementTemplate> = string | PropBinding<T> | T | Temp;
 

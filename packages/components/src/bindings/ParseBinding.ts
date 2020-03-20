@@ -1,13 +1,13 @@
-import { DataBinding } from './DataBinding';
+import { PropBinding } from './PropBinding';
 
 /**
  * parse binding
  *
  * @export
  * @class OneWayBinding
- * @extends {DataBinding<T>}
+ * @extends {PropBinding<T>}
  * @template T
  */
-export abstract class ParseBinding<T> extends DataBinding<T> {
+export abstract class ParseBinding<T> extends PropBinding<T> {
 
 }

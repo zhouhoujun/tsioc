@@ -1,8 +1,8 @@
 import { isObservable, isFunction } from '@tsdi/ioc';
-import { DataBinding } from './DataBinding';
+import { PropBinding } from './PropBinding';
 
 
-export class EventBinding<T = any> extends DataBinding<T> {
+export class EventBinding<T = any> extends PropBinding<T> {
 
     bind(target: any): void {
         let $scope = this.source;

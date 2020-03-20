@@ -13,7 +13,7 @@ import { IWorkflowContext, WorkflowContextToken } from './IWorkflowContext';
 
 
 /**
- * activity execute context.ß
+ * activity execute context.
  *
  * @export
  * @class ActivityContext

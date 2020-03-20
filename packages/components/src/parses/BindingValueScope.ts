@@ -2,7 +2,7 @@ import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, 
 import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser, BuildHandles } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { ComponentBuilderToken } from '../IComponentBuilder';
-import { DataBinding } from '../bindings/DataBinding';
+import { PropBinding } from '../bindings/PropBinding';
 import { BindingDirection } from '../bindings/IBinding';
 import { OneWayBinding } from '../bindings/OneWayBinding';
 import { TwoWayBinding } from '../bindings/TwoWayBinding';
@@ -43,7 +43,7 @@ const eventBindPref = '(binding):'
  */
 export const BindingScopeHandle = async function (ctx: IParseContext, next?: () => Promise<void>): Promise<void> {
     let expression = ctx.bindExpression;
-    if (!ctx.hasValue(CTX_BIND_DATABINDING) && expression instanceof DataBinding) {
+    if (!ctx.hasValue(CTX_BIND_DATABINDING) && expression instanceof PropBinding) {
         ctx.setValue(CTX_BIND_DATABINDING, expression);
     }
     let binding = ctx.binding;
@@ -57,7 +57,7 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
             await PromiseUtil.runInChain(regs.getFuncs(actInjector, compdect), ctx);
         } else {
             let exp = expression.trim();
-            let dataBinding: DataBinding;
+            let dataBinding: PropBinding;
             if (binding.direction === BindingDirection.input) {
                 if (exp.startsWith(bindPref)) {
                     dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(bindPref, '').trim());
@@ -76,7 +76,7 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
     let dataBinding = ctx.dataBinding;
     if (dataBinding instanceof ParseBinding) {
         ctx.setValue(CTX_BIND_EXPRESSION, dataBinding.resolveExression());
-    } else if (dataBinding instanceof DataBinding) {
+    } else if (dataBinding instanceof PropBinding) {
         ctx.value = dataBinding.resolveExression();
     }
 

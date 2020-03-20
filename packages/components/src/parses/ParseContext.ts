@@ -1,7 +1,7 @@
 import { Injectable, createRaiseContext, lang, tokenId, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBinding } from '../bindings/IBinding';
-import { DataBinding } from '../bindings/DataBinding';
+import { PropBinding } from '../bindings/PropBinding';
 import { ComponentContext, IComponentContext, IComponentOption } from '../ComponentContext';
 import { Input } from '../decorators/Input';
 import { Output } from '../decorators/Output';
@@ -26,11 +26,11 @@ export interface IBindingParseOption extends IComponentOption {
 export interface IParseContext extends IComponentContext<IBindingParseOption> {
     readonly binding: IBinding;
     readonly bindExpression: any;
-    readonly dataBinding: DataBinding;
+    readonly dataBinding: PropBinding;
     getExtenalBindings(): any;
 }
 
-export const CTX_BIND_DATABINDING = tokenId<DataBinding>('CTX_BIND_DATABINDING');
+export const CTX_BIND_DATABINDING = tokenId<PropBinding>('CTX_BIND_DATABINDING');
 export const CTX_BIND_BINDING = tokenId<IBinding>('CTX_BIND_BINDING');
 export const CTX_BIND_EXPRESSION = tokenId<any>('CTX_BIND_EXPRESSION');
 export const CTX_BIND_PARSED = tokenId<boolean>('CTX_BIND_PARSED');
@@ -60,7 +60,7 @@ export class ParseContext extends ComponentContext<IBindingParseOption> implemen
         return this.getValue(CTX_BIND_EXPRESSION);
     }
 
-    get dataBinding(): DataBinding {
+    get dataBinding(): PropBinding {
         return this.getValue(CTX_BIND_DATABINDING)
     }
 

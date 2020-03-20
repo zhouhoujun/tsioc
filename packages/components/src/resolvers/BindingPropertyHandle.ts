@@ -4,7 +4,7 @@ import { ParseContext, CTX_BIND_PARSED } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
 import { BindingTypes, IPropertyVaildate } from '../bindings/IBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
-import { DataBinding } from '../bindings/DataBinding';
+import { PropBinding } from '../bindings/PropBinding';
 import { Input } from '../decorators/Input';
 import { Vaildate } from '../decorators/Vaildate';
 
@@ -45,7 +45,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
                             } else {
                                 pctx.dataBinding.bind(ctx.value, pctx.value);
                             }
-                        } else if (pctx.dataBinding instanceof DataBinding) {
+                        } else if (pctx.dataBinding instanceof PropBinding) {
                             pctx.dataBinding.bind(ctx.value, pctx.value);
                         } else {
                             ctx.value[binding.name] = pctx.value;
