@@ -54,34 +54,16 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
             body: [
                 {
                     activity: Activities.if,
-                    condition: (ctx, bind) => {
-                        let input = bind.getInput<LibBundleOption>().input || bind.getScope<TsLibPackBuilder>().mainFile;
-                        if (input) {
-                            return isArray(input) ? input.some(i => tsFileExp.test(i)) : tsFileExp.test(input)
-                        }
-                        return false
-                    },
+                    condition: 'binding: vaidts(ctx.getInput())',
                     body: <RollupTsOption>{
                         activity: 'rts',
-                        input: (ctx, bind) => bind.getInput<LibBundleOption>().input || bind.getScope<TsLibPackBuilder>().mainFile,
+                        input: 'binding: transRollupInput(ctx.getInput())',
                         sourcemap: 'binding: sourcemap',
-                        beforeCompilePlugins: 'binding: beforeCompile',
-                        afterCompilePlugins: 'binding: plugins',
+                        plugins: 'binding: transPlugins(ctx)',
                         external: 'binding: external',
                         options: 'binding: options',
                         globals: 'binding: globals',
-                        annotation: 'binding: annotation',
-                        compileOptions: (ctx, bind) => bind.getScope<TsLibPackBuilder>().getCompileOptions(ctx.getInput<LibBundleOption>().target),
-                        // uglify: ctx => ctx.input.uglify,
-                        output: (ctx, bind) => {
-                            let scope = bind.getScope<TsLibPackBuilder>();
-                            let input = bind.getInput<LibBundleOption>();
-                            return {
-                                format: input.format || 'cjs',
-                                file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
-                                dir: input.outputFile ? undefined : scope.toModulePath(input),
-                            }
-                        }
+                        output: 'binding: transRollupoutput(ctx.getInput())'
                     }
                 },
                 {
@@ -89,25 +71,13 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                     condition: ctx => ctx.getInput<LibBundleOption>().input,
                     body: <RollupOption>{
                         activity: 'rollup',
-                        input: (ctx, bind) => {
-                            let inputs = bind.getInput<LibBundleOption>().input;
-                            let scope = bind.getScope<LibPackBuilder>();
-                            return isArray(inputs) ? inputs.map(i => scope.toOutputPath(i)) : scope.toOutputPath(inputs);
-                        },
+                        input: 'binding: transRollupInput(ctx.getInput())',
                         sourcemap: 'binding: sourcemap',
-                        plugins: 'binding: plugins',
+                        plugins: 'binding: transPlugins(ctx)',
                         external: 'binding: external',
                         options: 'binding: options',
                         globals: 'binding: globals',
-                        output: (ctx, bind) => {
-                            let input = bind.getInput<LibBundleOption>();
-                            let scope = bind.getScope<TsLibPackBuilder>();
-                            return {
-                                format: input.format || 'cjs',
-                                file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
-                                dir: input.outputFile ? undefined : scope.toModulePath(input),
-                            }
-                        }
+                        output: 'binding: transRollupoutput(ctx.getInput())'
                     }
                 },
                 {
@@ -115,11 +85,8 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                     condition: ctx => ctx.getInput<LibBundleOption>().uglify,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: (ctx, bind) => {
-                            let input = bind.getInput<LibBundleOption>();
-                            return isArray(input.input) ? bind.getScope<TsLibPackBuilder>().toModulePath(input, '/**/*.js') : bind.getScope<TsLibPackBuilder>().toModulePath(input, input.outputFile)
-                        },
-                        dist: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toModulePath(bind.getInput()),
+                        src: 'binding: getBundleSrc(ctx.getInput())',
+                        dist: 'binding: toModulePath(bind.getInput())',
                         sourcemap: 'binding: sourcemap | path:"./"',
                         pipes: [
                             () => uglify(),
@@ -133,8 +100,8 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
                     condition: ctx => ctx.getInput<LibBundleOption>().moduleName || ctx.getInput<LibBundleOption>().target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: (ctx, bind) => bind.getScope<TsLibPackBuilder>().toOutputPath('package.json'),
-                        dist: (ctx, bind) => bind.getScope<TsLibPackBuilder>().outDir,
+                        src: 'binding: toOutputPath("package.json")',
+                        dist: 'binding: outDir',
                         pipes: [
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
@@ -170,4 +137,12 @@ export class TsLibPackBuilder extends LibPackBuilder implements AfterInit {
 
     @Input() mainFile: string;
     @Input() beforeCompile: NodeExpression<Plugin[]>;
+
+    vaidts(input: LibBundleOption) {
+        let inputs = input.input || this.mainFile;
+        if (inputs) {
+            return isArray(inputs) ? inputs.some(i => tsFileExp.test(i)) : tsFileExp.test(inputs)
+        }
+        return false
+    }
 }

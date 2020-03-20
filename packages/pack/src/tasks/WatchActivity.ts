@@ -12,18 +12,18 @@ export interface WatchActivityOption extends BodyTemplate {
     /**
      * watch source.
      *
-     * @type {NodeExpression<Src>}
+     * @type {Src}
      * @memberof UnitTestActivityOption
      */
-    watch: Binding<NodeExpression<Src>>;
+    watch: Binding<Src>;
 
     /**
      * src option
      *
-     * @type {NodeExpression<DestOptions>}
+     * @type {*}
      * @memberof UnitTestActivityOption
      */
-    watchOptions?: Binding<NodeExpression>;
+    watchOptions?: Binding<any>;
 }
 
 
@@ -38,18 +38,18 @@ export interface WatchActivityOption extends BodyTemplate {
 export class WatchActivity extends NodeActivity<void> {
 
     @Input()
-    watch: NodeExpression<Src>;
+    watch: Src;
 
     @Input('watchOptions')
-    options:  NodeExpression;
+    options:  any;
 
     @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
 
 
 
     async execute(ctx: NodeActivityContext) {
-        let watchSrc = await ctx.resolveExpression(this.watch);
-        let options = await ctx.resolveExpression(this.options);
+        let watchSrc = this.watch;
+        let options = this.options;
         let watcher = chokidar.watch(ctx.platform.normalizeSrc(watchSrc), Object.assign({ ignored: /[\/\\]\./, ignoreInitial: true, cwd: ctx.platform.getRootPath() }, options));
 
         let defer = PromiseUtil.defer();

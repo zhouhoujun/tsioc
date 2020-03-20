@@ -1,4 +1,4 @@
-import { isDefined, Singleton, PromiseUtil, Defer } from '@tsdi/ioc';
+import { isDefined, PromiseUtil } from '@tsdi/ioc';
 import { Expression } from '@tsdi/activities';
 import { NodeActivity } from '../NodeActivity';
 import { ITransform, isTransform } from '../ITransform';

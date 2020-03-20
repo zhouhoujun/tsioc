@@ -129,6 +129,10 @@ export class PlatformService {
         return filePaths;
     }
 
+    join(...paths: string[]) {
+        return join(...paths);
+    }
+
     normalize(url: string): string {
         return url ? url.split('\\').join('/') : url;
     }

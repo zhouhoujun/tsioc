@@ -24,7 +24,7 @@ export interface ServeConfigure extends TemplateOption {
      * @type {CtxType<Src>}
      * @memberof ServeConfigure
      */
-    dirs: Binding<NodeExpression<Src>>;
+    dirs: Binding<Src>;
 }
 
 /**
@@ -40,20 +40,20 @@ export class ServeActivity extends NodeActivity<void> {
     /**
      * serve port.
      *
-     * @type {Expression<number>}
+     * @type {number}
      * @memberof ServeActivity
      */
     @Input()
-    port: Expression<number>;
+    port: number;
 
     /**
      * dirs.
      *
-     * @type {Expression<Src>}
+     * @type {Src}
      * @memberof ServeActivity
      */
     @Input()
-    dirs: Expression<Src>;
+    dirs: Src;
 
     /**
      * before run sequence.

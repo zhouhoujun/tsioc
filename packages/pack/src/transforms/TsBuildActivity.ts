@@ -3,7 +3,7 @@ import { Input, Binding } from '@tsdi/components';
 import { Task, Src, Activities, ActivityType } from '@tsdi/activities';
 import { CompilerOptions } from 'typescript';
 import { AssetActivityOption, AssetActivity } from './AssetActivity';
-import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import { NodeActivityContext } from '../NodeActivityContext';
 import { ITransform, isTransform } from '../ITransform';
 const sourcemaps = require('gulp-sourcemaps');
 const ts = require('gulp-typescript');
@@ -23,12 +23,12 @@ const ts = require('gulp-typescript');
  * @extends {AssetActivityOption}
  */
 export interface TsBuildOption extends AssetActivityOption {
-    test?: Binding<NodeExpression<Src>>;
-    annotation?: Binding<NodeExpression<boolean>>;
-    tsconfig?: Binding<NodeExpression<string | CompilerOptions>>;
-    dts?: Binding<NodeExpression<string>>;
-    uglify?: Binding<NodeExpression<boolean>>;
-    uglifyOptions?: Binding<NodeExpression>;
+    test?: Binding<Src>;
+    annotation?: Binding<boolean>;
+    tsconfig?: Binding<string | CompilerOptions>;
+    dts?: Binding<string>;
+    uglify?: Binding<boolean>;
+    uglifyOptions?: Binding<any>;
 }
 
 @Task({
@@ -72,9 +72,9 @@ export interface TsBuildOption extends AssetActivityOption {
                 if (!scope.tsconfig) {
                     return;
                 }
-                let tsconfig = await ctx.resolveExpression(scope.tsconfig);
+                let tsconfig = scope.tsconfig;
                 let tsCompile;
-                let dts = await ctx.resolveExpression(scope.dts);
+                let dts = scope.dts;
                 if (isString(tsconfig)) {
                     let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
                     tsCompile = tsProject();
@@ -194,12 +194,12 @@ export interface TsBuildOption extends AssetActivityOption {
     ]
 })
 export class TsBuildActivity extends AssetActivity {
-    @Input() dts: NodeExpression<string>;
-    @Input() annotation: NodeExpression<boolean>;
-    @Input('annotationFramework') annotationFramework: NodeExpression<ITransform>;
+    @Input() dts: string;
+    @Input() annotation: boolean;
+    @Input('annotationFramework') annotationFramework: ITransform;
     @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
-    @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string | ObjectMap>;
-    @Input() uglify: NodeExpression<boolean>;
-    @Input('uglifyOptions') uglifyOptions: NodeExpression;
+    @Input('tsconfig', './tsconfig.json') tsconfig: string | ObjectMap;
+    @Input() uglify: boolean;
+    @Input('uglifyOptions') uglifyOptions: any;
 }
 

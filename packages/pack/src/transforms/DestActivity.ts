@@ -21,7 +21,7 @@ export interface DistActivityOption extends TemplateOption {
      * @type {NodeExpression<string>}
      * @memberof DistActivityOption
      */
-    dist: Binding<NodeExpression<string>>;
+    dist: Binding<string>;
 
     /**
      * dist option
@@ -29,7 +29,7 @@ export interface DistActivityOption extends TemplateOption {
      * @type {Binding<DestOptions>}
      * @memberof DistActivityOption
      */
-    distOptions?: Binding<NodeExpression<DestOptions>>;
+    distOptions?: Binding<DestOptions>;
 }
 
 
@@ -44,15 +44,14 @@ export interface DistActivityOption extends TemplateOption {
 export class DestActivity extends TransformActivity<void> {
 
     @Input() end: boolean;
-    @Input() dist: NodeExpression<string>;
+    @Input() dist: string;
 
-    @Input('destOptions') options: NodeExpression<DestOptions>;
+    @Input('destOptions') options: DestOptions;
 
     async execute(ctx: NodeActivityContext): Promise<void> {
-        let dist = await ctx.resolveExpression(this.dist);
-        if (dist) {
-            let options = await ctx.resolveExpression(this.options);
-            dist = ctx.platform.toRootPath(dist);
+        if (this.dist) {
+            let options = this.options;
+            let dist = ctx.platform.toRootPath(this.dist);
             await this.pipeStream(ctx, ctx.getData(), options ? dest(dist, options) : dest(dist), this.end !== false);
         }
     }

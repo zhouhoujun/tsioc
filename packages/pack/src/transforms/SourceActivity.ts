@@ -18,18 +18,18 @@ export interface SourceActivityOption extends TemplateOption {
     /**
      * source.
      *
-     * @type {NodeExpression<Src>}
+     * @type {Src}
      * @memberof SourceActivityOption
      */
-    src: Binding<NodeExpression<Src>>;
+    src: Binding<Src>;
 
     /**
      * src option
      *
-     * @type {NodeExpression<DestOptions>}
+     * @type {DestOptions}
      * @memberof DistActivityOption
      */
-    srcOptions?: Binding<NodeExpression<SrcOptions>>;
+    srcOptions?: Binding<SrcOptions>;
 }
 
 /**
@@ -42,14 +42,12 @@ export interface SourceActivityOption extends TemplateOption {
 @Task('src, [src]')
 export class SourceActivity extends TransformActivity {
 
-    @Input() src: NodeExpression<Src>;
-    @Input('srcOptions') options: NodeExpression<SrcOptions>;
+    @Input() src: Src;
+    @Input('srcOptions') options: SrcOptions;
 
     async execute(ctx: NodeActivityContext): Promise<ITransform> {
-        let strSrc = await ctx.resolveExpression(this.src);
-        if (strSrc) {
-            let options = await ctx.resolveExpression(this.options);
-            return src(ctx.platform.normalizeSrc(strSrc), Object.assign({ cwd: ctx.platform.getRootPath() }, options || {}));
+        if (this.src) {
+            return src(ctx.platform.normalizeSrc(this.src), Object.assign({ cwd: ctx.platform.getRootPath() }, this.options || {}));
         }
     }
 }

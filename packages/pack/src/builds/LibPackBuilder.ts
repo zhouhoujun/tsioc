@@ -1,26 +1,18 @@
-import { isNullOrUndefined, isBoolean, isArray, lang } from '@tsdi/ioc';
+import { isBoolean, isArray, lang, Inject } from '@tsdi/ioc';
 import { Input, AfterInit, Binding } from '@tsdi/components';
-import { Task, TemplateOption, Src, Activities, ActivityTemplate } from '@tsdi/activities';
+import { Task, TemplateOption, Src, Activities, ActivityTemplate, IActivityContext } from '@tsdi/activities';
 import { BuilderTypes } from './BuilderTypes';
 import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../transforms';
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, GlobalsOption, Plugin, RollupOptions } from 'rollup';
 import { RollupOption } from '../rollups';
-// import { rollupClassAnnotations } from '@tsdi/annotations';
-import { join } from 'path';
-import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import uglify from 'gulp-uglify-es';
+import { PlatformService } from '../PlatformService';
+import { join } from 'path';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
-// const buildin = require('rollup-plugin-node-builtins');
-// const ts = require('rollup-plugin-typescript');
-
 const rename = require('gulp-rename');
-// const grollup = require('gulp-rollup');
-// const postcss = require('rollup-plugin-postcss');
-// const terser = require('rollup-plugin-terser');
-
 
 export interface LibBundleOption {
     /**
@@ -98,7 +90,7 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @type { Binding<LibBundleOption[]>}
      * @memberof LibPackBuilderOption
      */
-    bundles: Binding<NodeExpression<LibBundleOption[]>>;
+    bundles: Binding<LibBundleOption[]>;
 
     /**
      * project source.
@@ -119,10 +111,10 @@ export interface LibPackBuilderOption extends TemplateOption {
     /**
      * annotation source file.
      *
-     * @type {Binding<NodeExpression<boolean>>}
+     * @type {Binding<boolean>}
      * @memberof LibPackBuilderOption
      */
-    annotation?: Binding<NodeExpression<boolean>>;
+    annotation?: Binding<boolean>;
 
     /**
      * dts sub folder name
@@ -148,7 +140,7 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @type {NodeExpression<ExternalOption>}
      * @memberof RollupOption
      */
-    external?: Binding<NodeExpression<ExternalOption>>;
+    external?: Binding<ExternalOption>;
 
     /**
      * custome config all rollup plugins.
@@ -156,28 +148,20 @@ export interface LibPackBuilderOption extends TemplateOption {
      * @type {NodeExpression<Plugin[]>}
      * @memberof RollupOption
      */
-    plugins?: Binding<NodeExpression<Plugin[]>>;
+    plugins?: Binding<Plugin[]>;
 
-    cache?: Binding<NodeExpression<RollupCache>>;
+    cache?: Binding<RollupCache>;
 
-    watch?: Binding<NodeExpression<WatcherOptions>>;
+    watch?: Binding<WatcherOptions>;
 
-    globals?: Binding<NodeExpression<GlobalsOption>>;
+    globals?: Binding<GlobalsOption>;
     /**
      * custom setup rollup options.
      *
-     * @type {(NodeExpression<RollupOptions>)}
+     * @type {(RollupOptions)}
      * @memberof RollupOption
      */
-    options?: Binding<NodeExpression<RollupOptions>>;
-
-    /**
-     * postcss option.
-     *
-     * @type {Binding<NodeExpression>}
-     * @memberof LibPackBuilderOption
-     */
-    postcssOption?: Binding<NodeExpression>;
+    options?: Binding<RollupOptions>;
 
     /**
      * external Libs for auto create rollup options.
@@ -201,10 +185,10 @@ export interface LibPackBuilderOption extends TemplateOption {
      * resolveId
      * ` (source: string, importer: string) => string | false | null | {id: string, external?: boolean, moduleSideEffects?: boolean | null}`
      *
-     * @type { Binding<NodeExpression<Plugin[]>>;}
+     * @type { Binding<Plugin[]>;}
      * @memberof LibPackBuilderOption
      */
-    beforeResolve?: Binding<NodeExpression<Plugin[]>>;
+    beforeResolve?: Binding<Plugin[]>;
 
 }
 
@@ -234,16 +218,11 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: <TsBuildOption>{
                         activity: 'ts',
                         src: 'binding: src',
-                        dist: (ctx, bind) => bind.getScope<LibPackBuilder>().getTargetPath(bind.getInput()),
-                        dts: (ctx, bind) => {
-                            let input = bind.getInput<LibBundleOption>();
-                            let scope = bind.getScope<LibPackBuilder>();
-                            let targetpath = scope.getTargetPath(input);
-                            return scope.dts ? join(targetpath, scope.dts) : (input.dtsMain ? targetpath : null)
-                        },
+                        dist: 'binding: getTargetPath(ctx.getInput())',
+                        dts: 'binding: getDtsPath(ctx.getInput())',
                         annotation: 'binding: annotation',
                         sourcemap: 'binding: sourcemap',
-                        tsconfig: (ctx, bind) => bind.getScope<LibPackBuilder>().getCompileOptions(bind.getInput<LibBundleOption>().target)
+                        tsconfig: 'binding: transCompileOptions(ctx.getInput())'
                     }
                 },
                 {
@@ -252,36 +231,21 @@ export interface LibPackBuilderOption extends TemplateOption {
                     body: [
                         <RollupOption>{
                             activity: 'rollup',
-                            input: (ctx, bind) => {
-                                let inputs = bind.getInput<LibBundleOption>().input;
-                                let scope = bind.getScope<LibPackBuilder>();
-                                return isArray(inputs) ? inputs.map(i => scope.toOutputPath(i)) : scope.toOutputPath(inputs);
-                            },
+                            input: 'binding: transRollupInput(ctx.getInput())',
                             sourcemap: 'binding: sourcemap',
-                            plugins: 'binding: plugins',
+                            plugins: 'binding: transPlugins(ctx)',
                             external: 'binding: external',
                             options: 'binding: options',
                             globals: 'binding: globals',
-                            output: (ctx, bind) => {
-                                let scope = bind.getScope<LibPackBuilder>();
-                                let input = bind.getInput<LibBundleOption>();
-                                return {
-                                    format: input.format || 'cjs',
-                                    file: input.outputFile ? scope.toModulePath(input, input.outputFile) : undefined,
-                                    dir: input.outputFile ? undefined : scope.toModulePath(input),
-                                }
-                            }
+                            output: 'binding: transRollupoutput(ctx.getInput())'
                         },
                         {
                             activity: Activities.if,
                             condition: (ctx, bind) => bind.getInput<LibBundleOption>().uglify,
                             body: <AssetActivityOption>{
                                 activity: 'asset',
-                                src: (ctx, bind) => {
-                                    let input = bind.getInput<LibBundleOption>();
-                                    return isArray(input.input) ? bind.getScope<LibPackBuilder>().toModulePath(input, '/**/*.js') : bind.getScope<LibPackBuilder>().toModulePath(input, input.outputFile)
-                                },
-                                dist: (ctx, bind) => bind.getScope<LibPackBuilder>().toModulePath(bind.getInput()),
+                                src: 'binding: getBundleSrc(ctx.getInput())',
+                                dist: 'binding: toModulePath(bind.getInput())',
                                 sourcemap: 'binding: sourcemap | path:"./"',
                                 pipes: [
                                     () => uglify(),
@@ -296,8 +260,8 @@ export interface LibPackBuilderOption extends TemplateOption {
                     condition: ctx => ctx.getInput<LibBundleOption>().moduleName || ctx.getInput<LibBundleOption>().target,
                     body: <AssetActivityOption>{
                         activity: 'asset',
-                        src: (ctx, bind) => bind.getScope<LibPackBuilder>().toOutputPath('package.json'),
-                        dist: (ctx, bind) => bind.getScope<LibPackBuilder>().outDir,
+                        src: 'binding: toOutputPath("package.json")',
+                        dist: 'binding: outDir',
                         pipes: [
                             <JsonEditActivityOption>{
                                 activity: 'jsonEdit',
@@ -331,6 +295,9 @@ export interface LibPackBuilderOption extends TemplateOption {
 })
 export class LibPackBuilder implements AfterInit {
 
+    @Inject()
+    protected platform: PlatformService;
+
     constructor() {
 
     }
@@ -343,48 +310,40 @@ export class LibPackBuilder implements AfterInit {
      * @type {(LibBundleOption[])}
      * @memberof LibPackBuilderOption
      */
-    @Input() bundles: NodeExpression<LibBundleOption[]>;
+    @Input() bundles: LibBundleOption[];
     @Input() outDir: string;
-    @Input() annotation: NodeExpression<boolean>;
+    @Input() annotation: boolean;
     @Input() dts: string;
 
     /**
      * rollup external setting.
      *
-     * @type {NodeExpression<ExternalOption>}
+     * @type {ExternalOption}
      * @memberof RollupOption
      */
-    @Input() external?: NodeExpression<ExternalOption>;
+    @Input() external?: ExternalOption;
     @Input() externalLibs: string[];
     @Input() includeLib: string[];
     /**
      * rollup plugins setting.
      *
-     * @type {NodeExpression<Plugin[]>}
+     * @type {Plugin[]}
      * @memberof RollupOption
      */
-    @Input() plugins: NodeExpression<Plugin[]>;
-    @Input() globals: NodeExpression<GlobalsOption>;
-    @Input() cache?: NodeExpression<RollupCache>;
-    @Input() watch?: NodeExpression<WatcherOptions>;
+    @Input() plugins: Plugin[];
+    @Input() globals: GlobalsOption;
+    @Input() cache?: RollupCache;
+    @Input() watch?: WatcherOptions;
     /**
      * custom setup rollup options.
      *
      * @type {(NodeExpression<RollupOptions>)}
      * @memberof RollupOption
      */
-    @Input() options?: NodeExpression<RollupOptions>;
+    @Input() options?: RollupOptions;
     @Input({ defaultValue: true }) sourcemap?: boolean | string;
-    @Input() postcssOption: NodeExpression;
 
-    @Input() beforeResolve: NodeExpression<Plugin[]>
-
-    getCompileOptions(target: string) {
-        if (target) {
-            return { target: target };
-        }
-        return {};
-    }
+    @Input() beforeResolve: Plugin[];
 
 
     toOutputPath(...mdpath: string[]): string {
@@ -410,42 +369,87 @@ export class LibPackBuilder implements AfterInit {
         return input.moduleFolder || (isArray(input.moduleName) ? lang.first(input.moduleName) : input.moduleName)
     }
 
+    transRollupInput(input: LibBundleOption) {
+        let inputs = input.input;
+        return isArray(inputs) ? inputs.map(i => this.toOutputPath(i)) : this.toOutputPath(inputs);
+    }
+
+    transRollupoutput(input: LibBundleOption) {
+        return {
+            format: input.format || 'cjs',
+            file: input.outputFile ? this.toModulePath(input, input.outputFile) : undefined,
+            dir: input.outputFile ? undefined : this.toModulePath(input),
+        }
+    }
+
+    transCompileOptions(input: LibBundleOption) {
+        if (input.target) {
+            return { target: input.target };
+        }
+        return {};
+    }
+
+    getDtsPath(input: LibBundleOption) {
+        let targetpath = this.getTargetPath(input);
+        return this.dts ? join(targetpath, this.dts) : (input.dtsMain ? targetpath : null)
+    }
+
+
+    transPlugins(ctx: IActivityContext) {
+        let beforeResolve = this.beforeResolve || [];
+        let sourcemap = this.sourcemap;
+        let input = ctx.getInput<LibBundleOption>();
+        return this.plugins ?
+            [
+                ...beforeResolve,
+                ...this.plugins,
+                sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
+            ]
+            :
+            [
+                ...beforeResolve,
+                resolve({ browser: input.format === 'umd' }),
+                commonjs({ extensions: ['.js', '.ts', '.tsx'] }),
+                sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
+            ];
+    }
+
+    getBundleSrc(input: LibBundleOption) {
+        return isArray(input.input) ? this.toModulePath(input, '/**/*.js') : this.toModulePath(input, input.outputFile);
+    }
+
+
     async onAfterInit(): Promise<void> {
         if (!this.external) {
-            let func = (ctx: NodeActivityContext) => {
-                let packagejson = ctx.platform.getPackage();
-                let external = [
-                    'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
-                    'https', 'http', 'url', 'crypto',
-                    ...(this.externalLibs || []),
-                    ...Object.keys(packagejson.dependencies || {}),
-                    ...Object.keys(packagejson.peerDependencies || {})];
-                if (external.indexOf('rxjs')) {
-                    external.push('rxjs/operators')
-                }
-                if (this.includeLib && this.includeLib.length) {
-                    external = external.filter(ex => this.includeLib.indexOf(ex) < 0);
-                }
-                return external;
-            };
-            this.external = (ctx) => {
-                return func(ctx);
+            let packagejson = this.platform.getPackage();
+            let external = [
+                'process', 'util', 'path', 'fs', 'events', 'stream', 'child_process', 'os',
+                'https', 'http', 'url', 'crypto',
+                ...(this.externalLibs || []),
+                ...Object.keys(packagejson.dependencies || {}),
+                ...Object.keys(packagejson.peerDependencies || {})];
+            if (external.indexOf('rxjs')) {
+                external.push('rxjs/operators')
             }
+            if (this.includeLib && this.includeLib.length) {
+                external = external.filter(ex => this.includeLib.indexOf(ex) < 0);
+            }
+            this.external = this.external;
         }
 
-        if (!this.plugins) {
-            this.plugins = async (ctx: NodeActivityContext, bind) => {
-                let beforeResolve = await bind.resolveExpression(this.beforeResolve);
-                let sourcemap = await bind.resolveExpression(this.sourcemap);
-                let input = bind.getInput<LibBundleOption>();
-                return [
-                    ...(beforeResolve || []),
-                    resolve({ browser: input.format === 'umd' }),
-                    commonjs({ extensions: ['.js', '.ts', '.tsx'] }),
-                    sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
-                ];
-            };
-        }
+        // if (!this.plugins) {
+        //     this.plugins = async (ctx: NodeActivityContext, bind) => {
+        //         let beforeResolve = this.beforeResolve;
+        //         let sourcemap = this.sourcemap;
+        //         let input = bind.getInput<LibBundleOption>();
+        //         return [
+        //             ...(beforeResolve || []),
+        //             resolve({ browser: input.format === 'umd' }),
+        //             commonjs({ extensions: ['.js', '.ts', '.tsx'] }),
+        //             sourcemap ? rollupSourcemaps(isBoolean(sourcemap) ? undefined : sourcemap) : null
+        //         ];
+        //     };
+        // }
     }
 
 }

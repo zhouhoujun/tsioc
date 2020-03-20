@@ -19,21 +19,21 @@ export interface AssetActivityOption extends TemplateOption {
      * @type {Binding<Src>}
      * @memberof AssetActivityOption
      */
-    src?: Binding<NodeExpression<Src>>;
+    src?: Binding<Src>;
     /**
      * sourcemap.
      *
-     * @type {(Binding<NodeExpression<string | boolean>>)}
+     * @type {(Binding<string | boolean>)}
      * @memberof AssetActivityOption
      */
-    sourcemap?: Binding<NodeExpression<string | boolean>>;
+    sourcemap?: Binding<string | boolean>;
     /**
      * shell args.
      *
-     * @type {Binding<Src>}
+     * @type {Binding<string>}
      * @memberof AssetActivityOption
      */
-    dist?: Binding<NodeExpression<Src>>;
+    dist?: Binding<string>;
     /**
      * stream pipe works after asset loaded.
      *
@@ -97,8 +97,8 @@ export interface AssetActivityOption extends TemplateOption {
     ]
 })
 export class AssetActivity {
-    @Input() src: NodeExpression<Src>;
-    @Input() dist: NodeExpression<string>;
+    @Input() src: Src;
+    @Input() dist: string;
     @Input() sourcemap: string | boolean;
     @Input('sourceMapFramework') framework: any;
     @Input('pipes') pipes: ActivityType<ITransform>[];
