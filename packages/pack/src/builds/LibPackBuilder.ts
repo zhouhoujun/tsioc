@@ -6,13 +6,13 @@ import { TsBuildOption, AssetActivityOption, JsonEditActivityOption } from '../t
 import { CompilerOptions } from 'typescript';
 import { ExternalOption, RollupCache, WatcherOptions, GlobalsOption, Plugin, RollupOptions } from 'rollup';
 import { RollupOption } from '../rollups';
-import uglify from 'gulp-uglify-es';
 import { PlatformService } from '../PlatformService';
 import { join } from 'path';
 const resolve = require('rollup-plugin-node-resolve');
 const rollupSourcemaps = require('rollup-plugin-sourcemaps');
 const commonjs = require('rollup-plugin-commonjs');
 const rename = require('gulp-rename');
+const uglify = require('gulp-uglify-es');
 
 export interface LibBundleOption {
     /**

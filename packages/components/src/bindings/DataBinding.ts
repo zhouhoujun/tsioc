@@ -91,6 +91,9 @@ export abstract class DataBinding<T = any> {
                     target[fieldName] = this.resolveExression();
                 });
             });
+            if (!sub || !last) {
+                console.log(scope, target, fieldName, sub, last);
+            }
             observe.onPropertyChange(sub, last, (value, oldVal) => {
                 target[fieldName] = this.resolveExression();
             });
