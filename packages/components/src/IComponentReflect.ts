@@ -19,6 +19,10 @@ export interface IComponentReflect extends ITypeReflect {
      */
     component?: boolean;
     /**
+     * directive.
+     */
+    directive?: boolean;
+    /**
      * component selector.
      */
     selector?: string;

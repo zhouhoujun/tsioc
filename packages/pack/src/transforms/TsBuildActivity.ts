@@ -33,165 +33,20 @@ export interface TsBuildOption extends AssetActivityOption {
 
 @Task({
     selector: 'ts',
-    template: [
-        {
-            activity: 'src',
-            src: 'binding: src',
-        },
-        {
-            activity: 'annotation',
-            annotationFramework: 'binding: annotationFramework',
-            annotation: 'binding: annotation'
-        },
-        {
-            activity: Activities.if,
-            condition: 'binding: sourcemap',
-            body: {
-                name: 'sourcemap-init',
-                activity: Activities.execute,
-                action: (ctx: NodeActivityContext, bind) => {
-                    let scope = bind.getScope<TsBuildActivity>();
-                    let framework = scope.framework || sourcemaps;
-                    return ctx.getData().pipe(framework.init());
-                }
-            }
-        },
-        {
-            activity: Activities.if,
-            condition: (ctx, bind) => bind.getScope<TsBuildActivity>().beforePipes?.length > 0,
-            body: {
-                activity: 'pipes',
-                pipes: 'binding: beforePipes'
-            }
-        },
-        {
-            activity: Activities.execute,
-            name: 'tscompile',
-            action: async (ctx: NodeActivityContext, bind) => {
-                let scope = bind.getScope<TsBuildActivity>();
-                if (!scope.tsconfig) {
-                    return;
-                }
-                let tsconfig = scope.tsconfig;
-                let tsCompile;
-                let dts = scope.dts;
-                if (isString(tsconfig)) {
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
-                    tsCompile = tsProject();
-                } else {
-                    tsconfig.declaration = !!dts;
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
-                    tsCompile = tsProject();
-                }
-                return ctx.getData().pipe(tsCompile);
-            }
-        },
-        // {
-        //     activity: Activities.execute,
-        //     name: 'tscompile',
-        //     action: async (ctx: NodeActivityContext, bind) => {
-        //         let scope = bind.getScope<TsBuildActivity>();
-        //         if (!scope.tsconfig) {
-        //             return;
-        //         }
-        //         const compile = ctx.injector.get(TsComplie);
-        //         const tsconfig = await ctx.resolveExpression(scope.tsconfig);
-        //         const dts = await ctx.resolveExpression(scope.dts);
-        //         let setting: CompilerOptions;
-        //         let jsonFile: string;
-        //         if (!isString(tsconfig)) {
-        //             setting = tsconfig;
-        //             tsconfig.declaration = !!dts;
-        //         } else {
-        //             jsonFile = tsconfig;
-        //             setting = { declaration: !!dts };
-        //         }
-        //         const parsed = compile.parseTsconfig(ctx.platform.getRootPath(), ctx.platform.relativeRoot(jsonFile || './tsconfig.json'), setting);
-        //         return ctx.getData<ITransform>().pipe(through.obj(function (file, encoding, callback) {
-        //             if (file.isNull()) {
-        //                 return callback(null, file);
-        //             }
-
-        //             if (file.isStream()) {
-        //                 return callback('doesn\'t support Streams');
-        //             }
-        //             let contents: string = file.contents.toString('utf8');
-        //             const result = compile.compile(parsed.options, file.relative, contents);
-        //             if (result.dts) {
-        //                 this.push(new VFile({
-        //                     contents: Buffer.from(result.dts),
-        //                     cwd: file.cwd,
-        //                     base: file.base.replace(tsFileExp, '.dts'),
-        //                     path: file.path.replace(tsFileExp, '.dts')
-        //                 }));
-        //             }
-        //             if (file.sourceMap && result.map) {
-        //                 applySourceMap(file, JSON.parse(result.map));
-        //             }
-        //             file.contents = Buffer.from(result.code);
-        //             callback(null, file);
-        //         })).pipe(rename(path => {
-        //             if (path.extname === '.ts') {
-        //                 path.extname = '.js';
-        //             } else if (path.extname === '.dts') {
-        //                 path.extname = '.d.ts';
-        //             }
-        //             return path;
-        //         }));
-        //     }
-        // },
-        {
-            activity: Activities.if,
-            externals: {
-                data: 'ctx.getData() | tsjs'
-            },
-            condition: ctx => isTransform(ctx.getData()),
-            body: [
-                {
-                    activity: 'pipes',
-                    pipes: 'binding: pipes'
-                },
-                {
-                    activity: 'if',
-                    condition: 'binding: uglify',
-                    body: {
-                        activity: 'uglify',
-                        uglifyOptions: 'binding: uglifyOptions'
-                    }
-                },
-                {
-                    activity: Activities.if,
-                    condition: 'binding: sourcemap',
-                    body: {
-                        name: 'sourcemap-write',
-                        activity: Activities.execute,
-                        action: async (ctx: NodeActivityContext, bind) => {
-                            let scope = bind.getScope<TsBuildActivity>();
-                            let framework = scope.framework || sourcemaps;
-                            return ctx.getData<ITransform>().pipe(framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'));
-                        }
-                    }
-                },
-                {
-                    name: 'write-js',
-                    activity: 'dist',
-                    dist: 'binding: dist'
-                }
-            ]
-        },
-        {
-            activity: Activities.if,
-            externals: {
-                data: 'ctx.getData() | dts'
-            },
-            condition: 'binding: dts',
-            body: {
-                name: 'write-dts',
-                activity: 'dist',
-                dist: 'binding: dts'
-            }
-        }
-    ]
+    template: `
+        <src [src]="src"></src>
+        <annotation [annotation]="annotation" [framework]="annotationFramework"></annotation>
+        <execute *if="sourcemap" name="sourcemap-init" [action]="sourcemapInit(ctx.getData())"></execute>
+        <pipes *if="beforePipes" [pipes]="beforePipes"></pipes>
+        <execute name="tscompile" [action]="tscompile(ctx)"></execute>
+        <sequence [input]="ctx.getData() | tsjs">
+            <pipes [pipes]="pipes"></pipes>
+            <uglify *if="uglify" [uglifyOptions]="uglifyOptions"></uglify>
+            <execute *if="sourcemap" name="sourcemap-write" [action]="sourcemapWrite(ctx.getData())"></execute>
+            <dist [dist]="dist"></dist>
+        </sequence>
+        <dist [input]="ctx.getData() | dts" [dist]="dts"></dist>
+    `
 })
 export class TsBuildActivity extends AssetActivity {
     @Input() dts: string;
@@ -201,5 +56,132 @@ export class TsBuildActivity extends AssetActivity {
     @Input('tsconfig', './tsconfig.json') tsconfig: string | ObjectMap;
     @Input() uglify: boolean;
     @Input('uglifyOptions') uglifyOptions: any;
+
+    isTransform(stream) {
+       return isTransform(stream);
+    }
+
+    async tscompile(ctx: NodeActivityContext) {
+        if (!this.tsconfig) {
+            return;
+        }
+        let tsconfig = this.tsconfig;
+        let tsCompile;
+        let dts = this.dts;
+        if (isString(tsconfig)) {
+            let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
+            tsCompile = tsProject();
+        } else {
+            tsconfig.declaration = !!dts;
+            let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
+            tsCompile = tsProject();
+        }
+        return ctx.getData().pipe(tsCompile);
+    }
 }
 
+// template: [
+//     {
+//         activity: 'src',
+//         src: 'binding: src',
+//     },
+//     {
+//         activity: 'annotation',
+//         annotationFramework: 'binding: annotationFramework',
+//         annotation: 'binding: annotation'
+//     },
+//     {
+//         activity: Activities.if,
+//         condition: 'binding: sourcemap',
+//         body: {
+//             name: 'sourcemap-init',
+//             activity: Activities.execute,
+//             action: (ctx: NodeActivityContext, bind) => {
+//                 let scope = bind.getScope<TsBuildActivity>();
+//                 let framework = scope.framework || sourcemaps;
+//                 return ctx.getData().pipe(framework.init());
+//             }
+//         }
+//     },
+//     {
+//         activity: Activities.if,
+//         condition: (ctx, bind) => bind.getScope<TsBuildActivity>().beforePipes?.length > 0,
+//         body: {
+//             activity: 'pipes',
+//             pipes: 'binding: beforePipes'
+//         }
+//     },
+//     {
+//         activity: Activities.execute,
+//         name: 'tscompile',
+//         action: async (ctx: NodeActivityContext, bind) => {
+//             let scope = bind.getScope<TsBuildActivity>();
+//             if (!scope.tsconfig) {
+//                 return;
+//             }
+//             let tsconfig = scope.tsconfig;
+//             let tsCompile;
+//             let dts = scope.dts;
+//             if (isString(tsconfig)) {
+//                 let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
+//                 tsCompile = tsProject();
+//             } else {
+//                 tsconfig.declaration = !!dts;
+//                 let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
+//                 tsCompile = tsProject();
+//             }
+//             return ctx.getData().pipe(tsCompile);
+//         }
+//     },
+//     {
+//         activity: Activities.if,
+//         externals: {
+//             data: 'ctx.getData() | tsjs'
+//         },
+//         condition: ctx => isTransform(ctx.getData()),
+//         body: [
+//             {
+//                 activity: 'pipes',
+//                 pipes: 'binding: pipes'
+//             },
+//             {
+//                 activity: 'if',
+//                 condition: 'binding: uglify',
+//                 body: {
+//                     activity: 'uglify',
+//                     uglifyOptions: 'binding: uglifyOptions'
+//                 }
+//             },
+//             {
+//                 activity: Activities.if,
+//                 condition: 'binding: sourcemap',
+//                 body: {
+//                     name: 'sourcemap-write',
+//                     activity: Activities.execute,
+//                     action: async (ctx: NodeActivityContext, bind) => {
+//                         let scope = bind.getScope<TsBuildActivity>();
+//                         let framework = scope.framework || sourcemaps;
+//                         return ctx.getData<ITransform>().pipe(framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'));
+//                     }
+//                 }
+//             },
+//             {
+//                 name: 'write-js',
+//                 activity: 'dist',
+//                 dist: 'binding: dist'
+//             }
+//         ]
+//     },
+//     {
+//         activity: Activities.if,
+//         externals: {
+//             data: 'ctx.getData() | dts'
+//         },
+//         condition: 'binding: dts',
+//         body: {
+//             name: 'write-dts',
+//             activity: 'dist',
+//             dist: 'binding: dts'
+//         }
+//     }
+// ]

@@ -248,7 +248,7 @@ export type ControlTemplate = Required<TemplateOption> | TemplateOption | Execut
     | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
-export type TemplateType<T extends TemplateOption = ControlTemplate> = Type | T | PromiseUtil.ActionHandle<IWorkflowContext>;
+export type TemplateType<T extends TemplateOption = ControlTemplate> = string | Type | T | PromiseUtil.ActionHandle<IWorkflowContext>;
 
 /**
  *  activity type.

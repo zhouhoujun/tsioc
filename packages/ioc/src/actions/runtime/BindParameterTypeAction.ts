@@ -19,7 +19,7 @@ export const BindParameterTypeAction = function (ctx: RuntimeActionContext, next
         return next();
     }
 
-    let target = ctx.target
+    let target = ctx.target;
     let type = ctx.type;
 
     let designParams = createDesignParams(ctx, type, target, propertyKey);

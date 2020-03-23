@@ -8,7 +8,7 @@ import { ITransform } from '../ITransform';
 @Task('annotation')
 export class AnnotationActivity extends TransformActivity {
 
-    @Input('annotationFramework', classAnnotations) framework: ITransform| (() => ITransform);
+    @Input('framework', classAnnotations) framework: ITransform | (() => ITransform);
     @Input() annotation: boolean;
 
     async execute(ctx: NodeActivityContext): Promise<ITransform> {

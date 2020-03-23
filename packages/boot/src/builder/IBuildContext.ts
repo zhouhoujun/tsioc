@@ -1,5 +1,5 @@
 import { IHandleContext } from '../handles/Handle';
-import { IBuildOption } from './IBuildOption';
+import { IBuildOption, Template } from './IBuildOption';
 import { IAnnoationContext } from '../AnnoationContext';
 
 
@@ -20,5 +20,5 @@ export interface IBuildContext<T extends IBuildOption = IBuildOption> extends IA
     /**
      * current type attr data to binding.
      */
-    getTemplate<T = any>(): T;
+    getTemplate(): Template;
 }

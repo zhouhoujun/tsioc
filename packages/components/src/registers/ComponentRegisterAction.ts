@@ -7,10 +7,6 @@ import { BindingsCache } from './BindingsCache';
 
 /**
  * component register action.
- *
- * @export
- * @class ComponentRegisterAction
- * @extends {IocDesignAction}
  */
 export const ComponentRegisterAction = function (ctx: DesignActionContext, next: () => void): void {
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
@@ -59,6 +55,48 @@ export const ComponentRegisterAction = function (ctx: DesignActionContext, next:
                 injector.bindProvider(compdr.toSelectorToken(meta.selector), ctx.type);
             }
         }
+    });
+
+    next();
+};
+
+
+/**
+ * Directive register action.
+ */
+export const DirectiveRegisterAction = function (ctx: DesignActionContext, next: () => void): void {
+    let currDecor = ctx.getValue(CTX_CURR_DECOR);
+    let injector = ctx.injector;
+    let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
+    let compRefl = ctx.targetReflect as IComponentReflect;
+    let prdrs: IProviders;
+    if (!compRefl.getDecorProviders) {
+        prdrs = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).getProviders(currDecor);
+        if (prdrs) {
+            compRefl.getDecorProviders = () => prdrs;
+        }
+    } else {
+        prdrs = compRefl.getDecorProviders();
+    }
+    if (!compRefl.getBindings) {
+        let caches = prdrs.getInstance(BindingsCache);
+        compRefl.getBindings = (decor) => {
+            return caches.getCache(decor);
+        }
+    }
+    let compdr = prdrs.getInstance(ComponentProvider);
+    compRefl.decorator = currDecor;
+    compRefl.directive = true;
+    metas.forEach(meta => {
+        if (!meta.selector) {
+            return;
+        }
+
+        if (attrExp.test(meta.selector)) {
+            compRefl.attrSelector = meta.selector;
+            injector.bindProvider(compdr.toAttrSelectorToken(meta.selector), ctx.type);
+        }
+
     });
 
     next();

@@ -8,6 +8,7 @@ import { Input } from './decorators/Input';
 import { Output } from './decorators/Output';
 import { RefChild } from './decorators/RefChild';
 import { Component } from './decorators/Component';
+import { Directive } from './decorators/Directive';
 import { Vaildate } from './decorators/Vaildate';
 import { Pipe } from './decorators/Pipe';
 import { BindingScope } from './parses/BindingScope';
@@ -15,7 +16,7 @@ import { TemplateParseScope } from './parses/TemplateParseScope';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 
-import { ComponentRegisterAction } from './registers/ComponentRegisterAction';
+import { ComponentRegisterAction, DirectiveRegisterAction } from './registers/ComponentRegisterAction';
 import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
 import { BindingsCache } from './registers/BindingsCache';
 import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
@@ -70,6 +71,7 @@ export class ComponentsModule {
 
         actInjector.getInstance(DesignRegisterer)
             .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
+            .register(Directive, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, DirectiveRegisterAction )
             .register(Pipe, DecoratorScopes.Class, BindProviderAction, PipeRegisterAction)
             .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
             .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
@@ -77,7 +79,8 @@ export class ComponentsModule {
             .register(Vaildate, DecoratorScopes.Property, RegisterVaildateAction);
 
         actInjector.getInstance(RuntimeRegisterer)
-            .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+            .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
+            .register(Directive, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
 
         container.registerType(ComponentBuilder);
     }
