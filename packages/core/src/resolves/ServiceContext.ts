@@ -1,5 +1,5 @@
 import { Token, ResolveContext, ResolveOption, createContext, IInjector, isArray } from '@tsdi/ioc';
-import { CTX_TOKENS, CTX_TARGET_REFS } from '../../context-tokens';
+import { CTX_TOKENS, CTX_TARGET_REFS } from '../context-tokens';
 
 /**
  * service context option.
@@ -33,7 +33,7 @@ export interface ServiceOption<T> extends ResolveOption<T> {
  * @class ResolveServiceContext
  * @extends {ResovleActionContext}
  */
-export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = ServiceOption<T>> extends ResolveContext<T, TOP> {
+export class ServiceContext<T = any, TOP extends ServiceOption<T> = ServiceOption<T>> extends ResolveContext<T, TOP> {
     /**
      * create resolve context via options.
      *
@@ -43,8 +43,8 @@ export class ResolveServiceContext<T = any, TOP extends ServiceOption<T> = Servi
      * @returns {ResolveContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(injecor: IInjector, options: ServiceOption<T>): ResolveServiceContext<T> {
-        return createContext<ResolveServiceContext>(injecor, ResolveServiceContext, options);
+    static parse<T>(injecor: IInjector, options: ServiceOption<T>): ServiceContext<T> {
+        return createContext<ServiceContext>(injecor, ServiceContext, options);
     }
 
     /**

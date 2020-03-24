@@ -14,5 +14,5 @@ export const cls: DecoratorScope = 'Class';
 export const mth: DecoratorScope = 'Method';
 export const ptr: DecoratorScope = 'Property';
 export const parm: DecoratorScope = 'Parameter';
-export const befCstr: DecoratorScope = 'BeforeConstructor';
-export const aftCstr: DecoratorScope = 'AfterConstructor';
+export const befCtor: DecoratorScope = 'BeforeConstructor';
+export const aftCtor: DecoratorScope = 'AfterConstructor';

@@ -1,9 +1,44 @@
-import { isToken, InjectReference, isClassType, ProviderTypes, lang, PROVIDERS, DecoratorProvider } from '@tsdi/ioc';
-import { ResolveServicesContext } from './ResolveServicesContext';
-import { CTX_TARGET_REFS } from '../../context-tokens';
+import {
+    IocResolveScope, IActionSetup, PROVIDERS, isClassType, DecoratorProvider,
+    isToken, lang, InjectReference, ProviderTypes
+} from '@tsdi/ioc';
+import { ServicesContext } from './ServicesContext';
+import { CTX_TARGET_REFS } from '../context-tokens';
 
 
-export const ResovleServicesInClassAction = function (ctx: ResolveServicesContext, next: () => void): void {
+export class ResolveServicesScope extends IocResolveScope implements IActionSetup {
+
+    execute(ctx: ServicesContext, next?: () => void): void {
+        if (!ctx.tokens || !ctx.tokens.length) {
+            return;
+        }
+        ctx.services = ctx.injector.get(PROVIDERS);
+        super.execute(ctx);
+
+        next && next();
+        // after all.
+        if (ctx.services.size < 1) {
+            // after all resolve default.
+            let defaultTk = ctx.defaultToken;
+            if (defaultTk) {
+                let key = ctx.injector.getTokenKey(defaultTk);
+                if (ctx.injector.hasRegister(key)) {
+                    ctx.services.set(key, ctx.injector.getTokenFactory(key));
+                }
+            }
+        }
+        // after all clean.
+        ctx.destroy();
+    }
+    setup() {
+        this.use(RsvSuperServicesAction)
+            .use(RsvServicesAction);
+    }
+}
+
+
+
+export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     let targetRefs = ctx.getValue(CTX_TARGET_REFS);
 
     if (targetRefs && targetRefs.length) {
@@ -43,4 +78,17 @@ export const ResovleServicesInClassAction = function (ctx: ResolveServicesContex
     if (!ctx.getOptions().tagOnly) {
         next();
     }
+};
+
+
+export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
+    let types = ctx.types;
+    let services = ctx.services;
+    let reflects = ctx.reflects;
+    ctx.injector.iterator((fac, tk) => {
+        if (!services.has(tk) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
+            services.set(tk, fac);
+        }
+    }, true)
+    next();
 };

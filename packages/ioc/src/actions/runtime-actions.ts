@@ -11,7 +11,7 @@ import { RuntimeRegisterer, DecorsRegisterer } from './DecorsRegisterer';
 import { Inject } from '../decorators/Inject';
 import { AutoWired } from '../decorators/AutoWried';
 import { Param } from '../decorators/Param';
-import { parm, cls, mth, ptr, befCstr, aftCstr } from '../utils/exps';
+import { parm, cls, mth, ptr, befCtor, aftCtor } from '../utils/exps';
 import { IocDecorScope } from './IocDecorScope';
 import { ExecDecoratorAtion } from './ExecDecoratorAtion';
 import { IActionSetup } from './Action';
@@ -226,9 +226,9 @@ export abstract class RuntimeDecorScope extends IocDecorScope<RuntimeContext> {
                 return ctx.targetReflect.decorators.runtime.propsDecors;
             case parm:
                 return ctx.targetReflect.decorators.runtime.getParamDecors(ctx.propertyKey, ctx.target);
-            case befCstr:
+            case befCtor:
                 return ctx.targetReflect.decorators.runtime.beforeCstrDecors;
-            case aftCstr:
+            case aftCtor:
                 return ctx.targetReflect.decorators.runtime.afterCstrDecors
         }
         return ctx.targetReflect.decorators.runtime.getDecortors(scope);
@@ -257,7 +257,7 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements IAct
  */
 export class BeforeCtorDecorScope extends RuntimeDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return befCstr;
+        return befCtor;
     }
 }
 
@@ -284,7 +284,7 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements IActi
  */
 export class AfterCtorDecorScope extends RuntimeDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return aftCstr;
+        return aftCtor;
     }
 }
 

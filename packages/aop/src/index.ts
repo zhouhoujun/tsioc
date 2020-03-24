@@ -1,10 +1,3 @@
-// actions
-export * from './actions/RegistAspectAction';
-export * from './actions/BindMethodPointcutAction';
-export * from './actions/InvokeBeforeConstructorAction';
-export * from './actions/InvokeAfterConstructorAction';
-export * from './actions/MatchPointcutAction';
-
 // decorators
 export * from './decorators/Advice';
 export * from './decorators/Aspect';
@@ -45,3 +38,5 @@ export * from './Advisor';
 export * from './AdviceMatcher';
 export * from './AopModule';
 
+// actions
+export * from './actions/aop-actions';

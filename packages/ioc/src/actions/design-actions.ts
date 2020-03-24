@@ -41,10 +41,6 @@ export class DesignDecorAction extends ExecDecoratorAtion {
     }
 }
 
-
-
-
-
 export abstract class DesignDecorScope extends IocDecorScope<DesignContext> implements IActionSetup {
 
     protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
@@ -53,11 +49,11 @@ export abstract class DesignDecorScope extends IocDecorScope<DesignContext> impl
                 return ctx.targetReflect.decorators.design.beforeAnnoDecors
             case ann:
             case aftAnn:
-            case 'Class':
+            case cls:
                 return ctx.targetReflect.decorators.design.classDecors;
-            case 'Method':
+            case mth:
                 return ctx.targetReflect.decorators.design.methodDecors;
-            case 'Property':
+            case ptr:
                 return ctx.targetReflect.decorators.design.propsDecors;
         }
         return ctx.targetReflect.decorators.design.getDecortors(scope);
@@ -68,33 +64,6 @@ export abstract class DesignDecorScope extends IocDecorScope<DesignContext> impl
     }
 
 }
-
-
-export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetup {
-
-    setup() {
-        this.actInjector.getInstance(DesignRegisterer)
-            .register(Autorun, aftAnn, IocAutorunAction)
-            .register(IocExt, aftAnn, IocAutorunAction);
-
-        this.use(AnnoDecorScope)
-            .use(AfterAnnoDecorScope);
-    }
-}
-
-
-export class AnnoDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return ann;
-    }
-}
-
-export class AfterAnnoDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return aftAnn;
-    }
-}
-
 
 export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {
 
@@ -332,7 +301,6 @@ export const BindMthPdrAction = function (ctx: DesignContext, next: () => void) 
 };
 
 
-
 /**
  * method auto run action.
  *
@@ -358,4 +326,29 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     });
     next();
 };
+
+export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetup {
+
+    setup() {
+        this.actInjector.getInstance(DesignRegisterer)
+            .register(Autorun, aftAnn, IocAutorunAction)
+            .register(IocExt, aftAnn, IocAutorunAction);
+
+        this.use(AnnoDecorScope)
+            .use(AfterAnnoDecorScope);
+    }
+}
+
+
+export class AnnoDecorScope extends DesignDecorScope {
+    protected getDecorScope(): DecoratorScope {
+        return ann;
+    }
+}
+
+export class AfterAnnoDecorScope extends DesignDecorScope {
+    protected getDecorScope(): DecoratorScope {
+        return aftAnn;
+    }
+}
 

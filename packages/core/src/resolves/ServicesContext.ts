@@ -1,6 +1,6 @@
 import { createContext, IInjector, ClassType } from '@tsdi/ioc';
-import { ServiceOption, ResolveServiceContext } from '../service/ResolveServiceContext';
-import { CTX_TYPES } from '../../context-tokens';
+import { ServiceOption, ServiceContext } from './ServiceContext';
+import { CTX_TYPES } from '../context-tokens';
 
 /**
  * services context options
@@ -21,23 +21,19 @@ export interface ServicesOption<T> extends ServiceOption<T> {
 
 /**
  * resolve services context.
- *
- * @export
- * @class ResolveServicesContext
- * @extends {ResolveServiceContext}
  */
-export class ResolveServicesContext<T = any> extends ResolveServiceContext<T, ServicesOption<T>> {
+export class ServicesContext<T = any> extends ServiceContext<T, ServicesOption<T>> {
     /**
      * parse service resolve context.
      *
      * @static
      * @param { IInjector } injecor
      * @param {ServicesOption<T>} target
-     * @returns {ResolveServicesContext}
+     * @returns {ServicesContext}
      * @memberof ResolveServicesContext
      */
-    static parse<T>(injecor: IInjector, options: ServicesOption<T>): ResolveServicesContext<T> {
-        return createContext<ResolveServicesContext>(injecor, ResolveServicesContext, options);
+    static parse<T>(injecor: IInjector, options: ServicesOption<T>): ServicesContext<T> {
+        return createContext<ServicesContext>(injecor, ServicesContext, options);
     }
 
     get types(): ClassType[] {

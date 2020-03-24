@@ -6,11 +6,10 @@ import {
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
-import { RegistAspectAction } from './actions/RegistAspectAction';
-import { InvokeBeforeConstructorAction } from './actions/InvokeBeforeConstructorAction';
-import { InvokeAfterConstructorAction } from './actions/InvokeAfterConstructorAction';
-import { BindMethodPointcutAction } from './actions/BindMethodPointcutAction';
-import { MatchPointcutAction } from './actions/MatchPointcutAction';
+import {
+    RegistAspectAction, BeforeCtorAdviceAction, AfterCtorAdviceAction,
+    BindMthPointcutAction, MatchPointcutAction
+} from './actions/aop-actions';
 import { ProceedingScope } from './proceeding/ProceedingScope';
 import { AdvisorToken } from './IAdvisor';
 import { AdviceMatcherToken } from './IAdviceMatcher';
@@ -46,14 +45,14 @@ export class AopModule {
         actInjector.regAction(ProceedingScope);
 
         actInjector.getInstance(BeforeCtorScope)
-            .useBefore(InvokeBeforeConstructorAction);
+            .useBefore(BeforeCtorAdviceAction);
 
         actInjector.getInstance(AfterCtorScope)
             // .use(ExetndsInstanceAction)
-            .use(InvokeAfterConstructorAction);
+            .use(AfterCtorAdviceAction);
 
         actInjector.getInstance(RuntimeMthScope)
-            .useBefore(BindMethodPointcutAction);
+            .useBefore(BindMthPointcutAction);
 
         actInjector.getInstance(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, CtorArgsAction);

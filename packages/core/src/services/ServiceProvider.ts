@@ -1,8 +1,8 @@
 import { IocCoreService, IInjector, Token, ProviderTypes, isToken, IProviders, ContainerProxy, INJECTOR, InjectorProxyToken, PROVIDERS } from '@tsdi/ioc';
-import { ServiceOption, ResolveServiceContext } from '../resolves/service/ResolveServiceContext';
-import { ResolveServiceScope } from '../resolves/service/ResolveServiceScope';
-import { ServicesOption, ResolveServicesContext } from '../resolves/services/ResolveServicesContext';
-import { ResolveServicesScope } from '../resolves/services/ResolveServicesScope';
+import { ServiceOption, ServiceContext } from '../resolves/ServiceContext';
+import { ResolveServiceScope } from '../resolves/service-actions';
+import { ServicesOption, ServicesContext } from '../resolves/ServicesContext';
+import { ResolveServicesScope } from '../resolves/services-actions';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
 
@@ -21,7 +21,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      * @memberof Container
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
-        let context = ResolveServiceContext.parse(injector, isToken(target) ? { token: target } : target);
+        let context = ServiceContext.parse(injector, isToken(target) ? { token: target } : target);
         let pdr = context.providers;
         providers.length && pdr.inject(...providers);
         if (!pdr.hasTokenKey(INJECTOR)) {
@@ -66,12 +66,12 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      *
      * @template T
      * @param {Token<T>} target
-     * @param {ResolveServicesContext} [ctx]
+     * @param {ServicesContext} [ctx]
      * @returns {IProviders}
      * @memberof Container
      */
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProviders {
-        let context = ResolveServicesContext.parse(injector, isToken(target) ? { token: target } : target);
+        let context = ServicesContext.parse(injector, isToken(target) ? { token: target } : target);
         this.proxy().getActionInjector()
             .getInstance(ResolveServicesScope)
             .execute(context);

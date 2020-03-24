@@ -1,7 +1,7 @@
 import { ObjectMap } from '../types';
 import { IRuntimeDecorators } from '../services/ITypeReflect';
 import { TypeDecorators } from './TypeDecorators';
-import { befCstr, aftCstr, parm } from '../utils/exps';
+import { befCtor, aftCtor, parm } from '../utils/exps';
 
 /**
  * runtime decorators.
@@ -16,7 +16,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
     private _bcDecors: any[];
     get beforeCstrDecors(): string[] {
         if (!this._bcDecors) {
-            this._bcDecors = this.register.getRegisterer(befCstr)
+            this._bcDecors = this.register.getRegisterer(befCtor)
                 .getDecorators()
                 .filter(d => this.reflects.hasMethodMetadata(d, this.type))
         }
@@ -26,7 +26,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
     private _afDecors: any[];
     get afterCstrDecors(): string[] {
         if (!this._afDecors) {
-            this._afDecors = this.register.getRegisterer(aftCstr)
+            this._afDecors = this.register.getRegisterer(aftCtor)
                 .getDecorators()
                 .filter(d => this.reflects.hasMethodMetadata(d, this.type))
         }

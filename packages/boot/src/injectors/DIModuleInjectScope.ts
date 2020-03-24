@@ -1,5 +1,5 @@
 import { Type, CTX_CURR_DECOR, IActionSetup } from '@tsdi/ioc';
-import { InjectActionContext, InjectRegisterScope } from '@tsdi/core';
+import { InjectorContext, InjectorRegScope } from '@tsdi/core';
 
 
 
@@ -10,21 +10,21 @@ import { InjectActionContext, InjectRegisterScope } from '@tsdi/core';
  *
  * @export
  * @class DIModuleInjectorScope
- * @extends {InjectRegisterScope}
+ * @extends {InjectorRegScope}
  */
-export class DIModuleInjectScope extends InjectRegisterScope implements IActionSetup {
+export class DIModuleInjectScope extends InjectorRegScope implements IActionSetup {
 
-    execute(ctx: InjectActionContext, next?: () => void): void {
+    execute(ctx: InjectorContext, next?: () => void): void {
         let types = this.getTypes(ctx);
         this.registerTypes(ctx, types);
         next && next();
     }
 
-    protected getTypes(ctx: InjectActionContext): Type[] {
+    protected getTypes(ctx: InjectorContext): Type[] {
         return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.getValue(CTX_CURR_DECOR), ty));
     }
 
-    protected setNextRegTypes(ctx: InjectActionContext, registered: Type[]) {
+    protected setNextRegTypes(ctx: InjectorContext, registered: Type[]) {
         ctx.types = [];
     }
 }
