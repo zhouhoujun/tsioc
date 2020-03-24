@@ -292,13 +292,14 @@ export type AsyncHandler<T = any> = Handler<T, Promise<void>>;
  *
  * @export
  * @template T
+ * @template TR
  * @param {ActionHandle<T>[]} handlers
  * @param {T} ctx
- * @param {() => void} [next]
+ * @param {() => TR} [next]
  */
-export async function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: () => TR) {
+export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: () => TR) {
     let index = -1;
-    async function dispatch(idx: number) {
+    function dispatch(idx: number): TR {
         if (idx <= index) {
             throw new Error('next called mutiple times.');
         }
@@ -311,12 +312,12 @@ export async function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, ne
             return;
         }
         try {
-            return await handle(ctx, dispatch.bind(null, idx + 1));
+            return handle(ctx, dispatch.bind(null, idx + 1));
         } catch (err) {
             throw err;
         }
     }
-    await dispatch(0);
+    return dispatch(0);
 }
 
 export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
