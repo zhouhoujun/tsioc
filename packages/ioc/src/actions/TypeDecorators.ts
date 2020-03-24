@@ -1,5 +1,5 @@
 import { ClassType } from '../types';
-import { DecoratorsRegisterer, DecoratorScopes } from './DecoratorsRegisterer';
+import { DecoratorsRegisterer, DecoratorScope, DecoratorScopes } from './DecoratorsRegisterer';
 import { ITypeDecoractors } from '../services/ITypeReflect';
 import { ITypeReflects } from '../services/ITypeReflects';
 
@@ -64,7 +64,7 @@ export class TypeDecorators implements ITypeDecoractors {
         return this._mthDecors;
     }
 
-    getDecortors(scope: DecoratorScopes): string[] {
+    getDecortors(scope: DecoratorScope): string[] {
         let registerer = this.register.getRegisterer(scope);
         switch (scope) {
             case DecoratorScopes.BeforeAnnoation:

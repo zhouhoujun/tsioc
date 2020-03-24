@@ -1,4 +1,4 @@
-import { Type, PromiseUtil, Token, ProviderTypes, ObjectMap, tokenId } from '@tsdi/ioc';
+import { Type, Token, ProviderTypes, ObjectMap, tokenId, AsyncHandler } from '@tsdi/ioc';
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { IActivityContext } from './IActivityContext';
@@ -48,28 +48,10 @@ export interface ActivityMetadata extends IComponentMetadata {
 export const WorkflowId = tokenId<string>('WORKFLOW_ID');
 
 /**
- * selectors.
- *
- * @export
- * @enum {number}
+ * activities selectors.
  */
-export enum Activities {
-    if = 'if',
-    elseif = 'elseif',
-    else = 'else',
-    dowhile = 'dowhile',
-    while = 'while',
-    switch = 'switch',
-    throw = 'throw',
-    try = 'try',
-    catch = 'catch',
-    invoke = 'invoke',
-    sequence = 'sequence',
-    parallel = 'parallel',
-    interval = 'interval',
-    each = 'each',
-    execute = 'execute'
-}
+export type Activities = 'if' | 'elseif' | 'else' | 'dowhile' | 'while' | 'switch'
+    | 'throw' | 'try' | 'catch' | 'invoke' | 'sequence' | 'parallel' | 'interval' | 'each' | 'execute';
 
 /**
  * template option.
@@ -248,7 +230,7 @@ export type ControlTemplate = Required<TemplateOption> | TemplateOption | Execut
     | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
-export type TemplateType<T extends TemplateOption = ControlTemplate> = string | Type | T | PromiseUtil.ActionHandle<IWorkflowContext>;
+export type TemplateType<T extends TemplateOption = ControlTemplate> = string | Type | T | AsyncHandler<IWorkflowContext>;
 
 /**
  *  activity type.

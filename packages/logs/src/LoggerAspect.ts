@@ -4,7 +4,7 @@ import { LoggerMetadata } from './decorators/Logger';
 import { Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
-import { ILogFormater, LogFormaterToken, LogFormater } from './LogFormater';
+import { ILogFormater, LogFormaterToken } from './LogFormater';
 
 /**
  * base looger aspect. for extends your logger aspect.

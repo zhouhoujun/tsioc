@@ -1,5 +1,5 @@
 import { Metadate } from '../metadatas/Metadate';
-import { lang } from '../utils/lang';
+import { Handler } from '../utils/lang';
 
 /**
  * args iterator context.
@@ -44,4 +44,4 @@ export class ArgsIteratorContext<T extends Metadate = Metadate> {
 /**
  * args iterator action.
  */
-export type ArgsIteratorAction<T extends Metadate = Metadate> = lang.Action<ArgsIteratorContext<T>>;
+export type ArgsIteratorAction<T extends Metadate = Metadate> = Handler<ArgsIteratorContext<T>>;

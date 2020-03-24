@@ -1,4 +1,4 @@
-import { ObjectMap, IocDecoratorRegisterer, DecoratorScopes, DesignRegisterer, CTX_CURR_DECOR, IActionSetup } from '@tsdi/ioc';
+import { ObjectMap, IocDecoratorRegisterer, DesignRegisterer, CTX_CURR_DECOR, IActionSetup, DecoratorScopes } from '@tsdi/ioc';
 import { InjectActionContext } from './InjectActionContext';
 import { InjectScope } from './InjectAction';
 import { DecoratorInjectAction } from './DecoratorInjectAction';

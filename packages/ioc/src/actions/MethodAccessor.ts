@@ -39,7 +39,9 @@ export class MethodAccessor implements IMethodAccessor {
         if (isToken(target)) {
             targetClass = injector.getTokenProvider(target);
             instance = injector.get(target, ...providers);
-            lang.assert(targetClass, target.toString() + ' is not implements by any class.');
+            if (!targetClass) {
+                throw new Error(target.toString() + ' is not implements by any class.')
+            }
         } else {
             targetClass = lang.getClass(target);
             instance = target;
@@ -55,7 +57,9 @@ export class MethodAccessor implements IMethodAccessor {
             key = propertyKey;
         }
 
-        lang.assertExp(instance && isFunction(instance[key]), `type: ${targetClass} has no method ${(key || '').toString()}.`);
+        if (!instance || !isFunction(instance[key])) {
+            throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
+        }
 
         let pds = tgRefl.methodParamProviders.get(key) || [];
         providers = providers.concat(pds);

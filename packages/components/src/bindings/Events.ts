@@ -3,15 +3,9 @@ import { ObjectMap } from '@tsdi/ioc';
 /**
  * bind event type.
  *
- * @export
- * @enum {number}
+ * fieldChanged: filed changed.
  */
-export enum BindEventType {
-    /**
-     * filed changed.
-     */
-    fieldChanged = 'fieldChanged'
-}
+export type BindEventType = 'fieldChanged';
 
 /**
  * events.

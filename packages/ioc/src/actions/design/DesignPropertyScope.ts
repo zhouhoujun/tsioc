@@ -1,11 +1,12 @@
 import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { DesignActionContext } from './DesignActionContext';
 import { IocRegisterScope } from '../IocRegisterScope';
-import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
+import { DecoratorScope, DesignRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
 import { BindPropertyTypeAction } from './BindPropertyTypeAction';
 import { Inject } from '../../decorators/Inject';
 import { AutoWired } from '../../decorators/AutoWried';
 import { IActionSetup } from '../Action';
+
 
 export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
@@ -21,7 +22,7 @@ export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> i
 
 
 export class DesignPropertyDecoratorScope extends DesignDecoratorScope {
-    protected getDecorScope(): DecoratorScopes {
+    protected getDecorScope(): DecoratorScope {
         return DecoratorScopes.Property;
     }
 }

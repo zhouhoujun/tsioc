@@ -1,4 +1,4 @@
-import { isClass, Type, Abstract, classTypes } from '@tsdi/ioc';
+import { isClass, Type, Abstract, ClassTypes } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { IActivityContext } from './IActivityContext';
@@ -6,7 +6,7 @@ import { ActivityMetadata } from './ActivityMetadata';
 
 @Abstract()
 export abstract class Activity<T = any, TCtx extends IActivityContext = IActivityContext> {
-    static classType = classTypes.Activity;
+    static classType: ClassTypes = 'activity';
     /**
      * activity display name.
      *

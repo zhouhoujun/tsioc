@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
+import { DecoratorScope, RuntimeRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
 import { BindParameterTypeAction } from './BindParameterTypeAction';
 import { BindDeignParamTypeAction } from './BindDeignParamTypeAction';
 import { InitReflectAction } from '../InitReflectAction';
@@ -39,7 +39,7 @@ export class RuntimeParamScope extends IocRegisterScope<RuntimeActionContext> im
 
 
 export class RuntimeParamDecorScope extends RuntimeDecoratorScope {
-    protected getDecorScope(): DecoratorScopes {
+    protected getDecorScope(): DecoratorScope {
         return DecoratorScopes.Parameter;
     }
 }

@@ -1,4 +1,4 @@
-import { isClass, ActionInjectorToken, Inject, IActionInjector, PromiseUtil } from '@tsdi/ioc';
+import { isClass, ActionInjectorToken, Inject, IActionInjector, AsyncHandler } from '@tsdi/ioc';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
 import { IBuildContext } from './IBuildContext';
@@ -33,8 +33,8 @@ export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends H
         super();
     }
 
-    protected toHandle(handleType: HandleType<T>): PromiseUtil.ActionHandle<T> {
-        return this.actInjector.getAction<PromiseUtil.ActionHandle<T>>(handleType);
+    protected toHandle(handleType: HandleType<T>): AsyncHandler<T> {
+        return this.actInjector.getAction<AsyncHandler<T>>(handleType);
     }
 
     protected registerHandle(handleType: HandleType<T>): this {

@@ -2,7 +2,6 @@ import { ClassMethodDecorator } from '../factories/ClassMethodDecoratorFactory';
 import { ProvidersMetadata } from '../metadatas/ProvidersMetadata';
 import { isArray } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';
-import { DecoratorType } from '../factories/DecoratorType';
 import { createDecorator } from '../factories/DecoratorFactory';
 
 /**
@@ -32,8 +31,6 @@ export interface IProvidersDecorator {
      * @param {ProvidersMetadata} [metadata] metadata map.
      */
     (metadata: ProvidersMetadata): ClassMethodDecorator;
-
-    decoratorType?: DecoratorType;
 }
 
 /**

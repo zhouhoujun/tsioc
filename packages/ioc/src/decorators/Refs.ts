@@ -1,4 +1,3 @@
-import { DecoratorType } from '../factories/DecoratorType';
 import { createDecorator } from '../factories/DecoratorFactory';
 import { RefMetadata } from '../metadatas/RefMetadata';
 import { isString } from '../utils/lang';
@@ -43,8 +42,6 @@ export interface IRefsDecorator {
      * @param {RefMetadata} [metadata] metadata map.
      */
     (metadata: RefMetadata): ClassDecorator;
-
-    decoratorType?: DecoratorType;
 }
 
 /**

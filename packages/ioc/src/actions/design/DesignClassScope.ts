@@ -2,7 +2,7 @@ import { DesignDecoratorScope } from './DesignDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { DesignActionContext } from './DesignActionContext';
 import { BindProviderAction } from './BindProviderAction';
-import { DecoratorScopes, DesignRegisterer } from '../DecoratorsRegisterer';
+import { DecoratorScope, DesignRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
 import { Injectable } from '../../decorators/Injectable';
 import { Singleton } from '../../decorators/Singleton';
 import { Providers } from '../../decorators/Providers';
@@ -14,6 +14,8 @@ import { RuntimeActionContext } from '../runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from '../RuntimeLifeScope';
 import { CTX_TYPE_REGIN } from '../../context-tokens';
 import { INJECTOR } from '../../IInjector';
+
+
 
 export class DesignClassScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
 
@@ -81,13 +83,13 @@ export const RegClassAction = function (ctx: DesignActionContext, next: () => vo
 
 
 export class BeforeAnnoationDecoratorScope extends DesignDecoratorScope {
-    protected getDecorScope(): DecoratorScopes {
+    protected getDecorScope(): DecoratorScope {
         return DecoratorScopes.BeforeAnnoation;
     }
 }
 
 export class DesignClassDecoratorScope extends DesignDecoratorScope {
-    protected getDecorScope(): DecoratorScopes {
+    protected getDecorScope(): DecoratorScope {
         return DecoratorScopes.Class;
     }
 }

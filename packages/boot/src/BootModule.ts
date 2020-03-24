@@ -1,6 +1,6 @@
 import {
-    Inject, BindProviderAction, IocSetCacheAction, DecoratorScopes, IocAutorunAction, IocExt,
-    RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer
+    Inject, BindProviderAction, IocSetCacheAction, IocAutorunAction, IocExt,
+    RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScopes
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
@@ -60,6 +60,7 @@ export class BootModule {
         let desgReger = actInjector.getInstance(DesignRegisterer);
         registerModule(DIModule, desgReger);
         registerModule(Bootstrap, desgReger);
+
         desgReger.register(Annotation,
             { scope: DecoratorScopes.Class, action: [BindProviderAction, AnnoationDesignAction] },
             { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }

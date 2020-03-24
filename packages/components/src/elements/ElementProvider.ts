@@ -1,4 +1,4 @@
-import { Singleton, Type, ClassType, classTypes } from '@tsdi/ioc';
+import { Singleton, Type, ClassType } from '@tsdi/ioc';
 import { ComponentProvider } from '../ComponentProvider';
 import { ElementNode } from './ElementNode';
 import { ElementRef, IElementRef, IComponentRef, ComponentRef } from '../ComponentRef';
@@ -32,7 +32,7 @@ export class ElementProvider extends ComponentProvider {
     }
 
     isElementType(element: ClassType): boolean {
-        return element?.classType === classTypes.Node;
+        return element?.classType === 'directive';
     }
 
     isTemplateContext(context: IAnnoationContext): boolean {

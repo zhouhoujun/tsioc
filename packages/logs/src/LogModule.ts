@@ -1,4 +1,4 @@
-import { Inject, DecoratorScopes, BindMethodProviderAction, DesignRegisterer, IocExt, IIocContainer, IocContainerToken } from '@tsdi/ioc';
+import { Inject, BindMethodProviderAction, DesignRegisterer, IocExt, IIocContainer, IocContainerToken, DecoratorScopes } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLoggerAspect } from './AnnotationLoggerAspect';

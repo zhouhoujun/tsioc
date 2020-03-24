@@ -1,7 +1,7 @@
 import { Token, ClassType, ObjectMap } from '../types';
 import { lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
-import { DecoratorScopes } from '../actions/DecoratorsRegisterer';
+import { DecoratorScope } from '../actions/DecoratorsRegisterer';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers/types';
 import { InjectableMetadata } from '../metadatas/InjectableMetadata';
@@ -14,7 +14,7 @@ export interface ITypeDecoractors {
     readonly beforeAnnoDecors: string[];
     readonly annoDecors: string[];
     readonly afterAnnoDecors: string[];
-    getDecortors(scope: DecoratorScopes): string[];
+    getDecortors(scope: DecoratorScope): string[];
     reset();
 }
 

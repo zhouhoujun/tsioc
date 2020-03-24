@@ -1,6 +1,8 @@
+import { ClassTypes } from '@tsdi/ioc';
 import { Input } from '../decorators/Input';
 import { Component } from '../decorators/Component';
-import { classTypes } from '@tsdi/ioc';
+import { Directive } from '../decorators/Directive';
+
 
 /**
  * Element node.
@@ -9,9 +11,9 @@ import { classTypes } from '@tsdi/ioc';
  * @class ElementNode
  * @extends {CompositeNode}
  */
-@Component()
+@Directive()
 export class ElementNode {
-    static classType = classTypes.Node;
+    static classType: ClassTypes = 'directive';
     /**
      * element id.
      *

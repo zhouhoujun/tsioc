@@ -1,9 +1,8 @@
 import 'reflect-metadata';
-import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined,
-    isFunction, isNumber, isArray, lang
+    isFunction, isNumber, isArray, lang, chain
 } from '../utils/lang';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
 import { Metadate } from '../metadatas/Metadate';
@@ -96,7 +95,6 @@ export function createDecorator<T>(name: string, actions?: ArgsIteratorAction<T>
     }
 
     factory.toString = () => metaName;
-    (<any>factory).decoratorType = DecoratorType.Decorator;
     return factory;
 }
 
@@ -107,7 +105,7 @@ function argsToMetadata<T extends Metadate>(args: any[], actions?: ArgsIteratorA
             metadata = args[0];
         } else if (actions) {
             let ctx = new ArgsIteratorContext<T>(args);
-            lang.execAction(actions, ctx);
+            chain(actions, ctx);
             metadata = ctx.getMetadate();
         }
     }

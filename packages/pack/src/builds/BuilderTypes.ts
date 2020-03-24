@@ -1,5 +1,2 @@
 
-export enum BuilderTypes {
-    libs = 'libs',
-    tslibs = 'tslibs'
-}
+export type BuilderTypes = 'libs' | 'tslibs';

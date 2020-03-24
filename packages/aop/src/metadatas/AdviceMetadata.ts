@@ -1,4 +1,5 @@
 import { MethodMetadata, ClassType } from '@tsdi/ioc';
+import { AdviceTypes } from '../AdviceTypes';
 
 /**
  * advice metadata.
@@ -63,5 +64,5 @@ export interface AdviceMetadata extends MethodMetadata {
      * @type {string}
      * @memberof AdviceMetadata
      */
-    adviceName?: string;
+    adviceName?: AdviceTypes;
 }

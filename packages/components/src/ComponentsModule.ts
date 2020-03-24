@@ -1,6 +1,6 @@
 import {
-    BindProviderAction, IocSetCacheAction, DecoratorScopes, RegisterSingletionAction,
-    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt
+    BindProviderAction, IocSetCacheAction, RegisterSingletionAction,
+    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt, DecoratorScopes
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';

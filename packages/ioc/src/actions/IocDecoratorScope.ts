@@ -1,6 +1,6 @@
 import { IocCompositeAction } from './IocCompositeAction';
 import { RegisterActionContext } from './RegisterActionContext';
-import { DecoratorScopes } from './DecoratorsRegisterer';
+import { DecoratorScope } from './DecoratorsRegisterer';
 import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
 
 
@@ -20,7 +20,7 @@ export abstract class IocDecoratorScope<T extends RegisterActionContext> extends
         return this.getScopeDecorators(ctx, scope);
     }
 
-    protected abstract getScopeDecorators(ctx: T, scope: DecoratorScopes): string[]
+    protected abstract getScopeDecorators(ctx: T, scope: DecoratorScope): string[]
 
-    protected abstract getDecorScope(): DecoratorScopes;
+    protected abstract getDecorScope(): DecoratorScope;
 }

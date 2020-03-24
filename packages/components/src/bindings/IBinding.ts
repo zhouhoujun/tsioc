@@ -3,36 +3,20 @@ import { ClassType, Token } from '@tsdi/ioc';
 /**
  * binding types.
  *
- * @export
- * @enum {number}
+ * static: static binding.
+ * dynamic：dynamic binding.
+ *
  */
-export enum BindingTypes {
-    /**
-     * static binding
-     */
-    static = 1,
-    /**
-     * dynamic binding.
-     */
-    dynamic
-}
+export type BindingTypes = 'static' | 'dynamic';
+
 
 /**
  * binding direction.
  *
- * @export
- * @enum {number}
+ * input: input binding.
+ * output: output binding.
  */
-export enum BindingDirection {
-    /**
-     * input binding.
-     */
-    input = 1,
-    /**
-     * output binding.
-     */
-    output
-}
+export type BindingDirection = 'input' | 'output';
 
 /**
  * binding.

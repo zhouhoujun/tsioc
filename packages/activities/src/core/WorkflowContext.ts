@@ -1,4 +1,4 @@
-import { PromiseUtil, lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId } from '@tsdi/ioc';
+import { PromiseUtil, lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId, AsyncHandler } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
@@ -25,35 +25,9 @@ export const CTX_CURR_ACT_REF = tokenId<any>('CTX_CURR_ACT_REF');
 export const CTX_CURR_ACTSCOPE_REF = tokenId<any>('CTX_CURR_ACTSCOPE_REF');
 
 /**
- *run state.
- *
- * @export
- * @enum {number}
+ *  activity run state
  */
-export enum RunState {
-    /**
-     * activity init.
-     */
-    init,
-    /**
-     * runing.
-     */
-    running,
-    /**
-     * activity parused.
-     */
-    pause,
-    /**
-     * activity stopped.
-     */
-    stop,
-    /**
-     * activity complete.
-     */
-    complete
-}
-
-
+export type RunState = 'init' | 'running' | 'pause' | 'stop' | 'complete';
 
 
 @Injectable
@@ -157,8 +131,8 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
         }
     }
 
-    private _actionFunc: PromiseUtil.ActionHandle;
-    toAction(): PromiseUtil.ActionHandle<IWorkflowContext> {
+    private _actionFunc: AsyncHandler;
+    toAction(): AsyncHandler<IWorkflowContext> {
         if (!this._actionFunc) {
             this._actionFunc = async (ctx: IWorkflowContext, next?: () => Promise<void>) => {
                 await this.run(ctx);
@@ -365,16 +339,16 @@ export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Ser
         let target = this.getBoot() as IActivityRef;
         target.context.setValue(CTX_RUN_PARENT, context);
         await target.run(context);
-        this.state = RunState.complete;
+        this.state = 'complete';
         target.destroy();
     }
 
     async stop(): Promise<any> {
-        this.state = RunState.stop;
+        this.state = 'stop';
     }
 
     async pause(): Promise<any> {
-        this.state = RunState.pause;
+        this.state = 'pause';
     }
 
 }

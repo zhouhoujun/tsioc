@@ -1,7 +1,6 @@
 import { PropertyMetadata } from '../metadatas/PropertyMetadata';
 import { Token } from '../types';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
-import { DecoratorType } from './DecoratorType';
 import { isToken } from '../utils/isToken';
 import { ArgsIteratorAction } from './ArgsIterator';
 
@@ -27,7 +26,6 @@ export interface IPropertyDecorator<T extends PropertyMetadata> {
      * define property decorator.
      */
     (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
-    decoratorType?: DecoratorType;
 }
 
 
@@ -51,7 +49,6 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, ac
         }
     });
     let decorator = createDecorator<T>(name, actions, metadataExtends);
-    decorator.decoratorType = DecoratorType.Property;
     return decorator;
 }
 

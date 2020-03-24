@@ -1,5 +1,5 @@
 import { ITypeReflect, tokenId, IProviders } from '@tsdi/ioc';
-import { IBinding, IPropertyVaildate } from './bindings/IBinding';
+import { IBinding } from './bindings/IBinding';
 
 /**
  * default components.

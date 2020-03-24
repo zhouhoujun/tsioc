@@ -1,4 +1,4 @@
-import { isString, lang } from '../utils/lang';
+import { isString, Handler } from '../utils/lang';
 import { Action, IActionInjector } from './Action';
 import { IocCoreService } from '../IocCoreService';
 import { Type } from '../types';
@@ -10,7 +10,7 @@ import { Type } from '../types';
  * @class IocDecoratorRegisterer
  * @extends {IocCoreService}
  */
-export abstract class DecoratorRegisterer<TAction extends Function = lang.Action> extends IocCoreService {
+export abstract class DecoratorRegisterer<TAction extends Function = Handler> extends IocCoreService {
     protected actionMap: Map<string, (TAction | Type<Action>)[]>;
     protected funcs: Map<string, TAction[]>;
     constructor() {
@@ -133,6 +133,6 @@ export abstract class DecoratorRegisterer<TAction extends Function = lang.Action
  * @extends {DecoratorRegisterer<T>}
  * @template T
  */
-export class IocDecoratorRegisterer<T extends Function = lang.Action> extends DecoratorRegisterer<T> {
+export class IocDecoratorRegisterer<T extends Function = Handler> extends DecoratorRegisterer<T> {
 
 }

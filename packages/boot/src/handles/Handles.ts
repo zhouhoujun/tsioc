@@ -1,4 +1,4 @@
-import { PromiseUtil, lang } from '@tsdi/ioc';
+import { lang, AsyncHandler } from '@tsdi/ioc';
 import { IHandleContext, HandleType, Handle } from './Handle';
 
 /**
@@ -12,7 +12,7 @@ import { IHandleContext, HandleType, Handle } from './Handle';
 export abstract class Handles<T extends IHandleContext> extends Handle<T> {
 
     protected handles: HandleType<T>[] = [];
-    private funcs: PromiseUtil.ActionHandle<T>[];
+    private funcs: AsyncHandler<T>[];
 
 
     /**
@@ -96,7 +96,7 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
         this.funcs = null;
     }
 
-    protected abstract toHandle(handleType: HandleType<T>): PromiseUtil.ActionHandle<T>;
+    protected abstract toHandle(handleType: HandleType<T>): AsyncHandler<T>;
 
     protected abstract registerHandle(handleType: HandleType<T>): this;
 

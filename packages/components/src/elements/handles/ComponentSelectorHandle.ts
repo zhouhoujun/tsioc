@@ -1,5 +1,5 @@
-import { isString, Type, isArray, Token } from '@tsdi/ioc';
-import { CTX_TEMPLATE, BuildHandle } from '@tsdi/boot';
+import { isString, Type, isArray, Token, isClass } from '@tsdi/ioc';
+import { BuildHandle, CTX_TEMPLATE } from '@tsdi/boot';
 import { ComponentProvider } from '../../ComponentProvider';
 import { ITemplateContext } from '../../parses/TemplateContext';
 
@@ -16,7 +16,7 @@ export class ComponentSelectorHandle extends BuildHandle<ITemplateContext> {
         let template = ctx.getTemplate();
         if (isArray(template) && ctx.getAnnoation().template === template) {
             ctx.selector = compPdr.getDefaultCompose();
-        } else if (compPdr.isNodeType(template)) {
+        } else if (isClass(template) && compPdr.isNodeType(template)) {
             ctx.selector = template;
             ctx.remove(CTX_TEMPLATE);
         } else if (template) {

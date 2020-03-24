@@ -11,30 +11,6 @@ const toString = Object.prototype.toString;
  * lang utils
  */
 export namespace lang {
-    /**
-     * assert param is right or not.
-     *
-     * @export
-     * @param {*} param
-     * @param {(string | Function)} msg
-     */
-    export function assert(param: any, msg: string | Function) {
-        if (isNullOrUndefined(param)) {
-            throw new Error(isFunction(msg) ? msg(param) : msg);
-        }
-    }
-    /**
-     * check assert param invalid by express
-     *
-     * @export
-     * @param {(boolean | (() => boolean))} express
-     * @param {(string | Function)} msg
-     */
-    export function assertExp(express: boolean | (() => boolean), msg: string | Function) {
-        if (!(isFunction(express) ? express() : express)) {
-            throw new Error(isFunction(msg) ? msg() : msg);
-        }
-    }
 
     /**
      * create an new object from target object omit some field.
@@ -86,29 +62,6 @@ export namespace lang {
             Object.keys(target).some((key, idx) => iterator(target[key], key) === false);
         }
     }
-
-    /**
-     * find
-     *
-     * @template T
-     * @param {(ObjectMap<T> | T[])} target
-     * @param {((item: T, idx?: number | string) => boolean)} express
-     */
-    export function find<T>(target: ObjectMap<T> | T[], express: (item: T, idx?: number | string) => boolean) {
-        let item: T;
-        forIn(target as any, (it, idx) => {
-            if (!item) {
-                if (express(it, idx)) {
-                    item = it;
-                    return false;
-                }
-                return true;
-            } else {
-                return true;
-            }
-        })
-    }
-
 
     /**
      * first.
@@ -287,44 +240,6 @@ export namespace lang {
     }
 
     /**
-    *  action handle.
-    */
-    export type Action<T = any> = (ctx: T, next?: () => void) => any;
-
-    /**
-     * execute action in chain.
-     *
-     * @export
-     * @template T
-     * @param {ActionHandle<T>[]} handles
-     * @param {T} ctx
-     * @param {() => void} [next]
-     */
-    export function execAction<T>(handles: Action<T>[], ctx: T, next?: () => void): void {
-        let index = -1;
-        function dispatch(idx: number): any {
-            if (idx <= index) {
-                return Promise.reject('next called mutiple times.');
-            }
-            index = idx;
-            let handle = idx < handles.length ? handles[idx] : null;
-            if (idx === handles.length) {
-                handle = next;
-            }
-            if (!handle) {
-                return;
-            }
-            try {
-                return handle(ctx, dispatch.bind(null, idx + 1));
-            } catch (err) {
-                throw err;
-            }
-        }
-        dispatch(0);
-    }
-
-
-    /**
      * get all class type in modules.
      *
      * @param {Modules[]} modules
@@ -362,26 +277,49 @@ export namespace lang {
     }
 }
 
-export namespace classTypes {
+/**
+*  action handle.
+*/
+export type Handler<T = any, TR = void> = (ctx: T, next?: () => TR) => TR;
 
-    /**
-     * injector class type.
-     */
-    export const Injector = 1;
-    /**
-     * context type.
-     */
-    export const Context = 2;
-    /**
-     * class is activity.
-     */
-    export const Activity = 3;
+/**
+ * async action.
+ */
+export type AsyncHandler<T = any> = Handler<T, Promise<void>>;
 
-    /**
-     * class is element node.
-     */
-    export const Node = 4;
+/**
+ * execute action in chain.
+ *
+ * @export
+ * @template T
+ * @param {ActionHandle<T>[]} handlers
+ * @param {T} ctx
+ * @param {() => void} [next]
+ */
+export async function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: () => TR) {
+    let index = -1;
+    async function dispatch(idx: number) {
+        if (idx <= index) {
+            throw new Error('next called mutiple times.');
+        }
+        index = idx;
+        let handle = idx < handlers.length ? handlers[idx] : null;
+        if (idx === handlers.length) {
+            handle = next;
+        }
+        if (!handle) {
+            return;
+        }
+        try {
+            return await handle(ctx, dispatch.bind(null, idx + 1));
+        } catch (err) {
+            throw err;
+        }
+    }
+    await dispatch(0);
 }
+
+export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
 
 /**
  * check target is function or not.

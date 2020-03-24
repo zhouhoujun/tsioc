@@ -1,7 +1,6 @@
 import { ParamPropMetadata } from '../metadatas/ParamPropMetadata';
 import { Token } from '../types';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
-import { DecoratorType } from './DecoratorType';
 import { isToken } from '../utils/isToken';
 import { ArgsIteratorAction } from './ArgsIterator';
 
@@ -33,8 +32,6 @@ export interface IParamPropDecorator<T extends ParamPropMetadata> {
      * define parameter or property decorator.
      */
     (target: object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>): void;
-
-    decoratorType?: DecoratorType;
 }
 
 /**
@@ -60,7 +57,6 @@ export function createParamPropDecorator<T extends ParamPropMetadata>(
         }
     });
     let decorator = createDecorator<T>(name, actions, metadataExtends);
-    decorator.decoratorType = DecoratorType.Property | DecoratorType.Parameter;
     return decorator;
 }
 

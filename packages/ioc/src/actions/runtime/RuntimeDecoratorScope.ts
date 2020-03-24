@@ -1,4 +1,4 @@
-import { DecoratorScopes } from '../DecoratorsRegisterer';
+import { DecoratorScope, DecoratorScopes } from '../DecoratorsRegisterer';
 import { IocDecoratorScope } from '../IocDecoratorScope';
 import { RuntimeDecoratorAction } from './RuntimeDecoratorAction';
 import { RuntimeActionContext } from './RuntimeActionContext';
@@ -6,7 +6,7 @@ import { RuntimeActionContext } from './RuntimeActionContext';
 
 export abstract class RuntimeDecoratorScope extends IocDecoratorScope<RuntimeActionContext> {
 
-    protected getScopeDecorators(ctx: RuntimeActionContext, scope: DecoratorScopes): string[] {
+    protected getScopeDecorators(ctx: RuntimeActionContext, scope: DecoratorScope): string[] {
         switch (scope) {
             case DecoratorScopes.Class:
                 return ctx.targetReflect.decorators.runtime.classDecors;

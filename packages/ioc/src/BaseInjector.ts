@@ -2,7 +2,10 @@ import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } fro
 import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './types';
 import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
-import { isFunction, isUndefined, isNull, isClass, lang, isString, isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined, classTypes } from './utils/lang';
+import {
+    isFunction, isUndefined, isNull, isClass, lang, isString,
+    isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined, ClassTypes
+} from './utils/lang';
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
@@ -26,7 +29,7 @@ import { TypeReflectsToken } from './services/ITypeReflects';
  * @implements {IInjector}
  */
 export abstract class BaseInjector extends IocDestoryable implements IInjector {
-    static classType = classTypes.Injector;
+    static classType: ClassTypes = 'injector';
     /**
      * factories.
      *

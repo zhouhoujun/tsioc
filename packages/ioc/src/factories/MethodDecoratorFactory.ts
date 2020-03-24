@@ -1,7 +1,6 @@
 import { MethodMetadata } from '../metadatas/MethodMetadata';
 import { ParamProviders } from '../providers/types';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
-import { DecoratorType } from './DecoratorType';
 import { ArgsIteratorAction } from './ArgsIterator';
 
 
@@ -30,8 +29,6 @@ export interface IMethodDecorator<T extends MethodMetadata> {
      * @param {TypedPropertyDescriptor<any>} descriptor
      */
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
-
-    decoratorType?: DecoratorType;
 }
 
 
@@ -51,6 +48,5 @@ export function createMethodDecorator<T extends MethodMetadata>(
     metadataExtends?: MetadataExtends<T>): IMethodDecorator<T> {
 
     let decorator = createDecorator<T>(name, actions, metadataExtends);
-    decorator.decoratorType = DecoratorType.Method;
     return decorator;
 }

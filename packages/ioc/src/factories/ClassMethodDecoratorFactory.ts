@@ -1,7 +1,6 @@
 import { Type } from '../types';
 import { TypeMetadata } from '../metadatas/TypeMetadata';
-import { createDecorator, MetadataExtends } from './DecoratorFactory'
-import { DecoratorType } from './DecoratorType';
+import { createDecorator, MetadataExtends } from './DecoratorFactory';
 import { ArgsIteratorAction } from './ArgsIterator';
 
 
@@ -24,8 +23,6 @@ export interface IClassMethodDecorator<T extends TypeMetadata> {
 
     (target: Type): void;
     (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
-
-    decoratorType?: DecoratorType;
 }
 
 /**
@@ -40,7 +37,6 @@ export interface IClassMethodDecorator<T extends TypeMetadata> {
  */
 export function createClassMethodDecorator<T extends TypeMetadata>(name: string, actions?: ArgsIteratorAction<T>[], metadataExtends?: MetadataExtends<T>): IClassMethodDecorator<T> {
     let decorator = createDecorator<T>(name, actions, metadataExtends);
-    decorator.decoratorType = DecoratorType.Class | DecoratorType.Method;
     return decorator;
 }
 

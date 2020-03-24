@@ -1,4 +1,4 @@
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject, PromiseUtil, isToken, Action } from '@tsdi/ioc';
+import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject, PromiseUtil, isToken, Action, AsyncHandler } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
@@ -171,13 +171,13 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         return this;
     }
 
-    protected toHandle(handleType: HandleType<T>): PromiseUtil.ActionHandle<T> {
+    protected toHandle(handleType: HandleType<T>): AsyncHandler<T> {
         if (handleType instanceof Action) {
-            return handleType.toAction() as PromiseUtil.ActionHandle<T>;
+            return handleType.toAction() as AsyncHandler<T>;
         } else if (isToken(handleType)) {
-            return this.injector.get<Action>(handleType)?.toAction?.() as PromiseUtil.ActionHandle<T>;
+            return this.injector.get<Action>(handleType)?.toAction?.() as AsyncHandler<T>;
         } else if (isFunction(handleType)) {
-            return handleType as PromiseUtil.ActionHandle<T>;
+            return handleType as AsyncHandler<T>;
         }
         return null;
     }

@@ -2,7 +2,6 @@ import { ArgsIteratorAction } from './ArgsIterator';
 import { ClassMetadata } from '../metadatas/ClassMetadata';
 import { Type, Token, ProvideToken } from '../types';
 import { createDecorator, MetadataExtends } from './DecoratorFactory';
-import { DecoratorType } from './DecoratorType';
 import { isString, isNumber, isBoolean } from '../utils/lang';
 import { isToken, isProvideToken } from '../utils/isToken';
 
@@ -24,8 +23,6 @@ export interface ITypeDecorator<T extends ClassMetadata> {
      * not allow abstract to decorator with out metadata.
      */
     (target: Type): void;
-
-    decoratorType?: DecoratorType;
 }
 
 /**
@@ -170,7 +167,6 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, acti
         );
     }
     let decorator = createDecorator<T>(name, actions, metadataExtends);
-    decorator.decoratorType = DecoratorType.Class;
     return decorator;
 }
 

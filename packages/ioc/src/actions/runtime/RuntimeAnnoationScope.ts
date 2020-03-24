@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
+import { DecoratorScope, RuntimeRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
 import { RegisterSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';
 import { Singleton } from '../../decorators/Singleton';
@@ -37,7 +37,7 @@ export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext
  * @extends {RuntimeDecoratorScope}
  */
 export class RuntimeAnnoationDecorScope extends RuntimeDecoratorScope {
-    protected getDecorScope(): DecoratorScopes {
+    protected getDecorScope(): DecoratorScope {
         return DecoratorScopes.Class;
     }
 }

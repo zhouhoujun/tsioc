@@ -1,6 +1,5 @@
 import {
-    Inject, BindProviderAction, DecoratorScopes,
-    DecoratorProvider, DesignRegisterer, IocExt
+    Inject, BindProviderAction, DecoratorProvider, DesignRegisterer, IocExt, DecoratorScopes
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';

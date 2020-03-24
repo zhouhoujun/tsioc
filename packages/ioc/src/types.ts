@@ -1,6 +1,7 @@
 import { Registration } from './Registration';
 import { ProviderTypes } from './providers/types';
 import { IInjector } from './IInjector';
+import { ClassTypes } from './utils/lang';
 
 /**
  * module types.
@@ -107,7 +108,7 @@ export interface AbstractType<T = any> extends Function {
     /**
      * class type flag.
      */
-    classType?: number;
+    classType?: ClassTypes;
 }
 
 

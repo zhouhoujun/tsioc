@@ -1,5 +1,5 @@
 import { Joinpoint, AOP_THROWING, AOP_RETURNING, AOP_STATE } from '../joinpoints/Joinpoint';
-import { IocCompositeAction, IActionSetup, isDefined, isArray, tokenId, isPromise, PromiseUtil, TypeReflectsToken, INJECTOR, ITypeReflects } from '@tsdi/ioc';
+import { IocCompositeAction, IActionSetup, isDefined, isArray, tokenId, isPromise, PromiseUtil, ITypeReflects } from '@tsdi/ioc';
 import { JoinpointState } from '../joinpoints/JoinpointState';
 import { Advicer } from '../advices/Advicer';
 import { aExp } from '../regexps';

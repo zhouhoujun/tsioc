@@ -28,7 +28,7 @@ export const BindingPropertyHandle = async function (ctx: IComponentContext, nex
             let filed = binding.bindingName || binding.name;
             let expression = bindings ? bindings[filed] : null;
             if (isDefined(expression)) {
-                if (binding.bindingType === BindingTypes.dynamic) {
+                if (binding.bindingType === 'dynamic') {
                     ctx.value[binding.name] = expression;
                 } else {
                     let pctx = ParseContext.parse(ctx.injector, {

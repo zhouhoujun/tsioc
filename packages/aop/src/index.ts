@@ -39,6 +39,7 @@ export * from './advices/Advices';
 export * from './proceeding/ProceedingScope';
 export * from './proceeding/MethodAdvicesScope';
 
+export * from './AdviceTypes';
 export * from './IAdvisor';
 export * from './Advisor';
 export * from './AdviceMatcher';

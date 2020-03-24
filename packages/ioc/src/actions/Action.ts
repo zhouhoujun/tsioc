@@ -1,5 +1,5 @@
 import { Token, Type } from '../types';
-import { lang } from '../utils/lang';
+import { Handler } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';
 import { IInjector, IProviders } from '../IInjector';
 import { tokenId } from '../InjectToken';
@@ -62,5 +62,5 @@ export interface IActionSetup {
 /**
  * ioc action type.
  */
-export type ActionType<T extends Action = Action, TAction = lang.Action> = Token<T> | T | TAction;
+export type ActionType<T extends Action = Action, TAction = Handler> = Token<T> | T | TAction;
 

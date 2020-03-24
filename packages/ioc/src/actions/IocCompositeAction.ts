@@ -1,4 +1,4 @@
-import { lang, isBoolean, isClass } from '../utils/lang';
+import { lang, isBoolean, isClass, Handler } from '../utils/lang';
 import { ActionType, IActionInjector } from './Action';
 import { IocAction, IIocContext } from './IocAction';
 
@@ -16,7 +16,7 @@ export class IocCompositeAction<T extends IIocContext = IIocContext> extends Ioc
     protected actions: ActionType[];
     protected befores: ActionType[];
     protected afters: ActionType[];
-    private actionFuncs: lang.Action[];
+    private handlers: Handler[];
 
     constructor(protected actInjector: IActionInjector) {
         super();
@@ -122,10 +122,10 @@ export class IocCompositeAction<T extends IIocContext = IIocContext> extends Ioc
     }
 
     execute(ctx: T, next?: () => void): void {
-        if (!this.actionFuncs) {
-            this.actionFuncs = [...this.befores, ...this.actions, ...this.afters].map(ac => this.actInjector.getAction<lang.Action<T>>(ac)).filter(f => f);
+        if (!this.handlers) {
+            this.handlers = [...this.befores, ...this.actions, ...this.afters].map(ac => this.actInjector.getAction<Handler<T>>(ac)).filter(f => f);
         }
-        this.execFuncs(ctx, this.actionFuncs, next);
+        this.execFuncs(ctx, this.handlers, next);
     }
 
     protected regAction(ac: any) {
@@ -135,7 +135,7 @@ export class IocCompositeAction<T extends IIocContext = IIocContext> extends Ioc
     }
 
     protected resetFuncs() {
-        this.actionFuncs = null;
+        this.handlers = null;
     }
 
 }

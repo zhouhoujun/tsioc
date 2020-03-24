@@ -1,5 +1,5 @@
 import { Token, SymbolType } from '../types';
-import { lang } from '../utils/lang';
+import { Handler, chain } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflects } from '../services/ITypeReflects';
@@ -126,12 +126,12 @@ export abstract class IocAction<T extends IIocContext> extends Action {
 
     abstract execute(ctx: T, next: () => void): void;
 
-    protected execFuncs(ctx: T, actions: lang.Action[], next?: () => void) {
-        lang.execAction(actions, ctx, next);
+    protected execFuncs(ctx: T, actions: Handler[], next?: () => void) {
+        chain(actions, ctx, next);
     }
 
-    private _action: lang.Action<T>
-    toAction(): lang.Action<T> {
+    private _action: Handler;
+    toAction(): Handler {
         if (!this._action) {
             this._action = (ctx: T, next?: () => void) => this.execute(ctx, next);
         }

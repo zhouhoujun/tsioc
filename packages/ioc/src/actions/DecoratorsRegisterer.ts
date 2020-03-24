@@ -1,9 +1,19 @@
-import { isString, lang, isArray } from '../utils/lang';
+import { isString, isArray, Handler } from '../utils/lang';
 import { Registration } from '../Registration';
 import { IocCoreService } from '../IocCoreService';
 import { Action, IActionInjector } from './Action';
 import { Token, Type } from '../types';
 import { IocDecoratorRegisterer, DecoratorRegisterer } from './DecoratorRegisterer';
+
+/**
+ * decorator scopes.
+ *
+ * Annoation: annoation actions for design time.
+ * AfterAnnoation: after annoation actions for design time.
+ */
+export type DecoratorScope = 'BeforeAnnoation' | 'Class' | 'Parameter' | 'Property' | 'Method'
+    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation' | 'Inject'
+    | 'Build' | 'BindExpression' | 'TranslateTemplate' | 'Binding' | 'ValifyComponent';
 
 /**
  * decorator scopes.
@@ -27,13 +37,12 @@ export enum DecoratorScopes {
      * after annoation actions for design time.
      */
     AfterAnnoation = 'AfterAnnoation',
-
     Inject = 'Inject'
 }
 
-export interface IScopeAction<TAction extends Function = lang.Action> {
-    scope: string | DecoratorScopes,
-    action: TAction | Type<Action> | (TAction | Type<Action>)[]
+export interface IScopeAction<TAction extends Function = Handler> {
+    scope: DecoratorScope;
+    action: TAction | Type<Action> | (TAction | Type<Action>)[];
 }
 
 /**
@@ -42,7 +51,7 @@ export interface IScopeAction<TAction extends Function = lang.Action> {
  * @export
  * @class DecoratorRegisterer
  */
-export abstract class DecoratorsRegisterer<TAction extends Function = lang.Action> extends IocCoreService {
+export abstract class DecoratorsRegisterer<TAction extends Function = Handler> extends IocCoreService {
     protected map: Map<Token, any>;
     constructor(protected registerer: IActionInjector) {
         super()
@@ -57,10 +66,10 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
      * @param {...T[]} actions
      * @memberof DecoratorRegister
      */
-    register(decorator: string | Function, scope: string | DecoratorScopes, ...actions: (TAction | Type<Action>)[]): this;
+    register(decorator: string | Function, scope: DecoratorScope, ...actions: (TAction | Type<Action>)[]): this;
     register(decorator: string | Function, scope?: any, ...actions): this {
         if (isString(scope)) {
-            this.getRegisterer(scope)
+            this.getRegisterer(scope as DecoratorScope)
                 .register(decorator, ...actions);
         } else {
             actions.unshift(scope);
@@ -74,7 +83,7 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
     }
 
 
-    has(decorator: string | Function, scope: string | DecoratorScopes, action?: TAction | Type<Action>): boolean {
+    has(decorator: string | Function, scope: DecoratorScope, action?: TAction | Type<Action>): boolean {
         return this.getRegisterer(scope).has(decorator, action);
     }
 
@@ -82,20 +91,20 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
         return isString(decorator) ? decorator : decorator.toString();
     }
 
-    get<T extends Action>(decorator: string | Function, scope: string | DecoratorScopes): Type<T>[] {
+    get<T extends Action>(decorator: string | Function, scope: DecoratorScope): Type<T>[] {
         return this.getRegisterer(scope).get<T>(decorator) || [];
     }
 
-    getFuncs(register: IActionInjector, decorator: string | Function, scope: string | DecoratorScopes): TAction[] {
+    getFuncs(register: IActionInjector, decorator: string | Function, scope: DecoratorScope): TAction[] {
         return this.getRegisterer(scope).getFuncs(register, decorator);
     }
 
-    setRegisterer(scope: string | DecoratorScopes, registerer: DecoratorRegisterer<TAction>) {
+    setRegisterer(scope: DecoratorScope, registerer: DecoratorRegisterer<TAction>) {
         let rg = this.getRegistration(scope);
         this.map.set(rg, registerer);
     }
 
-    getRegisterer(scope: string | DecoratorScopes): DecoratorRegisterer<TAction> {
+    getRegisterer(scope: DecoratorScope): DecoratorRegisterer<TAction> {
         let rg = this.getRegistration(scope);
         if (!this.map.has(rg)) {
             this.map.set(rg, this.createRegister());
@@ -105,11 +114,11 @@ export abstract class DecoratorsRegisterer<TAction extends Function = lang.Actio
 
     protected abstract createRegister(): DecoratorRegisterer<TAction>;
 
-    protected getRegistration(scope: string | DecoratorScopes): string {
+    protected getRegistration(scope: DecoratorScope): string {
         return new Registration(DecoratorRegisterer, this.getScopeKey(scope)).toString();
     }
 
-    protected getScopeKey(scope: string | DecoratorScopes): string {
+    protected getScopeKey(scope: DecoratorScope): string {
         return scope.toString();
     }
 

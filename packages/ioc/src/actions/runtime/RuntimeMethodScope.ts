@@ -1,7 +1,7 @@
 import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
 import { IocRegisterScope } from '../IocRegisterScope';
 import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScopes, RuntimeRegisterer } from '../DecoratorsRegisterer';
+import { DecoratorScope, RuntimeRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
 import { Autorun } from '../../decorators/AutoRun';
 import { MethodAutorunAction } from './MethodAutorunAction';
 import { IActionSetup } from '../Action';
@@ -16,7 +16,7 @@ export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> i
 }
 
 export class RuntimeMethodDecorScope extends RuntimeDecoratorScope {
-    protected getDecorScope(): DecoratorScopes {
+    protected getDecorScope(): DecoratorScope {
         return DecoratorScopes.Method;
     }
 }

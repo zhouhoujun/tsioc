@@ -1,5 +1,6 @@
 import { createMethodDecorator, IMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction, isArray } from '@tsdi/ioc';
 import { AdviceMetadata } from '../metadatas/AdviceMetadata';
+import { AdviceTypes } from '../AdviceTypes';
 
 
 /**
@@ -95,7 +96,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             if (metadataExtends) {
                 metadataExtends(metadata as T);
             }
-            metadata.adviceName = adviceName;
+            metadata.adviceName = adviceName as AdviceTypes;
             return metadata;
         }) as IAdviceDecorator<T>;
 }

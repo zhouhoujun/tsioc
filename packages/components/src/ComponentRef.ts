@@ -175,31 +175,14 @@ export class ComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext
     }
 }
 
-
 /**
- * iterate way.
- *
- * @export
- * @enum {number}
+ * route： route up. iterate in parents.
+ * children： iterate in children.
+ * traverse: iterate as tree map. node first.
+ * traverseLast: iterate as tree map. node last.
  */
-export enum Mode {
-    /**
-     * route up. iterate in parents.
-     */
-    route = 1,
-    /**
-     * iterate in children.
-     */
-    children,
-    /**
-     * iterate as tree map. node first
-     */
-    traverse,
-    /**
-     * iterate as tree map. node last
-     */
-    traverseLast
-}
+export type Mode = 'route' | 'children' | 'traverse' | 'traverseLast';
+
 
 /**
  * node selector.
@@ -255,20 +238,20 @@ export class NodeSelector<T = any> {
     }
 
     each<Tc extends T>(express: Express<Tc, boolean | void>, mode?: Mode) {
-        mode = mode || Mode.traverse;
+        // mode = mode || 'traverse';
         let r;
         switch (mode) {
-            case Mode.route:
+            case 'route':
                 r = this.routeUp(this.node, express);
                 break;
-            case Mode.children:
+            case 'children':
                 r = this.eachChildren(this.node, express);
                 break;
-            case Mode.traverseLast:
+            case 'traverseLast':
                 r = this.transAfter(this.node, express);
                 break;
 
-            case Mode.traverse:
+            case 'traverse':
             default:
                 r = this.trans(this.node, express);
                 break;

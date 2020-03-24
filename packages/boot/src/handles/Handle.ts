@@ -1,4 +1,4 @@
-import { PromiseUtil, ActionType, Action } from '@tsdi/ioc';
+import { ActionType, Action, AsyncHandler, chain } from '@tsdi/ioc';
 
 
 /**
@@ -32,17 +32,17 @@ export interface IHandle<T = any> {
     /**
      * to action.
      *
-     * @returns {PromiseUtil.ActionHandle<T>}
+     * @returns {AsyncHandler<T>}
      * @memberof IHandle
      */
-    toAction(): PromiseUtil.ActionHandle<T>;
+    toAction(): AsyncHandler<T>;
 }
 
 
 /**
  *  handle type.
  */
-export type HandleType<T> = ActionType<IHandle<T>, PromiseUtil.ActionHandle<T>>;
+export type HandleType<T> = ActionType<IHandle<T>, AsyncHandler<T>>;
 
 
 /**
@@ -58,12 +58,12 @@ export abstract class Handle<T extends IHandleContext = any> extends Action impl
 
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 
-    protected execFuncs(ctx: T, handles: PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
-        return PromiseUtil.runInChain(handles, ctx, next);
+    protected execFuncs(ctx: T, handles: AsyncHandler<T>[], next?: () => Promise<void>): Promise<void> {
+        return chain(handles, ctx, next);
     }
 
-    private _action: PromiseUtil.ActionHandle<T>
-    toAction(): PromiseUtil.ActionHandle<T> {
+    private _action: AsyncHandler<T>;
+    toAction(): AsyncHandler<T> {
         if (!this._action) {
             this._action = (ctx: T, next?: () => Promise<void>) => this.execute(ctx, next);
         }
