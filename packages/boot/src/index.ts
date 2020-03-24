@@ -43,8 +43,8 @@ export * from './registers/AnnoationInjectorCheck';
 export * from './registers/AnnoationRegisterScope';
 
 
-// injectors
-export * from './injectors/DIModuleInjectScope';
+// injects
+export * from './injects/InjDIModuleScope';
 
 
 // modules

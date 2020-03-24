@@ -1,37 +1,39 @@
-import { DesignRegisterer, CTX_CURR_DECOR, chain, IActionSetup, IocDecorRegisterer, ObjectMap, Type, isArray, isClass, lang, IocCompositeAction } from '@tsdi/ioc';
-import { InjectorContext } from './InjectorContext';
+import { DesignRegisterer, CTX_CURR_DECOR, chain, IActionSetup, IocDecorRegisterer, ObjectMap, Type, isArray, isClass, lang, IocCompositeAction, DecoratorScope } from '@tsdi/ioc';
+import { InjContext } from './InjContext';
 import { CTX_CURR_TYPE } from '../context-tokens';
 
-export abstract class InjectorScope extends IocCompositeAction<InjectorContext> {
+export abstract class InjScope extends IocCompositeAction<InjContext> {
 
 }
 
 /**
- * register decorator module inject action.
+ * module inject action decorator register.
  *
- * @export
- * @class ModuleDecoratorRegisterer
- * @extends {IocDecorRegisterer}
  */
-export class InjectorDecorRegisterer extends IocDecorRegisterer {
+export class InjDecorRegisterer extends IocDecorRegisterer {
 
 }
 
-
-export class ModuleInjectorScope extends InjectorScope implements IActionSetup {
+/**
+ * module inject scope.
+ */
+export class InjModuleScope extends InjScope implements IActionSetup {
 
     setup() {
         this.use(InjDecorScope)
-            .use(InjTypesRegScope);
+            .use(InjRegTypesScope);
     }
 }
 
 
-
+const inj: DecoratorScope = 'Inj';
 const DECOR_STATE = 'CTX_DECOR_STATE';
 
-export class InjDecorScope extends InjectorScope implements IActionSetup {
-    execute(ctx: InjectorContext, next?: () => void): void {
+/**
+ * inject module by decorator.
+ */
+export class InjDecorScope extends InjScope implements IActionSetup {
+    execute(ctx: InjContext, next?: () => void): void {
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
                 .some(dec => {
@@ -47,10 +49,10 @@ export class InjDecorScope extends InjectorScope implements IActionSetup {
     }
 
     getRegisterer(): IocDecorRegisterer {
-        return this.actInjector.getInstance(DesignRegisterer).getRegisterer('Inject');
+        return this.actInjector.getInstance(DesignRegisterer).getRegisterer(inj);
     }
 
-    protected getState(ctx: InjectorContext): ObjectMap<boolean> {
+    protected getState(ctx: InjContext): ObjectMap<boolean> {
         if (!ctx.hasValue(DECOR_STATE)) {
             ctx.setValue(DECOR_STATE, this.getRegisterer()
                 .getDecorators()
@@ -62,13 +64,13 @@ export class InjDecorScope extends InjectorScope implements IActionSetup {
         return ctx.getValue(DECOR_STATE);
     }
 
-    protected done(ctx: InjectorContext): boolean {
+    protected done(ctx: InjContext): boolean {
         return this.getState(ctx)[ctx.getValue(CTX_CURR_DECOR)] = true;
     }
-    protected isCompleted(ctx: InjectorContext): boolean {
+    protected isCompleted(ctx: InjContext): boolean {
         return ctx.types.length === 0 || !Object.values(this.getState(ctx)).some(inj => !inj);
     }
-    protected getDecorators(ctx: InjectorContext): string[] {
+    protected getDecorators(ctx: InjContext): string[] {
         let states = this.getState(ctx);
         return Object.keys(states).reverse()
             .filter(dec => states[dec] === false);
@@ -79,28 +81,30 @@ export class InjDecorScope extends InjectorScope implements IActionSetup {
     }
 }
 
-export const InjDecorAction = function (ctx: InjectorContext, next?: () => void): void {
+export const InjDecorAction = function (ctx: InjContext, next?: () => void): void {
     if (ctx.hasValue(CTX_CURR_DECOR)) {
         let actInj = ctx.reflects.getActionInjector()
-        let decRgr = actInj.getInstance(DesignRegisterer).getRegisterer('Inject');
+        let decRgr = actInj.getInstance(DesignRegisterer).getRegisterer(inj);
         chain(decRgr.getFuncs(actInj, ctx.getValue(CTX_CURR_DECOR)), ctx, next);
     } else {
         next && next();
     }
 };
 
+/**
+ * module inject register scope.
+ */
+export abstract class InjRegScope extends InjScope implements IActionSetup {
 
-export abstract class InjectorRegScope extends InjectorScope implements IActionSetup {
-
-    execute(ctx: InjectorContext, next?: () => void): void {
+    execute(ctx: InjContext, next?: () => void): void {
         let types = this.getTypes(ctx);
         this.registerTypes(ctx, types);
         next && next();
     }
 
-    protected abstract getTypes(ctx: InjectorContext): Type[];
+    protected abstract getTypes(ctx: InjContext): Type[];
 
-    protected registerTypes(ctx: InjectorContext, types: Type[]) {
+    protected registerTypes(ctx: InjContext, types: Type[]) {
         if (isArray(types) && types.length) {
             let injector = ctx.injector;
             types.forEach(ty => {
@@ -113,7 +117,7 @@ export abstract class InjectorRegScope extends InjectorScope implements IActionS
         }
     }
 
-    protected setNextRegTypes(ctx: InjectorContext, registered: Type[]) {
+    protected setNextRegTypes(ctx: InjContext, registered: Type[]) {
         ctx.types = ctx.types.filter(ty => registered.indexOf(ty) < 0);
     }
 
@@ -122,14 +126,14 @@ export abstract class InjectorRegScope extends InjectorScope implements IActionS
     }
 }
 
-export class InjTypesRegScope extends InjectorRegScope {
-    protected getTypes(ctx: InjectorContext): Type[] {
+export class InjRegTypesScope extends InjRegScope {
+    protected getTypes(ctx: InjContext): Type[] {
         return ctx.types;
     }
 }
 
 
-export const InjRegTypeAction = function (ctx: InjectorContext, next: () => void): void {
+export const InjRegTypeAction = function (ctx: InjContext, next: () => void): void {
     let currType = ctx.getValue(CTX_CURR_TYPE);
     if (isClass(currType)) {
         ctx.injector.registerType(currType);
@@ -138,17 +142,20 @@ export const InjRegTypeAction = function (ctx: InjectorContext, next: () => void
     next();
 };
 
-export class InjIocExtScope extends InjectorRegScope {
-    protected getTypes(ctx: InjectorContext): Type[] {
+/**
+ * IocExt module injector
+ */
+export class InjIocExtScope extends InjRegScope {
+    protected getTypes(ctx: InjContext): Type[] {
         return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.getValue(CTX_CURR_DECOR), ty));
     }
 
-    protected setNextRegTypes(ctx: InjectorContext, registered: Type[]) {
+    protected setNextRegTypes(ctx: InjContext, registered: Type[]) {
         ctx.types = [];
     }
 };
 
-export const ModuleToTypesAction = function (ctx: InjectorContext, next: () => void): void {
+export const InjModuleToTypesAction = function (ctx: InjContext, next: () => void): void {
     if (!ctx.types) {
         ctx.types = lang.getTypes(ctx.module);
     }

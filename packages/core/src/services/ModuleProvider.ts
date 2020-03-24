@@ -1,6 +1,6 @@
 import { IInjector, Type, IocCoreService, ContainerProxy, ActionInjectorToken } from '@tsdi/ioc';
 import { IModuleLoader, ModuleLoader } from './ModuleLoader';
-import { InjectLifeScope } from '../injectors/InjectLifeScope';
+import { InjLifeScope } from '../injects/InjLifeScope';
 import { LoadType } from '../types';
 
 
@@ -30,6 +30,6 @@ export class ModuleProvider extends IocCoreService {
      */
     async load(injector: IInjector, ...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
-        return this.proxy().getInstance(ActionInjectorToken).getInstance(InjectLifeScope).register(injector, ...mdls);
+        return this.proxy().getInstance(ActionInjectorToken).getInstance(InjLifeScope).register(injector, ...mdls);
     }
 }

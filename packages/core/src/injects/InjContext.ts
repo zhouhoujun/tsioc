@@ -3,16 +3,16 @@ import { CTX_INJ_MODULE } from '../context-tokens';
 
 
 /**
- * Injector action option.
+ * module inject action option.
  */
-export interface InjectorOption extends ActCtxOption {
+export interface InjOption extends ActCtxOption {
     module: Modules;
 }
 
 /**
- * Ioc Injector action context.
+ * module inject action context.
  */
-export class InjectorContext extends IocContext<InjectorOption> {
+export class InjContext extends IocContext<InjOption> {
 
     /**
      * the module to injector to container.
@@ -49,15 +49,15 @@ export class InjectorContext extends IocContext<InjectorOption> {
      *
      * @static
      * @param { IInjector } injecor
-     * @param {InjectorOption} options
-     * @returns {InjectorContext}
+     * @param {InjOption} options
+     * @returns {InjContext}
      * @memberof InjectorActionContext
      */
-    static parse(injector: IInjector, options: InjectorOption): InjectorContext {
-        return createContext(injector, InjectorContext, options);
+    static parse(injector: IInjector, options: InjOption): InjContext {
+        return createContext(injector, InjContext, options);
     }
 
-    setOptions(options: InjectorOption) {
+    setOptions(options: InjOption) {
         if (!options) {
             return this;
         }

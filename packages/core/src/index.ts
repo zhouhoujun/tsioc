@@ -15,9 +15,9 @@ export * from './services/ModuleProvider';
 export * from './services/ServiceProvider';
 
 // injector actions
-export * from './injectors/InjectorContext';
-export * from './injectors/InjectLifeScope';
-export * from './injectors/injector-actions';
+export * from './injects/InjContext';
+export * from './injects/InjLifeScope';
+export * from './injects/inj-actions';
 
 // resolves actions
 // service

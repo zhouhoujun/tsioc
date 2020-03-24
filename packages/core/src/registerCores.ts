@@ -1,7 +1,7 @@
 import { ContainerProxyToken, InjectorFactoryToken } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from './IContainer';
 import { ModuleLoader } from './services/ModuleLoader';
-import { InjectLifeScope } from './injectors/InjectLifeScope';
+import { InjLifeScope } from './injects/InjLifeScope';
 import { ResolveServiceScope } from './resolves/service-actions';
 import { ResolveServicesScope } from './resolves/services-actions';
 import { ModuleProvider } from './services/ModuleProvider';
@@ -23,7 +23,7 @@ export function registerCores(container: IContainer) {
 
     let actInjector = container.getActionInjector();
     // register action
-    actInjector.regAction(InjectLifeScope)
+    actInjector.regAction(InjLifeScope)
         .regAction(ResolveServiceScope)
         .regAction(ResolveServicesScope);
 

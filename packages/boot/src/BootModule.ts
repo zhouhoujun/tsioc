@@ -9,7 +9,7 @@ import { Message } from './decorators/Message';
 import { MessageContext } from './messages/MessageContext';
 import { MessageQueue } from './messages/MessageQueue';
 import { RootMessageQueue } from './messages/RootMessageQueue';
-import { DIModuleInjectScope } from './injectors/DIModuleInjectScope';
+import { InjDIModuleScope } from './injects/InjDIModuleScope';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
 import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
 import { Bootstrap } from './decorators/Bootstrap';
@@ -52,7 +52,7 @@ export class BootModule {
 
         actInjector.setValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .regAction(AnnoationRegisterScope)
-            .regAction(DIModuleInjectScope)
+            .regAction(InjDIModuleScope)
             .regAction(ResolveMoudleScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);
@@ -92,7 +92,7 @@ const aftAnn: DecoratorScope = 'AfterAnnoation';
  */
 export function registerModule(decorator: string | Function, registerer: DesignRegisterer): DesignRegisterer {
     return registerer.register(decorator,
-        { scope: 'Inject', action: DIModuleInjectScope },
+        { scope: 'Inj', action: InjDIModuleScope },
         { scope: 'BeforeAnnoation', action: AnnoationInjectorCheck },
         { scope: cls, action: AnnoationDesignAction },
         { scope: 'Annoation', action: AnnoationRegisterScope },
