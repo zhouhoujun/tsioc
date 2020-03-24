@@ -2,7 +2,6 @@ import { lang, isTypeObject, isFunction } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBinding } from './IBinding';
 import { observe } from './onChange';
-import { BindEventType } from './Events';
 import { filedMatch, pathCkExp, pipeExp } from './exps';
 import { ComponentProvider } from '../ComponentProvider';
 
@@ -84,7 +83,7 @@ export abstract class PropBinding<T = any> {
             observe.onPropertyChange(this.source, lang.first(paths), (value, oldVal) => {
                 target[fieldName] = this.resolveExression();
                 if (sub) {
-                    observe.getEvents(sub).off(BindEventType.fieldChanged);
+                    observe.getEvents(sub).off('fieldChanged');
                 }
                 sub = astResolver.resolve(scope, this.injector, this.source);
                 observe.onPropertyChange(sub, last, (value, oldVal) => {

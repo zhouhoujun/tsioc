@@ -1,5 +1,7 @@
 import { lang, isFunction } from '@tsdi/ioc';
-import { Events, BindEventType } from './Events';
+import { Events } from './Events';
+
+const fdChg = 'fieldChanged';
 
 /**
  * observe property change.
@@ -84,7 +86,7 @@ export namespace observe {
                         descriptor.set.call(target, val);
                     }
                     if (isChanged) {
-                        evt.emit(BindEventType.fieldChanged, target, propName, val, old);
+                        evt.emit(fdChg, target, propName, val, old);
                     }
                 }
             });
@@ -94,7 +96,7 @@ export namespace observe {
             defines.set(target, pps)
         }
 
-        evt.on(BindEventType.fieldChanged, (tg, prop, val, old) => {
+        evt.on(fdChg, (tg, prop, val, old) => {
             if (target === tg) {
                 if (prop === propName) {
                     onChange(val, old, tg, prop);

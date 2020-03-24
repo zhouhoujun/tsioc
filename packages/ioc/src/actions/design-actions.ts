@@ -247,9 +247,6 @@ export const BindPropTypeAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-
-
-
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
 
