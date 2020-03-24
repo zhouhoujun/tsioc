@@ -1,4 +1,4 @@
-import { Input, BindingTypes } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
@@ -17,7 +17,7 @@ export class IntervalActivity extends ControlActivity {
 
     @Input() timer: TimerActivity;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
     async execute(ctx: IActivityContext): Promise<void> {
         if (!this.body) {

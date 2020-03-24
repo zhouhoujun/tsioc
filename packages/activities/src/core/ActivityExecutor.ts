@@ -1,5 +1,5 @@
 import {
-    Injectable, isArray, PromiseUtil, Type, isClass, isFunction, isPromise, ObjectMap, isDefined
+    Injectable, isArray, Type, isClass, isFunction, isPromise, ObjectMap, isDefined, AsyncHandler, chain, isString
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuilderServiceToken } from '@tsdi/boot';
@@ -60,7 +60,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity(nctx).then(() => nctx);
         } else {
             let md: Type;
-            if (isClass(activity.activity)) {
+            if (!isString(activity) && isClass(activity.activity)) {
                 md = activity.activity;
             }
 
@@ -113,7 +113,7 @@ export class ActivityExecutor implements IActivityExecutor {
         return this.context.getData();
     }
 
-    async execAction<T extends IWorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void> {
+    async execAction<T extends IWorkflowContext>(actions: AsyncHandler<T> | AsyncHandler<T>[], next?: () => Promise<void>): Promise<void> {
         if (!isArray(actions)) {
             return await actions(this.context.workflow as T, next);
         }
@@ -123,10 +123,10 @@ export class ActivityExecutor implements IActivityExecutor {
             }
             return;
         }
-        await PromiseUtil.runInChain(actions.filter(f => f), this.context.workflow, next);
+        await chain(actions.filter(f => f), this.context.workflow, next);
     }
 
-    parseAction<T extends IWorkflowContext>(activity: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[] {
+    parseAction<T extends IWorkflowContext>(activity: ActivityType | ActivityType[], input?: any): AsyncHandler<T> | AsyncHandler<T>[] {
         if (isArray(activity)) {
             return activity.filter(a => a).map(act => async (ctx: T, next?: () => Promise<void>) => {
                 let handle = await this.buildActivity<T>(act, input);
@@ -140,7 +140,7 @@ export class ActivityExecutor implements IActivityExecutor {
         }
     }
 
-    protected async buildActivity<T extends IWorkflowContext>(activity: ActivityType, input: any): Promise<PromiseUtil.ActionHandle<T>> {
+    protected async buildActivity<T extends IWorkflowContext>(activity: ActivityType, input: any): Promise<AsyncHandler<T>> {
         let ctx = this.context;
         if (isAcitvityRef(activity)) {
             activity.context.setValue(CTX_RUN_PARENT, ctx);
@@ -164,7 +164,7 @@ export class ActivityExecutor implements IActivityExecutor {
             return activity;
         } else if (activity) {
             let md: Type;
-            if (isClass(activity.activity)) {
+            if (!isString(activity) && isClass(activity.activity)) {
                 md = activity.activity;
             }
             let option = {

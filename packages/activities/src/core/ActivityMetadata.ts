@@ -4,6 +4,7 @@ import { Activity } from './Activity';
 import { IActivityContext } from './IActivityContext';
 import { IWorkflowContext } from './IWorkflowContext';
 import { IActivityRef } from './IActivityRef';
+import { Template } from '@tsdi/boot';
 
 
 
@@ -230,7 +231,7 @@ export type ControlTemplate = Required<TemplateOption> | TemplateOption | Execut
     | TimerTemplate | ThrowTemplate | SwitchTemplate | TryTemplate;
 
 
-export type TemplateType<T extends TemplateOption = ControlTemplate> = string | Type | T | AsyncHandler<IWorkflowContext>;
+export type TemplateType<T extends TemplateOption = ControlTemplate> = Template | Type | T | AsyncHandler<IWorkflowContext>;
 
 /**
  *  activity type.

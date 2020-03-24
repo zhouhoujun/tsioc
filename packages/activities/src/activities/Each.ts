@@ -1,5 +1,5 @@
 import { isNullOrUndefined } from '@tsdi/ioc';
-import { Input, BindingTypes } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { Expression, ActivityType } from '../core/ActivityMetadata';
 import { ActivityContext } from '../core/ActivityContext';
@@ -13,7 +13,7 @@ export class EachActicity<T> extends ControlActivity<T> {
 
     @Input() each: Expression<any[]>;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType;
 
     @Input() parallel: boolean;
 

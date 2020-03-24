@@ -1,5 +1,5 @@
 import { lang, Type } from '@tsdi/ioc';
-import { Input, BindingTypes } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
@@ -11,7 +11,7 @@ export class CatchActivity extends ControlActivity {
 
     @Input() error: Type<Error>;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
     async execute(ctx: IActivityContext): Promise<void> {
         let err = ctx.getData();
@@ -33,12 +33,12 @@ export class CatchActivity extends ControlActivity {
 @Task('try')
 export class TryCatchActivity extends ControlActivity {
 
-    @Input({ bindingType: BindingTypes.dynamic }) try: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) try: ActivityType<any>;
 
     @Input('catchs', CatchActivity)
     catchs: CatchActivity[];
 
-    @Input({ bindingType: BindingTypes.dynamic }) finallies: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) finallies: ActivityType<any>;
 
     async execute(ctx: IActivityContext): Promise<void> {
         try {

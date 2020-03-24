@@ -1,10 +1,10 @@
-import { Input, BindingTypes } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 import { ConditionActivity } from './ConditionActivity';
 import { ActivityType } from '../core/ActivityMetadata';
-import { PromiseUtil } from '@tsdi/ioc';
+import { AsyncHandler } from '@tsdi/ioc';
 import { WorkflowContext } from '../core/WorkflowContext';
 
 /**
@@ -19,9 +19,9 @@ export class WhileActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
-    private action: PromiseUtil.ActionHandle<WorkflowContext> | PromiseUtil.ActionHandle<WorkflowContext>[];
+    private action: AsyncHandler<WorkflowContext> | AsyncHandler<WorkflowContext>[];
 
     async execute(ctx: IActivityContext): Promise<void> {
         let condition = await this.condition?.execute(ctx);

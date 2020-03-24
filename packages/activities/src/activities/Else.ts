@@ -16,7 +16,7 @@ import { ActivityType } from '../core/ActivityMetadata';
 @Task('else')
 export class ElseActivity extends ControlActivity {
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
     async execute(ctx: IActivityContext): Promise<void> {
         let currScope = ctx.runScope;

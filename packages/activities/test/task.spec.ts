@@ -112,7 +112,7 @@ describe('activity test', () => {
         it('should get context by execute action.', async () => {
             let ctx = await Workflow.run({
                 template: {
-                    activity: Activities.execute,
+                    activity: 'execute',
                     action: `ctx => ctx.getContext('data')`
                 },
                 contexts: [
@@ -128,11 +128,11 @@ describe('activity test', () => {
         it('should get context by execute action in parallel.', async () => {
             let ctx = await Workflow.run({
                 template: {
-                    activity: Activities.each,
+                    activity: 'each',
                     each: ctx => ['t0', 't1', 't2', 't3'],
                     parallel: true,
                     body: {
-                        activity: Activities.execute,
+                        activity: 'execute',
                         action: ctx => {
                             // console.log(ctx.body);
                             return `${ctx.get('data')}: ${ctx.getInput()}`

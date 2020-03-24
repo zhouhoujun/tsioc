@@ -1,4 +1,4 @@
-import { PromiseUtil, tokenId } from '@tsdi/ioc';
+import { tokenId, AsyncHandler } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { Expression, ActivityType } from './ActivityMetadata';
 import { WorkflowContext } from './WorkflowContext';
@@ -51,12 +51,12 @@ export interface IActivityExecutor {
      * execute actions.
      *
      * @template T
-     * @param {(PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[])} actions
+     * @param {(AsyncHandler<T> | AsyncHandler<T>[])} actions
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      * @memberof IActivityExecutor
      */
-    execAction<T extends WorkflowContext>(actions: PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[], next?: () => Promise<void>): Promise<void>;
+    execAction<T extends WorkflowContext>(actions: AsyncHandler<T> | AsyncHandler<T>[], next?: () => Promise<void>): Promise<void>;
 
     /**
      * parse activites to actions.
@@ -64,10 +64,10 @@ export interface IActivityExecutor {
      * @template T
      * @param {(ActivityType | ActivityType[])} activities
      * @param {*} [input]
-     * @returns {PromiseUtil.ActionHandle<T>}
+     * @returns {AsyncHandler<T>}
      * @memberof IActivityExecutor
      */
-    parseAction<T extends WorkflowContext>(activities: ActivityType | ActivityType[], input?: any): PromiseUtil.ActionHandle<T> | PromiseUtil.ActionHandle<T>[];
+    parseAction<T extends WorkflowContext>(activities: ActivityType | ActivityType[], input?: any): AsyncHandler<T> | AsyncHandler<T>[];
 }
 
 export const ActivityExecutorToken = tokenId<IActivityExecutor>('ActivityExecutor');

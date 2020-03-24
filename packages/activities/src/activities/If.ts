@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { Input, BindingTypes } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
@@ -20,7 +20,7 @@ export class IfActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
     async execute(ctx: IActivityContext): Promise<void> {
         await this.tryExec(ctx);

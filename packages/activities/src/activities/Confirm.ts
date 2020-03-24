@@ -19,7 +19,7 @@ export class ConfirmActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
     async execute(ctx: IActivityContext): Promise<void> {
         let result = await this.condition.execute(ctx);

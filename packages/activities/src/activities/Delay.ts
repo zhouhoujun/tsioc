@@ -1,5 +1,5 @@
 import { PromiseUtil } from '@tsdi/ioc';
-import { Input, BindingTypes } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
@@ -20,7 +20,7 @@ export class DelayActivity extends ControlActivity {
 
     @Input() timer: TimerActivity;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
     async execute(ctx: ActivityContext): Promise<void> {
         let timeout = await this.timer.execute(ctx);

@@ -1,4 +1,4 @@
-import { PromiseUtil, IDestoryable, tokenId } from '@tsdi/ioc';
+import { AsyncHandler, IDestoryable, tokenId } from '@tsdi/ioc';
 import { ActivityContext } from './ActivityContext';
 import { IWorkflowContext } from './IWorkflowContext';
 export const ACTIVITY_INPUT = tokenId<any>('ACTIVITY_INPUT');
@@ -10,5 +10,5 @@ export interface IActivityRef extends IDestoryable {
     readonly isScope?: boolean;
     readonly context: ActivityContext;
     run(ctx: IWorkflowContext): Promise<void>;
-    toAction(): PromiseUtil.ActionHandle<IWorkflowContext>;
+    toAction(): AsyncHandler<IWorkflowContext>;
 }

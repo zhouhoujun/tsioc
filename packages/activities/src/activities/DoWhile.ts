@@ -1,5 +1,5 @@
-import { PromiseUtil } from '@tsdi/ioc';
-import { Input, BindingTypes } from '@tsdi/components';
+import { AsyncHandler } from '@tsdi/ioc';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
 import { IActivityContext } from '../core/IActivityContext';
@@ -21,9 +21,9 @@ export class DoWhileActivity extends ControlActivity {
 
     @Input() condition: ConditionActivity;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
-    private action: PromiseUtil.ActionHandle<IWorkflowContext> | PromiseUtil.ActionHandle<IWorkflowContext>[];
+    private action: AsyncHandler<IWorkflowContext> | AsyncHandler<IWorkflowContext>[];
 
     async execute(ctx: IActivityContext): Promise<void> {
         if (!this.action) {
