@@ -1,8 +1,8 @@
 import { ExecDecoratorAtion } from '../ExecDecoratorAtion';
-import { DecoratorsRegisterer, DesignRegisterer } from '../DecoratorsRegisterer';
+import { DecorsRegisterer, DesignRegisterer } from '../DecoratorsRegisterer';
 
-export class DesignDecoratorAction extends ExecDecoratorAtion {
-    protected getScopeRegisterer(): DecoratorsRegisterer {
+export class DesignDecorAction extends ExecDecoratorAtion {
+    protected getScopeRegisterer(): DecorsRegisterer {
         return this.actInjector.getInstance(DesignRegisterer);
     }
 }

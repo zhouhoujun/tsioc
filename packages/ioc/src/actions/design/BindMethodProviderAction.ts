@@ -1,6 +1,6 @@
 import { MethodMetadata } from '../../metadatas/MethodMetadata';
 import { isArray } from '../../utils/lang';
-import { DesignActionContext } from './DesignActionContext';
+import { DesignContext } from './DesignActionContext';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 
 
@@ -9,7 +9,7 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
  *
  * @export
  */
-export const BindMethodProviderAction = function (ctx: DesignActionContext, next: () => void) {
+export const BindMthPdrAction = function (ctx: DesignContext, next: () => void) {
     let refs = ctx.reflects;
     let targetReflect = ctx.targetReflect;
     targetReflect.defines.extendTypes.forEach(ty => {

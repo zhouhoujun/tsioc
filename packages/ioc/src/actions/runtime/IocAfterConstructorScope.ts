@@ -1,8 +1,9 @@
-import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
-import { IocRegisterScope } from '../IocRegisterScope';
-import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScope, DecoratorScopes } from '../DecoratorsRegisterer';
+import { RuntimeDecorScope } from './RuntimeDecoratorScope';
+import { IocRegScope } from '../IocRegisterScope';
+import { RuntimeContext } from './RuntimeActionContext';
 import { IActionSetup } from '../Action';
+import { DecoratorScope } from '../../types';
+import { aftCstr } from '../../utils/exps';
 
 /**
  * ioc register actions scope run after constructor.
@@ -11,9 +12,9 @@ import { IActionSetup } from '../Action';
  * @class IocAfterConstructorScope
  * @extends {IocRuntimeScopeAction}
  */
-export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
+export class AfterCtorScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
-        this.use(IocAfterConstructorDecorScope);
+        this.use(AfterCtorDecorScope);
     }
 }
 
@@ -21,11 +22,10 @@ export class IocAfterConstructorScope extends IocRegisterScope<RuntimeActionCont
  * after constructor decorator.
  *
  * @export
- * @class IocAfterConstructorDecorScope
- * @extends {RuntimeDecoratorScope}
+ * @extends {RuntimeDecorScope}
  */
-export class IocAfterConstructorDecorScope extends RuntimeDecoratorScope {
+export class AfterCtorDecorScope extends RuntimeDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.AfterConstructor;
+        return aftCstr;
     }
 }

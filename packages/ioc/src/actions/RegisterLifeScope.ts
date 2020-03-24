@@ -1,15 +1,15 @@
-import { RegisterActionContext } from './RegisterActionContext';
-import { IocRegisterScope } from './IocRegisterScope';
+import { RegContext } from './RegisterActionContext';
+import { IocRegScope } from './IocRegisterScope';
 
 /**
  * register life scope.
  *
  * @export
  * @class RegisterLifeScope
- * @extends {IocRegisterScope<T>}
+ * @extends {IocRegScope<T>}
  * @template T
  */
-export class RegisterLifeScope<T extends RegisterActionContext = RegisterActionContext> extends IocRegisterScope<T> {
+export class RegisterLifeScope<T extends RegContext = RegContext> extends IocRegScope<T> {
 
     register(ctx: T, next?: () => void) {
         this.execute(ctx, next);

@@ -1,12 +1,12 @@
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { InitReflectAction } from './InitReflectAction';
-import { DesignActionContext } from './design/DesignActionContext';
-import { DesignDecoratorAction } from './design/DesignDecoratorAction';
-import { DesignPropertyScope } from './design/DesignPropertyScope';
-import { DesignMethodScope } from './design/DesignMethodScope';
+import { DesignContext } from './design/DesignActionContext';
+import { DesignDecorAction } from './design/DesignDecoratorAction';
+import { DesignPropScope } from './design/DesignPropertyScope';
+import { DesignMthScope } from './design/DesignMethodScope';
 import { DesignClassScope } from './design/DesignClassScope';
 import { IActionSetup } from './Action';
-import { AnnoationScope } from './design/AnnoationScope';
+import { AnnoScope } from './design/AnnoationScope';
 import { isClass } from '../utils/lang';
 
 
@@ -17,8 +17,8 @@ import { isClass } from '../utils/lang';
  * @class DesignLifeScope
  * @extends {LifeScope}
  */
-export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> implements IActionSetup {
-    execute(ctx: DesignActionContext, next?: () => void): void {
+export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements IActionSetup {
+    execute(ctx: DesignContext, next?: () => void): void {
         if (isClass(ctx.type)) {
             super.execute(ctx, next);
         }
@@ -26,12 +26,12 @@ export class DesignLifeScope extends RegisterLifeScope<DesignActionContext> impl
         ctx.destroy();
     }
     setup() {
-        this.actInjector.regAction(DesignDecoratorAction);
+        this.actInjector.regAction(DesignDecorAction);
 
         this.use(InitReflectAction)
             .use(DesignClassScope)
-            .use(DesignPropertyScope)
-            .use(DesignMethodScope)
-            .use(AnnoationScope);
+            .use(DesignPropScope)
+            .use(DesignMthScope)
+            .use(AnnoScope);
     }
 }

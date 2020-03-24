@@ -1,4 +1,4 @@
-import { Injectable, createRaiseContext } from '@tsdi/ioc';
+import { Injectable, createContext } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBuildContext } from './IBuildContext';
 import { AnnoationContext } from '../AnnoationContext';
@@ -23,7 +23,7 @@ export class BuildContext<T extends IBuildOption = IBuildOption> extends Annoati
     }
 
     static parse(injector: ICoreInjector, options: IBuildOption): BuildContext {
-        return createRaiseContext(injector, BuildContext, options);
+        return createContext(injector, BuildContext, options);
     }
 
     setOptions(options: T) {

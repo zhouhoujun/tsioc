@@ -11,7 +11,7 @@ import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './p
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { MethodAccessorToken, MethodType } from './IMethodAccessor';
 import { IParameter } from './IParameter';
-import { ResolveActionOption } from './actions/ResolveActionContext';
+import { ResolveOption } from './actions/ResolveActionContext';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
@@ -423,12 +423,12 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * resolve instance with token and param provider via resolve scope.
      *
      * @template T
-     * @param {(Token<T> | ResolveActionOption<T>)} token
+     * @param {(Token<T> | ResolveOption<T>)} token
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IocContainer
      */
-    resolve<T>(token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderTypes[]): T {
         return this.getSingleton(ActionInjectorToken).getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 

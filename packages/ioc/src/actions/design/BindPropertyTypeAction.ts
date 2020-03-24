@@ -1,5 +1,5 @@
 import { isClass } from '../../utils/lang';
-import { DesignActionContext } from './DesignActionContext';
+import { DesignContext } from './DesignActionContext';
 import { PropertyMetadata } from '../../metadatas/PropertyMetadata';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 
@@ -8,7 +8,7 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
  *
  * @export
  */
-export const BindPropertyTypeAction = function (ctx: DesignActionContext, next: () => void) {
+export const BindPropTypeAction = function (ctx: DesignContext, next: () => void) {
     let refs = ctx.reflects;
     let injector = ctx.injector;
     let targetReflect = ctx.targetReflect;

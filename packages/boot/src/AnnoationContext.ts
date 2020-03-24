@@ -1,5 +1,5 @@
 import {
-    Type, createRaiseContext, IocProvidersOption, IocProvidersContext,
+    Type, createContext, IocPdrsOption, IocPdrsContext,
     isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, IProviders, IIocContext, isDefined
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
@@ -14,7 +14,7 @@ import { IAnnotationMetadata, IAnnoationReflect } from './annotations/IAnnoation
  * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationOption<T = any> extends IocProvidersOption, RegInMetadata {
+export interface AnnoationOption<T = any> extends IocPdrsOption, RegInMetadata {
     /**
      * target module type.
      *
@@ -108,10 +108,10 @@ export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
  * @extends {HandleContext}
  */
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
-    extends IocProvidersContext<T, ICoreInjector> implements IAnnoationContext<T> {
+    extends IocPdrsContext<T, ICoreInjector> implements IAnnoationContext<T> {
 
     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
-        return createRaiseContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
+        return createContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
     }
 
     get type(): Type {

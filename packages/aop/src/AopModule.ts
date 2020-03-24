@@ -1,7 +1,7 @@
 import {
-    Inject, IocBeforeConstructorScope, IocAfterConstructorScope, IocContainerToken, IIocContainer,
-    RuntimeMethodScope, BindProviderAction, RegisterSingletionAction, RuntimeLifeScope,
-    ConstructorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken, DecoratorScopes
+    Inject, BeforeCtorScope, AfterCtorScope, IocContainerToken, IIocContainer,
+    RuntimeMthScope, BindAnnoPdrAction, RegSingletionAction, RuntimeLifeScope,
+    CtorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
 import { Advisor } from './Advisor';
@@ -45,24 +45,24 @@ export class AopModule {
 
         actInjector.regAction(ProceedingScope);
 
-        actInjector.getInstance(IocBeforeConstructorScope)
+        actInjector.getInstance(BeforeCtorScope)
             .useBefore(InvokeBeforeConstructorAction);
 
-        actInjector.getInstance(IocAfterConstructorScope)
+        actInjector.getInstance(AfterCtorScope)
             // .use(ExetndsInstanceAction)
             .use(InvokeAfterConstructorAction);
 
-        actInjector.getInstance(RuntimeMethodScope)
+        actInjector.getInstance(RuntimeMthScope)
             .useBefore(BindMethodPointcutAction);
 
         actInjector.getInstance(RuntimeLifeScope)
-            .useBefore(MatchPointcutAction, ConstructorArgsAction);
+            .useBefore(MatchPointcutAction, CtorArgsAction);
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Aspect, DecoratorScopes.Class, BindProviderAction, RegistAspectAction);
+            .register(Aspect, 'Class', BindAnnoPdrAction, RegistAspectAction);
 
         actInjector.getInstance(RuntimeRegisterer)
-            .register(Aspect, DecoratorScopes.Class, RegisterSingletionAction);
+            .register(Aspect, 'Class', RegSingletionAction);
 
     }
 }

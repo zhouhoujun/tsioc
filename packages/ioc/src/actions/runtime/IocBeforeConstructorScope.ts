@@ -1,32 +1,27 @@
-import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
-import { IocRegisterScope } from '../IocRegisterScope';
-import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScope, DecoratorScopes } from '../DecoratorsRegisterer';
+import { RuntimeDecorScope } from './RuntimeDecoratorScope';
+import { IocRegScope } from '../IocRegisterScope';
+import { RuntimeContext } from './RuntimeActionContext';
 import { IActionSetup } from '../Action';
+import { DecoratorScope } from '../../types';
+import { befCstr } from '../../utils/exps';
 
 
 /**
  * ioc register actions scope run before constructor.
  *
- * @export
- * @class IocBeforeConstructorScope
- * @extends {IocRuntimeScopeAction}
  */
-export class IocBeforeConstructorScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
+export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
-        this.use(IocBeforeConstructorDecorScope);
+        this.use(BeforeCtorDecorScope);
     }
 }
 
 /**
  * before constructor decorator.
  *
- * @export
- * @class IocBeforeConstructorDecorScope
- * @extends {RuntimeDecoratorScope}
  */
-export class IocBeforeConstructorDecorScope extends RuntimeDecoratorScope {
+export class BeforeCtorDecorScope extends RuntimeDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.BeforeConstructor;
+        return befCstr;
     }
 }

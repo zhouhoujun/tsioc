@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 
 /**
  * singleton action, to set the factory of Token as singleton.
@@ -7,7 +7,7 @@ import { RuntimeActionContext } from './RuntimeActionContext';
  * @class SingletionAction
  * @extends {IocRuntimeAction}
  */
-export const RegisterSingletionAction = function (ctx: RuntimeActionContext, next: () => void): void {
+export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
     if (ctx.type && ctx.target && ctx.targetReflect.singleton) {
         if (!ctx.injector.hasSingleton(ctx.type)) {
             ctx.injector.setValue(ctx.type, ctx.target);

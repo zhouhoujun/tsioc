@@ -1,15 +1,12 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { RuntimeParamScope } from './RuntimeParamScope';
 import { CTX_ARGS, CTX_PARAMS } from '../../context-tokens';
 
 /**
  * resolve constructor args action.
  *
- * @export
- * @class ConstructorArgsAction
- * @extends {IocRuntimeAction}
  */
-export const ConstructorArgsAction = function (ctx: RuntimeActionContext, next: () => void): void {
+export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.hasValue(CTX_ARGS)) {
         let targetReflect = ctx.targetReflect;
         let injector = ctx.injector;

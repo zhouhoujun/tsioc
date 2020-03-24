@@ -1,4 +1,4 @@
-import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { StartupDecoratorRegisterer } from '@tsdi/boot';
 import { IComponentContext } from '../ComponentContext';
 import { chain } from '@tsdi/ioc';
 
@@ -8,7 +8,7 @@ export const ValifyTeamplateHandle = async function (ctx: IComponentContext, nex
     let actInjector = ctx.reflects.getActionInjector();
     let startupRegr = actInjector.getInstance(StartupDecoratorRegisterer);
 
-    let validRegs = startupRegr.getRegisterer(StartupScopes.ValifyComponent);
+    let validRegs = startupRegr.getRegisterer('ValifyComponent');
     if (validRegs.has(ctx.decorator)) {
         await chain(validRegs.getFuncs(actInjector, ctx.decorator), ctx);
     }

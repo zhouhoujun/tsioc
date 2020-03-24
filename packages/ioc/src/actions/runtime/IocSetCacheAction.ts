@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { IocCacheManager } from '../IocCacheManager';
 
 
@@ -7,7 +7,7 @@ import { IocCacheManager } from '../IocCacheManager';
  *
  * @export
  */
-export const IocSetCacheAction = function (ctx: RuntimeActionContext, next: () => void) {
+export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
     let targetReflect = ctx.targetReflect;
     if (targetReflect.singleton || !targetReflect.expires || targetReflect.expires <= 0) {
         return next();

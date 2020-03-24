@@ -1,20 +1,16 @@
 import { Token } from '../types';
-import { createRaiseContext, IocProvidersContext, IocProvidersOption, IIocProvidersContext } from './IocActionContext';
+import { createContext, IocPdrsContext, IocPdrsOption, IIocPdrsContext } from './IocActionContext';
 import { IInjector } from '../IInjector';
 import { CTX_TOKEN, CTX_DEFAULT_TOKEN } from '../context-tokens';
 
 /**
  * resovle action option.
  *
- * @export
- * @interface ResolveActionOption
  */
-export interface ResolveActionOption<T = any> extends IocProvidersOption {
+export interface ResolveOption<T = any> extends IocPdrsOption {
     /**
      * token.
      *
-     * @type {Token<T>}
-     * @memberof ResolveActionOption
      */
     token?: Token<T>;
     /**
@@ -32,14 +28,12 @@ export interface ResolveActionOption<T = any> extends IocProvidersOption {
     /**
      * register token if has not register.
      *
-     * @type {boolean}
-     * @memberof ResolveActionOption
      */
     regify?: boolean;
 
 }
 
-export interface IResolveActionContext<T = any, TOP extends ResolveActionOption<T> = ResolveActionOption<T>> extends IIocProvidersContext<TOP> {
+export interface IResolveContext<T = any, TOP extends ResolveOption<T> = ResolveOption<T>> extends IIocPdrsContext<TOP> {
     readonly token: Token<T>;
     readonly defaultToken: Token<T>;
     /**
@@ -52,12 +46,9 @@ export interface IResolveActionContext<T = any, TOP extends ResolveActionOption<
 
 /**
  * resolve action context.
- *
- * @export
- * @interface IResolverContext
  */
-export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = ResolveActionOption<T>>
-    extends IocProvidersContext<TOP> implements IResolveActionContext<T, TOP> {
+export class ResolveContext<T = any, TOP extends ResolveOption<T> = ResolveOption<T>>
+    extends IocPdrsContext<TOP> implements IResolveContext<T, TOP> {
 
     /**
      * token.
@@ -86,12 +77,12 @@ export class ResolveActionContext<T = any, TOP extends ResolveActionOption<T> = 
      *
      * @static
      * @param {IInjector} injector
-     * @param {ResolveActionOption} options
-     * @returns {ResolveActionContext}
+     * @param {ResolveOption} options
+     * @returns {ResolveContext}
      * @memberof ResolveActionContext
      */
-    static parse<T>(injector: IInjector, options: ResolveActionOption<T>): ResolveActionContext<T> {
-        return createRaiseContext<ResolveActionContext>(injector, ResolveActionContext, options);
+    static parse<T>(injector: IInjector, options: ResolveOption<T>): ResolveContext<T> {
+        return createContext<ResolveContext>(injector, ResolveContext, options);
     }
 
     setOptions(options: TOP) {

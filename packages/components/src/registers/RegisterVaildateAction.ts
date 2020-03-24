@@ -1,10 +1,10 @@
-import { DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { DesignContext, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { VaildatePropertyMetadata } from '../decorators/Vaildate';
 import { IComponentReflect } from '../IComponentReflect';
 import { RefChild } from '../decorators/RefChild';
 
 
-export const RegisterVaildateAction = function (ctx: DesignActionContext, next: () => void) {
+export const RegVaildateAction = function (ctx: DesignContext, next: () => void) {
     let ref = ctx.targetReflect as IComponentReflect;
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let propVaildates = ref.getBindings<VaildatePropertyMetadata[]>(RefChild.toString())

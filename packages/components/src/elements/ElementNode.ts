@@ -1,6 +1,5 @@
 import { ClassTypes } from '@tsdi/ioc';
 import { Input } from '../decorators/Input';
-import { Component } from '../decorators/Component';
 import { Directive } from '../decorators/Directive';
 
 

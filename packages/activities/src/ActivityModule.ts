@@ -1,10 +1,10 @@
 import {
-    Inject, BindProviderAction, DecoratorProvider, DesignRegisterer, IocExt, DecoratorScopes
+    Inject, BindAnnoPdrAction, DecoratorProvider, DesignRegisterer, IocExt
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { BootContext, StartupDecoratorRegisterer, StartupScopes, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
+import { BootContext, StartupDecoratorRegisterer, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
 import {
-    ComponentRegisterAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle, AstResolver,
+    ComponentRegAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle, AstResolver,
     DefaultComponets, ELEMENT_REF, TEMPLATE_REF, COMPONENT_REF, BindingsCache, Input, Output, RefChild, Vaildate
 } from '@tsdi/components';
 import { Task } from './decorators/Task';
@@ -34,11 +34,11 @@ export class ActivityModule {
         let actInjector = container.getActionInjector();
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Task, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction, ActivityDepsRegister);
+            .register(Task, 'Class', BindAnnoPdrAction, AnnoationDesignAction, ComponentRegAction, ActivityDepsRegister);
 
         actInjector.regAction(ComponentSelectorHandle);
         actInjector.getInstance(StartupDecoratorRegisterer)
-            .register(Task, StartupScopes.TranslateTemplate, ComponentSelectorHandle);
+            .register(Task, 'TranslateTemplate', ComponentSelectorHandle);
 
         container.inject(WorkflowContext, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect);
 

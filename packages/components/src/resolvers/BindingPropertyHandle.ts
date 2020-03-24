@@ -2,7 +2,7 @@ import { isTypeObject, lang, isDefined } from '@tsdi/ioc';
 import { IComponentContext } from '../ComponentContext';
 import { ParseContext, CTX_BIND_PARSED } from '../parses/ParseContext';
 import { BindingScope } from '../parses/BindingScope';
-import { BindingTypes, IPropertyVaildate } from '../bindings/IBinding';
+import { IPropertyVaildate } from '../bindings/IBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { PropBinding } from '../bindings/PropBinding';
 import { Input } from '../decorators/Input';

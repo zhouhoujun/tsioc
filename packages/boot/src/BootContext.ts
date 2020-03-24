@@ -1,4 +1,4 @@
-import { Type, Injectable, createRaiseContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
+import { Type, Injectable, createContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
 import { LoadType, IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { IStartup } from './runnable/Startup';
@@ -290,7 +290,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     }
 
     static parse(injector: ICoreInjector, target: Type | BootOption): BootContext {
-        return createRaiseContext(injector, BootContext, isToken(target) ? { module: target } : target);
+        return createContext(injector, BootContext, isToken(target) ? { module: target } : target);
     }
 
     setOptions(options: T) {

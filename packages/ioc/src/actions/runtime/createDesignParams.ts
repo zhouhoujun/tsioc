@@ -1,10 +1,10 @@
 import { Token, Type } from '../../types';
 import { isClass } from '../../utils/lang';
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { IParameter } from '../../IParameter';
 
 
-export function createDesignParams(ctx: RuntimeActionContext, type: Type, target: any, propertyKey: string): IParameter[] {
+export function createDesignParams(ctx: RuntimeContext, type: Type, target: any, propertyKey: string): IParameter[] {
     let paramTokens: Token[];
     if (target && propertyKey) {
         paramTokens = Reflect.getMetadata('design:paramtypes', target, propertyKey) || [];

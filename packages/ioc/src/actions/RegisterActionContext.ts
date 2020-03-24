@@ -1,5 +1,5 @@
 import { Type, Token } from '../types';
-import { IocProvidersContext, IocProvidersOption } from './IocActionContext';
+import { IocPdrsContext, IocPdrsOption } from './IocActionContext';
 import { ITypeReflect } from '../services/ITypeReflect';
 import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON } from '../context-tokens';
 
@@ -8,29 +8,20 @@ import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON } f
  * register action option.
  *
  * @export
- * @interface RegisterActionOption
+ * @interface RegOption
  */
-export interface RegisterActionOption extends IocProvidersOption {
+export interface RegOption extends IocPdrsOption {
     /**
      * resolve token.
-     *
-     * @type {Token}
-     * @memberof RegisterActionOption
      */
     token?: Token;
     /**
      * target type.
-     *
-     * @type {Type}
-     * @memberof RegisterActionOption
      */
     type: Type;
 
     /**
      * custom set singleton or not.
-     *
-     * @type {boolean}
-     * @memberof RegisterActionOption
      */
     singleton?: boolean;
 
@@ -41,15 +32,13 @@ export interface RegisterActionOption extends IocProvidersOption {
  * Ioc Register action context.
  *
  * @export
- * @class RegisterActionContext
+ * @class RegContext
  * @extends {IocActionContext}
  */
-export class RegisterActionContext<T extends RegisterActionOption = RegisterActionOption> extends IocProvidersContext<T> {
+export class RegContext<T extends RegOption = RegOption> extends IocPdrsContext<T> {
     /**
      * resolve token.
      *
-     * @type {Token}
-     * @memberof RegisterActionContext
      */
     get token(): Token {
         return this.getValue(CTX_TOKEN);
@@ -58,8 +47,6 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
     /**
      * target type.
      *
-     * @type {Type}
-     * @memberof RegisterActionContext
      */
     get type(): Type {
         return this.getValue(CTX_TYPE);
@@ -72,8 +59,6 @@ export class RegisterActionContext<T extends RegisterActionOption = RegisterActi
     /**
      * custom set singleton or not.
      *
-     * @type {boolean}
-     * @memberof RegisterActionOption
      */
     get singleton(): boolean {
         return this.getValue(CTX_SINGLETON) === true;

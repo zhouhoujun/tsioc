@@ -1,4 +1,4 @@
-import { DesignActionContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders } from '@tsdi/ioc';
+import { DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders } from '@tsdi/ioc';
 import { AnnotationMerger } from '../services/AnnotationMerger';
 import { AnnotationCloner } from '../services/AnnotationCloner';
 import { IModuleReflect } from '../modules/IModuleReflect';
@@ -6,7 +6,7 @@ import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { CTX_MODULE_ANNOATION } from '../context-tokens';
 
 
-export const AnnoationDesignAction = function (ctx: DesignActionContext, next: () => void): void {
+export const AnnoationDesignAction = function (ctx: DesignContext, next: () => void): void {
     let tgRef = ctx.targetReflect as IModuleReflect;
     if (tgRef.getAnnoation) {
         ctx.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation());

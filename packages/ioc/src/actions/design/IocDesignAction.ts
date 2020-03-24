@@ -1,5 +1,5 @@
-import { DesignActionContext } from './DesignActionContext';
-import { IocRegisterAction } from '../IocRegisterAction';
+import { DesignContext } from './DesignActionContext';
+import { IocRegAction } from '../IocRegisterAction';
 
 /**
  * ioc design action.
@@ -8,8 +8,8 @@ import { IocRegisterAction } from '../IocRegisterAction';
  * @export
  * @abstract
  * @class IocRegisterAction
- * @extends {IocRegisterAction<DesignActionContext>}
+ * @extends {IocRegAction<DesignContext>}
  */
-export abstract class IocDesignAction extends IocRegisterAction<DesignActionContext> {
+export abstract class IocDesignAction extends IocRegAction<DesignContext> {
 
 }

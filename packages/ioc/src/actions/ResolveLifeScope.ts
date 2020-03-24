@@ -1,7 +1,7 @@
 import { Token } from '../types';
 import { isToken } from '../utils/isToken';
 import { ProviderTypes } from '../providers/types';
-import { ResolveActionContext, ResolveActionOption, IResolveActionContext } from './ResolveActionContext';
+import { ResolveContext, ResolveOption, IResolveContext } from './ResolveActionContext';
 import { IocResolveScope } from './IocResolveScope';
 import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { isNullOrUndefined } from '../utils/lang';
@@ -11,12 +11,12 @@ import { isNullOrUndefined } from '../utils/lang';
  *
  * @export
  * @class ResolveLifeScope
- * @extends {IocResolveScope<ResolveActionContext<T>>}
+ * @extends {IocResolveScope<ResolveContext<T>>}
  * @template T
  */
-export class ResolveLifeScope<T> extends IocResolveScope<IResolveActionContext<T>> {
+export class ResolveLifeScope<T> extends IocResolveScope<IResolveContext<T>> {
 
-    execute(ctx: IResolveActionContext, next?: () => void): void {
+    execute(ctx: IResolveContext, next?: () => void): void {
         if (isNullOrUndefined(ctx.instance)) {
             super.execute(ctx, next);
         }
@@ -33,13 +33,13 @@ export class ResolveLifeScope<T> extends IocResolveScope<IResolveActionContext<T
      * resolve token in resolve chain.
      *
      * @template T
-     * @param {(Token<T> | ResolveActionOption<T>)} token
+     * @param {(Token<T> | ResolveOption<T>)} token
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof ResolveLifeScope
      */
-    resolve<T>(injector: IInjector, token: Token<T> | ResolveActionOption<T>, ...providers: ProviderTypes[]): T {
-        let ctx = ResolveActionContext.parse(injector, isToken(token) ? { token: token } : token);
+    resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: ProviderTypes[]): T {
+        let ctx = ResolveContext.parse(injector, isToken(token) ? { token: token } : token);
         let pdr = ctx.providers;
         providers.length && pdr.inject(...providers);
         if (!pdr.hasTokenKey(INJECTOR)) {

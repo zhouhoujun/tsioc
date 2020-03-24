@@ -1,33 +1,37 @@
-import { DesignDecoratorScope } from './DesignDecoratorScope';
-import { IocRegisterScope } from '../IocRegisterScope';
-import { DesignActionContext } from './DesignActionContext';
+import { DesignDecorScope } from './DesignDecoratorScope';
+import { IocRegScope } from '../IocRegisterScope';
+import { DesignContext } from './DesignActionContext';
 import { IocAutorunAction } from './IocAutorunAction';
-import { DecoratorScope, DesignRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
+import { DesignRegisterer } from '../DecoratorsRegisterer';
 import { Autorun } from '../../decorators/AutoRun';
 import { IocExt } from '../../decorators/IocExt';
 import { IActionSetup } from '../Action';
+import { aftAnn, ann } from '../../utils/exps';
+import { DecoratorScope } from '../../types';
 
-export class AnnoationScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
+
+
+export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
         this.actInjector.getInstance(DesignRegisterer)
-            .register(Autorun, DecoratorScopes.AfterAnnoation, IocAutorunAction)
-            .register(IocExt, DecoratorScopes.AfterAnnoation, IocAutorunAction);
+            .register(Autorun, aftAnn, IocAutorunAction)
+            .register(IocExt, aftAnn, IocAutorunAction);
 
-        this.use(AnnoationDecoratorScope)
-            .use(AfterAnnoationDecoratorScope);
+        this.use(AnnoDecorScope)
+            .use(AfterAnnoDecorScope);
     }
 }
 
 
-export class AnnoationDecoratorScope extends DesignDecoratorScope {
+export class AnnoDecorScope extends DesignDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.Annoation;
+        return ann;
     }
 }
 
-export class AfterAnnoationDecoratorScope extends DesignDecoratorScope {
+export class AfterAnnoDecorScope extends DesignDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.AfterAnnoation;
+        return aftAnn;
     }
 }

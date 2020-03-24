@@ -1,16 +1,16 @@
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { InitReflectAction } from './InitReflectAction';
-import { RuntimeActionContext } from './runtime/RuntimeActionContext';
-import { RuntimeDecoratorAction } from './runtime/RuntimeDecoratorAction';
+import { RuntimeContext } from './runtime/RuntimeActionContext';
+import { RuntimeDecorAction } from './runtime/RuntimeDecoratorAction';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
 import { IocGetCacheAction } from './runtime/IocGetCacheAction';
-import { ConstructorArgsAction } from './runtime/ConstructorArgsAction';
-import { IocBeforeConstructorScope } from './runtime/IocBeforeConstructorScope';
+import { CtorArgsAction } from './runtime/ConstructorArgsAction';
+import { BeforeCtorScope } from './runtime/IocBeforeConstructorScope';
 import { CreateInstanceAction } from './runtime/CreateInstanceAction';
-import { IocAfterConstructorScope } from './runtime/IocAfterConstructorScope';
-import { RuntimePropertyScope } from './runtime/RuntimePropertyScope';
-import { RuntimeMethodScope } from './runtime/RuntimeMethodScope';
-import { RuntimeAnnoationScope } from './runtime/RuntimeAnnoationScope';
+import { AfterCtorScope } from './runtime/IocAfterConstructorScope';
+import { RuntimePropScope } from './runtime/RuntimePropertyScope';
+import { RuntimeMthScope } from './runtime/RuntimeMethodScope';
+import { RuntimeAnnoScope } from './runtime/RuntimeAnnoationScope';
 
 /**
  * runtime life scope.
@@ -19,9 +19,9 @@ import { RuntimeAnnoationScope } from './runtime/RuntimeAnnoationScope';
  * @class RuntimeLifeScope
  * @extends {LifeScope}
  */
-export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
+export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
 
-    execute(ctx: RuntimeActionContext, next?: () => void): void {
+    execute(ctx: RuntimeContext, next?: () => void): void {
         if (!ctx.target) {
             super.execute(ctx, next);
         }
@@ -31,18 +31,18 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeActionContext> {
 
     setup() {
         this.actInjector
-            .regAction(RuntimeDecoratorAction)
+            .regAction(RuntimeDecorAction)
             .regAction(RuntimeParamScope);
 
         this.use(InitReflectAction)
             .use(IocGetCacheAction)
-            .use(ConstructorArgsAction)
-            .use(IocBeforeConstructorScope)
+            .use(CtorArgsAction)
+            .use(BeforeCtorScope)
             .use(CreateInstanceAction)
-            .use(IocAfterConstructorScope)
-            .use(RuntimePropertyScope)
-            .use(RuntimeMethodScope)
-            .use(RuntimeAnnoationScope);
+            .use(AfterCtorScope)
+            .use(RuntimePropScope)
+            .use(RuntimeMthScope)
+            .use(RuntimeAnnoScope);
 
     }
 

@@ -147,3 +147,13 @@ export interface Express<T, TResult> {
 export interface Express2<T1, T2, TResult> {
     (arg1: T1, arg2: T2): TResult
 }
+
+/**
+ * decorator scopes.
+ *
+ * Annoation: annoation actions for design time.
+ * AfterAnnoation: after annoation actions for design time.
+ */
+export type DecoratorScope = 'BeforeAnnoation' | 'Class' | 'Parameter' | 'Property' | 'Method'
+    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation' | 'Inject'
+    | 'Build' | 'BindExpression' | 'TranslateTemplate' | 'Binding' | 'ValifyComponent';

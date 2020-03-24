@@ -1,18 +1,16 @@
 import { IParameter } from '../../IParameter';
-import { RegisterActionOption, RegisterActionContext } from '../RegisterActionContext';
-import { createRaiseContext } from '../IocActionContext';
+import { RegOption, RegContext } from '../RegisterActionContext';
+import { createContext } from '../IocActionContext';
 import { CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../../context-tokens';
 import { ParamProviders } from '../../providers/types';
 import { IInjector } from '../../IInjector';
 
 
 /**
- * register action option.
+ *  runtime action option.
  *
- * @export
- * @interface RegisterActionOption
  */
-export interface RuntimeActionOption extends RegisterActionOption {
+export interface RuntimeOption extends RegOption {
     /**
      * the args.
      *
@@ -52,11 +50,9 @@ export interface RuntimeActionOption extends RegisterActionOption {
 /**
  * Ioc Register action context.
  *
- * @export
- * @class RuntimeActionContext
- * @extends {RegisterActionContext}
+ * @extends {RegContext}
  */
-export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOption> {
+export class RuntimeContext extends RegContext<RuntimeOption> {
     /**
      * target instance.
      *
@@ -74,15 +70,15 @@ export class RuntimeActionContext extends RegisterActionContext<RuntimeActionOpt
      *
      * @static
      * @param {IInjector} injector
-     * @param {RuntimeActionOption} options
-     * @returns {RegisterActionContext}
+     * @param {RuntimeOption} options
+     * @returns {RegContext}
      * @memberof RegisterActionContext
      */
-    static parse(injector: IInjector, options: RuntimeActionOption): RuntimeActionContext {
-        return createRaiseContext(injector, RuntimeActionContext, options);
+    static parse(injector: IInjector, options: RuntimeOption): RuntimeContext {
+        return createContext(injector, RuntimeContext, options);
     }
 
-    setOptions(options: RuntimeActionOption) {
+    setOptions(options: RuntimeOption) {
         if (!options) {
             return this;
         }

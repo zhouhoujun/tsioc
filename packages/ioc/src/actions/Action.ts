@@ -8,9 +8,9 @@ import { tokenId } from '../InjectToken';
  * action context option.
  *
  * @export
- * @interface ActionContextOption
+ * @interface ActCtxOption
  */
-export interface ActionContextOption {
+export interface ActCtxOption {
     /**
      * providers for contexts.
      *

@@ -1,5 +1,5 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, isFunction } from '@tsdi/ioc';
-import { StartupDecoratorRegisterer, StartupScopes, BaseTypeParser, BuildHandles } from '@tsdi/boot';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, isFunction, chain } from '@tsdi/ioc';
+import { StartupDecoratorRegisterer, BaseTypeParser, BuildHandles } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 import { PropBinding } from '../bindings/PropBinding';
@@ -50,15 +50,15 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
     if (!ctx.hasValue(CTX_BIND_DATABINDING) && isString(expression)) {
         let actInjector = ctx.reflects.getActionInjector();
         let regs = actInjector.getInstance(StartupDecoratorRegisterer)
-            .getRegisterer(StartupScopes.BindExpression);
+            .getRegisterer('BindExpression');
         let compdect = ctx.componentDecorator;
         // translate binding expression via current decorator.
         if (regs.has(compdect)) {
-            await PromiseUtil.runInChain(regs.getFuncs(actInjector, compdect), ctx);
+            await chain(regs.getFuncs(actInjector, compdect), ctx);
         } else {
             let exp = expression.trim();
             let dataBinding: PropBinding;
-            if (binding.direction === BindingDirection.input) {
+            if (binding.direction === 'input') {
                 if (exp.startsWith(bindPref)) {
                     dataBinding = new OneWayBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(bindPref, '').trim());
                 } else if (exp.startsWith(twobindPref)) {
@@ -66,7 +66,7 @@ export const BindingScopeHandle = async function (ctx: IParseContext, next?: () 
                 } else if (exp.startsWith(two2bindPref)) {
                     dataBinding = new TwoWayBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(two2bindPref, '').trim());
                 }
-            } else if (binding.direction === BindingDirection.output && exp.startsWith(eventBindPref)) {
+            } else if (binding.direction === 'output' && exp.startsWith(eventBindPref)) {
                 dataBinding = new EventBinding(ctx.injector, ctx.componentProvider, ctx.getScope(), binding, exp.replace(eventBindPref, '').trim());
             }
             dataBinding && ctx.setValue(CTX_BIND_DATABINDING, dataBinding);

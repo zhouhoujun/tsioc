@@ -1,16 +1,12 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { isToken } from '../../utils/isToken';
 import { isDefined } from '../../utils/lang';
 
 
 /**
  * inject property value action, to inject property value for resolve instance.
- *
- * @export
- * @class SetPropAction
- * @extends {ActionComposite}
  */
-export const InjectPropertyAction = function (ctx: RuntimeActionContext, next: () => void) {
+export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
     let providers = ctx.providers;
     let injector = ctx.injector;
 

@@ -1,4 +1,4 @@
-import { IResolveActionContext } from './ResolveActionContext';
+import { IResolveContext } from './ResolveActionContext';
 import { ResolveInInjectorAction } from './resolves/ResolveInInjectorAction';
 import { ResolveInRootAction } from './resolves/ResolveInRootAction';
 import { ResolvePrivateAction } from './resolves/ResolvePrivateAction';
@@ -21,7 +21,7 @@ import { IocCompositeAction } from './IocCompositeAction';
  * @extends {IocCompositeAction<T>}
  * @template T
  */
-export class IocResolveScope<T extends IResolveActionContext = IResolveActionContext> extends IocCompositeAction<T> {
+export class IocResolveScope<T extends IResolveContext = IResolveContext> extends IocCompositeAction<T> {
 
     execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {

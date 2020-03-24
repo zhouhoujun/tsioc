@@ -1,17 +1,12 @@
 import { IocAction } from './IocAction';
-import { RegisterActionContext } from './RegisterActionContext';
+import { RegContext } from './RegisterActionContext';
 
 /**
  * ioc register action.
  *
  * the register type class can only register in ioc as:
  * ` container.registerSingleton(SubRegisterAction, () => new SubRegisterAction(container));`
- * @export
- * @abstract
- * @class IocRegisterAction
- * @extends {IocAction<T>}
- * @template T
  */
-export abstract class IocRegisterAction<T extends RegisterActionContext> extends IocAction<T> {
+export abstract class IocRegAction<T extends RegContext> extends IocAction<T> {
 
 }

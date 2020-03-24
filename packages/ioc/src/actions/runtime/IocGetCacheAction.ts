@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { IocCacheManager } from '../IocCacheManager';
 
 /**
@@ -6,7 +6,7 @@ import { IocCacheManager } from '../IocCacheManager';
  *
  * @export
  */
-export const IocGetCacheAction = function (ctx: RuntimeActionContext, next: () => void): void {
+export const IocGetCacheAction = function (ctx: RuntimeContext, next: () => void): void {
     let targetReflect = ctx.targetReflect;
     if (!ctx.target && !targetReflect.singleton && targetReflect.expires > 0) {
         let cache = ctx.injector.getInstance(IocCacheManager).get(ctx.target, targetReflect.expires);

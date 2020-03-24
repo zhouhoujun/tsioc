@@ -3,7 +3,7 @@ import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
-import { DesignActionContext } from './actions/design/DesignActionContext';
+import { DesignContext } from './actions/design/DesignActionContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
 import { BaseInjector } from './BaseInjector';
@@ -157,7 +157,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
 
         (async () => {
             this.getActionInjector().getInstance(DesignLifeScope).register(
-                DesignActionContext.parse(injector, {
+                DesignContext.parse(injector, {
                     token: provide,
                     type: type,
                     singleton: singleton

@@ -1,12 +1,12 @@
-import { IocDecoratorRegisterer } from '@tsdi/ioc';
+import { IocDecorRegisterer } from '@tsdi/ioc';
 
 /**
  * register decorator module inject action.
  *
  * @export
  * @class ModuleDecoratorRegisterer
- * @extends {IocDecoratorRegisterer}
+ * @extends {IocDecorRegisterer}
  */
-export class InjectDecoratorRegisterer extends IocDecoratorRegisterer {
+export class InjectDecoratorRegisterer extends IocDecorRegisterer {
 
 }

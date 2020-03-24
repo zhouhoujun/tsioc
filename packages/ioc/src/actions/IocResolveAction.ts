@@ -1,5 +1,5 @@
 import { IocAction } from './IocAction';
-import { ResolveActionContext } from './ResolveActionContext';
+import { ResolveContext } from './ResolveActionContext';
 
 /**
  * ioc Resolve action.
@@ -12,6 +12,6 @@ import { ResolveActionContext } from './ResolveActionContext';
  * @extends {IocAction<T>}
  * @template T
  */
-export abstract class IocResolveAction<T extends ResolveActionContext = ResolveActionContext> extends IocAction<T> {
+export abstract class IocResolveAction<T extends ResolveContext = ResolveContext> extends IocAction<T> {
 
 }

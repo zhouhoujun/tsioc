@@ -1,29 +1,30 @@
-import { DesignDecoratorAction } from './DesignDecoratorAction';
-import { DesignActionContext } from './DesignActionContext';
-import { DecoratorScope, DecoratorScopes } from '../DecoratorsRegisterer';
-import { IocDecoratorScope } from '../IocDecoratorScope';
+import { DesignDecorAction } from './DesignDecoratorAction';
+import { DesignContext } from './DesignActionContext';
+import { IocDecorScope } from '../IocDecoratorScope';
 import { IActionSetup } from '../Action';
+import { DecoratorScope } from '../../types';
+import { befAnn, ann, aftAnn } from '../../utils/exps';
 
-export abstract class DesignDecoratorScope extends IocDecoratorScope<DesignActionContext> implements IActionSetup {
+export abstract class DesignDecorScope extends IocDecorScope<DesignContext> implements IActionSetup {
 
-    protected getScopeDecorators(ctx: DesignActionContext, scope: DecoratorScope): string[] {
+    protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
         switch (scope) {
-            case DecoratorScopes.BeforeAnnoation:
+            case befAnn:
                 return ctx.targetReflect.decorators.design.beforeAnnoDecors
-            case DecoratorScopes.Annoation:
-            case DecoratorScopes.AfterAnnoation:
-            case DecoratorScopes.Class:
+            case ann:
+            case aftAnn:
+            case 'Class':
                 return ctx.targetReflect.decorators.design.classDecors;
-            case DecoratorScopes.Method:
+            case 'Method':
                 return ctx.targetReflect.decorators.design.methodDecors;
-            case DecoratorScopes.Property:
+            case 'Property':
                 return ctx.targetReflect.decorators.design.propsDecors;
         }
         return ctx.targetReflect.decorators.design.getDecortors(scope);
     }
 
     setup() {
-        this.use(DesignDecoratorAction);
+        this.use(DesignDecorAction);
     }
 
 }

@@ -5,7 +5,7 @@ import { isToken } from '../utils/isToken';
 import { IInjector, IProviders } from '../IInjector';
 import { IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
 import { ParamProviders } from '../providers/types';
-import { RuntimeActionContext } from './runtime/RuntimeActionContext';
+import { RuntimeContext } from './runtime/RuntimeActionContext';
 import { RuntimeParamScope } from './runtime/RuntimeParamScope';
 import { TypeReflectsToken } from '../services/ITypeReflects';
 
@@ -132,7 +132,7 @@ export class MethodAccessor implements IMethodAccessor {
      */
     getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): IParameter[];
     getParameters<T>(injector: IInjector, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
-        let ctx = RuntimeActionContext.parse(injector, {
+        let ctx = RuntimeContext.parse(injector, {
             type: type,
             target: instance,
             propertyKey: propertyKey,

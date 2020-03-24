@@ -1,4 +1,4 @@
-import { DesignActionContext, CTX_CURR_DECOR, DecoratorProvider, IProviders } from '@tsdi/ioc';
+import { DesignContext, CTX_CURR_DECOR, DecoratorProvider, IProviders } from '@tsdi/ioc';
 import { IComponentReflect } from '../IComponentReflect';
 import { attrExp } from '../bindings/exps';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
@@ -8,7 +8,7 @@ import { BindingsCache } from './BindingsCache';
 /**
  * component register action.
  */
-export const ComponentRegisterAction = function (ctx: DesignActionContext, next: () => void): void {
+export const ComponentRegAction = function (ctx: DesignContext, next: () => void): void {
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
@@ -64,7 +64,7 @@ export const ComponentRegisterAction = function (ctx: DesignActionContext, next:
 /**
  * Directive register action.
  */
-export const DirectiveRegisterAction = function (ctx: DesignActionContext, next: () => void): void {
+export const DirectiveRegisterAction = function (ctx: DesignContext, next: () => void): void {
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);

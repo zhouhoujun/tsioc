@@ -1,10 +1,10 @@
 import { IocCompositeAction } from './IocCompositeAction';
-import { RegisterActionContext } from './RegisterActionContext';
-import { DecoratorScope } from './DecoratorsRegisterer';
+import { RegContext } from './RegisterActionContext';
+import { DecoratorScope } from '../types';
 import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
 
 
-export abstract class IocDecoratorScope<T extends RegisterActionContext> extends IocCompositeAction<T> {
+export abstract class IocDecorScope<T extends RegContext> extends IocCompositeAction<T> {
     execute(ctx: T, next?: () => void): void {
         this.getDecorators(ctx)
             .forEach(dec => {

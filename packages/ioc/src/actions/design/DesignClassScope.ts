@@ -1,8 +1,8 @@
-import { DesignDecoratorScope } from './DesignDecoratorScope';
-import { IocRegisterScope } from '../IocRegisterScope';
-import { DesignActionContext } from './DesignActionContext';
-import { BindProviderAction } from './BindProviderAction';
-import { DecoratorScope, DesignRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
+import { DesignDecorScope } from './DesignDecoratorScope';
+import { IocRegScope } from '../IocRegisterScope';
+import { DesignContext } from './DesignActionContext';
+import { BindAnnoPdrAction } from './BindProviderAction';
+import { DesignRegisterer } from '../DecoratorsRegisterer';
 import { Injectable } from '../../decorators/Injectable';
 import { Singleton } from '../../decorators/Singleton';
 import { Providers } from '../../decorators/Providers';
@@ -10,30 +10,31 @@ import { Refs } from '../../decorators/Refs';
 import { IActionSetup } from '../Action';
 import { InjectableMetadata } from '../../metadatas/InjectableMetadata';
 import { ParamProviders } from '../../providers/types';
-import { RuntimeActionContext } from '../runtime/RuntimeActionContext';
+import { RuntimeContext } from '../runtime/RuntimeActionContext';
 import { RuntimeLifeScope } from '../RuntimeLifeScope';
 import { CTX_TYPE_REGIN } from '../../context-tokens';
 import { INJECTOR } from '../../IInjector';
+import { DecoratorScope } from '../../types';
+import { cls, befAnn } from '../../utils/exps';
 
 
-
-export class DesignClassScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
+export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
         this.actInjector.getInstance(DesignRegisterer)
-            .register(Injectable, DecoratorScopes.Class, BindProviderAction)
-            .register(Singleton, DecoratorScopes.Class, BindProviderAction)
-            .register(Providers, DecoratorScopes.Class, BindProviderAction)
-            .register(Refs, DecoratorScopes.Class, BindProviderAction);
+            .register(Injectable, cls, BindAnnoPdrAction)
+            .register(Singleton, cls, BindAnnoPdrAction)
+            .register(Providers, cls, BindAnnoPdrAction)
+            .register(Refs, cls, BindAnnoPdrAction);
 
-        this.use(AnnoationRegInAction)
-            .use(BeforeAnnoationDecoratorScope)
+        this.use(AnnoRegInAction)
+            .use(BeforeAnnoDecorScope)
             .use(RegClassAction)
-            .use(DesignClassDecoratorScope);
+            .use(DesignClassDecorScope);
     }
 }
 
-export const AnnoationRegInAction = function (ctx: DesignActionContext, next: () => void): void {
+export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
     let regIn: string;
     let reflects = ctx.reflects;
     ctx.targetReflect.decorators.classDecors.some(d => {
@@ -53,14 +54,14 @@ export const AnnoationRegInAction = function (ctx: DesignActionContext, next: ()
 };
 
 
-export const RegClassAction = function (ctx: DesignActionContext, next: () => void): void {
+export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
     let injector = ctx.injector;
     let provide = injector.getTokenKey(ctx.token);
     let type = ctx.type;
     let singleton = ctx.targetReflect.singleton;
     let actInjector = ctx.reflects.getActionInjector();
     let factory = (...providers: ParamProviders[]) => {
-        let ctx = RuntimeActionContext.parse(injector, {
+        let ctx = RuntimeContext.parse(injector, {
             token: provide,
             type: type,
             singleton: singleton,
@@ -82,14 +83,14 @@ export const RegClassAction = function (ctx: DesignActionContext, next: () => vo
 };
 
 
-export class BeforeAnnoationDecoratorScope extends DesignDecoratorScope {
+export class BeforeAnnoDecorScope extends DesignDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.BeforeAnnoation;
+        return befAnn;
     }
 }
 
-export class DesignClassDecoratorScope extends DesignDecoratorScope {
+export class DesignClassDecorScope extends DesignDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.Class;
+        return cls;
     }
 }

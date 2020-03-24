@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from '@tsdi/ioc';
+import { RuntimeContext } from '@tsdi/ioc';
 import { AdvisorToken } from '../IAdvisor';
 import { AdviceMatcherToken } from '../IAdviceMatcher';
 import { Advicer } from '../advices/Advicer';
@@ -10,7 +10,7 @@ import { isValideAspectTarget } from './isValideAspectTarget';
  *
  * @export
  */
-export const MatchPointcutAction = function (ctx: RuntimeActionContext, next: () => void): void {
+export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     let reflects = ctx.reflects;
     if (!isValideAspectTarget(ctx.type, reflects)) {

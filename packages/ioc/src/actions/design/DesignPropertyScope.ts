@@ -1,28 +1,31 @@
-import { DesignDecoratorScope } from './DesignDecoratorScope';
-import { DesignActionContext } from './DesignActionContext';
-import { IocRegisterScope } from '../IocRegisterScope';
-import { DecoratorScope, DesignRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
-import { BindPropertyTypeAction } from './BindPropertyTypeAction';
+import { DesignDecorScope } from './DesignDecoratorScope';
+import { DesignContext } from './DesignActionContext';
+import { IocRegScope } from '../IocRegisterScope';
+import { DesignRegisterer } from '../DecoratorsRegisterer';
+import { BindPropTypeAction } from './BindPropertyTypeAction';
+import { DecoratorScope } from '../../types';
 import { Inject } from '../../decorators/Inject';
 import { AutoWired } from '../../decorators/AutoWried';
 import { IActionSetup } from '../Action';
+import { ptr } from '../../utils/exps';
 
 
-export class DesignPropertyScope extends IocRegisterScope<DesignActionContext> implements IActionSetup {
+
+export class DesignPropScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
 
         this.actInjector.getInstance(DesignRegisterer)
-            .register(Inject, DecoratorScopes.Property, BindPropertyTypeAction)
-            .register(AutoWired, DecoratorScopes.Property, BindPropertyTypeAction);
+            .register(Inject, ptr, BindPropTypeAction)
+            .register(AutoWired, ptr, BindPropTypeAction);
 
-        this.use(DesignPropertyDecoratorScope);
+        this.use(DesignPropDecorScope);
     }
 }
 
 
-export class DesignPropertyDecoratorScope extends DesignDecoratorScope {
+export class DesignPropDecorScope extends DesignDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.Property;
+        return ptr;
     }
 }

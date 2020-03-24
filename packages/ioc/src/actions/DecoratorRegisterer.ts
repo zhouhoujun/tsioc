@@ -6,11 +6,8 @@ import { Type } from '../types';
 /**
  * decorator action registerer.
  *
- * @export
- * @class IocDecoratorRegisterer
- * @extends {IocCoreService}
  */
-export abstract class DecoratorRegisterer<TAction extends Function = Handler> extends IocCoreService {
+export abstract class DecorRegisterer<TAction extends Function = Handler> extends IocCoreService {
     protected actionMap: Map<string, (TAction | Type<Action>)[]>;
     protected funcs: Map<string, TAction[]>;
     constructor() {
@@ -127,12 +124,7 @@ export abstract class DecoratorRegisterer<TAction extends Function = Handler> ex
 
 /**
  * ioc decorator registerer.
- *
- * @export
- * @class IocDecoratorRegisterer
- * @extends {DecoratorRegisterer<T>}
- * @template T
  */
-export class IocDecoratorRegisterer<T extends Function = Handler> extends DecoratorRegisterer<T> {
+export class IocDecorRegisterer<T extends Function = Handler> extends DecorRegisterer<T> {
 
 }

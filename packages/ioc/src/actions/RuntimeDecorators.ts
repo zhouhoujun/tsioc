@@ -1,7 +1,7 @@
 import { ObjectMap } from '../types';
-import { DecoratorScopes } from './DecoratorsRegisterer';
 import { IRuntimeDecorators } from '../services/ITypeReflect';
 import { TypeDecorators } from './TypeDecorators';
+import { befCstr, aftCstr, parm } from '../utils/exps';
 
 /**
  * runtime decorators.
@@ -16,7 +16,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
     private _bcDecors: any[];
     get beforeCstrDecors(): string[] {
         if (!this._bcDecors) {
-            this._bcDecors = this.register.getRegisterer(DecoratorScopes.BeforeConstructor)
+            this._bcDecors = this.register.getRegisterer(befCstr)
                 .getDecorators()
                 .filter(d => this.reflects.hasMethodMetadata(d, this.type))
         }
@@ -26,7 +26,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
     private _afDecors: any[];
     get afterCstrDecors(): string[] {
         if (!this._afDecors) {
-            this._afDecors = this.register.getRegisterer(DecoratorScopes.AfterConstructor)
+            this._afDecors = this.register.getRegisterer(aftCstr)
                 .getDecorators()
                 .filter(d => this.reflects.hasMethodMetadata(d, this.type))
         }
@@ -40,7 +40,7 @@ export class RuntimeDecorators extends TypeDecorators implements IRuntimeDecorat
         }
         let key = propertyKey === 'constructor' ? '_constructor' : propertyKey;
         if (!this.paramsDesc[key]) {
-            this.paramsDesc[key] = this.register.getRegisterer(DecoratorScopes.Parameter)
+            this.paramsDesc[key] = this.register.getRegisterer(parm)
                 .getDecorators()
                 .filter(d => this.reflects.hasParamerterMetadata(d, target || this.type, propertyKey))
         }

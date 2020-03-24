@@ -1,4 +1,4 @@
-import { RuntimeActionContext, lang } from '@tsdi/ioc';
+import { RuntimeContext, lang } from '@tsdi/ioc';
 import { isValideAspectTarget } from './isValideAspectTarget';
 import { AdvisorToken } from '../IAdvisor';
 import { ProceedingScope } from '../proceeding/ProceedingScope';
@@ -7,11 +7,11 @@ import { ProceedingScope } from '../proceeding/ProceedingScope';
 /**
  * execute bind method pointcut action.
  *
- * @param {RuntimeActionContext} ctx
+ * @param {RuntimeContext} ctx
  * @param {() => void} next
  * @returns {void}
  */
-export const BindMethodPointcutAction = function (ctx: RuntimeActionContext, next: () => void): void {
+export const BindMethodPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     let reflects = ctx.reflects;
     if (!ctx.target || !isValideAspectTarget(ctx.type, reflects)) {

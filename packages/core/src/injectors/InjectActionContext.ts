@@ -1,4 +1,4 @@
-import { ActionContextOption, Type, Modules, IocRaiseContext, createRaiseContext, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
+import { ActCtxOption, Type, Modules, IocContext, createContext, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
 import { CTX_INJ_MODULE } from '../context-tokens';
 
 
@@ -8,7 +8,7 @@ import { CTX_INJ_MODULE } from '../context-tokens';
  * @export
  * @interface InjectorActionOption
  */
-export interface InjectActionOption extends ActionContextOption {
+export interface InjectActionOption extends ActCtxOption {
     module: Modules;
 }
 
@@ -19,7 +19,7 @@ export interface InjectActionOption extends ActionContextOption {
  * @class InjectorActionContext
  * @extends {IocActionContext}
  */
-export class InjectActionContext extends IocRaiseContext<InjectActionOption> {
+export class InjectActionContext extends IocContext<InjectActionOption> {
 
     /**
      * the module to injector to container.
@@ -61,7 +61,7 @@ export class InjectActionContext extends IocRaiseContext<InjectActionOption> {
      * @memberof InjectorActionContext
      */
     static parse(injector: IInjector, options: InjectActionOption): InjectActionContext {
-        return createRaiseContext(injector, InjectActionContext, options);
+        return createContext(injector, InjectActionContext, options);
     }
 
     setOptions(options: InjectActionOption) {

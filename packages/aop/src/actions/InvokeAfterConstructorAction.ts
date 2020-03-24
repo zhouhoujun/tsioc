@@ -1,4 +1,4 @@
-import { RuntimeActionContext, CTX_ARGS, CTX_PARAMS, ActionInjectorToken } from '@tsdi/ioc';
+import { RuntimeContext, CTX_ARGS, CTX_PARAMS, ActionInjectorToken } from '@tsdi/ioc';
 import { isValideAspectTarget } from './isValideAspectTarget';
 import { ProceedingScope } from '../proceeding/ProceedingScope';
 
@@ -7,7 +7,7 @@ import { ProceedingScope } from '../proceeding/ProceedingScope';
  *
  * @export
  */
-export const InvokeAfterConstructorAction = function (ctx: RuntimeActionContext, next: () => void): void {
+export const InvokeAfterConstructorAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     let reflects = ctx.reflects;
     if (!ctx.target || !isValideAspectTarget(ctx.type, reflects)) {

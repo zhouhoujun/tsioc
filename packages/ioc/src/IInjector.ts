@@ -2,7 +2,7 @@ import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './ty
 import { IParameter } from './IParameter';
 import { tokenId } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
-import { ResolveActionOption } from './actions/ResolveActionContext';
+import { ResolveOption } from './actions/ResolveActionContext';
 import { InjectReference } from './InjectReference';
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
@@ -161,12 +161,12 @@ export interface IInjector extends IDestoryable {
      * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {ResolveActionOption<T>} option  resolve option
+     * @param {ResolveOption<T>} option  resolve option
      * @param {...ProviderTypes[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolve<T>(option: ResolveActionOption<T>, ...providers: ProviderTypes[]): T;
+    resolve<T>(option: ResolveOption<T>, ...providers: ProviderTypes[]): T;
     /**
     * get token implement class type.
     *

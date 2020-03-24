@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { createDesignParams } from './createDesignParams';
 
 /**
@@ -8,7 +8,7 @@ import { createDesignParams } from './createDesignParams';
  * @class BindParameterTypeAction
  * @extends {ActionComposite}
  */
-export const BindDeignParamTypeAction = function (ctx: RuntimeActionContext, next: () => void) {
+export const BindDeignParamTypeAction = function (ctx: RuntimeContext, next: () => void) {
     let propertyKey = ctx.propertyKey;
     if (!ctx.targetReflect.methodParams.has(propertyKey)) {
         ctx.targetReflect.methodParams.set(

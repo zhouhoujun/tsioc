@@ -1,18 +1,15 @@
 import { isClass, isArray } from '../../utils/lang';
 import { isToken } from '../../utils/isToken';
 import { ParameterMetadata } from '../../metadatas/ParameterMetadata';
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 import { createDesignParams } from './createDesignParams';
 
 /**
  * bind parameter type action.
  *
- * @export
- * @class BindParameterTypeAction
- * @extends {ActionComposite}
  */
-export const BindParameterTypeAction = function (ctx: RuntimeActionContext, next: () => void) {
+export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => void) {
     let propertyKey = ctx.propertyKey;
     let targetReflect = ctx.targetReflect;
     if (targetReflect.methodParams.has(propertyKey)) {

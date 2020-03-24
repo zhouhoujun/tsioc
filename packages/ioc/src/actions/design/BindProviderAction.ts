@@ -1,15 +1,15 @@
-import { DesignActionContext } from './DesignActionContext';
+import { DesignContext } from './DesignActionContext';
 import { CTX_CURR_DECOR } from '../../context-tokens';
 import { InjectableMetadata } from '../../metadatas/InjectableMetadata';
 
 /**
- * bind provider action. for binding a factory to an token.
+ * bind annoation provider action. for binding a factory to an token.
  *
  * @export
  * @class BindProviderAction
  * @extends {ActionComposite}
  */
-export const BindProviderAction = function (ctx: DesignActionContext, next: () => void) {
+export const BindAnnoPdrAction = function (ctx: DesignContext, next: () => void) {
     let tgReflect = ctx.targetReflect;
     let injector = ctx.injector;
     let currDecor = ctx.getValue(CTX_CURR_DECOR);

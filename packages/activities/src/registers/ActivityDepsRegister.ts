@@ -1,7 +1,7 @@
-import { DesignActionContext } from '@tsdi/ioc';
+import { DesignContext } from '@tsdi/ioc';
 import { ActivityMetadata } from '../core/ActivityMetadata';
 
-export const ActivityDepsRegister = function (ctx: DesignActionContext, next: () => void): void {
+export const ActivityDepsRegister = function (ctx: DesignContext, next: () => void): void {
     let metas = ctx.reflects.getMetadata<ActivityMetadata>(ctx.currDecoractor, ctx.type);
     let injector = ctx.injector;
     if (metas.length) {

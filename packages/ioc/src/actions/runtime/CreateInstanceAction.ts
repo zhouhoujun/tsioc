@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { CTX_ARGS } from '../../context-tokens';
 
 
@@ -9,7 +9,7 @@ import { CTX_ARGS } from '../../context-tokens';
  * @class CreateInstanceAction
  * @extends {IocRuntimeAction}
  */
-export const CreateInstanceAction = function (ctx: RuntimeActionContext, next: () => void): void {
+export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.target) {
         ctx.target = new ctx.type(...ctx.getValue(CTX_ARGS));
     }

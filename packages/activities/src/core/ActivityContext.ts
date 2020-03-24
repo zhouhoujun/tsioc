@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, createRaiseContext, isToken, Token, SymbolType, isDefined } from '@tsdi/ioc';
+import { Injectable, Type, Refs, createContext, isToken, Token, SymbolType, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BuildContext } from '@tsdi/boot';
 import { ComponentContext, ITemplateContext } from '@tsdi/components';
@@ -106,7 +106,7 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
 
 
     static parse(injector: ICoreInjector, target: Type | ActivityOption): ActivityContext {
-        return createRaiseContext(injector, ActivityContext, isToken(target) ? { module: target } : target);
+        return createContext(injector, ActivityContext, isToken(target) ? { module: target } : target);
     }
 
 }

@@ -1,43 +1,39 @@
-import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
-import { IocRegisterScope } from '../IocRegisterScope';
-import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScope, RuntimeRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
-import { RegisterSingletionAction } from './RegisterSingletionAction';
+import { RuntimeDecorScope } from './RuntimeDecoratorScope';
+import { IocRegScope } from '../IocRegisterScope';
+import { RuntimeContext } from './RuntimeActionContext';
+import { RuntimeRegisterer } from '../DecoratorsRegisterer';
+import { RegSingletionAction } from './RegisterSingletionAction';
 import { IocSetCacheAction } from './IocSetCacheAction';
 import { Singleton } from '../../decorators/Singleton';
 import { Injectable } from '../../decorators/Injectable';
 import { IocExt } from '../../decorators/IocExt';
 import { IActionSetup } from '../Action';
+import { DecoratorScope } from '../../types';
+import { cls } from '../../utils/exps';
 
 /**
  * runtime annoation action scope.
  *
- * @export
- * @class RuntimeAnnoationScope
- * @extends {IocRegisterScope<RuntimeActionContext>}
  */
-export class RuntimeAnnoationScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
+export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
 
         this.actInjector.getInstance(RuntimeRegisterer)
-            .register(Singleton, DecoratorScopes.Class, RegisterSingletionAction)
-            .register(Injectable, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
-            .register(IocExt, DecoratorScopes.Class, RegisterSingletionAction);
+            .register(Singleton, cls, RegSingletionAction)
+            .register(Injectable, cls, RegSingletionAction, IocSetCacheAction)
+            .register(IocExt, cls, RegSingletionAction);
 
 
-        this.use(RuntimeAnnoationDecorScope);
+        this.use(RuntimeAnnoDecorScope);
     }
 }
 
 /**
  * runtime annoation decorator action scope.
  *
- * @export
- * @class RuntimeAnnoationDecorScope
- * @extends {RuntimeDecoratorScope}
  */
-export class RuntimeAnnoationDecorScope extends RuntimeDecoratorScope {
+export class RuntimeAnnoDecorScope extends RuntimeDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.Class;
+        return cls;
     }
 }

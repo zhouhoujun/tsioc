@@ -1,22 +1,24 @@
-import { RuntimeDecoratorScope } from './RuntimeDecoratorScope';
-import { IocRegisterScope } from '../IocRegisterScope';
-import { RuntimeActionContext } from './RuntimeActionContext';
-import { DecoratorScope, RuntimeRegisterer, DecoratorScopes } from '../DecoratorsRegisterer';
+import { RuntimeDecorScope } from './RuntimeDecoratorScope';
+import { IocRegScope } from '../IocRegisterScope';
+import { RuntimeContext } from './RuntimeActionContext';
+import { RuntimeRegisterer } from '../DecoratorsRegisterer';
 import { Autorun } from '../../decorators/AutoRun';
-import { MethodAutorunAction } from './MethodAutorunAction';
+import { MthAutorunAction } from './MethodAutorunAction';
+import { DecoratorScope } from '../../types';
 import { IActionSetup } from '../Action';
+import { mth } from '../../utils/exps';
 
-export class RuntimeMethodScope extends IocRegisterScope<RuntimeActionContext> implements IActionSetup {
+export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
         this.actInjector.getInstance(RuntimeRegisterer)
-            .register(Autorun, DecoratorScopes.Method, MethodAutorunAction);
+            .register(Autorun, mth, MthAutorunAction);
 
-        this.use(RuntimeMethodDecorScope);
+        this.use(RuntimeMthDecorScope);
     }
 }
 
-export class RuntimeMethodDecorScope extends RuntimeDecoratorScope {
+export class RuntimeMthDecorScope extends RuntimeDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return DecoratorScopes.Method;
+        return mth;
     }
 }

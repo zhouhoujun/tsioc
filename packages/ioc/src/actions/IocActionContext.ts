@@ -1,5 +1,5 @@
 import { isArray, lang, isBoolean } from '../utils/lang';
-import { ActionContextOption } from './Action';
+import { ActCtxOption } from './Action';
 import { ProviderTypes } from '../providers/types';
 import { IIocContainer } from '../IIocContainer';
 import { CTX_PROVIDERS, CTX_OPTIONS } from '../context-tokens';
@@ -16,9 +16,9 @@ import { isToken } from '../utils/isToken';
  * ioc action context.
  *
  * @export
- * @class IocActionContext
+ * @class IocActCtx
  */
-export abstract class IocActionContext extends IocDestoryable {
+export abstract class IocActCtx extends IocDestoryable {
 
     /**
      * reflects.
@@ -31,13 +31,13 @@ export abstract class IocActionContext extends IocDestoryable {
     /**
      * set options.
      *
-     * @param {ActionContextOption} options
+     * @param {ActCtxOption} options
      * @memberof IocActionContext
      */
-    abstract setOptions(options: ActionContextOption);
+    abstract setOptions(options: ActCtxOption);
 }
 
-export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjector, CtxType: Type<Ctx>, options: ActionContextOption): Ctx {
+export function createContext<Ctx extends IocContext>(injector: IInjector, CtxType: Type<Ctx>, options: ActCtxOption): Ctx {
     let ctx = new CtxType(injector);
     options && ctx.setOptions(options);
     return ctx;
@@ -48,11 +48,11 @@ export function createRaiseContext<Ctx extends IocRaiseContext>(injector: IInjec
  *
  * @export
  * @class IocRasieContext
- * @extends {IocActionContext}
+ * @extends {IocActCtx}
  */
-export abstract class IocRaiseContext<
-    T extends ActionContextOption = ActionContextOption,
-    TJ extends IInjector = IInjector> extends IocActionContext implements IIocContext<T, TJ> {
+export abstract class IocContext<
+    T extends ActCtxOption = ActCtxOption,
+    TJ extends IInjector = IInjector> extends IocActCtx implements IIocContext<T, TJ> {
 
     public readonly context: IProviders;
 
@@ -222,10 +222,10 @@ export abstract class IocRaiseContext<
      */
     clone(options?: T | boolean): this {
         if (isBoolean(options)) {
-            return options ? createRaiseContext(this.injector, lang.getClass(this), null)
-                : createRaiseContext(this.injector, lang.getClass(this), this.getOptions());
+            return options ? createContext(this.injector, lang.getClass(this), null)
+                : createContext(this.injector, lang.getClass(this), this.getOptions());
         } else {
-            return createRaiseContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.context.clone(), ...options || {} });
+            return createContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.context.clone(), ...options || {} });
         }
     }
 
@@ -236,15 +236,15 @@ export abstract class IocRaiseContext<
 }
 
 
-export interface IocProvidersOption extends ActionContextOption {
+export interface IocPdrsOption extends ActCtxOption {
     /**
      *  providers.
      */
     providers?: ProviderTypes[] | IInjector;
 }
 
-export interface IIocProvidersContext<
-    T extends IocProvidersOption = IocProvidersOption,
+export interface IIocPdrsContext<
+    T extends IocPdrsOption = IocPdrsOption,
     TJ extends IInjector = IInjector> extends IIocContext<T, TJ> {
     /**
      * get providers of options.
@@ -253,9 +253,9 @@ export interface IIocProvidersContext<
 }
 
 
-export abstract class IocProvidersContext<
-    T extends IocProvidersOption = IocProvidersOption,
-    TJ extends IInjector = IInjector> extends IocRaiseContext<T, TJ> {
+export abstract class IocPdrsContext<
+    T extends IocPdrsOption = IocPdrsOption,
+    TJ extends IInjector = IInjector> extends IocContext<T, TJ> {
 
     /**
      * get providers of options.

@@ -1,4 +1,4 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
+import { RuntimeContext } from './RuntimeActionContext';
 import { AutorunMetadata } from '../../metadatas/AutorunMetadata';
 import { lang, isNumber } from '../../utils/lang';
 import { CTX_CURR_DECOR } from '../../context-tokens';
@@ -10,7 +10,7 @@ import { CTX_CURR_DECOR } from '../../context-tokens';
  * @class SetPropAction
  * @extends {IocRuntimeAction}
  */
-export const MethodAutorunAction = function (ctx: RuntimeActionContext, next: () => void) {
+export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     let currDec = ctx.getValue(CTX_CURR_DECOR);
     let injector = ctx.injector;
     if (ctx.reflects.hasMethodMetadata(currDec, ctx.type)) {

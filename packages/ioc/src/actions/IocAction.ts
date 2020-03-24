@@ -4,7 +4,7 @@ import { ProviderTypes } from '../providers/types';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflects } from '../services/ITypeReflects';
 import { IInjector, IProviders } from '../IInjector';
-import { ActionContextOption, Action } from './Action';
+import { ActCtxOption, Action } from './Action';
 import { IDestoryable } from '../Destoryable';
 
 
@@ -12,7 +12,7 @@ import { IDestoryable } from '../Destoryable';
  * context interface.
  */
 export interface IIocContext<
-    T extends ActionContextOption = ActionContextOption,
+    T extends ActCtxOption = ActCtxOption,
     TJ extends IInjector = IInjector> extends IDestoryable {
     /**
      * current injector.

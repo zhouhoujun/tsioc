@@ -1,5 +1,5 @@
-import { IActionSetup, PromiseUtil, isNullOrUndefined } from '@tsdi/ioc';
-import { BuildHandles, StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { IActionSetup, PromiseUtil, isNullOrUndefined, chain } from '@tsdi/ioc';
+import { BuildHandles, StartupDecoratorRegisterer } from '@tsdi/boot';
 import { ITemplateContext, TemplateOptionToken } from './TemplateContext';
 import { CTX_COMPONENT_DECTOR } from '../ComponentRef';
 import { DefaultComponets } from '../IComponentReflect';
@@ -37,18 +37,18 @@ export class TranslateSelectorScope extends BuildHandles<ITemplateContext> imple
  */
 export const TranslateElementHandle = async function (ctx: ITemplateContext, next: () => Promise<void>): Promise<void> {
     let actInjector = ctx.reflects.getActionInjector();
-    let reg = actInjector.getInstance(StartupDecoratorRegisterer).getRegisterer(StartupScopes.TranslateTemplate);
+    let reg = actInjector.getInstance(StartupDecoratorRegisterer).getRegisterer('TranslateTemplate');
     if (ctx.componentDecorator) {
         if (reg.has(ctx.componentDecorator)) {
-            await PromiseUtil.runInChain(reg.getFuncs(actInjector, ctx.componentDecorator), ctx);
+            await chain(reg.getFuncs(actInjector, ctx.componentDecorator), ctx);
         }
     } else {
         let decorators = ctx.getModuleRef()?.reflect.componentDectors ?? actInjector.getSingleton(DefaultComponets);
-        PromiseUtil.runInChain(decorators.map(decor => async (ctx: ITemplateContext, next) => {
+        chain(decorators.map(decor => async (ctx: ITemplateContext, next) => {
             if (reg.has(decor)) {
                 ctx.remove(CTX_COMPONENT_PROVIDER);
                 ctx.setValue(CTX_COMPONENT_DECTOR, decor);
-                await PromiseUtil.runInChain(reg.getFuncs(actInjector, decor), ctx);
+                await chain(reg.getFuncs(actInjector, decor), ctx);
             }
             if (!ctx.selector) {
                 await next();

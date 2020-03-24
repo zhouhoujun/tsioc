@@ -1,9 +1,9 @@
-import { DesignActionContext, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { DesignContext, CTX_CURR_DECOR } from '@tsdi/ioc';
 import { RootMessageQueueToken } from '../messages/IMessageQueue';
 import { MessageMetadata } from '../decorators/Message';
 
 
-export const MessageRegisterAction = function (ctx: DesignActionContext, next: () => void): void {
+export const MessageRegisterAction = function (ctx: DesignContext, next: () => void): void {
     let injector = ctx.injector;
     let msgQueue = injector.getInstance(RootMessageQueueToken);
     let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.getValue(CTX_CURR_DECOR), ctx.type);

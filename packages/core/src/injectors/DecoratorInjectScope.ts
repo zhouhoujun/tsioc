@@ -1,4 +1,4 @@
-import { ObjectMap, IocDecoratorRegisterer, DesignRegisterer, CTX_CURR_DECOR, IActionSetup, DecoratorScopes } from '@tsdi/ioc';
+import { ObjectMap, IocDecorRegisterer, DesignRegisterer, CTX_CURR_DECOR, IActionSetup } from '@tsdi/ioc';
 import { InjectActionContext } from './InjectActionContext';
 import { InjectScope } from './InjectAction';
 import { DecoratorInjectAction } from './DecoratorInjectAction';
@@ -19,8 +19,8 @@ export class DecoratorInjectScope extends InjectScope implements IActionSetup {
         next && next();
     }
 
-    getRegisterer(): IocDecoratorRegisterer {
-        return this.actInjector.getInstance(DesignRegisterer).getRegisterer(DecoratorScopes.Inject);
+    getRegisterer(): IocDecorRegisterer {
+        return this.actInjector.getInstance(DesignRegisterer).getRegisterer('Inject');
     }
 
     protected getState(ctx: InjectActionContext): ObjectMap<boolean> {

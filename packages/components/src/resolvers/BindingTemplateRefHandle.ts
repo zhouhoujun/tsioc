@@ -1,5 +1,5 @@
 import { lang, chain } from '@tsdi/ioc';
-import { StartupDecoratorRegisterer, StartupScopes } from '@tsdi/boot';
+import { StartupDecoratorRegisterer } from '@tsdi/boot';
 import { CTX_COMPONENT_REF, REFCHILD_SELECTOR } from '../ComponentRef';
 import { RefChild } from '../decorators/RefChild';
 import { IComponentContext } from '../ComponentContext';
@@ -56,7 +56,7 @@ export const BindingTemplateRefHandle = async function (ctx: IComponentContext, 
     let actInjector = ctx.reflects.getActionInjector();
     let startupRegr = actInjector.getInstance(StartupDecoratorRegisterer);
 
-    let bindRegs = startupRegr.getRegisterer(StartupScopes.Binding);
+    let bindRegs = startupRegr.getRegisterer('Binding');
     if (bindRegs.has(ctx.decorator)) {
         await chain(bindRegs.getFuncs(this.actInjector, ctx.decorator), ctx);
     }

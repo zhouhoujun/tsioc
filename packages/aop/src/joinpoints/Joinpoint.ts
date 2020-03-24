@@ -1,12 +1,12 @@
 import {
     Type, MethodMetadata, IParameter, ClassMetadata, IProviders, TypeMetadata, tokenId, Token,
-    isNullOrUndefined, IocRaiseContext, ActionContextOption, IInjector, createRaiseContext, PROVIDERS
+    isNullOrUndefined, IocContext, ActCtxOption, IInjector, createContext, PROVIDERS
 } from '@tsdi/ioc';
 import { JoinpointState } from './JoinpointState';
 import { Advices } from '../advices/Advices';
 
 
-export interface JoinpointOption extends ActionContextOption {
+export interface JoinpointOption extends ActCtxOption {
     provJoinpoint?: Joinpoint;
     name: string;
     fullName: string;
@@ -44,7 +44,7 @@ export const AOP_ADVICES = tokenId<Advices>('AOP_ADVICES');
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-export class Joinpoint extends IocRaiseContext {
+export class Joinpoint extends IocContext {
     /**
      * method name
      *
@@ -227,6 +227,6 @@ export class Joinpoint extends IocRaiseContext {
      * @memberof ResolveActionContext
      */
     static parse<T>(injector: IInjector, options: JoinpointOption): Joinpoint {
-        return createRaiseContext<Joinpoint>(injector, Joinpoint, options);
+        return createContext<Joinpoint>(injector, Joinpoint, options);
     }
 }

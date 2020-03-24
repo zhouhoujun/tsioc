@@ -1,6 +1,6 @@
 import {
-    BindProviderAction, IocSetCacheAction, RegisterSingletionAction,
-    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt, DecoratorScopes
+    BindAnnoPdrAction, IocSetCacheAction, RegSingletionAction,
+    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
@@ -16,11 +16,11 @@ import { TemplateParseScope } from './parses/TemplateParseScope';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 
-import { ComponentRegisterAction, DirectiveRegisterAction } from './registers/ComponentRegisterAction';
+import { ComponentRegAction, DirectiveRegisterAction } from './registers/ComponentRegisterAction';
 import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
 import { BindingsCache } from './registers/BindingsCache';
-import { RegisterVaildateAction } from './registers/RegisterVaildateAction';
-import { PipeRegisterAction } from './registers/PipeRegisterAction';
+import { RegVaildateAction } from './registers/RegisterVaildateAction';
+import { PipeRegAction } from './registers/PipeRegisterAction';
 import { BindingComponentScope } from './resolvers/BindingComponentScope';
 import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
 import { DefaultComponets } from './IComponentReflect';
@@ -68,19 +68,21 @@ export class ComponentsModule {
             .use(ParseTemplateHandle);
 
 
+        const cls: DecoratorScope = 'Class';
+        const prty: DecoratorScope = 'Property';
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Component, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, ComponentRegisterAction)
-            .register(Directive, DecoratorScopes.Class, BindProviderAction, AnnoationDesignAction, DirectiveRegisterAction )
-            .register(Pipe, DecoratorScopes.Class, BindProviderAction, PipeRegisterAction)
-            .register(Input, DecoratorScopes.Property, BindingPropertyTypeAction)
-            .register(Output, DecoratorScopes.Property, BindingPropertyTypeAction)
-            .register(RefChild, DecoratorScopes.Property, BindingPropertyTypeAction)
-            .register(Vaildate, DecoratorScopes.Property, RegisterVaildateAction);
+            .register(Component, cls, BindAnnoPdrAction, AnnoationDesignAction, ComponentRegAction)
+            .register(Directive, cls, BindAnnoPdrAction, AnnoationDesignAction, DirectiveRegisterAction)
+            .register(Pipe, cls, BindAnnoPdrAction, PipeRegAction)
+            .register(Input, prty, BindingPropertyTypeAction)
+            .register(Output, prty, BindingPropertyTypeAction)
+            .register(RefChild, prty, BindingPropertyTypeAction)
+            .register(Vaildate, prty, RegVaildateAction);
 
         actInjector.getInstance(RuntimeRegisterer)
-            .register(Component, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
-            .register(Directive, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+            .register(Component, cls, RegSingletionAction, IocSetCacheAction)
+            .register(Directive, cls, RegSingletionAction, IocSetCacheAction);
 
         container.registerType(ComponentBuilder);
     }

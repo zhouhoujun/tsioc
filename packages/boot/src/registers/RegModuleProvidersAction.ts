@@ -1,4 +1,4 @@
-import { Type, ProviderTypes, isArray, DesignActionContext, IProviders, tokenId, lang } from '@tsdi/ioc';
+import { Type, ProviderTypes, isArray, DesignContext, IProviders, tokenId, lang } from '@tsdi/ioc';
 import { CTX_MODULE_EXPORTS, CTX_MODULE_ANNOATION } from '../context-tokens';
 import { IModuleReflect } from '../modules/IModuleReflect';
 import { ModuleProviders, ModuleInjector } from '../modules/ModuleInjector';
@@ -25,7 +25,7 @@ export interface IModuleProvidersBuilder {
  */
 export const ModuleProvidersBuilderToken = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
 
-export const RegModuleProvidersAction = function (ctx: DesignActionContext, next: () => void): void {
+export const RegModuleProvidersAction = function (ctx: DesignContext, next: () => void): void {
     let reflects = ctx.reflects;
     let annoation = ctx.getValue(CTX_MODULE_ANNOATION);
 

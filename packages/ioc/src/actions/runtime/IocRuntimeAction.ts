@@ -1,5 +1,5 @@
-import { RuntimeActionContext } from './RuntimeActionContext';
-import { IocRegisterAction } from '../IocRegisterAction';
+import { RuntimeContext } from './RuntimeActionContext';
+import { IocRegAction } from '../IocRegisterAction';
 
 /**
  * ioc runtime register action.
@@ -8,9 +8,9 @@ import { IocRegisterAction } from '../IocRegisterAction';
  * @export
  * @abstract
  * @class IocRegisterAction
- * @extends {IocRegisterAction<RuntimeActionContext>}
+ * @extends {IocRegAction<RuntimeContext>}
  */
-export abstract class IocRuntimeAction extends IocRegisterAction<RuntimeActionContext> {
+export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> {
 
 }
 

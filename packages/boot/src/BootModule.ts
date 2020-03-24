@@ -1,6 +1,6 @@
 import {
-    Inject, BindProviderAction, IocSetCacheAction, IocAutorunAction, IocExt,
-    RegisterSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScopes
+    Inject, BindAnnoPdrAction, IocSetCacheAction, IocAutorunAction, IocExt,
+    RegSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
@@ -62,27 +62,29 @@ export class BootModule {
         registerModule(Bootstrap, desgReger);
 
         desgReger.register(Annotation,
-            { scope: DecoratorScopes.Class, action: [BindProviderAction, AnnoationDesignAction] },
-            { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }
+            { scope: cls, action: [BindAnnoPdrAction, AnnoationDesignAction] },
+            { scope: aftAnn, action: IocAutorunAction }
         )
             .register(Message,
-                { scope: DecoratorScopes.Class, action: BindProviderAction },
-                { scope: DecoratorScopes.AfterAnnoation, action: [IocAutorunAction, MessageRegisterAction] }
+                { scope: cls, action: BindAnnoPdrAction },
+                { scope: aftAnn, action: [IocAutorunAction, MessageRegisterAction] }
             );
 
         actInjector.getInstance(RuntimeRegisterer)
-            .register(Annotation, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
-            .register(DIModule, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction)
-            .register(Message, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+            .register(Annotation, cls, RegSingletionAction, IocSetCacheAction)
+            .register(DIModule, cls, RegSingletionAction, IocSetCacheAction)
+            .register(Message, cls, RegSingletionAction, IocSetCacheAction);
 
         container.inject(BuildContext, BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 
         actInjector.getInstance(RuntimeRegisterer)
-            .register(Bootstrap, DecoratorScopes.Class, RegisterSingletionAction, IocSetCacheAction);
+            .register(Bootstrap, cls, RegSingletionAction, IocSetCacheAction);
 
     }
 }
 
+const cls: DecoratorScope = 'Class';
+const aftAnn: DecoratorScope = 'AfterAnnoation';
 /**
  * register decorator as module.
  * @param decorator decorator.
@@ -90,10 +92,10 @@ export class BootModule {
  */
 export function registerModule(decorator: string | Function, registerer: DesignRegisterer): DesignRegisterer {
     return registerer.register(decorator,
-        { scope: DecoratorScopes.Inject, action: DIModuleInjectScope },
-        { scope: DecoratorScopes.BeforeAnnoation, action: AnnoationInjectorCheck },
-        { scope: DecoratorScopes.Class, action: AnnoationDesignAction },
-        { scope: DecoratorScopes.Annoation, action: AnnoationRegisterScope },
-        { scope: DecoratorScopes.AfterAnnoation, action: IocAutorunAction }
+        { scope: 'Inject', action: DIModuleInjectScope },
+        { scope: 'BeforeAnnoation', action: AnnoationInjectorCheck },
+        { scope: cls, action: AnnoationDesignAction },
+        { scope: 'Annoation', action: AnnoationRegisterScope },
+        { scope: aftAnn, action: IocAutorunAction }
     );
 }

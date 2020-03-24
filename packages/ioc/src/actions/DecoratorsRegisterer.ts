@@ -2,43 +2,10 @@ import { isString, isArray, Handler } from '../utils/lang';
 import { Registration } from '../Registration';
 import { IocCoreService } from '../IocCoreService';
 import { Action, IActionInjector } from './Action';
-import { Token, Type } from '../types';
-import { IocDecoratorRegisterer, DecoratorRegisterer } from './DecoratorRegisterer';
+import { Token, Type, DecoratorScope } from '../types';
+import { IocDecorRegisterer, DecorRegisterer } from './DecoratorRegisterer';
 
-/**
- * decorator scopes.
- *
- * Annoation: annoation actions for design time.
- * AfterAnnoation: after annoation actions for design time.
- */
-export type DecoratorScope = 'BeforeAnnoation' | 'Class' | 'Parameter' | 'Property' | 'Method'
-    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation' | 'Inject'
-    | 'Build' | 'BindExpression' | 'TranslateTemplate' | 'Binding' | 'ValifyComponent';
 
-/**
- * decorator scopes.
- *
- * @export
- * @enum {number}
- */
-export enum DecoratorScopes {
-    BeforeAnnoation = 'BeforeAnnoation',
-    Class = 'Class',
-    Parameter = 'Parameter',
-    Property = 'Property',
-    Method = 'Method',
-    BeforeConstructor = 'BeforeConstructor',
-    AfterConstructor = 'AfterConstructor',
-    /**
-     * annoation actions for design time.
-     */
-    Annoation = 'Annoation',
-    /**
-     * after annoation actions for design time.
-     */
-    AfterAnnoation = 'AfterAnnoation',
-    Inject = 'Inject'
-}
 
 export interface IScopeAction<TAction extends Function = Handler> {
     scope: DecoratorScope;
@@ -51,7 +18,7 @@ export interface IScopeAction<TAction extends Function = Handler> {
  * @export
  * @class DecoratorRegisterer
  */
-export abstract class DecoratorsRegisterer<TAction extends Function = Handler> extends IocCoreService {
+export abstract class DecorsRegisterer<TAction extends Function = Handler> extends IocCoreService {
     protected map: Map<Token, any>;
     constructor(protected registerer: IActionInjector) {
         super()
@@ -99,12 +66,12 @@ export abstract class DecoratorsRegisterer<TAction extends Function = Handler> e
         return this.getRegisterer(scope).getFuncs(register, decorator);
     }
 
-    setRegisterer(scope: DecoratorScope, registerer: DecoratorRegisterer<TAction>) {
+    setRegisterer(scope: DecoratorScope, registerer: DecorRegisterer<TAction>) {
         let rg = this.getRegistration(scope);
         this.map.set(rg, registerer);
     }
 
-    getRegisterer(scope: DecoratorScope): DecoratorRegisterer<TAction> {
+    getRegisterer(scope: DecoratorScope): DecorRegisterer<TAction> {
         let rg = this.getRegistration(scope);
         if (!this.map.has(rg)) {
             this.map.set(rg, this.createRegister());
@@ -112,10 +79,10 @@ export abstract class DecoratorsRegisterer<TAction extends Function = Handler> e
         return this.map.get(rg);
     }
 
-    protected abstract createRegister(): DecoratorRegisterer<TAction>;
+    protected abstract createRegister(): DecorRegisterer<TAction>;
 
     protected getRegistration(scope: DecoratorScope): string {
-        return new Registration(DecoratorRegisterer, this.getScopeKey(scope)).toString();
+        return new Registration(DecorRegisterer, this.getScopeKey(scope)).toString();
     }
 
     protected getScopeKey(scope: DecoratorScope): string {
@@ -129,11 +96,11 @@ export abstract class DecoratorsRegisterer<TAction extends Function = Handler> e
  *
  * @export
  * @class DesignRegisterer
- * @extends {DecoratorsRegisterer}
+ * @extends {DecorsRegisterer}
  */
-export class DesignRegisterer extends DecoratorsRegisterer {
-    protected createRegister(): DecoratorRegisterer {
-        return new IocDecoratorRegisterer() as DecoratorRegisterer;
+export class DesignRegisterer extends DecorsRegisterer {
+    protected createRegister(): DecorRegisterer {
+        return new IocDecorRegisterer() as DecorRegisterer;
     }
 }
 
@@ -142,11 +109,11 @@ export class DesignRegisterer extends DecoratorsRegisterer {
  *
  * @export
  * @class RuntimeRegisterer
- * @extends {DecoratorsRegisterer}
+ * @extends {DecorsRegisterer}
  */
-export class RuntimeRegisterer extends DecoratorsRegisterer {
-    protected createRegister(): DecoratorRegisterer {
-        return new IocDecoratorRegisterer() as DecoratorRegisterer;
+export class RuntimeRegisterer extends DecorsRegisterer {
+    protected createRegister(): DecorRegisterer {
+        return new IocDecorRegisterer() as DecorRegisterer;
     }
 }
 
