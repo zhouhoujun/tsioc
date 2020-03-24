@@ -11,7 +11,7 @@ import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './p
 import { IIocContainer, ContainerProxy } from './IIocContainer';
 import { MethodAccessorToken, MethodType } from './IMethodAccessor';
 import { IParameter } from './IParameter';
-import { ResolveOption } from './actions/ResolveActionContext';
+import { ResolveOption } from './actions/ResolveContext';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';

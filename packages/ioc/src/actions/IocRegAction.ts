@@ -1,5 +1,5 @@
 import { IocAction } from './IocAction';
-import { RegContext } from './RegisterActionContext';
+import { RegContext } from './RegContext';
 
 /**
  * ioc register action.

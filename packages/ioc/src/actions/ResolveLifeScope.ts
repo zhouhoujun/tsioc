@@ -1,7 +1,7 @@
 import { Token } from '../types';
 import { isToken } from '../utils/isToken';
 import { ProviderTypes } from '../providers/types';
-import { ResolveContext, ResolveOption, IResolveContext } from './ResolveActionContext';
+import { ResolveContext, ResolveOption, IResolveContext } from './ResolveContext';
 import { IocResolveScope } from './IocResolveScope';
 import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { isNullOrUndefined } from '../utils/lang';

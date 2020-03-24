@@ -3,7 +3,7 @@ import { Registration } from '../Registration';
 import { IocCoreService } from '../IocCoreService';
 import { Action, IActionInjector } from './Action';
 import { Token, Type, DecoratorScope } from '../types';
-import { IocDecorRegisterer, DecorRegisterer } from './DecoratorRegisterer';
+import { IocDecorRegisterer, DecorRegisterer } from './DecorRegisterer';
 
 
 

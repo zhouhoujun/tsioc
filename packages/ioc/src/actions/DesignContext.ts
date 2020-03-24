@@ -1,7 +1,6 @@
-import { IInjector } from '../../IInjector';
-import { createContext } from '../IocActionContext';
-import { RegContext, RegOption } from '../RegisterActionContext';
-
+import { RegOption, RegContext } from './RegContext';
+import { IInjector } from '../IInjector';
+import { createContext } from './IocActionContext';
 
 /**
  * design action option.

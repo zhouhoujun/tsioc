@@ -1,4 +1,4 @@
-import { RegContext } from './RegisterActionContext';
+import { RegContext } from './RegContext';
 import { isClass } from '../utils/lang';
 
 export const InitReflectAction = function (ctx: RegContext, next?: () => void): void {

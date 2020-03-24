@@ -1,16 +1,11 @@
 import { RegisterLifeScope } from './RegisterLifeScope';
 import { InitReflectAction } from './InitReflectAction';
-import { RuntimeContext } from './runtime/RuntimeActionContext';
-import { RuntimeDecorAction } from './runtime/RuntimeDecoratorAction';
-import { RuntimeParamScope } from './runtime/RuntimeParamScope';
-import { IocGetCacheAction } from './runtime/IocGetCacheAction';
-import { CtorArgsAction } from './runtime/ConstructorArgsAction';
-import { BeforeCtorScope } from './runtime/IocBeforeConstructorScope';
-import { CreateInstanceAction } from './runtime/CreateInstanceAction';
-import { AfterCtorScope } from './runtime/IocAfterConstructorScope';
-import { RuntimePropScope } from './runtime/RuntimePropertyScope';
-import { RuntimeMthScope } from './runtime/RuntimeMethodScope';
-import { RuntimeAnnoScope } from './runtime/RuntimeAnnoationScope';
+import { RuntimeContext } from './RuntimeContext';
+import {
+    RuntimeDecorAction, RuntimeParamScope, IocGetCacheAction, CtorArgsAction,
+    BeforeCtorScope, CreateInstanceAction, AfterCtorScope, RuntimePropScope,
+    RuntimeMthScope, RuntimeAnnoScope
+} from './runtime-actions';
 
 /**
  * runtime life scope.

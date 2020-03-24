@@ -3,7 +3,7 @@ import { TypeReflects } from './services/TypeReflects';
 import { TypeReflectsToken } from './services/ITypeReflects';
 import { MethodAccessorToken, INVOKED_PROVIDERS } from './IMethodAccessor';
 import { ActionInjector } from './actions/ActionInjector';
-import { RuntimeRegisterer, DesignRegisterer } from './actions/DecoratorsRegisterer';
+import { RuntimeRegisterer, DesignRegisterer } from './actions/DecorsRegisterer';
 import { Injector, InjectorProvider, InvokedProviders } from './Injector';
 import { DecoratorProvider } from './services/DecoratorProvider';
 import { MethodAccessor } from './actions/MethodAccessor';

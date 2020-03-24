@@ -1,5 +1,5 @@
 import { ClassType, DecoratorScope } from '../types';
-import { DecorsRegisterer } from './DecoratorsRegisterer';
+import { DecorsRegisterer } from './DecorsRegisterer';
 import { ITypeDecoractors } from '../services/ITypeReflect';
 import { ITypeReflects } from '../services/ITypeReflects';
 import { befAnn, cls, ann, aftAnn, ptr, mth } from '../utils/exps';

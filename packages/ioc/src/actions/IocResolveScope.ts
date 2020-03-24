@@ -1,9 +1,8 @@
-import { IResolveContext } from './ResolveActionContext';
-import { ResolveInInjectorAction } from './resolves/ResolveInInjectorAction';
-import { ResolveInRootAction } from './resolves/ResolveInRootAction';
-import { ResolvePrivateAction } from './resolves/ResolvePrivateAction';
-import { ResolveRefAction } from './resolves/ResolveRefAction';
-import { ResolveDefaultAction } from './resolves/ResolveDefaultAction';
+import { IResolveContext } from './ResolveContext';
+import {
+    ResolveInInjectorAction, ResolveInRootAction, ResolvePrivateAction,
+    ResolveRefAction, ResolveDefaultAction,
+} from './resolve-actions';
 import { isNullOrUndefined, isClass, lang } from '../utils/lang';
 import { isToken } from '../utils/isToken';
 import { CTX_TARGET_TOKEN } from '../context-tokens';

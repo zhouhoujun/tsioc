@@ -1,5 +1,5 @@
 import { IocAction } from './IocAction';
-import { ResolveContext } from './ResolveActionContext';
+import { ResolveContext } from './ResolveContext';
 
 /**
  * ioc Resolve action.

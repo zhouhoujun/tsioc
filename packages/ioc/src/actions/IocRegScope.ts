@@ -1,4 +1,4 @@
-import { RegContext } from './RegisterActionContext';
+import { RegContext } from './RegContext';
 import { IocCompositeAction } from './IocCompositeAction';
 
 

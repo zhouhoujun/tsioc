@@ -1,5 +1,5 @@
 import { IocCompositeAction } from './IocCompositeAction';
-import { RegContext } from './RegisterActionContext';
+import { RegContext } from './RegContext';
 import { DecoratorScope } from '../types';
 import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
 

@@ -15,7 +15,7 @@ import { MethodAccessorToken } from '../IMethodAccessor';
 import { RuntimeDecorators } from '../actions/RuntimeDecorators';
 import { Singleton } from '../decorators/Singleton';
 import { DecoratorProvider } from './DecoratorProvider';
-import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecoratorsRegisterer';
+import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecorsRegisterer';
 import { ITypeReflects } from './ITypeReflects';
 import { IActionInjector } from '../actions/Action';
 import { TypeDecorators } from '../actions/TypeDecorators';

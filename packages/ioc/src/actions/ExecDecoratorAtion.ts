@@ -1,6 +1,6 @@
 import { IActionInjector } from './Action';
-import { RegContext } from './RegisterActionContext';
-import { DecorsRegisterer } from './DecoratorsRegisterer';
+import { RegContext } from './RegContext';
+import { DecorsRegisterer } from './DecorsRegisterer';
 import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
 import { IocAction } from './IocAction';
 

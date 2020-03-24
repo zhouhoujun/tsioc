@@ -3,7 +3,7 @@ import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
-import { DesignContext } from './actions/design/DesignActionContext';
+import { DesignContext } from './actions/DesignContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
 import { BaseInjector } from './BaseInjector';

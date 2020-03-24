@@ -1,5 +1,5 @@
-import { RegContext } from './RegisterActionContext';
-import { IocRegScope } from './IocRegisterScope';
+import { RegContext } from './RegContext';
+import { IocRegScope } from './IocRegScope';
 
 /**
  * register life scope.
