@@ -2,7 +2,7 @@ import { IocDecorScope } from './IocDecorScope';
 import { INJECTOR } from '../IInjector';
 import { DecoratorScope } from '../types';
 import { IActionSetup } from './Action';
-import { befAnn, ann, aftAnn, cls, mth, ptr } from '../utils/exps';
+import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { ExecDecoratorAtion } from './ExecDecoratorAtion';
 import { DecorsRegisterer, DesignRegisterer } from './DecorsRegisterer';
 import { IocRegScope } from './IocRegScope';
@@ -53,7 +53,7 @@ export abstract class DesignDecorScope extends IocDecorScope<DesignContext> impl
                 return ctx.targetReflect.decorators.design.classDecors;
             case mth:
                 return ctx.targetReflect.decorators.design.methodDecors;
-            case ptr:
+            case prop:
                 return ctx.targetReflect.decorators.design.propsDecors;
         }
         return ctx.targetReflect.decorators.design.getDecortors(scope);
@@ -149,8 +149,8 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
     setup() {
 
         this.actInjector.getInstance(DesignRegisterer)
-            .register(Inject, ptr, BindPropTypeAction)
-            .register(AutoWired, ptr, BindPropTypeAction);
+            .register(Inject, prop, BindPropTypeAction)
+            .register(AutoWired, prop, BindPropTypeAction);
 
         this.use(DesignPropDecorScope);
     }
@@ -159,7 +159,7 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
 
 export class DesignPropDecorScope extends DesignDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return ptr;
+        return prop;
     }
 }
 

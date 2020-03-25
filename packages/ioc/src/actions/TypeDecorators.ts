@@ -2,7 +2,7 @@ import { ClassType, DecoratorScope } from '../types';
 import { DecorsRegisterer } from './DecorsRegisterer';
 import { ITypeDecoractors } from '../services/ITypeReflect';
 import { ITypeReflects } from '../services/ITypeReflects';
-import { befAnn, cls, ann, aftAnn, ptr, mth } from '../utils/exps';
+import { befAnn, cls, ann, aftAnn, prop, mth } from '../utils/exps';
 
 
 /**
@@ -53,7 +53,7 @@ export class TypeDecorators implements ITypeDecoractors {
     private _prsDecors: any[];
     get propsDecors(): string[] {
         if (!this._prsDecors) {
-            this._prsDecors = this.getDecortors(ptr);
+            this._prsDecors = this.getDecortors(prop);
         }
         return this._prsDecors;
     }
@@ -76,7 +76,7 @@ export class TypeDecorators implements ITypeDecoractors {
                 return registerer.getDecorators()
                     .filter(d => this.reflects.hasMetadata(d, this.type));
 
-            case ptr:
+            case prop:
                 return registerer.getDecorators()
                     .filter(d => this.reflects.hasPropertyMetadata(d, this.type));
 

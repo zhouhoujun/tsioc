@@ -11,7 +11,7 @@ import { RuntimeRegisterer, DecorsRegisterer } from './DecorsRegisterer';
 import { Inject } from '../decorators/Inject';
 import { AutoWired } from '../decorators/AutoWried';
 import { Param } from '../decorators/Param';
-import { parm, cls, mth, ptr, befCtor, aftCtor } from '../utils/exps';
+import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
 import { IocDecorScope } from './IocDecorScope';
 import { ExecDecoratorAtion } from './ExecDecoratorAtion';
 import { IActionSetup } from './Action';
@@ -222,7 +222,7 @@ export abstract class RuntimeDecorScope extends IocDecorScope<RuntimeContext> {
                 return ctx.targetReflect.decorators.runtime.classDecors;
             case mth:
                 return ctx.targetReflect.decorators.runtime.methodDecors;
-            case ptr:
+            case prop:
                 return ctx.targetReflect.decorators.runtime.propsDecors;
             case parm:
                 return ctx.targetReflect.decorators.runtime.getParamDecors(ctx.propertyKey, ctx.target);
@@ -435,8 +435,8 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IAc
     setup() {
 
         this.actInjector.getInstance(RuntimeRegisterer)
-            .register(Inject, ptr, InjectPropAction)
-            .register(AutoWired, ptr, InjectPropAction);
+            .register(Inject, prop, InjectPropAction)
+            .register(AutoWired, prop, InjectPropAction);
 
         this.use(RuntimePropDecorScope);
     }
@@ -444,7 +444,7 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IAc
 
 export class RuntimePropDecorScope extends RuntimeDecorScope {
     protected getDecorScope(): DecoratorScope {
-        return ptr;
+        return prop;
     }
 }
 
