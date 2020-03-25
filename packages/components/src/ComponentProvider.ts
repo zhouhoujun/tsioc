@@ -13,7 +13,7 @@ import {
 import { IComponentReflect } from './IComponentReflect';
 import { IPipeTransform } from './bindings/IPipeTransform';
 import { IComponentContext } from './ComponentContext';
-import { ITemplateContext, ITemplateOption } from './parses/TemplateContext';
+import { ITemplateContext, ITemplateOption } from './compile/TemplateContext';
 import { pipeExp } from './bindings/exps';
 
 

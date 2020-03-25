@@ -8,9 +8,9 @@ import { IComponentReflect } from './IComponentReflect';
 import { ComponentProvider } from './ComponentProvider';
 import { CTX_TEMPLATE_REF } from './ComponentRef';
 import { NonSerialize } from './decorators/NonSerialize';
-import { ITemplateOption, ITemplateContext } from './parses/TemplateContext';
-import { TemplateContext } from './parses/TemplateContext';
-import { TemplateParseScope } from './parses/TemplateParseScope';
+import { ITemplateOption, ITemplateContext } from './compile/TemplateContext';
+import { TemplateContext } from './compile/TemplateContext';
+import { TemplateParseScope } from './compile/parse-templ';
 import { Input } from './decorators/Input';
 
 

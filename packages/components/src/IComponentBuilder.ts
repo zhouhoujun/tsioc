@@ -1,6 +1,6 @@
 import { ProviderTypes, tokenId } from '@tsdi/ioc';
 import { IBuilderService } from '@tsdi/boot';
-import { ITemplateOption, ITemplateContext } from './parses/TemplateContext';
+import { ITemplateOption, ITemplateContext } from './compile/TemplateContext';
 
 
 

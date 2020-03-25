@@ -1,11 +1,11 @@
 import { Singleton, Type, ClassType } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
+import { IAnnoationContext } from '@tsdi/boot';
 import { ComponentProvider } from '../ComponentProvider';
 import { ElementNode } from './ElementNode';
 import { ElementRef, IElementRef, IComponentRef, ComponentRef } from '../ComponentRef';
-import { IAnnoationContext } from '@tsdi/boot';
-import { TemplateContext } from '../parses/TemplateContext';
-import { ICoreInjector } from '@tsdi/core';
-import { ITemplateOption, ITemplateContext } from '../parses/TemplateContext';
+import { TemplateContext } from '../compile/TemplateContext';
+import { ITemplateOption, ITemplateContext } from '../compile/TemplateContext';
 
 /**
  * ref element selector.

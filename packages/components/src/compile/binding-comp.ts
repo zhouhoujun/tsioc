@@ -1,16 +1,74 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, isFunction, chain } from '@tsdi/ioc';
-import { StartupDecoratorRegisterer, BaseTypeParser, BuildHandles } from '@tsdi/boot';
-import { TemplateParseScope } from './TemplateParseScope';
-import { ComponentBuilderToken } from '../IComponentBuilder';
+import {
+    lang, isFunction, isNullOrUndefined, isString, isBaseType,
+    isClassType, ClassType, chain, isArray, IActionSetup
+} from '@tsdi/ioc';
 import { PropBinding } from '../bindings/PropBinding';
+import { IComponentOption } from '../ComponentContext';
+import { StartupDecoratorRegisterer, BaseTypeParser, BuildHandles } from '@tsdi/boot';
+import { TemplateParseScope } from './parse-templ';
+import { ComponentBuilderToken } from '../IComponentBuilder';
 import { OneWayBinding } from '../bindings/OneWayBinding';
 import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';
 import { ParseBinding } from '../bindings/ParseBinding';
 import { IComponentReflect } from '../IComponentReflect';
-import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING, CTX_BIND_PARSED } from './ParseContext';
-import { IComponentOption } from '../ComponentContext';
+import { IParseContext, CTX_BIND_EXPRESSION, CTX_BIND_DATABINDING, CTX_BIND_PARSED, CTX_BIND_BINDING } from './ParseContext';
 
+
+/**
+ * binding scope.
+ *
+ * @export
+ * @class BindingScope
+ * @extends {ParsersHandle}
+ */
+export class BindingScope extends BuildHandles<IParseContext> implements IActionSetup {
+
+    async execute(ctx: IParseContext, next?: () => Promise<void>): Promise<void> {
+        if (ctx.hasValue(CTX_BIND_BINDING)) {
+            await super.execute(ctx);
+        }
+        if (next) {
+            await next();
+        }
+        // after all clean.
+        ctx.destroy();
+    }
+
+    setup() {
+        this.use(BindingArrayHandle)
+            .use(BindingValueScope)
+    }
+}
+
+
+/**
+ * binding array handle.
+ *
+ * @export
+ * @class BindingArrayHandle
+ * @extends {ParseHandle}
+ */
+export const BindingArrayHandle = async function (ctx: IParseContext, next: () => Promise<void>): Promise<void> {
+    let binding = ctx.getValue(CTX_BIND_BINDING);
+    let expression = ctx.getValue(CTX_BIND_EXPRESSION);
+    if (binding.type === Array && isArray(expression)) {
+        let actInjector = ctx.reflects.getActionInjector();
+        ctx.value = await Promise.all(expression.map(async tp => {
+            let subCtx = ctx.clone().setOptions({
+                bindExpression: tp,
+                template: tp,
+                sub: true
+            });
+            await actInjector.getInstance(BindingScope).execute(subCtx);
+            return subCtx.value ?? tp;
+        }));
+    }
+
+    if (isNullOrUndefined(ctx.value)) {
+        await next();
+    }
+};
 
 /**
  * binding value scope.

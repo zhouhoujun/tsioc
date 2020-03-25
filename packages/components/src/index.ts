@@ -20,30 +20,14 @@ export * from './decorators/NonSerialize';
 export * from './decorators/Vaildate';
 export * from './decorators/Pipe';
 
-
 export * from './elements';
-
-// parses
 export * from './ComponentContext';
-export * from './parses/ParseContext';
-export * from './parses/BindingValueScope';
-export * from './parses/BindingScope';
-export * from './parses/TemplateContext';
-export * from './parses/TemplateParseScope';
-export * from './parses/TranslateSelectorScope';
-
-// resolvers
-export * from './resolvers/BindingPropertyHandle';
-export * from './resolvers/BindingOutputHandle';
-export * from './resolvers/ValifyTeamplateHandle';
-export * from './resolvers/BindingTemplateRefHandle';
-export * from './resolvers/ModuleInitHandle';
-export * from './resolvers/ModuleAfterInitHandle';
-export * from './resolvers/ModuleBeforeInitHandle';
-export * from './resolvers/ModuleAfterContentInitHandle';
-export * from './resolvers/ResolveTemplateHanlde';
-export * from './resolvers/ResolveTargetRefScope';
-export * from './resolvers/ParseTemplateHandle';
+// compile
+export * from './compile/ParseContext';
+export * from './compile/binding-comp';
+export * from './compile/TemplateContext';
+export * from './compile/parse-templ';
+export * from './compile/build-comp';
 
 
 // registers

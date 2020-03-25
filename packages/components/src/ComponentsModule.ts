@@ -11,8 +11,8 @@ import { Component } from './decorators/Component';
 import { Directive } from './decorators/Directive';
 import { Vaildate } from './decorators/Vaildate';
 import { Pipe } from './decorators/Pipe';
-import { BindingScope } from './parses/BindingScope';
-import { TemplateParseScope } from './parses/TemplateParseScope';
+import { BindingScope } from './compile/binding-comp';
+import { TemplateParseScope } from './compile/parse-templ';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 
@@ -21,8 +21,8 @@ import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction
 import { BindingsCache } from './registers/BindingsCache';
 import { RegVaildateAction } from './registers/RegisterVaildateAction';
 import { PipeRegAction } from './registers/PipeRegisterAction';
-import { BindingComponentScope } from './resolvers/BindingComponentScope';
-import { ParseTemplateHandle } from './resolvers/ParseTemplateHandle';
+import { BindingComponentScope, ParseTemplateHandle  } from './compile/build-comp';
+
 import { DefaultComponets } from './IComponentReflect';
 import { ComponentProvider, AstResolver } from './ComponentProvider';
 import { TEMPLATE_REF, TemplateRef, COMPONENT_REF, ComponentRef, ELEMENT_REF, ElementRef } from './ComponentRef';
