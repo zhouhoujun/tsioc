@@ -33,7 +33,7 @@ export interface TsLibPackBuilderOption extends LibPackBuilderOption {
  * @implements {AfterInit}
  */
 @Task({
-    selector: BuilderTypes.tslibs,
+    selector: 'tslibs',
     template: `
     <clean [clean]="outDir"></clean>
     <test [test]="outDir"></test>

@@ -193,7 +193,7 @@ export interface LibPackBuilderOption extends TemplateOption {
 }
 
 @Task({
-    selector: BuilderTypes.libs,
+    selector: 'libs',
     template: `
         <clean [clean]="outDir"></clean>
         <test [test]="outDir"></test>
