@@ -8,7 +8,7 @@ import { BindingTypes, BindingDirection } from '../bindings/IBinding';
  * @interface BindingPropertyMetadata
  * @extends {ParamPropMetadata}
  */
-export interface BindingPropertyMetadata extends ParamPropMetadata {
+export interface BindingPropMetadata extends ParamPropMetadata {
     /**
      * binding name.
      *

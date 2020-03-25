@@ -1,5 +1,5 @@
 import { DesignContext, isClassType, isDefined, CTX_CURR_DECOR } from '@tsdi/ioc';
-import { BindingPropertyMetadata } from '../decorators/BindingPropertyMetadata';
+import { BindingPropMetadata } from '../decorators/BindingPropMetadata';
 import { IComponentReflect } from '../IComponentReflect';
 
 
@@ -8,13 +8,13 @@ import { IComponentReflect } from '../IComponentReflect';
  *
  * @export
  */
-export const BindingPropertyTypeAction = function (ctx: DesignContext, next: () => void) {
+export const BindingPropTypeAction = function (ctx: DesignContext, next: () => void) {
     let refl = ctx.targetReflect as IComponentReflect;
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let propBindings = refl?.getBindings?.(currDecor);
     if (propBindings) {
         ctx.targetReflect.defines.extendTypes.forEach(ty => {
-            let propMetas = ctx.reflects.getPropertyMetadata<BindingPropertyMetadata>(currDecor, ty);
+            let propMetas = ctx.reflects.getPropertyMetadata<BindingPropMetadata>(currDecor, ty);
             Object.keys(propMetas).forEach(key => {
                 if (!propBindings.has(key)) {
                     propBindings.set(key, { name: key, type: null });

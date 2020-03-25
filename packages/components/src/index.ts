@@ -10,7 +10,7 @@ export * from './bindings/ParseBinding';
 export * from './bindings/Events';
 
 // decorators
-export * from './decorators/BindingPropertyMetadata';
+export * from './decorators/BindingPropMetadata';
 export * from './decorators/IComponentMetadata';
 export * from './decorators/Component';
 export * from './decorators/Input';
@@ -32,10 +32,10 @@ export * from './compile/build-comp';
 
 // registers
 export * from './registers/BindingsCache';
-export * from './registers/BindingPropertyTypeAction';
-export * from './registers/ComponentRegisterAction';
-export * from './registers/PipeRegisterAction';
-export * from './registers/RegisterVaildateAction';
+export * from './registers/BindingPropTypeAction';
+export * from './registers/ComponentRegAction';
+export * from './registers/PipeRegAction';
+export * from './registers/RegVaildateAction';
 
 export * from './ComponentLifecycle';
 export * from './ComponentRef';

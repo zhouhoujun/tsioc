@@ -1,5 +1,5 @@
 import { isString, isToken, Registration, ClassType, Token, createPropDecorator, isClassType } from '@tsdi/ioc';
-import { BindingPropertyMetadata } from './BindingPropertyMetadata';
+import { BindingPropMetadata } from './BindingPropMetadata';
 
 
 export type RefChildDectorator = (target: Object, propertyKey: string | symbol) => void;
@@ -25,7 +25,7 @@ export interface IRefChildDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingPropertyMetadata): PropertyDecorator;
+    (metadata: BindingPropMetadata): PropertyDecorator;
     /**
      * define RefChild property decorator with binding property name and provider.
      *
@@ -59,7 +59,7 @@ export interface IRefChildDecorator {
  *
  * @RefChild
  */
-export const RefChild: IRefChildDecorator = createPropDecorator<BindingPropertyMetadata>('RefChild', [
+export const RefChild: IRefChildDecorator = createPropDecorator<BindingPropMetadata>('RefChild', [
     (ctx, next) => {
         let arg = ctx.currArg;
         if (isString(arg)) {

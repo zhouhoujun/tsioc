@@ -16,11 +16,11 @@ import { TemplateParseScope } from './compile/parse-templ';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 
-import { ComponentRegAction, DirectiveRegisterAction } from './registers/ComponentRegisterAction';
-import { BindingPropertyTypeAction } from './registers/BindingPropertyTypeAction';
+import { ComponentRegAction, DirectiveRegisterAction } from './registers/ComponentRegAction';
+import { BindingPropTypeAction } from './registers/BindingPropTypeAction';
 import { BindingsCache } from './registers/BindingsCache';
-import { RegVaildateAction } from './registers/RegisterVaildateAction';
-import { PipeRegAction } from './registers/PipeRegisterAction';
+import { RegVaildateAction } from './registers/RegVaildateAction';
+import { PipeRegAction } from './registers/PipeRegAction';
 import { BindingComponentScope, ParseTemplateHandle  } from './compile/build-comp';
 
 import { DefaultComponets } from './IComponentReflect';
@@ -75,9 +75,9 @@ export class ComponentsModule {
             .register(Component, cls, BindAnnoPdrAction, AnnoationDesignAction, ComponentRegAction)
             .register(Directive, cls, BindAnnoPdrAction, AnnoationDesignAction, DirectiveRegisterAction)
             .register(Pipe, cls, BindAnnoPdrAction, PipeRegAction)
-            .register(Input, prty, BindingPropertyTypeAction)
-            .register(Output, prty, BindingPropertyTypeAction)
-            .register(RefChild, prty, BindingPropertyTypeAction)
+            .register(Input, prty, BindingPropTypeAction)
+            .register(Output, prty, BindingPropTypeAction)
+            .register(RefChild, prty, BindingPropTypeAction)
             .register(Vaildate, prty, RegVaildateAction);
 
         actInjector.getInstance(RuntimeRegisterer)

@@ -1,5 +1,5 @@
 import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType } from '@tsdi/ioc';
-import { BindingPropertyMetadata } from './BindingPropertyMetadata';
+import { BindingPropMetadata } from './BindingPropMetadata';
 
 /**
  * Output decorator.
@@ -20,7 +20,7 @@ export interface OutputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingPropertyMetadata): PropertyDecorator;
+    (metadata: BindingPropMetadata): PropertyDecorator;
     /**
      * define Output property decorator with binding property name and provider.
      *
@@ -54,7 +54,7 @@ export interface OutputPropertyDecorator {
 /**
  * output property decorator.
  */
-export const Output: OutputPropertyDecorator = createPropDecorator<BindingPropertyMetadata>('Output', [
+export const Output: OutputPropertyDecorator = createPropDecorator<BindingPropMetadata>('Output', [
     (ctx, next) => {
         let arg = ctx.currArg;
         if (isString(arg)) {

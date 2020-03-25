@@ -1,5 +1,5 @@
 import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType } from '@tsdi/ioc';
-import { BindingPropertyMetadata } from './BindingPropertyMetadata';
+import { BindingPropMetadata } from './BindingPropMetadata';
 /**
  * Input decorator.
  *
@@ -19,7 +19,7 @@ export interface InputPropertyDecorator {
      *
      * @param {string} bindingName binding property name
      */
-    (metadata: BindingPropertyMetadata): PropertyDecorator;
+    (metadata: BindingPropMetadata): PropertyDecorator;
     /**
      * define Input property decorator with binding property name and provider.
      *
@@ -53,7 +53,7 @@ export interface InputPropertyDecorator {
 /**
  * Input decorator.
  */
-export const Input: InputPropertyDecorator = createPropDecorator<BindingPropertyMetadata>('Input', [
+export const Input: InputPropertyDecorator = createPropDecorator<BindingPropMetadata>('Input', [
     (ctx, next) => {
         let arg = ctx.currArg;
         if (isString(arg)) {
