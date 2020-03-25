@@ -75,35 +75,11 @@ export * from './builder/BuildHandles';
 export * from './builder/IBuildContext';
 export * from './builder/IBuildOption';
 export * from './builder/BuildContext';
-
-
-// build resolvers
-export * from './builder/resolvers/ResolveHandle';
-export * from './builder/resolvers/ResolveModuleHandle';
-export * from './builder/resolvers/ResolveMoudleScope';
+export * from './builder/build-hanles';
 
 
 // boots
-export * from './boots/RegisterAnnoationHandle';
-export * from './boots/RegisterModuleScope';
-
-export * from './boots/BootHandle';
-export * from './boots/BootConfigureLoadHandle';
-export * from './boots/BootConfigureRegisterHandle';
-export * from './boots/BootProvidersHandle';
-export * from './boots/BootDepsHandle';
-export * from './boots/ModuleConfigureRegisterHandle';
-export * from './boots/ConfigureServiceHandle';
-
-export * from './boots/ModuleBuildScope';
-
-export * from './boots/ResolveBootHandle';
-export * from './boots/ResolveTypeHandle';
-
-export * from './boots/ResolveRunnableScope';
-export * from './boots/RefRunnableHandle';
-export * from './boots/StartupBootHandle';
-
+export * from './boots/boot-handles';
 export * from './boots/RunnableBuildLifeScope';
 export * from './boots/BootLifeScope';
 

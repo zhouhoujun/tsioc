@@ -1,9 +1,8 @@
-import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, PromiseUtil, isFunction, chain } from '@tsdi/ioc';
+import { isNullOrUndefined, lang, isString, isBaseType, isClassType, ClassType, isFunction, chain } from '@tsdi/ioc';
 import { StartupDecoratorRegisterer, BaseTypeParser, BuildHandles } from '@tsdi/boot';
 import { TemplateParseScope } from './TemplateParseScope';
 import { ComponentBuilderToken } from '../IComponentBuilder';
 import { PropBinding } from '../bindings/PropBinding';
-import { BindingDirection } from '../bindings/IBinding';
 import { OneWayBinding } from '../bindings/OneWayBinding';
 import { TwoWayBinding } from '../bindings/TwoWayBinding';
 import { EventBinding } from '../bindings/EventBinding';

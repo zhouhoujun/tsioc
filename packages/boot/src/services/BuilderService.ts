@@ -9,7 +9,7 @@ import { RunnableBuildLifeScope } from '../boots/RunnableBuildLifeScope';
 import { BootLifeScope } from '../boots/BootLifeScope';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
 import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS } from '../context-tokens';
-import { ResolveMoudleScope } from '../builder/resolvers/ResolveMoudleScope';
+import { ResolveMoudleScope } from '../builder/build-hanles';
 import { BuildContext } from '../builder/BuildContext';
 import { IBuildOption } from '../builder/IBuildOption';
 import { IBuildContext } from '../builder/IBuildContext';

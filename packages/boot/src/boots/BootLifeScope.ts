@@ -1,16 +1,11 @@
 import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../builder/BuildHandles';
 import { IAnnoationContext } from '../AnnoationContext';
-import { BootProvidersHandle } from './BootProvidersHandle';
-import { BootDepsHandle } from './BootDepsHandle';
-import { BootConfigureLoadHandle } from './BootConfigureLoadHandle';
-import { RegisterModuleScope } from './RegisterModuleScope';
-import { ModuleBuildScope } from './ModuleBuildScope';
-import { BootConfigureRegisterHandle } from './BootConfigureRegisterHandle';
-import { ResolveRunnableScope } from './ResolveRunnableScope';
-import { StartupBootHandle } from './StartupBootHandle';
-import { ModuleConfigureRegisterHandle } from './ModuleConfigureRegisterHandle';
-import { ConfigureServiceHandle } from './ConfigureServiceHandle';
+import {
+    BootDepsHandle, BootProvidersHandle, BootConfigureLoadHandle, RegisterModuleScope,
+    BootConfigureRegisterHandle, ModuleBuildScope, ModuleConfigureRegisterHandle, ConfigureServiceHandle,
+    ResolveRunnableScope, StartupBootHandle
+} from './boot-handles';
 
 
 

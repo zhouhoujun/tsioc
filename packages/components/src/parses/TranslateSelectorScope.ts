@@ -1,4 +1,4 @@
-import { IActionSetup, PromiseUtil, isNullOrUndefined, chain } from '@tsdi/ioc';
+import { IActionSetup, isNullOrUndefined, chain } from '@tsdi/ioc';
 import { BuildHandles, StartupDecoratorRegisterer } from '@tsdi/boot';
 import { ITemplateContext, TemplateOptionToken } from './TemplateContext';
 import { CTX_COMPONENT_DECTOR } from '../ComponentRef';

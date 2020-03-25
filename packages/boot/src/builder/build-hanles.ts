@@ -1,9 +1,11 @@
 import { IActionSetup, INJECTOR, isNullOrUndefined } from '@tsdi/ioc';
-import { BuildHandles } from '../BuildHandles';
-import { ResolveModuleHandle } from './ResolveModuleHandle';
-import { IBuildContext } from '../IBuildContext';
-import { IAnnoationReflect } from '../../annotations/IAnnoationReflect';
+import { IBuildContext } from './IBuildContext';
+import { BuildHandle, BuildHandles } from './BuildHandles';
+import { IAnnoationReflect } from '../annotations/IAnnoationReflect';
 
+export abstract class ResolveHandle extends BuildHandle<IBuildContext> {
+
+}
 
 /**
  * resolve module scope.
@@ -47,3 +49,10 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
         this.use(ResolveModuleHandle);
     }
 }
+
+export const ResolveModuleHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
+    if (!ctx.value && ctx.type) {
+        ctx.value = ctx.injector.resolve(ctx.type, ctx.providers);
+    }
+    await next();
+};

@@ -20,7 +20,7 @@ import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer
 import { ModuleInjector, ModuleProviders } from './modules/ModuleInjector';
 import { AnnoationInjectorCheck } from './registers/AnnoationInjectorCheck';
 import { AnnoationRegisterScope } from './registers/AnnoationRegisterScope';
-import { ResolveMoudleScope } from './builder/resolvers/ResolveMoudleScope';
+import { ResolveMoudleScope } from './builder/build-hanles';
 import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
 import { BootLifeScope } from './boots/BootLifeScope';
 import { BuildContext } from './builder/BuildContext';
