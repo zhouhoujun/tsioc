@@ -4,7 +4,7 @@ import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     rollup, WatcherOptions, RollupCache, ExternalOption, GlobalsOption, RollupOptions, OutputOptions
 } from 'rollup';
-import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeActivityContext } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
 
 /**

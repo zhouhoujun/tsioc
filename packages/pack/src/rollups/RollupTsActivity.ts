@@ -5,7 +5,7 @@ import { Task } from '@tsdi/activities';
 import { Plugin, RollupOptions } from 'rollup';
 import { CompilerOptions, nodeModuleNameResolver, sys } from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
-import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import { NodeActivityContext } from '../NodeActivityContext';
 import { RollupActivity, RollupOption } from './RollupActivity';
 import { TsComplie } from '../ts-complie';
 import { tsdexp } from '../exps';

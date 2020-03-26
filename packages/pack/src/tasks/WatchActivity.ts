@@ -1,9 +1,9 @@
 import { PromiseUtil } from '@tsdi/ioc';
-import { Input, Binding, BindingTypes } from '@tsdi/components';
+import { Input, Binding } from '@tsdi/components';
 import { Task, Src, BodyTemplate, ActivityType } from '@tsdi/activities';
 import { fromEventPattern } from 'rxjs';
 import { bufferTime, filter } from 'rxjs/operators';
-import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
+import { NodeActivityContext } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
 const chokidar = require('chokidar');
 
@@ -43,7 +43,7 @@ export class WatchActivity extends NodeActivity<void> {
     @Input('watchOptions')
     options:  any;
 
-    @Input({ bindingType: BindingTypes.dynamic }) body: ActivityType<any>;
+    @Input({ bindingType: 'dynamic' }) body: ActivityType<any>;
 
 
 

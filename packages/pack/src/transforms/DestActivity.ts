@@ -2,7 +2,7 @@ import { Input, Binding } from '@tsdi/components';
 import { Task, TemplateOption } from '@tsdi/activities';
 import { TransformActivity } from './TransformActivity';
 import { DestOptions, dest } from 'vinyl-fs';
-import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import { NodeActivityContext } from '../NodeActivityContext';
 
 
 
