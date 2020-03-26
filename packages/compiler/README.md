@@ -1,25 +1,18 @@
-# packaged @tsdi/components
+# packaged @tsdi/compiler
 
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/components`： components framewroks. base on AOP, Ioc container, via `@tsdi/core`.
-
+`@tsdi/compiler`：compiler of components. to parse template, expresion, binding compomet.
 
 # Install
 
 ```shell
 
-npm install @tsdi/components
+npm install @tsdi/compiler
 
 ```
 
-## components
-*  `@Component`  Component decorator,  use to defaine class as component with template.
-*  `@Input` Input decorator, use to define property or param as component binding field or args.
-*  `@Output` Output decorator, use to define property or param as component output field or args.
-*  `@RefChild` RefChild decorator, use to select child element and inject to the property in component.
-*  `@Pipe` Pipe decorator, use to define class type as pipe transform.
 see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
 
 
