@@ -1,4 +1,4 @@
-import { ParseLocation } from './utils';
+import { ParseLocation } from '../source';
 
 export interface TemplateAst {
     /**

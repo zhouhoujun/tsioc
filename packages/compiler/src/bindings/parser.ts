@@ -1,5 +1,6 @@
-import { Parser } from './parser';
-import { IBinding } from '../bindings/IBinding';
+import { IBinding } from '@tsdi/components';
+import { Parser } from '../parser';
+
 
 export class BindingParser {
     constructor(private parser: Parser) {
@@ -9,7 +10,6 @@ export class BindingParser {
     parsePropBinding(binding: IBinding) {
 
     }
-
 
     parseAttr() {
 
