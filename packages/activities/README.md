@@ -295,11 +295,14 @@ Documentation is available on the
 * [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
 * [@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
 * [@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
+* [@tsdi/compiler document](https://github.com/zhouhoujun/tsioc/tree/master/packages/compiler).
 * [@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
+* [@tsdi/pack document](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack).
 * [@tsdi/typeorm-adapter document](https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter).
 * [@tsdi/unit document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit).
 * [@tsdi/unit-console document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit-console).
 * [@tsdi/cli document](https://github.com/zhouhoujun/tsioc/tree/master/packages/cli).
+
 
 ### packages
 [@tsdi/cli](https://www.npmjs.com/package/@tsdi/cli)
