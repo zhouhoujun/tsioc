@@ -63,6 +63,20 @@ Documentation is available on the
 * [@tsdi/cli document](https://github.com/zhouhoujun/tsioc/tree/master/packages/cli).
 
 
+### packages
+[@tsdi/cli](https://www.npmjs.com/package/@tsdi/cli)
+[@tsdi/ioc](https://www.npmjs.com/package/@tsdi/ioc)
+[@tsdi/aop](https://www.npmjs.com/package/@tsdi/aop)
+[@tsdi/core](https://www.npmjs.com/package/@tsdi/core)
+[@tsdi/boot](https://www.npmjs.com/package/@tsdi/boot)
+[@tsdi/components](https://www.npmjs.com/package/@tsdi/components)
+[@tsdi/compiler](https://www.npmjs.com/package/@tsdi/compiler)
+[@tsdi/activities](https://www.npmjs.com/package/@tsdi/activities)
+[@tsdi/pack](https://www.npmjs.com/package/@tsdi/pack)
+[@tsdi/typeorm-adapter](https://www.npmjs.com/package/@tsdi/typeorm-adapter)
+[@tsdi/unit](https://www.npmjs.com/package/@tsdi/unit)
+[@tsdi/unit-console](https://www.npmjs.com/package/@tsdi/unit-console)
+
 ## License
 
 MIT © [Houjun](https://github.com/zhouhoujun/)
