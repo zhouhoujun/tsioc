@@ -35,16 +35,9 @@ export const AnnoationDesignAction = function (ctx: DesignContext, next: () => v
         if (!tgRef.baseURL) {
             tgRef.baseURL = merged.baseURL;
         }
-        let cloner: AnnotationCloner;
+        let cloner = proder?.getInstance(AnnotationCloner);
         tgRef.getAnnoation = <T extends ModuleConfigure>() => {
-            let annon = { ...merged };
-            if (!cloner && proder) {
-                cloner = proder.resolve(AnnotationCloner);
-            }
-            if (cloner) {
-                annon = cloner.clone(annon);
-            }
-            return annon as T;
+            return cloner ? cloner.clone(merged) : { ...merged };
         };
 
         ctx.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
