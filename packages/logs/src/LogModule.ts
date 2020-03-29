@@ -1,4 +1,4 @@
-import { Inject, BindMthPdrAction, DesignRegisterer, IocExt, IIocContainer, IocContainerToken } from '@tsdi/ioc';
+import { Inject, MthProviderAction, DesignRegisterer, IocExt, IIocContainer, IocContainerToken } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { Logger } from './decorators/Logger';
 import { AnnotationLoggerAspect } from './AnnotationLoggerAspect';
@@ -28,8 +28,8 @@ export class LogModule {
             container.registerType(AopModule);
         }
         container.getActionInjector().getInstance(DesignRegisterer)
-            .register(Logger, 'Class', BindMthPdrAction)
-            .register(Logger, 'Method', BindMthPdrAction);
+            .register(Logger, 'Class', MthProviderAction)
+            .register(Logger, 'Method', MthProviderAction);
 
         container.inject(ConfigureLoggerManger, AnnotationLoggerAspect, LogFormater, ConsoleLogManager);
     }

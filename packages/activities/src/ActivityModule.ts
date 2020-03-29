@@ -1,8 +1,8 @@
 import {
-    Inject, BindAnnoPdrAction, DecoratorProvider, DesignRegisterer, IocExt
+    Inject, TypeProviderAction, DecoratorProvider, DesignRegisterer, IocExt
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { BootContext, StartupDecoratorRegisterer, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
+import { BootContext, StartupDecoratorRegisterer, AnnoationAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
 import {
     ComponentRegAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle, AstResolver,
     DefaultComponets, ELEMENT_REF, TEMPLATE_REF, COMPONENT_REF, BindingsCache, Input, Output, RefChild, Vaildate
@@ -34,7 +34,7 @@ export class ActivityModule {
         let actInjector = container.getActionInjector();
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Task, 'Class', BindAnnoPdrAction, AnnoationDesignAction, ComponentRegAction, ActivityDepsRegister);
+            .register(Task, 'Class', TypeProviderAction, AnnoationAction, ComponentRegAction, ActivityDepsRegister);
 
         actInjector.regAction(ComponentSelectorHandle);
         actInjector.getInstance(StartupDecoratorRegisterer)

@@ -34,17 +34,8 @@ export * from './decorators/Message';
 export * from './AnnoationContext';
 // registers
 export * from './registers/MessageRegisterAction';
-export * from './registers/AnnoationDesignAction';
-export * from './registers/RegModuleImportsAction';
-export * from './registers/RegModuleProvidersAction';
-export * from './registers/RegModuleRefAction';
-export * from './registers/RegModuleExportsAction';
-export * from './registers/AnnoationInjectorCheck';
-export * from './registers/AnnoationRegisterScope';
-
-
-// injects
-export * from './injects/InjDIModuleScope';
+export * from './registers/module_actions';
+export * from './registers/InjDIModuleScope';
 
 
 // modules

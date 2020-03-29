@@ -1,6 +1,6 @@
 import {
     Inject, BeforeCtorScope, AfterCtorScope, IocContainerToken, IIocContainer,
-    RuntimeMthScope, BindAnnoPdrAction, RegSingletionAction, RuntimeLifeScope,
+    RuntimeMthScope, TypeProviderAction, RegSingletionAction, RuntimeLifeScope,
     CtorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken
 } from '@tsdi/ioc';
 import { Aspect } from './decorators/Aspect';
@@ -58,7 +58,7 @@ export class AopModule {
             .useBefore(MatchPointcutAction, CtorArgsAction);
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Aspect, 'Class', BindAnnoPdrAction, RegistAspectAction);
+            .register(Aspect, 'Class', TypeProviderAction, RegistAspectAction);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Aspect, 'Class', RegSingletionAction);

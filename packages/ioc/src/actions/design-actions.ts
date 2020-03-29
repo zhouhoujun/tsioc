@@ -69,10 +69,10 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 
     setup() {
         this.actInjector.getInstance(DesignRegisterer)
-            .register(Injectable, cls, BindAnnoPdrAction)
-            .register(Singleton, cls, BindAnnoPdrAction)
-            .register(Providers, cls, BindAnnoPdrAction)
-            .register(Refs, cls, BindAnnoPdrAction);
+            .register(Injectable, cls, TypeProviderAction)
+            .register(Singleton, cls, TypeProviderAction)
+            .register(Providers, cls, TypeProviderAction)
+            .register(Refs, cls, TypeProviderAction);
 
         this.use(AnnoRegInAction)
             .use(BeforeAnnoDecorScope)
@@ -149,8 +149,8 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
     setup() {
 
         this.actInjector.getInstance(DesignRegisterer)
-            .register(Inject, prop, BindPropTypeAction)
-            .register(AutoWired, prop, BindPropTypeAction);
+            .register(Inject, prop, PropProviderAction)
+            .register(AutoWired, prop, PropProviderAction);
 
         this.use(DesignPropDecorScope);
     }
@@ -165,13 +165,13 @@ export class DesignPropDecorScope extends DesignDecorScope {
 
 
 /**
- * bind annoation provider action. for binding a factory to an token.
+ * register bind type class provider action. for binding a factory to an token.
  *
  * @export
  * @class BindProviderAction
  * @extends {ActionComposite}
  */
-export const BindAnnoPdrAction = function (ctx: DesignContext, next: () => void) {
+export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     let tgReflect = ctx.targetReflect;
     let injector = ctx.injector;
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
@@ -218,11 +218,11 @@ export const BindAnnoPdrAction = function (ctx: DesignContext, next: () => void)
 };
 
 /**
- * bind property type action. to get the property autowride token of Type calss.
+ * register bind property provider action. to get the property autowride token of Type calss.
  *
  * @export
  */
-export const BindPropTypeAction = function (ctx: DesignContext, next: () => void) {
+export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
     let refs = ctx.reflects;
     let injector = ctx.injector;
     let targetReflect = ctx.targetReflect;
@@ -251,8 +251,8 @@ export class DesignMthScope extends IocRegScope<DesignContext> implements IActio
     setup() {
 
         this.actInjector.getInstance(DesignRegisterer)
-            .register(AutoWired, mth, BindMthPdrAction)
-            .register(Providers, mth, BindMthPdrAction);
+            .register(AutoWired, mth, MthProviderAction)
+            .register(Providers, mth, MthProviderAction);
 
         this.use(DesignMthDecorScope);
     }
@@ -271,7 +271,7 @@ export class DesignMthDecorScope extends DesignDecorScope {
  *
  * @export
  */
-export const BindMthPdrAction = function (ctx: DesignContext, next: () => void) {
+export const MthProviderAction = function (ctx: DesignContext, next: () => void) {
     let refs = ctx.reflects;
     let targetReflect = ctx.targetReflect;
     targetReflect.defines.extendTypes.forEach(ty => {

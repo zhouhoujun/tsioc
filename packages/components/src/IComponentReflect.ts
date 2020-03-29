@@ -1,4 +1,5 @@
-import { ITypeReflect, tokenId, IProviders } from '@tsdi/ioc';
+import { tokenId } from '@tsdi/ioc';
+import { IAnnoationReflect } from '@tsdi/boot';
 import { IBinding } from './bindings/IBinding';
 
 /**
@@ -13,15 +14,17 @@ export const DefaultComponets = tokenId<string[]>('DefaultComponets');
  * @interface IBindingTypeReflect
  * @extends {ITypeReflect}
  */
-export interface IComponentReflect extends ITypeReflect {
+export interface IComponentReflect extends IAnnoationReflect {
     /**
      * the type is component or not.
      */
     component?: boolean;
     /**
-     * directive.
+     * component compiled def.
      */
-    directive?: boolean;
+    componentDef?: any;
+
+    // todo: will remove.
     /**
      * component selector.
      */
@@ -34,11 +37,6 @@ export interface IComponentReflect extends ITypeReflect {
      * component select key.
      */
     selectKey?: string;
-    /**
-     * get decorator providers.
-     */
-    getDecorProviders?(): IProviders;
-
     /**
      * get bindings.
      * @param decor decorator

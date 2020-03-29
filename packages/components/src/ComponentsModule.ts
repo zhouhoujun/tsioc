@@ -1,9 +1,9 @@
 import {
-    BindAnnoPdrAction, IocSetCacheAction, RegSingletionAction,
+    TypeProviderAction, IocSetCacheAction, RegSingletionAction,
     Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { ResolveMoudleScope, AnnoationDesignAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
+import { ResolveMoudleScope, AnnoationAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
 import { Input } from './decorators/Input';
 import { Output } from './decorators/Output';
 import { RefChild } from './decorators/RefChild';
@@ -16,7 +16,7 @@ import { TemplateParseScope } from './compile/parse-templ';
 import { ComponentBuilder } from './ComponentBuilder';
 import { ComponentAnnotationCloner } from './ComponentAnnotationCloner';
 
-import { ComponentRegAction, DirectiveRegisterAction } from './registers/ComponentRegAction';
+import { ComponentRegAction } from './registers/ComponentRegAction';
 import { BindingPropTypeAction } from './registers/BindingPropTypeAction';
 import { BindingsCache } from './registers/BindingsCache';
 import { RegVaildateAction } from './registers/RegVaildateAction';
@@ -27,6 +27,7 @@ import { DefaultComponets } from './IComponentReflect';
 import { ComponentProvider, AstResolver } from './ComponentProvider';
 import { TEMPLATE_REF, TemplateRef, COMPONENT_REF, ComponentRef, ELEMENT_REF, ElementRef } from './ComponentRef';
 import { ComponentContext } from './ComponentContext';
+import { DirectiveCompileAction } from './registers/DirectiveCompileAction';
 
 
 /**
@@ -72,9 +73,9 @@ export class ComponentsModule {
         const prty: DecoratorScope = 'Property';
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Component, cls, BindAnnoPdrAction, AnnoationDesignAction, ComponentRegAction)
-            .register(Directive, cls, BindAnnoPdrAction, AnnoationDesignAction, DirectiveRegisterAction)
-            .register(Pipe, cls, BindAnnoPdrAction, PipeRegAction)
+            .register(Component, cls, TypeProviderAction, AnnoationAction, ComponentRegAction)
+            .register(Directive, cls, TypeProviderAction, AnnoationAction, DirectiveCompileAction)
+            .register(Pipe, cls, TypeProviderAction, PipeRegAction)
             .register(Input, prty, BindingPropTypeAction)
             .register(Output, prty, BindingPropTypeAction)
             .register(RefChild, prty, BindingPropTypeAction)

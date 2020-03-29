@@ -1,5 +1,5 @@
 import {
-    Inject, BindAnnoPdrAction, IocSetCacheAction, IocAutorunAction, IocExt,
+    Inject, TypeProviderAction, IocSetCacheAction, IocAutorunAction, IocExt,
     RegSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
@@ -9,17 +9,15 @@ import { Message } from './decorators/Message';
 import { MessageContext } from './messages/MessageContext';
 import { MessageQueue } from './messages/MessageQueue';
 import { RootMessageQueue } from './messages/RootMessageQueue';
-import { InjDIModuleScope } from './injects/InjDIModuleScope';
+import { InjDIModuleScope } from './registers/InjDIModuleScope';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
-import { AnnoationDesignAction } from './registers/AnnoationDesignAction';
+import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope} from './registers/module_actions';
 import { Bootstrap } from './decorators/Bootstrap';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
 import { ModuleInjector, ModuleProviders } from './modules/ModuleInjector';
-import { AnnoationInjectorCheck } from './registers/AnnoationInjectorCheck';
-import { AnnoationRegisterScope } from './registers/AnnoationRegisterScope';
 import { ResolveMoudleScope } from './builder/build-hanles';
 import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
 import { BootLifeScope } from './boots/BootLifeScope';
@@ -62,11 +60,11 @@ export class BootModule {
         registerModule(Bootstrap, desgReger);
 
         desgReger.register(Annotation,
-            { scope: cls, action: [BindAnnoPdrAction, AnnoationDesignAction] },
+            { scope: cls, action: [TypeProviderAction, AnnoationAction] },
             { scope: aftAnn, action: IocAutorunAction }
         )
             .register(Message,
-                { scope: cls, action: BindAnnoPdrAction },
+                { scope: cls, action: TypeProviderAction },
                 { scope: aftAnn, action: [IocAutorunAction, MessageRegisterAction] }
             );
 
@@ -93,8 +91,8 @@ const aftAnn: DecoratorScope = 'AfterAnnoation';
 export function registerModule(decorator: string | Function, registerer: DesignRegisterer): DesignRegisterer {
     return registerer.register(decorator,
         { scope: 'Inj', action: InjDIModuleScope },
-        { scope: 'BeforeAnnoation', action: AnnoationInjectorCheck },
-        { scope: cls, action: AnnoationDesignAction },
+        { scope: 'BeforeAnnoation', action: AnnoationRegInAction },
+        { scope: cls, action: AnnoationAction },
         { scope: 'Annoation', action: AnnoationRegisterScope },
         { scope: aftAnn, action: IocAutorunAction }
     );
