@@ -17,11 +17,11 @@ import chalk from 'chalk';
 export class ConsoleReporter extends RealtimeReporter {
 
     renderSuite(desc: ISuiteDescribe): void {
-        console.log('\n  ' + desc.describe + '\n');
+        console.log('\n  ', desc.describe, '\n');
     }
 
     renderCase(desc: ICaseDescribe): void {
-        console.log('    ' + (desc.error ? chalk.red('x') : chalk.green('√')) + ' ' + chalk.gray(desc.title))
+        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'),  chalk.gray(desc.title));
     }
 
     async render(suites: Map<Token, ISuiteDescribe>): Promise<void> {
