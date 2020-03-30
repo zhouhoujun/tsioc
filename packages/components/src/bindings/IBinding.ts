@@ -15,7 +15,7 @@ export type BindingTypes = 'static' | 'dynamic';
  * input: input binding.
  * output: output binding.
  */
-export type BindingDirection = 'input' | 'output';
+export type BindingDirection = 'input' | 'output' | 'twoway';
 
 /**
  * binding.
