@@ -1,7 +1,8 @@
 import { CTX_CURR_DECOR, DesignContext, IProviders, DecoratorProvider } from '@tsdi/ioc';
+import { Compiler } from '@tsdi/boot';
 import { IDirectiveMetadata } from '../decorators/IComponentMetadata';
 import { IDirectiveReflect } from '../IDirectiveReflect';
-import { Compiler } from '../compile/parser';
+import { BindingsCache } from './BindingsCache';
 
 /**
  * Directive compile action.
@@ -19,6 +20,12 @@ export const DirectiveCompileAction = function (ctx: DesignContext, next: () => 
         }
     } else {
         prdrs = compRefl.getDecorProviders();
+    }
+    if (!compRefl.getBindings) {
+        let caches = prdrs.getInstance(BindingsCache);
+        compRefl.getBindings = (decor) => {
+            return caches.getCache(decor);
+        }
     }
     compRefl.decorator = currDecor;
     compRefl.directive = true;

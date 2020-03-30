@@ -6,9 +6,9 @@ export * from './services/BaseTypeParser';
 export * from './services/StartupService';
 export * from './services/AnnotationMerger';
 export * from './services/AnnotationCloner';
-
 export * from './services/IBuilderService';
 export * from './services/BuilderService';
+export * from './services/parser';
 
 // annotations
 export * from './annotations/IAnnoationReflect';

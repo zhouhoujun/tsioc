@@ -9,7 +9,6 @@ import { ClassType, Token } from '@tsdi/ioc';
  */
 export type BindingTypes = 'static' | 'dynamic';
 
-
 /**
  * binding direction.
  *

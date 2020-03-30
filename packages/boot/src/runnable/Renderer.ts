@@ -1,7 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Startup, IStartup } from './Startup';
 
-
 /**
  * renderer interface. define the type as renderer.
  *

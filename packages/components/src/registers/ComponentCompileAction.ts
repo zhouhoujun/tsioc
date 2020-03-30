@@ -1,8 +1,8 @@
 import { DesignContext, CTX_CURR_DECOR, IProviders, DecoratorProvider } from '@tsdi/ioc';
+import { Compiler } from '@tsdi/boot';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
-import { Compiler } from '../compile/parser';
-
+import { BindingsCache } from './BindingsCache';
 
 export const ComponentCompileAction = function (ctx: DesignContext, next: () => void): void {
 
@@ -19,7 +19,12 @@ export const ComponentCompileAction = function (ctx: DesignContext, next: () => 
     } else {
         prdrs = compRefl.getDecorProviders();
     }
-
+    if (!compRefl.getBindings) {
+        let caches = prdrs.getInstance(BindingsCache);
+        compRefl.getBindings = (decor) => {
+            return caches.getCache(decor);
+        }
+    }
     compRefl.decorator = currDecor;
     compRefl.component = true;
     if (ctx.type.getComponentDef) {

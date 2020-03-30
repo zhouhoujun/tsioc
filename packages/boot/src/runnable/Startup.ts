@@ -1,5 +1,4 @@
 import { lang, Type, Abstract, Inject } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
 import { IBootContext, BootContext } from '../BootContext';
 
 

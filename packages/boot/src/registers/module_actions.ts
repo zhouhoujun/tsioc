@@ -1,4 +1,8 @@
-import { DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders, IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR } from '@tsdi/ioc';
+import {
+    DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders,
+    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR
+} from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../services/AnnotationMerger';
 import { AnnotationCloner } from '../services/AnnotationCloner';
 import { IModuleReflect, ParentInjectorToken } from '../modules/IModuleReflect';
@@ -6,7 +10,6 @@ import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { CTX_MODULE_ANNOATION, CTX_MODULE_EXPORTS } from '../context-tokens';
 import { ModuleInjector, ModuleProviders } from '../modules/ModuleInjector';
 import { ModuleRef } from '../modules/ModuleRef';
-import { ICoreInjector } from '@tsdi/core';
 
 /**
  * annoation class type design action.

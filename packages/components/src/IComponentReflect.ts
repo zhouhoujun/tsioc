@@ -24,6 +24,12 @@ export interface IComponentReflect extends IAnnoationReflect {
      */
     componentDef?: any;
 
+    /**
+     * get bindings.
+     * @param decor decorator
+     */
+    getBindings?<T = IBinding>(decor: string): Map<string, T>;
+
     // todo: will remove.
     /**
      * component selector.
@@ -37,10 +43,5 @@ export interface IComponentReflect extends IAnnoationReflect {
      * component select key.
      */
     selectKey?: string;
-    /**
-     * get bindings.
-     * @param decor decorator
-     */
-    getBindings?<T = IBinding>(decor: string): Map<string, T>;
 
 }

@@ -14,5 +14,5 @@ export const RegVaildateAction = function (ctx: DesignContext, next: () => void)
             propVaildates.set(key, propMetas[key]);
         })
     });
-
+    next();
 };
