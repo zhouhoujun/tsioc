@@ -6,8 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { AstVisitor, Ast, PropertyRead, ImplicitReceiver, PropertyWrite, Binary, Chain, Conditional, BindingPipe, FunctionCall, Interpolation, KeyedRead, KeyedWrite, LiteralArray, LiteralMap, LiteralPrimitive, MethodCall, PrefixNot, NonNullAssert, SafePropertyRead, SafeMethodCall, Quote, CodeRange, RecursiveAstVisitor } from '../src/ast';
-import { InterpolationConfig, DEFAULT_INTERPOLATION_CONFIG } from '../src/interpolation';
+import {
+    AstVisitor, AST, PropertyRead, ImplicitReceiver, PropertyWrite, Binary, Chain, Conditional, BindingPipe,
+    FunctionCall, Interpolation, KeyedRead, KeyedWrite, LiteralArray, LiteralMap, LiteralPrimitive, MethodCall,
+    PrefixNot, NonNullAssert, SafePropertyRead, SafeMethodCall, Quote, RecursiveAstVisitor, ParseSpan
+} from '../../src/expression_parser/ast';
+import { InterpolationConfig, DEFAULT_INTERPOLATION_CONFIG } from '../../src/ml_parser/interpolation_config';
+
 
 class Unparser implements AstVisitor {
     private static _quoteRegExp = /"/g;
@@ -16,7 +21,7 @@ class Unparser implements AstVisitor {
     // TODO(issue/24571): remove '!'.
     private _interpolationConfig !: InterpolationConfig;
 
-    unparse(ast: Ast, interpolationConfig: InterpolationConfig) {
+    unparse(ast: AST, interpolationConfig: InterpolationConfig) {
         this._expression = '';
         this._interpolationConfig = interpolationConfig;
         this._visit(ast);
@@ -188,37 +193,37 @@ class Unparser implements AstVisitor {
         this._expression += `${ast.prefix}:${ast.uninterpretedExpression}`;
     }
 
-    private _visit(ast: Ast) { ast.visit(this); }
+    private _visit(ast: AST) { ast.visit(this); }
 }
 
 const sharedUnparser = new Unparser();
 
 export function unparse(
-    ast: Ast, interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): string {
+    ast: AST, interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): string {
     return sharedUnparser.unparse(ast, interpolationConfig);
 }
 
 
 class ASTValidator extends RecursiveAstVisitor {
-    private parentSpan: CodeRange | undefined;
+    private parentSpan: ParseSpan | undefined;
 
-    visit(ast: Ast) {
+    visit(ast: AST) {
         this.parentSpan = undefined;
         ast.visit(this);
     }
 
-    validate(ast: Ast, cb: () => void): void {
-        if (!inSpan(ast.range, this.parentSpan)) {
+    validate(ast: AST, cb: () => void): void {
+        if (!inSpan(ast.span, this.parentSpan)) {
             if (this.parentSpan) {
-                const parentSpan = this.parentSpan as CodeRange;
+                const parentSpan = this.parentSpan as ParseSpan;
                 throw Error(
-                    `Invalid Ast span [expected (${ast.range.start}, ${ast.range.end}) to be in (${parentSpan.start},  ${parentSpan.end}) for ${unparse(ast)}`);
+                    `Invalid AST span [expected (${ast.span.start}, ${ast.span.end}) to be in (${parentSpan.start},  ${parentSpan.end}) for ${unparse(ast)}`);
             } else {
-                throw Error(`Invalid root Ast span for ${unparse(ast)}`);
+                throw Error(`Invalid root AST span for ${unparse(ast)}`);
             }
         }
         const oldParent = this.parentSpan;
-        this.parentSpan = ast.range;
+        this.parentSpan = ast.span;
         cb();
         this.parentSpan = oldParent;
     }
@@ -300,13 +305,13 @@ class ASTValidator extends RecursiveAstVisitor {
     }
 }
 
-function inSpan(span: CodeRange, parentSpan: CodeRange | undefined): parentSpan is CodeRange {
+function inSpan(span: ParseSpan, parentSpan: ParseSpan | undefined): parentSpan is ParseSpan {
     return !parentSpan || (span.start >= parentSpan.start && span.end <= parentSpan.end);
 }
 
 const sharedValidator = new ASTValidator();
 
-export function validate<T extends Ast>(ast: T): T {
+export function validate<T extends AST>(ast: T): T {
     sharedValidator.visit(ast);
     return ast;
 }

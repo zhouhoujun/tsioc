@@ -8,7 +8,7 @@ import expect = require('expect');
  * found in the LICENSE file at https://angular.io/license
  */
 
-import { Lexer, Tokenize } from '../src/lexer';
+import { Lexer, Tokenize } from '../../src/expression_parser/lexer';
 
 function lex(text: string): any[] {
   return new Lexer().tokenize(text);

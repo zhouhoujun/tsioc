@@ -1,7 +1,7 @@
 import { tokenId } from '@tsdi/ioc';
-import { Expectation } from 'expect';
+import { Matchers } from 'expect';
 
-export interface IAssertMatch<T> extends Expectation<T> {
+export interface IAssertMatch<T> extends Matchers<T> {
 
 }
 
