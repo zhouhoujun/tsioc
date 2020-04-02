@@ -172,10 +172,10 @@ export class TemplateParser {
     return new TemplateParseResult(result, usedPipes, errors);
   }
 
-  expandHtml(htmlAstWithErrors: ParseTreeResult, forced: boolean = false): ParseTreeResult {
+  expandHtml(htmlAstWithErrors: ParseTreeResult, forced = false): ParseTreeResult {
     const errors: ParseError[] = htmlAstWithErrors.errors;
 
-    if (errors.length == 0 || forced) {
+    if (errors.length === 0 || forced) {
       // Transform ICU messages to angular directives
       const expandedHtmlAst = expandNodes(htmlAstWithErrors.rootNodes);
       errors.push(...expandedHtmlAst.errors);
@@ -343,7 +343,7 @@ class TemplateParseVisitor implements html.Visitor {
             isTemplateElement ? parent.providerContext ! : providerContext));
     providerContext.afterElement();
     // Override the actual selector when the `ngProjectAs` attribute is provided
-    const projectionSelector = preparsedElement.projectAs != '' ?
+    const projectionSelector = preparsedElement.projectAs !== '' ?
         CssSelector.parse(preparsedElement.projectAs)[0] :
         elementCssSelector;
     const ngContentIndex = parent.findNgContentIndex(projectionSelector) !;
@@ -883,7 +883,7 @@ export function createElementCssSelector(
     const attrValue = attributes[i][1];
 
     cssSelector.addAttribute(attrNameNoNs, attrValue);
-    if (attrName.toLowerCase() == CLASS_ATTR) {
+    if (attrName.toLowerCase() === CLASS_ATTR) {
       const classes = splitClasses(attrValue);
       classes.forEach(className => cssSelector.addClassName(className));
     }
@@ -895,7 +895,7 @@ const EMPTY_ELEMENT_CONTEXT = new ElementContext(true, new SelectorMatcher(), nu
 const NON_BINDABLE_VISITOR = new NonBindableVisitor();
 
 function _isEmptyTextNode(node: html.Node): boolean {
-  return node instanceof html.Text && node.value.trim().length == 0;
+  return node instanceof html.Text && node.value.trim().length === 0;
 }
 
 export function removeSummaryDuplicates<T extends{type: CompileTypeMetadata}>(items: T[]): T[] {

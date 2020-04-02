@@ -24,7 +24,7 @@
  * `['+' at 1-10, 'a' at 1-2]`.
  */
 export class AstPath<T> {
-  constructor(private path: T[], public position: number = -1) {}
+  constructor(private path: T[], public position = -1) {}
 
   get empty(): boolean { return !this.path || !this.path.length; }
   get head(): T|undefined { return this.path[0]; }
@@ -38,7 +38,9 @@ export class AstPath<T> {
   first<N extends T>(ctor: {new (...args: any[]): N}): N|undefined {
     for (let i = this.path.length - 1; i >= 0; i--) {
       let item = this.path[i];
-      if (item instanceof ctor) return <N>item;
+      if (item instanceof ctor) {
+        return <N>item;
+      }
     }
   }
 

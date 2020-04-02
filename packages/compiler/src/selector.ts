@@ -59,8 +59,8 @@ export class CssSelector {
   static parse(selector: string): CssSelector[] {
     const results: CssSelector[] = [];
     const _addResult = (res: CssSelector[], cssSel: CssSelector) => {
-      if (cssSel.notSelectors.length > 0 && !cssSel.element && cssSel.classNames.length == 0 &&
-          cssSel.attrs.length == 0) {
+      if (cssSel.notSelectors.length > 0 && !cssSel.element && cssSel.classNames.length === 0 &&
+          cssSel.attrs.length === 0) {
         cssSel.element = '*';
       }
       res.push(cssSel);
@@ -114,7 +114,7 @@ export class CssSelector {
   }
 
   isElementSelector(): boolean {
-    return this.hasElementSelector() && this.classNames.length == 0 && this.attrs.length == 0 &&
+    return this.hasElementSelector() && this.classNames.length === 0 && this.attrs.length === 0 &&
         this.notSelectors.length === 0;
   }
 
@@ -146,7 +146,7 @@ export class CssSelector {
     return result.concat(this.attrs);
   }
 
-  addAttribute(name: string, value: string = '') {
+  addAttribute(name: string, value = '') {
     this.attrs.push(name, value && value.toLowerCase() || '');
   }
 
@@ -380,7 +380,7 @@ export class SelectorMatcher<T = any> {
 
 
 export class SelectorListContext {
-  alreadyMatched: boolean = false;
+  alreadyMatched = false;
 
   constructor(public selectors: CssSelector[]) {}
 }

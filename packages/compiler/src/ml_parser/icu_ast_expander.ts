@@ -37,7 +37,7 @@ const PLURAL_CASES: string[] = ['zero', 'one', 'two', 'few', 'many', 'other'];
  * ```
  */
 export function expandNodes(nodes: html.Node[]): ExpansionResult {
-  const expander = new _Expander();
+  const expander = new Expander();
   return new ExpansionResult(html.visitAll(expander, nodes), expander.isExpanded, expander.errors);
 }
 
@@ -54,8 +54,8 @@ export class ExpansionError extends ParseError {
  *
  * @internal
  */
-class _Expander implements html.Visitor {
-  isExpanded: boolean = false;
+class Expander implements html.Visitor {
+  isExpanded = false;
   errors: ParseError[] = [];
 
   visitElement(element: html.Element, context: any): any {
@@ -72,7 +72,7 @@ class _Expander implements html.Visitor {
 
   visitExpansion(icu: html.Expansion, context: any): any {
     this.isExpanded = true;
-    return icu.type == 'plural' ? _expandPluralForm(icu, this.errors) :
+    return icu.type === 'plural' ? _expandPluralForm(icu, this.errors) :
                                   _expandDefaultForm(icu, this.errors);
   }
 
@@ -84,10 +84,10 @@ class _Expander implements html.Visitor {
 // Plural forms are expanded to `NgPlural` and `NgPluralCase`s
 function _expandPluralForm(ast: html.Expansion, errors: ParseError[]): html.Element {
   const children = ast.cases.map(c => {
-    if (PLURAL_CASES.indexOf(c.value) == -1 && !c.value.match(/^=\d+$/)) {
+    if (PLURAL_CASES.indexOf(c.value) === -1 && !c.value.match(/^=\d+$/)) {
       errors.push(new ExpansionError(
           c.valueSourceSpan,
-          `Plural cases should be "=<number>" or one of ${PLURAL_CASES.join(", ")}`));
+          `Plural cases should be "=<number>" or one of ${PLURAL_CASES.join(', ')}`));
     }
 
     const expansionResult = expandNodes(c.expression);

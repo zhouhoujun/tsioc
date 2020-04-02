@@ -11,7 +11,7 @@ import {debugOutputAstAsTypeScript} from './ts_emitter';
 
 export function interpretStatements(
     statements: o.Statement[], reflector: CompileReflector): {[key: string]: any} {
-  const ctx = new _ExecutionContext(null, null, null, new Map<string, any>());
+  const ctx = new ExecutionContext(null, null, null, new Map<string, any>());
   const visitor = new StatementInterpreter(reflector);
   visitor.visitAllStatements(statements, ctx);
   const result: {[key: string]: any} = {};
@@ -20,7 +20,7 @@ export function interpretStatements(
 }
 
 function _executeFunctionStatements(
-    varNames: string[], varValues: any[], statements: o.Statement[], ctx: _ExecutionContext,
+    varNames: string[], varValues: any[], statements: o.Statement[], ctx: ExecutionContext,
     visitor: StatementInterpreter): any {
   const childCtx = ctx.createChildWihtLocalVars();
   for (let i = 0; i < varNames.length; i++) {
@@ -30,15 +30,15 @@ function _executeFunctionStatements(
   return result ? result.value : null;
 }
 
-class _ExecutionContext {
+class ExecutionContext {
   exports: string[] = [];
 
   constructor(
-      public parent: _ExecutionContext|null, public instance: Object|null,
+      public parent: ExecutionContext|null, public instance: Object|null,
       public className: string|null, public vars: Map<string, any>) {}
 
-  createChildWihtLocalVars(): _ExecutionContext {
-    return new _ExecutionContext(this, this.instance, this.className, new Map<string, any>());
+  createChildWihtLocalVars(): ExecutionContext {
+    return new ExecutionContext(this, this.instance, this.className, new Map<string, any>());
   }
 }
 
@@ -47,7 +47,7 @@ class ReturnValue {
 }
 
 function createDynamicClass(
-    _classStmt: o.ClassStmt, _ctx: _ExecutionContext, _visitor: StatementInterpreter): Function {
+    _classStmt: o.ClassStmt, _ctx: ExecutionContext, _visitor: StatementInterpreter): Function {
   const propertyDescriptors: {[key: string]: any} = {};
 
   _classStmt.getters.forEach((getter: o.ClassGetter) => {
@@ -55,7 +55,7 @@ function createDynamicClass(
     propertyDescriptors[getter.name] = {
       configurable: false,
       get: function() {
-        const instanceCtx = new _ExecutionContext(_ctx, this, _classStmt.name, _ctx.vars);
+        const instanceCtx = new ExecutionContext(_ctx, this, _classStmt.name, _ctx.vars);
         return _executeFunctionStatements([], [], getter.body, instanceCtx, _visitor);
       }
     };
@@ -67,7 +67,7 @@ function createDynamicClass(
       writable: false,
       configurable: false,
       value: function(...args: any[]) {
-        const instanceCtx = new _ExecutionContext(_ctx, this, _classStmt.name, _ctx.vars);
+        const instanceCtx = new ExecutionContext(_ctx, this, _classStmt.name, _ctx.vars);
         return _executeFunctionStatements(paramNames, args, method.body, instanceCtx, _visitor);
       }
     };
@@ -76,7 +76,7 @@ function createDynamicClass(
   const ctorParamNames = _classStmt.constructorMethod.params.map(param => param.name);
   // Note: use `function` instead of arrow function to capture `this`
   const ctor = function(this: Object, ...args: any[]) {
-    const instanceCtx = new _ExecutionContext(_ctx, this, _classStmt.name, _ctx.vars);
+    const instanceCtx = new ExecutionContext(_ctx, this, _classStmt.name, _ctx.vars);
     _classStmt.fields.forEach((field) => { (this as any)[field.name] = undefined; });
     _executeFunctionStatements(
         ctorParamNames, args, _classStmt.constructorMethod.body, instanceCtx, _visitor);
@@ -90,7 +90,7 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
   constructor(private reflector: CompileReflector) {}
   debugAst(ast: o.Expression|o.Statement|o.Type): string { return debugOutputAstAsTypeScript(ast); }
 
-  visitDeclareVarStmt(stmt: o.DeclareVarStmt, ctx: _ExecutionContext): any {
+  visitDeclareVarStmt(stmt: o.DeclareVarStmt, ctx: ExecutionContext): any {
     const initialValue = stmt.value ? stmt.value.visitExpression(this, ctx) : undefined;
     ctx.vars.set(stmt.name, initialValue);
     if (stmt.hasModifier(o.StmtModifier.Exported)) {
@@ -98,7 +98,7 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     return null;
   }
-  visitWriteVarExpr(expr: o.WriteVarExpr, ctx: _ExecutionContext): any {
+  visitWriteVarExpr(expr: o.WriteVarExpr, ctx: ExecutionContext): any {
     const value = expr.value.visitExpression(this, ctx);
     let currCtx = ctx;
     while (currCtx != null) {
@@ -110,13 +110,13 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     throw new Error(`Not declared variable ${expr.name}`);
   }
-  visitWrappedNodeExpr(ast: o.WrappedNodeExpr<any>, ctx: _ExecutionContext): never {
+  visitWrappedNodeExpr(ast: o.WrappedNodeExpr<any>, ctx: ExecutionContext): never {
     throw new Error('Cannot interpret a WrappedNodeExpr.');
   }
-  visitTypeofExpr(ast: o.TypeofExpr, ctx: _ExecutionContext): never {
+  visitTypeofExpr(ast: o.TypeofExpr, ctx: ExecutionContext): never {
     throw new Error('Cannot interpret a TypeofExpr');
   }
-  visitReadVarExpr(ast: o.ReadVarExpr, ctx: _ExecutionContext): any {
+  visitReadVarExpr(ast: o.ReadVarExpr, ctx: ExecutionContext): any {
     let varName = ast.name !;
     if (ast.builtin != null) {
       switch (ast.builtin) {
@@ -143,21 +143,21 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     throw new Error(`Not declared variable ${varName}`);
   }
-  visitWriteKeyExpr(expr: o.WriteKeyExpr, ctx: _ExecutionContext): any {
+  visitWriteKeyExpr(expr: o.WriteKeyExpr, ctx: ExecutionContext): any {
     const receiver = expr.receiver.visitExpression(this, ctx);
     const index = expr.index.visitExpression(this, ctx);
     const value = expr.value.visitExpression(this, ctx);
     receiver[index] = value;
     return value;
   }
-  visitWritePropExpr(expr: o.WritePropExpr, ctx: _ExecutionContext): any {
+  visitWritePropExpr(expr: o.WritePropExpr, ctx: ExecutionContext): any {
     const receiver = expr.receiver.visitExpression(this, ctx);
     const value = expr.value.visitExpression(this, ctx);
     receiver[expr.name] = value;
     return value;
   }
 
-  visitInvokeMethodExpr(expr: o.InvokeMethodExpr, ctx: _ExecutionContext): any {
+  visitInvokeMethodExpr(expr: o.InvokeMethodExpr, ctx: ExecutionContext): any {
     const receiver = expr.receiver.visitExpression(this, ctx);
     const args = this.visitAllExpressions(expr.args, ctx);
     let result: any;
@@ -180,7 +180,7 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     return result;
   }
-  visitInvokeFunctionExpr(stmt: o.InvokeFunctionExpr, ctx: _ExecutionContext): any {
+  visitInvokeFunctionExpr(stmt: o.InvokeFunctionExpr, ctx: ExecutionContext): any {
     const args = this.visitAllExpressions(stmt.args, ctx);
     const fnExpr = stmt.fn;
     if (fnExpr instanceof o.ReadVarExpr && fnExpr.builtin === o.BuiltinVar.Super) {
@@ -191,10 +191,10 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
       return fn.apply(null, args);
     }
   }
-  visitReturnStmt(stmt: o.ReturnStatement, ctx: _ExecutionContext): any {
+  visitReturnStmt(stmt: o.ReturnStatement, ctx: ExecutionContext): any {
     return new ReturnValue(stmt.value.visitExpression(this, ctx));
   }
-  visitDeclareClassStmt(stmt: o.ClassStmt, ctx: _ExecutionContext): any {
+  visitDeclareClassStmt(stmt: o.ClassStmt, ctx: ExecutionContext): any {
     const clazz = createDynamicClass(stmt, ctx, this);
     ctx.vars.set(stmt.name, clazz);
     if (stmt.hasModifier(o.StmtModifier.Exported)) {
@@ -202,10 +202,10 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     return null;
   }
-  visitExpressionStmt(stmt: o.ExpressionStatement, ctx: _ExecutionContext): any {
+  visitExpressionStmt(stmt: o.ExpressionStatement, ctx: ExecutionContext): any {
     return stmt.expr.visitExpression(this, ctx);
   }
-  visitIfStmt(stmt: o.IfStmt, ctx: _ExecutionContext): any {
+  visitIfStmt(stmt: o.IfStmt, ctx: ExecutionContext): any {
     const condition = stmt.condition.visitExpression(this, ctx);
     if (condition) {
       return this.visitAllStatements(stmt.trueCase, ctx);
@@ -214,7 +214,7 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     return null;
   }
-  visitTryCatchStmt(stmt: o.TryCatchStmt, ctx: _ExecutionContext): any {
+  visitTryCatchStmt(stmt: o.TryCatchStmt, ctx: ExecutionContext): any {
     try {
       return this.visitAllStatements(stmt.bodyStmts, ctx);
     } catch (e) {
@@ -224,22 +224,22 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
       return this.visitAllStatements(stmt.catchStmts, childCtx);
     }
   }
-  visitThrowStmt(stmt: o.ThrowStmt, ctx: _ExecutionContext): any {
+  visitThrowStmt(stmt: o.ThrowStmt, ctx: ExecutionContext): any {
     throw stmt.error.visitExpression(this, ctx);
   }
   visitCommentStmt(stmt: o.CommentStmt, context?: any): any { return null; }
   visitJSDocCommentStmt(stmt: o.JSDocCommentStmt, context?: any): any { return null; }
-  visitInstantiateExpr(ast: o.InstantiateExpr, ctx: _ExecutionContext): any {
+  visitInstantiateExpr(ast: o.InstantiateExpr, ctx: ExecutionContext): any {
     const args = this.visitAllExpressions(ast.args, ctx);
     const clazz = ast.classExpr.visitExpression(this, ctx);
     return new clazz(...args);
   }
-  visitLiteralExpr(ast: o.LiteralExpr, ctx: _ExecutionContext): any { return ast.value; }
+  visitLiteralExpr(ast: o.LiteralExpr, ctx: ExecutionContext): any { return ast.value; }
   visitLocalizedString(ast: o.LocalizedString, context: any): any { return null; }
-  visitExternalExpr(ast: o.ExternalExpr, ctx: _ExecutionContext): any {
+  visitExternalExpr(ast: o.ExternalExpr, ctx: ExecutionContext): any {
     return this.reflector.resolveExternalReference(ast.value);
   }
-  visitConditionalExpr(ast: o.ConditionalExpr, ctx: _ExecutionContext): any {
+  visitConditionalExpr(ast: o.ConditionalExpr, ctx: ExecutionContext): any {
     if (ast.condition.visitExpression(this, ctx)) {
       return ast.trueCase.visitExpression(this, ctx);
     } else if (ast.falseCase != null) {
@@ -247,20 +247,20 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     return null;
   }
-  visitNotExpr(ast: o.NotExpr, ctx: _ExecutionContext): any {
+  visitNotExpr(ast: o.NotExpr, ctx: ExecutionContext): any {
     return !ast.condition.visitExpression(this, ctx);
   }
-  visitAssertNotNullExpr(ast: o.AssertNotNull, ctx: _ExecutionContext): any {
+  visitAssertNotNullExpr(ast: o.AssertNotNull, ctx: ExecutionContext): any {
     return ast.condition.visitExpression(this, ctx);
   }
-  visitCastExpr(ast: o.CastExpr, ctx: _ExecutionContext): any {
+  visitCastExpr(ast: o.CastExpr, ctx: ExecutionContext): any {
     return ast.value.visitExpression(this, ctx);
   }
-  visitFunctionExpr(ast: o.FunctionExpr, ctx: _ExecutionContext): any {
+  visitFunctionExpr(ast: o.FunctionExpr, ctx: ExecutionContext): any {
     const paramNames = ast.params.map((param) => param.name);
     return _declareFn(paramNames, ast.statements, ctx, this);
   }
-  visitDeclareFunctionStmt(stmt: o.DeclareFunctionStmt, ctx: _ExecutionContext): any {
+  visitDeclareFunctionStmt(stmt: o.DeclareFunctionStmt, ctx: ExecutionContext): any {
     const paramNames = stmt.params.map((param) => param.name);
     ctx.vars.set(stmt.name, _declareFn(paramNames, stmt.statements, ctx, this));
     if (stmt.hasModifier(o.StmtModifier.Exported)) {
@@ -268,7 +268,7 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     }
     return null;
   }
-  visitBinaryOperatorExpr(ast: o.BinaryOperatorExpr, ctx: _ExecutionContext): any {
+  visitBinaryOperatorExpr(ast: o.BinaryOperatorExpr, ctx: ExecutionContext): any {
     const lhs = () => ast.lhs.visitExpression(this, ctx);
     const rhs = () => ast.rhs.visitExpression(this, ctx);
 
@@ -307,21 +307,21 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
         throw new Error(`Unknown operator ${ast.operator}`);
     }
   }
-  visitReadPropExpr(ast: o.ReadPropExpr, ctx: _ExecutionContext): any {
+  visitReadPropExpr(ast: o.ReadPropExpr, ctx: ExecutionContext): any {
     let result: any;
     const receiver = ast.receiver.visitExpression(this, ctx);
     result = receiver[ast.name];
     return result;
   }
-  visitReadKeyExpr(ast: o.ReadKeyExpr, ctx: _ExecutionContext): any {
+  visitReadKeyExpr(ast: o.ReadKeyExpr, ctx: ExecutionContext): any {
     const receiver = ast.receiver.visitExpression(this, ctx);
     const prop = ast.index.visitExpression(this, ctx);
     return receiver[prop];
   }
-  visitLiteralArrayExpr(ast: o.LiteralArrayExpr, ctx: _ExecutionContext): any {
+  visitLiteralArrayExpr(ast: o.LiteralArrayExpr, ctx: ExecutionContext): any {
     return this.visitAllExpressions(ast.entries, ctx);
   }
-  visitLiteralMapExpr(ast: o.LiteralMapExpr, ctx: _ExecutionContext): any {
+  visitLiteralMapExpr(ast: o.LiteralMapExpr, ctx: ExecutionContext): any {
     const result: {[k: string]: any} = {};
     ast.entries.forEach(entry => result[entry.key] = entry.value.visitExpression(this, ctx));
     return result;
@@ -330,11 +330,11 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     const values = this.visitAllExpressions(ast.parts, context);
     return values[values.length - 1];
   }
-  visitAllExpressions(expressions: o.Expression[], ctx: _ExecutionContext): any {
+  visitAllExpressions(expressions: o.Expression[], ctx: ExecutionContext): any {
     return expressions.map((expr) => expr.visitExpression(this, ctx));
   }
 
-  visitAllStatements(statements: o.Statement[], ctx: _ExecutionContext): ReturnValue|null {
+  visitAllStatements(statements: o.Statement[], ctx: ExecutionContext): ReturnValue|null {
     for (let i = 0; i < statements.length; i++) {
       const stmt = statements[i];
       const val = stmt.visitStatement(this, ctx);
@@ -347,7 +347,7 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
 }
 
 function _declareFn(
-    varNames: string[], statements: o.Statement[], ctx: _ExecutionContext,
+    varNames: string[], statements: o.Statement[], ctx: ExecutionContext,
     visitor: StatementInterpreter): Function {
   return (...args: any[]) => _executeFunctionStatements(varNames, args, statements, ctx, visitor);
 }

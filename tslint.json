@@ -44,7 +44,7 @@
         "variable-declaration": "nospace"
       }
     ],
-    "curly": true,
+    "curly": false,
     "variable-name": [
       true,
       "allow-leading-underscore",

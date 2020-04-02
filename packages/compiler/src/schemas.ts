@@ -23,5 +23,4 @@ export type I18nMeta = {
     legacyIds?: string[],
     description?: string,
     meaning?: string
-  };
-  
+};

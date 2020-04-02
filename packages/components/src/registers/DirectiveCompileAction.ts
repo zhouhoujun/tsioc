@@ -1,8 +1,8 @@
-import { CTX_CURR_DECOR, DesignContext, IProviders, DecoratorProvider } from '@tsdi/ioc';
-import { Compiler } from '@tsdi/boot';
+import { CTX_CURR_DECOR, DesignContext, IProviders, DecoratorProvider, lang } from '@tsdi/ioc';
 import { IDirectiveMetadata } from '../decorators/IComponentMetadata';
 import { IDirectiveReflect } from '../IDirectiveReflect';
 import { BindingsCache } from './BindingsCache';
+import { Compiler } from '../compile/parser';
 
 /**
  * Directive compile action.
@@ -34,7 +34,7 @@ export const DirectiveCompileAction = function (ctx: DesignContext, next: () => 
         compRefl.directiveDef = ctx.type.getDirectiveDef();
     } else {
         const compiler = prdrs.getInstance(Compiler);
-        compRefl.directiveDef = compiler.compileDirective();
+        compRefl.directiveDef = compiler.compileDirective(lang.first(metas));
     }
 
     next();

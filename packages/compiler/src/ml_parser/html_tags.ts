@@ -11,12 +11,12 @@ import {TagContentType, TagDefinition} from './tags';
 export class HtmlTagDefinition implements TagDefinition {
   private closedByChildren: {[key: string]: boolean} = {};
 
-  closedByParent: boolean = false;
+  closedByParent = false;
   implicitNamespacePrefix: string|null;
   contentType: TagContentType;
   isVoid: boolean;
   ignoreFirstLf: boolean;
-  canSelfClose: boolean = false;
+  canSelfClose = false;
 
   constructor(
       {closedByChildren, implicitNamespacePrefix, contentType = TagContentType.PARSABLE_DATA,

@@ -13,7 +13,7 @@ const _debugFilePath = '/debug/lib';
 
 export function debugOutputAstAsTypeScript(ast: o.Statement | o.Expression | o.Type | any[]):
   string {
-  const converter = new _TsEmitterVisitor();
+  const converter = new TsEmitterVisitor();
   const ctx = EmitterVisitorContext.createRoot();
   const asts: any[] = Array.isArray(ast) ? ast : [ast];
 
@@ -35,10 +35,10 @@ export type ReferenceFilter = (reference: o.ExternalReference) => boolean;
 
 export class TypeScriptEmitter implements OutputEmitter {
   emitStatementsAndContext(
-    genFilePath: string, stmts: o.Statement[], preamble: string = '',
-    emitSourceMaps: boolean = true, referenceFilter?: ReferenceFilter,
+    genFilePath: string, stmts: o.Statement[], preamble = '',
+    emitSourceMaps = true, referenceFilter?: ReferenceFilter,
     importFilter?: ReferenceFilter): { sourceText: string, context: EmitterVisitorContext } {
-    const converter = new _TsEmitterVisitor(referenceFilter, importFilter);
+    const converter = new TsEmitterVisitor(referenceFilter, importFilter);
 
     const ctx = EmitterVisitorContext.createRoot();
 
@@ -70,13 +70,13 @@ export class TypeScriptEmitter implements OutputEmitter {
     return { sourceText: lines.join('\n'), context: ctx };
   }
 
-  emitStatements(genFilePath: string, stmts: o.Statement[], preamble: string = '') {
+  emitStatements(genFilePath: string, stmts: o.Statement[], preamble = '') {
     return this.emitStatementsAndContext(genFilePath, stmts, preamble).sourceText;
   }
 }
 
 
-class _TsEmitterVisitor extends AbstractEmitterVisitor implements o.TypeVisitor {
+class TsEmitterVisitor extends AbstractEmitterVisitor implements o.TypeVisitor {
   private typeExpression = 0;
 
   constructor(private referenceFilter?: ReferenceFilter, private importFilter?: ReferenceFilter) {
@@ -86,7 +86,7 @@ class _TsEmitterVisitor extends AbstractEmitterVisitor implements o.TypeVisitor 
   importsWithPrefixes = new Map<string, string>();
   reexports = new Map<string, { name: string, as: string }[]>();
 
-  visitType(t: o.Type | null, ctx: EmitterVisitorContext, defaultType: string = 'any') {
+  visitType(t: o.Type | null, ctx: EmitterVisitorContext, defaultType = 'any') {
     if (t) {
       this.typeExpression++;
       t.visitType(this, ctx);
@@ -98,7 +98,7 @@ class _TsEmitterVisitor extends AbstractEmitterVisitor implements o.TypeVisitor 
 
   visitLiteralExpr(ast: o.LiteralExpr, ctx: EmitterVisitorContext): any {
     const value = ast.value;
-    if (value == null && ast.type != o.INFERRED_TYPE) {
+    if (value == null && ast.type !== o.INFERRED_TYPE) {
       ctx.print(ast, `(${value} as any)`);
       return null;
     }

@@ -50,7 +50,7 @@ export class Parser {
     this._checkNoInterpolation(input, location, interpolationConfig);
     const sourceToLex = this._stripComments(input);
     const tokens = this._lexer.tokenize(this._stripComments(input));
-    const ast = new _ParseAST(
+    const ast = new ParseAST(
                     input, location, absoluteOffset, tokens, sourceToLex.length, true, this.errors,
                     input.length - sourceToLex.length)
                     .parseChain();
@@ -100,16 +100,16 @@ export class Parser {
     this._checkNoInterpolation(input, location, interpolationConfig);
     const sourceToLex = this._stripComments(input);
     const tokens = this._lexer.tokenize(sourceToLex);
-    return new _ParseAST(
+    return new ParseAST(
                input, location, absoluteOffset, tokens, sourceToLex.length, false, this.errors,
                input.length - sourceToLex.length)
         .parseChain();
   }
 
   private _parseQuote(input: string|null, location: any, absoluteOffset: number): AST|null {
-    if (input == null) return null;
+    if (input === null) return null;
     const prefixSeparatorIndex = input.indexOf(':');
-    if (prefixSeparatorIndex == -1) return null;
+    if (prefixSeparatorIndex === -1) return null;
     const prefix = input.substring(0, prefixSeparatorIndex).trim();
     if (!isIdentifier(prefix)) return null;
     const uninterpretedExpression = input.substring(prefixSeparatorIndex + 1);
@@ -148,7 +148,7 @@ export class Parser {
       templateKey: string, templateValue: string, templateUrl: string, absoluteKeyOffset: number,
       absoluteValueOffset: number): TemplateBindingParseResult {
     const tokens = this._lexer.tokenize(templateValue);
-    const parser = new _ParseAST(
+    const parser = new ParseAST(
         templateValue, templateUrl, absoluteValueOffset, tokens, templateValue.length,
         false /* parseAction */, this.errors, 0 /* relative offset */);
     return parser.parseTemplateBindings({
@@ -161,7 +161,7 @@ export class Parser {
       input: string, location: any, absoluteOffset: number,
       interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): ASTWithSource|null {
     const split = this.splitInterpolation(input, location, interpolationConfig);
-    if (split == null) return null;
+    if (split === null) return null;
 
     const expressions: AST[] = [];
 
@@ -169,14 +169,14 @@ export class Parser {
       const expressionText = split.expressions[i];
       const sourceToLex = this._stripComments(expressionText);
       const tokens = this._lexer.tokenize(sourceToLex);
-      const ast = new _ParseAST(
+      const ast = new ParseAST(
                       input, location, absoluteOffset, tokens, sourceToLex.length, false,
                       this.errors, split.offsets[i] + (expressionText.length - sourceToLex.length))
                       .parseChain();
       expressions.push(ast);
     }
 
-    const span = new ParseSpan(0, input == null ? 0 : input.length);
+    const span = new ParseSpan(0, input === null ? 0 : input.length);
     return new ASTWithSource(
         new Interpolation(span, span.toAbsolute(absoluteOffset), split.strings, expressions), input,
         location, absoluteOffset, this.errors);
@@ -219,7 +219,7 @@ export class Parser {
   }
 
   wrapLiteralPrimitive(input: string|null, location: any, absoluteOffset: number): ASTWithSource {
-    const span = new ParseSpan(0, input == null ? 0 : input.length);
+    const span = new ParseSpan(0, input === null ? 0 : input.length);
     return new ASTWithSource(
         new LiteralPrimitive(span, span.toAbsolute(absoluteOffset), input), input, location,
         absoluteOffset, this.errors);
@@ -236,11 +236,11 @@ export class Parser {
       const char = input.charCodeAt(i);
       const nextChar = input.charCodeAt(i + 1);
 
-      if (char === chars.$SLASH && nextChar == chars.$SLASH && outerQuote == null) return i;
+      if (char === chars.$SLASH && nextChar === chars.$SLASH && outerQuote === null) return i;
 
       if (outerQuote === char) {
         outerQuote = null;
-      } else if (outerQuote == null && isQuote(char)) {
+      } else if (outerQuote === null && isQuote(char)) {
         outerQuote = char;
       }
     }
@@ -277,7 +277,7 @@ export class IvyParser extends Parser {
   simpleExpressionChecker = IvySimpleExpressionChecker;  //
 }
 
-export class _ParseAST {
+export class ParseAST {
   private rparensExpected = 0;
   private rbracketsExpected = 0;
   private rbracesExpected = 0;
@@ -288,7 +288,7 @@ export class _ParseAST {
   // and may change for subsequent expressions visited by the parser.
   private sourceSpanCache = new Map<string, AbsoluteSourceSpan>();
 
-  index: number = 0;
+  index = 0;
 
   constructor(
       public input: string, public location: any, public absoluteOffset: number,
@@ -399,8 +399,8 @@ export class _ParseAST {
         this.error(`Unexpected token '${this.next}'`);
       }
     }
-    if (exprs.length == 0) return new EmptyExpr(this.span(start), this.sourceSpan(start));
-    if (exprs.length == 1) return exprs[0];
+    if (exprs.length === 0) return new EmptyExpr(this.span(start), this.sourceSpan(start));
+    if (exprs.length === 1) return exprs[0];
     return new Chain(this.span(start), this.sourceSpan(start), exprs);
   }
 
@@ -476,7 +476,7 @@ export class _ParseAST {
   parseEquality(): AST {
     // '==','!=','===','!=='
     let result = this.parseRelational();
-    while (this.next.type == TokenType.Operator) {
+    while (this.next.type === TokenType.Operator) {
       const operator = this.next.strValue;
       switch (operator) {
         case '==':
@@ -497,7 +497,7 @@ export class _ParseAST {
   parseRelational(): AST {
     // '<', '>', '<=', '>='
     let result = this.parseAdditive();
-    while (this.next.type == TokenType.Operator) {
+    while (this.next.type === TokenType.Operator) {
       const operator = this.next.strValue;
       switch (operator) {
         case '<':
@@ -518,7 +518,7 @@ export class _ParseAST {
   parseAdditive(): AST {
     // '+', '-'
     let result = this.parseMultiplicative();
-    while (this.next.type == TokenType.Operator) {
+    while (this.next.type === TokenType.Operator) {
       const operator = this.next.strValue;
       switch (operator) {
         case '+':
@@ -537,7 +537,7 @@ export class _ParseAST {
   parseMultiplicative(): AST {
     // '*', '%', '/'
     let result = this.parsePrefix();
-    while (this.next.type == TokenType.Operator) {
+    while (this.next.type === TokenType.Operator) {
       const operator = this.next.strValue;
       switch (operator) {
         case '*':
@@ -555,7 +555,7 @@ export class _ParseAST {
   }
 
   parsePrefix(): AST {
-    if (this.next.type == TokenType.Operator) {
+    if (this.next.type === TokenType.Operator) {
       const start = this.inputIndex;
       const operator = this.next.strValue;
       const literalSpan = new ParseSpan(start, start);
@@ -715,7 +715,7 @@ export class _ParseAST {
     return new LiteralMap(this.span(start), this.sourceSpan(start), keys, values);
   }
 
-  parseAccessMemberOrMethodCall(receiver: AST, isSafe: boolean = false): AST {
+  parseAccessMemberOrMethodCall(receiver: AST, isSafe = false): AST {
     const start = receiver.span.start;
     const id = this.expectIdentifierOrKeyword();
 
@@ -959,7 +959,7 @@ export class _ParseAST {
   }
 
   private locationText(index: number|null = null) {
-    if (index == null) index = this.index;
+    if (index === null) index = this.index;
     return (index < this.tokens.length) ? `at column ${this.tokens[index].index + 1} in` :
                                           `at the end of the expression`;
   }

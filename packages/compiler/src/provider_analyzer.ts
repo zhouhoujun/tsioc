@@ -37,7 +37,7 @@ export class ProviderViewContext {
     this.viewQueries = _getViewQueries(component);
     this.viewProviders = new Map<any, boolean>();
     component.viewProviders.forEach((provider) => {
-      if (this.viewProviders.get(tokenReference(provider.token)) == null) {
+      if (this.viewProviders.get(tokenReference(provider.token)) === null) {
         this.viewProviders.set(tokenReference(provider.token), true);
       }
     });
@@ -225,10 +225,10 @@ export class ProviderElementContext {
 
   private _getLocalDependency(
       requestingProviderType: ProviderAstType, dep: CompileDiDependencyMetadata,
-      eager: boolean = false): CompileDiDependencyMetadata|null {
+      eager = false): CompileDiDependencyMetadata|null {
     if (dep.isAttribute) {
       const attrValue = this._attrs[dep.token !.value];
-      return {isValue: true, value: attrValue == null ? null : attrValue};
+      return {isValue: true, value: attrValue === null ? null : attrValue};
     }
 
     if (dep.token != null) {
@@ -266,7 +266,7 @@ export class ProviderElementContext {
 
   private _getDependency(
       requestingProviderType: ProviderAstType, dep: CompileDiDependencyMetadata,
-      eager: boolean = false): CompileDiDependencyMetadata|null {
+      eager = false): CompileDiDependencyMetadata|null {
     let currElement: ProviderElementContext = this;
     let currEager: boolean = eager;
     let result: CompileDiDependencyMetadata|null = null;
@@ -401,7 +401,7 @@ export class NgModuleProviderAnalyzer {
   }
 
   private _getDependency(
-      dep: CompileDiDependencyMetadata, eager: boolean = false,
+      dep: CompileDiDependencyMetadata, eager = false,
       requestorSourceSpan: ParseSourceSpan): CompileDiDependencyMetadata {
     let foundLocal = false;
     if (!dep.isSkipSelf && dep.token != null) {

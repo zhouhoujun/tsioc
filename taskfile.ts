@@ -13,7 +13,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
     baseURL: __dirname,
     template: [
         {
-            activity: Activities.if,
+            activity: 'if',
             condition: (ctx: NodeActivityContext) => {
                 let unp = ctx.platform.getEnvArgs().unp;
                 return isString(unp) && /\d+.\d+.\d+/.test(unp);
@@ -36,11 +36,11 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
             }
         },
         {
-            activity: Activities.elseif,
+            activity: 'elseif',
             condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().build !== 'false',
             body: [
                 {
-                    activity: Activities.if,
+                    activity: 'if',
                     // condition: {
                     //     activity: 'exists',
                     //     expect: `ctx.platform.getEnvArgs().setvs`
@@ -88,11 +88,11 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                     }]
                 },
                 {
-                    activity: Activities.each,
+                    activity: 'each',
                     each: (ctx: NodeActivityContext) => ctx.platform.getFolders('packages').filter(f => !f.endsWith('unit-karma')),
                     // parallel: true,
                     body: {
-                        activity: Activities.execute,
+                        activity: 'execute',
                         action: async (ctx) => {
                             let activitys = Object.values(require(path.join(ctx.getInput(), 'taskfile.ts'))).filter(b => isAcitvityClass(b)) as Type<Activity<any>>[];
                             // await ctx.getExector().runActivity(ctx, activitys);
@@ -103,7 +103,7 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
             ]
         },
         {
-            activity: Activities.if,
+            activity: 'if',
             condition: (ctx: NodeActivityContext) => ctx.platform.getEnvArgs().deploy,
             body: {
                 activity: 'shell',

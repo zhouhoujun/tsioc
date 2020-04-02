@@ -684,11 +684,11 @@ function createParser() {
     return new Parser(new Lexer());
 }
 
-function parseAction(text: string, location: any = null, offset: number = 0): ASTWithSource {
+function parseAction(text: string, location: any = null, offset = 0): ASTWithSource {
     return createParser().parseAction(text, location, offset);
 }
 
-function parseBinding(text: string, location: any = null, offset: number = 0): ASTWithSource {
+function parseBinding(text: string, location: any = null, offset = 0): ASTWithSource {
     return createParser().parseBinding(text, location, offset);
 }
 
@@ -706,7 +706,7 @@ function parseTemplateBindings(attribute: string, templateUrl = 'foo.html'): Tem
     return result.templateBindings;
 }
 
-function parseInterpolation(text: string, location: any = null, offset: number = 0): ASTWithSource |
+function parseInterpolation(text: string, location: any = null, offset = 0): ASTWithSource |
     null {
     return createParser().parseInterpolation(text, location, offset);
 }
@@ -715,7 +715,7 @@ function splitInterpolation(text: string, location: any = null): SplitInterpolat
     return createParser().splitInterpolation(text, location);
 }
 
-function parseSimpleBinding(text: string, location: any = null, offset: number = 0): ASTWithSource {
+function parseSimpleBinding(text: string, location: any = null, offset = 0): ASTWithSource {
     return createParser().parseSimpleBinding(text, location, offset);
 }
 

@@ -11,7 +11,7 @@ import {AbstractJsEmitterVisitor} from './abstract_js_emitter';
 import * as o from './output_ast';
 
 export class JavaScriptEmitter implements OutputEmitter {
-  emitStatements(genFilePath: string, stmts: o.Statement[], preamble: string = ''): string {
+  emitStatements(genFilePath: string, stmts: o.Statement[], preamble = ''): string {
     const converter = new JsEmitterVisitor();
     const ctx = EmitterVisitorContext.createRoot();
     converter.visitAllStatements(stmts, ctx);
@@ -41,7 +41,7 @@ class JsEmitterVisitor extends AbstractJsEmitterVisitor {
     const {name, moduleName} = ast.value;
     if (moduleName) {
       let prefix = this.importsWithPrefixes.get(moduleName);
-      if (prefix == null) {
+      if (prefix === null) {
         prefix = `i${this.importsWithPrefixes.size}`;
         this.importsWithPrefixes.set(moduleName, prefix);
       }

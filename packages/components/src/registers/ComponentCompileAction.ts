@@ -1,8 +1,8 @@
-import { DesignContext, CTX_CURR_DECOR, IProviders, DecoratorProvider } from '@tsdi/ioc';
-import { Compiler } from '@tsdi/boot';
+import { DesignContext, CTX_CURR_DECOR, IProviders, DecoratorProvider, lang } from '@tsdi/ioc';
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
 import { BindingsCache } from './BindingsCache';
+import { Compiler } from '../compile/parser';
 
 export const ComponentCompileAction = function (ctx: DesignContext, next: () => void): void {
 
@@ -31,7 +31,7 @@ export const ComponentCompileAction = function (ctx: DesignContext, next: () => 
         compRefl.componentDef = ctx.type.getComponentDef();
     } else {
         const compiler = prdrs.getInstance(Compiler);
-        compRefl.componentDef = compiler.compileComponent();
+        compRefl.componentDef = compiler.compileComponent(lang.first(metas));
         // todo: compiler componet to componentDef.
     }
 

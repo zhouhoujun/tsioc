@@ -21,7 +21,7 @@ export function mapEntry(key: string, value: o.Expression): MapEntry {
 }
 
 export function mapLiteral(
-    obj: {[key: string]: o.Expression}, quoted: boolean = false): o.Expression {
+    obj: {[key: string]: o.Expression}, quoted = false): o.Expression {
   return o.literalMap(Object.keys(obj).map(key => ({
                                              key,
                                              quoted,

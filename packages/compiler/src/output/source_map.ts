@@ -32,7 +32,7 @@ export type SourceMap = {
 export class SourceMapGenerator {
   private sourcesContent: Map<string, string|null> = new Map();
   private lines: Segment[][] = [];
-  private lastCol0: number = 0;
+  private lastCol0 = 0;
   private hasMappings = false;
 
   constructor(private file: string|null = null) {}
@@ -95,11 +95,11 @@ export class SourceMapGenerator {
       sourcesContent.push(this.sourcesContent.get(url) || null);
     });
 
-    let mappings: string = '';
-    let lastCol0: number = 0;
-    let lastSourceIndex: number = 0;
-    let lastSourceLine0: number = 0;
-    let lastSourceCol0: number = 0;
+    let mappings = '';
+    let lastCol0 = 0;
+    let lastSourceIndex = 0;
+    let lastSourceLine0 = 0;
+    let lastSourceCol0 = 0;
 
     this.lines.forEach(segments => {
       lastCol0 = 0;

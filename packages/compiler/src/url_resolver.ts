@@ -56,7 +56,7 @@ export const UrlResolver: UrlResolverCtor = class UrlResolverImpl {
     const resolvedParts = _split(resolvedUrl);
     let prefix = this._packagePrefix;
     if (prefix != null && resolvedParts != null &&
-      resolvedParts[_ComponentIndex.Scheme] == 'package') {
+      resolvedParts[_ComponentIndex.Scheme] === 'package') {
       let path = resolvedParts[_ComponentIndex.Path];
       prefix = prefix.replace(/\/+$/, '');
       path = path.replace(/^\/+/, '');
@@ -253,9 +253,11 @@ function _split(uri: string): Array<string | any> {
   * @return Path component with removed dot segments.
   */
 function _removeDotSegments(path: string): string {
-  if (path == '/') return '/';
+  if (path === '/') {
+    return '/';
+  }
 
-  const leadingSlash = path[0] == '/' ? '/' : '';
+  const leadingSlash = path[0] === '/' ? '/' : '';
   const trailingSlash = path[path.length - 1] === '/' ? '/' : '';
   const segments = path.split('/');
 
@@ -279,12 +281,14 @@ function _removeDotSegments(path: string): string {
     }
   }
 
-  if (leadingSlash == '') {
+  if (leadingSlash === '') {
     while (up-- > 0) {
       out.unshift('..');
     }
 
-    if (out.length === 0) out.push('.');
+    if (out.length === 0) {
+      out.push('.');
+    }
   }
 
   return leadingSlash + out.join('/') + trailingSlash;
@@ -296,7 +300,7 @@ function _removeDotSegments(path: string): string {
  */
 function _joinAndCanonicalizePath(parts: any[]): string {
   let path = parts[_ComponentIndex.Path];
-  path = path == null ? '' : _removeDotSegments(path);
+  path = path === null ? '' : _removeDotSegments(path);
   parts[_ComponentIndex.Path] = path;
 
   return _buildFromEncodedParts(
@@ -321,17 +325,19 @@ function _resolveUrl(base: string, url: string): string {
   }
 
   for (let i = _ComponentIndex.Scheme; i <= _ComponentIndex.Port; i++) {
-    if (parts[i] == null) {
+    if (parts[i] === null) {
       parts[i] = baseParts[i];
     }
   }
 
-  if (parts[_ComponentIndex.Path][0] == '/') {
+  if (parts[_ComponentIndex.Path][0] === '/') {
     return _joinAndCanonicalizePath(parts);
   }
 
   let path = baseParts[_ComponentIndex.Path];
-  if (path == null) path = '/';
+  if (path === null) {
+    path = '/';
+  }
   const index = path.lastIndexOf('/');
   path = path.substring(0, index + 1) + parts[_ComponentIndex.Path];
   parts[_ComponentIndex.Path] = path;

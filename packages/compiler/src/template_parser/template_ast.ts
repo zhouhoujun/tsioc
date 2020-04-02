@@ -359,7 +359,9 @@ export class RecursiveTemplateAstVisitor extends NullTemplateVisitor implements 
     let results: any[][] = [];
     let t = this;
     function visit<T extends TemplateAst>(children: T[] | undefined) {
-      if (children && children.length) results.push(templateVisitAll(t, children, context));
+      if (children && children.length) {
+        results.push(templateVisitAll(t, children, context));
+      }
     }
     cb(visit);
     return Array.prototype.concat.apply([], results);
