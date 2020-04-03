@@ -17,7 +17,7 @@ import { originalPositionFor, extractSourceMap } from './source_map';
 const someGenFilePath = 'somePackage/someGenFile';
 
 {
-  describe('JavaScriptEmitter 2', () => {
+  describe('JavaScriptEmitter', () => {
     let emitter: JavaScriptEmitter;
     let someVar: o.ReadVarExpr;
 

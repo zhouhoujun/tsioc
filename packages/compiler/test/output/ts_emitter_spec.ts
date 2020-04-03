@@ -32,7 +32,6 @@ const externalModuleIdentifier = new o.ExternalReference(anotherModuleUrl, 'some
 
     beforeEach(() => {
       emitter = new TypeScriptEmitter();
-      console.log('beforeEach', emitter);
       someVar = o.variable('someVar', null, null);
     });
 

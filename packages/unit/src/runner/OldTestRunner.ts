@@ -3,7 +3,7 @@ import { ICoreInjector } from '@tsdi/core';
 import { BootContext, IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
-import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
+import { ISuiteDescribe, ICaseDescribe, ISuiteHook } from '../reports/ITestReport';
 
 declare let window: any;
 declare let global: any;
@@ -47,7 +47,7 @@ export class OldTestRunner implements ISuiteRunner {
     timeout: number;
     describe: string;
 
-    suites: Map<string, ISuiteDescribe>;
+    suites: ISuiteDescribe[];
 
     getBootType(): Type {
         return null;
@@ -59,7 +59,7 @@ export class OldTestRunner implements ISuiteRunner {
     }
 
     constructor(timeout?: number) {
-        this.suites = new Map();
+        this.suites = [];
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
 
@@ -70,15 +70,20 @@ export class OldTestRunner implements ISuiteRunner {
             gls[k] = globals[k];
         });
 
+        let suites = this.suites;
+
         // BDD style
-        let describe = globals.describe = (name: string, fn: () => any) => {
+        let describe = globals.describe = (name: string, fn: () => any, superDesc?: ISuiteDescribe) => {
             let suiteDesc = {
+                ...superDesc,
                 describe: name,
                 cases: []
             } as ISuiteDescribe;
 
+            suites.push(suiteDesc);
+
             globals.describe = (subname: string, fn: () => any) => {
-                describe(name + ' ' + subname, fn);
+                describe(name + ' ' + subname, fn, suiteDesc);
             }
 
             globals.it = (title: string, test: () => any, timeout?: number) => {
@@ -113,20 +118,20 @@ export class OldTestRunner implements ISuiteRunner {
                 });
             }
             fn && fn();
-            if (suiteDesc.cases.length) {
-                this.suites.set(name, suiteDesc);
-            }
             globals.describe = describe;
         };
 
         // TDD style
-        let suite = globals.suite = (name: string, fn: () => any) => {
+        let suite = globals.suite =  function (name: string, fn: () => any, superDesc?: ISuiteDescribe) {
             let suiteDesc = {
+                ...superDesc,
                 describe: name,
                 cases: []
             } as ISuiteDescribe;
+            suites.push(suiteDesc);
+
             globals.suite = (subname: string, fn: () => any) => {
-                suite(name + ' ' + subname, fn);
+                suite(name + ' ' + subname, fn, suiteDesc);
             }
             globals.test = (title: string, test: () => any, timeout?: number) => {
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
@@ -160,9 +165,6 @@ export class OldTestRunner implements ISuiteRunner {
                 });
             }
             fn && fn();
-            if (suiteDesc.cases.length) {
-                this.suites.set(name, suiteDesc);
-            }
             globals.suite = suite;
         };
     }
@@ -171,8 +173,7 @@ export class OldTestRunner implements ISuiteRunner {
         // reset to default.
         testkeys.forEach(k => {
             globals[k] = gls[k];
-        })
-
+        });
     }
 
     async startup() {
@@ -181,7 +182,7 @@ export class OldTestRunner implements ISuiteRunner {
 
     async run(): Promise<any> {
         try {
-            await PromiseUtil.step(Array.from(this.suites.values()).map(desc => () => this.runSuite(desc)));
+            await PromiseUtil.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {
             // console.error(err);
         }

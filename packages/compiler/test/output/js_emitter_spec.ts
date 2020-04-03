@@ -25,7 +25,7 @@ const externalModuleIdentifier = new o.ExternalReference(anotherModuleUrl, 'some
   // - types
   // - declaring fields
 
-  describe('JavaScriptEmitter 1', () => {
+  describe('JavaScriptEmitter', () => {
     let emitter: JavaScriptEmitter;
     let someVar: o.ReadVarExpr;
 
