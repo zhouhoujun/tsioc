@@ -6,12 +6,11 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {AstPath} from '../ast_path';
-import {CompileDirectiveSummary, CompileProviderMetadata, CompileTokenMetadata} from '../compile_metadata';
-import {SecurityContext} from '../core';
-import {ASTWithSource, BindingType, BoundElementProperty, ParsedEvent, ParsedEventType, ParsedVariable} from '../expression_parser/ast';
-// import {LifecycleHooks} from '../lifecycle_reflector';
-import {ParseSourceSpan} from '../parse_util';
+import { AstPath } from '../ast_path';
+import { CompileDirectiveSummary, CompileProviderMetadata, CompileTokenMetadata } from '../compile_metadata';
+import { SecurityContext } from '../core';
+import { ASTWithSource, BindingType, BoundElementProperty, ParsedEvent, ParsedEventType, ParsedVariable } from '../expression_parser/ast';
+import { ParseSourceSpan } from '../parse_util';
 
 
 
@@ -35,7 +34,7 @@ export interface TemplateAst {
  */
 export class TextAst implements TemplateAst {
   constructor(
-      public value: string, public ngContentIndex: number, public sourceSpan: ParseSourceSpan) {}
+    public value: string, public ngContentIndex: number, public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any { return visitor.visitText(this, context); }
 }
 
@@ -44,8 +43,8 @@ export class TextAst implements TemplateAst {
  */
 export class BoundTextAst implements TemplateAst {
   constructor(
-      public value: ASTWithSource, public ngContentIndex: number,
-      public sourceSpan: ParseSourceSpan) {}
+    public value: ASTWithSource, public ngContentIndex: number,
+    public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any {
     return visitor.visitBoundText(this, context);
   }
@@ -55,7 +54,7 @@ export class BoundTextAst implements TemplateAst {
  * A plain attribute on an element.
  */
 export class AttrAst implements TemplateAst {
-  constructor(public name: string, public value: string, public sourceSpan: ParseSourceSpan) {}
+  constructor(public name: string, public value: string, public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any { return visitor.visitAttr(this, context); }
 }
 
@@ -88,16 +87,16 @@ export class BoundElementPropertyAst implements TemplateAst {
   readonly isAnimation: boolean;
 
   constructor(
-      public name: string, public type: PropertyBindingType,
-      public securityContext: SecurityContext, public value: ASTWithSource,
-      public unit: string|null, public sourceSpan: ParseSourceSpan) {
+    public name: string, public type: PropertyBindingType,
+    public securityContext: SecurityContext, public value: ASTWithSource,
+    public unit: string | null, public sourceSpan: ParseSourceSpan) {
     this.isAnimation = this.type === PropertyBindingType.Animation;
   }
 
   static fromBoundProperty(prop: BoundElementProperty) {
     const type = BoundPropertyMapping[prop.type];
     return new BoundElementPropertyAst(
-        prop.name, type, prop.securityContext, prop.value, prop.unit, prop.sourceSpan);
+      prop.name, type, prop.securityContext, prop.value, prop.unit, prop.sourceSpan);
   }
 
   visit(visitor: TemplateAstVisitor, context: any): any {
@@ -114,14 +113,14 @@ export class BoundEventAst implements TemplateAst {
   readonly isAnimation: boolean;
 
   constructor(
-      public name: string, public target: string|null, public phase: string|null,
-      public handler: ASTWithSource, public sourceSpan: ParseSourceSpan,
-      public handlerSpan: ParseSourceSpan) {
+    public name: string, public target: string | null, public phase: string | null,
+    public handler: ASTWithSource, public sourceSpan: ParseSourceSpan,
+    public handlerSpan: ParseSourceSpan) {
     this.fullName = BoundEventAst.calcFullName(this.name, this.target, this.phase);
     this.isAnimation = !!this.phase;
   }
 
-  static calcFullName(name: string, target: string|null, phase: string|null): string {
+  static calcFullName(name: string, target: string | null, phase: string | null): string {
     if (target) {
       return `${target}:${name}`;
     }
@@ -133,11 +132,11 @@ export class BoundEventAst implements TemplateAst {
   }
 
   static fromParsedEvent(event: ParsedEvent) {
-    const target: string|null = event.type === ParsedEventType.Regular ? event.targetOrPhase : null;
-    const phase: string|null =
-        event.type === ParsedEventType.Animation ? event.targetOrPhase : null;
+    const target: string | null = event.type === ParsedEventType.Regular ? event.targetOrPhase : null;
+    const phase: string | null =
+      event.type === ParsedEventType.Animation ? event.targetOrPhase : null;
     return new BoundEventAst(
-        event.name, target, phase, event.handler, event.sourceSpan, event.handlerSpan);
+      event.name, target, phase, event.handler, event.sourceSpan, event.handlerSpan);
   }
 
   visit(visitor: TemplateAstVisitor, context: any): any {
@@ -150,8 +149,8 @@ export class BoundEventAst implements TemplateAst {
  */
 export class ReferenceAst implements TemplateAst {
   constructor(
-      public name: string, public value: CompileTokenMetadata, public originalValue: string,
-      public sourceSpan: ParseSourceSpan) {}
+    public name: string, public value: CompileTokenMetadata, public originalValue: string,
+    public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any {
     return visitor.visitReference(this, context);
   }
@@ -162,8 +161,8 @@ export class ReferenceAst implements TemplateAst {
  */
 export class VariableAst implements TemplateAst {
   constructor(
-      public readonly name: string, public readonly value: string,
-      public readonly sourceSpan: ParseSourceSpan, public readonly valueSpan?: ParseSourceSpan) {}
+    public readonly name: string, public readonly value: string,
+    public readonly sourceSpan: ParseSourceSpan, public readonly valueSpan?: ParseSourceSpan) { }
 
   static fromParsedVariable(v: ParsedVariable) {
     return new VariableAst(v.name, v.value, v.sourceSpan, v.valueSpan);
@@ -179,12 +178,12 @@ export class VariableAst implements TemplateAst {
  */
 export class ElementAst implements TemplateAst {
   constructor(
-      public name: string, public attrs: AttrAst[], public inputs: BoundElementPropertyAst[],
-      public outputs: BoundEventAst[], public references: ReferenceAst[],
-      public directives: DirectiveAst[], public providers: ProviderAst[],
-      public hasViewContainer: boolean, public queryMatches: QueryMatch[],
-      public children: TemplateAst[], public ngContentIndex: number|null,
-      public sourceSpan: ParseSourceSpan, public endSourceSpan: ParseSourceSpan|null) {}
+    public name: string, public attrs: AttrAst[], public inputs: BoundElementPropertyAst[],
+    public outputs: BoundEventAst[], public references: ReferenceAst[],
+    public directives: DirectiveAst[], public providers: ProviderAst[],
+    public hasViewContainer: boolean, public queryMatches: QueryMatch[],
+    public children: TemplateAst[], public ngContentIndex: number | null,
+    public sourceSpan: ParseSourceSpan, public endSourceSpan: ParseSourceSpan | null) { }
 
   visit(visitor: TemplateAstVisitor, context: any): any {
     return visitor.visitElement(this, context);
@@ -196,11 +195,11 @@ export class ElementAst implements TemplateAst {
  */
 export class EmbeddedTemplateAst implements TemplateAst {
   constructor(
-      public attrs: AttrAst[], public outputs: BoundEventAst[], public references: ReferenceAst[],
-      public variables: VariableAst[], public directives: DirectiveAst[],
-      public providers: ProviderAst[], public hasViewContainer: boolean,
-      public queryMatches: QueryMatch[], public children: TemplateAst[],
-      public ngContentIndex: number, public sourceSpan: ParseSourceSpan) {}
+    public attrs: AttrAst[], public outputs: BoundEventAst[], public references: ReferenceAst[],
+    public variables: VariableAst[], public directives: DirectiveAst[],
+    public providers: ProviderAst[], public hasViewContainer: boolean,
+    public queryMatches: QueryMatch[], public children: TemplateAst[],
+    public ngContentIndex: number, public sourceSpan: ParseSourceSpan) { }
 
   visit(visitor: TemplateAstVisitor, context: any): any {
     return visitor.visitEmbeddedTemplate(this, context);
@@ -212,8 +211,8 @@ export class EmbeddedTemplateAst implements TemplateAst {
  */
 export class BoundDirectivePropertyAst implements TemplateAst {
   constructor(
-      public directiveName: string, public templateName: string, public value: ASTWithSource,
-      public sourceSpan: ParseSourceSpan) {}
+    public directiveName: string, public templateName: string, public value: ASTWithSource,
+    public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any {
     return visitor.visitDirectiveProperty(this, context);
   }
@@ -224,9 +223,9 @@ export class BoundDirectivePropertyAst implements TemplateAst {
  */
 export class DirectiveAst implements TemplateAst {
   constructor(
-      public directive: CompileDirectiveSummary, public inputs: BoundDirectivePropertyAst[],
-      public hostProperties: BoundElementPropertyAst[], public hostEvents: BoundEventAst[],
-      public contentQueryStartId: number, public sourceSpan: ParseSourceSpan) {}
+    public directive: CompileDirectiveSummary, public inputs: BoundDirectivePropertyAst[],
+    public hostProperties: BoundElementPropertyAst[], public hostEvents: BoundEventAst[],
+    public contentQueryStartId: number, public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any {
     return visitor.visitDirective(this, context);
   }
@@ -237,10 +236,10 @@ export class DirectiveAst implements TemplateAst {
  */
 export class ProviderAst implements TemplateAst {
   constructor(
-      public token: CompileTokenMetadata, public multiProvider: boolean, public eager: boolean,
-      public providers: CompileProviderMetadata[], public providerType: ProviderAstType,
-      public lifecycleHooks: string[], public sourceSpan: ParseSourceSpan,
-      readonly isModule: boolean) {}
+    public token: CompileTokenMetadata, public multiProvider: boolean, public eager: boolean,
+    public providers: CompileProviderMetadata[], public providerType: ProviderAstType,
+    public lifecycleHooks: string[], public sourceSpan: ParseSourceSpan,
+    readonly isModule: boolean) { }
 
   visit(visitor: TemplateAstVisitor, context: any): any {
     // No visit method in the visitor for now...
@@ -261,7 +260,7 @@ export enum ProviderAstType {
  */
 export class NgContentAst implements TemplateAst {
   constructor(
-      public index: number, public ngContentIndex: number, public sourceSpan: ParseSourceSpan) {}
+    public index: number, public ngContentIndex: number, public sourceSpan: ParseSourceSpan) { }
   visit(visitor: TemplateAstVisitor, context: any): any {
     return visitor.visitNgContent(this, context);
   }
@@ -300,18 +299,18 @@ export interface TemplateAstVisitor {
  * as the base class for a visitor that is only interested in a subset of the node types.
  */
 export class NullTemplateVisitor implements TemplateAstVisitor {
-  visitNgContent(ast: NgContentAst, context: any): void {}
-  visitEmbeddedTemplate(ast: EmbeddedTemplateAst, context: any): void {}
-  visitElement(ast: ElementAst, context: any): void {}
-  visitReference(ast: ReferenceAst, context: any): void {}
-  visitVariable(ast: VariableAst, context: any): void {}
-  visitEvent(ast: BoundEventAst, context: any): void {}
-  visitElementProperty(ast: BoundElementPropertyAst, context: any): void {}
-  visitAttr(ast: AttrAst, context: any): void {}
-  visitBoundText(ast: BoundTextAst, context: any): void {}
-  visitText(ast: TextAst, context: any): void {}
-  visitDirective(ast: DirectiveAst, context: any): void {}
-  visitDirectiveProperty(ast: BoundDirectivePropertyAst, context: any): void {}
+  visitNgContent(ast: NgContentAst, context: any): void { }
+  visitEmbeddedTemplate(ast: EmbeddedTemplateAst, context: any): void { }
+  visitElement(ast: ElementAst, context: any): void { }
+  visitReference(ast: ReferenceAst, context: any): void { }
+  visitVariable(ast: VariableAst, context: any): void { }
+  visitEvent(ast: BoundEventAst, context: any): void { }
+  visitElementProperty(ast: BoundElementPropertyAst, context: any): void { }
+  visitAttr(ast: AttrAst, context: any): void { }
+  visitBoundText(ast: BoundTextAst, context: any): void { }
+  visitText(ast: TextAst, context: any): void { }
+  visitDirective(ast: DirectiveAst, context: any): void { }
+  visitDirectiveProperty(ast: BoundDirectivePropertyAst, context: any): void { }
 }
 
 /**
@@ -354,8 +353,8 @@ export class RecursiveTemplateAstVisitor extends NullTemplateVisitor implements 
   }
 
   protected visitChildren(
-      context: any,
-      cb: (visit: (<V extends TemplateAst>(children: V[]|undefined) => void)) => void) {
+    context: any,
+    cb: (visit: (<V extends TemplateAst>(children: V[] | undefined) => void)) => void) {
     let results: any[][] = [];
     let t = this;
     function visit<T extends TemplateAst>(children: T[] | undefined) {
@@ -372,11 +371,11 @@ export class RecursiveTemplateAstVisitor extends NullTemplateVisitor implements 
  * Visit every node in a list of {@link TemplateAst}s with the given {@link TemplateAstVisitor}.
  */
 export function templateVisitAll(
-    visitor: TemplateAstVisitor, asts: TemplateAst[], context: any = null): any[] {
+  visitor: TemplateAstVisitor, asts: TemplateAst[], context: any = null): any[] {
   const result: any[] = [];
   const visit = visitor.visit ?
-      (ast: TemplateAst) => visitor.visit !(ast, context) || ast.visit(visitor, context) :
-      (ast: TemplateAst) => ast.visit(visitor, context);
+    (ast: TemplateAst) => visitor.visit!(ast, context) || ast.visit(visitor, context) :
+    (ast: TemplateAst) => ast.visit(visitor, context);
   asts.forEach(ast => {
     const astResult = visit(ast);
     if (astResult) {

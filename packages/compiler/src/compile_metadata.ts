@@ -6,9 +6,11 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ChangeDetectionStrategy, SchemaMetadata, Type, ViewEncapsulation} from './core';
+import { Type } from '@tsdi/ioc';
+import {ChangeDetectionStrategy, SchemaMetadata, ViewEncapsulation} from './core';
 import {ParseTreeResult as HtmlParseTreeResult} from './ml_parser/parser';
 import {splitAtColon, stringify} from './util';
+
 
 
 

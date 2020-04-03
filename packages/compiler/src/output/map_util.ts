@@ -17,14 +17,14 @@ export type MapEntry = {
 export type MapLiteral = MapEntry[];
 
 export function mapEntry(key: string, value: o.Expression): MapEntry {
-  return {key, value, quoted: false};
+  return { key, value, quoted: false };
 }
 
 export function mapLiteral(
-    obj: {[key: string]: o.Expression}, quoted = false): o.Expression {
+  obj: { [key: string]: o.Expression }, quoted = false): o.Expression {
   return o.literalMap(Object.keys(obj).map(key => ({
-                                             key,
-                                             quoted,
-                                             value: obj[key],
-                                           })));
+    key,
+    quoted,
+    value: obj[key],
+  })));
 }

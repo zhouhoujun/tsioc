@@ -15,10 +15,10 @@ export const QUOTED_KEYS = '$quoted$';
 
 export function convertValueToOutputAst(
     ctx: OutputContext, value: any, type: o.Type | null = null): o.Expression {
-  return visitValue(value, new _ValueOutputAstTransformer(ctx), type);
+  return visitValue(value, new ValueOutputAstTransformer(ctx), type);
 }
 
-class _ValueOutputAstTransformer implements ValueTransformer {
+class ValueOutputAstTransformer implements ValueTransformer {
   constructor(private ctx: OutputContext) {}
   visitArray(arr: any[], type: o.Type): o.Expression {
     return o.literalArr(arr.map(value => visitValue(value, this, null)), type);

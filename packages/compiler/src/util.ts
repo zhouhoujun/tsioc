@@ -103,8 +103,8 @@ export function syntaxError(msg: string, parseErrors?: ParseError[]): Error {
   return error;
 }
 
-const ERROR_SYNTAX_ERROR = 'ngSyntaxError';
-const ERROR_PARSE_ERRORS = 'ngParseErrors';
+const ERROR_SYNTAX_ERROR = 'cmpSyntaxError';
+const ERROR_PARSE_ERRORS = 'cmpParseErrors';
 
 export function isSyntaxError(error: Error): boolean {
   return (error as any)[ERROR_SYNTAX_ERROR];
