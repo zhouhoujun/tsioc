@@ -6,10 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ConstantPool} from './constant_pool';
+import { ConstantPool } from './constant_pool';
 
 import * as o from './output/output_ast';
-import {ParseError} from './parse_util';
+import { ParseError } from './parse_util';
 
 const DASH_CASE_REGEXP = /-+([a-z0-9])/g;
 
@@ -37,11 +37,11 @@ export function visitValue(value: any, visitor: ValueVisitor, context: any): any
   }
 
   if (isStrictStringMap(value)) {
-    return visitor.visitStringMap(<{[key: string]: any}>value, context);
+    return visitor.visitStringMap(<{ [key: string]: any }>value, context);
   }
 
-  if (value == null || typeof value == 'string' || typeof value == 'number' ||
-      typeof value == 'boolean') {
+  let vtype = typeof value;
+  if (value == null || vtype === 'string' || vtype === 'number' || vtype === 'boolean') {
     return visitor.visitPrimitive(value, context);
   }
 
@@ -53,12 +53,12 @@ export function isDefined(val: any): boolean {
 }
 
 export function noUndefined<T>(val: T | undefined): T {
-  return val === undefined ? null ! : val;
+  return val === undefined ? null! : val;
 }
 
 export interface ValueVisitor {
   visitArray(arr: any[], context: any): any;
-  visitStringMap(map: {[key: string]: any}, context: any): any;
+  visitStringMap(map: { [key: string]: any }, context: any): any;
   visitPrimitive(value: any, context: any): any;
   visitOther(value: any, context: any): any;
 }
@@ -67,8 +67,8 @@ export class ValueTransformer implements ValueVisitor {
   visitArray(arr: any[], context: any): any {
     return arr.map(value => visitValue(value, this, context));
   }
-  visitStringMap(map: {[key: string]: any}, context: any): any {
-    const result: {[key: string]: any} = {};
+  visitStringMap(map: { [key: string]: any }, context: any): any {
+    const result: { [key: string]: any } = {};
     Object.keys(map).forEach(key => { result[key] = visitValue(map[key], this, context); });
     return result;
   }
@@ -85,8 +85,8 @@ export const SyncAsync = {
     }
     return value;
   },
-  then: <T, R>(value: SyncAsync<T>, cb: (value: T) => R | Promise<R>| SyncAsync<R>):
-            SyncAsync<R> => { return isPromise(value) ? value.then(cb) : cb(value);},
+  then: <T, R>(value: SyncAsync<T>, cb: (value: T) => R | Promise<R> | SyncAsync<R>):
+    SyncAsync<R> => { return isPromise(value) ? value.then(cb) : cb(value); },
   all: <T>(syncAsyncValues: SyncAsync<T>[]): SyncAsync<T[]> => {
     return syncAsyncValues.some(isPromise) ? Promise.all(syncAsyncValues) : syncAsyncValues as T[];
   }
@@ -145,11 +145,11 @@ export function utf8Encode(str: string): string {
       encoded += String.fromCharCode(((codePoint >> 6) & 0x1F) | 0xc0, (codePoint & 0x3f) | 0x80);
     } else if (codePoint <= 0xffff) {
       encoded += String.fromCharCode(
-          (codePoint >> 12) | 0xe0, ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
+        (codePoint >> 12) | 0xe0, ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
     } else if (codePoint <= 0x1fffff) {
       encoded += String.fromCharCode(
-          ((codePoint >> 18) & 0x07) | 0xf0, ((codePoint >> 12) & 0x3f) | 0x80,
-          ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
+        ((codePoint >> 18) & 0x07) | 0xf0, ((codePoint >> 12) & 0x3f) | 0x80,
+        ((codePoint >> 6) & 0x3f) | 0x80, (codePoint & 0x3f) | 0x80);
     }
   }
 
@@ -160,7 +160,7 @@ export interface OutputContext {
   genFilePath: string;
   statements: o.Statement[];
   constantPool: ConstantPool;
-  importExpr(reference: any, typeParams?: o.Type[]|null, useSummaries?: boolean): o.Expression;
+  importExpr(reference: any, typeParams?: o.Type[] | null, useSummaries?: boolean): o.Expression;
 }
 
 export function stringify(token: any): string {
@@ -246,20 +246,20 @@ declare var WorkerGlobalScope: any;
 declare var global: any;
 const __window = typeof window !== 'undefined' && window;
 const __self = typeof self !== 'undefined' && typeof WorkerGlobalScope !== 'undefined' &&
-    self instanceof WorkerGlobalScope && self;
+  self instanceof WorkerGlobalScope && self;
 const __global = typeof global !== 'undefined' && global;
 
 // Check __global first, because in Node tests both __global and __window may be defined and _global
 // should be __global in that case.
-const _global: {[name: string]: any} = __global || __window || __self;
-export {_global as global};
+const _global: { [name: string]: any } = __global || __window || __self;
+export { _global as global };
 
 export function newArray<T = any>(size: number): T[];
 export function newArray<T>(size: number, value: T): T[];
 export function newArray<T>(size: number, value?: T): T[] {
   const list: T[] = [];
   for (let i = 0; i < size; i++) {
-    list.push(value !);
+    list.push(value!);
   }
   return list;
 }
