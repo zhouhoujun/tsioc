@@ -41,7 +41,7 @@ class JsEmitterVisitor extends AbstractJsEmitterVisitor {
     const {name, moduleName} = ast.value;
     if (moduleName) {
       let prefix = this.importsWithPrefixes.get(moduleName);
-      if (prefix === null) {
+      if (prefix === null || prefix === undefined) {
         prefix = `i${this.importsWithPrefixes.size}`;
         this.importsWithPrefixes.set(moduleName, prefix);
       }

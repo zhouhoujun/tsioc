@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {utf8Encode} from '../util';
+import { utf8Encode } from '../util';
 
 // https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit
 const VERSION = 3;
@@ -30,15 +30,15 @@ export type SourceMap = {
 };
 
 export class SourceMapGenerator {
-  private sourcesContent: Map<string, string|null> = new Map();
+  private sourcesContent: Map<string, string | null> = new Map();
   private lines: Segment[][] = [];
   private lastCol0 = 0;
   private hasMappings = false;
 
-  constructor(private file: string|null = null) {}
+  constructor(private file: string | null = null) { }
 
   // The content is `null` when the content is expected to be loaded using the URL
-  addSource(url: string, content: string|null = null): this {
+  addSource(url: string, content: string | null = null): this {
     if (!this.sourcesContent.has(url)) {
       this.sourcesContent.set(url, content);
     }
@@ -70,7 +70,7 @@ export class SourceMapGenerator {
 
     this.hasMappings = true;
     this.lastCol0 = col0;
-    this.currentLine.push({col0, sourceUrl, sourceLine0, sourceCol0});
+    this.currentLine.push({ col0, sourceUrl, sourceLine0, sourceCol0 });
     return this;
   }
 
@@ -78,9 +78,9 @@ export class SourceMapGenerator {
   * @internal strip this from published d.ts files due to
   * https://github.com/microsoft/TypeScript/issues/36216
   */
-  private get currentLine(): Segment[]|null { return this.lines.slice(-1)[0]; }
+  private get currentLine(): Segment[] | null { return this.lines.slice(-1)[0]; }
 
-  toJSON(): SourceMap|null {
+  toJSON(): SourceMap | null {
     if (!this.hasMappings) {
       return null;
     }
@@ -105,27 +105,27 @@ export class SourceMapGenerator {
       lastCol0 = 0;
 
       mappings += segments
-                      .map(segment => {
-                        // zero-based starting column of the line in the generated code
-                        let segAsStr = toBase64VLQ(segment.col0 - lastCol0);
-                        lastCol0 = segment.col0;
+        .map(segment => {
+          // zero-based starting column of the line in the generated code
+          let segAsStr = toBase64VLQ(segment.col0 - lastCol0);
+          lastCol0 = segment.col0;
 
-                        if (segment.sourceUrl != null) {
-                          // zero-based index into the “sources” list
-                          segAsStr +=
-                              toBase64VLQ(sourcesIndex.get(segment.sourceUrl) ! - lastSourceIndex);
-                          lastSourceIndex = sourcesIndex.get(segment.sourceUrl) !;
-                          // the zero-based starting line in the original source
-                          segAsStr += toBase64VLQ(segment.sourceLine0 ! - lastSourceLine0);
-                          lastSourceLine0 = segment.sourceLine0 !;
-                          // the zero-based starting column in the original source
-                          segAsStr += toBase64VLQ(segment.sourceCol0 ! - lastSourceCol0);
-                          lastSourceCol0 = segment.sourceCol0 !;
-                        }
+          if (segment.sourceUrl != null) {
+            // zero-based index into the “sources” list
+            segAsStr +=
+              toBase64VLQ(sourcesIndex.get(segment.sourceUrl)! - lastSourceIndex);
+            lastSourceIndex = sourcesIndex.get(segment.sourceUrl)!;
+            // the zero-based starting line in the original source
+            segAsStr += toBase64VLQ(segment.sourceLine0! - lastSourceLine0);
+            lastSourceLine0 = segment.sourceLine0!;
+            // the zero-based starting column in the original source
+            segAsStr += toBase64VLQ(segment.sourceCol0! - lastSourceCol0);
+            lastSourceCol0 = segment.sourceCol0!;
+          }
 
-                        return segAsStr;
-                      })
-                      .join(',');
+          return segAsStr;
+        })
+        .join(',');
       mappings += ';';
     });
 
@@ -142,8 +142,9 @@ export class SourceMapGenerator {
   }
 
   toJsComment(): string {
-    return this.hasMappings ? '//' + JS_B64_PREFIX + toBase64String(JSON.stringify(this, null, 0)) :
-                              '';
+    return this.hasMappings ?
+      '//' + JS_B64_PREFIX + toBase64String(JSON.stringify(this, null, 0))
+      : '';
   }
 }
 
