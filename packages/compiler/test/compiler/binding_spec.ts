@@ -74,7 +74,7 @@ describe('t2 binding', () => {
     const binder = new R3TargetBinder(makeSelectorMatcher());
     const res = binder.bind({template: template.nodes});
     const tmpl = template.nodes[0] as a.Template;
-    const directives = res.getDirectivesOfNode(tmpl) !;
+    const directives = res.getDirectivesOfNode(tmpl);
     expect(directives).not.toBeNull();
     expect(directives.length).toBe(1);
     expect(directives[0].name).toBe('NgFor');

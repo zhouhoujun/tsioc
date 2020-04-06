@@ -29,9 +29,8 @@ import {BindingParser} from '../template_parser/binding_parser';
 import {error} from '../util';
 import * as t from '../render/r3_ast';
 import {Identifiers as R3} from '../render/r3_identifiers';
-import {htmlAstToRender3Ast} from '../render/r3_template_transform';
 import {prepareSyntheticListenerFunctionName, prepareSyntheticListenerName, prepareSyntheticPropertyName} from '../render/util';
-
+import { htmlAstToRender3Ast } from '../render/r3_template_transform';
 import {I18nContext} from './i18n/context';
 import {createGoogleGetMsgStatements} from './i18n/get_msg_utils';
 import {createLocalizeStatements} from './i18n/localize_utils';
@@ -39,6 +38,7 @@ import {I18nMetaVisitor} from './i18n/meta';
 import {I18N_ICU_MAPPING_PREFIX, TRANSLATION_PREFIX, assembleBoundTextPlaceholders, assembleI18nBoundString, declareI18nVariable, getTranslationConstPrefix, i18nFormatPlaceholderNames, icuFromI18nMessage, isI18nRootNode, isSingleI18nIcu, placeholdersToParams, wrapI18nPlaceholder} from './i18n/util';
 import {StylingBuilder, StylingInstruction} from './styling_builder';
 import {CONTEXT_NAME, IMPLICIT_REFERENCE, NON_BINDABLE_ATTR, REFERENCE_PREFIX, RENDER_FLAGS, asLiteral, chainedInstruction, getAttrsForDirectiveMatching, getInterpolationArgsLength, invalid, trimTrailingNulls, unsupported} from './util';
+
 
 
 
