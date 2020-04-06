@@ -8,7 +8,7 @@
 
 
 import { ParseSourceSpan } from '../parse_util';
-import { I18nMeta } from '../schemas';
+import { I18nMeta } from '../compiler/i18n/meta';
 
 
 

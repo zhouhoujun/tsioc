@@ -7,7 +7,7 @@
  */
 
 import {AstPath} from '../ast_path';
-import {I18nMeta} from '../schemas';
+import {I18nMeta} from '../i18n/i18n_ast';
 import {ParseSourceSpan} from '../parse_util';
 
 export interface Node {
