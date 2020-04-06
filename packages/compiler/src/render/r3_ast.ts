@@ -8,8 +8,8 @@
 
 import { SecurityContext } from '../core';
 import { AST, BindingType, BoundElementProperty, ParsedEvent, ParsedEventType } from '../expression_parser/ast';
-import { I18nMeta } from '../schemas';
 import { ParseSourceSpan } from '../parse_util';
+import { I18nMeta } from '../i18n/i18n_ast';
 
 export interface Node {
   sourceSpan: ParseSourceSpan;

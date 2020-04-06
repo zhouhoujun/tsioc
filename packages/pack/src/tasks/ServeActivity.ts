@@ -1,6 +1,5 @@
 import { Input, Binding } from '@tsdi/components';
-import { Task, Src, Expression, TemplateOption } from '@tsdi/activities';
-import { NodeExpression } from '../NodeActivityContext';
+import { Task, Src, TemplateOption } from '@tsdi/activities';
 import { NodeActivity } from '../NodeActivity';
 
 

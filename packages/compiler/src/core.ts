@@ -13,6 +13,7 @@
 // be compiled with the compiler.
 
 import { Type, ProviderTypes } from '@tsdi/ioc';
+import { CssSelector } from './selector';
 
 export interface Query {
   descendants: boolean;
@@ -48,6 +49,7 @@ export interface Component extends Directive {
   entryComponents?: Array<Type|any[]>;
   preserveWhitespaces?: boolean;
 }
+
 export enum ViewEncapsulation {
   Emulated = 0,
   Native = 1,
@@ -79,9 +81,231 @@ export enum SecurityContext {
   RESOURCE_URL = 5,
 }
 
+/**
+ * Injection flags for DI.
+ */
+export const enum InjectFlags {
+  Default = 0,
+
+  /**
+   * Specifies that an injector should retrieve a dependency from any injector until reaching the
+   * host element of the current component. (Only used with Element Injector)
+   */
+  Host = 1 << 0,
+  /** Don't descend into ancestors of the node requesting injection. */
+  Self = 1 << 1,
+  /** Skip the node that is requesting injection. */
+  SkipSelf = 1 << 2,
+  /** Inject `defaultValue` instead if token not found. */
+  Optional = 1 << 3,
+}
+
 
 export enum MissingTranslationStrategy {
   Error = 0,
   Warning = 1,
   Ignore = 2,
+}
+
+/**
+ * Flags used to generate R3-style CSS Selectors. They are pasted from
+ * core/src/render3/projection.ts because they cannot be referenced directly.
+ */
+export const enum SelectorFlags {
+  /** Indicates this is the beginning of a new negative selector */
+  NOT = 0b0001,
+
+  /** Mode for matching attributes */
+  ATTRIBUTE = 0b0010,
+
+  /** Mode for matching tag names */
+  ELEMENT = 0b0100,
+
+  /** Mode for matching class names */
+  CLASS = 0b1000,
+}
+export type R3CssSelector = (string | SelectorFlags)[];
+export type R3CssSelectorList = R3CssSelector[];
+
+function parserSelectorToSimpleSelector(selector: CssSelector): R3CssSelector {
+  const classes = selector.classNames && selector.classNames.length ?
+      [SelectorFlags.CLASS, ...selector.classNames] :
+      [];
+  const elementName = selector.element && selector.element !== '*' ? selector.element : '';
+  return [elementName, ...selector.attrs, ...classes];
+}
+
+function parserSelectorToNegativeSelector(selector: CssSelector): R3CssSelector {
+  const classes = selector.classNames && selector.classNames.length ?
+      [SelectorFlags.CLASS, ...selector.classNames] :
+      [];
+
+  if (selector.element) {
+    return [
+      SelectorFlags.NOT | SelectorFlags.ELEMENT, selector.element, ...selector.attrs, ...classes
+    ];
+  } else if (selector.attrs.length) {
+    return [SelectorFlags.NOT | SelectorFlags.ATTRIBUTE, ...selector.attrs, ...classes];
+  } else {
+    return selector.classNames && selector.classNames.length ?
+        [SelectorFlags.NOT | SelectorFlags.CLASS, ...selector.classNames] :
+        [];
+  }
+}
+
+function parserSelectorToR3Selector(selector: CssSelector): R3CssSelector {
+  const positive = parserSelectorToSimpleSelector(selector);
+
+  const negative: R3CssSelectorList = selector.notSelectors && selector.notSelectors.length ?
+      selector.notSelectors.map(notSelector => parserSelectorToNegativeSelector(notSelector)) :
+      [];
+
+  return positive.concat(...negative);
+}
+
+export function parseSelectorToR3Selector(selector: string | null): R3CssSelectorList {
+  return selector ? CssSelector.parse(selector).map(parserSelectorToR3Selector) : [];
+}
+
+/**
+ * Flags passed into template functions to determine which blocks (i.e. creation, update)
+ * should be executed.
+ *
+ * Typically, a template runs both the creation block and the update block on initialization and
+ * subsequent runs only execute the update block. However, dynamically created views require that
+ * the creation block be executed separately from the update block (for backwards compat).
+ */
+export const enum RenderFlags {
+  /* Whether to run the creation block (e.g. create elements and directives) */
+  Create = 0b01,
+
+  /* Whether to run the update block (e.g. refresh bindings) */
+  Update = 0b10
+}
+
+
+// Pasted from render3/interfaces/node.ts
+/**
+ * A set of marker values to be used in the attributes arrays. These markers indicate that some
+ * items are not regular attributes and the processing should be adapted accordingly.
+ */
+export const enum AttributeMarker {
+  /**
+   * Marker indicates that the following 3 values in the attributes array are:
+   * namespaceUri, attributeName, attributeValue
+   * in that order.
+   */
+  NamespaceURI = 0,
+
+  /**
+   * Signals class declaration.
+   *
+   * Each value following `Classes` designates a class name to include on the element.
+   * ## Example:
+   *
+   * Given:
+   * ```
+   * <div class="foo bar baz">...<d/vi>
+   * ```
+   *
+   * the generated code is:
+   * ```
+   * var _c1 = [AttributeMarker.Classes, 'foo', 'bar', 'baz'];
+   * ```
+   */
+  Classes = 1,
+
+  /**
+   * Signals style declaration.
+   *
+   * Each pair of values following `Styles` designates a style name and value to include on the
+   * element.
+   * ## Example:
+   *
+   * Given:
+   * ```
+   * <div style="width:100px; height:200px; color:red">...</div>
+   * ```
+   *
+   * the generated code is:
+   * ```
+   * var _c1 = [AttributeMarker.Styles, 'width', '100px', 'height'. '200px', 'color', 'red'];
+   * ```
+   */
+  Styles = 2,
+
+  /**
+   * Signals that the following attribute names were extracted from input or output bindings.
+   *
+   * For example, given the following HTML:
+   *
+   * ```
+   * <div moo="car" [foo]="exp" (bar)="doSth()">
+   * ```
+   *
+   * the generated code is:
+   *
+   * ```
+   * var _c1 = ['moo', 'car', AttributeMarker.Bindings, 'foo', 'bar'];
+   * ```
+   */
+  Bindings = 3,
+
+  /**
+   * Signals that the following attribute names were hoisted from an inline-template declaration.
+   *
+   * For example, given the following HTML:
+   *
+   * ```
+   * <div *ngFor="let value of values; trackBy:trackBy" dirA [dirB]="value">
+   * ```
+   *
+   * the generated code for the `template()` instruction would include:
+   *
+   * ```
+   * ['dirA', '', AttributeMarker.Bindings, 'dirB', AttributeMarker.Template, 'ngFor', 'ngForOf',
+   * 'ngForTrackBy', 'let-value']
+   * ```
+   *
+   * while the generated code for the `element()` instruction inside the template function would
+   * include:
+   *
+   * ```
+   * ['dirA', '', AttributeMarker.Bindings, 'dirB']
+   * ```
+   */
+  Template = 4,
+
+  /**
+   * Signals that the following attribute is `ngProjectAs` and its value is a parsed `CssSelector`.
+   *
+   * For example, given the following HTML:
+   *
+   * ```
+   * <h1 attr="value" ngProjectAs="[title]">
+   * ```
+   *
+   * the generated code for the `element()` instruction would include:
+   *
+   * ```
+   * ['attr', 'value', AttributeMarker.ProjectAs, ['', 'title', '']]
+   * ```
+   */
+  ProjectAs = 5,
+
+  /**
+   * Signals that the following attribute will be translated by runtime i18n
+   *
+   * For example, given the following HTML:
+   *
+   * ```
+   * <div moo="car" foo="value" i18n-foo [bar]="binding" i18n-bar>
+   * ```
+   *
+   * the generated code is:
+   *
+   * ```
+   * var _c1 = ['moo', 'car', AttributeMarker.I18n, 'foo', 'bar'];
+   */
+  I18n = 6,
 }

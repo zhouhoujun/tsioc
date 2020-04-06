@@ -19,14 +19,6 @@ export abstract class ElementSchemaRegistry {
 }
 
 
-export type I18nMeta = {
-    id?: string,
-    customId?: string,
-    legacyIds?: string[],
-    description?: string,
-    meaning?: string
-};
-
 // =================================================================================================
 // =================================================================================================
 // =========== S T O P   -  S T O P   -  S T O P   -  S T O P   -  S T O P   -  S T O P  ===========

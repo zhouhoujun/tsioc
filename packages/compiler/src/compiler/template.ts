@@ -6,31 +6,31 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {flatten, sanitizeIdentifier} from '../../compile_metadata';
-import {BindingForm, BuiltinFunctionCall, LocalResolver, convertActionBinding, convertPropertyBinding, convertUpdateArguments} from '../../compiler_util/expression_converter';
-import {ConstantPool} from '../../constant_pool';
-import * as core from '../../core';
-import {AST, AstMemoryEfficientTransformer, BindingPipe, BindingType, FunctionCall, ImplicitReceiver, Interpolation, LiteralArray, LiteralMap, LiteralPrimitive, ParsedEventType, PropertyRead} from '../../expression_parser/ast';
-import {Lexer} from '../../expression_parser/lexer';
-import {IvyParser} from '../../expression_parser/parser';
-import * as i18n from '../../i18n/i18n_ast';
-import * as html from '../../ml_parser/ast';
-import {HtmlParser} from '../../ml_parser/html_parser';
-import {WhitespaceVisitor} from '../../ml_parser/html_whitespaces';
-import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig} from '../../ml_parser/interpolation_config';
-import {LexerRange} from '../../ml_parser/lexer';
-import {isNgContainer as checkIsNgContainer, splitNsName} from '../../ml_parser/tags';
-import {mapLiteral} from '../../output/map_util';
-import * as o from '../../output/output_ast';
-import {ParseError, ParseSourceSpan} from '../../parse_util';
-import {DomElementSchemaRegistry} from '../../schema/dom_element_schema_registry';
-import {CssSelector, SelectorMatcher} from '../../selector';
-import {BindingParser} from '../../template_parser/binding_parser';
-import {error} from '../../util';
-import * as t from '../r3_ast';
-import {Identifiers as R3} from '../r3_identifiers';
-import {htmlAstToRender3Ast} from '../r3_template_transform';
-import {prepareSyntheticListenerFunctionName, prepareSyntheticListenerName, prepareSyntheticPropertyName} from '../util';
+import {flatten, sanitizeIdentifier} from '../compile_metadata';
+import {BindingForm, BuiltinFunctionCall, LocalResolver, convertActionBinding, convertPropertyBinding, convertUpdateArguments} from '../compiler_util/expression_converter';
+import {ConstantPool} from '../constant_pool';
+import * as core from '../core';
+import {AST, AstMemoryEfficientTransformer, BindingPipe, BindingType, FunctionCall, ImplicitReceiver, Interpolation, LiteralArray, LiteralMap, LiteralPrimitive, ParsedEventType, PropertyRead} from '../expression_parser/ast';
+import {Lexer} from '../expression_parser/lexer';
+import {IvyParser} from '../expression_parser/parser';
+import * as i18n from '../i18n/i18n_ast';
+import * as html from '../ml_parser/ast';
+import {HtmlParser} from '../ml_parser/html_parser';
+import {WhitespaceVisitor} from '../ml_parser/html_whitespaces';
+import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig} from '../ml_parser/interpolation_config';
+import {LexerRange} from '../ml_parser/lexer';
+import {isNgContainer as checkIsNgContainer, splitNsName} from '../ml_parser/tags';
+import {mapLiteral} from '../output/map_util';
+import * as o from '../output/output_ast';
+import {ParseError, ParseSourceSpan} from '../parse_util';
+import {DomElementSchemaRegistry} from '../schemas';
+import {CssSelector, SelectorMatcher} from '../selector';
+import {BindingParser} from '../template_parser/binding_parser';
+import {error} from '../util';
+import * as t from '../render/r3_ast';
+import {Identifiers as R3} from '../render/r3_identifiers';
+import {htmlAstToRender3Ast} from '../render/r3_template_transform';
+import {prepareSyntheticListenerFunctionName, prepareSyntheticListenerName, prepareSyntheticPropertyName} from '../render/util';
 
 import {I18nContext} from './i18n/context';
 import {createGoogleGetMsgStatements} from './i18n/get_msg_utils';

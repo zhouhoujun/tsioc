@@ -7,7 +7,7 @@
  */
 
 
-import {CompileDiDependencyMetadata, CompileDirectiveMetadata, CompileDirectiveSummary, CompileNgModuleMetadata, CompileProviderMetadata, CompileQueryMetadata, CompileTokenMetadata, CompileTypeMetadata, tokenName, tokenReference} from './compile_metadata';
+import {CompileDiDependencyMetadata, CompileDirectiveMetadata, CompileDirectiveSummary, CompileProviderMetadata, CompileQueryMetadata, CompileTokenMetadata, CompileTypeMetadata, tokenName, tokenReference} from './compile_metadata';
 import {CompileReflector} from './compile_reflector';
 import {Identifiers, createTokenForExternalReference} from './identifiers';
 import {ParseError, ParseSourceSpan} from './parse_util';
@@ -303,120 +303,6 @@ export class ProviderElementContext {
           new ProviderError(`No provider for ${tokenName(dep.token!)}`, this._sourceSpan));
     }
     return result;
-  }
-}
-
-
-export class NgModuleProviderAnalyzer {
-  private _transformedProviders = new Map<any, ProviderAst>();
-  private _seenProviders = new Map<any, boolean>();
-  private _allProviders: Map<any, ProviderAst>;
-  private _errors: ProviderError[] = [];
-
-  constructor(
-      private reflector: CompileReflector, ngModule: CompileNgModuleMetadata,
-      extraProviders: CompileProviderMetadata[], sourceSpan: ParseSourceSpan) {
-    this._allProviders = new Map<any, ProviderAst>();
-    ngModule.transitiveModule.modules.forEach((ngModuleType: CompileTypeMetadata) => {
-      const ngModuleProvider = {token: {identifier: ngModuleType}, useClass: ngModuleType};
-      _resolveProviders(
-          [ngModuleProvider], ProviderAstType.PublicService, true, sourceSpan, this._errors,
-          this._allProviders, /* isModule */ true);
-    });
-    _resolveProviders(
-        ngModule.transitiveModule.providers.map(entry => entry.provider).concat(extraProviders),
-        ProviderAstType.PublicService, false, sourceSpan, this._errors, this._allProviders,
-        /* isModule */ false);
-  }
-
-  parse(): ProviderAst[] {
-    Array.from(this._allProviders.values()).forEach((provider) => {
-      this._getOrCreateLocalProvider(provider.token, provider.eager);
-    });
-    if (this._errors.length > 0) {
-      const errorString = this._errors.join('\n');
-      throw new Error(`Provider parse errors:\n${errorString}`);
-    }
-    // Note: Maps keep their insertion order.
-    const lazyProviders: ProviderAst[] = [];
-    const eagerProviders: ProviderAst[] = [];
-    this._transformedProviders.forEach(provider => {
-      if (provider.eager) {
-        eagerProviders.push(provider);
-      } else {
-        lazyProviders.push(provider);
-      }
-    });
-    return lazyProviders.concat(eagerProviders);
-  }
-
-  private _getOrCreateLocalProvider(token: CompileTokenMetadata, eager: boolean): ProviderAst|null {
-    const resolvedProvider = this._allProviders.get(tokenReference(token));
-    if (!resolvedProvider) {
-      return null;
-    }
-    let transformedProviderAst = this._transformedProviders.get(tokenReference(token));
-    if (transformedProviderAst) {
-      return transformedProviderAst;
-    }
-    if (this._seenProviders.get(tokenReference(token)) != null) {
-      this._errors.push(new ProviderError(
-          `Cannot instantiate cyclic dependency! ${tokenName(token)}`,
-          resolvedProvider.sourceSpan));
-      return null;
-    }
-    this._seenProviders.set(tokenReference(token), true);
-    const transformedProviders = resolvedProvider.providers.map((provider) => {
-      let transformedUseValue = provider.useValue;
-      let transformedUseExisting = provider.useExisting !;
-      let transformedDeps: CompileDiDependencyMetadata[] = undefined !;
-      if (provider.useExisting != null) {
-        const existingDiDep =
-            this._getDependency({token: provider.useExisting}, eager, resolvedProvider.sourceSpan);
-        if (existingDiDep.token != null) {
-          transformedUseExisting = existingDiDep.token;
-        } else {
-          transformedUseExisting = null !;
-          transformedUseValue = existingDiDep.value;
-        }
-      } else if (provider.useFactory) {
-        const deps = provider.deps || provider.useFactory.diDeps;
-        transformedDeps =
-            deps.map((dep) => this._getDependency(dep, eager, resolvedProvider.sourceSpan));
-      } else if (provider.useClass) {
-        const deps = provider.deps || provider.useClass.diDeps;
-        transformedDeps =
-            deps.map((dep) => this._getDependency(dep, eager, resolvedProvider.sourceSpan));
-      }
-      return _transformProvider(provider, {
-        useExisting: transformedUseExisting,
-        useValue: transformedUseValue,
-        deps: transformedDeps
-      });
-    });
-    transformedProviderAst =
-        _transformProviderAst(resolvedProvider, {eager: eager, providers: transformedProviders});
-    this._transformedProviders.set(tokenReference(token), transformedProviderAst);
-    return transformedProviderAst;
-  }
-
-  private _getDependency(
-      dep: CompileDiDependencyMetadata, eager = false,
-      requestorSourceSpan: ParseSourceSpan): CompileDiDependencyMetadata {
-    let foundLocal = false;
-    if (!dep.isSkipSelf && dep.token != null) {
-      // access the injector
-      if (tokenReference(dep.token) ===
-              this.reflector.resolveExternalReference(Identifiers.Injector) ||
-          tokenReference(dep.token) ===
-              this.reflector.resolveExternalReference(Identifiers.ComponentFactoryResolver)) {
-        foundLocal = true;
-        // access providers
-      } else if (this._getOrCreateLocalProvider(dep.token, eager) != null) {
-        foundLocal = true;
-      }
-    }
-    return dep;
   }
 }
 

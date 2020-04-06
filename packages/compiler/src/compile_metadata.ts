@@ -534,99 +534,99 @@ export class CompilePipeMetadata {
   }
 }
 
-// Note: This should only use interfaces as nested data types
-// as we need to be able to serialize this from/to JSON!
-export interface CompileNgModuleSummary extends CompileTypeSummary {
-  type: CompileTypeMetadata;
+// // Note: This should only use interfaces as nested data types
+// // as we need to be able to serialize this from/to JSON!
+// export interface CompileNgModuleSummary extends CompileTypeSummary {
+//   type: CompileTypeMetadata;
 
-  // Note: This is transitive over the exported modules.
-  exportedDirectives: CompileIdentifierMetadata[];
-  // Note: This is transitive over the exported modules.
-  exportedPipes: CompileIdentifierMetadata[];
+//   // Note: This is transitive over the exported modules.
+//   exportedDirectives: CompileIdentifierMetadata[];
+//   // Note: This is transitive over the exported modules.
+//   exportedPipes: CompileIdentifierMetadata[];
 
-  // Note: This is transitive.
-  entryComponents: CompileEntryComponentMetadata[];
-  // Note: This is transitive.
-  providers: { provider: CompileProviderMetadata, module: CompileIdentifierMetadata }[];
-  // Note: This is transitive.
-  modules: CompileTypeMetadata[];
-}
+//   // Note: This is transitive.
+//   entryComponents: CompileEntryComponentMetadata[];
+//   // Note: This is transitive.
+//   providers: { provider: CompileProviderMetadata, module: CompileIdentifierMetadata }[];
+//   // Note: This is transitive.
+//   modules: CompileTypeMetadata[];
+// }
 
-export class CompileShallowModuleMetadata {
-  // TODO(issue/24571): remove '!'.
-  type !: CompileTypeMetadata;
+// export class CompileShallowModuleMetadata {
+//   // TODO(issue/24571): remove '!'.
+//   type !: CompileTypeMetadata;
 
-  rawExports: any;
-  rawImports: any;
-  rawProviders: any;
-}
+//   rawExports: any;
+//   rawImports: any;
+//   rawProviders: any;
+// }
 
-/**
- * Metadata regarding compilation of a module.
- */
-export class CompileNgModuleMetadata {
-  type: CompileTypeMetadata;
-  declaredDirectives: CompileIdentifierMetadata[];
-  exportedDirectives: CompileIdentifierMetadata[];
-  declaredPipes: CompileIdentifierMetadata[];
+// /**
+//  * Metadata regarding compilation of a module.
+//  */
+// export class CompileNgModuleMetadata {
+//   type: CompileTypeMetadata;
+//   declaredDirectives: CompileIdentifierMetadata[];
+//   exportedDirectives: CompileIdentifierMetadata[];
+//   declaredPipes: CompileIdentifierMetadata[];
 
-  exportedPipes: CompileIdentifierMetadata[];
-  entryComponents: CompileEntryComponentMetadata[];
-  bootstrapComponents: CompileIdentifierMetadata[];
-  providers: CompileProviderMetadata[];
+//   exportedPipes: CompileIdentifierMetadata[];
+//   entryComponents: CompileEntryComponentMetadata[];
+//   bootstrapComponents: CompileIdentifierMetadata[];
+//   providers: CompileProviderMetadata[];
 
-  importedModules: CompileNgModuleSummary[];
-  exportedModules: CompileNgModuleSummary[];
-  schemas: SchemaMetadata[];
-  id: string | null;
+//   importedModules: CompileNgModuleSummary[];
+//   exportedModules: CompileNgModuleSummary[];
+//   schemas: SchemaMetadata[];
+//   id: string | null;
 
-  transitiveModule: TransitiveCompileNgModuleMetadata;
+//   transitiveModule: TransitiveCompileNgModuleMetadata;
 
-  constructor({ type, providers, declaredDirectives, exportedDirectives, declaredPipes,
-    exportedPipes, entryComponents, bootstrapComponents, importedModules,
-    exportedModules, schemas, transitiveModule, id }: {
-      type: CompileTypeMetadata,
-      providers: CompileProviderMetadata[],
-      declaredDirectives: CompileIdentifierMetadata[],
-      exportedDirectives: CompileIdentifierMetadata[],
-      declaredPipes: CompileIdentifierMetadata[],
-      exportedPipes: CompileIdentifierMetadata[],
-      entryComponents: CompileEntryComponentMetadata[],
-      bootstrapComponents: CompileIdentifierMetadata[],
-      importedModules: CompileNgModuleSummary[],
-      exportedModules: CompileNgModuleSummary[],
-      transitiveModule: TransitiveCompileNgModuleMetadata,
-      schemas: SchemaMetadata[],
-      id: string | null
-    }) {
-    this.type = type || null;
-    this.declaredDirectives = _normalizeArray(declaredDirectives);
-    this.exportedDirectives = _normalizeArray(exportedDirectives);
-    this.declaredPipes = _normalizeArray(declaredPipes);
-    this.exportedPipes = _normalizeArray(exportedPipes);
-    this.providers = _normalizeArray(providers);
-    this.entryComponents = _normalizeArray(entryComponents);
-    this.bootstrapComponents = _normalizeArray(bootstrapComponents);
-    this.importedModules = _normalizeArray(importedModules);
-    this.exportedModules = _normalizeArray(exportedModules);
-    this.schemas = _normalizeArray(schemas);
-    this.id = id || null;
-    this.transitiveModule = transitiveModule || null;
-  }
+//   constructor({ type, providers, declaredDirectives, exportedDirectives, declaredPipes,
+//     exportedPipes, entryComponents, bootstrapComponents, importedModules,
+//     exportedModules, schemas, transitiveModule, id }: {
+//       type: CompileTypeMetadata,
+//       providers: CompileProviderMetadata[],
+//       declaredDirectives: CompileIdentifierMetadata[],
+//       exportedDirectives: CompileIdentifierMetadata[],
+//       declaredPipes: CompileIdentifierMetadata[],
+//       exportedPipes: CompileIdentifierMetadata[],
+//       entryComponents: CompileEntryComponentMetadata[],
+//       bootstrapComponents: CompileIdentifierMetadata[],
+//       importedModules: CompileNgModuleSummary[],
+//       exportedModules: CompileNgModuleSummary[],
+//       transitiveModule: TransitiveCompileNgModuleMetadata,
+//       schemas: SchemaMetadata[],
+//       id: string | null
+//     }) {
+//     this.type = type || null;
+//     this.declaredDirectives = _normalizeArray(declaredDirectives);
+//     this.exportedDirectives = _normalizeArray(exportedDirectives);
+//     this.declaredPipes = _normalizeArray(declaredPipes);
+//     this.exportedPipes = _normalizeArray(exportedPipes);
+//     this.providers = _normalizeArray(providers);
+//     this.entryComponents = _normalizeArray(entryComponents);
+//     this.bootstrapComponents = _normalizeArray(bootstrapComponents);
+//     this.importedModules = _normalizeArray(importedModules);
+//     this.exportedModules = _normalizeArray(exportedModules);
+//     this.schemas = _normalizeArray(schemas);
+//     this.id = id || null;
+//     this.transitiveModule = transitiveModule || null;
+//   }
 
-  toSummary(): CompileNgModuleSummary {
-    const module = this.transitiveModule!;
-    return {
-      summaryKind: CompileSummaryKind.NgModule,
-      type: this.type,
-      entryComponents: module.entryComponents,
-      providers: module.providers,
-      modules: module.modules,
-      exportedDirectives: module.exportedDirectives,
-      exportedPipes: module.exportedPipes
-    };
-  }
-}
+//   toSummary(): CompileNgModuleSummary {
+//     const module = this.transitiveModule!;
+//     return {
+//       summaryKind: CompileSummaryKind.NgModule,
+//       type: this.type,
+//       entryComponents: module.entryComponents,
+//       providers: module.providers,
+//       modules: module.modules,
+//       exportedDirectives: module.exportedDirectives,
+//       exportedPipes: module.exportedPipes
+//     };
+//   }
+// }
 
 export class TransitiveCompileNgModuleMetadata {
   directivesSet = new Set<any>();
@@ -690,32 +690,32 @@ function _normalizeArray(obj: any[] | undefined | null): any[] {
   return obj || [];
 }
 
-export class ProviderMeta {
-  token: any;
-  useClass: Type | null;
-  useValue: any;
-  useExisting: any;
-  useFactory: Function | null;
-  dependencies: Object[] | null;
-  multi: boolean;
+// export class ProviderMeta {
+//   token: any;
+//   useClass: Type | null;
+//   useValue: any;
+//   useExisting: any;
+//   useFactory: Function | null;
+//   dependencies: Object[] | null;
+//   multi: boolean;
 
-  constructor(token: any, { useClass, useValue, useExisting, useFactory, deps, multi }: {
-    useClass?: Type,
-    useValue?: any,
-    useExisting?: any,
-    useFactory?: Function | null,
-    deps?: Object[] | null,
-    multi?: boolean
-  }) {
-    this.token = token;
-    this.useClass = useClass || null;
-    this.useValue = useValue;
-    this.useExisting = useExisting;
-    this.useFactory = useFactory || null;
-    this.dependencies = deps || null;
-    this.multi = !!multi;
-  }
-}
+//   constructor(token: any, { useClass, useValue, useExisting, useFactory, deps, multi }: {
+//     useClass?: Type,
+//     useValue?: any,
+//     useExisting?: any,
+//     useFactory?: Function | null,
+//     deps?: Object[] | null,
+//     multi?: boolean
+//   }) {
+//     this.token = token;
+//     this.useClass = useClass || null;
+//     this.useValue = useValue;
+//     this.useExisting = useExisting;
+//     this.useFactory = useFactory || null;
+//     this.dependencies = deps || null;
+//     this.multi = !!multi;
+//   }
+// }
 
 export function flatten<T>(list: Array<T | T[]>): T[] {
   return list.reduce((flat: any[], item: T | T[]): T[] => {
