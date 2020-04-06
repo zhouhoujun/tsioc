@@ -7,10 +7,9 @@
  */
 import {ConstantPool} from '../constant_pool';
 import {AttributeMarker} from '../core';
-import {AST, ASTWithSource, BindingPipe, BindingType, Interpolation} from '../expression_parser/ast';
+import {AST, ASTWithSource, BindingPipe, BindingType, Interpolation, isEmptyExpression} from '../expression_parser/ast';
 import * as o from '../output/output_ast';
 import {ParseSourceSpan} from '../parse_util';
-import {isEmptyExpression} from '../template_parser/template_parser';
 import * as t from '../render/r3_ast';
 import {Identifiers as R3} from '../render/r3_identifiers';
 

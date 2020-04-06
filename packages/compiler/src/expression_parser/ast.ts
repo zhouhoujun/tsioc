@@ -772,3 +772,11 @@ export class BoundElementProperty {
       public value: ASTWithSource, public unit: string|null, public sourceSpan: ParseSourceSpan,
       public valueSpan?: ParseSourceSpan) {}
 }
+
+
+export function isEmptyExpression(ast: AST): boolean {
+  if (ast instanceof ASTWithSource) {
+    ast = ast.ast;
+  }
+  return ast instanceof EmptyExpr;
+}
