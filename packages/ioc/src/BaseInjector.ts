@@ -29,7 +29,7 @@ import { TypeReflectsToken } from './services/ITypeReflects';
  * @implements {IInjector}
  */
 export abstract class BaseInjector extends IocDestoryable implements IInjector {
-    static classType: ClassTypes = 'injector';
+    static d0CT: ClassTypes = 'injector';
     /**
      * factories.
      *

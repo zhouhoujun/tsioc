@@ -118,7 +118,7 @@ export namespace lang {
      * @returns
      */
     export function getClassAnnations(target: ClassType) {
-        return isFunction(target.getClassAnnations) ? target.getClassAnnations() : target.classAnnations;
+        return target.d0Ann?.() ?? target['getClassAnnations']?.() ?? null;
     }
 
     /**
@@ -129,10 +129,10 @@ export namespace lang {
      * @returns {boolean}
      */
     export function hasClassAnnations(target: ClassType): boolean {
-        if (isFunction(target.getClassAnnations)) {
+        if (isFunction(target.d0Ann) || isFunction(target['getClassAnnations'])) {
             return true;
         }
-        return target.classAnnations && target.classAnnations.name && isString(target.classAnnations.name);
+        return false
     }
 
 

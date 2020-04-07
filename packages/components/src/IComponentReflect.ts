@@ -1,14 +1,16 @@
-import { tokenId } from '@tsdi/ioc';
+import { tokenId, Type } from '@tsdi/ioc';
 import { IAnnoationReflect } from '@tsdi/boot';
 import { IBinding } from './bindings/IBinding';
 
-/**
- * default components.
- */
-export const DefaultComponets = tokenId<string[]>('DefaultComponets');
+export interface IComponentDef {
+    expression: any;
+    type: Type;
+}
+
+
 
 /**
- * binding type reflect data.
+ * component reflect data.
  *
  * @export
  * @interface IBindingTypeReflect
@@ -22,7 +24,7 @@ export interface IComponentReflect extends IAnnoationReflect {
     /**
      * component compiled def.
      */
-    componentDef?: any;
+    componentDef?: IComponentDef;
 
     /**
      * get bindings.
@@ -30,18 +32,9 @@ export interface IComponentReflect extends IAnnoationReflect {
      */
     getBindings?<T = IBinding>(decor: string): Map<string, T>;
 
-    // todo: will remove.
     /**
      * component selector.
      */
     selector?: string;
-    /**
-     * attr selector.
-     */
-    attrSelector?: string;
-    /**
-     * component select key.
-     */
-    selectKey?: string;
 
 }

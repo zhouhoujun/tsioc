@@ -7,11 +7,13 @@ import { IComponentMetadata, IDirectiveMetadata } from '../decorators/IComponent
 @Abstract()
 export abstract class Compiler {
 
-    abstract compileTemplate(template: string): any;
+    abstract compileTemplate(template: any): any;
 
     abstract compile(template: any): any;
 
     abstract compileComponent(meta: IComponentMetadata): any;
 
     abstract compileDirective(meta: IDirectiveMetadata): any;
+
+    abstract serialize(component: any): any;
 }

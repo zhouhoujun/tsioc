@@ -99,24 +99,26 @@ export interface ClassAnnations {
  */
 export interface AbstractType<T = any> extends Function {
     new?(...args: any[]): T;
-    classAnnations?: ClassAnnations;
-    getClassAnnations?(): ClassAnnations;
+    /**
+     * class annations
+     */
+    d0Ann?(): ClassAnnations;
     /**
      * get component def.
      */
-    getComponentDef?(): any;
+    d0Cmp?(): any;
     /**
      * get directive def.
      */
-    getDirectiveDef?(): any;
+    d0Dir?(): any;
     /**
      * class flag. none poincut for aop.
      */
-    nonePointcut?: boolean;
+    d0NPT?: boolean;
     /**
      * class type flag.
      */
-    classType?: ClassTypes;
+    d0CT?: ClassTypes;
 }
 
 

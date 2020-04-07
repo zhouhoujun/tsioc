@@ -30,8 +30,8 @@ export const DirectiveCompileAction = function (ctx: DesignContext, next: () => 
     compRefl.decorator = currDecor;
     compRefl.directive = true;
 
-    if (ctx.type.getDirectiveDef) {
-        compRefl.directiveDef = ctx.type.getDirectiveDef();
+    if (ctx.type.d0Dir) {
+        compRefl.directiveDef = ctx.type.d0Dir();
     } else {
         const compiler = prdrs.getInstance(Compiler);
         compRefl.directiveDef = compiler.compileDirective(lang.first(metas));

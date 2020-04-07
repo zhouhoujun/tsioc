@@ -2,9 +2,9 @@ import { PromiseUtil, lang, Abstract, IDestoryable, isFunction, Type, Inject, is
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
-    NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
+    CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
 } from '@tsdi/components';
-import { CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL, IActivityContext } from './IActivityContext';
+import { CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL } from './IActivityContext';
 import { ActivityContext, ActivityTemplateContext } from './ActivityContext';
 import { IActivityRef, ACTIVITY_DATA, ACTIVITY_INPUT, ACTIVITY_ORIGIN_DATA } from './IActivityRef';
 import { Activity } from './Activity';
@@ -270,10 +270,6 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
         let injector = context.injector;
         injector.getSingleton(COMPONENT_REFS).set(instance, this);
         this.onDestroy(() => injector.getSingleton(COMPONENT_REFS)?.delete(this.instance));
-    }
-
-    getNodeSelector(): NodeSelector {
-        return new NodeSelector(this.nodeRef);
     }
 
     /**

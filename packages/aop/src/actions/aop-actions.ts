@@ -185,7 +185,7 @@ function isValAspectTag(targetType: Type, reflects: ITypeReflects): boolean {
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-    if (targetType.nonePointcut) {
+    if (targetType.d0NPT) {
         return false;
     }
     return !reflects.hasMetadata(NonePointcut, targetType)

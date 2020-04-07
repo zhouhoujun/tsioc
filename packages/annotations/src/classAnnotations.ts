@@ -50,7 +50,7 @@ export function iocAnnotations(contents: string): string {
                 ts.forEachChild(node, (node) => eachChild(node, annations));
 
                 let classAnnations = `
-                    static getClassAnnations():any  {
+                    static d0Ann():any  {
                         return ${JSON.stringify(annations)};
                     }
                `;

@@ -4,7 +4,6 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../services/AnnotationMerger';
-import { AnnotationCloner } from '../services/AnnotationCloner';
 import { IModuleReflect, ParentInjectorToken } from '../modules/IModuleReflect';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { CTX_MODULE_ANNOATION, CTX_MODULE_EXPORTS } from '../context-tokens';
@@ -45,9 +44,8 @@ export const AnnoationAction = function (ctx: DesignContext, next: () => void): 
         if (!tgRef.baseURL) {
             tgRef.baseURL = merged.baseURL;
         }
-        let cloner = proder?.getInstance(AnnotationCloner);
         tgRef.getAnnoation = <T extends ModuleConfigure>() => {
-            return cloner ? cloner.clone(merged) : { ...merged };
+            return { ...merged };
         };
 
         ctx.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation());

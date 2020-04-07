@@ -6,6 +6,9 @@
  * @class IocCoreService
  */
 export abstract class IocCoreService {
-    static nonePointcut = true;
+    /**
+     * none poincut for aop.
+     */
+    static d0NPT = true;
     constructor() { }
 }
