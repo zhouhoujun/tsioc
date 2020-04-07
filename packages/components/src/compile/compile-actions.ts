@@ -1,9 +1,10 @@
+import { ModuleRef } from '@tsdi/boot';
 import { IComponentContext } from '../ComponentContext';
-import { Compiler } from './parser';
-
+import { CompilerFacade } from './CompilerFacade';
+import { DecoratorProvider, IProviders } from '@tsdi/ioc';
 
 /**
- * module before init handle
+ * parse template handle
  *
  * @export
  * @class ModuleBeforeInitHandle
@@ -12,7 +13,20 @@ import { Compiler } from './parser';
 export const ParseTemplateHandle = async function (ctx: IComponentContext, next?: () => Promise<void>): Promise<void> {
     let temp = ctx.getTemplate();
     if (!ctx.value && temp) {
-        ctx.value = ctx.injector.getInstance(Compiler).compileTemplate(temp);
+        // use compiler of component, register in module of current injector.
+        const injector = ctx.injector;
+        let moduleRefl = injector.get(ModuleRef)?.reflect;
+        let prods: IProviders;
+        if (moduleRefl.componentDectors) {
+            const decpdrs = injector.getInstance(DecoratorProvider);
+            moduleRefl.componentDectors.some(d => {
+                prods = decpdrs.getProviders(d);
+                return prods;
+            });
+        }
+        prods = prods ?? injector;
+        let compiler = prods.getInstance(CompilerFacade);
+        ctx.value = compiler.compileTemplate(temp);
     }
 
     if (next) {

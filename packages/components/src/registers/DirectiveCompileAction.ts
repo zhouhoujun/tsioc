@@ -2,7 +2,7 @@ import { CTX_CURR_DECOR, DesignContext, IProviders, DecoratorProvider, lang } fr
 import { IDirectiveMetadata } from '../decorators/IComponentMetadata';
 import { IDirectiveReflect } from '../IDirectiveReflect';
 import { BindingsCache } from './BindingsCache';
-import { Compiler } from '../compile/parser';
+import { CompilerFacade } from '../compile/CompilerFacade';
 
 /**
  * Directive compile action.
@@ -33,7 +33,7 @@ export const DirectiveCompileAction = function (ctx: DesignContext, next: () => 
     if (ctx.type.d0Dir) {
         compRefl.directiveDef = ctx.type.d0Dir();
     } else {
-        const compiler = prdrs.getInstance(Compiler);
+        const compiler = prdrs.getInstance(CompilerFacade);
         compRefl.directiveDef = compiler.compileDirective(lang.first(metas));
     }
 

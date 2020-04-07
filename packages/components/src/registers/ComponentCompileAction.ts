@@ -2,7 +2,7 @@ import { DesignContext, CTX_CURR_DECOR, IProviders, DecoratorProvider, lang } fr
 import { IComponentMetadata } from '../decorators/IComponentMetadata';
 import { IComponentReflect } from '../IComponentReflect';
 import { BindingsCache } from './BindingsCache';
-import { Compiler } from '../compile/parser';
+import { CompilerFacade } from '../compile/CompilerFacade';
 
 export const ComponentCompileAction = function (ctx: DesignContext, next: () => void): void {
 
@@ -30,7 +30,7 @@ export const ComponentCompileAction = function (ctx: DesignContext, next: () => 
     if (ctx.type.d0Cmp) {
         compRefl.componentDef = ctx.type.d0Cmp();
     } else {
-        const compiler = prdrs.getInstance(Compiler);
+        const compiler = prdrs.getInstance(CompilerFacade);
         compRefl.componentDef = compiler.compileComponent(lang.first(metas));
         // todo: compiler componet to componentDef.
     }
