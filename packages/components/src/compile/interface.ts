@@ -1,5 +1,20 @@
 import { ProviderTypes } from '@tsdi/ioc';
 
+/**
+ * Flags passed into template functions to determine which blocks (i.e. creation, update)
+ * should be executed.
+ *
+ * Typically, a template runs both the creation block and the update block on initialization and
+ * subsequent runs only execute the update block. However, dynamically created views require that
+ * the creation block be executed separately from the update block (for backwards compat).
+ */
+export enum RenderFlags {
+    /* Whether to run the creation block (e.g. create elements and directives) */
+    Create = 1,
+    /* Whether to run the update block (e.g. refresh bindings) */
+    Update
+}
+
 export interface ParseSourceSpan {
     start: any;
     end: any;
@@ -56,12 +71,12 @@ export interface ComponentMetadataFacade extends DirectiveMetadataFacade {
     preserveWhitespaces: boolean;
     animations?: any[];
     pipes: Map<string, any>;
-    directives: {selector: string, expression: any}[];
+    directives: { selector: string, expression: any }[];
     styles: string[];
     viewProviders?: ProviderTypes[];
     interpolation?: [string, string];
     changeDetection?: number;
-  }
+}
 
 export interface QueryMetadataFacade {
     propertyName: string;

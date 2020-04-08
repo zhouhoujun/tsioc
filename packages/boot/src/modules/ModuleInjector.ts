@@ -1,5 +1,5 @@
-import { ContainerProxy, Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProviders, InjectorProvider, ITypeReflects, TypeReflectsToken } from '@tsdi/ioc';
-import { CoreInjector } from '@tsdi/core';
+import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProviders, InjectorProvider, TypeReflectsToken, InjectorProxy } from '@tsdi/ioc';
+import { CoreInjector, IContainer } from '@tsdi/core';
 import { ModuleRef } from './ModuleRef';
 
 
@@ -17,7 +17,7 @@ export class ModuleInjector extends CoreInjector {
 
     protected exports: ModuleRef[];
 
-    constructor(factory: ContainerProxy) {
+    constructor(factory: InjectorProxy<IContainer>) {
         super(factory);
         this.exports = [];
     }

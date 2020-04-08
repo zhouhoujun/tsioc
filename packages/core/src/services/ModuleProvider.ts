@@ -1,12 +1,13 @@
-import { IInjector, Type, IocCoreService, ContainerProxy, ActionInjectorToken } from '@tsdi/ioc';
+import { IInjector, Type, IocCoreService, ActionInjectorToken, InjectorProxy } from '@tsdi/ioc';
 import { IModuleLoader, ModuleLoader } from './ModuleLoader';
 import { InjLifeScope } from '../injects/InjLifeScope';
+import { IContainer } from '../IContainer';
 import { LoadType } from '../types';
 
 
 export class ModuleProvider extends IocCoreService {
 
-    constructor(private proxy: ContainerProxy) {
+    constructor(private proxy: InjectorProxy<IContainer>) {
         super();
     }
 

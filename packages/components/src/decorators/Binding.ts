@@ -1,5 +1,6 @@
 import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType } from '@tsdi/ioc';
 import { BindingPropMetadata } from './BindingPropMetadata';
+import { BindingDirection, isBindingDriection } from '../bindings/IBinding';
 /**
  * Binding decorator.
  *
@@ -10,9 +11,16 @@ export interface BindingPropertyDecorator {
     /**
      * define Binding property decorator with binding property name.
      *
+     * @param {BindingDirection} direction binding direction. default twoway
+     */
+    (direction?: BindingDirection): PropertyDecorator;
+    /**
+     * define Binding property decorator with binding property name.
+     *
+     * @param {BindingDirection} direction binding direction.
      * @param {string} bindingName binding property name
      */
-    (bindingName?: string): PropertyDecorator;
+    (direction: BindingDirection, bindingName?: string): PropertyDecorator;
 
     /**
      * define Binding property decorator with binding metadata.
@@ -23,37 +31,43 @@ export interface BindingPropertyDecorator {
     /**
      * define Binding property decorator with binding property name and provider.
      *
+     * @param {BindingDirection} direction binding direction.
      * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
      * @param {*} [defaultVal] default value.
      */
-    (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
+    (direction: BindingDirection, provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
 
     /**
      * define Binding property decorator with binding property name and provider.
      *
+     * @param {BindingDirection} direction binding direction.
      * @param {string} bindingName binding property name
      * @param {*} defaultVal default value.
      */
-    (bindingName: string, defaultVal: any): PropertyDecorator;
+    (direction: BindingDirection, bindingName: string, defaultVal: any): PropertyDecorator;
 
     /**
      * define Binding property decorator with binding property name and provider.
      *
+     * @param {BindingDirection} direction binding direction.
      * @param {string} bindingName binding property name
      * @param {Token} provider define provider to resolve value to the property.
      * @param {*} defaultVal default value.
      */
-    (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
-    /**
-     * define property decorator.
-     */
-    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
+    (direction: BindingDirection, bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
 }
 
 /**
  * Binding decorator.
  */
 export const Binding: BindingPropertyDecorator = createPropDecorator<BindingPropMetadata>('Binding', [
+    (ctx, next) => {
+        let arg = ctx.currArg;
+        if (isBindingDriection(arg)) {
+            ctx.metadata.direction = arg;
+            ctx.next(next);
+        }
+    },
     (ctx, next) => {
         let arg = ctx.currArg;
         if (isString(arg)) {

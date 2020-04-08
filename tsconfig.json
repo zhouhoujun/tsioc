@@ -29,6 +29,9 @@
       "@tsdi/components": [
         "packages/components/src"
       ],
+      "@tsdi/compiler": [
+        "packages/compiler/src"
+      ],
       "@tsdi/logs": [
         "packages/logs/src"
       ],

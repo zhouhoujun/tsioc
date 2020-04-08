@@ -1,4 +1,4 @@
-import { ClassType, Token } from '@tsdi/ioc';
+import { ClassType, Token, isString } from '@tsdi/ioc';
 
 /**
  * binding types.
@@ -16,6 +16,10 @@ export type BindingTypes = 'static' | 'dynamic';
  * output: output binding.
  */
 export type BindingDirection = 'input' | 'output' | 'twoway';
+
+export function isBindingDriection(target: any): target is BindingDirection {
+    return isString(target) && (target === 'input' || target === 'output' || target === 'twoway');
+}
 
 /**
  * binding.

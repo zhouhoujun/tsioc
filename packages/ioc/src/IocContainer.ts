@@ -1,11 +1,11 @@
-import { IIocContainer, ContainerProxyToken, ContainerProxy } from './IIocContainer';
+import { IIocContainer } from './IIocContainer';
 import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
 import { DesignContext } from './actions/DesignContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
-import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
+import { IInjector, InjectorFactoryToken, PROVIDERS, InjectorProxy, InjectorProxyToken } from './IInjector';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { InjectToken } from './InjectToken';
@@ -48,10 +48,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
 
     createInjector(): IInjector {
         return this.getInstance(InjectorFactoryToken);
-    }
-
-    getContainerProxy<T extends IIocContainer>(): ContainerProxy<T> {
-        return this.getSingleton(ContainerProxyToken) as ContainerProxy<T>;
     }
 
     /**

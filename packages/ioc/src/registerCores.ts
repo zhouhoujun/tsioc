@@ -1,4 +1,4 @@
-import { IIocContainer, IocContainerToken, ContainerProxyToken, ContainerProxy } from './IIocContainer';
+import { IIocContainer, IocContainerToken } from './IIocContainer';
 import { TypeReflects } from './services/TypeReflects';
 import { TypeReflectsToken } from './services/ITypeReflects';
 import { MethodAccessorToken, INVOKED_PROVIDERS } from './IMethodAccessor';
@@ -10,7 +10,7 @@ import { MethodAccessor } from './actions/MethodAccessor';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
-import { PROVIDERS, InjectorProxyToken, InjectorFactoryToken } from './IInjector';
+import { PROVIDERS, InjectorFactoryToken } from './IInjector';
 import { ActionInjectorToken } from './actions/Action';
 
 /**
@@ -20,9 +20,8 @@ import { ActionInjectorToken } from './actions/Action';
  * @param {IIocContainer} container
  */
 export function registerCores(container: IIocContainer) {
-    let fac = container.getInstance(InjectorProxyToken) as ContainerProxy;
+    let fac = container.getProxy();
     container.set(IocContainerToken, fac);
-    container.setValue(ContainerProxyToken, fac);
     container.setValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);

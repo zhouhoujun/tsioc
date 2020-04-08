@@ -1,17 +1,26 @@
-import { Abstract } from '@tsdi/ioc';
-import { ComponentMetadataFacade, DirectiveMetadataFacade } from './interface';
+import { Abstract, IProviders, InjectorProvider } from '@tsdi/ioc';
+import { IComponentMetadata, IDirectiveMetadata } from '../decorators/IComponentMetadata';
+
+/**
+ * compiler identifiers providers.
+ */
+export class Identifiers extends InjectorProvider {
+
+}
 
 /**
  * ivy compiler.
  */
 @Abstract()
 export abstract class CompilerFacade {
+    /**
+     * compiler providers. the IInjector compiler registered in.
+     */
+    abstract getCompilerProviders(): IProviders;
 
     abstract compileTemplate(template: any): any;
 
-    abstract compileComponent(meta: ComponentMetadataFacade): any;
+    abstract compileComponent(meta: IComponentMetadata): any;
 
-    abstract compileDirective(meta: DirectiveMetadataFacade): any;
-
-    abstract serialize(component: any): any;
+    abstract compileDirective(meta: IDirectiveMetadata): any;
 }

@@ -13,13 +13,13 @@ import { Vaildate } from './decorators/Vaildate';
 import { Pipe } from './decorators/Pipe';
 
 import { BindingPropTypeAction } from './registers/BindingPropTypeAction';
-import { BindingsCache } from './registers/BindingsCache';
 import { RegVaildateAction } from './registers/RegVaildateAction';
 import { PipeRegAction } from './registers/PipeRegAction';
 import { ComponentContext } from './ComponentContext';
 import { DirectiveCompileAction } from './registers/DirectiveCompileAction';
 import { ComponentCompileAction } from './registers/ComponentCompileAction';
 import { ParseTemplateHandle } from './compile/compile-actions';
+import { Identifiers } from './compile/CompilerFacade';
 
 
 /**
@@ -35,15 +35,8 @@ export class ComponentsModule {
         let actInjector = container.getActionInjector();
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Component,
-                {
-                    provide: BindingsCache,
-                    useFactory: () => new BindingsCache()
-                        .register(Input)
-                        .register(Output)
-                        .register(RefChild)
-                        .register(Vaildate)
-                },
-                { provide: BuildContext, useClass: ComponentContext }
+                { provide: BuildContext, useClass: ComponentContext },
+                { provide: Identifiers, useValue: new Identifiers(container.getProxy())}
             );
 
         actInjector.getInstance(ResolveMoudleScope)

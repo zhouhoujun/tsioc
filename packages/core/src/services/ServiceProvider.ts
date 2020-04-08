@@ -1,13 +1,14 @@
-import { IocCoreService, IInjector, Token, ProviderTypes, isToken, IProviders, ContainerProxy, INJECTOR, InjectorProxyToken, PROVIDERS } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, ProviderTypes, isToken, IProviders, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext } from '../resolves/ServiceContext';
 import { ResolveServiceScope } from '../resolves/service-actions';
 import { ServicesOption, ServicesContext } from '../resolves/ServicesContext';
 import { ResolveServicesScope } from '../resolves/services-actions';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
+import { IContainer } from '../IContainer';
 
 export class ServiceProvider extends IocCoreService implements IServiceResolver, IServicesResolver {
-    constructor(private proxy: ContainerProxy) {
+    constructor(private proxy: InjectorProxy<IContainer>) {
         super();
     }
 

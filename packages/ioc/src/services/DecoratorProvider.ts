@@ -1,11 +1,11 @@
 import { Token, Factory } from '../types';
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
-import { ContainerProxy } from '../IIocContainer';
 import { ProviderTypes, InjectTypes } from '../providers/types';
-import { IInjector, PROVIDERS, IProviders } from '../IInjector';
+import { IInjector, PROVIDERS, IProviders, InjectorProxy } from '../IInjector';
 import { tokenId } from '../InjectToken';
 import { ITypeReflects } from './ITypeReflects';
+import { IIocContainer } from '../IIocContainer';
 
 /**
  * current decorator provide token key
@@ -21,7 +21,7 @@ export const DECORATOR = tokenId<string>('DECORATOR_KEY')
 export class DecoratorProvider extends IocCoreService {
     protected map: Map<string, IInjector>;
 
-    constructor(private proxy: ContainerProxy) {
+    constructor(private proxy: InjectorProxy<IIocContainer>) {
         super()
         this.map = new Map();
     }

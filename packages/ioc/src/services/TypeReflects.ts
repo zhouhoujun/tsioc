@@ -1,6 +1,6 @@
 import { ClassType, ObjectMap, Type, Token } from '../types';
 import { IocCoreService } from '../IocCoreService';
-import { IIocContainer, ContainerProxy } from '../IIocContainer';
+import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import { MetadataTypes, DefineClassTypes } from '../factories/DecoratorType';
 import {
@@ -19,7 +19,7 @@ import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecorsRegisterer
 import { ITypeReflects } from './ITypeReflects';
 import { IActionInjector } from '../actions/Action';
 import { TypeDecorators } from '../actions/TypeDecorators';
-import { IInjector } from '../IInjector';
+import { IInjector, InjectorProxy } from '../IInjector';
 
 
 /**
@@ -31,13 +31,13 @@ import { IInjector } from '../IInjector';
  */
 export class TypeReflects extends IocCoreService implements ITypeReflects {
     protected map: Map<ClassType, ITypeReflect>;
-    constructor(private containerFactory: ContainerProxy) {
+    constructor(private proxy: InjectorProxy<IIocContainer>) {
         super();
         this.map = new Map();
     }
 
     getContainer<T extends IIocContainer>(): T {
-        return this.containerFactory() as T;
+        return this.proxy() as T;
     }
 
     private _actInj: IActionInjector;

@@ -1,6 +1,6 @@
 import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
-import { IInjector, IProviders, INJECTOR } from './IInjector';
-import { IIocContainer, ContainerProxy } from './IIocContainer';
+import { IInjector, IProviders, InjectorProxy } from './IInjector';
+import { IIocContainer } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
 import { InjectTypes } from './providers/types';
 import { lang } from './utils/lang';
@@ -17,16 +17,12 @@ import { lang } from './utils/lang';
  */
 export class Injector extends BaseInjector implements IInjector {
 
-    constructor(protected proxy: ContainerProxy) {
+    constructor(protected proxy: InjectorProxy<IIocContainer>) {
         super();
     }
 
     protected parse(...providers: InjectTypes[]): IInjector {
         return new (lang.getClass(this))(this.proxy).inject(...providers);
-    }
-
-    getContainerProxy<T extends IIocContainer>(): ContainerProxy<T> {
-        return this.proxy as ContainerProxy<T>;
     }
 
     getContainer(): IIocContainer {

@@ -4,7 +4,7 @@ import { tokenId } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
 import { ResolveOption } from './actions/ResolveContext';
 import { InjectReference } from './InjectReference';
-import { IIocContainer, ContainerProxy } from './IIocContainer';
+import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 import { lang } from './utils/lang';
@@ -29,9 +29,9 @@ export interface IInjector extends IDestoryable {
      */
     getContainer(): IIocContainer;
     /**
-     * get container proxy.
+     *  get injector proxy
      */
-    getContainerProxy<T extends IIocContainer>(): ContainerProxy<T>;
+    getProxy(): InjectorProxy<this>;
     /**
      * get token.
      *
@@ -186,10 +186,6 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T>;
-    /**
-     *  get injector proxy
-     */
-    getProxy(): InjectorProxy;
     /**
      * set provide.
      *

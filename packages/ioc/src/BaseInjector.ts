@@ -8,7 +8,7 @@ import {
 } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
-import { IIocContainer, ContainerProxy } from './IIocContainer';
+import { IIocContainer } from './IIocContainer';
 import { MethodAccessorToken, MethodType } from './IMethodAccessor';
 import { IParameter } from './IParameter';
 import { ResolveOption } from './actions/ResolveContext';
@@ -68,17 +68,11 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return this.factories.size;
     }
 
-
-    getProxy(): InjectorProxy {
-        return this.getSingleton(InjectorProxyToken);
+    getProxy(): InjectorProxy<this> {
+        return this.getSingleton(InjectorProxyToken) as InjectorProxy<this>;
     }
 
     abstract getContainer(): IIocContainer;
-
-    /**
-     *  get container factory.
-     */
-    abstract getContainerProxy<T extends IIocContainer>(): ContainerProxy<T>;
 
     /**
      * register type.
@@ -601,7 +595,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
             to = filter;
             filter = undefined;
         }
-        to = to || new (lang.getClass(this))(this.getContainerProxy());
+        to = to || new (lang.getClass(this))(this.getContainer().getProxy());
         this.merge(this, to as BaseInjector, filter);
         return to;
     }
