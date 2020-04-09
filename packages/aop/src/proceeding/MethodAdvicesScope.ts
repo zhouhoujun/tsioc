@@ -20,7 +20,7 @@ export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements
             .use(PointcutAdvicesAction)
             .use(ExecuteOriginMethodAction)
             .use(AfterAdvicesAction)
-            .use(AfterSyncReturningAdvicesAction)
+            .use(AfterAsyncReturningAdvicesAction)
             .use(AfterReturningAdvicesAction)
             .use(AfterThrowingAdvicesAction);
     }
@@ -126,7 +126,7 @@ export const AfterAdvicesAction = function (ctx: Joinpoint, next: () => void): v
     next();
 }
 
-export const AfterSyncReturningAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
+export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.throwing || !isPromise(ctx.returning)) {
         return next();
     }
@@ -134,11 +134,11 @@ export const AfterSyncReturningAdvicesAction = function (ctx: Joinpoint, next: (
     ctx.setValue(AOP_STATE, JoinpointState.AfterReturning);
     let advices = ctx.advices;
     let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
-    let asyncRt = ctx.returning;
     ctx.setValue(AOP_RETURNING, PromiseUtil.step([
-        asyncRt,
+        ctx.returning,
         ...advices.Around.map(a => () => invoker(ctx, a)),
-        ...advices.AfterReturning.map(a => () => invoker(ctx, a))
+        ...advices.AfterReturning.map(a => () => invoker(ctx, a)),
+        ctx.returning
     ]));
 
 }

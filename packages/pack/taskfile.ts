@@ -29,6 +29,6 @@ export class PackBuilder implements AfterInit {
     }
 }
 
-// if (process.cwd() === __dirname) {
-//     Workflow.run(PackBuilder);
-// }
+if (process.cwd() === __dirname) {
+    Workflow.run(PackBuilder);
+}
