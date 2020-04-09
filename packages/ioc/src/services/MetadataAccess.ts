@@ -1,6 +1,9 @@
 import { ITypeReflect } from './ITypeReflect';
 import { ClassType, ObjectMap } from '../types';
 
+/**
+ * metadata access for decorator.
+ */
 export interface IMetadataAccess {
     hasMetadata(decorator: string | Function, target: ClassType): boolean;
     hasMetadata(decorator: string | Function, target: ClassType, type: 'constructor'): boolean;

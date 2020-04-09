@@ -192,7 +192,7 @@ program
             files = files.filter(f => f && isString(f));
         } else {
             if (!files || !isString(files)) {
-                files = 'test/**/*.ts';
+                files = 'test/**/*.(js|ts)';
             }
         }
         let unit = requireCwd('@tsdi/unit');

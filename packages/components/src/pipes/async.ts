@@ -7,7 +7,7 @@ import { ChangeDetectorRef } from '../bindings/change_ref';
 import { WrappedValue } from '../bindings/change';
 
 
-@Pipe('async')
+@Pipe('async', false)
 export class AsyncPipe implements OnDestroy, IPipeTransform {
     private _latestValue: any = null;
     private _latestReturnedValue: any = null;

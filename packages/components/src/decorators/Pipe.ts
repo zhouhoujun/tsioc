@@ -1,4 +1,4 @@
-import { Type, TypeMetadata, createClassDecorator, isString, ITypeDecorator, isBoolean, ProviderMetadata } from '@tsdi/ioc';
+import { Type, TypeMetadata, createClassDecorator, isString, ITypeDecorator, isBoolean, ProviderMetadata, isUndefined } from '@tsdi/ioc';
 import { IPipeTransform } from '../bindings/IPipeTransform';
 
 /**
@@ -46,9 +46,10 @@ export interface IPipeDecorator extends ITypeDecorator<IPipeMetadata> {
      * Pipe decorator, define the class as pipe.
      *
      * @Pipe
-     * @param {string} selector metadata selector.
+     * @param {string} name  pipe name.
+     * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
      */
-    (name: string, prue?: boolean): PipeDecorator;
+    (name: string, pure?: boolean): PipeDecorator;
 }
 
 /**
@@ -67,6 +68,10 @@ export const Pipe: IPipeDecorator = createClassDecorator<IPipeMetadata>('Pipe', 
         if (isBoolean(ctx.currArg)) {
             ctx.metadata.pure = ctx.currArg;
         }
-    },
-]);
+    }
+], meta => {
+    if (isUndefined(meta.pure)) {
+        meta.pure = true;
+    }
+});
 

@@ -1,7 +1,7 @@
 import { Pipe } from '../decorators/Pipe';
 import { IPipeTransform } from '../bindings/IPipeTransform';
 
-@Pipe('json')
+@Pipe('json', false)
 export class JsonPipe implements IPipeTransform {
   /**
    * @param value A value of any type to convert into a JSON-format string.

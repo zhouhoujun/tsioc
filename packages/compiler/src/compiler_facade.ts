@@ -7,13 +7,13 @@
  */
 
 
-import {CompilerFacade, CoreEnvironment, ExportedCompilerFacade, R3ComponentMetadataFacade, R3DependencyMetadataFacade, R3DirectiveMetadataFacade, R3FactoryDefMetadataFacade, R3InjectableMetadataFacade, R3InjectorMetadataFacade, R3NgModuleMetadataFacade, R3PipeMetadataFacade, R3QueryMetadataFacade, StringMap, StringMapWithRename} from './compiler_facade_interface';
+import {CompilerFacade, CoreEnvironment, ExportedCompilerFacade, R3ComponentMetadataFacade, R3DependencyMetadataFacade, R3DirectiveMetadataFacade, R3QueryMetadataFacade, StringMap, StringMapWithRename} from './compiler_facade_interface';
 import {ConstantPool} from './constant_pool';
 import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig} from './ml_parser/interpolation_config';
 import {DeclareVarStmt, Expression, LiteralExpr, Statement, StmtModifier, WrappedNodeExpr} from './output/output_ast';
 import {JitEvaluator} from './output/output_jit';
 import {ParseError, ParseSourceSpan, r3JitTypeSourceSpan} from './parse_util';
-import {R3DependencyMetadata, R3FactoryTarget, R3ResolvedDependencyType, compileFactoryFunction} from './render/r3_factory';
+import {R3DependencyMetadata, R3FactoryTarget, R3ResolvedDependencyType} from './render/r3_factory';
 import {R3Reference} from './render/util';
 import {R3DirectiveMetadata, R3QueryMetadata} from './compiler/api';
 import {ParsedHostBindings, compileComponentFromMetadata, compileDirectiveFromMetadata, parseHostBindings, verifyHostBindings} from './compiler/compiler';

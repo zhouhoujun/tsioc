@@ -4,7 +4,7 @@ import { ITemplateRef } from '../ComponentRef';
 
 export type DIterable<T> = Array<T>| Iterable<T>;
 
-@Directive('[each]')
+@Directive('[each][forEach]')
 export class DirectiveEach<T> {
 
     @Input() each: DIterable<T>;
