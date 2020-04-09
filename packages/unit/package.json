@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit",
-  "version": "6.0.0-beta7",
+  "version": "6.0.0-beta8",
   "description": "unit testing framework, base on AOP, Ioc container",
   "scripts": {
     "postinstall": "npm prune",
@@ -32,11 +32,11 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/unit#readme",
   "dependencies": {
-    "@tsdi/ioc": "~6.0.0-beta7",
-    "@tsdi/core": "~6.0.0-beta7",
-    "@tsdi/aop": "~6.0.0-beta7",
-    "@tsdi/boot": "~6.0.0-beta7",
-    "@tsdi/logs": "~6.0.0-beta7",
+    "@tsdi/ioc": "~6.0.0-beta8",
+    "@tsdi/core": "~6.0.0-beta8",
+    "@tsdi/aop": "~6.0.0-beta8",
+    "@tsdi/boot": "~6.0.0-beta8",
+    "@tsdi/logs": "~6.0.0-beta8",
     "@types/mocha": "^5.2.5",
     "assert": "^1.4.1",
     "expect": "^25.3.0",
