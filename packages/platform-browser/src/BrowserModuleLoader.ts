@@ -15,7 +15,9 @@ export class BrowserModuleLoader extends ModuleLoader implements IModuleLoader {
                 return System.import(modulepath);
             }
         } else {
-            lang.assert(window.require, 'has not module loader');
+            if (!window.require) {
+                throw Error('has not module loader');
+            }
             return (modulepath: string) => {
                 return new Promise((resolve, reject) => {
                     window.require([modulepath], (mud) => {
