@@ -111,7 +111,9 @@ export class PlatformService {
     async getFiles(express: Src, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]>;
     async getFiles(express: Src, options: GlobbyOptions, filter?: (fileName: string) => boolean, mapping?: (filename: string) => string): Promise<string[]>;
     async getFiles(express: Src, options: any, filter?: any, mapping?: (filename: string) => string): Promise<string[]> {
-        lang.assertExp(isString(express) || isArray(express), 'input express param type error!');
+        if (!(isString(express) || isArray(express))) {
+            throw Error('input express param type error!');
+        }
         if (isFunction(options)) {
             filter = options;
             mapping = filter;

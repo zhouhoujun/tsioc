@@ -1,11 +1,11 @@
 import {
-    Inject, TypeProviderAction, DecoratorProvider, DesignRegisterer, IocExt
+    Inject, DecoratorProvider, DesignRegisterer, IocExt, TypeProviderAction
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { BootContext, StartupDecoratorRegisterer, AnnoationAction, BuildContext } from '@tsdi/boot';
+import { BootContext, StartupDecoratorRegisterer, BuildContext, AnnoationAction } from '@tsdi/boot';
 import {
-    ComponentRegAction, ComponentProvider, ComponentSelectorHandle, AstResolver,
-    DefaultComponets, ELEMENT_REF, TEMPLATE_REF, COMPONENT_REF, BindingsCache, Input, Output, RefChild, Vaildate
+    ComponentProvider, ComponentSelectorHandle, AstResolver,
+    DefaultComponets, ELEMENT_REF, TEMPLATE_REF, COMPONENT_REF, BindingsCache, Input, Output, RefChild, Vaildate, ComponentRegAction
 } from '@tsdi/components';
 import { Task } from './decorators/Task';
 import { RunAspect } from './aop/RunAspect';
@@ -54,7 +54,6 @@ export class ActivityModule {
                 { provide: ELEMENT_REF, useClass: ActivityElementRef },
                 { provide: TEMPLATE_REF, useClass: ActivityTemplateRef },
                 { provide: COMPONENT_REF, useClass: ActivityComponentRef },
-                { provide: AnnotationCloner, useClass: ComponentAnnotationCloner },
                 {
                     provide: BindingsCache,
                     useFactory: () => new BindingsCache()

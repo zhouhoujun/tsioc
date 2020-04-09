@@ -2,7 +2,7 @@ import { Input, Binding } from '@tsdi/components';
 import { Task, Src, TemplateOption } from '@tsdi/activities';
 import { runTest, UnitTestConfigure } from '@tsdi/unit';
 import { ConsoleReporter } from '@tsdi/unit-console';
-import { NodeActivityContext } from '../NodeActivityContext';
+import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
 
 
@@ -17,30 +17,30 @@ export interface UnitTestActivityOption extends TemplateOption {
     /**
      * test source.
      *
-     * @type {Src}
+     * @type {NodeExpression<Src>}
      * @memberof UnitTestActivityOption
      */
-    test: Binding<Src>;
+    test: Binding<NodeExpression<Src>>;
 
     /**
      * src option
      *
-     * @type {DestOptions}
+     * @type {NodeExpression<DestOptions>}
      * @memberof UnitTestActivityOption
      */
-    testOptions?: Binding<UnitTestConfigure>;
+    testOptions?: Binding<NodeExpression<UnitTestConfigure>>;
 }
 
 
 @Task('test, [test]')
 export class UnitTestActivity extends NodeActivity<void> {
 
-    @Input() test: Src;
-    @Input('testOptions') options: UnitTestConfigure;
+    @Input() test: NodeExpression<Src>;
+    @Input('testOptions') options: NodeExpression<UnitTestConfigure>;
 
     async execute(ctx: NodeActivityContext): Promise<void> {
-        let test = this.test;
-        let options = this.options;
+        let test = await ctx.resolveExpression(this.test);
+        let options = await ctx.resolveExpression(this.options);
         if (test) {
             await runTest(test, Object.assign({ baseURL: ctx.platform.getRootPath() }, options || {}), ConsoleReporter);
         }

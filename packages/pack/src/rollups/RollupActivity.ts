@@ -4,7 +4,7 @@ import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
     rollup, WatcherOptions, RollupCache, ExternalOption, GlobalsOption, RollupOptions, OutputOptions
 } from 'rollup';
-import { NodeActivityContext } from '../NodeActivityContext';
+import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
 import { NodeActivity } from '../NodeActivity';
 
 /**
@@ -18,51 +18,51 @@ export interface RollupOption extends TemplateOption {
     /**
      * rollup input setting.
      *
-     * @type {Binding<Src>}
+     * @type {Binding<NodeExpression<Src>>}
      * @memberof RollupOption
      */
-    input: Binding<Src>;
+    input: Binding<NodeExpression<Src>>;
 
     /**
      * rollup source maps
      *
-     * @type {Binding<boolean>}
+     * @type {Binding<NodeExpression<boolean>>}
      * @memberof RollupOption
      */
-    sourcemap?: Binding<boolean>;
+    sourcemap?: Binding<NodeExpression<boolean>>;
     /**
      * rollup output setting.
      *
-     * @type {(Binding<OutputOptions>)}
+     * @type {(Binding<NodeExpression<OutputOptions>>)}
      * @memberof RollupOption
      */
-    output?: Binding<OutputOptions>;
+    output?: Binding<NodeExpression<OutputOptions>>;
     /**
      * rollup external setting.
      *
-     * @type {Binding<ExternalOption>}
+     * @type {Binding<NodeExpression<ExternalOption>>}
      * @memberof RollupOption
      */
-    external?: Binding<ExternalOption>;
+    external?: Binding<NodeExpression<ExternalOption>>;
     /**
      * globals.
      *
-     * @type {Binding<GlobalsOption>}
+     * @type {Binding<NodeExpression<GlobalsOption>>}
      * @memberof RollupOption
      */
-    globals?: Binding<GlobalsOption>;
+    globals?: Binding<NodeExpression<GlobalsOption>>;
     /**
      * rollup plugins setting.
      *
-     * @type {Binding<Plugin[]>}
+     * @type {Binding<NodeExpression<Plugin[]>>}
      * @memberof RollupOption
      */
-    plugins?: Binding<Plugin[]>;
+    plugins?: Binding<NodeExpression<Plugin[]>>;
     /**
      * cache.
      */
-    cache?: Binding<RollupCache>;
-    watch?: Binding<WatcherOptions>;
+    cache?: Binding<NodeExpression<RollupCache>>;
+    watch?: Binding<NodeExpression<WatcherOptions>>;
 
     /**
      * custom setup rollup options.
@@ -70,7 +70,7 @@ export interface RollupOption extends TemplateOption {
      * @type {(Binding<RollupOptions>)}
      * @memberof RollupOption
      */
-    options?: Binding<RollupOptions>;
+    options?: Binding<NodeExpression<RollupOptions>>;
 }
 
 /**
@@ -83,41 +83,41 @@ export interface RollupOption extends TemplateOption {
 @Task('rollup')
 export class RollupActivity extends NodeActivity<void> {
 
-    @Input() input: Src;
+    @Input() input: NodeExpression<Src>;
 
-    @Input() output: OutputOptions;
+    @Input() output: NodeExpression<OutputOptions>;
 
-    @Input() plugins: Plugin[];
+    @Input() plugins: NodeExpression<Plugin[]>;
 
-    @Input() external: ExternalOption;
+    @Input() external: NodeExpression<ExternalOption>;
 
-    @Input() globals?: GlobalsOption;
+    @Input() globals?: NodeExpression<GlobalsOption>;
 
-    @Input() sourcemap?: boolean;
+    @Input() sourcemap?: NodeExpression<boolean>;
 
-    @Input() cache: RollupCache;
+    @Input() cache: NodeExpression<RollupCache>;
 
-    @Input() options: RollupOptions;
+    @Input() options: NodeExpression<RollupOptions>;
 
-    @Input() watch: WatcherOptions;
+    @Input() watch: NodeExpression<WatcherOptions>;
 
     async execute(ctx: NodeActivityContext): Promise<void> {
-        let opts = this.options;
+        let opts = await ctx.resolveExpression(this.options);
         opts = opts || { input: '' };
-        this.getInputProps()
+        await Promise.all(this.getInputProps()
             .map(async n => {
-                let val = this[n];
+                let val = await ctx.resolveExpression(this[n]);
                 this.setOptions(ctx, opts, n, val);
-            });
+            }));
         await Promise.all((isArray(opts.output) ? opts.output : [opts.output]).map(async output => {
             if (this.sourcemap) {
-                let sourceMap = this.sourcemap;
+                let sourceMap = await ctx.resolveExpression(this.sourcemap);
                 if (sourceMap) {
                     output.sourcemap = isString(sourceMap) ? true : sourceMap;
                 }
             }
             if (this.globals) {
-                let globals = this.globals;
+                let globals = await ctx.resolveExpression(this.globals);
                 output.globals = globals;
             } else {
                 output.globals = {};

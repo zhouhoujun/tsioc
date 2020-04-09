@@ -9,7 +9,6 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "useDefineForClassFields":false,
     "paths": {
       "@tsdi/annotations": [
         "packages/annotations/src"

@@ -5,7 +5,7 @@ import { Task } from '@tsdi/activities';
 import { Plugin, RollupOptions } from 'rollup';
 import { CompilerOptions, nodeModuleNameResolver, sys } from 'typescript';
 import { createFilter } from 'rollup-pluginutils';
-import { NodeActivityContext } from '../NodeActivityContext';
+import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
 import { RollupActivity, RollupOption } from './RollupActivity';
 import { TsComplie } from '../ts-complie';
 import { tsdexp } from '../exps';
@@ -21,10 +21,10 @@ export interface RollupTsOption extends RollupOption {
     /**
      * rollup annotation.
      *
-     * @type {Binding<boolean>}
+     * @type {Binding<NodeExpression<boolean>>}
      * @memberof RollupOption
      */
-    annotation?: Binding<boolean>;
+    annotation?: Binding<NodeExpression<boolean>>;
     /**
      * include libs for auto create rollup options.
      *
@@ -33,39 +33,39 @@ export interface RollupTsOption extends RollupOption {
      */
     includeLib?: Binding<string[]>;
 
-    include?: Binding<string[]>;
-    exclude?: Binding<string[]>;
-    tsconfig?: Binding<string>;
-    compileOptions?: Binding<CompilerOptions>;
+    include?: Binding<NodeExpression<string[]>>;
+    exclude?: Binding<NodeExpression<string[]>>;
+    tsconfig?: Binding<NodeExpression<string>>;
+    compileOptions?: Binding<NodeExpression<CompilerOptions>>;
     /**
      * dts sub folder name
      *
      * @type {string}
      * @memberof LibTaskOption
      */
-    dts?: Binding<string>;
+    dts?: Binding<NodeExpression<string>>;
     /**
      * before compile plugins.
      *
      * @type {Binding<NodeExpression<Plugin[]>>}
      * @memberof RollupTsOption
      */
-    beforeCompilePlugins?: Binding<Plugin[]>;
+    beforeCompilePlugins?: Binding<NodeExpression<Plugin[]>>;
     /**
      * tscompile rollup plugin.
      *
      * @type {Binding<NodeExpression<Plugin>>}
      * @memberof RollupTsOption
      */
-    tscompile?: Binding<Plugin>;
-    uglify: Binding<boolean | Plugin>;
+    tscompile?: Binding<NodeExpression<Plugin>>;
+    uglify: Binding<NodeExpression<boolean | Plugin>>;
     /**
      * after ts compile rollup plugins.
      *
-     * @type {Plugin[]}
+     * @type {NodeExpression<Plugin[]>}
      * @memberof RollupOption
      */
-    afterCompilePlugins?: Binding<Plugin[]>;
+    afterCompilePlugins?: Binding<NodeExpression<Plugin[]>>;
 
 }
 const TSLIB_ID = '\0tslib';
@@ -75,20 +75,20 @@ const TSLIB_ID = '\0tslib';
 })
 export class RollupTsActivity extends RollupActivity {
 
-    @Input('beforeCompilePlugins') beforeCompile: Plugin[];
-    @Input() tscompile: Plugin;
-    @Input('afterCompilePlugins') afterCompile: Plugin[];
+    @Input('beforeCompilePlugins') beforeCompile: NodeExpression<Plugin[]>;
+    @Input() tscompile: NodeExpression<Plugin>;
+    @Input('afterCompilePlugins') afterCompile: NodeExpression<Plugin[]>;
 
     @Input() includeLib: string[];
-    @Input() annotation: boolean;
+    @Input() annotation: NodeExpression<boolean>;
 
-    @Input('include', ['*.ts+(|x)', '**/*.ts+(|x)']) include: string[];
-    @Input('exclude', ['*.d.ts', '**/*.d.ts']) exclude: string[];
+    @Input('include', ['*.ts+(|x)', '**/*.ts+(|x)']) include: NodeExpression<string[]>;
+    @Input('exclude', ['*.d.ts', '**/*.d.ts']) exclude: NodeExpression<string[]>;
 
-    @Input() dts: string;
-    @Input('tsconfig', './tsconfig.json') tsconfig: string;
-    @Input() compileOptions?: CompilerOptions;
-    @Input() uglify: boolean | Plugin;
+    @Input() dts: NodeExpression<string>;
+    @Input('tsconfig', './tsconfig.json') tsconfig: NodeExpression<string>;
+    @Input() compileOptions?: NodeExpression<CompilerOptions>;
+    @Input() uglify: NodeExpression<boolean | Plugin>;
 
     private exeCache: {
         beforeCompile?: Plugin[];
@@ -130,9 +130,10 @@ export class RollupTsActivity extends RollupActivity {
             plugins.push(...beforeCompile);
         }
         if (this.tscompile) {
-            plugins.push(this.tscompile);
+            let compile = await ctx.resolveExpression(this.tscompile);
+            plugins.push(compile);
         } else {
-            plugins.push(this.getDefaultTsCompiler(ctx));
+            plugins.push(await this.getDefaultTsCompiler(ctx));
         }
 
         if (opts.plugins && opts.plugins.length) {
@@ -144,7 +145,7 @@ export class RollupTsActivity extends RollupActivity {
         }
 
         if (this.uglify) {
-            let ugfy = this.uglify;
+            let ugfy = await ctx.resolveExpression(this.uglify);
             const uglify = syncRequire('rollup-plugin-uglify');
             if (isBoolean(ugfy)) {
                 ugfy && plugins.push(uglify());
@@ -155,17 +156,17 @@ export class RollupTsActivity extends RollupActivity {
         opts.plugins = plugins;
     }
 
-    getDefaultTsCompiler(ctx: NodeActivityContext): Plugin {
+    async getDefaultTsCompiler(ctx: NodeActivityContext): Promise<Plugin> {
         const tslib = syncRequire('tslib');
 
-        let include = this.include;
-        let exclude = this.exclude;
-        let annotation = this.annotation;
+        let include = await ctx.resolveExpression(this.include);
+        let exclude = await ctx.resolveExpression(this.exclude)
+        let annotation = await ctx.resolveExpression(this.annotation);
         const filter = createFilter(include, exclude);
         let compile = ctx.injector.get(TsComplie);
         let projectDirectory = ctx.platform.getRootPath();
-        let settings: CompilerOptions = this.compileOptions;
-        let tsconfig = this.tsconfig;
+        let settings: CompilerOptions = await ctx.resolveExpression(this.compileOptions);
+        let tsconfig = await ctx.resolveExpression(this.tsconfig);
         tsconfig = ctx.platform.toRootPath(tsconfig);
 
         let parsed = compile.parseTsconfig(projectDirectory, tsconfig, settings);

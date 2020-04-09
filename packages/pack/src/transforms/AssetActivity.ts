@@ -19,21 +19,21 @@ export interface AssetActivityOption extends TemplateOption {
      * @type {Binding<Src>}
      * @memberof AssetActivityOption
      */
-    src?: Binding<Src>;
+    src?: Binding<NodeExpression<Src>>;
     /**
      * sourcemap.
      *
-     * @type {(Binding<string | boolean>)}
+     * @type {(Binding<NodeExpression<string | boolean>>)}
      * @memberof AssetActivityOption
      */
-    sourcemap?: Binding<string | boolean>;
+    sourcemap?: Binding<NodeExpression<string | boolean>>;
     /**
      * shell args.
      *
-     * @type {Binding<string>}
+     * @type {Binding<Src>}
      * @memberof AssetActivityOption
      */
-    dist?: Binding<string>;
+    dist?: Binding<NodeExpression<Src>>;
     /**
      * stream pipe works after asset loaded.
      *
@@ -56,69 +56,50 @@ export interface AssetActivityOption extends TemplateOption {
 
 @Task({
     selector: 'asset',
-    template: `
-        <src [src]="src"></src>
-        <execute *if="sourcemap" name="sourcemap-init" [action]="sourcemapInit(ctx.getData())"></execute>
-        <pipes [pipes]="pipes"></pipes>
-        <execute *if="sourcemap" name="sourcemap-write" [action]="sourcemapWrite(ctx.getData())"></execute>
-        <dist [dist]="dist"></dist>
-    `
+    template: [
+        {
+            activity: 'src',
+            src: 'binding: src'
+        },
+        {
+            activity: Activities.if,
+            condition: 'binding: sourcemap',
+            body: {
+                name: 'sourcemap-init',
+                activity: Activities.execute,
+                action: (ctx: NodeActivityContext, bind) => {
+                    let framework = bind.getScope<AssetActivity>().framework || sourcemaps;
+                    return  ctx.getData<ITransform>().pipe(framework.init())
+                }
+            }
+        },
+        {
+            activity: 'pipes',
+            pipes: 'binding: pipes'
+        },
+        {
+            activity: Activities.if,
+            condition: 'binding: sourcemap',
+            body: {
+                name: 'sourcemap-write',
+                activity: Activities.execute,
+                action: (ctx: NodeActivityContext, bind) => {
+                    let scope = bind.getScope<AssetActivity>();
+                    let framework = scope.framework || sourcemaps;
+                    return ctx.getData<ITransform>().pipe(framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
+                }
+            }
+        },
+        {
+            activity: 'dist',
+            dist: 'binding: dist',
+        }
+    ]
 })
 export class AssetActivity {
-    @Input() src: Src;
-    @Input() dist: string;
+    @Input() src: NodeExpression<Src>;
+    @Input() dist: NodeExpression<string>;
     @Input() sourcemap: string | boolean;
     @Input('sourceMapFramework') framework: any;
     @Input('pipes') pipes: ActivityType<ITransform>[];
-
-    sourcemapInit(stream) {
-        let framework = this.framework || sourcemaps;
-        return stream.pipe(framework.init());
-    }
-
-    sourcemapWrite(stream) {
-        let framework = this.framework || sourcemaps;
-        return stream.pipe(framework.write(isString(this.sourcemap) ? this.sourcemap : './sourcemaps'));
-    }
 }
-
-
-// template: [
-//     {
-//         activity: 'src',
-//         src: 'binding: src'
-//     },
-//     {
-//         activity: Activities.if,
-//         condition: 'binding: sourcemap',
-//         body: {
-//             name: 'sourcemap-init',
-//             activity: Activities.execute,
-//             action: (ctx: NodeActivityContext, bind) => {
-//                 let framework = bind.getScope<AssetActivity>().framework || sourcemaps;
-//                 return  ctx.getData<ITransform>().pipe(framework.init())
-//             }
-//         }
-//     },
-//     {
-//         activity: 'pipes',
-//         pipes: 'binding: pipes'
-//     },
-//     {
-//         activity: Activities.if,
-//         condition: 'binding: sourcemap',
-//         body: {
-//             name: 'sourcemap-write',
-//             activity: Activities.execute,
-//             action: (ctx: NodeActivityContext, bind) => {
-//                 let scope = bind.getScope<AssetActivity>();
-//                 let framework = scope.framework || sourcemaps;
-//                 return ctx.getData<ITransform>().pipe(framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'))
-//             }
-//         }
-//     },
-//     {
-//         activity: 'dist',
-//         dist: 'binding: dist',
-//     }
-// ]

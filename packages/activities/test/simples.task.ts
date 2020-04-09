@@ -69,13 +69,13 @@ export class WorkTask extends Activity<string> {
     ],
     selector: 'comptest',
     template: [
-        { activity: 'if', condition: (ctx) => !!ctx.workflow.args[0], body: [] },
+        { activity: Activities.if, condition: (ctx) => !!ctx.workflow.args[0], body: [] },
         {
-            activity: 'else',
+            activity: Activities.else,
             body: [
                 // WorkTask
                 {
-                    activity: 'switch',
+                    activity: Activities.switch,
                     switch: (ctx) => ctx.workflow.args.length,
                     cases: [
                         { case: 0, body: [] }
@@ -108,7 +108,7 @@ export class SimpleCTask {
     template: [
         {
             name: 'test---task---3',
-            activity: 'if',
+            activity: Activities.if,
             condition: ctx => true,
             body: [SimpleTask]
         },

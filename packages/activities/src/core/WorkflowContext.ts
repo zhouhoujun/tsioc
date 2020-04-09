@@ -1,8 +1,8 @@
 import { PromiseUtil, lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId, AsyncHandler } from '@tsdi/ioc';
-import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext } from '@tsdi/boot';
+import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext, Handle } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
-    CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
+    NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
 } from '@tsdi/components';
 import { CTX_RUN_SCOPE, CTX_RUN_PARENT, CTX_BASEURL } from './IActivityContext';
 import { ActivityContext, ActivityTemplateContext } from './ActivityContext';
@@ -25,9 +25,35 @@ export const CTX_CURR_ACT_REF = tokenId<any>('CTX_CURR_ACT_REF');
 export const CTX_CURR_ACTSCOPE_REF = tokenId<any>('CTX_CURR_ACTSCOPE_REF');
 
 /**
- *  activity run state
+ *run state.
+ *
+ * @export
+ * @enum {number}
  */
-export type RunState = 'init' | 'running' | 'pause' | 'stop' | 'complete';
+export enum RunState {
+    /**
+     * activity init.
+     */
+    init,
+    /**
+     * runing.
+     */
+    running,
+    /**
+     * activity parused.
+     */
+    pause,
+    /**
+     * activity stopped.
+     */
+    stop,
+    /**
+     * activity complete.
+     */
+    complete
+}
+
+
 
 
 @Injectable
@@ -272,6 +298,10 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
         this.onDestroy(() => injector.getSingleton(COMPONENT_REFS)?.delete(this.instance));
     }
 
+    getNodeSelector(): NodeSelector {
+        return new NodeSelector(this.nodeRef);
+    }
+
     /**
      * run activity.
      * @param ctx root context.
@@ -335,16 +365,16 @@ export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Ser
         let target = this.getBoot() as IActivityRef;
         target.context.setValue(CTX_RUN_PARENT, context);
         await target.run(context);
-        this.state = 'complete';
+        this.state = RunState.complete;
         target.destroy();
     }
 
     async stop(): Promise<any> {
-        this.state = 'stop';
+        this.state = RunState.stop;
     }
 
     async pause(): Promise<any> {
-        this.state = 'pause';
+        this.state = RunState.pause;
     }
 
 }

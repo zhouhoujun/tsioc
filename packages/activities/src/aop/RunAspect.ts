@@ -27,9 +27,9 @@ export class RunAspect {
             return;
         }
         switch (startup.state) {
-            case 'pause':
+            case RunState.pause:
                 throw new Error('workflow paused!');
-            case 'stop':
+            case RunState.stop:
                 throw new Error('workflow stop!');
         }
 

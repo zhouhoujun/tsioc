@@ -90,12 +90,11 @@ export abstract class PropBinding<T = any> {
                     target[fieldName] = this.resolveExression();
                 });
             });
-            if (!sub || !last) {
-                console.log(scope, target, fieldName, sub, last);
+            if (sub) {
+                observe.onPropertyChange(sub, last, (value, oldVal) => {
+                    target[fieldName] = this.resolveExression();
+                });
             }
-            observe.onPropertyChange(sub, last, (value, oldVal) => {
-                target[fieldName] = this.resolveExression();
-            });
         } else {
             observe.onPropertyChange(this.source, field, (value, oldVal) => {
                 target[fieldName] = this.resolveExression();

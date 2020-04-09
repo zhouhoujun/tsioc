@@ -49,10 +49,28 @@ export interface ActivityMetadata extends IComponentMetadata {
 export const WorkflowId = tokenId<string>('WORKFLOW_ID');
 
 /**
- * activities selectors.
+ * selectors.
+ *
+ * @export
+ * @enum {number}
  */
-export type Activities = 'if' | 'elseif' | 'else' | 'dowhile' | 'while' | 'switch'
-    | 'throw' | 'try' | 'catch' | 'invoke' | 'sequence' | 'parallel' | 'interval' | 'each' | 'execute';
+export enum Activities {
+    if = 'if',
+    elseif = 'elseif',
+    else = 'else',
+    dowhile = 'dowhile',
+    while = 'while',
+    switch = 'switch',
+    throw = 'throw',
+    try = 'try',
+    catch = 'catch',
+    invoke = 'invoke',
+    sequence = 'sequence',
+    parallel = 'parallel',
+    interval = 'interval',
+    each = 'each',
+    execute = 'execute'
+}
 
 /**
  * template option.

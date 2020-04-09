@@ -1,8 +1,8 @@
 import { Input, Binding } from '@tsdi/components';
 import { Task, TemplateOption } from '@tsdi/activities';
-import { TransformActivity } from './TransformActivity';
 import { DestOptions, dest } from 'vinyl-fs';
-import { NodeActivityContext } from '../NodeActivityContext';
+import { NodeExpression, NodeActivityContext } from '../NodeActivityContext';
+import { TransformActivity } from './TransformActivity';
 
 
 
@@ -21,7 +21,7 @@ export interface DistActivityOption extends TemplateOption {
      * @type {NodeExpression<string>}
      * @memberof DistActivityOption
      */
-    dist: Binding<string>;
+    dist: Binding<NodeExpression<string>>;
 
     /**
      * dist option
@@ -29,7 +29,7 @@ export interface DistActivityOption extends TemplateOption {
      * @type {Binding<DestOptions>}
      * @memberof DistActivityOption
      */
-    distOptions?: Binding<DestOptions>;
+    distOptions?: Binding<NodeExpression<DestOptions>>;
 }
 
 
@@ -44,14 +44,15 @@ export interface DistActivityOption extends TemplateOption {
 export class DestActivity extends TransformActivity<void> {
 
     @Input() end: boolean;
-    @Input() dist: string;
+    @Input() dist: NodeExpression<string>;
 
-    @Input('destOptions') options: DestOptions;
+    @Input('destOptions') options: NodeExpression<DestOptions>;
 
     async execute(ctx: NodeActivityContext): Promise<void> {
-        if (this.dist) {
-            let options = this.options;
-            let dist = ctx.platform.toRootPath(this.dist);
+        let dist = await ctx.resolveExpression(this.dist);
+        if (dist) {
+            let options = await ctx.resolveExpression(this.options);
+            dist = ctx.platform.toRootPath(dist);
             await this.pipeStream(ctx, ctx.getData(), options ? dest(dist, options) : dest(dist), this.end !== false);
         }
     }
