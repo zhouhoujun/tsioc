@@ -437,7 +437,7 @@ export function isPromise(target: any): target is Promise<any> {
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === '[object Observable]';
+    return toString.call(target) === '[object Observable]' || (isDefined(target) && isFunction(target.subscribe));
 }
 
 /**

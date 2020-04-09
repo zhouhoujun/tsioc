@@ -21,7 +21,7 @@ export interface IPipeMetadata extends TypeMetadata, ProviderMetadata {
     /**
      * If Pipe is pure (its output depends only on its input.)
      */
-    prue?: boolean;
+    pure?: boolean;
 }
 
 
@@ -65,7 +65,7 @@ export const Pipe: IPipeDecorator = createClassDecorator<IPipeMetadata>('Pipe', 
     },
     (ctx, next) => {
         if (isBoolean(ctx.currArg)) {
-            ctx.metadata.prue = ctx.currArg;
+            ctx.metadata.pure = ctx.currArg;
         }
     },
 ]);
