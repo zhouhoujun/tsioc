@@ -6,12 +6,12 @@ import { ControlActivity } from '../core/ControlActivity';
 @Task('equals')
 export class EqualsActivity extends ControlActivity<boolean> {
 
-    @Input() expect: string;
+    @Input() equals: string;
 
     @Input() value: any;
 
     async execute(ctx: IActivityContext): Promise<boolean> {
-        let exp = ctx.getExector().eval(this.expect);
+        let exp = ctx.getExector().eval(this.equals);
         return exp === this.value;
     }
 }

@@ -13,7 +13,7 @@ import { AfterInit } from '@tsdi/components';
         activity: 'libs',
         outDir: '../../dist/pack',
         src: 'src/**/*.ts',
-        test: 'test/**/*.ts',
+        // test: 'test/**/*.ts',
         annotation: true,
         sourcemap: true,
         bundles: [
@@ -29,6 +29,6 @@ export class PackBuilder implements AfterInit {
     }
 }
 
-if (process.cwd() === __dirname) {
-    Workflow.run(PackBuilder);
-}
+// if (process.cwd() === __dirname) {
+//     Workflow.run(PackBuilder);
+// }

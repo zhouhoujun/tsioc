@@ -7,10 +7,10 @@ import { ControlActivity } from '../core/ControlActivity';
 @Task('exists')
 export class ExistsActvity extends ControlActivity<boolean> {
 
-    @Input() expect: string;
+    @Input() exists: string;
 
     async execute(ctx: IActivityContext): Promise<boolean> {
-        let exp = ctx.getExector().eval(this.expect);
+        let exp = ctx.getExector().eval(this.exists);
         return !isNullOrUndefined(exp);
     }
 }
