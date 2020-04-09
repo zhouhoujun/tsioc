@@ -10,7 +10,7 @@ export interface BeforeInit {
      *
      * @memberof BeforeInit
      */
-    onBeforeInit(): void;
+    onBeforeInit(): void | Promise<void>;
 }
 
 /**
@@ -25,7 +25,7 @@ export interface OnInit {
      *
      * @memberof OnInit
      */
-    onInit(): void;
+    onInit(): void | Promise<void>;
 }
 
 /**
@@ -40,7 +40,7 @@ export interface AfterInit {
      *
      * @memberof AfterInit
      */
-    onAfterInit(): void;
+    onAfterInit(): void | Promise<void>;
 }
 
 /**
@@ -55,7 +55,7 @@ export interface AfterContentInit {
      *
      * @memberof AfterInit
      */
-    onAfterContentInit(): void;
+    onAfterContentInit(): void | Promise<void>;
 }
 
 /**
@@ -65,7 +65,7 @@ export interface AfterContentInit {
  * @interface AfterViewInit
  */
 export interface AfterViewInit  {
-    onAfterViewInit(): void;
+    onAfterViewInit(): void | Promise<void>;
 }
 
 /**
@@ -80,5 +80,5 @@ export interface OnDestory {
      *
      * @memberof AfterInit
      */
-    onDestory(): void;
+    onDestory(): void | Promise<void>;
 }

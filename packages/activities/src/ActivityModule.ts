@@ -2,9 +2,9 @@ import {
     Inject, TypeProviderAction, DecoratorProvider, DesignRegisterer, IocExt
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { BootContext, StartupDecoratorRegisterer, AnnoationAction, AnnotationCloner, BuildContext } from '@tsdi/boot';
+import { BootContext, StartupDecoratorRegisterer, AnnoationAction, BuildContext } from '@tsdi/boot';
 import {
-    ComponentRegAction, ComponentProvider, ComponentAnnotationCloner, ComponentSelectorHandle, AstResolver,
+    ComponentRegAction, ComponentProvider, ComponentSelectorHandle, AstResolver,
     DefaultComponets, ELEMENT_REF, TEMPLATE_REF, COMPONENT_REF, BindingsCache, Input, Output, RefChild, Vaildate
 } from '@tsdi/components';
 import { Task } from './decorators/Task';

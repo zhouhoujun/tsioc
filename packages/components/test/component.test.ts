@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, RefChild, NonSerialize, Binding, CompilerFacade } from '../src';
+import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode, ComponentRef, ElementRef, TemplateRef } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, INJECTOR } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
@@ -62,13 +62,15 @@ class Component3 extends Component1 {
 
 @Injectable()
 class CustomeService {
+    @Inject()
+    builder: ComponentBuilder;
 
     @Inject(INJECTOR)
     injector: ICoreInjector;
 
     createComponent3() {
         // console.log(this.container.resolve(BuildHandleRegisterer));
-        return this.injector.getInstance(CompilerFacade).compileTemplate({ template: { element: 'selector3', name: 'test3', address: 'address3', phone: '+86177000000010' }, injector: this.injector })
+        return this.builder.resolveTemplate({ template: { element: 'selector3', name: 'test3', address: 'address3', phone: '+86177000000010' }, injector: this.injector })
     }
 }
 

@@ -1,18 +1,6 @@
-import { Type } from '@tsdi/ioc';
 import { IAnnoationReflect } from '@tsdi/boot';
+import { IBinding } from './bindings/IBinding';
 
-export interface IDirectiveDef {
-    expression: any;
-    type: Type;
-}
-
-/**
- * directive reflect data.
- *
- * @export
- * @interface IBindingTypeReflect
- * @extends {ITypeReflect}
- */
 export interface IDirectiveReflect extends IAnnoationReflect  {
 
     /**
@@ -23,11 +11,12 @@ export interface IDirectiveReflect extends IAnnoationReflect  {
     /**
      * directive compiled def.
      */
-    directiveDef?: IDirectiveDef;
+    directiveDef: any;
 
     /**
-     * directive selector.
+     * get bindings.
+     * @param decor decorator
      */
-    selector?: string;
+    getBindings?<T = IBinding>(decor: string): Map<string, T>;
 }
 

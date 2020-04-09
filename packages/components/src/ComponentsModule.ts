@@ -11,15 +11,21 @@ import { Component } from './decorators/Component';
 import { Directive } from './decorators/Directive';
 import { Vaildate } from './decorators/Vaildate';
 import { Pipe } from './decorators/Pipe';
+import { BindingScope } from './compile/binding-comp';
+import { TemplateParseScope } from './compile/parse-templ';
+import { ComponentBuilder } from './ComponentBuilder';
 
+import { ComponentRegAction } from './registers/ComponentRegAction';
 import { BindingPropTypeAction } from './registers/BindingPropTypeAction';
+import { BindingsCache } from './registers/BindingsCache';
 import { RegVaildateAction } from './registers/RegVaildateAction';
 import { PipeRegAction } from './registers/PipeRegAction';
+import { BindingComponentScope, ParseTemplateHandle  } from './compile/build-comp';
+
+import { DefaultComponets } from './IComponentReflect';
+import { ComponentProvider, AstResolver } from './ComponentProvider';
+import { TEMPLATE_REF, TemplateRef, COMPONENT_REF, ComponentRef, ELEMENT_REF, ElementRef } from './ComponentRef';
 import { ComponentContext } from './ComponentContext';
-import { DirectiveCompileAction } from './registers/DirectiveCompileAction';
-import { ComponentCompileAction } from './registers/ComponentCompileAction';
-import { ParseTemplateHandle } from './compile/compile-actions';
-import { Identifiers } from './compile/CompilerFacade';
 
 
 /**
@@ -33,13 +39,29 @@ export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
         let actInjector = container.getActionInjector();
+
+        actInjector.setValue(DefaultComponets, ['@Component']);
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Component,
+                {
+                    provide: BindingsCache,
+                    useFactory: () => new BindingsCache()
+                        .register(Input)
+                        .register(Output)
+                        .register(RefChild)
+                        .register(Vaildate)
+                },
                 { provide: BuildContext, useClass: ComponentContext },
-                { provide: Identifiers, useValue: new Identifiers(container.getProxy())}
+                { provide: ELEMENT_REF, useClass: ElementRef },
+                { provide: TEMPLATE_REF, useClass: TemplateRef },
+                { provide: COMPONENT_REF, useClass: ComponentRef },
+                { provide: AstResolver, useFactory: (prd) => new AstResolver(prd), deps: [ComponentProvider] }
             );
 
-        actInjector.getInstance(ResolveMoudleScope)
+        actInjector.regAction(BindingScope)
+            .regAction(TemplateParseScope)
+            .getInstance(ResolveMoudleScope)
+            .use(BindingComponentScope)
             .use(ParseTemplateHandle);
 
 
@@ -47,8 +69,8 @@ export class ComponentsModule {
         const prty: DecoratorScope = 'Property';
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Component, cls, TypeProviderAction, AnnoationAction, ComponentCompileAction)
-            .register(Directive, cls, TypeProviderAction, AnnoationAction, DirectiveCompileAction)
+            .register(Component, cls, TypeProviderAction, AnnoationAction, ComponentRegAction)
+            .register(Directive, cls, TypeProviderAction, AnnoationAction)
             .register(Pipe, cls, TypeProviderAction, PipeRegAction)
             .register(Input, prty, BindingPropTypeAction)
             .register(Output, prty, BindingPropTypeAction)
@@ -59,6 +81,7 @@ export class ComponentsModule {
             .register(Component, cls, RegSingletionAction, IocSetCacheAction)
             .register(Directive, cls, RegSingletionAction, IocSetCacheAction);
 
+        container.registerType(ComponentBuilder);
     }
 
 }

@@ -6,6 +6,7 @@ import {
 } from './ComponentRef';
 import { IComponentMetadata } from './decorators/IComponentMetadata';
 import { IComponentReflect } from './IComponentReflect';
+import { ComponentProvider, CTX_COMPONENT_PROVIDER } from './ComponentProvider';
 
 export interface IComponentOption extends IBuildOption {
 
@@ -43,6 +44,7 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
      */
     getScope<T>(): T;
     getScopes(): any[];
+    readonly componentProvider: ComponentProvider;
     readonly componentDecorator: string;
 
 }
@@ -112,6 +114,18 @@ export class ComponentContext<T extends IComponentOption = IComponentOption>
         }
         return scopes;
     }
+
+    get componentProvider(): ComponentProvider {
+        return this.context.getValue(CTX_COMPONENT_PROVIDER) ?? this.getComponentProvider();
+    }
+
+    protected getComponentProvider() {
+        let dector = this.componentDecorator;
+        let pdr = dector ? this.reflects.getActionInjector().getInstance(DecoratorProvider).resolve(dector, ComponentProvider) : null;
+        pdr && this.setValue(CTX_COMPONENT_PROVIDER, pdr);
+        return pdr;
+    }
+
 
     get componentDecorator() {
         return this.context.getValue(CTX_COMPONENT_DECTOR)
