@@ -328,7 +328,7 @@ export class AstResolver {
             let func = this.toScopFunc(expression, Array.from(scopes.keys()));
             return func(...Array.from(scopes.values()));
         } else {
-            return this.toScopFunc(expression, []);
+            return this.toScopFunc(expression, [])();
         }
     }
 
