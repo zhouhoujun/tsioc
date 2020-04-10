@@ -334,10 +334,6 @@ export class AstResolver {
 
     toScopFunc(expression: string, scopes: string[]) {
         return new Function(...scopes, `return ${expression}`) as (...args) => any;
-        // // tslint:disable-next-line:no-eval
-        // return eval(`(${scopes.join(',')}) => {
-        //         return ${expression};
-        //     }`);
     }
 
     protected transforms(pipes: string[], injector: ICoreInjector, scopes: string[]): ((value, args: any[], envOptions?: any) => any)[] {
