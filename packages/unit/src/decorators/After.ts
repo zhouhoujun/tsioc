@@ -2,7 +2,7 @@ import { ITestDecorator, createTestDecorator } from './Test';
 import { TestMetadata } from '../metadata/TestMetadata';
 
 /**
- * @After decorator. define the method of class as unit test action run after all test case.
+ * @AfterAll decorator. define the method of class as unit test action run after all test case.
  *
  * @export
  * @interface IAfterTestDecorator
@@ -13,10 +13,18 @@ export interface IAfterTestDecorator extends ITestDecorator<TestMetadata> {
 }
 
 /**
- * @After decorator. define the method of class as unit test action run after all test case.
+ * @AfterAll decorator. define the method of class as unit test action run after all test case.
  *
  * @export
  * @interface IAfterTestDecorator
  * @template T
  */
-export const After: IAfterTestDecorator = createTestDecorator<TestMetadata>('TestAfter') as IAfterTestDecorator;
+export const AfterAll: IAfterTestDecorator = createTestDecorator<TestMetadata>('AfterAll') as IAfterTestDecorator;
+/**
+ * @AfterAll decorator. define the method of class as unit test action run after all test case.
+ *
+ * @export
+ * @interface IAfterTestDecorator
+ * @template T
+ */
+export const After = AfterAll;

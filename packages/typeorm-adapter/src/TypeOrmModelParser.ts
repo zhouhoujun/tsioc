@@ -1,8 +1,9 @@
 import { ModelParser, DefaultModelParserToken, DBPropertyMetadata } from '@tsdi/boot';
-import { Singleton, Type, ObjectMap, Autorun, SymbolType, Token, isFunction, isString } from '@tsdi/ioc';
+import { Singleton, Type, ObjectMap, Autorun, SymbolType, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
 import { getMetadataArgsStorage } from 'typeorm';
 import { ColumnMetadataArgs } from 'typeorm/metadata-args/ColumnMetadataArgs';
-import { ObjectID } from 'mongodb';
+
+export const ObjectIDToken = tokenId<Type>('ObjectID');
 
 const numbExp = /(int|float|double|dec|numeric|number)/;
 const intExp = /int/;
@@ -16,9 +17,19 @@ const bytesExp = /(bytes|bytea)/;
 @Autorun('setup')
 export class TypeOrmModelParser extends ModelParser {
 
+    @Inject(ObjectIDToken)
+    private _ObjectID: Type;
+
+    isObjectId(type: SymbolType) {
+        return this._ObjectID && this._ObjectID === type;
+    }
+
     setup() {
-        this.getTypeMap()
-            .register(ObjectID, (id) => new ObjectID(id));
+        let ObjectID = this._ObjectID
+        if (ObjectID) {
+            this.getTypeMap()
+                .register(ObjectID, (id) => new ObjectID(id));
+        }
     }
 
     protected getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata[]> {
@@ -52,7 +63,7 @@ export class TypeOrmModelParser extends ModelParser {
                 return true;
             }
         }
-        if (type === ObjectID) {
+        if (this.isObjectId(type)) {
             return true;
         }
         return super.isExtendBaseType(type, propmeta);
@@ -64,8 +75,8 @@ export class TypeOrmModelParser extends ModelParser {
                 return parseInt(value);
             }
         }
-        if (type === ObjectID) {
-            return new ObjectID(value);
+        if (this.isObjectId(type)) {
+            return new this._ObjectID(value);
         }
         return super.resolveExtendType(type, propmeta);
     }
@@ -98,7 +109,7 @@ export class TypeOrmModelParser extends ModelParser {
         }
         switch (col.mode) {
             case 'objectId':
-                type = ObjectID;
+                type = this._ObjectID;
                 break;
         }
         return type;

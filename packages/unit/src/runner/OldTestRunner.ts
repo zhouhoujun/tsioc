@@ -1,6 +1,6 @@
-import { Inject, PromiseUtil, Singleton, Type, INJECTOR } from '@tsdi/ioc';
+import { Inject, PromiseUtil, Singleton, Type, INJECTOR, isFunction } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BootContext, IBootContext } from '@tsdi/boot';
+import { IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe, ISuiteHook } from '../reports/ITestReport';
@@ -14,8 +14,10 @@ const gls = {
     it: undefined,
     test: undefined,
     before: undefined,
+    beforeAll: undefined,
     beforeEach: undefined,
     after: undefined,
+    afterAll: undefined,
     afterEach: undefined
 };
 const testkeys = Object.keys(gls);
@@ -74,6 +76,7 @@ export class OldTestRunner implements ISuiteRunner {
 
         // BDD style
         let describe = globals.describe = (name: string, fn: () => any, superDesc?: ISuiteDescribe) => {
+            if (!isFunction(fn))  return;
             let suiteDesc = {
                 ...superDesc,
                 describe: name,
@@ -87,33 +90,38 @@ export class OldTestRunner implements ISuiteRunner {
             }
 
             globals.it = (title: string, test: () => any, timeout?: number) => {
+                if (!isFunction(test))  return;
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
             }
-            globals.before = (test: () => any, timeout?: number) => {
+            globals.before = globals.beforeAll = (fn: () => any, timeout?: number) => {
+                if (!isFunction(fn))  return;
                 suiteDesc.before = suiteDesc.before || [];
                 suiteDesc.before.push({
-                    fn: test,
+                    fn: fn,
                     timeout: timeout
                 })
             }
-            globals.beforeEach = (test: () => any, timeout?: number) => {
+            globals.beforeEach = (fn: () => any, timeout?: number) => {
+                if (!isFunction(fn))  return;
                 suiteDesc.beforeEach = suiteDesc.beforeEach || [];
                 suiteDesc.beforeEach.push({
-                    fn: test,
+                    fn: fn,
                     timeout: timeout
                 });
             }
-            globals.after = (test: () => any, timeout?: number) => {
+            globals.after = globals.afterAll = (fn: () => any, timeout?: number) => {
+                if (!isFunction(fn))  return;
                 suiteDesc.after = suiteDesc.after || [];
                 suiteDesc.after.push({
-                    fn: test,
+                    fn: fn,
                     timeout: timeout
                 });
             }
-            globals.afterEach = (test: () => any, timeout?: number) => {
+            globals.afterEach = (fn: () => any, timeout?: number) => {
+                if (!isFunction(fn))  return;
                 suiteDesc.afterEach = suiteDesc.afterEach || [];
                 suiteDesc.afterEach.push({
-                    fn: test,
+                    fn: fn,
                     timeout: timeout
                 });
             }
@@ -122,7 +130,7 @@ export class OldTestRunner implements ISuiteRunner {
         };
 
         // TDD style
-        let suite = globals.suite =  function (name: string, fn: () => any, superDesc?: ISuiteDescribe) {
+        let suite = globals.suite = function (name: string, fn: () => any, superDesc?: ISuiteDescribe) {
             let suiteDesc = {
                 ...superDesc,
                 describe: name,
@@ -136,7 +144,7 @@ export class OldTestRunner implements ISuiteRunner {
             globals.test = (title: string, test: () => any, timeout?: number) => {
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
             }
-            globals.before = (test: () => any, timeout?: number) => {
+            globals.before = globals.beforeAll = (test: () => any, timeout?: number) => {
                 suiteDesc.before = suiteDesc.before || [];
                 suiteDesc.before.push({
                     fn: test,
@@ -150,7 +158,7 @@ export class OldTestRunner implements ISuiteRunner {
                     timeout: timeout
                 });
             }
-            globals.after = (test: () => any, timeout?: number) => {
+            globals.after = globals.afterAll = (test: () => any, timeout?: number) => {
                 suiteDesc.after = suiteDesc.after || [];
                 suiteDesc.after.push({
                     fn: test,

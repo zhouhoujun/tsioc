@@ -18,13 +18,14 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      */
     async configureService(ctx: IBootContext): Promise<void> {
         this.ctx = ctx;
-        let config = this.ctx.getConfiguration();
+        const config = this.ctx.getConfiguration();
+        const injector = ctx.injector;
         if (isArray(config.connections)) {
             await Promise.all(config.connections.map(async (options) => {
                 await this.createConnection(options, config);
                 getMetadataArgsStorage().entityRepositories?.forEach(meta => {
                     if (options.entities.indexOf(meta.entity as Type)) {
-                        ctx.injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
+                        injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
                     }
                 });
             }));
@@ -33,7 +34,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
             options.asDefault = true;
             await this.createConnection(options, config);
             getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-                ctx.injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
+                injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
             });
         }
     }

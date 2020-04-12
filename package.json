@@ -64,7 +64,6 @@
     "lodash": "^4.13.1",
     "minimatch": "^3.0.4",
     "minimist": "^1.2.0",
-    "mongodb": "^3.5.4",
     "on-change": "^1.6.2",
     "path": "^0.12.7",
     "pretty-hrtime": "^1.0.3",

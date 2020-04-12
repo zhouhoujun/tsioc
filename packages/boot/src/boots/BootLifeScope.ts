@@ -2,9 +2,9 @@ import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../builder/BuildHandles';
 import { IAnnoationContext } from '../AnnoationContext';
 import {
-    BootDepsHandle, BootProvidersHandle, BootConfigureLoadHandle, RegisterModuleScope,
-    BootConfigureRegisterHandle, ModuleBuildScope, ModuleConfigureRegisterHandle, ConfigureServiceHandle,
-    ResolveRunnableScope, StartupBootHandle
+    RegBootEnvScope, RegisterModuleScope,
+    BootConfigureRegisterHandle, ModuleBuildScope, ModuleConfigureRegisterHandle,
+    ResolveRunnableScope, StartupBootHandle, ConfigureServiceScope
 } from './boot-handles';
 
 
@@ -13,14 +13,12 @@ import {
 export class BootLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
-        this.use(BootDepsHandle)
-            .use(BootProvidersHandle)
-            .use(BootConfigureLoadHandle)
+        this.use(RegBootEnvScope)
             .use(RegisterModuleScope)
             .use(BootConfigureRegisterHandle)
             .use(ModuleBuildScope)
             .use(ModuleConfigureRegisterHandle)
-            .use(ConfigureServiceHandle)
+            .use(ConfigureServiceScope)
             .use(ResolveRunnableScope)
             .use(StartupBootHandle);
     }

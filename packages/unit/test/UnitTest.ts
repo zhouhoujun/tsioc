@@ -1,6 +1,6 @@
 import { PromiseUtil, Inject } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '../src';
+import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before } from '../src';
 
 
 
@@ -8,6 +8,15 @@ import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken } from '../src';
 export class SuiteTest {
 
     // testContainer: AnyApplicationBuilder;
+    @BeforeAll()
+    async init1() {
+        console.log('---------beofre all init1-----------');
+    }
+
+    @Before()
+    init2() {
+        console.log('---------beofre all init2-----------');
+    }
 
     @BeforeEach()
     async initTest() {
@@ -16,7 +25,7 @@ export class SuiteTest {
 
     @Test('assert test timeout', 200)
     testTimeout() {
-        console.log('--------assert test timeout------');
+        console.log('---------assert test timeout------');
         let def = PromiseUtil.defer();
         setTimeout(() => {
             console.log('out time do...');
@@ -27,7 +36,7 @@ export class SuiteTest {
 
     @Test('assert test in time', 200)
     testInTime(assert: Assert) {
-        console.log('--------assert test in time------');
+        console.log('---------assert test in time------');
         let def = PromiseUtil.defer();
         assert.ok(assert);
         setTimeout(() => {
