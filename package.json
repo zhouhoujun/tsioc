@@ -1,6 +1,6 @@
 {
   "name": "tsioc-srcs",
-  "version": "6.0.0-beta8",
+  "version": "6.0.0-beta9",
   "description": "AOP,  Ioc container, Boot framework, unit testing framework , activities workflow framework.",
   "scripts": {
     "postinstall": "npm prune",
@@ -33,6 +33,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@jest/types": "25.3.0",
     "@types/execa": "^0.9.0",
     "@types/mocha": "^5.2.5",
     "@types/shelljs": "^0.8.0",
@@ -46,7 +47,6 @@
     "del": "^3.0.0",
     "execa": "^1.0.0",
     "expect": "^25.3.0",
-    "@jest/types": "25.3.0",
     "findup": "^0.1.5",
     "fs": "0.0.1-security",
     "globby": "^10.0.1",
@@ -66,6 +66,7 @@
     "minimist": "^1.2.0",
     "on-change": "^1.6.2",
     "path": "^0.12.7",
+    "pg": "^8.0.2",
     "pretty-hrtime": "^1.0.3",
     "reflect-metadata": "^0.1.12",
     "rollup": "^1.31.1",

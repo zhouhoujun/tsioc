@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { IBootContext, IConnectionOptions, RunnableConfigure, ConnectionStatupService } from '@tsdi/boot';
 import { Singleton, Type, isString, isArray } from '@tsdi/ioc';
-import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository } from 'typeorm';
+import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
 
 
 @Singleton()
@@ -47,8 +47,8 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
     async createConnection(options: IConnectionOptions, config: RunnableConfigure) {
         if (options.asDefault && !options.entities) {
             let entities: Type[] = [];
-            let loader = this.ctx.injector.getLoader();
             if (config.models.some(m => isString(m))) {
+                let loader = this.ctx.injector.getLoader();
                 let models = await loader.loadTypes({ files: <string[]>config.models, basePath: this.ctx.baseURL });
                 models.forEach(ms => {
                     ms.forEach(mdl => {
@@ -79,6 +79,12 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      * @memberof TyepOrmStartupService
      */
     getConnection(connectName?: string): Connection {
-        return getConnection(connectName ?? this.options.name);
+        return getConnection(connectName ?? this.options?.name);
+    }
+
+    stop() {
+        getConnectionManager().connections.forEach(c => {
+            c && c.close();
+        })
     }
 }

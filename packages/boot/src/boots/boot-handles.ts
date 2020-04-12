@@ -45,6 +45,13 @@ export abstract class BootHandle extends BuildHandle<IBootContext> {
 
 export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActionSetup {
 
+    async execute(ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+        await super.execute(ctx);
+        if (next) {
+            await next();
+        }
+    }
+
     setup() {
         this.use(BootDepsHandle)
             .use(BootProvidersHandle)
@@ -278,7 +285,14 @@ export const ModuleConfigureRegisterHandle = async function (ctx: BootContext, n
 /**
  * configure startup service scope.
  */
-export class ConfigureServiceScope extends BuildHandles<IBootContext> implements IActionSetup {
+export class StatupServiceScope extends BuildHandles<IBootContext> implements IActionSetup {
+
+    async execute(ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+        await super.execute(ctx);
+        if (next) {
+            await next();
+        }
+    }
 
     setup() {
         this.use(ConfigureServiceHandle);

@@ -158,7 +158,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
                     key: key,
                     order: meta ? meta.setp : keys.length,
                     timeout: timeoutMeta ? timeoutMeta.timeout : this.timeout,
-                    title: title
+                    title: title || key
                 } as ICaseDescribe;
             })
                 .sort((a, b) => {
