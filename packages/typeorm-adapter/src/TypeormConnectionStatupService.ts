@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { IBootContext, IConnectionOptions, RunnableConfigure, ConnectionStatupService } from '@tsdi/boot';
-import { Singleton, Type, isString, isArray } from '@tsdi/ioc';
+import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
 import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
 
 
@@ -26,28 +26,24 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
             await loader.loadTypes({ files: <string[]>config.repositories, basePath: this.ctx.baseURL });
         }
         if (isArray(config.connections)) {
-            await Promise.all(config.connections.map(async (options) => {
-                let connection = await this.createConnection(options, config);
-                if (options.initDb) {
-                    await options.initDb(connection);
-                }
-                getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-                    if (options.entities.indexOf(meta.target as Type)) {
-                        injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
-                    }
-                });
-            }));
+            await Promise.all(config.connections.map((options) => this.statupConnection(injector, options, config)));
         } else if (config.connections) {
             let options = config.connections as IConnectionOptions;
             options.asDefault = true;
-            let connection = await this.createConnection(options, config);
-            if (options.initDb) {
-                await options.initDb(connection);
-            }
-            getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-                injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
-            });
+            await this.statupConnection(injector, options, config);
         }
+    }
+
+    async statupConnection(injector: IInjector, options: IConnectionOptions, config: RunnableConfigure) {
+        const connection = await this.createConnection(options, config);
+        if (options.initDb) {
+            await options.initDb(connection);
+        }
+        getMetadataArgsStorage().entityRepositories?.forEach(meta => {
+            if (options.entities.indexOf(meta.entity as Type)) {
+                injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
+            }
+        });
     }
 
     /**
