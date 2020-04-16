@@ -20,20 +20,10 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         this.ctx = ctx;
         const config = this.ctx.getConfiguration();
         const injector = ctx.injector;
-        let repositories: Type[];
         if (config.repositories && config.repositories.some(m => isString(m))) {
             let loader = this.ctx.injector.getLoader();
-            let types = await loader.loadTypes({ files: <string[]>config.repositories, basePath: this.ctx.baseURL });
-            repositories = [];
-            types.forEach(ms => {
-                ms.forEach(mdl => {
-                    if (mdl && repositories.indexOf(mdl) < 0) {
-                        repositories.push(mdl);
-                    }
-                });
-            });
-        } else {
-            repositories = config.repositories as Type[];
+            // preload repositories for typeorm.
+            await loader.loadTypes({ files: <string[]>config.repositories, basePath: this.ctx.baseURL });
         }
         if (isArray(config.connections)) {
             await Promise.all(config.connections.map(async (options) => {
@@ -58,12 +48,6 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
                 injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
             });
         }
-
-        repositories.forEach(r => {
-            if (!injector.has(r)) {
-                injector.set(r, () => getCustomRepository(r));
-            }
-        });
     }
 
     /**
