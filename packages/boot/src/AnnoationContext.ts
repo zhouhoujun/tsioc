@@ -1,6 +1,6 @@
 import {
-    Type, createContext, IocPdrsOption, IocPdrsContext,
-    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, IProviders, IIocContext, isDefined
+    Type, createContext, IocPdrsOption, IocPdrsContext, IProviders, IIocContext, isDefined,
+    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';

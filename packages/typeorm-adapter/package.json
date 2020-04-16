@@ -2,7 +2,7 @@
   "name": "@tsdi/typeorm-adapter",
   "version": "6.0.0-beta9",
   "description": "@tsdi/typeorm-adapter is typeorm adapter orm for boot application, mvc frameworks on server.",
-  "main": "./bundle/typeorm-adapter.umd.js",
+  "main": "./bundles/typeorm-adapter.js",
   "typings": "./lib/index.d.ts",
   "scripts": {
     "postinstall": "npm prune",

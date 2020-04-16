@@ -20,23 +20,50 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         this.ctx = ctx;
         const config = this.ctx.getConfiguration();
         const injector = ctx.injector;
+        let repositories: Type[];
+        if (config.repositories && config.repositories.some(m => isString(m))) {
+            let loader = this.ctx.injector.getLoader();
+            let types = await loader.loadTypes({ files: <string[]>config.repositories, basePath: this.ctx.baseURL });
+            repositories = [];
+            types.forEach(ms => {
+                ms.forEach(mdl => {
+                    if (mdl && repositories.indexOf(mdl) < 0) {
+                        repositories.push(mdl);
+                    }
+                });
+            });
+        } else {
+            repositories = config.repositories as Type[];
+        }
         if (isArray(config.connections)) {
             await Promise.all(config.connections.map(async (options) => {
-                await this.createConnection(options, config);
+                let connection = await this.createConnection(options, config);
+                if (options.initDb) {
+                    await options.initDb(connection);
+                }
                 getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-                    if (options.entities.indexOf(meta.entity as Type)) {
-                        injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
+                    if (options.entities.indexOf(meta.target as Type)) {
+                        injector.set(meta.target, () => getCustomRepository(meta.target, options.name), meta.target as Type);
                     }
                 });
             }));
         } else if (config.connections) {
             let options = config.connections as IConnectionOptions;
             options.asDefault = true;
-            await this.createConnection(options, config);
+            let connection = await this.createConnection(options, config);
+            if (options.initDb) {
+                await options.initDb(connection);
+            }
             getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-                injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
+                injector.set(meta.target, () => getCustomRepository(meta.target, options.name), meta.target as Type);
             });
         }
+
+        repositories.forEach(r => {
+            if (!injector.has(r)) {
+                injector.set(r, () => getCustomRepository(r), r);
+            }
+        });
     }
 
     /**
@@ -65,10 +92,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         if (options.asDefault) {
             this.options = options;
         }
-        let connect = await createConnection(options as ConnectionOptions);
-        if (options.initDb) {
-            await options.initDb(connect);
-        }
+        return await createConnection(options as ConnectionOptions);
     }
 
     /**

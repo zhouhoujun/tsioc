@@ -82,4 +82,9 @@ export interface RunnableConfigure extends ModuleConfigure {
      * models of boot application.
      */
     models?: string[] | Type[];
+
+    /**
+     * repositories of orm.
+     */
+    repositories?: string[] | Type[];
 }
