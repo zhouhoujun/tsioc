@@ -122,9 +122,13 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     ctx.setValue(CTX_APP_CONFIGURE, config);
 
     if (config.deps && config.deps.length) {
-        let container = ctx.getContainer();
-        await container.load(injector, ...config.deps);
+        injector.load(...config.deps);
     }
+
+    if (config.providers && config.providers.length) {
+        injector.inject(...config.providers);
+    }
+
     if (config.baseURL && !ctx.baseURL) {
         ctx.setValue(ProcessRunRootToken, config.baseURL);
         injector.setValue(ProcessRunRootToken, ctx.baseURL);
@@ -264,23 +268,23 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
     await next();
 };
 
-/**
- * register module configure register.
- * @param ctx boot context
- * @param next next step.
- */
-export const ModuleConfigureRegisterHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    let regs = ctx.injector.getServices({ token: ConfigureRegister, target: ctx.type, tagOnly: true });
-    if (regs && regs.length) {
-        let config = ctx.getConfiguration();
-        if (!config) {
-            let mgr = ctx.injector.resolve(ConfigureManager);
-            config = await mgr.getConfig();
-        }
-        await Promise.all(regs.map(reg => reg.register(config, ctx)));
-    }
-    await next();
-};
+// /**
+//  * register module configure register.
+//  * @param ctx boot context
+//  * @param next next step.
+//  */
+// export const ModuleConfigureRegisterHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
+//     let regs = ctx.injector.getServices({ token: ConfigureRegister, target: ctx.type, tagOnly: true });
+//     if (regs && regs.length) {
+//         let config = ctx.getConfiguration();
+//         if (!config) {
+//             let mgr = ctx.injector.resolve(ConfigureManager);
+//             config = await mgr.getConfig();
+//         }
+//         await Promise.all(regs.map(reg => reg.register(config, ctx)));
+//     }
+//     await next();
+// };
 
 /**
  * configure startup service scope.

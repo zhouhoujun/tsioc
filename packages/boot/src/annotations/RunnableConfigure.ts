@@ -1,6 +1,5 @@
-import { ObjectMap, tokenId, Type } from '@tsdi/ioc';
+import { ObjectMap, tokenId, Type, ProvidersMetadata } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
-import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**
  *  process run root.
@@ -31,7 +30,14 @@ export interface IConnectionOptions {
  * @interface RunnableConfigure
  * @extends {ModuleConfigure}
  */
-export interface RunnableConfigure extends ModuleConfigure {
+export interface RunnableConfigure extends ProvidersMetadata {
+    /**
+     * module base url.
+     *
+     * @type {string}
+     * @memberof ModuleConfig
+     */
+    baseURL?: string;
     /**
      * deps.
      *

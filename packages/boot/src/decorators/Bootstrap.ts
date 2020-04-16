@@ -1,5 +1,5 @@
 import { Token, MetadataExtends, ITypeDecorator, isFunction, isClass, createClassDecorator, ArgsIteratorAction } from '@tsdi/ioc';
-import { RunnableConfigure } from '../annotations/RunnableConfigure';
+import { ModuleConfigure } from '../modules/ModuleConfigure';
 
 /**
  * bootstrap metadata.
@@ -8,7 +8,7 @@ import { RunnableConfigure } from '../annotations/RunnableConfigure';
  * @interface BootstrapMetadata
  * @extends {AppConfigure}
  */
-export interface BootstrapMetadata extends RunnableConfigure {
+export interface BootstrapMetadata extends ModuleConfigure {
     /**
      * module bootstrap token.
      *
@@ -17,13 +17,6 @@ export interface BootstrapMetadata extends RunnableConfigure {
      */
     bootstrap?: Token;
 
-    /**
-     * configuration.
-     *
-     * @type {RunnableConfigure}
-     * @memberof BootstrapMetadata
-     */
-    bootConfiguration?: RunnableConfigure
 }
 
 

@@ -1,4 +1,4 @@
-import { RunnableConfigure } from '@tsdi/boot';
+import { IAnnotationMetadata } from '@tsdi/boot';
 
 /**
  * Suite metadata.
@@ -7,7 +7,7 @@ import { RunnableConfigure } from '@tsdi/boot';
  * @interface SuiteMetadata
  * @extends {ClassMetadata}
  */
-export interface SuiteMetadata extends RunnableConfigure {
+export interface SuiteMetadata extends IAnnotationMetadata {
     /**
      * test suite describe message.
      *

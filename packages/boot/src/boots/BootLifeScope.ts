@@ -3,7 +3,7 @@ import { BuildHandles } from '../builder/BuildHandles';
 import { IAnnoationContext } from '../AnnoationContext';
 import {
     RegBootEnvScope, RegisterModuleScope,
-    BootConfigureRegisterHandle, ModuleBuildScope, ModuleConfigureRegisterHandle,
+    BootConfigureRegisterHandle, ModuleBuildScope,
     ResolveRunnableScope, StartupBootHandle, StatupServiceScope
 } from './boot-handles';
 
@@ -17,7 +17,7 @@ export class BootLifeScope extends BuildHandles<IAnnoationContext> implements IA
             .use(RegisterModuleScope)
             .use(BootConfigureRegisterHandle)
             .use(ModuleBuildScope)
-            .use(ModuleConfigureRegisterHandle)
+            // .use(ModuleConfigureRegisterHandle)
             .use(StatupServiceScope)
             .use(ResolveRunnableScope)
             .use(StartupBootHandle);
