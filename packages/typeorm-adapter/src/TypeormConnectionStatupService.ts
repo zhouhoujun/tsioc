@@ -43,7 +43,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
                 }
                 getMetadataArgsStorage().entityRepositories?.forEach(meta => {
                     if (options.entities.indexOf(meta.target as Type)) {
-                        injector.set(meta.target, () => getCustomRepository(meta.target, options.name), meta.target as Type);
+                        injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
                     }
                 });
             }));
@@ -55,13 +55,13 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
                 await options.initDb(connection);
             }
             getMetadataArgsStorage().entityRepositories?.forEach(meta => {
-                injector.set(meta.target, () => getCustomRepository(meta.target, options.name), meta.target as Type);
+                injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
             });
         }
 
         repositories.forEach(r => {
             if (!injector.has(r)) {
-                injector.set(r, () => getCustomRepository(r), r);
+                injector.set(r, () => getCustomRepository(r));
             }
         });
     }
