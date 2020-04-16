@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit-console",
-  "version": "6.0.0-beta10",
+  "version": "6.0.0-beta11",
   "description": "unit testing console reporter",
   "scripts": {
     "postinstall": "npm prune",
@@ -36,15 +36,15 @@
     "chalk": "^2.3.1"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.0-beta10",
-    "@tsdi/core": "~6.0.0-beta10",
-    "@tsdi/aop": "~6.0.0-beta10",
-    "@tsdi/boot": "~6.0.0-beta10",
-    "@tsdi/logs": "~6.0.0-beta10",
-    "@tsdi/platform-server": "~6.0.0-beta10",
-    "@tsdi/platform-server-logs": "~6.0.0-beta10",
-    "@tsdi/platform-server-boot": "~6.0.0-beta10",
-    "@tsdi/unit": "~6.0.0-beta10",
+    "@tsdi/ioc": "~6.0.0-beta11",
+    "@tsdi/core": "~6.0.0-beta11",
+    "@tsdi/aop": "~6.0.0-beta11",
+    "@tsdi/boot": "~6.0.0-beta11",
+    "@tsdi/logs": "~6.0.0-beta11",
+    "@tsdi/platform-server": "~6.0.0-beta11",
+    "@tsdi/platform-server-logs": "~6.0.0-beta11",
+    "@tsdi/platform-server-boot": "~6.0.0-beta11",
+    "@tsdi/unit": "~6.0.0-beta11",
     "tslib": "^1.11.0",
     "globby": "^10.0.1"
   },
