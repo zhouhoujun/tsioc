@@ -31,6 +31,22 @@ describe('di module', () => {
             .send('test', 'hello');
     });
 
+    it('options test.', async () => {
+        let ctx = await BootApplication.run({
+            type: ModuleB,
+            providers: [
+                {
+                    provide: 'ttk',
+                    useValue: 'ccc'
+                }
+            ]
+        });
+
+        expect(ctx.boot).toBeInstanceOf(ClassSevice);
+        expect(ctx.providers.get('ttk')).toEqual('ccc');
+        expect(ctx.injector.get('ttk')).toEqual('ccc');
+    });
+
 
 });
 

@@ -65,7 +65,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     get size(): number {
-        return this.factories.size;
+        return this.factories.size + this.singletons.size;
     }
 
     getProxy(): InjectorProxy<this> {
