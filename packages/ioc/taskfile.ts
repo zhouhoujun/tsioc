@@ -13,7 +13,7 @@ import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
         outDir: '../../dist/ioc',
         src: 'src/**/*.ts',
         test: 'test/**/*.ts',
-        annotation: false,
+        annotation: true,
         bundles: [
             { target: 'es5', targetFolder: 'src', dtsMain: 'index.d.ts' },
             { input: 'src/index.js', moduleName: 'main', moduleFolder: 'bundle', outputFile: 'ioc.umd.js', format: 'umd', uglify: true },
