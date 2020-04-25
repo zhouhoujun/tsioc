@@ -22,19 +22,19 @@ import { ActionInjectorToken } from './actions/Action';
 export function registerCores(container: IIocContainer) {
     let fac = container.getProxy();
     container.set(IocContainerToken, fac);
-    container.setValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
+    container.setSingleton(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
     container.set(PROVIDERS, () => new InjectorProvider(fac), InjectorProvider);
     container.set(INVOKED_PROVIDERS, () => new InvokedProviders(fac), InvokedProviders);
-    container.setValue(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
+    container.setSingleton(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);
-    container.setValue(ActionInjectorToken, actInjector, ActionInjector);
+    container.setSingleton(ActionInjectorToken, actInjector, ActionInjector);
 
-    actInjector.setValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
-    actInjector.setValue(DesignRegisterer, new DesignRegisterer(actInjector));
-    actInjector.setValue(DecoratorProvider, new DecoratorProvider(fac));
+    actInjector.setSingleton(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
+    actInjector.setSingleton(DesignRegisterer, new DesignRegisterer(actInjector));
+    actInjector.setSingleton(DecoratorProvider, new DecoratorProvider(fac));
 
     // bing action.
     actInjector

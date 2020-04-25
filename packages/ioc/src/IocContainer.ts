@@ -5,7 +5,7 @@ import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
 import { DesignContext } from './actions/DesignContext';
 import { DesignLifeScope } from './actions/DesignLifeScope';
-import { IInjector, InjectorFactoryToken, PROVIDERS, InjectorProxy, InjectorProxyToken } from './IInjector';
+import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { InjectToken } from './InjectToken';
@@ -24,12 +24,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     protected singletons: Map<SymbolType, any>;
 
     get size(): number {
-        return this.factories.size + this.singletons.size;
+        return this.factories.size + this.values.size + this.singletons.size;
     }
 
     getTypeReflects(): ITypeReflects {
         return this.getSingleton(TypeReflectsToken);
-
     }
 
     getActionInjector(): IActionInjector {
@@ -80,8 +79,25 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this;
     }
 
+    hasSingleton<T>(key: SymbolType<T>): boolean {
+        return this.singletons.has(key);
+    }
+
+    getSingleton<T>(key: SymbolType<T>): T {
+        return this.singletons.get(key);
+    }
+
+    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this {
+        this.singletons.set(key, value);
+        if (provider) {
+            this.singletons.set(provider, value)
+        }
+        return this;
+    }
+
     protected init() {
         super.init();
+        this.singletons = new Map();
         registerCores(this);
     }
 
@@ -118,7 +134,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ParamProviders[]) => {
-                if (injector.hasRegisterSingleton(key)) {
+                if (injector.hasRegisterValue(key)) {
                     return injector.getSingleton(key);
                 }
                 let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
@@ -162,5 +178,10 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 }));
         })();
         return this;
+    }
+
+    protected destroying() {
+        super.destroying();
+        this.singletons.clear();
     }
 }

@@ -26,14 +26,14 @@ export class ModuleInjector extends CoreInjector {
         return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
     }
 
-    hasRegisterSingleton<T>(key: SymbolType<T>): boolean {
-        return super.hasRegisterSingleton(key) || this.exports.some(r => r.exports.hasRegisterSingleton(key));
+    hasRegisterValue<T>(key: SymbolType<T>): boolean {
+        return super.hasRegisterValue(key) || this.exports.some(r => r.exports.hasRegisterValue(key));
     }
 
 
-    protected tryGetSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.has(key) ? this.singletons.get(key)
-            : this.exports.find(r => r.exports.hasRegisterSingleton(key))?.exports.getSingleton(key);
+    protected tryGetValue<T>(key: SymbolType<T>): T {
+        return this.values.has(key) ? this.values.get(key)
+            : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getSingleton(key);
     }
 
 
@@ -120,7 +120,7 @@ export class ModuleProviders extends InjectorProvider implements IProviders {
 
     export(type: Type) {
         this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
-        this.tryGetSingletonInRoot(TypeReflectsToken).get(type).provides?.forEach(p => {
+        this.tryGetValueInRoot(TypeReflectsToken).get(type).provides?.forEach(p => {
             this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
         });
     }
