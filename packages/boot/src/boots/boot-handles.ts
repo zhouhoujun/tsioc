@@ -1,6 +1,6 @@
 import {
     isClass, INJECTOR, lang, isBaseType, IActionSetup, PromiseUtil,
-    isArray, isToken, Abstract
+    isArray, isToken, Abstract, Destoryable
 } from '@tsdi/ioc';
 import { LogConfigureToken } from '@tsdi/logs';
 import { IBootContext, BootContext } from '../BootContext';
@@ -268,24 +268,6 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
     await next();
 };
 
-// /**
-//  * register module configure register.
-//  * @param ctx boot context
-//  * @param next next step.
-//  */
-// export const ModuleConfigureRegisterHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-//     let regs = ctx.injector.getServices({ token: ConfigureRegister, target: ctx.type, tagOnly: true });
-//     if (regs && regs.length) {
-//         let config = ctx.getConfiguration();
-//         if (!config) {
-//             let mgr = ctx.injector.resolve(ConfigureManager);
-//             config = await mgr.getConfig();
-//         }
-//         await Promise.all(regs.map(reg => reg.register(config, ctx)));
-//     }
-//     await next();
-// };
-
 /**
  * configure startup service scope.
  */
@@ -317,12 +299,13 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
             prds.unregister(c);
             let instance = injector.resolve({ token: c, regify: true });
             if (instance instanceof StartupService) {
-                await instance.configureService(ctx);
+                ctx.onDestroy(() => instance.destroy());
+                return instance.configureService(ctx);
             }
         }));
     }
 
-    let sers = [];
+    let sers: StartupService[] = [];
     prds.iterator((fac) => {
         sers.push(fac(ctx.providers));
     });
@@ -330,14 +313,9 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
         startups = startups ?? [];
         ctx.setValue(CTX_APP_STARTUPS, startups);
         await Promise.all(sers.map(async ser => {
-            let tks = await ser.configureService(ctx);
-            if (isArray(tks)) {
-                startups.push(...tks.filter(t => isToken(t)))
-            } else if (isToken(tks)) {
-                startups.push(tks);
-            } else {
-                startups.push(lang.getClass(ser));
-            }
+            ctx.onDestroy(() => ser.destroy());
+            startups.push(lang.getClass(ser));
+            return ser.configureService(ctx);
         }));
     }
     await next();

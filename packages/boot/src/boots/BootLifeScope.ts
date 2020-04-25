@@ -17,7 +17,6 @@ export class BootLifeScope extends BuildHandles<IAnnoationContext> implements IA
             .use(RegisterModuleScope)
             .use(BootConfigureRegisterHandle)
             .use(ModuleBuildScope)
-            // .use(ModuleConfigureRegisterHandle)
             .use(StatupServiceScope)
             .use(ResolveRunnableScope)
             .use(StartupBootHandle);

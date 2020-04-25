@@ -86,7 +86,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         return getConnection(connectName ?? this.options?.name);
     }
 
-    stop() {
+    protected destroying() {
         getConnectionManager().connections.forEach(c => {
             c && c.close();
         })

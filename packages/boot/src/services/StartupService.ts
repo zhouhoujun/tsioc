@@ -1,4 +1,4 @@
-import { Abstract, Token } from '@tsdi/ioc';
+import { Abstract, Token, Destoryable } from '@tsdi/ioc';
 import { IBootContext } from '../BootContext';
 
 
@@ -11,17 +11,26 @@ import { IBootContext } from '../BootContext';
  * @template T
  */
 @Abstract()
-export abstract class StartupService<T extends IBootContext = IBootContext> {
+export abstract class StartupService<T extends IBootContext = IBootContext> extends Destoryable {
 
-    constructor() { }
+    constructor() {
+        super()
+    }
 
     /**
      * config service of application.
      *
      * @abstract
      * @param {T} [ctx]
-     * @returns {Promise<void | Token | Token[]>} startup service token
+     * @returns {Promise<void>} startup service token
      * @memberof ConfigureRegister
      */
-    abstract configureService(ctx: T): Promise<void | Token | Token[]>;
+    abstract configureService(ctx: T): Promise<void>;
+
+    /**
+     * default do nothing.
+     */
+    protected destroying() {
+
+    }
 }

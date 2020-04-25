@@ -1,4 +1,4 @@
-import { isArray, isString, isInjector, ClassType, isClassType } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
 import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
@@ -12,7 +12,7 @@ import { BootModule } from './BootModule';
  * @export
  * @class BootApplication
  */
-export class BootApplication<T extends BootContext = BootContext> implements IBootApplication, ContextInit<T> {
+export class BootApplication<T extends BootContext = BootContext> extends Destoryable implements IBootApplication, ContextInit<T> {
 
     /**
      * application context.
@@ -23,6 +23,7 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
     protected context: T;
 
     constructor(public target?: ClassType | BootOption | T, public deps?: LoadType[], protected loader?: IModuleLoader) {
+        super()
         this.onInit(target);
     }
 
@@ -128,6 +129,10 @@ export class BootApplication<T extends BootContext = BootContext> implements IBo
 
     protected createContainerBuilder(): IContainerBuilder {
         return new ContainerBuilder(this.loader);
+    }
+
+    protected destroying() {
+        this.getContext()?.destroy();
     }
 
 }
