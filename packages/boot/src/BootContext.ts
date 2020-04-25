@@ -201,7 +201,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @param token
      */
     getService<T>(token: Token<T>): T {
-        return this.context.get(token);
+        return this.context.get(token) ?? this.injector.get(token);
     }
 
     /**
