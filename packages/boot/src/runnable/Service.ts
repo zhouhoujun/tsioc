@@ -56,6 +56,10 @@ export abstract class Service<T = any> extends Startup<T> implements IService<T>
      * @memberof Service
      */
     abstract stop(): Promise<any>;
+
+    protected destroying() {
+        this.stop();
+    }
 }
 
 /**

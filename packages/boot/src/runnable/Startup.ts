@@ -1,4 +1,4 @@
-import { lang, Type, Abstract, Inject } from '@tsdi/ioc';
+import { lang, Type, Abstract, Inject, IDestoryable, Destoryable } from '@tsdi/ioc';
 import { IBootContext, BootContext } from '../BootContext';
 
 
@@ -10,7 +10,7 @@ import { IBootContext, BootContext } from '../BootContext';
  * @template T
  * @template TCtx default BootContext
  */
-export interface IStartup<T = any> {
+export interface IStartup<T = any> extends IDestoryable {
 
     /**
      * runable context.
@@ -56,11 +56,12 @@ export interface IStartup<T = any> {
  * @template T
  */
 @Abstract()
-export abstract class Startup<T = any> implements IStartup<T> {
+export abstract class Startup<T = any> extends Destoryable implements IStartup<T> {
 
     @Inject(BootContext) protected context: IBootContext;
 
     constructor() {
+        super();
     }
 
     /**
@@ -94,6 +95,12 @@ export abstract class Startup<T = any> implements IStartup<T> {
      *  startup boot.
      */
     abstract startup(): Promise<void>;
+
+    /**
+     * destorying. default do nothing.
+     */
+    protected destroying() {
+    }
 
 }
 

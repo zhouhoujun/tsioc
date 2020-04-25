@@ -369,6 +369,7 @@ export const RefRunnableHandle = async function (ctx: IBootContext, next: () => 
  */
 export const StartupBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let startup = ctx.getStartup();
+    ctx.onDestroy(() => startup.destroy());
     await startup.configureService(ctx);
     if (ctx.getOptions().autorun !== false) {
         await startup.startup();
