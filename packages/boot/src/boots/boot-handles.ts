@@ -295,16 +295,19 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     const injector = ctx.injector;
     const prds = injector.getServiceProviders(StartupService);
     if (startups && startups.length) {
-        await PromiseUtil.step(startups.map(c => async () => {
+        await PromiseUtil.step(startups.map(c => () => {
             prds.unregister(c);
-            let instance = injector.resolve({ token: c, regify: true });
-            if (instance instanceof StartupService) {
-                ctx.onDestroy(() => instance?.destroy());
-                return instance.configureService(ctx);
-            } else if (instance instanceof Destoryable) {
+            let instance: Destoryable = injector.resolve({ token: c, regify: true });
+            if (instance instanceof Destoryable) {
                 ctx.onDestroy(() => instance?.destroy());
             }
+            if (instance instanceof StartupService) {
+                return instance.configureService(ctx);
+            }
         }));
+    } else {
+        startups = [];
+        ctx.setValue(CTX_APP_STARTUPS, startups);
     }
 
     let sers: StartupService[] = [];
@@ -312,9 +315,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
         sers.push(fac(ctx.providers));
     });
     if (sers && sers.length) {
-        startups = startups ?? [];
-        ctx.setValue(CTX_APP_STARTUPS, startups);
-        await Promise.all(sers.map(async ser => {
+        await Promise.all(sers.map(ser => {
             ctx.onDestroy(() => ser?.destroy());
             startups.push(lang.getClass(ser));
             return ser.configureService(ctx);

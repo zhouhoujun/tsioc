@@ -21,8 +21,10 @@ import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
  */
 export class IocContainer extends BaseInjector implements IIocContainer {
 
+    protected singletons: Map<SymbolType, any>;
+
     get size(): number {
-        return this.factories.size;
+        return this.factories.size + this.singletons.size;
     }
 
     getTypeReflects(): ITypeReflects {

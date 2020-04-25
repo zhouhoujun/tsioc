@@ -16,7 +16,7 @@ export abstract class Destoryable implements IDestoryable {
 
     }
 
-    protected _destroyed = false;
+    private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
     get destroyed() {
         return this._destroyed;

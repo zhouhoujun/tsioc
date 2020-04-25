@@ -1,6 +1,6 @@
 import { isArray, lang, isBoolean } from '../utils/lang';
 import { ActCtxOption } from './Action';
-import { ProviderTypes } from '../providers/types';
+import { ProviderTypes, InjectTypes } from '../providers/types';
 import { IIocContainer } from '../IIocContainer';
 import { CTX_PROVIDERS, CTX_OPTIONS } from '../context-tokens';
 import { IInjector, PROVIDERS, IProviders, INJECTOR, isInjector } from '../IInjector';
@@ -240,7 +240,7 @@ export interface IocPdrsOption extends ActCtxOption {
     /**
      *  providers.
      */
-    providers?: ProviderTypes[] | IInjector;
+    providers?: InjectTypes[] | IInjector;
 }
 
 export interface IIocPdrsContext<

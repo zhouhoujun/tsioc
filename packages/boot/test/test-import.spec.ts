@@ -1,6 +1,7 @@
-import { ModuleA, ModuleB, ClassSevice, SubMessageQueue } from './demo';
+import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService } from './demo';
 import { BootApplication, RootMessageQueueToken } from '../src';
 import expect = require('expect');
+import * as net from 'net';
 
 
 describe('di module', () => {
@@ -47,6 +48,23 @@ describe('di module', () => {
         expect(ctx.injector.get('ttk')).toEqual('ccc');
     });
 
+
+    it('can destory service', async () => {
+        let ctx = await BootApplication.run({
+            type: ModuleB,
+            // deps: [
+            //     SocketService
+            // ]
+            providers: [SocketService]
+        });
+
+        let ser = ctx.injector.get(SocketService);
+        expect(ser).toBeInstanceOf(SocketService);
+        expect(ser.tcpServer).toBeInstanceOf(net.Server)
+        ctx.destroy();
+        expect(ctx.destroyed).toBeTruthy();
+        expect(ser.destroyed).toBeTruthy();
+    })
 
 });
 

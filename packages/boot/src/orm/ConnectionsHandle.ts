@@ -9,5 +9,5 @@ export const ConnectionsHandle = async function (ctx: IBootContext, next: () => 
             return ser.configureService(ctx)
         }));
     }
-    return next();
+    await next();
 };
