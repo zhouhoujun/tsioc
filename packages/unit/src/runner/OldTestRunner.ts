@@ -1,9 +1,9 @@
-import { Inject, PromiseUtil, Singleton, Type, INJECTOR, isFunction } from '@tsdi/ioc';
+import { Inject, PromiseUtil, Singleton, Type, INJECTOR, isFunction, Destoryable } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
-import { ISuiteDescribe, ICaseDescribe, ISuiteHook } from '../reports/ITestReport';
+import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
 declare let window: any;
 declare let global: any;
@@ -32,7 +32,8 @@ const globals = typeof window !== 'undefined' ? window : global;
  * @implements {IRunner<any>}
  */
 @Singleton
-export class OldTestRunner implements ISuiteRunner {
+export class OldTestRunner extends Destoryable implements ISuiteRunner {
+
 
     async configureService(ctx: IBootContext): Promise<void> {
 
@@ -61,6 +62,7 @@ export class OldTestRunner implements ISuiteRunner {
     }
 
     constructor(timeout?: number) {
+        super()
         this.suites = [];
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
@@ -76,7 +78,7 @@ export class OldTestRunner implements ISuiteRunner {
 
         // BDD style
         let describe = globals.describe = (name: string, fn: () => any, superDesc?: ISuiteDescribe) => {
-            if (!isFunction(fn))  return;
+            if (!isFunction(fn)) return;
             let suiteDesc = {
                 ...superDesc,
                 describe: name,
@@ -90,11 +92,11 @@ export class OldTestRunner implements ISuiteRunner {
             }
 
             globals.it = (title: string, test: () => any, timeout?: number) => {
-                if (!isFunction(test))  return;
+                if (!isFunction(test)) return;
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
             }
             globals.before = globals.beforeAll = (fn: () => any, timeout?: number) => {
-                if (!isFunction(fn))  return;
+                if (!isFunction(fn)) return;
                 suiteDesc.before = suiteDesc.before || [];
                 suiteDesc.before.push({
                     fn: fn,
@@ -102,7 +104,7 @@ export class OldTestRunner implements ISuiteRunner {
                 })
             }
             globals.beforeEach = (fn: () => any, timeout?: number) => {
-                if (!isFunction(fn))  return;
+                if (!isFunction(fn)) return;
                 suiteDesc.beforeEach = suiteDesc.beforeEach || [];
                 suiteDesc.beforeEach.push({
                     fn: fn,
@@ -110,7 +112,7 @@ export class OldTestRunner implements ISuiteRunner {
                 });
             }
             globals.after = globals.afterAll = (fn: () => any, timeout?: number) => {
-                if (!isFunction(fn))  return;
+                if (!isFunction(fn)) return;
                 suiteDesc.after = suiteDesc.after || [];
                 suiteDesc.after.push({
                     fn: fn,
@@ -118,7 +120,7 @@ export class OldTestRunner implements ISuiteRunner {
                 });
             }
             globals.afterEach = (fn: () => any, timeout?: number) => {
-                if (!isFunction(fn))  return;
+                if (!isFunction(fn)) return;
                 suiteDesc.afterEach = suiteDesc.afterEach || [];
                 suiteDesc.afterEach.push({
                     fn: fn,
@@ -277,4 +279,6 @@ export class OldTestRunner implements ISuiteRunner {
         return caseDesc;
     }
 
+    protected destroying() {
+    }
 }

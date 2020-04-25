@@ -1,6 +1,6 @@
 import {
     isClass, INJECTOR, lang, isBaseType, IActionSetup, PromiseUtil,
-    isArray, isToken, Abstract, Destoryable
+    Abstract, Destoryable
 } from '@tsdi/ioc';
 import { LogConfigureToken } from '@tsdi/logs';
 import { IBootContext, BootContext } from '../BootContext';
@@ -299,8 +299,10 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
             prds.unregister(c);
             let instance = injector.resolve({ token: c, regify: true });
             if (instance instanceof StartupService) {
-                ctx.onDestroy(() => instance.destroy());
+                ctx.onDestroy(() => instance?.destroy());
                 return instance.configureService(ctx);
+            } else if (instance instanceof Destoryable) {
+                ctx.onDestroy(() => instance?.destroy());
             }
         }));
     }
@@ -313,7 +315,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
         startups = startups ?? [];
         ctx.setValue(CTX_APP_STARTUPS, startups);
         await Promise.all(sers.map(async ser => {
-            ctx.onDestroy(() => ser.destroy());
+            ctx.onDestroy(() => ser?.destroy());
             startups.push(lang.getClass(ser));
             return ser.configureService(ctx);
         }));
@@ -369,7 +371,7 @@ export const RefRunnableHandle = async function (ctx: IBootContext, next: () => 
  */
 export const StartupBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let startup = ctx.getStartup();
-    ctx.onDestroy(() => startup.destroy());
+    ctx.onDestroy(() => startup?.destroy());
     await startup.configureService(ctx);
     if (ctx.getOptions().autorun !== false) {
         await startup.startup();
