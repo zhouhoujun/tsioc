@@ -184,6 +184,7 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
     if (annoation) {
         ctx.setValue(CTX_MODULE_ANNOATION, annoation);
         if (annoation.baseURL) {
+            ctx.setValue(ProcessRunRootToken, annoation.baseURL);
             ctx.injector.setValue(ProcessRunRootToken, annoation.baseURL);
         }
         next();

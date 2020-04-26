@@ -1,17 +1,15 @@
-import * as expect from 'expect';
 import { IBootContext, BootApplication } from '@tsdi/boot';
-import { TypeOrmHelper } from '../src';
+
+import { User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
-import { User, Role } from './models/models';
+import { TypeOrmHelper } from '../src';
+import * as expect from 'expect';
 import { UserRepository } from './repositories/UserRepository';
-import { MockBootTest, connectOption } from './MockBootTest';
+import { connectOption, MockBootTest } from './MockBootTest';
 
 
-
-
-
-@Suite('Repository test')
-export class ReposTest {
+@Suite('load Repository test')
+export class LoadReposTest {
 
     private ctx: IBootContext;
 
@@ -21,13 +19,9 @@ export class ReposTest {
             type: MockBootTest,
             configures: [
                 {
-                    connections: {
-                        ...connectOption,
-                        entities: [
-                            Role,
-                            User
-                        ]
-                    }
+                    models: ['./models/**/*.ts'],
+                    repositories: ['./repositories/**/*.ts'],
+                    connections: connectOption
                 }
             ]
         });
@@ -73,4 +67,3 @@ export class ReposTest {
     }
 
 }
-
