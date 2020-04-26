@@ -66,8 +66,23 @@ describe('di module', () => {
         expect(ser.destroyed).toBeTruthy();
     });
 
-    it('can statup socket service', async ()=> {
+    it('can statup socket service in module', async () => {
         let ctx = await BootApplication.run(StatupModule);
+        let ser = ctx.injector.get(SocketService);
+        expect(ser).toBeInstanceOf(SocketService);
+        expect(ser.tcpServer).toBeInstanceOf(net.Server)
+        ctx.destroy();
+        expect(ctx.destroyed).toBeTruthy();
+        expect(ser.destroyed).toBeTruthy();
+    });
+
+    it('can statup socket service in module with option', async () => {
+        let ctx = await BootApplication.run({
+            type: StatupModule,
+            configures: [
+                { debug: true }
+            ]
+        });
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)

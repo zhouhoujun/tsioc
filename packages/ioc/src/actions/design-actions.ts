@@ -107,7 +107,11 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let type = ctx.type;
     let singleton = ctx.targetReflect.singleton;
     let actInjector = ctx.reflects.getActionInjector();
+    const container = injector.getContainer();
     let factory = (...providers: ParamProviders[]) => {
+        if (singleton && container.hasSingleton(type)) {
+            return container.getSingleton(type);
+        }
         let ctx = RuntimeContext.parse(injector, {
             token: provide,
             type: type,
