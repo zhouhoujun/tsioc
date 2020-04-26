@@ -1,4 +1,4 @@
-import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService } from './demo';
+import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule } from './demo';
 import { BootApplication, RootMessageQueueToken } from '../src';
 import expect = require('expect');
 import * as net from 'net';
@@ -21,13 +21,16 @@ describe('di module', () => {
 
     it('message test.', async () => {
         let ctx = await BootApplication.run(ModuleB);
-        ctx.injector.get(SubMessageQueue).subscribe((ctx, next) => {
+        let q =   ctx.injector.get(SubMessageQueue);
+        q.subscribe((ctx, next) => {
             if (ctx.event === 'test') {
                 console.log('message queue test: ' + ctx.data);
             }
             return next()
-        })
-        expect(ctx.injector.get(SubMessageQueue)['handles'].length).toEqual(1);
+        });
+        let qb = ctx.injector.get(SubMessageQueue);
+        expect(q === qb).toBeTruthy();
+        expect(qb['handles'].length).toEqual(1);
         ctx.getContainer().get(RootMessageQueueToken)
             .send('test', 'hello');
     });
@@ -58,6 +61,31 @@ describe('di module', () => {
             providers: [SocketService]
         });
 
+        let ser = ctx.injector.get(SocketService);
+        expect(ser).toBeInstanceOf(SocketService);
+        expect(ser.tcpServer).toBeInstanceOf(net.Server)
+        ctx.destroy();
+        expect(ctx.destroyed).toBeTruthy();
+        expect(ser.destroyed).toBeTruthy();
+    });
+
+    it('can statup socket service in module', async () => {
+        let ctx = await BootApplication.run(StatupModule);
+        let ser = ctx.injector.get(SocketService);
+        expect(ser).toBeInstanceOf(SocketService);
+        expect(ser.tcpServer).toBeInstanceOf(net.Server)
+        ctx.destroy();
+        expect(ctx.destroyed).toBeTruthy();
+        expect(ser.destroyed).toBeTruthy();
+    });
+
+    it('can statup socket service in module with option', async () => {
+        let ctx = await BootApplication.run({
+            type: StatupModule,
+            configures: [
+                { debug: true }
+            ]
+        });
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)

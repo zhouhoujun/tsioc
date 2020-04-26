@@ -108,6 +108,9 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let singleton = ctx.targetReflect.singleton;
     let actInjector = ctx.reflects.getActionInjector();
     let factory = (...providers: ParamProviders[]) => {
+        if (singleton && injector.hasSingleton(type)) {
+            return injector.getSingleton(type);
+        }
         let ctx = RuntimeContext.parse(injector, {
             token: provide,
             type: type,
@@ -115,6 +118,9 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
             providers: providers
         });
         actInjector.getInstance(RuntimeLifeScope).register(ctx);
+        if (singleton) {
+            injector.setValue(type, ctx.target);
+        }
         return ctx.target;
     };
 
