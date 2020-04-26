@@ -5,7 +5,7 @@ export const ConnectionsHandle = async function (ctx: IBootContext, next: () => 
     let servers = ctx.injector.getServices(ConnectionStatupService);
     if (servers && servers.length) {
         await Promise.all(servers.map(ser => {
-            ctx.onDestroy(() => ser.destroy());
+            ctx.onDestroy(() => ser?.destroy());
             return ser.configureService(ctx)
         }));
     }

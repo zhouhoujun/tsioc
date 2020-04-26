@@ -7,10 +7,6 @@ import { IBootContext } from '../BootContext';
 @Abstract()
 export abstract class ConnectionStatupService<T extends IBootContext = IBootContext> extends Destoryable {
 
-    constructor() {
-        super();
-    }
-
     /**
      *  startup db connection
      *

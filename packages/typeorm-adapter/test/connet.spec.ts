@@ -146,7 +146,7 @@ export class ReposTest {
 
     @After()
     async after() {
-        this.ctx.get(TypeormConnectionStatupService).stop()
+        this.ctx.destroy()
     }
 
 }
