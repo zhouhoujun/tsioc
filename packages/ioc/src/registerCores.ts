@@ -32,9 +32,9 @@ export function registerCores(container: IIocContainer) {
     let actInjector = new ActionInjector(fac);
     container.setSingleton(ActionInjectorToken, actInjector, ActionInjector);
 
-    actInjector.setSingleton(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
-    actInjector.setSingleton(DesignRegisterer, new DesignRegisterer(actInjector));
-    actInjector.setSingleton(DecoratorProvider, new DecoratorProvider(fac));
+    actInjector.setValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
+    actInjector.setValue(DesignRegisterer, new DesignRegisterer(actInjector));
+    actInjector.setValue(DecoratorProvider, new DecoratorProvider(fac));
 
     // bing action.
     actInjector

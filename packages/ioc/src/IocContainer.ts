@@ -98,6 +98,10 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     protected init() {
         super.init();
         this.singletons = new Map();
+    }
+
+    protected initReg() {
+        super.initReg();
         registerCores(this);
     }
 

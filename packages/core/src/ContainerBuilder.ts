@@ -21,9 +21,9 @@ export class ContainerBuilder implements IContainerBuilder {
 
     create(): IContainer {
         let container = new Container();
-        container.setValue(ContainerBuilderToken, this);
+        container.setSingleton(ContainerBuilderToken, this);
         if (this._loader) {
-            container.setValue(ModuleLoader, this._loader);
+            container.setSingleton(ModuleLoader, this._loader);
         }
         return container;
     }

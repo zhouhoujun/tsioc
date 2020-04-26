@@ -33,7 +33,7 @@ export class ModuleInjector extends CoreInjector {
 
     protected tryGetValue<T>(key: SymbolType<T>): T {
         return this.values.has(key) ? this.values.get(key)
-            : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getSingleton(key);
+            : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getValue(key);
     }
 
 
@@ -120,7 +120,7 @@ export class ModuleProviders extends InjectorProvider implements IProviders {
 
     export(type: Type) {
         this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
-        this.tryGetValueInRoot(TypeReflectsToken).get(type).provides?.forEach(p => {
+        this.getSingleton(TypeReflectsToken).get(type).provides?.forEach(p => {
             this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
         });
     }

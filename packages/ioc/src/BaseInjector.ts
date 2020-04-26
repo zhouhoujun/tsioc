@@ -52,13 +52,17 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
 
     constructor() {
         super();
-        this.factories = new Map();
-        this.values = new Map();
-        this.provideTypes = new Map();
         this.init();
+        this.initReg();
     }
 
     protected init() {
+        this.factories = new Map();
+        this.values = new Map();
+        this.provideTypes = new Map();
+    }
+
+    protected initReg() {
         this.setValue(INJECTOR, this, lang.getClass(this));
         this.setValue(InjectorProxyToken, () => this);
         this.setValue(IocCacheManager, new IocCacheManager(this));
@@ -69,7 +73,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     getProxy(): InjectorProxy<this> {
-        return this.getSingleton(InjectorProxyToken) as InjectorProxy<this>;
+        return this.getValue(InjectorProxyToken) as InjectorProxy<this>;
     }
 
     abstract getContainer(): IIocContainer;
@@ -318,7 +322,8 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof IInjector
      */
     has<T>(token: Token<T>, alias?: string): boolean {
-        return this.hasTokenKey(this.getTokenKey(token, alias));
+        let key = this.getTokenKey(token, alias);
+        return this.hasSingleton(key) || this.hasTokenKey(key);
     }
     /**
      * has register.
@@ -327,7 +332,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      */
     hasRegister<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        return this.hasTokenKey(key) || this.hasInRoot(key);
+        return this.hasSingleton(key) || this.hasTokenKey(key) || this.hasInRoot(key);
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
@@ -381,7 +386,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     getValue<T>(key: SymbolType<T>): T {
-        return this.tryGetValue(key);
+        return this.tryGetValue(key) ?? this.tryGetValueInRoot(key);
     }
 
     getFirstValue<T>(...keys: SymbolType<T>[]): T {
@@ -423,7 +428,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderTypes[]): T {
-        return this.getValue(ActionInjectorToken).getInstance(ResolveLifeScope).resolve(this, token, ...providers);
+        return this.getSingleton(ActionInjectorToken).getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**
@@ -566,11 +571,11 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof BaseInjector
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR {
-        return this.getInstance(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
+        return this.getSingleton(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
-        return this.getInstance(MethodAccessorToken).createParams(this, params, ...providers);
+        return this.getSingleton(MethodAccessorToken).createParams(this, params, ...providers);
     }
 
     /**

@@ -13,13 +13,13 @@ export function registerCores(container: IContainer) {
 
     container.setValue(ContainerToken, container);
     if (!container.has(ModuleLoader)) {
-        container.setValue(ModuleLoader, new ModuleLoader());
+        container.setSingleton(ModuleLoader, new ModuleLoader());
     }
 
     let fac = container.getProxy();
     container.set(InjectorFactoryToken, () => new CoreInjector(fac), CoreInjector);
-    container.setValue(ModuleProvider, new ModuleProvider(fac));
-    container.setValue(ServiceProvider, new ServiceProvider(fac));
+    container.setSingleton(ModuleProvider, new ModuleProvider(fac));
+    container.setSingleton(ServiceProvider, new ServiceProvider(fac));
 
     let actInjector = container.getActionInjector();
     // register action

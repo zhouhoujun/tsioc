@@ -39,8 +39,8 @@ export class AopModule {
         const reflects = container.getInstance(TypeReflectsToken);
 
         actInjector
-            .setValue(AdvisorToken, new Advisor(reflects), Advisor)
-            .setValue(AdviceMatcherToken, new AdviceMatcher(reflects), AdviceMatcher);
+            .setSingleton(AdvisorToken, new Advisor(reflects), Advisor)
+            .setSingleton(AdviceMatcherToken, new AdviceMatcher(reflects), AdviceMatcher);
 
         actInjector.regAction(ProceedingScope);
 
