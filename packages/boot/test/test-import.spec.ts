@@ -1,4 +1,4 @@
-import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService } from './demo';
+import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule } from './demo';
 import { BootApplication, RootMessageQueueToken } from '../src';
 import expect = require('expect');
 import * as net from 'net';
@@ -58,6 +58,16 @@ describe('di module', () => {
             providers: [SocketService]
         });
 
+        let ser = ctx.injector.get(SocketService);
+        expect(ser).toBeInstanceOf(SocketService);
+        expect(ser.tcpServer).toBeInstanceOf(net.Server)
+        ctx.destroy();
+        expect(ctx.destroyed).toBeTruthy();
+        expect(ser.destroyed).toBeTruthy();
+    });
+
+    it('can statup socket service', async ()=> {
+        let ctx = await BootApplication.run(StatupModule);
         let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)

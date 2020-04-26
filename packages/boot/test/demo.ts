@@ -116,3 +116,15 @@ export class SocketService extends StartupService<IBootContext> {
   }
 
 }
+
+@DIModule({
+    providers:[
+        SocketService
+    ]
+})
+export class StatupModule {
+    constructor() {
+
+    }
+
+}
