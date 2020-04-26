@@ -31,7 +31,6 @@ export function registerCores(container: IIocContainer) {
 
     let actInjector = new ActionInjector(fac);
     container.setSingleton(ActionInjectorToken, actInjector, ActionInjector);
-
     actInjector.setValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
     actInjector.setValue(DesignRegisterer, new DesignRegisterer(actInjector));
     actInjector.setValue(DecoratorProvider, new DecoratorProvider(fac));

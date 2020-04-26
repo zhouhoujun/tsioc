@@ -3,8 +3,8 @@ import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
-import { TimerActivity } from './TimerActivity';
 import { ActivityType } from '../core/ActivityMetadata';
+import { TimerActivity } from './TimerActivity';
 
 
 
