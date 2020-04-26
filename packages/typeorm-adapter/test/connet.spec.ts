@@ -5,7 +5,7 @@ import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { TypeOrmModule, TypeormConnectionStatupService, TypeOrmHelper } from '../src';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 
-import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRepository, Repository } from 'typeorm';
+import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, OneToMany, EntityRepository, Repository, Connection } from 'typeorm';
 
 
 @Entity()
@@ -90,6 +90,20 @@ export class ReposTest {
             configures: [
                 {
                     connections: <IConnectionOptions>{
+                        async initDb(connection: Connection) {
+                            console.log('init db connection', connection.getRepository(User));
+                            let userRep = connection.getRepository(User);
+                            let c = await userRep.count();
+                            
+                            console.log('init db connection', c)
+                            if (c < 1) {
+                                let newUr = new User();
+                                newUr.name = 'admin';
+                                newUr.account = 'admin';
+                                newUr.password = '111111';
+                                await userRep.save(newUr);
+                            }
+                        },
                         name: 'xx',
                         entities: [
                             Role,
