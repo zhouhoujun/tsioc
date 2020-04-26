@@ -192,5 +192,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     protected destroying() {
         super.destroying();
         this.singletons.clear();
+        delete this.singletons;
     }
 }
