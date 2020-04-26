@@ -148,6 +148,7 @@ export interface IInjector extends IDestoryable {
      * @param value vaule
      */
     setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
+    delSingleton<T>(key: SymbolType<T>): void;
     /**
      * get singleton value instance, the injector registered.
      * @param key token key.

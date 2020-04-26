@@ -324,6 +324,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     abstract hasSingleton<T>(key: SymbolType<T>): boolean;
     abstract getSingleton<T>(key: SymbolType<T>): T;
     abstract setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
+    abstract delSingleton<T>(key: SymbolType<T>): void;
 
     hasValue<T>(key: SymbolType<T>): boolean {
         return this.values.has(key);
@@ -415,16 +416,20 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     unregister<T>(token: Token<T>): this {
         let key = this.getTokenKey(token);
         if (this.has(key)) {
-            this.delKey(key);
+            this.factories.delete(key);
+            this.values.delete(key);
+            this.provideTypes.delete(key);
             if (isClass(key)) {
                 let keys = [];
+                this.delSingleton(key);
                 this.provideTypes.forEach((v, k) => {
                     if (v === key) {
                         keys.push(k);
                     }
                 });
                 keys.forEach(k => {
-                    this.delKey(k);
+                    this.factories.delete(key);
+                    this.provideTypes.delete(key);
                 });
                 this.clearCache(key);
                 this.getSingleton(TypeReflectsToken).delete(key);
@@ -594,7 +599,6 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return null;
     }
 
-
     protected merge(from: BaseInjector, to: BaseInjector, filter?: (key: SymbolType) => boolean) {
         from.factories.forEach((fac, key) => {
             if (filter && !filter(key)) {
@@ -614,12 +618,6 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
             }
             to.provideTypes.set(key, fac);
         });
-    }
-
-    protected delKey(key: SymbolType) {
-        this.factories.delete(key);
-        this.values.delete(key);
-        this.provideTypes.delete(key);
     }
 
     protected destroying() {

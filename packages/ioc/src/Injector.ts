@@ -38,6 +38,10 @@ export class Injector extends BaseInjector implements IInjector {
         return this;
     }
 
+    delSingleton(key: SymbolType) {
+        this.getContainer().delSingleton(key);
+    }
+
     /**
      * register provider.
      *

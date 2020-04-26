@@ -95,6 +95,10 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this;
     }
 
+    delSingleton(key: SymbolType) {
+        this.singletons.delete(key);
+    }
+
     registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this {
         (async () => {
             let key = injector.getTokenKey(token);
@@ -182,11 +186,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 return instance;
             }
             : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-    }
-
-    protected delKey(key: SymbolType) {
-        super.delKey(key);
-        this.singletons.delete(key);
     }
 
     protected destroying() {
