@@ -13,10 +13,6 @@ import { IBootContext } from '../BootContext';
 @Abstract()
 export abstract class StartupService<T extends IBootContext = IBootContext> extends Destoryable {
 
-    constructor() {
-        super()
-    }
-
     /**
      * config service of application.
      *
