@@ -95,16 +95,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this;
     }
 
-    protected init() {
-        super.init();
-        this.singletons = new Map();
-    }
-
-    protected initReg() {
-        super.initReg();
-        registerCores(this);
-    }
-
     registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this {
         (async () => {
             let key = injector.getTokenKey(token);
@@ -129,23 +119,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             }
         })();
         return this;
-    }
-
-    protected parse(...providers: InjectTypes[]): IInjector {
-        return this.getInstance(PROVIDERS).inject(...providers);
-    }
-
-    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
-        return singleton ?
-            (...providers: ParamProviders[]) => {
-                if (injector.hasRegisterValue(key)) {
-                    return injector.getSingleton(key);
-                }
-                let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-                injector.setValue(key, instance);
-                return instance;
-            }
-            : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
     }
 
     /**
@@ -182,6 +155,38 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 }));
         })();
         return this;
+    }
+
+    protected init() {
+        super.init();
+        this.singletons = new Map();
+    }
+
+    protected initReg() {
+        super.initReg();
+        registerCores(this);
+    }
+
+    protected parse(...providers: InjectTypes[]): IInjector {
+        return this.getInstance(PROVIDERS).inject(...providers);
+    }
+
+    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
+        return singleton ?
+            (...providers: ParamProviders[]) => {
+                if (injector.hasSingleton(key)) {
+                    return injector.getSingleton(key);
+                }
+                let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
+                injector.setSingleton(key, instance);
+                return instance;
+            }
+            : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
+    }
+
+    protected delKey(key: SymbolType) {
+        super.delKey(key);
+        this.singletons.delete(key);
     }
 
     protected destroying() {

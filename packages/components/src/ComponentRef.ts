@@ -121,8 +121,8 @@ export class ElementRef<T = any, TCtx extends IAnnoationContext = IAnnoationCont
         if (!injector.has(ELEMENT_REFS)) {
             injector.setValue(ELEMENT_REFS, new WeakMap());
         }
-        injector.getSingleton(ELEMENT_REFS).set(nativeElement, this);
-        this.onDestroy(() => injector.getSingleton(ELEMENT_REFS)?.delete(nativeElement));
+        injector.getValue(ELEMENT_REFS).set(nativeElement, this);
+        this.onDestroy(() => injector.getValue(ELEMENT_REFS)?.delete(nativeElement));
     }
 
     protected destroying(): void {
@@ -161,8 +161,8 @@ export class ComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationContext
             context.injector.setValue(COMPONENT_REFS, new WeakMap());
         }
         let injector = context.injector;
-        injector.getSingleton(COMPONENT_REFS).set(instance, this);
-        this.onDestroy(() => injector.getSingleton(COMPONENT_REFS)?.delete(this.instance));
+        injector.getValue(COMPONENT_REFS).set(instance, this);
+        this.onDestroy(() => injector.getValue(COMPONENT_REFS)?.delete(this.instance));
     }
 
     getNodeSelector(): NodeSelector {

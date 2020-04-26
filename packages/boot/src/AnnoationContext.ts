@@ -136,7 +136,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
     }
 
     getModuleRef(): ModuleRef {
-        return this.injector.getSingleton(ModuleRef);
+        return this.injector.getValue(ModuleRef);
     }
 
     getTargetReflect(): IAnnoationReflect {

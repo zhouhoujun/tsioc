@@ -76,7 +76,7 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
     }
 
     get workflow(): IWorkflowContext {
-        return this.injector.getSingleton(WorkflowContextToken)
+        return this.injector.getValue(WorkflowContextToken)
     }
 
     get<T>(token: Token<T>): T {
@@ -89,7 +89,7 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
     }
 
     getValue<T>(key: SymbolType<T>): T {
-        return this.context.getSingleton(key) ?? this.workflow?.context.getSingleton(key) ?? null;
+        return this.context.getValue(key) ?? this.workflow?.context.getValue(key) ?? null;
     }
 
     private _executor: IActivityExecutor;

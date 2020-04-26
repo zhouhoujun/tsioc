@@ -377,8 +377,6 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return this.tryGetFactory(key) ?? this.tryGetFactoryInRoot(key);
     }
 
-
-
     /**
      * resolve instance with token and param provider via resolve scope.
      *
@@ -417,9 +415,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     unregister<T>(token: Token<T>): this {
         let key = this.getTokenKey(token);
         if (this.has(key)) {
-            this.factories.delete(key);
-            this.values.delete(key);
-            this.provideTypes.delete(key);
+            this.delKey(key);
             if (isClass(key)) {
                 let keys = [];
                 this.provideTypes.forEach((v, k) => {
@@ -428,8 +424,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
                     }
                 });
                 keys.forEach(k => {
-                    this.provideTypes.delete(k);
-                    this.factories.delete(k);
+                    this.delKey(k);
                 });
                 this.clearCache(key);
                 this.getSingleton(TypeReflectsToken).delete(key);
@@ -619,6 +614,12 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
             }
             to.provideTypes.set(key, fac);
         });
+    }
+
+    protected delKey(key: SymbolType) {
+        this.factories.delete(key);
+        this.values.delete(key);
+        this.provideTypes.delete(key);
     }
 
     protected destroying() {

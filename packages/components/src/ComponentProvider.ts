@@ -68,7 +68,7 @@ export abstract class ComponentProvider {
     createNodeSelector(element): NodeSelector {
         return this.reflects.get(lang.getClass(element))
             ?.getInjector()
-            ?.getSingleton(COMPONENT_REFS)
+            ?.getValue(COMPONENT_REFS)
             ?.get(element)
             ?.getNodeSelector();
     }
@@ -111,12 +111,12 @@ export abstract class ComponentProvider {
 
     getElementRef(target: any, injector?: ICoreInjector): IElementRef {
         injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as ICoreInjector;
-        return injector.getSingleton(ELEMENT_REFS)?.get(target);
+        return injector.getValue(ELEMENT_REFS)?.get(target);
     }
 
     getComponentRef<T>(target: T, injector?: ICoreInjector): IComponentRef<T, any> {
         injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as ICoreInjector;
-        return injector.getSingleton(COMPONENT_REFS)?.get(target);
+        return injector.getValue(COMPONENT_REFS)?.get(target);
     }
 
     getPipe<T extends IPipeTransform>(token: Token<T>, injector: ICoreInjector): T {

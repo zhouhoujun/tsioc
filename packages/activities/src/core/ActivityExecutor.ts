@@ -147,7 +147,7 @@ export class ActivityExecutor implements IActivityExecutor {
             isDefined(input) && activity.context.setValue(ACTIVITY_INPUT, input);
             return activity.toAction();
         } else if (activity instanceof Activity) {
-            let ref = this.context.injector.getSingleton(ELEMENT_REFS).get(activity) as IActivityElementRef;
+            let ref = this.context.injector.getValue(ELEMENT_REFS).get(activity) as IActivityElementRef;
             if (ref instanceof ActivityRef) {
                 ref.context.setValue(CTX_RUN_PARENT, ctx);
             } else {

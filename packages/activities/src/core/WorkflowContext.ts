@@ -189,8 +189,8 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
         if (!this.context.name) {
             this.context.setValue(CTX_ELEMENT_NAME, this.nativeElement.name ?? lang.getClassName(this.nativeElement));
         }
-        injector.getSingleton(ELEMENT_REFS).set(nativeElement, this);
-        this.onDestroy(() => injector.getSingleton(ELEMENT_REFS)?.delete(nativeElement));
+        injector.getValue(ELEMENT_REFS).set(nativeElement, this);
+        this.onDestroy(() => injector.getValue(ELEMENT_REFS)?.delete(nativeElement));
     }
 
     /**
@@ -294,8 +294,8 @@ export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends Activi
         let baseURL = context.getAnnoation()?.baseURL;
         baseURL && context.setValue(CTX_BASEURL, baseURL);
         let injector = context.injector;
-        injector.getSingleton(COMPONENT_REFS).set(instance, this);
-        this.onDestroy(() => injector.getSingleton(COMPONENT_REFS)?.delete(this.instance));
+        injector.getValue(COMPONENT_REFS).set(instance, this);
+        this.onDestroy(() => injector.getValue(COMPONENT_REFS)?.delete(this.instance));
     }
 
     getNodeSelector(): NodeSelector {
