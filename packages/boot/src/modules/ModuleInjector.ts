@@ -30,31 +30,6 @@ export class ModuleInjector extends CoreInjector {
         return super.hasRegisterValue(key) || this.exports.some(r => r.exports.hasRegisterValue(key));
     }
 
-
-    protected tryGetValue<T>(key: SymbolType<T>): T {
-        return this.values.has(key) ? this.values.get(key)
-            : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getValue(key);
-    }
-
-
-    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
-        return this.factories.has(key) ? this.factories.get(key)
-            : this.exports.find(r => r.exports.hasTokenKey(key))?.exports.getTokenFactory(key);
-    }
-
-    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
-        if (this.provideTypes.has(tokenKey)) {
-            return this.provideTypes.get(tokenKey);
-        } else {
-            let type;
-            this.exports.some(r => {
-                type = r.exports.getTokenProvider(tokenKey);
-                return type;
-            });
-            return type || null;
-        }
-    }
-
     clearCache(targetType: Type) {
         super.clearCache(targetType);
         this.exports.forEach(r => {
@@ -101,6 +76,29 @@ export class ModuleInjector extends CoreInjector {
         }
         if (deep) {
             return this.getContainer().iterator(callbackfn);
+        }
+    }
+
+    protected tryGetValue<T>(key: SymbolType<T>): T {
+        return this.values.has(key) ? this.values.get(key)
+            : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getValue(key);
+    }
+
+    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.factories.has(key) ? this.factories.get(key)
+            : this.exports.find(r => r.exports.hasTokenKey(key))?.exports.getTokenFactory(key);
+    }
+
+    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
+        if (this.provideTypes.has(tokenKey)) {
+            return this.provideTypes.get(tokenKey);
+        } else {
+            let type;
+            this.exports.some(r => {
+                type = r.exports.getTokenProvider(tokenKey);
+                return type;
+            });
+            return type || null;
         }
     }
 }
