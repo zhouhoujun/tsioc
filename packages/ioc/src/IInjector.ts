@@ -148,12 +148,28 @@ export interface IInjector extends IDestoryable {
      * @param value vaule
      */
     setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
+    /**
+     * delete singleton instance.
+     * @param key key
+     */
     delSingleton<T>(key: SymbolType<T>): void;
     /**
      * get singleton value instance, the injector registered.
      * @param key token key.
      */
     getValue<T>(key: SymbolType<T>): T;
+        /**
+     * set value.
+     * @param key token key.
+     * @param value value.
+     *  @param {Type<T>} [provider] the value provider.
+     */
+    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
+    /**
+     * delete value.
+     * @param key token key.
+     */
+    delValue<T>(key: SymbolType<T>): void;
     /**
      * get the first singleton value instance, the injector registered.
      * @param key token keys.
@@ -209,13 +225,7 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this;
-    /**
-     * set value.
-     * @param key token key.
-     * @param value value.
-     *  @param {Type<T>} [provider] the value provider.
-     */
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
+
     /**
      * register type.
      *

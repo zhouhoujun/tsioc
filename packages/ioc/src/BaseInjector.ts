@@ -110,6 +110,10 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return this;
     }
 
+    delValue<T>(key: SymbolType<T>): void {
+        this.values.delete(key);
+    }
+
     /**
      * register value.
      *
