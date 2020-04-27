@@ -21,7 +21,7 @@ export const connectOption = <IConnectionOptions>{
         console.log('init db connection', connection.options);
         let userRep = connection.getRepository(User);
         let c = await userRep.count();
-        
+
         if (c < 1) {
             let newUr = new User();
             newUr.name = 'admin';
@@ -35,7 +35,7 @@ export const connectOption = <IConnectionOptions>{
     host: 'localhost',
     port: 5432,
     username: 'postgres',
-    password: '',
+    password: 'zhouyou81',
     database: 'dbedge',
     useNewUrlParser: true,
     synchronize: true, // 同步数据库

@@ -119,6 +119,9 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
             providers: providers
         });
         actInjector.getInstance(RuntimeLifeScope).register(ctx);
+        if (singleton) {
+            container.setSingleton(type, ctx.target);
+        }
         return ctx.target;
     };
 

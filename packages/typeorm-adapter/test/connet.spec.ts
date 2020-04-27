@@ -23,7 +23,7 @@ export class ReposTest {
                 {
                     connections: {
                         ...connectOption,
-                        entities:[
+                        entities: [
                             Role,
                             User
                         ]
