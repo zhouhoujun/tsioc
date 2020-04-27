@@ -99,20 +99,29 @@ export class ModuleB {
 @Singleton()
 export class SocketService extends StartupService<IBootContext> {
 
-  public tcpServer: net.Server;
-  private context: IBootContext;
+    public tcpServer: net.Server;
+    private context: IBootContext;
 
-  async configureService(ctx: IBootContext): Promise<void> {
-    console.log('SocketService init...')
-    this.context = ctx;
-    const tcpServer = this.tcpServer = new net.Server();
-    tcpServer.listen(8801);
-  }
+    async configureService(ctx: IBootContext): Promise<void> {
+        console.log('SocketService init...')
+        this.context = ctx;
+        const tcpServer = this.tcpServer = new net.Server();
+        tcpServer.listen(8801);
+    }
 
-  protected destroying() {
-      console.log('SocketService destroying...');
-      this.tcpServer.removeAllListeners();
-      this.tcpServer.close();
-  }
+    protected destroying() {
+        console.log('SocketService destroying...');
+        this.tcpServer.removeAllListeners();
+        this.tcpServer.close();
+    }
 
+}
+
+@DIModule({
+    providers: [
+        SocketService
+    ]
+})
+export class StatupModule {
+    constructor() { }
 }

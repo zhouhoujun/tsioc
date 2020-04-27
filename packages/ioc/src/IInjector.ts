@@ -204,6 +204,12 @@ export interface IInjector extends IDestoryable {
      *  @param {Type<T>} [provider] the value provider.
      */
     setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
+
+    /**
+     * delete value.
+     * @param key token key.
+     */
+    delValue<T>(key: SymbolType<T>);
     /**
      * register type.
      *

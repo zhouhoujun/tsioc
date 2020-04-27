@@ -102,9 +102,9 @@ export abstract class IocContext<
      * remove contexts.
      * @param tokens
      */
-    remove(...tokens: Token[]) {
+    remove(...tokens: SymbolType[]) {
         tokens.forEach(tk => {
-            this.context.unregister(tk);
+            this.context.delValue(tk);
         });
     }
     /**

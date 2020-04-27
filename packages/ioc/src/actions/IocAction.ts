@@ -41,7 +41,7 @@ export interface IIocContext<
      * remove contexts.
      * @param tokens
      */
-    remove(...tokens: Token[]);
+    remove(...tokens: SymbolType[]);
     /**
      * get context provider of boot application.
      *
