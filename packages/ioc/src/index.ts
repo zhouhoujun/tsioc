@@ -102,9 +102,7 @@ export * from './actions/IocRegScope';
 export * from './actions/TypeDecorators';
 export * from './actions/ResolveContext';
 export * from './actions/IocResolveAction';
-
 export * from './actions/resolve-actions';
-export * from './actions/IocResolveScope';
 
 // runtime actions
 export * from './actions/RuntimeContext';
