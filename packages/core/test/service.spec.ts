@@ -63,7 +63,7 @@ describe('getService', () => {
         expect(tsr.flash()).toEqual('hi custom');
     })
 
-    it('get service  with providers in option', () => {
+    it('get service with providers in option', () => {
         let tsr = container.getService({ token: TestService, providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
