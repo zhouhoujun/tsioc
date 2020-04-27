@@ -60,10 +60,6 @@ export abstract class Startup<T = any> extends Destoryable implements IStartup<T
 
     @Inject(BootContext) protected context: IBootContext;
 
-    constructor() {
-        super();
-    }
-
     /**
      * runable context.
      *
@@ -100,6 +96,7 @@ export abstract class Startup<T = any> extends Destoryable implements IStartup<T
      * destorying. default do nothing.
      */
     protected destroying() {
+        
     }
 
 }

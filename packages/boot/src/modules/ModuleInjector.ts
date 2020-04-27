@@ -26,33 +26,8 @@ export class ModuleInjector extends CoreInjector {
         return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
     }
 
-    hasRegisterSingleton<T>(key: SymbolType<T>): boolean {
-        return super.hasRegisterSingleton(key) || this.exports.some(r => r.exports.hasRegisterSingleton(key));
-    }
-
-
-    protected tryGetSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.has(key) ? this.singletons.get(key)
-            : this.exports.find(r => r.exports.hasRegisterSingleton(key))?.exports.getSingleton(key);
-    }
-
-
-    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
-        return this.factories.has(key) ? this.factories.get(key)
-            : this.exports.find(r => r.exports.hasTokenKey(key))?.exports.getTokenFactory(key);
-    }
-
-    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
-        if (this.provideTypes.has(tokenKey)) {
-            return this.provideTypes.get(tokenKey);
-        } else {
-            let type;
-            this.exports.some(r => {
-                type = r.exports.getTokenProvider(tokenKey);
-                return type;
-            });
-            return type || null;
-        }
+    hasRegisterValue<T>(key: SymbolType<T>): boolean {
+        return super.hasRegisterValue(key) || this.exports.some(r => r.exports.hasRegisterValue(key));
     }
 
     clearCache(targetType: Type) {
@@ -103,6 +78,29 @@ export class ModuleInjector extends CoreInjector {
             return this.getContainer().iterator(callbackfn);
         }
     }
+
+    protected tryGetValue<T>(key: SymbolType<T>): T {
+        return this.values.has(key) ? this.values.get(key)
+            : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getValue(key);
+    }
+
+    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.factories.has(key) ? this.factories.get(key)
+            : this.exports.find(r => r.exports.hasTokenKey(key))?.exports.getTokenFactory(key);
+    }
+
+    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
+        if (this.provideTypes.has(tokenKey)) {
+            return this.provideTypes.get(tokenKey);
+        } else {
+            let type;
+            this.exports.some(r => {
+                type = r.exports.getTokenProvider(tokenKey);
+                return type;
+            });
+            return type || null;
+        }
+    }
 }
 
 export const MODULE_INJECTOR = tokenId<ModuleInjector>('MODULE_INJECTOR');
@@ -120,7 +118,7 @@ export class ModuleProviders extends InjectorProvider implements IProviders {
 
     export(type: Type) {
         this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
-        this.tryGetSingletonInRoot(TypeReflectsToken).get(type).provides?.forEach(p => {
+        this.getSingleton(TypeReflectsToken).get(type).provides?.forEach(p => {
             this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
         });
     }

@@ -42,7 +42,7 @@ export class ActivityModule {
 
         container.inject(WorkflowContext, ActivityContext, ActivityExecutor, WorkflowInstance, RunAspect);
 
-        actInjector.getSingleton(DefaultComponets).push('@Task');
+        actInjector.getValue(DefaultComponets).push('@Task');
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Task,

@@ -22,8 +22,8 @@ import { LoadType } from './types';
  */
 export class Container extends IocContainer implements IContainer {
 
-    protected init() {
-        super.init();
+    protected initReg() {
+        super.initReg();
         registerCores(this);
     }
 

@@ -1,4 +1,4 @@
-import { Abstract, Token, Destoryable } from '@tsdi/ioc';
+import { Abstract, Destoryable } from '@tsdi/ioc';
 import { IBootContext } from '../BootContext';
 
 

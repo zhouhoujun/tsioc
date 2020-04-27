@@ -95,7 +95,7 @@ export abstract class IocContext<
      * @param token
      */
     hasValue(token: SymbolType): boolean {
-        return this.context.hasSingleton(token);
+        return this.context.hasValue(token);
     }
 
     /**
@@ -195,7 +195,7 @@ export abstract class IocContext<
                 this.context.inject(...options.contexts);
             }
         }
-        options = this.context.hasSingleton(CTX_OPTIONS) ? Object.assign(this.getOptions(), options) : options;
+        options = this.context.hasValue(CTX_OPTIONS) ? Object.assign(this.getOptions(), options) : options;
         this.context.setValue(CTX_OPTIONS, options);
         return this;
     }

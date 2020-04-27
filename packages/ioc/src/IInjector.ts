@@ -81,15 +81,20 @@ export interface IInjector extends IDestoryable {
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
-     * has singleton or not in current injector.
+     * has singleton or not in root.
      * @param key
      */
     hasSingleton<T>(key: SymbolType<T>): boolean;
     /**
-     * has registered singleton or not.
+     * has value or not in current injector.
      * @param key
      */
-    hasRegisterSingleton<T>(key: SymbolType<T>): boolean;
+    hasValue<T>(key: SymbolType<T>): boolean;
+    /**
+     * has registered value or not.
+     * @param key
+     */
+    hasRegisterValue<T>(key: SymbolType<T>): boolean;
     /**
      * has register in the injector or root container.
      * @param token the token.
@@ -138,10 +143,33 @@ export interface IInjector extends IDestoryable {
      */
     getSingleton<T>(key: SymbolType<T>): T;
     /**
+     * set singleton.
+     * @param key provide key
+     * @param value vaule
+     */
+    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
+    /**
+     * delete singleton instance.
+     * @param key key
+     */
+    delSingleton<T>(key: SymbolType<T>): void;
+    /**
      * get singleton value instance, the injector registered.
      * @param key token key.
      */
     getValue<T>(key: SymbolType<T>): T;
+        /**
+     * set value.
+     * @param key token key.
+     * @param value value.
+     *  @param {Type<T>} [provider] the value provider.
+     */
+    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
+    /**
+     * delete value.
+     * @param key token key.
+     */
+    delValue<T>(key: SymbolType<T>): void;
     /**
      * get the first singleton value instance, the injector registered.
      * @param key token keys.
@@ -197,19 +225,6 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this;
-    /**
-     * set value.
-     * @param key token key.
-     * @param value value.
-     *  @param {Type<T>} [provider] the value provider.
-     */
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
-
-    /**
-     * delete value.
-     * @param key token key.
-     */
-    delValue<T>(key: SymbolType<T>);
     /**
      * register type.
      *

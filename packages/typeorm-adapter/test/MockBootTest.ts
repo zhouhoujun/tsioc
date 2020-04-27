@@ -34,9 +34,9 @@ export const connectOption = <IConnectionOptions>{
     host: 'localhost',
     port: 5432,
     username: 'postgres',
-    password: 'zhouyou81',
+    password: '',
     database: 'dbedge',
-    useNewUrlParser: true,
+    // useNewUrlParser: true,
     synchronize: true, // 同步数据库
     logging: false  // 日志
 }

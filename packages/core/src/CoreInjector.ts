@@ -12,7 +12,7 @@ import { LoadType } from './types';
 export class CoreInjector extends Injector implements ICoreInjector {
 
     getServiceProvider(): ServiceProvider {
-        return this.tryGetSingletonInRoot(ServiceProvider)
+        return this.getSingleton(ServiceProvider)
     }
 
     /**
@@ -29,7 +29,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.tryGetSingletonInRoot(ContainerBuilderToken);
+        return this.getSingleton(ContainerBuilderToken);
     }
 
     /**
@@ -50,7 +50,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @memberof IContainer
      */
     load(...modules: LoadType[]): Promise<Type[]> {
-        return this.tryGetSingletonInRoot(ModuleProvider).load(this, ...modules);
+        return this.getSingleton(ModuleProvider).load(this, ...modules);
     }
 
     /**
