@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { IBootContext, IConnectionOptions, RunnableConfigure, ConnectionStatupService } from '@tsdi/boot';
 import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
 import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
+import { ILogger } from '@tsdi/logs';
 
 
 @Singleton()
@@ -12,12 +13,15 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
     protected options: IConnectionOptions;
     protected ctx: IBootContext;
 
+    private logger: ILogger;
     /**
      * configure service.
      * @param ctx context.
      */
     async configureService(ctx: IBootContext): Promise<void> {
         this.ctx = ctx;
+        const logger = this.logger = ctx.getLogManager()?.getLogger();
+        logger?.info('startup db connections');
         const config = this.ctx.getConfiguration();
         const injector = ctx.injector;
         if (config.repositories && config.repositories.some(m => isString(m))) {
@@ -87,6 +91,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
     }
 
     protected destroying() {
+        this.logger?.info('close db connections');
         getConnectionManager().connections.forEach(c => {
             c && c.close();
         })
