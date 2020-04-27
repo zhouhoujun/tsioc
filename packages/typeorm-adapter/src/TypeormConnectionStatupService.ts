@@ -1,8 +1,9 @@
 import 'reflect-metadata';
-import { IBootContext, IConnectionOptions, RunnableConfigure, ConnectionStatupService } from '@tsdi/boot';
-import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
-import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
 import { ILogger } from '@tsdi/logs';
+import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
+import { IBootContext, IConnectionOptions, RunnableConfigure, ConnectionStatupService } from '@tsdi/boot';
+import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
+
 
 
 @Singleton()
