@@ -1,14 +1,19 @@
 import {
-    Type, isFunction, lang, IProviders, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction, IParameter, IActionSetup
+    Type, isFunction, lang, IProviders, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction, IParameter, IActionSetup, isArray, isDefined, tokenId
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
-import { Joinpoint } from '../joinpoints/Joinpoint';
+import { Joinpoint, AOP_RETURNING } from '../joinpoints/Joinpoint';
 import { JoinpointState } from '../joinpoints/JoinpointState';
 import { AdvisorToken } from '../IAdvisor';
 import { MethodAdvicesScope } from './MethodAdvicesScope';
+import { aExp } from '../regexps';
+import { Advicer } from '../advices/Advicer';
 
 const proxyFlag = '_proxy';
+const ctor = 'constructor';
+export const AOP_ADVICE_INVOKER = tokenId<(joinPoint: Joinpoint, advicer: Advicer) => any>('AOP_ADVICE_INVOKER');
+
 /**
  * Proxy method.
  *
@@ -20,6 +25,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
 
     execute(ctx: Joinpoint, next?: () => void) {
         ctx.providers.inject({ provide: Joinpoint, useValue: ctx });
+        ctx.setValue(AOP_ADVICE_INVOKER, (j, a) => this.invokeAdvice(j, a, this.reflects));
         super.execute(ctx, next);
     }
 
@@ -32,7 +38,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
     }
 
     beforeConstr(targetType: Type, params: IParameter[], args: any[], providers: IProviders) {
-        let propertykey = 'constructor';
+        let propertykey = ctor;
         let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
         if (!advices) {
             return;
@@ -40,10 +46,10 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
 
         let className = lang.getClassName(targetType);
         let joinPoint = Joinpoint.parse(this.reflects.getInjector(targetType), {
-            name: 'constructor',
+            name: ctor,
             state: JoinpointState.Before,
             advices: advices,
-            fullName: className + '.constructor',
+            fullName: className + '.' + ctor,
             args: args,
             params: params,
             targetType: targetType,
@@ -53,7 +59,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
     }
 
     afterConstr(target: any, targetType: Type, params: IParameter[], args: any[], providers: IProviders) {
-        let propertykey = 'constructor';
+        let propertykey = ctor;
         let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
         if (!advices) {
             return;
@@ -61,10 +67,10 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
 
         let className = lang.getClassName(targetType);
         let joinPoint = Joinpoint.parse(this.reflects.getInjector(targetType), {
-            name: 'constructor',
+            name: ctor,
             state: JoinpointState.After,
             advices: advices,
-            fullName: className + '.constructor',
+            fullName: className + '.' + ctor,
             args: args,
             params: params,
             target: target,
@@ -139,48 +145,98 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
     }
 
     setup() {
-        this.use(ConstrBeforeAdviceAction)
-            .use(ConstrAfterAdviceAction)
+        this.use(CtorAdvicesScope)
             .use(MethodAdvicesScope);
+    }
+
+    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, reflects: ITypeReflects) {
+        let metadata: any = advicer.advice;
+        let providers = joinPoint.providers;
+        if (isDefined(joinPoint.args) && metadata.args) {
+            providers.inject({ provide: metadata.args, useValue: joinPoint.args })
+        }
+
+        if (metadata.annotationArgName) {
+            providers.inject({
+                provide: metadata.annotationArgName,
+                useFactory: () => {
+                    let curj = joinPoint;
+                    let annotations = curj.annotations;
+
+                    if (isArray(annotations)) {
+                        if (metadata.annotationName) {
+                            let d: string = metadata.annotationName;
+                            d = aExp.test(d) ? d : `@${d}`;
+                            return annotations.filter(a => a.decorator === d);
+                        }
+                        return annotations;
+                    } else {
+                        return [];
+                    }
+                }
+            });
+        }
+
+        if (joinPoint.hasValue(AOP_RETURNING) && metadata.returning) {
+            providers.inject({ provide: metadata.returning, useValue: joinPoint.returning })
+        }
+
+        if (joinPoint.throwing && metadata.throwing) {
+            providers.inject({ provide: metadata.throwing, useValue: joinPoint.throwing });
+        }
+        return reflects.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+    }
+
+}
+
+
+export class CtorAdvicesScope extends IocCompositeAction<Joinpoint> implements IActionSetup {
+    execute(ctx: Joinpoint, next?: () => void) {
+        if (ctx.name === ctor) {
+            super.execute(ctx);
+        } else {
+            next();
+        }
+    }
+    setup() {
+        this.use(CtorBeforeAdviceAction)
+            .use(CtorAfterAdviceAction);
     }
 }
 
-export const ConstrBeforeAdviceAction = function (ctx: Joinpoint, next: () => void): void {
-    if (ctx.name === 'constructor' && ctx.state === JoinpointState.Before) {
+export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void): void {
+    if (ctx.state === JoinpointState.Before) {
         let advices = ctx.advices;
-        let injector = ctx.injector;
-        let providers = ctx.providers;
+        let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
         advices.Before.forEach(advicer => {
-            injector.invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+            invoker(ctx, advicer);
         });
 
         advices.Pointcut.forEach(advicer => {
-            injector.invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+            invoker(ctx, advicer);
         });
 
         advices.Around.forEach(advicer => {
-            injector.invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+            invoker(ctx, advicer);
         });
-    } else {
-        next();
     }
+    next();
+
 }
 
 
-export const ConstrAfterAdviceAction = function (ctx: Joinpoint, next: () => void): void {
-    if (ctx.name === 'constructor' && ctx.state === JoinpointState.After) {
+export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void): void {
+    if (ctx.state === JoinpointState.After) {
         let advices = ctx.advices;
-        let injector = ctx.injector;
-        let providers = ctx.providers;
+        let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
         advices.After.forEach(advicer => {
-            injector.invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+            invoker(ctx, advicer);
         });
 
         advices.Around.forEach(advicer => {
-            injector.invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+            invoker(ctx, advicer);
         });
-    } else {
-        next();
     }
+    next();
 }
 

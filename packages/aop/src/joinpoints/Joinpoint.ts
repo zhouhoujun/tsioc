@@ -212,6 +212,7 @@ export class Joinpoint extends IocContext {
         this.setValue(AOP_METHOD_PARAMS, options.params);
         this.setValue(AOP_ARGS, options.args);
         this.setValue(AOP_ADVICES, options.advices);
+        options.state && this.setValue(AOP_STATE, options.state);
         options.providers && this.setValue(AOP_METHOD_PROVIDERS, options.providers);
         options.annotations && this.setValue(AOP_METHOD_ANNOTATIONS, options.annotations);
         options.provJoinpoint && this.setValue(AOP_PROV_JOINPOINT, options.provJoinpoint);

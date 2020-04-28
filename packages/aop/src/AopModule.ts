@@ -35,8 +35,8 @@ export class AopModule {
      */
     setup(@Inject(IocContainerToken) container: IIocContainer) {
 
-        const actInjector = container.getInstance(ActionInjector);
-        const reflects = container.getInstance(TypeReflectsToken);
+        const actInjector = container.getSingleton(ActionInjector);
+        const reflects = container.getSingleton(TypeReflectsToken);
 
         actInjector
             .setSingleton(AdvisorToken, new Advisor(reflects), Advisor)

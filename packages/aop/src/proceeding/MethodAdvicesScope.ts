@@ -1,18 +1,15 @@
 import { Joinpoint, AOP_THROWING, AOP_RETURNING, AOP_STATE } from '../joinpoints/Joinpoint';
-import { IocCompositeAction, IActionSetup, isDefined, isArray, tokenId, isPromise, PromiseUtil, ITypeReflects } from '@tsdi/ioc';
+import { IocCompositeAction, IActionSetup, isPromise, PromiseUtil } from '@tsdi/ioc';
 import { JoinpointState } from '../joinpoints/JoinpointState';
-import { Advicer } from '../advices/Advicer';
-import { aExp } from '../regexps';
+import { AOP_ADVICE_INVOKER } from './ProceedingScope';
 
 
-const AOP_ADVICE_INVOKER = tokenId<(joinPoint: Joinpoint, advicer: Advicer) => any>('AOP_ADVICE_INVOKER');
+
 
 export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements IActionSetup {
 
     execute(ctx: Joinpoint, next?: () => void) {
         ctx.providers.inject(...ctx.getProvProviders());
-        let reflects = ctx.reflects;
-        ctx.setValue(AOP_ADVICE_INVOKER, (j, a) => this.invokeAdvice(j, a, reflects));
         super.execute(ctx, next);
     }
     setup() {
@@ -23,44 +20,6 @@ export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements
             .use(AfterAsyncReturningAdvicesAction)
             .use(AfterReturningAdvicesAction)
             .use(AfterThrowingAdvicesAction);
-    }
-
-    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, reflects: ITypeReflects) {
-        let metadata: any = advicer.advice;
-        let providers = joinPoint.providers;
-        if (isDefined(joinPoint.args) && metadata.args) {
-            providers.inject({ provide: metadata.args, useValue: joinPoint.args })
-        }
-
-        if (metadata.annotationArgName) {
-            providers.inject({
-                provide: metadata.annotationArgName,
-                useFactory: () => {
-                    let curj = joinPoint;
-                    let annotations = curj.annotations;
-
-                    if (isArray(annotations)) {
-                        if (metadata.annotationName) {
-                            let d: string = metadata.annotationName;
-                            d = aExp.test(d) ? d : `@${d}`;
-                            return annotations.filter(a => a.decorator === d);
-                        }
-                        return annotations;
-                    } else {
-                        return [];
-                    }
-                }
-            });
-        }
-
-        if (joinPoint.hasValue(AOP_RETURNING) && metadata.returning) {
-            providers.inject({ provide: metadata.returning, useValue: joinPoint.returning })
-        }
-
-        if (joinPoint.throwing && metadata.throwing) {
-            providers.inject({ provide: metadata.throwing, useValue: joinPoint.throwing });
-        }
-        return reflects.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
     }
 
 }

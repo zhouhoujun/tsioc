@@ -7,6 +7,7 @@ export class AnnotationAspect {
     @Pointcut('@annotation(AutoWired)', 'authMetas')
     auth(joinPoint: Joinpoint, authMetas: MethodMetadata[]) {
         console.log('authMetas:', authMetas);
+        joinPoint.target.authdata = 'authdata';
         console.log('aspect annotation Before log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 

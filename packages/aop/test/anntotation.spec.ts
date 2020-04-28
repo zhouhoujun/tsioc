@@ -86,7 +86,20 @@ describe('aop test', () => {
         container.register(AnnotationAspect);
         container.register(CheckRightAspect);
         container.register(MethodTest3);
-        expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
+        let mt3 = container.get('Test3');
+        expect(mt3['around_constructor_After']).toBeTruthy();
+        expect(container.invoke(mt3, 'sayHello')).toEqual('Mama, I love you.');
+        expect(mt3['around_sayHello_Before']).toBeTruthy();
+        expect(mt3['around_sayHello_After']).toBeTruthy();
+        expect(mt3['authdata']).toEqual('authdata');
 
     });
+
+    it('Aop ann with data', ()=> {
+        container.register(AnnotationAspect);
+        container.register(CheckRightAspect);
+        container.register(MethodTest2);
+        expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama')
+
+    })
 });
