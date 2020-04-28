@@ -299,7 +299,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
-     *  has register.
+     *  has register token in current injector.
      *
      * @template T
      * @param {Token<T>} token the token.
@@ -308,8 +308,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof IInjector
      */
     has<T>(token: Token<T>, alias?: string): boolean {
-        let key = this.getTokenKey(token, alias);
-        return this.hasSingleton(key) || this.hasTokenKey(key);
+        return this.hasTokenKey(this.getTokenKey(token, alias));
     }
     /**
      * has register.
@@ -490,10 +489,9 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        let next = !Array.from(this.values.keys()).some(tk => callbackfn(() => this.values.get(tk), tk, this) === false);
-
+        let next = !Array.from(this.values.keys()).some(tk => isToken(tk) ? callbackfn(() => this.values.get(tk), tk, this) === false : false);
         return next ? !Array.from(this.factories.keys()).some(tk => {
-            if (!this.values.has(tk)) {
+            if (!this.values.has(tk) && isToken(tk)) {
                 return callbackfn(this.factories.get(tk), tk, this) === false;
             }
             return false;

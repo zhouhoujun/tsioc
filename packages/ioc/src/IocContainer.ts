@@ -28,6 +28,10 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this.factories.size + this.values.size + this.singletons.size;
     }
 
+    hasTokenKey<T>(key: SymbolType<T>): boolean {
+        return this.hasSingleton(key) || this.values.has(key) || this.factories.has(key);
+    }
+
     getTypeReflects(): ITypeReflects {
         return this.getSingleton(TypeReflectsToken);
     }
