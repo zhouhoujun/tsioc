@@ -167,7 +167,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             return false;
         }
         return Array.from(this.singletons.keys()).some(tk => {
-            if (!this.values.has(tk) && !this.factories.has(tk)) {
+            if (!this.values.has(tk) && !this.factories.has(tk) && isToken(tk)) {
                 return callbackfn(()=> this.singletons.get(tk), tk, this) === false;
             }
             return false;
