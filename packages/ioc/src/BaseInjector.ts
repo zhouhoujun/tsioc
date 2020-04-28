@@ -490,15 +490,10 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        let next = !Array.from(this.values.keys()).some(tk => {
-            if (isToken(tk)) {
-                return callbackfn(() => this.values.get(tk), tk, this) === false;
-            }
-            return false;
-        });
+        let next = !Array.from(this.values.keys()).some(tk => callbackfn(() => this.values.get(tk), tk, this) === false);
 
         return next ? !Array.from(this.factories.keys()).some(tk => {
-            if (!this.values.has(tk) && isToken(tk)) {
+            if (!this.values.has(tk)) {
                 return callbackfn(this.factories.get(tk), tk, this) === false;
             }
             return false;
