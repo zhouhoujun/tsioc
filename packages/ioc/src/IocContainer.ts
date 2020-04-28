@@ -10,6 +10,7 @@ import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { InjectToken } from './InjectToken';
 import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
+import { isToken } from './utils/isToken';
 
 
 /**
@@ -159,6 +160,18 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 }));
         })();
         return this;
+    }
+
+    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
+        if (super.iterator(callbackfn, deep) === false) {
+            return false;
+        }
+        return Array.from(this.singletons.keys()).some(tk => {
+            if (!this.values.has(tk) && !this.factories.has(tk)) {
+                return callbackfn(()=> this.singletons.get(tk), tk, this) === false;
+            }
+            return false;
+        });
     }
 
     protected init() {

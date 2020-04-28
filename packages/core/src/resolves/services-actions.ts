@@ -53,7 +53,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             if (maps && maps.size) {
                 maps.iterator((fac, tk) => {
                     if (!services.has(tk) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
-                        services.set(tk, (...providers: ProviderTypes[]) => fac(...providers));
+                        services.set(tk, fac);
                     }
                 });
             }
@@ -62,7 +62,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     .some(dec => {
                         dprvoider.getProviders(dec)?.iterator((fac, tk) => {
                             if (!services.has(tk) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
-                                services.set(tk, (...providers: ProviderTypes[]) => fac(...providers));
+                                services.set(tk, fac);
                             }
                         });
                     });
