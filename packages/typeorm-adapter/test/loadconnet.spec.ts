@@ -36,6 +36,15 @@ export class LoadReposTest {
     @Test()
     async canGetUserRepository() {
         let rep = this.ctx.injector.get(UserRepository);
+        // let [users, total] = await rep.search('xxx');
+        // let [user] = users;
+        // let name = 'xxx';
+        // let edited = new User();
+        // edited = { ...user, ...edited, name };
+
+        // let { name: name1, account, age } = user;
+        // name1
+
         expect(rep).toBeInstanceOf(UserRepository);
     }
 
