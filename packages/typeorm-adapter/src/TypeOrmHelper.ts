@@ -1,32 +1,38 @@
 import { Repository, MongoRepository, Connection } from 'typeorm';
-import { Singleton, Type } from '@tsdi/ioc';
+import { Singleton, Type, Inject, INJECTOR } from '@tsdi/ioc';
 import { TypeormConnectionStatupService } from './TypeormConnectionStatupService';
+import { ICoreInjector } from '@tsdi/core';
 
 
 
-@Singleton
+@Singleton()
 export class TypeOrmHelper {
 
-    constructor(private service: TypeormConnectionStatupService) {
+    private service: TypeormConnectionStatupService;
 
+    @Inject(INJECTOR)
+    private injector: ICoreInjector;
+
+    constructor() {
     }
 
     getConnection(connectName?: string): Connection {
+        if (!this.service) {
+            this.service = this.injector.get(TypeormConnectionStatupService);
+        }
         return this.service.getConnection(connectName);
     }
 
     getRepository<T>(type: Type<T>, connectName?: string): Repository<T> {
-        let conn = this.service.getConnection(connectName);
-        return conn.getRepository<T>(type);
+        return this.getConnection(connectName).getRepository<T>(type);
     }
 
     getCustomRepository<T extends Repository<any>>(type: Type<T>, connectName?: string): T {
-        return this.getCustomRepository(type, connectName);
+        return this.getConnection(connectName).getCustomRepository(type);
     }
 
     getMongoRepository<T>(type: Type<T>, connectName?: string): MongoRepository<T> {
-        let conn = this.service.getConnection(connectName);
-        return conn.getMongoRepository<T>(type);
+        return this.getConnection(connectName).getMongoRepository<T>(type);
     }
 
 }

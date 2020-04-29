@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server",
-  "version": "6.0.4",
+  "version": "6.0.6",
   "description": "@tsdi/platform-server is platform of @tsdi framework for server.",
   "scripts": {
     "postinstall": "npm prune",
@@ -36,8 +36,8 @@
   },
   "peerDependencies": {
     "tslib": "^1.11.0",
-    "@tsdi/ioc": "~6.0.4",
-    "@tsdi/core": "~6.0.4"
+    "@tsdi/ioc": "~6.0.6",
+    "@tsdi/core": "~6.0.6"
   },
   "directories": {
     "lib": "lib",
