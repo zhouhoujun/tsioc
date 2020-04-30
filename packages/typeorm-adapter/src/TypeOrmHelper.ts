@@ -1,7 +1,7 @@
-import { Repository, MongoRepository, Connection } from 'typeorm';
 import { Singleton, Type, Inject, INJECTOR } from '@tsdi/ioc';
-import { TypeormConnectionStatupService } from './TypeormConnectionStatupService';
 import { ICoreInjector } from '@tsdi/core';
+import { Repository, MongoRepository, Connection } from 'typeorm';
+import { TypeormConnectionStatupService } from './TypeormConnectionStatupService';
 
 
 
