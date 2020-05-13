@@ -9,14 +9,10 @@ import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 import { lang } from './utils/lang';
 
-
 /**
- * injector interface.
- *
- * @export
- * @interface IInjector
+ * value injector.
  */
-export interface IInjector extends IDestoryable {
+export interface IValueInjector extends IDestoryable {
     /**
      * resolver size.
      *
@@ -25,13 +21,15 @@ export interface IInjector extends IDestoryable {
      */
     readonly size: number;
     /**
-     * get root container.
+     * has value or not in current injector.
+     * @param key
      */
-    getContainer(): IIocContainer;
+    hasValue<T>(key: SymbolType<T>): boolean;
     /**
-     *  get injector proxy
+     * has registered value or not.
+     * @param key
      */
-    getProxy(): InjectorProxy<this>;
+    hasRegisterValue<T>(key: SymbolType<T>): boolean;
     /**
      * get token.
      *
@@ -43,15 +41,6 @@ export interface IInjector extends IDestoryable {
      */
     getToken<T>(target: Token<T>, alias?: string): Token<T>;
     /**
-     * has token key.
-     *
-     * @template T
-     * @param {SymbolType<T>} key the token key.
-     * @returns {boolean}
-     * @memberof IInjector
-     */
-    hasTokenKey<T>(key: SymbolType<T>): boolean;
-    /**
      * get tocken key.
      *
      * @template T
@@ -61,6 +50,67 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
+    /**
+     * get singleton value instance, the injector registered.
+     * @param key token key.
+     */
+    getValue<T>(key: SymbolType<T>): T;
+        /**
+     * set value.
+     * @param key token key.
+     * @param value value.
+     *  @param {Type<T>} [provider] the value provider.
+     */
+    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
+    /**
+     * delete value.
+     * @param key token key.
+     */
+    delValue<T>(key: SymbolType<T>): void;
+    /**
+     * get the first singleton value instance, the injector registered.
+     * @param key token keys.
+     */
+    getFirstValue<T>(...keys: SymbolType<T>[]): T;
+     /**
+     * register value.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {T} value
+     * @param {Type<T>} provider the token provider
+     * @returns {this}
+     * @memberof IInjector
+     */
+    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+
+}
+
+/**
+ * injector interface.
+ *
+ * @export
+ * @interface IInjector
+ */
+export interface IInjector extends IValueInjector {
+    
+    /**
+     * get root container.
+     */
+    getContainer(): IIocContainer;
+    /**
+     *  get injector proxy
+     */
+    getProxy(): InjectorProxy<this>;
+    /**
+     * has token key.
+     *
+     * @template T
+     * @param {SymbolType<T>} key the token key.
+     * @returns {boolean}
+     * @memberof IInjector
+     */
+    hasTokenKey<T>(key: SymbolType<T>): boolean;
     /**
      * has register.
      *
@@ -85,16 +135,6 @@ export interface IInjector extends IDestoryable {
      * @param key
      */
     hasSingleton<T>(key: SymbolType<T>): boolean;
-    /**
-     * has value or not in current injector.
-     * @param key
-     */
-    hasValue<T>(key: SymbolType<T>): boolean;
-    /**
-     * has registered value or not.
-     * @param key
-     */
-    hasRegisterValue<T>(key: SymbolType<T>): boolean;
     /**
      * has register in the injector or root container.
      * @param token the token.
@@ -153,28 +193,6 @@ export interface IInjector extends IDestoryable {
      * @param key key
      */
     delSingleton<T>(key: SymbolType<T>): void;
-    /**
-     * get singleton value instance, the injector registered.
-     * @param key token key.
-     */
-    getValue<T>(key: SymbolType<T>): T;
-        /**
-     * set value.
-     * @param key token key.
-     * @param value value.
-     *  @param {Type<T>} [provider] the value provider.
-     */
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
-    /**
-     * delete value.
-     * @param key token key.
-     */
-    delValue<T>(key: SymbolType<T>): void;
-    /**
-     * get the first singleton value instance, the injector registered.
-     * @param key token keys.
-     */
-    getFirstValue<T>(...keys: SymbolType<T>[]): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -246,17 +264,6 @@ export interface IInjector extends IDestoryable {
      */
     registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
     /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @param {Type<T>} provider the token provider
-     * @returns {this}
-     * @memberof IInjector
-     */
-    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-    /**
      * register type class.
      * @param Type the class.
      * @param [provide] the class prodvider to.
@@ -311,8 +318,6 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     use(...modules: Modules[]): this;
-
-
     /**
      * unregister the token
      *

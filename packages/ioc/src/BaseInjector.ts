@@ -1,10 +1,9 @@
 import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './types';
-import { Registration } from './Registration';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
-    isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined, ClassTypes
+    isBaseObject, isArray, isDefined, isClassType, ClassTypes
 } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
@@ -16,8 +15,8 @@ import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';
 import { ActionInjectorToken } from './actions/Action';
-import { IocDestoryable } from './Destoryable';
 import { TypeReflectsToken } from './services/ITypeReflects';
+import { ValueInjector } from './ValueInjector';
 
 
 /**
@@ -28,8 +27,7 @@ import { TypeReflectsToken } from './services/ITypeReflects';
  * @class BaseInjector
  * @implements {IInjector}
  */
-export abstract class BaseInjector extends IocDestoryable implements IInjector {
-    static d0CT: ClassTypes = 'injector';
+export abstract class BaseInjector extends ValueInjector implements IInjector {
     /**
      * factories.
      *
@@ -38,22 +36,10 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
      * @memberof BaseInjector
      */
     protected factories: Map<SymbolType, InstanceFactory>;
-    /**
-     * values.
-     */
-    protected values: Map<SymbolType, any>;
-    /**
-     * provide types.
-     *
-     * @protected
-     * @type {Map<Token, Type>}
-     * @memberof BaseInjector
-     */
-    protected provideTypes: Map<SymbolType, Type>;
+
 
     constructor() {
         super();
-        this.init();
         this.initReg();
     }
 
@@ -99,34 +85,7 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return this;
     }
 
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>) {
-        if (provider && isClass(provider)) {
-            this.values.set(provider, value);
-            this.values.set(key, value);
-            this.provideTypes.set(key, provider);
-        } else {
-            this.values.set(key, value);
-        }
-        return this;
-    }
 
-    delValue<T>(key: SymbolType<T>): void {
-        this.values.delete(key);
-    }
-
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof BaseInjector
-     */
-    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
-        let key = this.getTokenKey(token);
-        return this.setValue(key, value, provider);
-    }
 
     /**
      * register type class.
@@ -329,14 +288,6 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     abstract setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
     abstract delSingleton<T>(key: SymbolType<T>): void;
 
-    hasValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key);
-    }
-
-    hasRegisterValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key) || this.hasValueInRoot(key);
-    }
-
     /**
      * get token factory resolve instace in current BaseInjector.
      *
@@ -362,19 +313,6 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
         return this.getSingleton(key) ?? this.getValue(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
-    }
-
-    getValue<T>(key: SymbolType<T>): T {
-        return this.tryGetValue(key) ?? this.tryGetValueInRoot(key);
-    }
-
-    getFirstValue<T>(...keys: SymbolType<T>[]): T {
-        let value: T;
-        keys.some(k => {
-            value = this.getValue(k);
-            return !isNullOrUndefined(value);
-        })
-        return value;
     }
 
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
@@ -452,42 +390,6 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
         return this;
     }
 
-
-    /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof BaseInjector
-     */
-    getToken<T>(token: Token<T>, alias?: string): Token<T> {
-        if (alias) {
-            return new Registration(token, alias);
-        }
-        return token;
-    }
-
-
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     * @memberof BaseInjector
-     */
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-        if (alias) {
-            return new Registration(token, alias).toString();
-        } else if (token instanceof Registration) {
-            return token.toString();
-        }
-        return token;
-    }
-
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
         let next = !Array.from(this.values.keys()).some(tk => isToken(tk) ? callbackfn(() => this.values.get(tk), tk, this) === false : false);
         return next ? !Array.from(this.factories.keys()).some(tk => {
@@ -545,9 +447,8 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     protected init() {
+        super.init();
         this.factories = new Map();
-        this.values = new Map();
-        this.provideTypes = new Map();
     }
 
     protected initReg() {
@@ -564,18 +465,6 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
 
     protected hasInRoot(key: SymbolType): boolean {
         return false;
-    }
-
-    protected hasValueInRoot(key: SymbolType): boolean {
-        return false;
-    }
-
-    protected tryGetValue<T>(key: SymbolType<T>): T {
-        return this.values.get(key) ?? null;
-    }
-
-    protected tryGetValueInRoot<T>(key: SymbolType<T>): T {
-        return null;
     }
 
     protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
@@ -618,12 +507,9 @@ export abstract class BaseInjector extends IocDestoryable implements IInjector {
     }
 
     protected destroying() {
-        this.values.clear();
+        super.destroying();
         this.factories.clear();
-        this.provideTypes.clear();
-        delete this.values;
         delete this.factories;
-        delete this.provideTypes;
     }
 }
 
