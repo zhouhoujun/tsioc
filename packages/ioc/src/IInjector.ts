@@ -55,12 +55,12 @@ export interface IValueInjector extends IDestoryable {
      * @param key token key.
      */
     getValue<T>(key: SymbolType<T>): T;
-        /**
-     * set value.
-     * @param key token key.
-     * @param value value.
-     *  @param {Type<T>} [provider] the value provider.
-     */
+    /**
+ * set value.
+ * @param key token key.
+ * @param value value.
+ *  @param {Type<T>} [provider] the value provider.
+ */
     setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
     /**
      * delete value.
@@ -72,18 +72,17 @@ export interface IValueInjector extends IDestoryable {
      * @param key token keys.
      */
     getFirstValue<T>(...keys: SymbolType<T>[]): T;
-     /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @param {Type<T>} provider the token provider
-     * @returns {this}
-     * @memberof IInjector
-     */
+    /**
+    * register value.
+    *
+    * @template T
+    * @param {Token<T>} token
+    * @param {T} value
+    * @param {Type<T>} provider the token provider
+    * @returns {this}
+    * @memberof IInjector
+    */
     registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-
 }
 
 /**
@@ -93,7 +92,6 @@ export interface IValueInjector extends IDestoryable {
  * @interface IInjector
  */
 export interface IInjector extends IValueInjector {
-    
     /**
      * get root container.
      */

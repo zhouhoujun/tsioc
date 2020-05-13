@@ -73,7 +73,7 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
         }
         return token;
     }
-    
+
     setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>) {
         if (provider && isClass(provider)) {
             this.values.set(provider, value);

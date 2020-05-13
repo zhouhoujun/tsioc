@@ -3,7 +3,7 @@ import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './ty
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
-    isBaseObject, isArray, isDefined, isClassType, ClassTypes
+    isBaseObject, isArray, isDefined, isClassType
 } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
