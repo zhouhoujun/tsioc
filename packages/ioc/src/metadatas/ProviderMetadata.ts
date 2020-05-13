@@ -8,7 +8,7 @@ import { Token } from '../types';
  * @extends {MetaType}
  */
 export interface ProviderMetadata {
-/**
+    /**
      * this type provider to.
      *
      * @type {SymbolType}

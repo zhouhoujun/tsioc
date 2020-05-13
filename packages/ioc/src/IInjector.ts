@@ -56,11 +56,11 @@ export interface IValueInjector extends IDestoryable {
      */
     getValue<T>(key: SymbolType<T>): T;
     /**
- * set value.
- * @param key token key.
- * @param value value.
- *  @param {Type<T>} [provider] the value provider.
- */
+     * set value.
+     * @param key token key.
+     * @param value value.
+     *  @param {Type<T>} [provider] the value provider.
+     */
     setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
     /**
      * delete value.
