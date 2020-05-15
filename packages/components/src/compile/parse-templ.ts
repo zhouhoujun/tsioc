@@ -1,4 +1,4 @@
-import { isNullOrUndefined, isArray, IActionSetup, chain } from '@tsdi/ioc';
+import { isNullOrUndefined, isArray, IActionSetup, chain, isDefined } from '@tsdi/ioc';
 import { BuildHandles, StartupDecoratorRegisterer } from '@tsdi/boot';
 import { ITemplateContext, TemplateOptionToken } from './TemplateContext';
 import { CTX_COMPONENT_PROVIDER } from '../ComponentProvider';
@@ -48,7 +48,7 @@ export const ElementsTemplateHandle = async function (ctx: ITemplateContext, nex
     let template = ctx.getTemplate();
     if (isArray(template)) {
         let actInjector = ctx.reflects.getActionInjector();
-        ctx.value = await Promise.all(template.map(async tp => {
+        ctx.value = await Promise.all(template.filter(e => isDefined(e)).map(async tp => {
             let subCtx = ctx.clone().setOptions({
                 template: tp
             });

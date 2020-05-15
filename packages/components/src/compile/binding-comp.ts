@@ -1,6 +1,6 @@
 import {
     lang, isFunction, isNullOrUndefined, isString, isBaseType,
-    isClassType, ClassType, chain, isArray, IActionSetup
+    isClassType, ClassType, chain, isArray, IActionSetup, isDefined
 } from '@tsdi/ioc';
 import { PropBinding } from '../bindings/PropBinding';
 import { IComponentOption } from '../ComponentContext';
@@ -54,7 +54,7 @@ export const BindingArrayHandle = async function (ctx: IParseContext, next: () =
     let expression = ctx.getValue(CTX_BIND_EXPRESSION);
     if (binding.type === Array && isArray(expression)) {
         let actInjector = ctx.reflects.getActionInjector();
-        ctx.value = await Promise.all(expression.map(async tp => {
+        ctx.value = await Promise.all(expression.filter(e => isDefined(e)).map(async tp => {
             let subCtx = ctx.clone().setOptions({
                 bindExpression: tp,
                 template: tp,

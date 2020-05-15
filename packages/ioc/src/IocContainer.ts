@@ -10,7 +10,6 @@ import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { InjectToken } from './InjectToken';
 import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
-import { isToken } from './utils/isToken';
 
 
 /**
