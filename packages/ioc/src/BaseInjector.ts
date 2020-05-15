@@ -36,6 +36,14 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      * @memberof BaseInjector
      */
     protected factories: Map<SymbolType, InstanceFactory>;
+    /**
+     * singleton map.
+     *
+     * @protected
+     * @type {Map<SymbolType, any>}
+     * @memberof BaseInjector
+     */
+    protected singletons: Map<SymbolType, any>;
 
 
     constructor() {
@@ -44,11 +52,11 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     }
 
     get size(): number {
-        return this.factories.size + this.values.size;
+        return this.factories.size + this.values.size + this.singletons.size;
     }
 
     getProxy(): InjectorProxy<this> {
-        return this.getValue(InjectorProxyToken) as InjectorProxy<this>;
+        return this.getSingleton(InjectorProxyToken) as InjectorProxy<this>;
     }
 
     abstract getContainer(): IIocContainer;
@@ -65,12 +73,35 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     abstract register<T>(token: Token<T>, fac?: Factory<T>): this;
 
     /**
-     * register as singleton.
-     * @param token token
-     * @param value factory
+     * register stingleton type.
+     * @abstract
+     * @template T
+     * @param {Token<T>} token
+     * @param {Factory<T>} [fac]
+     * @returns {this}
+     * @memberOf Container
      */
     abstract registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
 
+
+    /**
+     * register type class.
+     * @param Type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     */
+    abstract registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+
+    /**
+     * set token factory.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {InstanceFactory<T>} fac
+     * @param {Type<T>} [provider]
+     * @returns {this}
+     * @memberof BaseInjector
+     */
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
         if (isClass(provider)) {
@@ -84,16 +115,6 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
         }
         return this;
     }
-
-
-
-    /**
-     * register type class.
-     * @param Type the class.
-     * @param [provide] the class prodvider to.
-     * @param [singleton]
-     */
-    abstract registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
 
     /**
      * bind provider.
@@ -147,6 +168,13 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
         return refToken;
     }
 
+    /**
+     * inject providers.
+     *
+     * @param {...InjectTypes[]} providers
+     * @returns {this}
+     * @memberof BaseInjector
+     */
     inject(...providers: InjectTypes[]): this {
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
@@ -276,17 +304,33 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      */
     hasRegister<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        return this.hasSingleton(key) || this.hasTokenKey(key) || this.hasInRoot(key);
+        return this.hasTokenKey(key) || this.hasInRoot(key);
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key) || this.factories.has(key);
+        return this.singletons.has(key) || this.values.has(key) || this.factories.has(key);
     }
 
-    abstract hasSingleton<T>(key: SymbolType<T>): boolean;
-    abstract getSingleton<T>(key: SymbolType<T>): T;
-    abstract setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
-    abstract delSingleton<T>(key: SymbolType<T>): void;
+    hasSingleton<T>(key: SymbolType<T>): boolean {
+        return this.singletons.has(key);
+    }
+
+    getSingleton<T>(key: SymbolType<T>): T {
+        return this.singletons.get(key);
+    }
+
+    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this {
+        this.singletons.set(key, value);
+        if (provider && isClass(provider)) {
+            this.singletons.set(provider, value);
+            this.provideTypes.set(key, provider);
+        }
+        return this;
+    }
+
+    delSingleton(key: SymbolType) {
+        this.singletons.delete(key);
+    }
 
     /**
      * get token factory resolve instace in current BaseInjector.
@@ -316,7 +360,7 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     }
 
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
-        return this.tryGetFactory(key) ?? this.tryGetFactoryInRoot(key);
+        return this.factories.get(key) ?? null;
     }
 
     /**
@@ -342,7 +386,7 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let tokenKey = this.getTokenKey(token);
-        return this.tryGetTokenProvidider(tokenKey) ?? this.tryGetTokenProviderInRoot(tokenKey) ?? (isClassType(tokenKey) ? tokenKey as Type<T> : null);
+        return this.provideTypes.get(tokenKey) ?? (isClassType(tokenKey) ? tokenKey as Type<T> : null);
     }
 
     /**
@@ -359,6 +403,7 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
         if (this.has(key)) {
             this.factories.delete(key);
             this.values.delete(key);
+            this.singletons.delete(key);
             this.provideTypes.delete(key);
             if (isClass(key)) {
                 let keys = [];
@@ -369,6 +414,7 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
                     }
                 });
                 keys.forEach(k => {
+                    this.singletons.delete(key);
                     this.factories.delete(key);
                     this.provideTypes.delete(key);
                 });
@@ -391,9 +437,12 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     }
 
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        let next = !Array.from(this.values.keys()).some(tk => isToken(tk) ? callbackfn(() => this.values.get(tk), tk, this) === false : false);
+        let next = !Array.from(this.singletons.keys()).some(tk => isToken(tk) ? callbackfn(() => this.singletons.get(tk), tk, this) === false : false);
+        if (!next) {
+            next = !Array.from(this.values.keys()).some(tk => isToken(tk) ? callbackfn(() => this.values.get(tk), tk, this) === false : false);
+        }
         return next ? !Array.from(this.factories.keys()).some(tk => {
-            if (!this.values.has(tk) && isToken(tk)) {
+            if (!this.singletons.has(tk) && !this.values.has(tk) && isToken(tk)) {
                 return callbackfn(this.factories.get(tk), tk, this) === false;
             }
             return false;
@@ -449,12 +498,13 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     protected init() {
         super.init();
         this.factories = new Map();
+        this.singletons = new Map();
     }
 
     protected initReg() {
-        this.setValue(INJECTOR, this, lang.getClass(this));
-        this.setValue(InjectorProxyToken, () => this);
-        this.setValue(IocCacheManager, new IocCacheManager(this));
+        this.setSingleton(INJECTOR, this, lang.getClass(this));
+        this.setSingleton(InjectorProxyToken, () => this);
+        this.setSingleton(IocCacheManager, new IocCacheManager(this));
     }
 
     /**
@@ -467,23 +517,6 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
         return false;
     }
 
-    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
-        return this.factories.has(key) ? this.factories.get(key) : null;
-    }
-
-    protected tryGetFactoryInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
-        return null;
-    }
-
-    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
-        if (this.provideTypes.has(tokenKey)) {
-            return this.provideTypes.get(tokenKey);
-        }
-    }
-
-    protected tryGetTokenProviderInRoot<T>(tokenKey: SymbolType<T>): Type<T> {
-        return null;
-    }
 
     protected merge(from: BaseInjector, to: BaseInjector, filter?: (key: SymbolType) => boolean) {
         from.factories.forEach((fac, key) => {
@@ -491,6 +524,12 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
                 return;
             }
             to.factories.set(key, fac);
+        });
+        from.singletons.forEach((sgl, key) => {
+            if (filter && !filter(key)) {
+                return;
+            }
+            to.singletons.set(key, sgl);
         });
         from.values.forEach((val, key) => {
             if (filter && !filter(key)) {
@@ -508,6 +547,8 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
 
     protected destroying() {
         super.destroying();
+        this.singletons.clear();
+        delete this.singletons;
         this.factories.clear();
         delete this.factories;
     }

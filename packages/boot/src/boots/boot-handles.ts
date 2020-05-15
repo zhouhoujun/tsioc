@@ -98,8 +98,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     const options = ctx.getOptions();
     const injector = ctx.injector;
     if (isClass(ctx.type)) {
-        let baseURL = ctx.baseURL;
-        if (baseURL) {
+        if (ctx.hasValue(ProcessRunRootToken)) {
             injector.setValue(ProcessRunRootToken, ctx.baseURL)
         }
     }
@@ -129,9 +128,9 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
         injector.inject(...config.providers);
     }
 
-    if (config.baseURL && !ctx.baseURL) {
+    if (config.baseURL && !ctx.hasValue(ProcessRunRootToken)) {
         ctx.setValue(ProcessRunRootToken, config.baseURL);
-        injector.setValue(ProcessRunRootToken, ctx.baseURL);
+        injector.setValue(ProcessRunRootToken, config.baseURL);
     }
 
     await next();
@@ -239,7 +238,7 @@ export const ResolveTypeHandle = async function (ctx: BootContext, next: () => P
         let injector = ctx.injector;
         let target = await injector.getInstance(BuilderServiceToken).resolve({
             type: ctx.type,
-            parent: ctx.getParent(),
+            parent: ctx,
             providers: ctx.providers
         });
         target && ctx.setValue(CTX_MODULE_INST, target);

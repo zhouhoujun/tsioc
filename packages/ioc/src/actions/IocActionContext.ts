@@ -77,7 +77,7 @@ export abstract class IocContext<
     }
 
     protected getReflects() {
-        let reflects = this.injector.getSingleton(TypeReflectsToken);
+        let reflects = this.injector.getInstance(TypeReflectsToken);
         this.context.setValue(TypeReflectsToken, reflects);
         return reflects;
     }

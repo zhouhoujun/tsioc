@@ -30,6 +30,14 @@ export class ModuleInjector extends CoreInjector {
         return super.hasRegisterValue(key) || this.exports.some(r => r.exports.hasRegisterValue(key));
     }
 
+    hasSingleton<T>(key: SymbolType<T>): boolean {
+        return this.singletons.has(key) || this.hasSgltnRoot(key) || this.hasSgltnInExports(key);
+    }
+
+    getSingleton<T>(key: SymbolType<T>): T {
+        return this.singletons.get(key) ?? this.getSgltnInExports(key) ?? this.getSgltnRoot(key);
+    }
+
     clearCache(targetType: Type) {
         super.clearCache(targetType);
         this.exports.forEach(r => {
@@ -84,12 +92,12 @@ export class ModuleInjector extends CoreInjector {
             : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getValue(key);
     }
 
-    protected tryGetFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+    protected getFcty<T>(key: SymbolType<T>): InstanceFactory<T> {
         return this.factories.has(key) ? this.factories.get(key)
             : this.exports.find(r => r.exports.hasTokenKey(key))?.exports.getTokenFactory(key);
     }
 
-    protected tryGetTokenProvidider<T>(tokenKey: SymbolType<T>): Type<T> {
+    protected getTknPdr<T>(tokenKey: SymbolType<T>): Type<T> {
         if (this.provideTypes.has(tokenKey)) {
             return this.provideTypes.get(tokenKey);
         } else {
@@ -100,6 +108,14 @@ export class ModuleInjector extends CoreInjector {
             });
             return type || null;
         }
+    }
+
+    protected hasSgltnInExports<T>(key: SymbolType<T>): boolean {
+        return this.exports.some(r => r.exports.hasSingleton(key));
+    }
+
+    protected getSgltnInExports<T>(key: SymbolType<T>): T {
+        return this.exports.find(r => r.exports.hasSingleton(key))?.exports.getSingleton(key);
     }
 }
 

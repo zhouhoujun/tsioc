@@ -3,7 +3,7 @@ import { IInjector, IProviders, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
 import { InjectTypes } from './providers/types';
-import { lang } from './utils/lang';
+import { lang, isClassType } from './utils/lang';
 
 // use core-js in browser.
 
@@ -25,21 +25,37 @@ export class Injector extends BaseInjector implements IInjector {
         return this.proxy();
     }
 
+    /**
+     * get token provider class type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {Type<T>}
+     * @memberof BaseInjector
+     */
+    getTokenProvider<T>(token: Token<T>): Type<T> {
+        let tokenKey = this.getTokenKey(token);
+        return this.getTknPdr(tokenKey) ?? this.getTknPdrInRoot(tokenKey) ?? (isClassType(tokenKey) ? tokenKey as Type<T> : null);
+    }
+
+    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.getFcty(key) ?? this.getFctyInRoot(key);
+    }
+
     hasSingleton<T>(key: SymbolType<T>): boolean {
-        return this.getContainer().hasSingleton(key);
+        return this.singletons.has(key) || this.hasSgltnRoot(key);
+    }
+
+    protected hasSgltnRoot<T>(key: SymbolType<T>) {
+        return this.getContainer().hasSingleton(key)
     }
 
     getSingleton<T>(key: SymbolType<T>): T {
-        return this.getContainer().getSingleton(key);
+        return this.singletons.get(key) ?? this.getSgltnRoot(key);
     }
 
-    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this {
-        this.getContainer().setSingleton(key, value, provider);
-        return this;
-    }
-
-    delSingleton(key: SymbolType) {
-        this.getContainer().delSingleton(key);
+    protected getSgltnRoot<T>(key: SymbolType<T>) {
+        return this.getContainer().getSingleton(key)
     }
 
     /**
@@ -96,15 +112,23 @@ export class Injector extends BaseInjector implements IInjector {
         return this.getContainer().hasRegisterValue(key);
     }
 
-    protected tryGetFactoryInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
-        return this.getContainer().getTokenFactory(key);
-    }
-
-    protected tryGetValueInRoot<T>(key: SymbolType<T>): T {
+    protected getValueInRoot<T>(key: SymbolType<T>): T {
         return this.getContainer().getValue(key);
     }
 
-    protected tryGetTokenProviderInRoot<T>(tokenKey: SymbolType<T>): Type<T> {
+    protected getFcty<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.factories.get(key) ?? null;
+    }
+
+    protected getFctyInRoot<T>(key: SymbolType<T>): InstanceFactory<T> {
+        return this.getContainer().getTokenFactory(key);
+    }
+
+    protected getTknPdr<T>(tokenKey: SymbolType<T>): Type<T> {
+        return this.provideTypes.get(tokenKey);
+    }
+
+    protected getTknPdrInRoot<T>(tokenKey: SymbolType<T>): Type<T> {
         return this.getContainer().getTokenProvider(tokenKey);
     }
 

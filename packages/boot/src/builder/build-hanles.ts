@@ -1,4 +1,4 @@
-import { IActionSetup, INJECTOR, isNullOrUndefined } from '@tsdi/ioc';
+import { IActionSetup, INJECTOR, isNullOrUndefined, lang } from '@tsdi/ioc';
 import { IBuildContext } from './IBuildContext';
 import { BuildHandle, BuildHandles } from './BuildHandles';
 import { IAnnoationReflect } from '../annotations/IAnnoationReflect';

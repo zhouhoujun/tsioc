@@ -21,16 +21,6 @@ import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
  */
 export class IocContainer extends BaseInjector implements IIocContainer {
 
-    protected singletons: Map<SymbolType, any>;
-
-    get size(): number {
-        return this.factories.size + this.values.size + this.singletons.size;
-    }
-
-    hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.hasSingleton(key) || this.values.has(key) || this.factories.has(key);
-    }
-
     getTypeReflects(): ITypeReflects {
         return this.getSingleton(TypeReflectsToken);
     }
@@ -69,38 +59,9 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this;
     }
 
-    /**
-     * register stingleton type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {Factory<T>} [fac]
-     * @returns {this}
-     * @memberOf Container
-     */
     registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this {
         this.registerFactory(this, token, fac, true);
         return this;
-    }
-
-    hasSingleton<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key);
-    }
-
-    getSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.get(key);
-    }
-
-    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this {
-        this.singletons.set(key, value);
-        if (provider) {
-            this.singletons.set(provider, value)
-        }
-        return this;
-    }
-
-    delSingleton(key: SymbolType) {
-        this.singletons.delete(key);
     }
 
     registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this {
@@ -165,11 +126,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         return this;
     }
 
-    protected init() {
-        super.init();
-        this.singletons = new Map();
-    }
-
     protected initReg() {
         super.initReg();
         registerCores(this);
@@ -190,11 +146,5 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 return instance;
             }
             : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-    }
-
-    protected destroying() {
-        super.destroying();
-        this.singletons.clear();
-        delete this.singletons;
     }
 }

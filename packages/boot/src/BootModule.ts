@@ -43,9 +43,9 @@ export class BootModule {
      * @memberof AopModule
      */
     setup(@Inject(ContainerToken) container: IContainer) {
-
-        container.set(ModuleInjector, () => new ModuleInjector(container.getProxy()));
-        container.set(ModuleProviders, () => new ModuleProviders(container.getProxy()));
+        const proxy = container.getProxy();
+        container.set(ModuleInjector, () => new ModuleInjector(proxy));
+        container.set(ModuleProviders, () => new ModuleProviders(proxy));
         let actInjector = container.getActionInjector();
 
         actInjector.setValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))

@@ -193,7 +193,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * get log manager.
      */
     getLogManager(): ILoggerManager {
-        return this.getContainer().resolve(ConfigureLoggerManger);
+        return this.injector.resolve(ConfigureLoggerManger);
     }
 
     /**
@@ -218,7 +218,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @memberof BootContext
      */
     get baseURL(): string {
-        let url = this.context.getValue(ProcessRunRootToken)
+        let url = this.context.getValue(ProcessRunRootToken);
         if (!url) {
             url = this.getAnnoation()?.baseURL;
             if (url) {
@@ -253,7 +253,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @memberof BootContext
      */
     getConfigureManager(): ConfigureManager<RunnableConfigure> {
-        return this.getContainer().resolve(ConfigureManager);
+        return this.injector.resolve(ConfigureManager);
     }
 
     get args(): string[] {

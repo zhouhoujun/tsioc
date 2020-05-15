@@ -30,7 +30,6 @@ export class UnitTestRunner extends Runnable<any> {
         let src = config.src;
         let injector = context.injector;
         let suites: any[] = [];
-
         let oldRunner = injector.resolve(OldTestRunner);
         await oldRunner.configureService(context);
         let loader = injector.getLoader();

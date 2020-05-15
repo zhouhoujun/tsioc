@@ -1,6 +1,6 @@
 import {
     IocCoreService, Inject, Singleton, isFunction, isString, isClassType,
-    ClassType, TypeReflectsToken, ITypeReflects, INJECTOR
+    ClassType, TypeReflectsToken, ITypeReflects, INJECTOR, lang
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
 import { BootContext, BootOption, IBootContext, isBootContext } from '../BootContext';
@@ -72,6 +72,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         } else {
             rctx = BuildContext.parse(injector, options);
         }
+        rctx.setValue(INJECTOR, injector);
         await this.reflects.getActionInjector().getInstance(ResolveMoudleScope)
             .execute(rctx);
         return rctx;

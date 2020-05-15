@@ -75,12 +75,10 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
     }
 
     setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>) {
+        this.values.set(key, value);
         if (provider && isClass(provider)) {
             this.values.set(provider, value);
-            this.values.set(key, value);
             this.provideTypes.set(key, provider);
-        } else {
-            this.values.set(key, value);
         }
         return this;
     }
@@ -112,7 +110,7 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
     }
 
     getValue<T>(key: SymbolType<T>): T {
-        return this.tryGetValue(key) ?? this.tryGetValueInRoot(key);
+        return this.tryGetValue(key) ?? this.getValueInRoot(key);
     }
 
     getFirstValue<T>(...keys: SymbolType<T>[]): T {
@@ -132,7 +130,7 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
         return this.values.get(key) ?? null;
     }
 
-    protected tryGetValueInRoot<T>(key: SymbolType<T>): T {
+    protected getValueInRoot<T>(key: SymbolType<T>): T {
         return null;
     }
 
