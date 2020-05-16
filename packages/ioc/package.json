@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/ioc",
-  "version": "6.0.8",
+  "version": "6.0.9",
   "description": "@tsdi is base Ioc container, via typescript decorator",
   "scripts": {
     "postinstall": "npm prune",
