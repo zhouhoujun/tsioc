@@ -3,7 +3,7 @@ import { Workflow, Task, Activities, isAcitvityClass, Activity } from '@tsdi/act
 import * as path from 'path';
 import { PackModule, NodeActivityContext, JsonReplaceActivityOption } from '@tsdi/pack';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
-
+import * as through from 'through2';
 
 @Task({
     deps: [
@@ -99,6 +99,36 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
                             await Workflow.run(lang.first(activitys));
                         }
                     }
+                },
+                {
+                    activity: 'asset',
+                    src: 'dist/**/*.d.ts',
+                    pipes: [
+                        () => through.obj(function (file, encoding, callback) {
+                            if (file.isNull()) {
+                                return callback(null, file);
+                            }
+
+                            if (file.isStream()) {
+                                return callback('doesn\'t support Streams');
+                            }
+
+                            let contents: string = file.contents.toString('utf8');
+                            let sets: string[] = [];
+                            contents = contents.replace(/set\s\w+\(.+\)\;/g, match => {
+                                sets.push(match.substring(4, match.indexOf('(')));
+                                return '';
+                            });
+                            contents = contents.replace(/get\s\w+\(\)\:\s/g, match => {
+                                let field = match.substring(4, match.length - 4);
+                                return `${sets.indexOf(field) >= 0 ? '' : 'readonly '}${field}:`;
+                            });
+
+                            file.contents = Buffer.from(contents);
+                            callback(null, file);
+                        })
+                    ],
+                    dist: 'dist'
                 }
             ]
         },

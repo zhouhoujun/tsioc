@@ -38,7 +38,6 @@ const jsTsChkExp = /(\w+\.ts|\.js)$/;
 export function runMainPath(): string {
     let cwd = process.cwd();
     let pr: any = process;
-    console.log(pr.mainModule);
     if (pr.mainModule && pr.mainModule.filename && pr.mainModule.filename.startsWith(cwd)) {
         return path.dirname(pr.mainModule.filename);
     }
