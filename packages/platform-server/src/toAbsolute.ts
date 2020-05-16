@@ -37,8 +37,10 @@ const jsTsChkExp = /(\w+\.ts|\.js)$/;
  */
 export function runMainPath(): string {
     let cwd = process.cwd();
-    if (process.mainModule && process.mainModule.filename && process.mainModule.filename.startsWith(cwd)) {
-        return path.dirname(process.mainModule.filename);
+    let pr: any = process;
+    console.log(pr.mainModule);
+    if (pr.mainModule && pr.mainModule.filename && pr.mainModule.filename.startsWith(cwd)) {
+        return path.dirname(pr.mainModule.filename);
     }
     if (process.argv.length > 2) {
         let mainfile = process.argv.slice(2).find(arg => jsTsChkExp.test(arg) && existsSync(path.join(cwd, arg)));
