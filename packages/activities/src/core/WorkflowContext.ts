@@ -110,7 +110,7 @@ export interface IActivityComponentRef<T = any, TN = ActivityNodeType> extends I
 }
 
 
-export type ActivityNodeType = Activity | IActivityElementRef | IActivityTemplateRef | IActivityComponentRef;
+export type ActivityNodeType = Activity | IActivityElementRef; // | IActivityTemplateRef | IActivityComponentRef;
 
 @Abstract()
 export abstract class ActivityRef extends ContextNode<ActivityContext> implements IActivityRef {

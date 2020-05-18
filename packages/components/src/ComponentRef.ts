@@ -75,7 +75,7 @@ export interface IComponentRef<T = any, TN = NodeType, TCtx extends IAnnoationCo
     getNodeSelector(): NodeSelector;
 }
 
-export type NodeType = IElement | IElementRef | INodeRef | ITemplateRef | IComponentRef;
+export type NodeType = IElement | IElementRef | INodeRef | ITemplateRef; // | IComponentRef;
 
 
 export class NodeRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoationContext>
