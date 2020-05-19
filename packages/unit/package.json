@@ -31,6 +31,9 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/unit#readme",
   "dependencies": {
+    "assert": "^1.4.1",
+    "expect": "^25.3.0",
+    "@types/mocha": "^7.0.2"
   },
   "peerDependencies": {
     "@tsdi/ioc": "~6.0.10",
@@ -38,18 +41,10 @@
     "@tsdi/aop": "~6.0.10",
     "@tsdi/boot": "~6.0.10",
     "@tsdi/logs": "~6.0.10",
-    "@types/mocha": "^5.2.5",
-    "assert": "^1.4.1",
-    "expect": "^25.3.0",
-    "@jest/types": "25.3.0",
-    "@types/jasmine": "^3.5.10",
     "tslib": "^1.11.0"
   },
   "directories": {
     "lib": "lib",
     "test": "test"
-  },
-  "devDependencies": {
-    "assert": "^1.4.1"
   }
 }
