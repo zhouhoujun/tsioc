@@ -3,7 +3,6 @@
   "version": "6.0.10",
   "description": "@tsdi/platform-browser is platform of @tsdi framework for browser.",
   "scripts": {
-    "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [

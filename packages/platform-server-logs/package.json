@@ -3,7 +3,6 @@
   "version": "6.0.10",
   "description": "service logs, base on AOP, Ioc container, via @tsdi",
   "scripts": {
-    "postinstall": "npm prune",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
   },
   "keywords": [
