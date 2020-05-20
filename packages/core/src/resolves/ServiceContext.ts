@@ -1,5 +1,5 @@
 import { Token, ResolveContext, ResolveOption, createContext, IInjector, isArray } from '@tsdi/ioc';
-import { CTX_TOKENS, CTX_TARGET_REFS } from '../context-tokens';
+import { CTX_TOKENS, CTX_TARGET_REFS, CTX_ALIAS } from '../context-tokens';
 
 /**
  * service context option.
@@ -17,6 +17,13 @@ export interface ServiceOption<T> extends ResolveOption<T> {
      */
     tokens?: Token<T>[];
 
+    /**
+     * token alias.
+     *
+     * @type {string}
+     * @memberof ServiceOption
+     */
+    alias?: string;
     /**
      * get extend servie or not.
      *
@@ -57,18 +64,26 @@ export class ServiceContext<T = any, TOP extends ServiceOption<T> = ServiceOptio
         return this.getValue(CTX_TOKENS);
     }
 
+    get alias(): string {
+        return this.getValue(CTX_ALIAS);
+    }
+
     setOptions(options: TOP) {
         if (!options) {
             return this;
         }
         let tokens = this.getValue(CTX_TOKENS) || [];
+        let alias = options.alias;
         if (options.token) {
-            tokens.push(options.token)
+            tokens.push(this.context.getToken(options.token, alias));
         }
         if (options.tokens && options.tokens.length) {
             options.tokens.forEach(t => {
-                t && tokens.push(t);
+                t && tokens.push(this.context.getToken(t, alias));
             });
+        }
+        if (options.alias) {
+            this.context.setValue(CTX_ALIAS, options.alias);
         }
         if (options.target) {
             let targets = (isArray(options.target) ? options.target : [options.target]).filter(t => t);
