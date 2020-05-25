@@ -194,12 +194,12 @@ export const TranslateAtrrHandle = async function (ctx: IParseContext, next: () 
             selector = injector.getTokenProvider(compdr.toAttrSelectorToken(pdr));
         } else if (binding.type !== Array) {
             if (isClassType(binding.provider)) {
-                if (reflects.get<IComponentReflect>(binding.provider).component) {
+                if (reflects.get<IComponentReflect>(binding.provider)?.component) {
                     selector = binding.provider;
                 }
             }
             if (!selector && isClassType(binding.type)) {
-                if (reflects.get<IComponentReflect>(binding.type).component) {
+                if (reflects.get<IComponentReflect>(binding.type)?.component) {
                     selector = binding.type;
                 }
             }
