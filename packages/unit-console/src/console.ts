@@ -4,7 +4,7 @@ import { ISuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLogsModule } from '@tsdi/platform-server-logs';
 import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
-import chalk from 'chalk';
+import * as chalk from 'chalk';
 
 @DIModule({
     regIn: 'root',

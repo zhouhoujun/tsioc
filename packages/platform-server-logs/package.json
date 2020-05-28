@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-logs#readme",
   "dependencies": {
-    "chalk": "^2.4.2",
+    "chalk": "^4.0.0",
     "log4js": "^6.3.0"
   },
   "peerDependencies": {

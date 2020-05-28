@@ -3,7 +3,7 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
 import { IActivityRef, ActivityRef, ControlActivityElementRef } from '@tsdi/activities';
-import chalk from 'chalk';
+import * as chalk from 'chalk';
 const timestamp = require('time-stamp');
 const prettyTime = require('pretty-hrtime');
 

@@ -1,7 +1,7 @@
 import { Singleton, Refs } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
 import { LoggerAspect, LogFormaterToken, ILogFormater } from '@tsdi/logs';
-import chalk from 'chalk';
+import * as chalk from 'chalk';
 
 
 @NonePointcut()

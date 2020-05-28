@@ -36,7 +36,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-activities#readme",
   "dependencies": {
     "bluebird": "^3.7.2",
-    "chalk": "^2.4.2",
+    "chalk": "^4.0.0",
     "globby": "^11.0.0",
     "minimatch": "^3.0.4",
     "minimist": "^1.2.5",
