@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-logs",
-  "version": "6.0.12",
+  "version": "6.0.13",
   "description": "service logs, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -36,12 +36,12 @@
     "log4js": "^6.3.0"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.12",
-    "@tsdi/core": "~6.0.12",
-    "@tsdi/aop": "~6.0.12",
-    "@tsdi/logs": "~6.0.12",
-    "@tsdi/boot": "~6.0.12",
-    "@tsdi/platform-server": "~6.0.12",
+    "@tsdi/ioc": "~6.0.13",
+    "@tsdi/core": "~6.0.13",
+    "@tsdi/aop": "~6.0.13",
+    "@tsdi/logs": "~6.0.13",
+    "@tsdi/boot": "~6.0.13",
+    "@tsdi/platform-server": "~6.0.13",
     "globby": "^11.0.0",
     "interpret": "^2.0.0",
     "time-stamp": "^2.2.0",
