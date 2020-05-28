@@ -52,7 +52,7 @@
     "tslib": "^1.13.0",
     "ts-node": "^8.10.1",
     "tsconfig-paths": "^3.9.0",
-    "zone.js": "^0.8.27"
+    "zone.js": "^0.10.3"
   },
   "directories": {
     "lib": "lib",
