@@ -41,6 +41,6 @@
     "@tsdi/boot": "~6.0.12",
     "@tsdi/components": "~6.0.12",
     "@tsdi/logs": "~6.0.12",
-    "tslib": "^1.11.0"
+    "tslib": "^1.13.0"
   }
 }

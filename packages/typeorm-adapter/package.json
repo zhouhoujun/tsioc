@@ -38,16 +38,16 @@
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
   "dependencies": {
-    "typeorm": "~0.2.24"
+    "typeorm": "~0.2.25"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.1.12",
+    "reflect-metadata": "^0.1.13",
     "@tsdi/annotations": "~6.0.12",
     "@tsdi/ioc": "~6.0.12",
     "@tsdi/boot": "~6.0.12",
     "@tsdi/core": "~6.0.12",
     "@tsdi/logs": "~6.0.12",
-    "tslib": "^1.11.0"
+    "tslib": "^1.13.0"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter#readme#readme"
 }

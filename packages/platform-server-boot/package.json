@@ -36,8 +36,8 @@
   "dependencies": {
   },
   "peerDependencies": {
-    "tslib": "^1.11.0",
-    "globby": "^10.0.1",
+    "tslib": "^1.13.0",
+    "globby": "^11.0.0",
     "@tsdi/ioc": "~6.0.12",
     "@tsdi/core": "~6.0.12",
     "@tsdi/boot": "~6.0.12",
