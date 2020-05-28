@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "chalk": "^4.0.0"
+    "chalk": "^2.4.2"
   },
   "peerDependencies": {
     "@tsdi/ioc": "~6.0.12",
