@@ -329,7 +329,7 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
             return targetReflect.methodParams.get(propertyKey) || [];
         }
         let container = this.getContainer();
-        return container.get(MethodAccessorToken).getParameters(container, type, instance, propertyKey);
+        return container.getInstance(MethodAccessorToken).getParameters(container, type, instance, propertyKey);
     }
 
 }

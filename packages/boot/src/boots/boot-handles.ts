@@ -199,12 +199,14 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
  */
 export const BootConfigureRegisterHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let config = ctx.getConfiguration();
+    let container = ctx.getContainer();
+    if (config.logConfig && !container.has(LogConfigureToken)) {
+        container.setValue(LogConfigureToken, config.logConfig);
+    }
     let regs = ctx.injector.getServices(ConfigureRegister);
     if (regs && regs.length) {
         await Promise.all(regs.map(reg => reg.register(config, ctx)));
-        if (config.logConfig && !ctx.injector.has(LogConfigureToken) && !ctx.getContainer().has(LogConfigureToken)) {
-            ctx.injector.setValue(LogConfigureToken, config.logConfig);
-        }
+
     }
     await next();
 };
