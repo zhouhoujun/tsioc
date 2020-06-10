@@ -41,7 +41,7 @@
     "bluebird": "^3.7.2",
     "chalk": "^4.0.0",
     "chokidar": "^3.4.0",
-    "commander": "^3.0.2",
+    "commander": "^4.1.1",
     "core-js": "^3.6.4",
     "del": "^5.1.0",
     "execa": "^4.0.2",
