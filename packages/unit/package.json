@@ -36,6 +36,7 @@
     "@types/mocha": "^7.0.2"
   },
   "peerDependencies": {
+    "@types/jasmine": "^3.5.10",
     "@tsdi/ioc": "~6.0.17",
     "@tsdi/core": "~6.0.17",
     "@tsdi/aop": "~6.0.17",
