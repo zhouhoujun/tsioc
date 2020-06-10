@@ -33,8 +33,7 @@
   "dependencies": {
     "assert": "^2.0.0",
     "expect": "^26.0.1",
-    "@types/mocha": "^7.0.2",
-    "@types/jasmine": "^3.5.10"
+    "@types/mocha": "^7.0.2"
   },
   "peerDependencies": {
     "@tsdi/ioc": "~6.0.16",
