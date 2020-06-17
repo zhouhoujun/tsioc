@@ -1,5 +1,5 @@
 import { Type, isFunction, Destoryable, IDestoryable, tokenId, Injectable, Inject, Express, isBoolean, TokenId } from '@tsdi/ioc';
-import { IAnnoationContext, CTX_TEMPLATE,  } from '@tsdi/boot';
+import { IAnnoationContext, CTX_TEMPLATE, AnnoationOption,  } from '@tsdi/boot';
 
 export const CTX_COMPONENT_DECTOR: TokenId<string> = tokenId<string>('CTX_COMPONENT_DECTOR');
 export const CTX_COMPONENT = tokenId<any>('CTX_COMPONENT');
@@ -41,7 +41,7 @@ export interface IElement {
     destroy?();
 }
 
-export const CONTEXT_REF = tokenId<IAnnoationContext>('CONTEXT_REF');
+export const CONTEXT_REF = tokenId<IAnnoationContext<AnnoationOption<any>>>('CONTEXT_REF');
 
 export const ELEMENT_REF = tokenId<IElementRef>('ELEMENT_REF');
 

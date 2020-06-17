@@ -1,4 +1,4 @@
-import { createContext, IInjector, ClassType } from '@tsdi/ioc';
+import { createContext, IInjector, ClassType, Type } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext } from './ServiceContext';
 import { CTX_TYPES } from '../context-tokens';
 
@@ -40,7 +40,7 @@ export class ServicesContext<T = any> extends ServiceContext<T, ServicesOption<T
         return this.getValue(CTX_TYPES) ?? this.getTypes();
     }
 
-    protected getTypes() {
+    protected getTypes(): Type<T>[] {
         let types = this.tokens.map(t => this.injector.getTokenProvider(t))
             .filter(t => t);
         this.setValue(CTX_TYPES, types);
