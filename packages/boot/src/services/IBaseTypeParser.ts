@@ -1,4 +1,4 @@
-import { Token, tokenId } from '@tsdi/ioc';
+import { Token, tokenId, TokenId } from '@tsdi/ioc';
 /**
  * base type parser.
  *
@@ -20,4 +20,4 @@ export interface IBaseTypeParser {
 /**
  * base type parser token.
  */
-export const BaseTypeParserToken = tokenId<IBaseTypeParser>('BaseTypeParser');
+export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('BaseTypeParser');

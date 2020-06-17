@@ -1,4 +1,4 @@
-import { Injectable, createContext, lang, tokenId, isDefined } from '@tsdi/ioc';
+import { Injectable, createContext, lang, tokenId, isDefined, TokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBinding } from '../bindings/IBinding';
 import { PropBinding } from '../bindings/PropBinding';
@@ -30,7 +30,7 @@ export interface IParseContext extends IComponentContext<IBindingParseOption> {
     getExtenalBindings(): any;
 }
 
-export const CTX_BIND_DATABINDING = tokenId<PropBinding>('CTX_BIND_DATABINDING');
+export const CTX_BIND_DATABINDING: TokenId<PropBinding> = tokenId<PropBinding>('CTX_BIND_DATABINDING');
 export const CTX_BIND_BINDING = tokenId<IBinding>('CTX_BIND_BINDING');
 export const CTX_BIND_EXPRESSION = tokenId<any>('CTX_BIND_EXPRESSION');
 export const CTX_BIND_PARSED = tokenId<boolean>('CTX_BIND_PARSED');

@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProviders, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction, IParameter, IActionSetup, isArray, isDefined, tokenId, isPromise, PromiseUtil
+    Type, isFunction, lang, IProviders, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction, IParameter, IActionSetup, isArray, isDefined, tokenId, isPromise, PromiseUtil, TokenId
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -11,7 +11,8 @@ import { Advicer } from '../advices/Advicer';
 
 const proxyFlag = '_proxy';
 const ctor = 'constructor';
-export const AOP_ADVICE_INVOKER = tokenId<(joinPoint: Joinpoint, advicer: Advicer) => any>('AOP_ADVICE_INVOKER');
+export const AOP_ADVICE_INVOKER: TokenId<(joinPoint: Joinpoint, advicer: Advicer) => any>
+    = tokenId<(joinPoint: Joinpoint, advicer: Advicer) => any>('AOP_ADVICE_INVOKER');
 
 /**
  * Proxy method.

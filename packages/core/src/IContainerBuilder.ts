@@ -1,4 +1,4 @@
-import { Modules, tokenId } from '@tsdi/ioc';
+import { Modules, tokenId, TokenId } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { LoadType } from './types';
 
@@ -6,7 +6,7 @@ import { LoadType } from './types';
  * ContainerBuilder interface token.
  * it is a token id, you can register yourself IContainerBuilder for this.
  */
-export const ContainerBuilderToken = tokenId<IContainerBuilder>('CONTAINER_BUILDER');
+export const ContainerBuilderToken: TokenId<IContainerBuilder> = tokenId<IContainerBuilder>('CONTAINER_BUILDER');
 
 /**
  * container builder.

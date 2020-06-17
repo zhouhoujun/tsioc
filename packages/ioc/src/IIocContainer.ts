@@ -1,5 +1,5 @@
-import { Token, Factory, Type } from './types';
-import { IInjector, InjectorProxy } from './IInjector';
+import { Token, Factory, Type, TokenId } from './types';
+import { IInjector } from './IInjector';
 import { tokenId } from './InjectToken';
 import { ITypeReflects } from './services/ITypeReflects';
 import { IActionInjector } from './actions/Action';
@@ -9,7 +9,7 @@ import { IActionInjector } from './actions/Action';
  * root ioc container token.
  * it is a symbol id, you can use  `@Inject`, `@Autowried` or `@Param` to get container instance in yourself class.
  */
-export const IocContainerToken = tokenId<IIocContainer>('DI_IOCCONTAINER');
+export const IocContainerToken: TokenId<IIocContainer> = tokenId<IIocContainer>('DI_IOCCONTAINER');
 
 /**
  * root container interface.

@@ -1,4 +1,4 @@
-import { ProviderTypes, tokenId } from '@tsdi/ioc';
+import { ProviderTypes, tokenId, TokenId } from '@tsdi/ioc';
 import { IBuilderService } from '@tsdi/boot';
 import { ITemplateOption, ITemplateContext } from './compile/TemplateContext';
 
@@ -7,7 +7,7 @@ import { ITemplateOption, ITemplateContext } from './compile/TemplateContext';
 /**
  * component build token.
  */
-export const ComponentBuilderToken = tokenId<IComponentBuilder>('ComponentBuilder');
+export const ComponentBuilderToken: TokenId<IComponentBuilder> = tokenId<IComponentBuilder>('ComponentBuilder');
 
 
 /**

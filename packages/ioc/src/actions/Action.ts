@@ -1,4 +1,4 @@
-import { Token, Type } from '../types';
+import { Token, Type, TokenId } from '../types';
 import { Handler } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';
 import { IInjector, IProviders } from '../IInjector';
@@ -36,7 +36,7 @@ export interface IActionInjector extends IInjector {
     getAction<T extends Function>(target: Token<Action> | Action | Function): T;
 }
 
-export const ActionInjectorToken = tokenId<IActionInjector>('ACTION_INJECTOR');
+export const ActionInjectorToken: TokenId<IActionInjector> = tokenId<IActionInjector>('ACTION_INJECTOR');
 
 /**
  * action interface.

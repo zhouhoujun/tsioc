@@ -1,4 +1,4 @@
-import { Type, Token } from './types';
+import { Type, Token, TokenId } from './types';
 import { ParamProviders } from './providers/types';
 import { IParameter } from './IParameter';
 import { tokenId } from './InjectToken';
@@ -65,6 +65,6 @@ export interface IMethodAccessor {
 /**
  * method accessor.
  */
-export const MethodAccessorToken = tokenId<IMethodAccessor>('DI_METHOD_ACCESSOR');
+export const MethodAccessorToken: TokenId<IMethodAccessor> = tokenId<IMethodAccessor>('DI_METHOD_ACCESSOR');
 
 export const INVOKED_PROVIDERS = tokenId<IProviders>('INVOKED_PROVIDERS');

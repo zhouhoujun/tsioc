@@ -1,4 +1,4 @@
-import { Type, Injectable, createContext, Token, isToken, isDefined, tokenId } from '@tsdi/ioc';
+import { Type, Injectable, createContext, Token, isToken, isDefined, tokenId, TokenId } from '@tsdi/ioc';
 import { LoadType, IModuleLoader, ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
 import { IStartup } from './runnable/Startup';
@@ -17,7 +17,7 @@ import { BootstrapMetadata } from './decorators/Bootstrap';
 /**
  *  current application boot context token.
  */
-export const ApplicationContextToken = tokenId<IBootContext>('APP__CONTEXT');
+export const ApplicationContextToken: TokenId<IBootContext> = tokenId<IBootContext>('APP__CONTEXT');
 
 /**
  * boot options

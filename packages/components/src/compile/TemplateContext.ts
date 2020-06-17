@@ -1,4 +1,4 @@
-import { Injectable, Type, createContext, tokenId } from '@tsdi/ioc';
+import { Injectable, Type, createContext, tokenId, TokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ComponentContext, IComponentOption, IComponentContext  } from '../ComponentContext';
 
@@ -17,7 +17,7 @@ export interface ITemplateOption extends IComponentOption {
 /**
  * Template option token.
  */
-export const TemplateOptionToken = tokenId<ITemplateOption>('COMPONENT_TEMPLATE_OPTION');
+export const TemplateOptionToken: TokenId<ITemplateOption> = tokenId<ITemplateOption>('COMPONENT_TEMPLATE_OPTION');
 
 
 export interface ITemplateContext<T extends ITemplateOption = ITemplateOption> extends IComponentContext<T> {

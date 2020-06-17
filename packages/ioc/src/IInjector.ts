@@ -1,4 +1,4 @@
-import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './types';
+import { Token, InstanceFactory, SymbolType, Factory, Type, Modules, TokenId } from './types';
 import { IParameter } from './IParameter';
 import { tokenId } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
@@ -399,7 +399,7 @@ export function isInjector(target: any): target is IInjector {
 /**
  * injector instance token of self.
  */
-export const INJECTOR = tokenId<IInjector>('DI_INJECTOR');
+export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
 
 /**
  * injector proxy of current injector.

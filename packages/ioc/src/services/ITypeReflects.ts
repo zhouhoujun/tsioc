@@ -1,5 +1,5 @@
 import { IMetadataAccess } from './MetadataAccess';
-import { ClassType, Token, ObjectMap, Type } from '../types';
+import { ClassType, Token, ObjectMap, Type, TokenId } from '../types';
 import { ITypeReflect } from './ITypeReflect';
 import { DefineClassTypes } from '../factories/DecoratorType';
 import { ParamProviders } from '../providers/types';
@@ -12,7 +12,7 @@ import { IIocContainer } from '../IIocContainer';
 /**
  * type reflects token.
  */
-export const TypeReflectsToken = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
+export const TypeReflectsToken: TokenId<ITypeReflects> = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
 
 /**
  *  type reflects interface.

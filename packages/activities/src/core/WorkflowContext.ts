@@ -1,5 +1,5 @@
-import { PromiseUtil, lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId, AsyncHandler } from '@tsdi/ioc';
-import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext, Handle } from '@tsdi/boot';
+import { lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
+import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
     NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR
@@ -18,11 +18,11 @@ import { IWorkflowContext } from './IWorkflowContext';
 /**
  * each body token.
  */
-export const CTX_CURR_ACT_REF = tokenId<any>('CTX_CURR_ACT_REF');
+export const CTX_CURR_ACT_REF: TokenId = tokenId<any>('CTX_CURR_ACT_REF');
 /**
  * each body token.
  */
-export const CTX_CURR_ACTSCOPE_REF = tokenId<any>('CTX_CURR_ACTSCOPE_REF');
+export const CTX_CURR_ACTSCOPE_REF: TokenId  = tokenId<any>('CTX_CURR_ACTSCOPE_REF');
 
 /**
  *run state.

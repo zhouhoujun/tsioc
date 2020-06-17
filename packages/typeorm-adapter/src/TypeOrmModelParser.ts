@@ -1,9 +1,9 @@
 import { ModelParser, DefaultModelParserToken, DBPropertyMetadata } from '@tsdi/boot';
-import { Singleton, Type, ObjectMap, Autorun, SymbolType, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
+import { Singleton, Type, ObjectMap, Autorun, SymbolType, Token, isFunction, isString, tokenId, Inject, TokenId } from '@tsdi/ioc';
 import { getMetadataArgsStorage } from 'typeorm';
 import { ColumnMetadataArgs } from 'typeorm/metadata-args/ColumnMetadataArgs';
 
-export const ObjectIDToken = tokenId<Type>('ObjectID');
+export const ObjectIDToken: TokenId<Type> = tokenId<Type>('ObjectID');
 
 const numbExp = /(int|float|double|dec|numeric|number)/;
 const intExp = /int/;

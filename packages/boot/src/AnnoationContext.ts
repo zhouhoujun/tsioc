@@ -1,6 +1,6 @@
 import {
     Type, createContext, IocPdrsOption, IocPdrsContext, IProviders, IIocContext, isDefined,
-    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token
+    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, TokenId
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
@@ -98,8 +98,8 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
 }
 
 
-export const CTX_PARENT_CONTEXT = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
-export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
+export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
+export const CTX_SUB_CONTEXT: TokenId<IAnnoationContext[]> = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
 /**
  * annoation context.
  *
@@ -248,7 +248,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
         return this.context.getValue(CTX_MODULE_ANNOATION) ?? this.getReflAnnoation();
     }
 
-    protected getReflAnnoation(): IAnnotationMetadata  {
+    protected getReflAnnoation(): IAnnotationMetadata {
         let anno = this.type ? this.getTargetReflect()?.getAnnoation?.() : null;
         anno && this.setValue(CTX_MODULE_ANNOATION, anno);
         return anno;

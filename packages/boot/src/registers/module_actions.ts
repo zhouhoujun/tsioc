@@ -1,6 +1,6 @@
 import {
     DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders,
-    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR
+    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../services/AnnotationMerger';
@@ -114,7 +114,7 @@ export interface IModuleProvidersBuilder {
 /**
  * module providers builder token. for module decorator provider.
  */
-export const ModuleProvidersBuilderToken = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
+export const ModuleProvidersBuilderToken: TokenId<IModuleProvidersBuilder> = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
 
 export const RegModuleProvidersAction = function (ctx: DesignContext, next: () => void): void {
     let reflects = ctx.reflects;

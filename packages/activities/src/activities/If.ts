@@ -1,4 +1,4 @@
-import { tokenId } from '@tsdi/ioc';
+import { tokenId, TokenId } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { IActivityContext } from '../core/IActivityContext';
@@ -7,7 +7,7 @@ import { ConditionActivity } from './ConditionActivity';
 import { ActivityType } from '../core/ActivityMetadata';
 
 
-export const IFStateKey = tokenId<boolean>('if-condition');
+export const IFStateKey: TokenId<boolean> = tokenId<boolean>('if-condition');
 /**
  * if control activity.
  *

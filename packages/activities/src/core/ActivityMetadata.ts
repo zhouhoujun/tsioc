@@ -1,4 +1,4 @@
-import { Type, Token, ProviderTypes, ObjectMap, tokenId, AsyncHandler } from '@tsdi/ioc';
+import { Type, Token, ProviderTypes, ObjectMap, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
 import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { IActivityContext } from './IActivityContext';
@@ -46,7 +46,7 @@ export interface ActivityMetadata extends IComponentMetadata {
 /**
  * workflow id.
  */
-export const WorkflowId = tokenId<string>('WORKFLOW_ID');
+export const WorkflowId: TokenId<string> = tokenId<string>('WORKFLOW_ID');
 
 /**
  * selectors.

@@ -1,4 +1,4 @@
-import { DecoratorProvider, tokenId } from '@tsdi/ioc';
+import { DecoratorProvider, tokenId, TokenId } from '@tsdi/ioc';
 import { BuildContext, IBuildOption, CTX_ELEMENT_NAME, IBuildContext } from '@tsdi/boot';
 import {
     CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF,
@@ -49,7 +49,7 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
 
 }
 
-export const CTX_COMPONENT_CONTEXT = tokenId<IComponentContext>('CTX_COMPONENT_CONTEXT');
+export const CTX_COMPONENT_CONTEXT: TokenId<IComponentContext> = tokenId<IComponentContext>('CTX_COMPONENT_CONTEXT');
 
 export class ComponentContext<T extends IComponentOption = IComponentOption>
     extends BuildContext<T> implements IComponentContext<T> {

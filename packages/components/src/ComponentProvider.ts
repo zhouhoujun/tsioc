@@ -1,7 +1,7 @@
 import {
     Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProviders,
     SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject,
-    ClassType, Injectable, isTypeObject, isFunction, isDefined
+    ClassType, Injectable, isTypeObject, isFunction, isDefined, TokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
@@ -28,7 +28,7 @@ export interface BindFunc extends Function {
     __binded?: boolean;
 }
 
-export const CTX_COMPONENT_PROVIDER = tokenId<ComponentProvider>('CTX_COMPONENT_PROVIDER');
+export const CTX_COMPONENT_PROVIDER: TokenId<ComponentProvider> = tokenId<ComponentProvider>('CTX_COMPONENT_PROVIDER');
 /**
  * ref element identfy selector.
  *

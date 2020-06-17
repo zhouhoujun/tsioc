@@ -1,5 +1,5 @@
 import { Advicer } from './Advicer';
-import { tokenId } from '@tsdi/ioc';
+import { tokenId, TokenId } from '@tsdi/ioc';
 
 /**
  * advices of target.
@@ -17,4 +17,4 @@ export interface Advices {
 }
 
 
-export const AdvicesToken = tokenId<Advices>('AOP_ADVICES');
+export const AdvicesToken: TokenId<Advices> = tokenId<Advices>('AOP_ADVICES');

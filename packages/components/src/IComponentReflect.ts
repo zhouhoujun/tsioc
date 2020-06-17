@@ -1,11 +1,11 @@
-import { tokenId } from '@tsdi/ioc';
+import { tokenId, TokenId } from '@tsdi/ioc';
 import { IAnnoationReflect } from '@tsdi/boot';
 import { IBinding } from './bindings/IBinding';
 
 /**
  * default components.
  */
-export const DefaultComponets = tokenId<string[]>('DefaultComponets');
+export const DefaultComponets: TokenId<string[]> = tokenId<string[]>('DefaultComponets');
 
 /**
  * binding type reflect data.

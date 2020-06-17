@@ -1,4 +1,4 @@
-import { Token, Factory } from '../types';
+import { Token, Factory, TokenId } from '../types';
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { ProviderTypes, InjectTypes } from '../providers/types';
@@ -10,7 +10,7 @@ import { IIocContainer } from '../IIocContainer';
 /**
  * current decorator provide token key
  */
-export const DECORATOR = tokenId<string>('DECORATOR_KEY')
+export const DECORATOR: TokenId<string> = tokenId<string>('DECORATOR_KEY')
 /**
  * decorator default provider.
  *

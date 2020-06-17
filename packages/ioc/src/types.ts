@@ -20,7 +20,7 @@ export interface IToken<T = any> {
 /**
  *  token id.
  */
-export type TokenId<T> =  string | symbol | IToken<T>;
+export type TokenId<T = any> =  string | symbol | IToken<T>;
 
 /**
  * class type.

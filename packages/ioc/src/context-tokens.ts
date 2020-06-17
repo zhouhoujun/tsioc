@@ -1,11 +1,11 @@
 import { tokenId } from './InjectToken';
 import { ActCtxOption } from './actions/Action';
 import { IParameter } from './IParameter';
-import { Token, Type } from './types';
+import { Token, Type, TokenId } from './types';
 import { ITypeReflect } from './services/ITypeReflect';
 import { IProviders } from './IInjector';
 
-export const CTX_PROVIDERS = tokenId<IProviders>('DI_PROVIDERS');
+export const CTX_PROVIDERS: TokenId<IProviders> = tokenId<IProviders>('DI_PROVIDERS');
 export const CTX_OPTIONS = tokenId<ActCtxOption>('CTX_OPTIONS');
 export const CTX_PARAMS = tokenId<IParameter[]>('CTX_PARAMS');
 export const CTX_ARGS = tokenId<any[]>('CTX_ARGS');
