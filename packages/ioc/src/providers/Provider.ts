@@ -305,7 +305,7 @@ export class ParamProvider extends InvokeProvider {
         this.index = index;
     }
 
-    getToken() {
+    getToken(): Token {
         return this.type || `param_${this.index}`;
     }
 

@@ -83,7 +83,7 @@ export class TypeOrmModelParser extends ModelParser {
 
 
 
-    protected getModeType(col: ColumnMetadataArgs) {
+    protected getModeType(col: ColumnMetadataArgs): Token {
         let type: SymbolType = col.options.type;
         if (type) {
             if (isString(type)) {
