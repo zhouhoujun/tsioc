@@ -1,4 +1,4 @@
-import { Input, BindingTypes } from '@tsdi/components';
+import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { ConditionActivity } from './ConditionActivity';
 import { ControlActivity } from '../core/ControlActivity';
