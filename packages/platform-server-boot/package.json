@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-boot",
-  "version": "6.0.18",
+  "version": "6.0.19",
   "description": "boot application on node server, AOP Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -38,10 +38,10 @@
   "peerDependencies": {
     "tslib": "^1.13.0",
     "globby": "^11.0.0",
-    "@tsdi/ioc": "~6.0.18",
-    "@tsdi/core": "~6.0.18",
-    "@tsdi/boot": "~6.0.18",
-    "@tsdi/platform-server": "~6.0.18"
+    "@tsdi/ioc": "~6.0.19",
+    "@tsdi/core": "~6.0.19",
+    "@tsdi/boot": "~6.0.19",
+    "@tsdi/platform-server": "~6.0.19"
   },
   "directories": {
     "lib": "lib",

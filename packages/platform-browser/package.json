@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser",
-  "version": "6.0.18",
+  "version": "6.0.19",
   "description": "@tsdi/platform-browser is platform of @tsdi framework for browser.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -34,8 +34,8 @@
     "core-js": "^3.6.5"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.18",
-    "@tsdi/core": "~6.0.18",
+    "@tsdi/ioc": "~6.0.19",
+    "@tsdi/core": "~6.0.19",
     "tslib": "^1.13.0"
   },
   "directories": {
