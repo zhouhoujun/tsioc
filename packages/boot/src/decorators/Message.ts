@@ -24,11 +24,11 @@ export interface MessageMetadata extends TypeMetadata {
     singleton?: boolean;
     /**
      * message type.
-     *
+     * default register in root message queue.
      * @type {boolean}
      * @memberof ModuleConfig
      */
-    regIn?: Type<MessageQueue<MessageContext>>;
+    regIn?: Type<MessageQueue<MessageContext>> | 'root' | 'none';
 
     /**
      * register this message handle before this handle.
@@ -60,10 +60,10 @@ export interface IMessageDecorator {
      *
      * @RegisterFor
      *
-     * @param {Type<MessageQueue<MessageContext>>} regIn the message reg in the message queue.
+     * @param {Type<MessageQueue<MessageContext>>} [regIn] the message reg in the message queue. default register in root message queue.
      * @param {Type<MessageHandle<MessageContext>>} [before] register this message handle before this handle.
      */
-    (regIn: Type<MessageQueue<MessageContext>>, before?: Type<MessageHandle<MessageContext>>): MessageDecorator;
+    (regIn?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>): MessageDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
@@ -72,7 +72,7 @@ export interface IMessageDecorator {
      *
      * @param {ClassMetadata} [metadata] metadata map.
      */
-    (metadata?: MessageMetadata): MessageDecorator;
+    (metadata: MessageMetadata): MessageDecorator;
 }
 
 /**
@@ -98,4 +98,8 @@ export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>(
         }
     ], meta => {
         meta.singleton = true;
+        // default register in root.
+        if (!meta.regIn) {
+            meta.regIn = 'root';
+        }
     }) as IMessageDecorator;
