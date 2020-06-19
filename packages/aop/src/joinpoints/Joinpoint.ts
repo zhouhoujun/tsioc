@@ -22,19 +22,19 @@ export interface JoinpointOption extends ActCtxOption {
 }
 
 export const AOP_METHOD_NAME: TokenId<string> = tokenId<string>('AOP_METHOD_NAME');
-export const AOP_METHOD_FULLNAME: TokenId<string> = tokenId<string>('AOP_METHOD_FULLNAME');
-export const AOP_METHOD_ORIGIN: TokenId<Function> = tokenId<Function>('AOP_METHOD_ORIGIN');
-export const AOP_METHOD_PARAMS: TokenId<IParameter[]> = tokenId<IParameter[]>('AOP_METHOD_PARAMS');
-export const AOP_METHOD_ANNOTATIONS: TokenId<(ClassMetadata | MethodMetadata)[]> = tokenId<(ClassMetadata | MethodMetadata)[]>('AOP_METHOD_ANNOTATIONS');
-export const AOP_METHOD_PROVIDERS: TokenId<IProviders> = tokenId<IProviders>('AOP_METHOD_PROVIDERS');
-export const AOP_PROV_JOINPOINT: TokenId<Joinpoint> = tokenId<Joinpoint>('AOP_PROV_JOINPOINT');
-export const AOP_ARGS: TokenId = tokenId<any[]>('AOP_ARGS');
-export const AOP_TARGET: TokenId = tokenId<any>('AOP_TARGET');
-export const AOP_TARGET_TYPE: TokenId<Type> = tokenId<Type>('AOP_TARGET_TYPE');
-export const AOP_RETURNING: TokenId = tokenId<any>('AOP_RETURNING');
-export const AOP_THROWING: TokenId<Error> = tokenId<Error>('AOP_THROWING');
-export const AOP_STATE: TokenId<JoinpointState> = tokenId<JoinpointState>('AOP_STATE');
-export const AOP_ADVICES: TokenId<Advices> = tokenId<Advices>('AOP_ADVICES');
+export const AOP_METHOD_FULLNAME = tokenId<string>('AOP_METHOD_FULLNAME');
+export const AOP_METHOD_ORIGIN = tokenId<Function>('AOP_METHOD_ORIGIN');
+export const AOP_METHOD_PARAMS = tokenId<IParameter[]>('AOP_METHOD_PARAMS');
+export const AOP_METHOD_ANNOTATIONS = tokenId<(ClassMetadata | MethodMetadata)[]>('AOP_METHOD_ANNOTATIONS');
+export const AOP_METHOD_PROVIDERS = tokenId<IProviders>('AOP_METHOD_PROVIDERS');
+export const AOP_PROV_JOINPOINT = tokenId<Joinpoint>('AOP_PROV_JOINPOINT');
+export const AOP_ARGS = tokenId<any[]>('AOP_ARGS');
+export const AOP_TARGET = tokenId<any>('AOP_TARGET');
+export const AOP_TARGET_TYPE = tokenId<Type>('AOP_TARGET_TYPE');
+export const AOP_RETURNING = tokenId<any>('AOP_RETURNING');
+export const AOP_THROWING = tokenId<Error>('AOP_THROWING');
+export const AOP_STATE = tokenId<JoinpointState>('AOP_STATE');
+export const AOP_ADVICES = tokenId<Advices>('AOP_ADVICES');
 
 
 /**

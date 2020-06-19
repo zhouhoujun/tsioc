@@ -99,7 +99,7 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
 
 
 export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
-export const CTX_SUB_CONTEXT: TokenId<IAnnoationContext[]> = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
+export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
 /**
  * annoation context.
  *

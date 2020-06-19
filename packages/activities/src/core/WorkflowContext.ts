@@ -22,7 +22,7 @@ export const CTX_CURR_ACT_REF: TokenId = tokenId<any>('CTX_CURR_ACT_REF');
 /**
  * each body token.
  */
-export const CTX_CURR_ACTSCOPE_REF: TokenId  = tokenId<any>('CTX_CURR_ACTSCOPE_REF');
+export const CTX_CURR_ACTSCOPE_REF = tokenId<any>('CTX_CURR_ACTSCOPE_REF');
 
 /**
  *run state.

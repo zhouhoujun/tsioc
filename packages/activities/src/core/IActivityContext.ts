@@ -9,8 +9,8 @@ import { Expression, ActivityMetadata } from './ActivityMetadata';
 
 
 export const CTX_RUN_PARENT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
-export const CTX_RUN_SCOPE: TokenId<IActivityContext> = tokenId<IActivityContext>('CTX_RUN_SCOPE');
-export const CTX_BASEURL: TokenId<string> = tokenId<string>('CTX_BASEURL');
+export const CTX_RUN_SCOPE = tokenId<IActivityContext>('CTX_RUN_SCOPE');
+export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 
 
 export interface IActivityContext extends IComponentContext<ActivityOption> {
