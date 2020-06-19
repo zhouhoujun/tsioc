@@ -15,7 +15,7 @@ import { ConfigureRegister } from '../annotations/ConfigureRegister';
 import { BuildHandles, BuildHandle } from '../builder/BuildHandles';
 import { IAnnoationContext } from '../AnnoationContext';
 import { BuilderServiceToken } from '../services/IBuilderService';
-import { StartupService } from '../services/StartupService';
+import { StartupService, STARTUPS } from '../services/StartupService';
 import { Startup } from '../runnable/Startup';
 import { Renderer } from '../runnable/Renderer';
 import { Runnable } from '../runnable/Runnable';
@@ -293,28 +293,25 @@ export class StatupServiceScope extends BuildHandles<IBootContext> implements IA
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let startups = ctx.getStarupTokens();
+    let startups = ctx.getStarupTokens() || [];
     const injector = ctx.injector;
-    const prds = injector.getServiceProviders(StartupService);
-    if (startups && startups.length) {
-        await PromiseUtil.step(startups.map(c => () => {
-            prds.unregister(c);
-            let instance: Destoryable = injector.resolve({ token: c, regify: true });
-            if (instance instanceof Destoryable) {
-                ctx.onDestroy(() => instance?.destroy());
-            }
-            if (instance instanceof StartupService) {
-                return instance.configureService(ctx);
-            }
+
+    const starts = injector.get(STARTUPS) || [];
+    if (starts.length) {
+        await Promise.all(starts.map(tyser => {
+            const ser = injector.get(tyser);
+            ctx.onDestroy(() => ser?.destroy());
+            startups.push(tyser);
+            return ser.configureService(ctx);
         }));
-    } else {
-        startups = [];
-        ctx.setValue(CTX_APP_STARTUPS, startups);
     }
 
     let sers: StartupService[] = [];
-    prds.iterator((fac) => {
-        sers.push(fac(ctx.providers));
+    const prds = injector.getServiceProviders(StartupService);
+    prds.iterator((fac, tk) => {
+        if (startups.indexOf(tk) < 0) {
+            sers.push(fac(ctx.providers));
+        }
     });
     if (sers && sers.length) {
         await Promise.all(sers.map(ser => {
@@ -323,6 +320,8 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
             return ser.configureService(ctx);
         }));
     }
+
+    ctx.setValue(CTX_APP_STARTUPS, startups);
     await next();
 };
 

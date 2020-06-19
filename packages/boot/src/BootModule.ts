@@ -4,14 +4,13 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule } from './decorators/DIModule';
-import { Annotation } from './decorators/Annotation';
 import { Message } from './decorators/Message';
 import { MessageContext } from './messages/MessageContext';
 import { MessageQueue } from './messages/MessageQueue';
 import { RootMessageQueue } from './messages/RootMessageQueue';
 import { InjDIModuleScope } from './registers/InjDIModuleScope';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
-import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope} from './registers/module_actions';
+import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope } from './registers/module_actions';
 import { Bootstrap } from './decorators/Bootstrap';
 import { ConfigureManager } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
@@ -22,6 +21,8 @@ import { ResolveMoudleScope } from './builder/build-hanles';
 import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
 import { BootLifeScope } from './boots/BootLifeScope';
 import { BuildContext } from './builder/BuildContext';
+import { Boot } from './decorators/Boot';
+import { StartupRegisterAction } from './registers/StartupRegisterAction';
 
 
 /**
@@ -59,17 +60,15 @@ export class BootModule {
         registerModule(DIModule, desgReger);
         registerModule(Bootstrap, desgReger);
 
-        desgReger.register(Annotation,
-            { scope: cls, action: [TypeProviderAction, AnnoationAction] },
-            { scope: aftAnn, action: IocAutorunAction }
+        desgReger.register(Message,
+            { scope: cls, action: TypeProviderAction },
+            { scope: aftAnn, action: [IocAutorunAction, MessageRegisterAction] }
         )
-            .register(Message,
+            .register(Boot,
                 { scope: cls, action: TypeProviderAction },
-                { scope: aftAnn, action: [IocAutorunAction, MessageRegisterAction] }
-            );
+                { scope: aftAnn, action: [IocAutorunAction, StartupRegisterAction] });
 
         actInjector.getInstance(RuntimeRegisterer)
-            .register(Annotation, cls, RegSingletionAction, IocSetCacheAction)
             .register(DIModule, cls, RegSingletionAction, IocSetCacheAction)
             .register(Message, cls, RegSingletionAction, IocSetCacheAction);
 

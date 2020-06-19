@@ -1,5 +1,3 @@
-export * from './decorators/Bootstrap';
-
 // services
 export * from './services/IBaseTypeParser';
 export * from './services/BaseTypeParser';
@@ -24,7 +22,7 @@ export * from './runnable/Renderer';
 
 
 // decorators
-export * from './decorators/Annotation';
+export * from './decorators/Bootstrap';
 export * from './decorators/DIModule';
 export * from './decorators/Message';
 
@@ -32,6 +30,7 @@ export * from './decorators/Message';
 export * from './AnnoationContext';
 // registers
 export * from './registers/MessageRegisterAction';
+export * from './registers/StartupRegisterAction';
 export * from './registers/module_actions';
 export * from './registers/InjDIModuleScope';
 

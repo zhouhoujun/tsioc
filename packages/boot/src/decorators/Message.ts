@@ -1,4 +1,4 @@
-import { TypeMetadata, createClassDecorator, Type, isClass } from '@tsdi/ioc';
+import { TypeMetadata, createClassDecorator, Type, isClass, PatternMetadata } from '@tsdi/ioc';
 import { IMessage } from '../messages/IMessageQueue';
 import { MessageQueue } from '../messages/MessageQueue';
 import { MessageContext } from '../messages/MessageContext';
@@ -14,14 +14,7 @@ export type MessageDecorator = <TFunction extends Type<IMessage>>(target: TFunct
  * @interface RegisterForMetadata
  * @extends {TypeMetadata}
  */
-export interface MessageMetadata extends TypeMetadata {
-    /**
-     * is singleton or not.
-     *
-     * @type {boolean}
-     * @memberof ClassMetadata
-     */
-    singleton?: boolean;
+export interface MessageMetadata extends TypeMetadata, PatternMetadata {
     /**
      * message type.
      * default register in root message queue.

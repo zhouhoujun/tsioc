@@ -6,7 +6,7 @@ import { MessageMetadata } from '../decorators/Message';
 export const MessageRegisterAction = function (ctx: DesignContext, next: () => void): void {
     let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.getValue(CTX_CURR_DECOR), ctx.type);
     const { regIn, before, after } = metas.find(meta => !!meta.before || !!meta.after) || <MessageMetadata>{};
-    if (regIn === 'none') {
+    if (!regIn || regIn === 'none') {
         return next();
     }
     const injector = ctx.injector;

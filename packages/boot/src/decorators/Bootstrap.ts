@@ -47,26 +47,26 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeD
  * @template T
  * @param {string} name
  * @param {MetadataAdapter} [actions]
- * @param {MetadataExtends<T>} [metadataExtends]
+ * @param {MetadataExtends<T>} [metaExt]
  * @returns {IBootstrapDecorator<T>}
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(
     name: string,
     actions?: ArgsIteratorAction<T>[],
-    metadataExtends?: MetadataExtends<T>): IBootstrapDecorator<T> {
+    metaExt?: MetadataExtends<T>): IBootstrapDecorator<T> {
 
-    return createClassDecorator<BootstrapMetadata>(name, actions, (metadata: T) => {
-        if (metadataExtends) {
-            metadataExtends(metadata);
+    return createClassDecorator<BootstrapMetadata>(name, actions, (meta: T) => {
+        if (metaExt) {
+            metaExt(meta);
         }
 
         // static main.
-        if (isClass(metadata.type) && isFunction(metadata.type['main'])) {
+        if (isClass(meta.type) && isFunction(meta.type['main'])) {
             setTimeout(() => {
-                metadata.type['main'](metadata);
+                meta.type['main'](meta);
             }, 100);
         }
-        return metadata;
+        return meta;
     }) as IBootstrapDecorator<T>;
 }
 

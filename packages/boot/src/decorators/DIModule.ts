@@ -46,25 +46,25 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDec
  * @template T
  * @param {string} name decorator name.
  * @param {MetadataAdapter} [actions]
- * @param {MetadataExtends<T>} [metadataExtends]
+ * @param {MetadataExtends<T>} [metaExt]
  * @returns {IDIModuleDecorator<T>}
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(
     name: string,
     actions?: ArgsIteratorAction<T>[],
-    metadataExtends?: MetadataExtends<T>): IDIModuleDecorator<T> {
+    metaExt?: MetadataExtends<T>): IDIModuleDecorator<T> {
 
     return createClassDecorator<DIModuleMetadata>(name,
         actions,
-        metadata => {
-            if (metadataExtends) {
-                metadataExtends(metadata as T);
+        meta => {
+            if (metaExt) {
+                metaExt(meta as T);
             }
 
-            if (!metadata.name && isClass(metadata.token)) {
-                metadata.name = lang.getClassName(metadata.token);
+            if (!meta.name && isClass(meta.token)) {
+                meta.name = lang.getClassName(meta.token);
             }
-            metadata.decorType = name;
+            meta.decorType = name;
         }) as IDIModuleDecorator<T>;
 }
 

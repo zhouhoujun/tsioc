@@ -4,33 +4,30 @@ import { RefMetadata } from './RefMetadata';
 import { TypeMetadata } from './TypeMetadata';
 
 /**
+ * class pattern metadata.
+ */
+export interface PatternMetadata {
+    /**
+     * is singleton or not.
+     *
+     * @type {boolean}
+     */
+    singleton?: boolean;
+    /**
+     * class cache timeout when not used.
+     *
+     * @type {number}
+     */
+    expires?: number;
+}
+
+/**
  * class metadata.
  *
  * @export
  * @interface ClassMetadata
  */
-export interface ClassMetadata extends ProviderMetadata, ProvidersMetadata, RefMetadata, TypeMetadata {
-    /**
-     * is singleton or not.
-     *
-     * @type {boolean}
-     * @memberof ClassMetadata
-     */
-    singleton?: boolean;
-    /**
-     * class package name.
-     *
-     * @type {string}
-     * @memberof ClassMetadata
-     */
-    package?: string;
+export interface ClassMetadata extends PatternMetadata, ProviderMetadata, ProvidersMetadata, RefMetadata, TypeMetadata {
 
-    /**
-     * class cache timeout when not used.
-     *
-     * @type {number}
-     * @memberof ClassMetadata
-     */
-    expires?: number;
 }
 
