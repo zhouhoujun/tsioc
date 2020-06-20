@@ -70,6 +70,7 @@ export class BootModule {
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(DIModule, cls, RegSingletionAction, IocSetCacheAction)
+            .register(Boot, cls, RegSingletionAction, IocSetCacheAction)
             .register(Message, cls, RegSingletionAction, IocSetCacheAction);
 
         container.inject(BuildContext, BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);

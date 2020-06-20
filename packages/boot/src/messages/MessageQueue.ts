@@ -1,4 +1,4 @@
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject, PromiseUtil, isToken, Action, AsyncHandler } from '@tsdi/ioc';
+import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject, PromiseUtil, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
@@ -20,8 +20,12 @@ import { Handles } from '../handles/Handles';
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
 
-    @Inject(INJECTOR)
-    injector: ICoreInjector;
+    @Inject(InjectorProxyToken)
+    private _injector: InjectorProxy<ICoreInjector>;
+
+    getInjector(): ICoreInjector {
+        return this._injector();
+    }
 
     private completed: ((ctx: T) => void)[];
 
@@ -93,7 +97,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 fac = data;
                 data = undefined;
             }
-            let ctx = fac ? fac() : this.injector.resolve(MessageContext) as T;
+            let ctx = fac ? fac() : this.getInjector().resolve(MessageContext) as T;
             if (isString(event)) {
                 if (!isString(type)) {
                     data = type;
@@ -166,7 +170,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
 
     protected registerHandle(HandleType: HandleType<T>): this {
         if (isClass(HandleType)) {
-            this.injector.registerType(HandleType);
+            this.getInjector().registerType(HandleType);
         }
         return this;
     }
@@ -175,7 +179,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         if (handleType instanceof Action) {
             return handleType.toAction() as AsyncHandler<T>;
         } else if (isToken(handleType)) {
-            return this.injector.get<Action>(handleType)?.toAction?.() as AsyncHandler<T>;
+            return this.getInjector().get<Action>(handleType)?.toAction?.() as AsyncHandler<T>;
         } else if (isFunction(handleType)) {
             return handleType as AsyncHandler<T>;
         }
