@@ -1,7 +1,4 @@
-import {
-    isClass, INJECTOR, lang, isBaseType, IActionSetup, PromiseUtil,
-    Abstract, Destoryable
-} from '@tsdi/ioc';
+import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract } from '@tsdi/ioc';
 import { LogConfigureToken } from '@tsdi/logs';
 import { IBootContext, BootContext } from '../BootContext';
 import { AnnotationMerger } from '../services/AnnotationMerger';

@@ -20,8 +20,8 @@ export * from './runnable/Service';
 export * from './runnable/Renderer';
 
 
-
 // decorators
+export * from './decorators/Boot';
 export * from './decorators/Bootstrap';
 export * from './decorators/DIModule';
 export * from './decorators/Message';

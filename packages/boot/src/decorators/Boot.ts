@@ -16,13 +16,17 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
      */
     deps?: ClassType<IStartupService>[];
     /**
-     * the service startup order.
+     * this service startup before the service, or at first
      */
-    order?: 'first' | 'last';
+    before?: ClassType<IStartupService> | 'all';
+    /**
+     * this service startup after the service, or last.
+     */
+    after?: ClassType<IStartupService> | 'all';
 }
 
 /**
- * Boot decorator, use to define class build way via config.
+ * Boot decorator, use to define class as statup service when bootstrap application.
  *
  * @export
  * @interface IBootDecorator
@@ -31,7 +35,7 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
  */
 export interface IBootDecorator<T extends BootMetadata> extends ITypeDecorator<T> {
     /**
-     * Boot decorator, use to define class as DI Module.
+     * Boot decorator, use to define class as statup service when bootstrap application.
      *
      * @Build
      *
@@ -70,7 +74,7 @@ export function createBootDecorator<T extends BootMetadata>(
 
 
 /**
- * Boot decorator, use to define class as configurable service way via config.
+ * Boot decorator, use to define class as statup service when bootstrap application.
  *
  * @Boot
  */

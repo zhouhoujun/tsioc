@@ -46,11 +46,13 @@ export abstract class DesignDecorScope extends IocDecorScope<DesignContext> impl
     protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
         switch (scope) {
             case befAnn:
-                return ctx.targetReflect.decorators.design.beforeAnnoDecors
-            case ann:
-            case aftAnn:
+                return ctx.targetReflect.decorators.design.beforeAnnoDecors;
             case cls:
                 return ctx.targetReflect.decorators.design.classDecors;
+            case ann:
+                return ctx.targetReflect.decorators.design.annoDecors;
+            case aftAnn:
+                return ctx.targetReflect.decorators.design.afterAnnoDecors;
             case mth:
                 return ctx.targetReflect.decorators.design.methodDecors;
             case prop:
@@ -316,7 +318,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     let refs = ctx.reflects;
     let currDec = ctx.getValue(CTX_CURR_DECOR);
     if (!refs.hasMetadata(currDec, ctx.type)) {
-        return;
+        return next();
     }
     let injector = ctx.injector;
     let metadatas = refs.getMetadata<AutorunMetadata>(currDec, ctx.type);
@@ -328,7 +330,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
             }
         }
     });
-    next();
+    return next();
 };
 
 export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetup {
