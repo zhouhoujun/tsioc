@@ -5,10 +5,12 @@ import { ICoreInjector } from '@tsdi/core';
 @Message('none')
 class DeviceQueue extends MessageQueue {
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
-        await super.execute(ctx);
+        console.log('device msg start.');
+        ctx.setValue('device', 'device data')
+        await super.execute(ctx, async () => {
+            ctx.setValue('device', 'device next');
+        });
         console.log('device sub msg done.');
-        ctx.setValue('device', DeviceQueue);
-        return next();
     }
 }
 
@@ -23,29 +25,53 @@ class DeviceStartQueue extends MessageQueue {
 class DeviceStartupHandle extends MessageHandle {
 
     async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+        console.log('DeviceStartupHandle.')
         if (ctx.event === 'startup') {
             // todo sth.
-            ctx.setValue('state', 'startup');
+            ctx.setValue('deviceB_state', 'startuped');
         }
+    }
+}
+
+@Message(DeviceStartQueue)
+class DeviceAStartupHandle extends MessageHandle {
+
+    async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+        console.log('DeviceAStartupHandle.')
+        if (ctx.event === 'startup') {
+            // todo sth.
+            ctx.setValue('deviceA_state', 'startuped');
+        }
+        return next()
     }
 }
 
 @DIModule({
     providers: [
-        DeviceStartupHandle
+        DeviceQueue,
+        DeviceStartQueue
     ]
 })
-class ModuleA {
+class DeviceManageModule {
+
+}
+
+@DIModule({
+    providers: [
+        DeviceAStartupHandle
+    ]
+})
+class DeviceAModule {
 
 }
 
 @DIModule({
     imports: [
-        ModuleA
+        DeviceManageModule,
+        DeviceAModule
     ],
     providers: [
-        DeviceQueue,
-        DeviceStartQueue
+        DeviceStartupHandle
     ]
 })
 class MainApp {
@@ -55,6 +81,7 @@ class MainApp {
 describe('app message queue', () => {
     let ctx: IBootContext;
     let injector: ICoreInjector;
+
     before(async () => {
         ctx = await BootApplication.run(MainApp);
         injector = ctx.injector;
@@ -66,6 +93,26 @@ describe('app message queue', () => {
         expect(a).toEqual(b);
     });
 
+    it('has registered', async () => {
+        const a = injector.get(DeviceQueue);
+        expect(a.has(DeviceStartQueue)).toBeTruthy();
+        expect(injector.get(DeviceStartQueue).has(DeviceStartupHandle)).toBeTruthy();
+    });
+
+
+    it('msg work', async () => {
+        const a = injector.get(DeviceQueue);
+        let device, aState, bState;
+        a.done(ctx => {
+            device = ctx.getValue('device');
+            aState = ctx.getValue('deviceA_state');
+            bState = ctx.getValue('deviceB_state');
+        })
+        await a.send({ event: 'startup' });
+        expect(device).toBe('device data');
+        expect(aState).toBe('startuped');
+        expect(bState).toBe('startuped');
+    });
 
     after(() => {
         ctx.destroy();

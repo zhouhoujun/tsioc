@@ -293,6 +293,13 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     let startups = ctx.getStarupTokens() || [];
     const injector = ctx.injector;
 
+    if (startups.length) {
+        await Promise.all(startups.map(tyser => {
+            const ser = injector.get(tyser);
+            ctx.onDestroy(() => ser?.destroy());
+            return ser.configureService(ctx);
+        }));
+    }
     const starts = injector.get(STARTUPS) || [];
     if (starts.length) {
         await Promise.all(starts.map(tyser => {

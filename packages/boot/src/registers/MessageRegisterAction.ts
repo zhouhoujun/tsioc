@@ -1,29 +1,33 @@
-import { DesignContext, CTX_CURR_DECOR, isClass } from '@tsdi/ioc';
-import { RootMessageQueueToken } from '../messages/IMessageQueue';
+import { DesignContext, CTX_CURR_DECOR, isClass, lang } from '@tsdi/ioc';
+import { RootMessageQueueToken, IMessageQueue } from '../messages/IMessageQueue';
 import { MessageMetadata } from '../decorators/Message';
 
 
 export const MessageRegisterAction = function (ctx: DesignContext, next: () => void): void {
-    let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.getValue(CTX_CURR_DECOR), ctx.type);
-    const { regIn, before, after } = metas.find(meta => !!meta.before || !!meta.after) || <MessageMetadata>{};
+    const classType = ctx.type;
+    let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.getValue(CTX_CURR_DECOR), classType);
+    const { regIn, before, after } = metas[0] || <MessageMetadata>{};
     if (!regIn || regIn === 'none') {
         return next();
     }
     const injector = ctx.injector;
-    let msgQueue = injector.getInstance(RootMessageQueueToken);
+    let msgQueue: IMessageQueue;
     if (isClass(regIn)) {
-        if (!injector.hasRegister(regIn)) {
-            injector.registerType(regIn);
-        }
-        msgQueue = injector.getInstance(regIn);
+        msgQueue = ctx.reflects.get(regIn)?.getInjector()?.get(regIn);
+    } else {
+        msgQueue = injector.getInstance(RootMessageQueueToken);
+    }
+
+    if (!msgQueue) {
+        throw new Error(lang.getClassName(regIn) + 'has not registered!')
     }
 
     if (before) {
-        msgQueue.useBefore(ctx.type, before);
+        msgQueue.useBefore(classType, before);
     } else if (after) {
-        msgQueue.useAfter(ctx.type, after);
+        msgQueue.useAfter(classType, after);
     } else {
-        msgQueue.use(ctx.type);
+        msgQueue.use(classType);
     }
     next();
 };
