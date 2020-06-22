@@ -1,4 +1,4 @@
-import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract } from '@tsdi/ioc';
+import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType } from '@tsdi/ioc';
 import { LogConfigureToken } from '@tsdi/logs';
 import { IBootContext, BootContext } from '../BootContext';
 import { AnnotationMerger } from '../services/AnnotationMerger';
@@ -12,7 +12,7 @@ import { ConfigureRegister } from '../annotations/ConfigureRegister';
 import { BuildHandles, BuildHandle } from '../builder/BuildHandles';
 import { IAnnoationContext } from '../AnnoationContext';
 import { BuilderServiceToken } from '../services/IBuilderService';
-import { StartupService, STARTUPS } from '../services/StartupService';
+import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Startup } from '../runnable/Startup';
 import { Renderer } from '../runnable/Renderer';
 import { Runnable } from '../runnable/Runnable';
@@ -292,18 +292,24 @@ export class StatupServiceScope extends BuildHandles<IBootContext> implements IA
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let startups = ctx.getStarupTokens() || [];
     const injector = ctx.injector;
-
+    const reflects = ctx.reflects;
     if (startups.length) {
         await Promise.all(startups.map(tyser => {
-            const ser = injector.get(tyser);
+            let ser: IStartupService;
+            if (isClass(tyser) && !reflects.hasRegister(tyser)) {
+                injector.register(tyser);
+
+            }
+            ser = injector.get(tyser) ?? reflects.get(tyser as ClassType)?.getInjector().get(tyser);
             ctx.onDestroy(() => ser?.destroy());
-            return ser.configureService(ctx);
+            return ser?.configureService(ctx);
         }));
     }
+
     const starts = injector.get(STARTUPS) || [];
     if (starts.length) {
         await Promise.all(starts.map(tyser => {
-            const ser = injector.get(tyser);
+            const ser = injector.get(tyser) ?? reflects.get(tyser as ClassType)?.getInjector().get(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
             return ser.configureService(ctx);

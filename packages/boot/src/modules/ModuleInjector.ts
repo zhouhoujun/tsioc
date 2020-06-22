@@ -133,7 +133,7 @@ export class ModuleProviders extends InjectorProvider implements IProviders {
     }
 
     export(type: Type) {
-        // this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
+        this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
         this.getSingleton(TypeReflectsToken).get(type).provides?.forEach(p => {
             this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
         });
