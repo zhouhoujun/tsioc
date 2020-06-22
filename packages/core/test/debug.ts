@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject } from '@tsdi/ioc';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Abstract } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '../src';
 
 export class SimppleAutoWried {
@@ -31,6 +31,7 @@ export class ClassRoom {
     }
 }
 
+@Abstract()
 export abstract class Student {
     @Inject(ContainerToken)
     container: IContainer;

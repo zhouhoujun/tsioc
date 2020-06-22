@@ -304,9 +304,6 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      */
     hasRegister<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
-        if (isClass(key)) {
-            return this.getSingleton(TypeReflectsToken).hasRegister(key);
-        }
         return this.hasTokenKey(key) || this.hasInRoot(key);
     }
 
