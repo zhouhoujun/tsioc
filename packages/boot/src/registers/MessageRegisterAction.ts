@@ -6,7 +6,7 @@ import { MessageMetadata } from '../decorators/Message';
 export const MessageRegisterAction = function (ctx: DesignContext, next: () => void): void {
     const classType = ctx.type;
     let metas = ctx.reflects.getMetadata<MessageMetadata>(ctx.getValue(CTX_CURR_DECOR), classType);
-    const { regIn, before, after } = metas[0] || <MessageMetadata>{};
+    const { parent: regIn, before, after } = metas[0] || <MessageMetadata>{};
     if (!regIn || regIn === 'none') {
         return next();
     }

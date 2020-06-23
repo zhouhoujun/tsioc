@@ -1,6 +1,7 @@
 import { BootApplication, RootMessageQueueToken, DIModule, Message, MessageQueue, MessageContext, MessageHandle, IBootContext } from '../src';
 import expect = require('expect');
 import { ICoreInjector } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
 
 @Message('none')
 class DeviceQueue extends MessageQueue {
@@ -15,7 +16,7 @@ class DeviceQueue extends MessageQueue {
 }
 
 @Message({
-    regIn: DeviceQueue
+    parent: DeviceQueue
 })
 class DeviceStartQueue extends MessageQueue {
 
@@ -28,7 +29,8 @@ class DeviceStartupHandle extends MessageHandle {
         console.log('DeviceStartupHandle.')
         if (ctx.event === 'startup') {
             // todo sth.
-            ctx.setValue('deviceB_state', 'startuped');
+            let ret = ctx.injector.get(MyService).dosth();
+            ctx.setValue('deviceB_state', ret);
         }
     }
 }
@@ -40,7 +42,8 @@ class DeviceAStartupHandle extends MessageHandle {
         console.log('DeviceAStartupHandle.')
         if (ctx.event === 'startup') {
             // todo sth.
-            ctx.setValue('deviceA_state', 'startuped');
+            let ret = ctx.injector.get(MyService).dosth();
+            ctx.setValue('deviceA_state', ret);
         }
         return next()
     }
@@ -56,8 +59,16 @@ class DeviceManageModule {
 
 }
 
+@Injectable()
+class MyService {
+    dosth() {
+        return 'startuped';
+    }
+}
+
 @DIModule({
     providers: [
+        MyService,
         DeviceAStartupHandle
     ]
 })

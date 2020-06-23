@@ -1,5 +1,5 @@
 import { Injectable, IocContext, ActCtxOption, isDefined } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { IContainer, ICoreInjector } from '@tsdi/core';
 import { IHandleContext } from '../handles/Handle';
 import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT } from '../context-tokens';
 
@@ -51,7 +51,7 @@ export interface MessageOption extends ActCtxOption {
  * @extends {HandleContext}
  */
 @Injectable
-export class MessageContext<T extends MessageOption = MessageOption> extends IocContext<T, IContainer> implements IHandleContext {
+export class MessageContext<T extends MessageOption = MessageOption> extends IocContext<T, ICoreInjector> implements IHandleContext {
 
     /**
      * message of target.

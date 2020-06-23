@@ -97,7 +97,8 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 fac = data;
                 data = undefined;
             }
-            let ctx = fac ? fac() : this.getInjector().resolve(MessageContext) as T;
+            const injector = this.getInjector();
+            let ctx = fac ? fac() : injector.getService({ token: MessageContext, target: this, defaultToken: MessageContext });
             if (isString(event)) {
                 if (!isString(type)) {
                     data = type;
@@ -114,7 +115,9 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
             } else {
                 ctx.setOptions(event);
             }
-            return this.execute(ctx);
+            ctx.setValue(INJECTOR, injector);
+
+            return this.execute(ctx as T);
         }
     }
 

@@ -16,10 +16,15 @@ export type MessageDecorator = <TFunction extends Type<IMessage>>(target: TFunct
  */
 export interface MessageMetadata extends TypeMetadata, PatternMetadata {
     /**
-     * message type.
+     * message parent.
      * default register in root message queue.
      * @type {boolean}
      * @memberof ModuleConfig
+     */
+    parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none';
+    /**
+     * message handle regster in. use parent instead.
+     * @deprecated
      */
     regIn?: Type<MessageQueue<MessageContext>> | 'root' | 'none';
 
@@ -53,10 +58,10 @@ export interface IMessageDecorator {
      *
      * @RegisterFor
      *
-     * @param {Type<MessageQueue<MessageContext>>} [regIn] the message reg in the message queue. default register in root message queue.
+     * @param {Type<MessageQueue<MessageContext>>} [parent] the message reg in the message queue. default register in root message queue.
      * @param {Type<MessageHandle<MessageContext>>} [before] register this message handle before this handle.
      */
-    (regIn?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>): MessageDecorator;
+    (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>): MessageDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
@@ -78,7 +83,7 @@ export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>(
         (ctx, next) => {
             let arg = ctx.currArg;
             if (isClass(arg) && ctx.args.length > 0) {
-                ctx.metadata.regIn = arg;
+                ctx.metadata.parent = arg;
                 ctx.next(next);
             }
         },
@@ -92,7 +97,8 @@ export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>(
     ], meta => {
         meta.singleton = true;
         // default register in root.
-        if (!meta.regIn) {
-            meta.regIn = 'root';
+        if (!meta.parent) {
+            meta.parent = meta.regIn || 'root';
         }
+        meta.regIn = undefined;
     }) as IMessageDecorator;
