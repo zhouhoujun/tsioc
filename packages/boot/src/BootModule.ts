@@ -12,7 +12,7 @@ import { InjDIModuleScope } from './registers/InjDIModuleScope';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
 import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope } from './registers/module_actions';
 import { Bootstrap } from './decorators/Bootstrap';
-import { ConfigureManager } from './annotations/ConfigureManager';
+import { ConfigureManager, ConfigureMerger } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
@@ -73,7 +73,7 @@ export class BootModule {
             .register(Boot, cls, RegSingletionAction, IocSetCacheAction)
             .register(Message, cls, RegSingletionAction, IocSetCacheAction);
 
-        container.inject(BuildContext, BuilderService, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
+        container.inject(BuildContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Bootstrap, cls, RegSingletionAction, IocSetCacheAction);

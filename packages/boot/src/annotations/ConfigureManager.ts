@@ -1,6 +1,6 @@
-import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject, isBaseObject, lang, Type } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
-import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken } from './IConfigureManager';
+import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken, IConfigureMerger, ConfigureMergerToken } from './IConfigureManager';
 import { RunnableConfigure, ProcessRunRootToken } from './RunnableConfigure';
 
 
@@ -80,10 +80,11 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
                 return cfg;
             }
         }));
+        const merger = this.container.get(ConfigureMergerToken);
         exts.forEach(exCfg => {
             if (exCfg) {
                 exCfg = isMetadataObject(exCfg['default']) ? exCfg['default'] : exCfg;
-                Object.assign(config, exCfg);
+                config = (merger ? merger.merge(config, exCfg) : Object.assign(config, exCfg)) as T;
             }
         });
         return config;
@@ -123,4 +124,19 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
             return {} as T;
         }
     }
+}
+
+
+@Singleton(ConfigureMergerToken)
+export class ConfigureMerger implements IConfigureMerger {
+    merge(config1: RunnableConfigure, config2: RunnableConfigure): RunnableConfigure {
+        let setting = { ...config1?.setting, ...config2?.setting };
+        let deps = [...config1?.deps || [], ...config2?.deps || []];
+        let providers = [...config1?.providers || [], ...config2?.providers || []];
+        let models = [...config1?.models || [], ...config2?.models || []];
+        let repositories = [...config1?.repositories || [], ...config2?.repositories || []];
+
+        return { ...config1, ...config2, setting, deps, providers, models, repositories };
+    }
+
 }

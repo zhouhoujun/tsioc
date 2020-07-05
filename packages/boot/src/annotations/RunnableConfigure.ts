@@ -87,10 +87,10 @@ export interface RunnableConfigure extends ProvidersMetadata {
     /**
      * models of boot application.
      */
-    models?: string[] | Type[];
+    models?: (string| Type)[];
 
     /**
      * repositories of orm.
      */
-    repositories?: string[] | Type[];
+    repositories?: (string | Type)[];
 }

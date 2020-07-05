@@ -32,7 +32,25 @@ export interface IConfigureLoader<T extends RunnableConfigure = RunnableConfigur
 /**
  * configure loader token.
  */
-export const ConfigureLoaderToken: TokenId<IConfigureLoader> = tokenId<IConfigureLoader>('DI_Configure_Loader');
+export const ConfigureLoaderToken: TokenId<IConfigureLoader> = tokenId<IConfigureLoader>('BOOT_Configure_Loader');
+
+/**
+ * configure merge provider
+ */
+export interface IConfigureMerger {
+    /**
+     * merge configure
+     * @param config1 config 1
+     * @param config2 coniig 2
+     * @returns merged config.
+     */
+    merge(config1: RunnableConfigure, config2: RunnableConfigure): RunnableConfigure;
+}
+
+/**
+ * configure merger token.
+ */
+export const ConfigureMergerToken = tokenId<IConfigureMerger>('BOOT_Configure_Loader');
 
 /**
  * configure manager.
