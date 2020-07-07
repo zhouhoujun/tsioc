@@ -123,7 +123,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 }
                 ctx.setOptions(event);
             }
-            if (fac) {
+            if (!fac) {
                 ctx.setValue(INJECTOR, injector);
             }
 

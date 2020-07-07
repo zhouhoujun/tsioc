@@ -42,7 +42,7 @@ export interface MessageOption extends ActCtxOption {
      */
     target?: any;
     /**
-     * custom set message queue.
+     * custom set conetext injector of message queue.
      */
     injector?: ICoreInjector;
 }
