@@ -1,7 +1,7 @@
 import { Injectable, IocContext, ActCtxOption, isDefined } from '@tsdi/ioc';
-import { IContainer, ICoreInjector } from '@tsdi/core';
+import { ICoreInjector } from '@tsdi/core';
 import { IHandleContext } from '../handles/Handle';
-import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT } from '../context-tokens';
+import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT, CTX_CURR_INJECTOR } from '../context-tokens';
 
 
 /**
@@ -41,6 +41,10 @@ export interface MessageOption extends ActCtxOption {
      * @memberof MessageOption
      */
     target?: any;
+    /**
+     * custom set message queue.
+     */
+    injector?: ICoreInjector;
 }
 
 /**
@@ -52,6 +56,13 @@ export interface MessageOption extends ActCtxOption {
  */
 @Injectable
 export class MessageContext<T extends MessageOption = MessageOption> extends IocContext<T, ICoreInjector> implements IHandleContext {
+
+    /**
+     * get injector of current message queue.
+     */
+    getQueueInjector(): ICoreInjector {
+        return this.getValue(CTX_CURR_INJECTOR) ?? this.injector;
+    }
 
     /**
      * message of target.

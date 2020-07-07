@@ -4,6 +4,7 @@ import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
+import { CTX_CURR_INJECTOR } from '../context-tokens';
 
 
 
@@ -23,6 +24,9 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
     @Inject(InjectorProxyToken)
     private _injector: InjectorProxy<ICoreInjector>;
 
+    /**
+     * get injector of current message queue.
+     */
     getInjector(): ICoreInjector {
         return this._injector();
     }
@@ -30,6 +34,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
     private completed: ((ctx: T) => void)[];
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
+        ctx.setValue(CTX_CURR_INJECTOR, this.getInjector())
         await super.execute(ctx, next);
         this.completed && this.completed.map(cb => {
             cb(ctx);
@@ -97,7 +102,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 fac = data;
                 data = undefined;
             }
-            const injector = this.getInjector();
+            let injector = this.getInjector();
             let ctx = fac ? fac() : injector.getService({ token: MessageContext, target: this, defaultToken: MessageContext });
             if (isString(event)) {
                 if (!isString(type)) {
@@ -113,9 +118,14 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                     data: data
                 });
             } else {
+                if (event.injector) {
+                    injector = event.injector;
+                }
                 ctx.setOptions(event);
             }
-            ctx.setValue(INJECTOR, injector);
+            if (fac) {
+                ctx.setValue(INJECTOR, injector);
+            }
 
             return this.execute(ctx as T);
         }

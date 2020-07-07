@@ -2,6 +2,7 @@ import { Type, tokenId, IProviders, Token, TokenId } from '@tsdi/ioc';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { IStartup } from './runnable/Startup';
+import { ICoreInjector } from '@tsdi/core';
 
 
 export const CTX_MODULE: TokenId<Type> = tokenId<Type>('CTX_MODULE');
@@ -45,4 +46,5 @@ export const CTX_ELEMENT_NAME = tokenId<any>('CTX_ELEMENT_NAME');
 // message.
 export const CTX_MSG_TARGET = tokenId<any>('CTX_MSG_TARGET');
 export const CTX_MSG_TYPE = tokenId<string>('CTX_MSG_TYPE');
+export const CTX_CURR_INJECTOR = tokenId<ICoreInjector>('CTX_CURR_INJECTOR');
 export const CTX_MSG_EVENT = tokenId<string>('CTX_MSG_EVENT');
