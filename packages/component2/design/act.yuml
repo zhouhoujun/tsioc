@@ -1,0 +1,10 @@
+// {type:activity}
+// {generate:true}
+(start)->(Application Boot)->(Ioc Inject Component)->(@Component Decorator)-><a>[compiled]->|b|
+<a>[not compile]->(Compoent Template)->(AST)->(CodeFrame)->(Save CompoentDef)->|b|
+|b|->(Render Component)->(Resove with CompoentDef)->|c|
+|c|->(Create Composite)->|d|
+|c|->(Binding Property)->|d|
+|c|->(Bound Sub Compoent)->|d|
+|c|->(Bound Directive)->|d|
+|d|->(Render View)->(end)
