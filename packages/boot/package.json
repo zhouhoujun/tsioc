@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/boot",
-  "version": "6.0.24",
+  "version": "6.0.25",
   "description": "Application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -33,9 +33,9 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.24",
-    "@tsdi/core": "~6.0.24",
-    "@tsdi/logs": "~6.0.24",
+    "@tsdi/ioc": "~6.0.25",
+    "@tsdi/core": "~6.0.25",
+    "@tsdi/logs": "~6.0.25",
     "tslib": "^1.13.0"
   },
   "directories": {
