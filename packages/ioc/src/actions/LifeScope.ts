@@ -1,9 +1,8 @@
 import { IocContext, IocCompositeAction } from './IocAction';
-import { RuntimeContext } from './RuntimeContext';
 import {
     RuntimeDecorAction, RuntimeParamScope, IocGetCacheAction, CtorArgsAction,
     BeforeCtorScope, CreateInstanceAction, AfterCtorScope, RuntimePropScope,
-    RuntimeMthScope, RuntimeAnnoScope
+    RuntimeMthScope, RuntimeAnnoScope, RuntimeContext
 } from './runtime-actions';
 import { RegContext, InitReflectAction } from './IocRegAction';
 
@@ -34,8 +33,6 @@ export class RegisterLifeScope<T extends RegContext = RegContext> extends IocCom
     }
 
 }
-
-
 
 /**
  * runtime life scope.

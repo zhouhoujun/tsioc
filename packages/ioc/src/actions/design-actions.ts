@@ -1,10 +1,7 @@
-import { IocDecorScope } from './IocDecorScope';
-import { INJECTOR } from '../IInjector';
+import { INJECTOR, IInjector } from '../IInjector';
 import { DecoratorScope } from '../types';
 import { IActionSetup } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
-import { ExecDecoratorAtion } from './ExecDecoratorAtion';
-import { DecorsRegisterer, DesignRegisterer } from './DecorsRegisterer';
 import { Autorun } from '../decorators/AutoRun';
 import { IocExt } from '../decorators/IocExt';
 import { CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../context-tokens';
@@ -18,12 +15,47 @@ import { Singleton } from '../decorators/Singleton';
 import { Providers } from '../decorators/Providers';
 import { Refs } from '../decorators/Refs';
 import { ParamProviders } from '../providers/types';
-import { RuntimeContext } from './RuntimeContext';
 import { AutoWired } from '../decorators/AutoWried';
 import { Inject } from '../decorators/Inject';
-import { IocRegAction, IocRegScope } from './IocRegAction';
-import { DesignContext } from './DesignContext';
+import {
+    IocRegAction, IocRegScope, RegOption, RegContext, ExecDecoratorAtion,
+    DecorsRegisterer, DesignRegisterer, IocDecorScope
+} from './IocRegAction';
 import { RuntimeLifeScope } from './LifeScope';
+import { createContext } from './IocAction';
+import { RuntimeContext } from './runtime-actions';
+
+
+/**
+ * design action option.
+ *
+ * @extends {RegOption}
+ */
+export interface DesignOption extends RegOption {
+
+}
+
+/**
+ * design action context.
+ */
+export class DesignContext extends RegContext<DesignOption> {
+
+    /**
+     * parse design action context.
+     *
+     * @static
+     *
+     * @param { IInjector } injecor
+     * @param {DesignOption} options
+     * @returns {DesignContext}
+     * @memberof DesignActionContext
+     */
+    static parse(injecor: IInjector, options: DesignOption): DesignContext {
+        return createContext(injecor, DesignContext, options);
+    }
+
+}
+
 
 /**
  * ioc design action.

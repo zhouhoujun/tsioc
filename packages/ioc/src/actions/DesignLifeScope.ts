@@ -1,7 +1,6 @@
 import { IActionSetup } from './Action';
-import { DesignContext } from './DesignContext';
 import {
-    DesignDecorAction, DesignPropScope,
+    DesignContext, DesignDecorAction, DesignPropScope,
     DesignMthScope, DesignClassScope, AnnoScope
 } from './design-actions';
 import { isClass } from '../utils/lang';
