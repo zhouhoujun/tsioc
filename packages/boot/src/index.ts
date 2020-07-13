@@ -17,7 +17,6 @@ export * from './annotations/ConfigureRegister';
 export * from './runnable/Startup';
 export * from './runnable/Runnable';
 export * from './runnable/Service';
-export * from './runnable/Renderer';
 
 
 // decorators

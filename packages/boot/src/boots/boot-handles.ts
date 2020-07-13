@@ -14,7 +14,6 @@ import { IAnnoationContext } from '../AnnoationContext';
 import { BuilderServiceToken } from '../services/IBuilderService';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Startup } from '../runnable/Startup';
-import { Renderer } from '../runnable/Renderer';
 import { Runnable } from '../runnable/Runnable';
 import { Service } from '../runnable/Service';
 
@@ -365,7 +364,7 @@ export class ResolveRunnableScope extends BuildHandles<IBootContext> implements 
  */
 export const RefRunnableHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let startup = ctx.injector.getService(
-        { tokens: [Startup, Renderer, Runnable, Service], target: ctx.boot },
+        { tokens: [Startup, Runnable, Service], target: ctx.boot },
         { provide: BootContext, useValue: ctx },
         { provide: lang.getClass(ctx), useValue: ctx });
 
