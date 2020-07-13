@@ -75,6 +75,6 @@ export class ActivityProvider extends ComponentProvider {
     }
 
     isElementType(element: ClassType): boolean {
-        return  element?.d0CT === 'activity';
+        return  element?.ρCT === 'activity';
     }
 }

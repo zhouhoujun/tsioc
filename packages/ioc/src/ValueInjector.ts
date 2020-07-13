@@ -11,7 +11,7 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
     /**
      * class type.
      */
-    static d0CT: ClassTypes = 'injector';
+    static ρCT: ClassTypes = 'injector';
     /**
      * values.
      */

@@ -392,7 +392,7 @@ const injectorKey = 'injector';
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is IInjector {
-    return lang.getClass(target)?.d0CT === injectorKey;
+    return lang.getClass(target)?.ρCT === injectorKey;
 }
 
 

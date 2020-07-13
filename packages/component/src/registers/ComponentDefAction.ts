@@ -26,8 +26,8 @@ export const ComponentDefAction = function (ctx: DesignContext, next: () => void
 
     compRefl.decorator = currDecor;
     compRefl.component = true;
-    if (ctx.type.d0Cmp) {
-        compRefl.componentDef = ctx.type.d0Cmp();
+    if (ctx.type.ρCmp) {
+        compRefl.componentDef = ctx.type.ρCmp();
     } else {
         const compiler = prdrs.getInstance(CompilerFacade);
         compRefl.componentDef = compiler.compileComponent(lang.first(metas));

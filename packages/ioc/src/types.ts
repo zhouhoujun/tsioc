@@ -102,23 +102,23 @@ export interface AbstractType<T = any> extends Function {
     /**
      * class annations
      */
-    d0Ann?(): ClassAnnations;
+    ρAnn?(): ClassAnnations;
     /**
      * get component def.
      */
-    d0Cmp?(): any;
+    ρCmp?(): any;
     /**
      * get directive def.
      */
-    d0Dir?(): any;
+    ρDir?(): any;
     /**
      * class flag. none poincut for aop.
      */
-    d0NPT?: boolean;
+    ρNPT?: boolean;
     /**
      * class type flag.
      */
-    d0CT?: ClassTypes;
+    ρCT?: ClassTypes;
 }
 
 
