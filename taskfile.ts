@@ -89,7 +89,7 @@ import * as through from 'through2';
                 },
                 {
                     activity: 'each',
-                    each: (ctx: NodeActivityContext) => ctx.platform.getFolders('packages').filter(f => !f.endsWith('unit-karma')),
+                    each: (ctx: NodeActivityContext) => ctx.platform.getFolders('packages').filter(f => !f.endsWith('component2') && !f.endsWith('unit-karma')),
                     // parallel: true,
                     body: {
                         activity: 'execute',

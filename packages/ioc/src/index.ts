@@ -66,7 +66,6 @@ export * from './providers/types';
 
 // actions
 export * from './context-tokens';
-
 export * from './actions/Action';
 export * from './actions/IocAction';
 export * from './actions/ActionInjector';
@@ -74,19 +73,16 @@ export * from './actions/IocCacheManager';
 export * from './actions/IocRegAction';
 export * from './actions/LifeScope';
 export * from './actions/ResolveLifeScope';
-
 export * from './actions/MethodAccessor';
-
 export * from './actions/TypeDecorators';
+
+// runtime actions
+export * from './actions/runtime-actions';
 
 // resolve
 export * from './actions/IocResolveAction';
 export * from './actions/resolve-actions';
 
-// runtime actions
-export * from './actions/runtime-actions';
-
 // design time action.
 export * from './actions/design-actions';
 export * from './actions/DesignLifeScope';
-

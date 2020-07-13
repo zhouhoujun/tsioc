@@ -22,9 +22,9 @@ import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
         ]
     }
 })
-export class ComponentsBuilder {
+export class Component2Builder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.run(ComponentsBuilder);
+    Workflow.run(Component2Builder);
 }
