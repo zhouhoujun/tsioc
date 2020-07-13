@@ -1,9 +1,9 @@
-import { ResolveContext, IResolveContext } from './ResolveContext';
+import { ResolveContext, IResolveContext } from './IocResolveAction';
 import { isNullOrUndefined, lang, isClass } from '../utils/lang';
 import { CTX_DEFAULT_TOKEN, CTX_TARGET_TOKEN } from '../context-tokens';
 import { InjectReference } from '../InjectReference';
 import { PROVIDERS } from '../IInjector';
-import { IocCompositeAction } from './IocCompositeAction';
+import { IocCompositeAction } from './IocAction';
 import { isToken } from '../utils/isToken';
 
 

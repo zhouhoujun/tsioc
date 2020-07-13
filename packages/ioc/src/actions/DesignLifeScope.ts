@@ -1,5 +1,3 @@
-import { RegisterLifeScope } from './RegisterLifeScope';
-import { InitReflectAction } from './InitReflectAction';
 import { IActionSetup } from './Action';
 import { DesignContext } from './DesignContext';
 import {
@@ -7,6 +5,9 @@ import {
     DesignMthScope, DesignClassScope, AnnoScope
 } from './design-actions';
 import { isClass } from '../utils/lang';
+import { RegisterLifeScope } from './LifeScope';
+import { InitReflectAction } from './IocRegAction';
+
 
 
 /**
@@ -34,3 +35,5 @@ export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements
             .use(AnnoScope);
     }
 }
+
+

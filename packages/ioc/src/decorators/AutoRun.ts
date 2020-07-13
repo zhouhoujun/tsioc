@@ -1,4 +1,4 @@
-import { IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../factories/ClassMethodDecoratorFactory';
+import { IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator } from '../factories/DecoratorFactory';
 import { isString, isNumber } from '../utils/lang';
 import { AutorunMetadata } from '../metadatas/AutorunMetadata';
 

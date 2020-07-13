@@ -1,8 +1,7 @@
 import { IActionInjector } from './Action';
-import { RegContext } from './RegContext';
 import { DecorsRegisterer } from './DecorsRegisterer';
 import { CTX_CURR_DECOR, CTX_CURR_DECOR_SCOPE } from '../context-tokens';
-import { IocAction } from './IocAction';
+import { RegContext, IocRegAction } from './IocRegAction';
 
 
 /**
@@ -12,7 +11,7 @@ import { IocAction } from './IocAction';
  * @class ExecDecoratorAtion
  * @extends {IocAction<RegContext>}
  */
-export abstract class ExecDecoratorAtion extends IocAction<RegContext> {
+export abstract class ExecDecoratorAtion extends IocRegAction<RegContext> {
 
     constructor(protected actInjector: IActionInjector) {
         super();

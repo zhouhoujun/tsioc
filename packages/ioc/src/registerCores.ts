@@ -7,11 +7,11 @@ import { RuntimeRegisterer, DesignRegisterer } from './actions/DecorsRegisterer'
 import { Injector, InjectorProvider, InvokedProviders } from './Injector';
 import { DecoratorProvider } from './services/DecoratorProvider';
 import { MethodAccessor } from './actions/MethodAccessor';
-import { DesignLifeScope } from './actions/DesignLifeScope';
-import { RuntimeLifeScope } from './actions/RuntimeLifeScope';
+import { RuntimeLifeScope } from './actions/LifeScope';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { PROVIDERS, InjectorFactoryToken } from './IInjector';
 import { ActionInjectorToken } from './actions/Action';
+import { DesignLifeScope } from './actions/DesignLifeScope';
 
 /**
  * register core for container.

@@ -1,4 +1,4 @@
-import { createClassDecorator, IClassDecorator } from '../factories/ClassDecoratorFactory';
+import { createClassDecorator, IClassDecorator } from '../factories/DecoratorFactory';
 import { InjectableMetadata } from '../metadatas/InjectableMetadata';
 
 /**
