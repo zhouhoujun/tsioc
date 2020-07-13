@@ -1,4 +1,4 @@
-import { ClassMethodDecorator } from '../factories/ClassMethodDecoratorFactory';
+import { ClassMethodDecorator } from '../factories/DecoratorFactory';
 import { ProvidersMetadata } from '../metadatas/ProvidersMetadata';
 import { isArray } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';

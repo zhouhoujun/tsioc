@@ -10,7 +10,7 @@ import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './p
 import { IIocContainer } from './IIocContainer';
 import { MethodAccessorToken, MethodType } from './IMethodAccessor';
 import { IParameter } from './IParameter';
-import { ResolveOption } from './actions/ResolveContext';
+import { ResolveOption } from './actions/IocResolveAction';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
 import { InjectReference } from './InjectReference';

@@ -12,15 +12,13 @@ import { isUndefined, isClassType, lang } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
-import { RuntimeDecorators } from '../actions/RuntimeDecorators';
 import { Singleton } from '../decorators/Singleton';
 import { DecoratorProvider } from './DecoratorProvider';
-import { DesignRegisterer, RuntimeRegisterer } from '../actions/DecorsRegisterer';
 import { ITypeReflects } from './ITypeReflects';
 import { IActionInjector } from '../actions/Action';
-import { TypeDecorators } from '../actions/TypeDecorators';
+import { TypeDecorators, RuntimeDecorators } from '../actions/TypeDecorators';
+import { DesignRegisterer, RuntimeRegisterer } from '../actions/IocRegAction';
 import { IInjector, InjectorProxy } from '../IInjector';
-
 
 /**
  * type reflects.

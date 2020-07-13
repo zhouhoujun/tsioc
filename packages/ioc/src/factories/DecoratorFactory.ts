@@ -2,15 +2,21 @@ import 'reflect-metadata';
 import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined,
-    isFunction, isNumber, isArray, lang, chain
+    isFunction, isNumber, isArray, lang, chain, isBoolean, isString
 } from '../utils/lang';
-import { Type, AbstractType, ObjectMap, ClassType } from '../types';
+import { Type, AbstractType, ObjectMap, ClassType, ProvideToken, Token } from '../types';
 import { Metadate } from '../metadatas/Metadate';
 import { ClassMetadata } from '../metadatas/ClassMetadata';
 import { MethodMetadata } from '../metadatas/MethodMetadata';
 import { PropertyMetadata } from '../metadatas/PropertyMetadata';
 import { ParameterMetadata } from '../metadatas/ParameterMetadata';
+import { TypeMetadata } from '../metadatas/TypeMetadata';
+import { MethodPropMetadata } from '../metadatas/MethodPropMetadata';
+import { MethodParamPropMetadata } from '../metadatas/MethodParamPropMetadata';
+import { ParamPropMetadata } from '../metadatas/ParamPropMetadata';
 import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
+import { isToken, isProvideToken } from '../utils/isToken';
+import { ParamProviders, ProviderTypes } from '../providers/types';
 
 
 
@@ -591,5 +597,514 @@ function getParamNames(func) {
         result = [];
     }
     return result;
+}
+
+
+
+/**
+ * Type decorator.
+ *
+ * @export
+ * @interface ITypeDecorator
+ * @template T
+ */
+export interface ITypeDecorator<T extends ClassMetadata> {
+    /**
+     * define class decorator setting with metadata map.
+     *
+     * @param {T} [metadata] metadata map.
+     */
+    (metadata?: T): ClassDecorator;
+    /**
+     * not allow abstract to decorator with out metadata.
+     */
+    (target: Type): void;
+}
+
+/**
+ * class decorator.
+ *
+ * @export
+ * @interface IClassDecorator
+ */
+export interface IClassDecorator<T extends ClassMetadata> extends ITypeDecorator<T> {
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {ProvideToken} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     */
+    (provide: ProvideToken<any>): ClassDecorator;
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     */
+    (provide: Token, alias: string): ClassDecorator;
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {Token} [refTarget]  define the class as service of target.
+     */
+    (provide: Token, alias: string, refTarget: Token): ClassDecorator;
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {boolean} [singlton] define this class as singlton.
+     * @param {Token} [refTarget]  define the class as service of target.
+     */
+    (provide: Token, alias: string, singlton: boolean, refTarget: Token): ClassDecorator;
+
+    /**
+     * define class decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {boolean} [singlton] define this class as singlton.
+     * @param {number} [cache]  define class cahce expris when is not singlton.
+     * @param {Token} [refTarget]  define the class as service of target.
+     */
+    (provide: Token, alias: string, cache: number, refTarget: Token): ClassDecorator;
+
+}
+
+
+
+
+/**
+ * create class decorator
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {boolean} [appendCheck]
+ * @returns {IClassDecorator<T>}
+ */
+export function createClassDecorator<T extends ClassMetadata>(name: string, appendCheck?: boolean): IClassDecorator<T>;
+/**
+ * create class decorator
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {ArgsIteratorAction<T>[]} [actions]
+ * @param {boolean} [appendCheck]
+ * @returns {IClassDecorator<T>}
+ */
+export function createClassDecorator<T extends ClassMetadata>(name: string, actions?: ArgsIteratorAction<T>[], appendCheck?: boolean): IClassDecorator<T>;
+/**
+ * create class decorator
+ *
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata iterator action.
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @param {boolean} [appendCheck] default false
+ * @returns {*}
+ */
+export function createClassDecorator<T extends ClassMetadata>(name: string, actions?: ArgsIteratorAction<T>[], metadataExtends?: MetadataExtends<T>, appendCheck?: boolean): IClassDecorator<T>;
+export function createClassDecorator<T extends ClassMetadata>(name: string, actions?: any, metadataExtends?: any, appendCheck = false): IClassDecorator<T> {
+    if (isBoolean(actions)) {
+        appendCheck = actions;
+        actions = undefined;
+        metadataExtends = undefined;
+    } else if (isBoolean(metadataExtends)) {
+        appendCheck = metadataExtends;
+        metadataExtends = undefined;
+    }
+
+    if (appendCheck) {
+        actions = actions || [];
+        actions.push(
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if ((ctx.args.length > 1) ? isToken(arg) : isProvideToken(arg)) {
+                    ctx.metadata.provide = arg;
+                    ctx.next(next);
+                }
+            },
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isString(arg)) {
+                    ctx.metadata.alias = arg;
+                    ctx.next(next);
+                }
+            },
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isBoolean(arg)) {
+                    ctx.metadata.singleton = arg;
+                    ctx.next(next);
+                } else if (isNumber(arg)) {
+                    ctx.metadata.expires = arg;
+                    ctx.next(next);
+                } else if (isToken(arg)) {
+                    ctx.metadata.refs = { target: arg, provide: ctx.metadata.provide || ctx.metadata.type, alias: ctx.metadata.alias };
+                    ctx.next(next);
+                }
+            },
+            (ctx, next) => {
+                let arg = ctx.currArg;
+                if (isNumber(arg)) {
+                    ctx.metadata.expires = arg;
+                    ctx.next(next);
+                }
+            }
+        );
+    }
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
+}
+
+
+export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
+
+/**
+ * class method decorator
+ *
+ * @export
+ * @interface IClassMethodDecorator
+ * @template T
+ */
+export interface IClassMethodDecorator<T extends TypeMetadata> {
+    /**
+     * create decorator with metadata map. for class or method decorator.
+     *
+     * @param {T} [metadata] metadata map.
+     */
+    (metadata?: T): ClassMethodDecorator;
+
+    (target: Type): void;
+    (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
+}
+
+/**
+ * create decorator for class and method.
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata iterator actions.
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {IClassMethodDecorator<T>}
+ */
+export function createClassMethodDecorator<T extends TypeMetadata>(name: string, actions?: ArgsIteratorAction<T>[], metadataExtends?: MetadataExtends<T>): IClassMethodDecorator<T> {
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
+}
+
+
+/**
+ * Method decorator.
+ *
+ * @export
+ * @interface IMethodDecorator
+ */
+export interface IMethodDecorator<T extends MethodMetadata> {
+    /**
+     * create method decorator with providers.
+     *
+     * @param  {ParamProviders[]} [providers]
+     */
+    (providers?: ParamProviders[]): MethodDecorator;
+    /**
+     * create method decorator with metadata map.
+     * @param {T} [metadata]
+     */
+    (metadata?: T): MethodDecorator;
+    /**
+     * create method decorator.
+     * @param {Object} target
+     * @param {(string | symbol)} propertyKey
+     * @param {TypedPropertyDescriptor<any>} descriptor
+     */
+    (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
+}
+
+
+/**
+ * create method decorator.
+ *
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns
+ */
+export function createMethodDecorator<T extends MethodMetadata>(
+    name: string,
+    actions?: ArgsIteratorAction<T>[],
+    metadataExtends?: MetadataExtends<T>): IMethodDecorator<T> {
+
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
+}
+
+
+
+export type MethodPropDecorator = (target: Object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
+/**
+ * method and Property decorator.
+ *
+ * @export
+ * @interface IMethodPropDecorator
+ */
+export interface IMethodPropDecorator<T extends MethodPropMetadata> {
+    /**
+     * create method decorator with metadata map.
+     * @param {T} [metadata]
+     */
+    (metadata?: T): MethodPropDecorator;
+    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
+}
+
+/**
+ * create method or property decorator
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata iterator action.
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {IMethodPropDecorator<T>}
+ */
+export function createMethodPropDecorator<T extends MethodPropMetadata>(
+    name: string,
+    actions?: ArgsIteratorAction<T>[],
+    metadataExtends?: MetadataExtends<T>): IMethodPropDecorator<T> {
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
+}
+
+
+export type MethodPropParamDecorator = (target: Object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>) => void;
+/**
+ * method, property or parameter decorator.
+ *
+ * @export
+ * @interface IMethodPropParamDecorator
+ */
+export interface IMethodPropParamDecorator<T extends TypeMetadata> {
+    /**
+     * define method, property or parameter decorator with metadata map.
+     * @param {T} [metadata] metadata map
+     */
+    (metadata?: T): MethodPropParamDecorator;
+    /**
+     * define parameter or property decorator with param.
+     *
+     * @param {Token<T>} provider define provider to resolve value to the parameter or property.
+     */
+    (provider: Token): PropParamDecorator;
+
+    /**
+     * define method decorator with providers.
+     *
+     * @param {Token<T>} provider define providers to the method.
+     */
+    (providers: ProviderTypes[]): MethodDecorator;
+    /**
+     * define method, property or parameter decorator.
+     */
+    (target: object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>): void;
+}
+
+/**
+ * create method, property or parameter decorator.
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {MetadataAdapter} [actions]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {IMethodPropParamDecorator<T>}
+ */
+export function createMethodPropParamDecorator<T extends MethodParamPropMetadata>(
+    name: string,
+    actions?: ArgsIteratorAction<T>[],
+    metadataExtends?: MetadataExtends<T>): IMethodPropParamDecorator<T> {
+
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isArray(arg)) {
+            ctx.metadata.providers = arg;
+            ctx.next(next);
+        } else if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
+        }
+    })
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
+}
+
+
+/**
+ * Parameter decorator.
+ *
+ * @export
+ * @interface IParameterDecorator
+ */
+export interface IParameterDecorator<T extends ParameterMetadata> {
+    /**
+     * define parameter decorator with param.
+     *
+     * @param {Token<T>} provider define provider to resolve value to the parameter.
+     */
+    (provider: Token<T>): ParameterDecorator;
+    /**
+     * define parameter decorator with metadata map.
+     * @param {T} [metadata] define matadata map to resolve value to the parameter.
+     */
+    (metadata?: T): ParameterDecorator;
+    /**
+     * define paramete decorator.
+     */
+    (target: object, propertyKey: string | symbol, parameterIndex: number): void;
+}
+
+
+
+/**
+ * create parameter decorator.
+ *
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns
+ */
+export function createParamDecorator<T extends ParameterMetadata>(
+    name: string,
+    actions?: ArgsIteratorAction<T>[],
+    metadataExtends?: MetadataExtends<T>): IParameterDecorator<T> {
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
+        }
+    });
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
+}
+
+
+/**
+ * property parameter decorator.
+ */
+export type PropParamDecorator = (target: Object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>) => void;
+
+/**
+ * Parameter and Property decorator.
+ *
+ * @export
+ * @interface IParamPropDecorator
+ */
+export interface IParamPropDecorator<T extends ParamPropMetadata> {
+    /**
+     * define parameter or property decorator with param.
+     *
+     * @param {Token<T>} provider define provider to resolve value to the parameter or property.
+     */
+    (provider: Token): PropParamDecorator;
+    /**
+     * define parameter or property decorator with metadata map.
+     * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
+     */
+    (metadata?: T): PropParamDecorator;
+    /**
+     * define parameter or property decorator.
+     */
+    (target: object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>): void;
+}
+
+/**
+ * create parameter or property decorator
+ *
+ * @export
+ * @template T
+ * @param {string} name
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns {IParamPropDecorator<T>}
+ */
+export function createParamPropDecorator<T extends ParamPropMetadata>(
+    name: string,
+    actions?: ArgsIteratorAction<T>[],
+    metadataExtends?: MetadataExtends<T>): IParamPropDecorator<T> {
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
+        }
+    });
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
+}
+
+
+/**
+ * property decorator.
+ *
+ * @export
+ * @interface IPropertyDecorator
+ */
+export interface IPropertyDecorator<T extends PropertyMetadata> {
+    /**
+     * define property decorator with param.
+     *
+     * @param {Token<T>} provider define provider to resolve value to the property.
+     */
+    (provider: Token): PropertyDecorator;
+    /**
+     * define property decorator with metadata map.
+     * @param {T} [metadata] define matadata map to resolve value to the property.
+     */
+    (metadata?: T): PropertyDecorator;
+    /**
+     * define property decorator.
+     */
+    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
+}
+
+
+/**
+ * create property decorator.
+ *
+ * @export
+ * @template T metadata type.
+ * @param {string} name decorator name.
+ * @param {ArgsIteratorAction<T>[]} [actions]  metadata adapter
+ * @param {MetadataExtends<T>} [metadataExtends] add extents for metadata.
+ * @returns
+ */
+export function createPropDecorator<T extends PropertyMetadata>(name: string, actions?: ArgsIteratorAction<T>[], metadataExtends?: MetadataExtends<T>): IPropertyDecorator<T> {
+    actions = actions || [];
+    actions.push((ctx, next) => {
+        let arg = ctx.currArg;
+        if (isToken(arg)) {
+            ctx.metadata.provider = arg;
+            ctx.next(next);
+        }
+    });
+    let decorator = createDecorator<T>(name, actions, metadataExtends);
+    return decorator;
 }
 

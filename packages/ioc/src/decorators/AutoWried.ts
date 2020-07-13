@@ -1,4 +1,4 @@
-import { IMethodPropParamDecorator, createMethodPropParamDecorator } from '../factories/MethodPropParamDecoratorFactory';
+import { IMethodPropParamDecorator, createMethodPropParamDecorator } from '../factories/DecoratorFactory';
 import { AutoWiredMetadata } from '../metadatas/AutoWiredMetadata';
 
 /**

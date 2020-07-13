@@ -1,4 +1,4 @@
-import { createClassDecorator, ITypeDecorator } from '../factories/ClassDecoratorFactory';
+import { createClassDecorator, ITypeDecorator } from '../factories/DecoratorFactory';
 import { AutorunMetadata } from '../metadatas/AutorunMetadata';
 import { IIocContainer } from '../IIocContainer';
 import { Type } from '../types';

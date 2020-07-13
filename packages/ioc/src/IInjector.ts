@@ -2,7 +2,7 @@ import { Token, InstanceFactory, SymbolType, Factory, Type, Modules, TokenId } f
 import { IParameter } from './IParameter';
 import { tokenId } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
-import { ResolveOption } from './actions/ResolveContext';
+import { ResolveOption } from './actions/IocResolveAction';
 import { InjectReference } from './InjectReference';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';

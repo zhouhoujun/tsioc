@@ -1,4 +1,4 @@
-import { ITypeDecorator, createClassDecorator } from '../factories/ClassDecoratorFactory';
+import { ITypeDecorator, createClassDecorator } from '../factories/DecoratorFactory';
 import { ClassMetadata } from '../metadatas/ClassMetadata';
 import { ProvideToken, Token } from '../types';
 

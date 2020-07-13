@@ -59,56 +59,30 @@ export * from './decorators/IocExt';
 export * from './factories/ArgsIterator';
 export * from './factories/DecoratorType';
 export * from './factories/DecoratorFactory';
-export * from './factories/ClassDecoratorFactory';
-export * from './factories/MethodDecoratorFactory';
-export * from './factories/ParamDecoratorFactory';
-export * from './factories/PropertyDecoratorFactory';
-export * from './factories/ParamPropDecoratorFactory';
-export * from './factories/ClassMethodDecoratorFactory';
-export * from './factories/MethodPropDecoratorFactory';
-export * from './factories/MethodPropParamDecoratorFactory';
-
 
 // providers
 export * from './providers/Provider';
 export * from './providers/types';
 
-
+// actions
 export * from './context-tokens';
-
 export * from './actions/Action';
 export * from './actions/IocAction';
-export * from './actions/IocActionContext';
 export * from './actions/ActionInjector';
-export * from './actions/IocCompositeAction';
 export * from './actions/IocCacheManager';
-export * from './actions/LifeScope';
-export * from './actions/RegisterLifeScope';
-export * from './actions/DesignLifeScope';
-export * from './actions/RuntimeLifeScope';
-export * from './actions/DecorRegisterer';
-export * from './actions/DecorsRegisterer';
-export * from './actions/ResolveLifeScope';
-
-export * from './actions/MethodAccessor';
-export * from './actions/IocDecorScope';
-
-export * from './actions/ExecDecoratorAtion';
-export * from './actions/InitReflectAction';
-export * from './actions/RegContext';
 export * from './actions/IocRegAction';
-export * from './actions/IocRegScope';
-
+export * from './actions/LifeScope';
+export * from './actions/ResolveLifeScope';
+export * from './actions/MethodAccessor';
 export * from './actions/TypeDecorators';
-export * from './actions/ResolveContext';
+
+// runtime actions
+export * from './actions/runtime-actions';
+
+// resolve
 export * from './actions/IocResolveAction';
 export * from './actions/resolve-actions';
 
-// runtime actions
-export * from './actions/RuntimeContext';
-export * from './actions/runtime-actions';
-
 // design time action.
-export * from './actions/DesignContext';
 export * from './actions/design-actions';
-
+export * from './actions/DesignLifeScope';

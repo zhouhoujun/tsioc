@@ -1,28 +1,117 @@
-import { RuntimeContext } from './RuntimeContext';
 import { Token, Type, DecoratorScope } from '../types';
 import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
 import { IParameter } from '../IParameter';
-import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS } from '../context-tokens';
+import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../context-tokens';
 import { isToken } from '../utils/isToken';
 import { ParameterMetadata } from '../metadatas/ParameterMetadata';
-import { IocRegScope } from './IocRegScope';
-import { InitReflectAction } from './InitReflectAction';
-import { RuntimeRegisterer, DecorsRegisterer } from './DecorsRegisterer';
 import { Inject } from '../decorators/Inject';
 import { AutoWired } from '../decorators/AutoWried';
 import { Param } from '../decorators/Param';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
-import { IocDecorScope } from './IocDecorScope';
-import { ExecDecoratorAtion } from './ExecDecoratorAtion';
 import { IActionSetup } from './Action';
-import { IocRegAction } from './IocRegAction';
+import {
+    IocRegAction, InitReflectAction, IocRegScope, RegOption, RegContext,
+    ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
+} from './IocRegAction';
 import { IocCacheManager } from './IocCacheManager';
 import { AutorunMetadata } from '../metadatas/AutorunMetadata';
 import { Singleton } from '../decorators/Singleton';
 import { Injectable } from '../decorators/Injectable';
 import { IocExt } from '../decorators/IocExt';
 import { Autorun } from '../decorators/AutoRun';
+import { ParamProviders } from '../providers/types';
+import { createContext } from './IocAction';
+import { IInjector } from '../IInjector';
 
+/**
+ *  runtime action option.
+ *
+ */
+export interface RuntimeOption extends RegOption {
+    /**
+     * the args.
+     *
+     * @type {any[]}
+     * @memberof RuntimeActionContext
+     */
+    args?: any[];
+
+    /**
+     * property key.
+     */
+    propertyKey?: string;
+    /**
+     * args params types.
+     *
+     * @type {IParameter[]}
+     * @memberof RuntimeActionContext
+     */
+    params?: IParameter[];
+    /**
+     * target instance.
+     *
+     * @type {*}
+     * @memberof RegisterActionContext
+     */
+    target?: any;
+    /**
+     * exter providers for resolve. origin providers
+     *
+     * @type {ParamProviders[]}
+     * @memberof RegisterActionContext
+     */
+    providers?: ParamProviders[];
+}
+
+
+/**
+ * Ioc Register action context.
+ *
+ * @extends {RegContext}
+ */
+export class RuntimeContext extends RegContext<RuntimeOption> {
+    /**
+     * target instance.
+     *
+     * @type {*}
+     * @memberof RuntimeActionContext
+     */
+    target?: any;
+
+    get propertyKey() {
+        return this.getValue(CTX_PROPERTYKEY);
+    }
+
+    /**
+     * create register context.
+     *
+     * @static
+     * @param {IInjector} injector
+     * @param {RuntimeOption} options
+     * @returns {RegContext}
+     * @memberof RegisterActionContext
+     */
+    static parse(injector: IInjector, options: RuntimeOption): RuntimeContext {
+        return createContext(injector, RuntimeContext, options);
+    }
+
+    setOptions(options: RuntimeOption) {
+        if (!options) {
+            return this;
+        }
+        if (options.target) {
+            this.target = options.target;
+        }
+        if (options.args) {
+            this.context.setValue(CTX_ARGS, options.args);
+        }
+        if (options.params) {
+            this.context.setValue(CTX_PARAMS, options.params);
+        }
+        this.context.setValue(CTX_PROPERTYKEY, options.propertyKey || 'constructor');
+        return super.setOptions(options);
+    }
+}
 
 /**
  * ioc runtime register action.

@@ -5,8 +5,7 @@ import { isToken } from '../utils/isToken';
 import { IInjector, IProviders } from '../IInjector';
 import { IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
 import { ParamProviders } from '../providers/types';
-import { RuntimeContext } from './RuntimeContext';
-import { RuntimeParamScope } from './runtime-actions';
+import { RuntimeContext, RuntimeParamScope } from './runtime-actions';
 import { TypeReflectsToken } from '../services/ITypeReflects';
 
 

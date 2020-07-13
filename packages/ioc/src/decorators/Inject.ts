@@ -1,4 +1,4 @@
-import { IParamPropDecorator, createParamPropDecorator } from '../factories/ParamPropDecoratorFactory';
+import { IParamPropDecorator, createParamPropDecorator } from '../factories/DecoratorFactory';
 import { InjectMetadata } from '../metadatas/InjectMetadata';
 
 /**
