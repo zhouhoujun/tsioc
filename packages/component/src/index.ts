@@ -28,7 +28,7 @@ export * from './registers/ComponentDefAction';
 export * from './registers/DirectiveDefAction';
 export * from './registers/PipeRegAction';
 
+export * from './IReflect';
 export * from './ComponentLifecycle';
 export * from './ComponentRef';
-export * from './IComponentReflect';
-export * from './ComponentsModule';
+export * from './ComponentModule';

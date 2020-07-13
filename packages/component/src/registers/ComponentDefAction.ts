@@ -1,9 +1,14 @@
 import { DesignContext, CTX_CURR_DECOR, IProviders, DecoratorProvider, lang } from '@tsdi/ioc';
 import { IComponentMetadata } from '../decorators/metadata';
-import { IComponentReflect } from '../IComponentReflect';
+import { IComponentReflect } from '../IReflect';
 import { CompilerFacade } from '../compile/CompilerFacade';
 
-export const ComponentCompileAction = function (ctx: DesignContext, next: () => void): void {
+/**
+ * component def compile action.
+ * @param ctx
+ * @param next
+ */
+export const ComponentDefAction = function (ctx: DesignContext, next: () => void): void {
 
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let compRefl = ctx.targetReflect as IComponentReflect;

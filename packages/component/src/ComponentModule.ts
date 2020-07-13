@@ -4,32 +4,26 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { ResolveMoudleScope, AnnoationAction, BuildContext } from '@tsdi/boot';
-import { Input } from './decorators/Input';
-import { Output } from './decorators/Output';
-import { RefChild } from './decorators/RefChild';
 import { Component } from './decorators/Component';
 import { Directive } from './decorators/Directive';
-import { Vaildate } from './decorators/Vaildate';
 import { Pipe } from './decorators/Pipe';
 
-import { BindingPropTypeAction } from './registers/BindingPropTypeAction';
-import { RegVaildateAction } from './registers/RegVaildateAction';
 import { PipeRegAction } from './registers/PipeRegAction';
 import { ComponentContext } from './ComponentContext';
-import { DirectiveCompileAction } from './registers/DirectiveCompileAction';
-import { ComponentCompileAction } from './registers/ComponentCompileAction';
+import { DirectiveDefAction } from './registers/DirectiveDefAction';
+import { ComponentDefAction } from './registers/ComponentDefAction';
 import { ParseTemplateHandle } from './compile/actions';
 import { Identifiers } from './compile/CompilerFacade';
 
 
 /**
- * components module.
+ * component extend module.
  *
  * @export
- * @class ComponentsModule
+ * @class ComponentModule
  */
 @IocExt()
-export class ComponentsModule {
+export class ComponentModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
         let actInjector = container.getActionInjector();
@@ -44,20 +38,16 @@ export class ComponentsModule {
 
 
         const cls: DecoratorScope = 'Class';
-        const prty: DecoratorScope = 'Property';
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Component, cls, TypeProviderAction, AnnoationAction, ComponentCompileAction)
-            .register(Directive, cls, TypeProviderAction, AnnoationAction, DirectiveCompileAction)
-            .register(Pipe, cls, TypeProviderAction, PipeRegAction)
-            .register(Input, prty, BindingPropTypeAction)
-            .register(Output, prty, BindingPropTypeAction)
-            .register(RefChild, prty, BindingPropTypeAction)
-            .register(Vaildate, prty, RegVaildateAction);
+            .register(Component, cls, TypeProviderAction, AnnoationAction, ComponentDefAction)
+            .register(Directive, cls, TypeProviderAction, AnnoationAction, DirectiveDefAction)
+            .register(Pipe, cls, TypeProviderAction, PipeRegAction);
 
         actInjector.getInstance(RuntimeRegisterer)
             .register(Component, cls, RegSingletionAction, IocSetCacheAction)
-            .register(Directive, cls, RegSingletionAction, IocSetCacheAction);
+            .register(Directive, cls, RegSingletionAction, IocSetCacheAction)
+            .register(Pipe, cls, RegSingletionAction, IocSetCacheAction);
 
     }
 

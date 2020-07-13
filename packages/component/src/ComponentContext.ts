@@ -5,7 +5,7 @@ import {
     CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_TEMPLATE_SCOPE
 } from './ComponentRef';
 import { IComponentMetadata } from './decorators/metadata';
-import { IComponentReflect } from './IComponentReflect';
+import { IComponentReflect } from './IReflect';
 
 /**
  * component option.
