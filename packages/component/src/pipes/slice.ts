@@ -1,4 +1,4 @@
-import { lang } from '@tsdi/ioc';
+import { lang, isString, isArray } from '@tsdi/ioc';
 import { Pipe } from '../decorators/Pipe';
 import { IPipeTransform } from '../bindings/IPipeTransform';
 
@@ -17,6 +17,6 @@ export class SlicePipe implements IPipeTransform {
     }
 
     private supports(obj: any): boolean {
-        return typeof obj === 'string' || Array.isArray(obj);
+        return isString(obj) || isArray(obj);
     }
 }
