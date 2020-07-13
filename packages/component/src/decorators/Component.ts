@@ -1,22 +1,22 @@
 import { createClassDecorator, isString, ITypeDecorator } from '@tsdi/ioc';
-import { IDirectiveMetadata } from './IComponentMetadata';
+import { IComponentMetadata } from './metadata';
 
 /**
- * Directive decorator
+ * Component decorator
  *
  * @export
- * @interface IDirectiveDecorator
- * @extends {IClassDecorator<IDirectiveMetadata>}
+ * @interface IComponentDecorator
+ * @extends {IClassDecorator<IComponentMetadata>}
  */
-export interface IDirectiveDecorator extends ITypeDecorator<IDirectiveMetadata> {
+export interface IComponentDecorator extends ITypeDecorator<IComponentMetadata> {
     /**
      * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
      *
      * @Component
      *
-     * @param {IDirectiveMetadata} [metadata] metadata map.
+     * @param {IComponentMetadata} [metadata] metadata map.
      */
-    (metadata?: IDirectiveMetadata): ClassDecorator;
+    (metadata?: IComponentMetadata): ClassDecorator;
 
     /**
      * Component decorator, use to define class as Component element.
@@ -28,11 +28,11 @@ export interface IDirectiveDecorator extends ITypeDecorator<IDirectiveMetadata> 
 }
 
 /**
- * Directive decorator, define for class. use to define the class as Directive.
+ * Component decorator, define for class. use to define the class as Component. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
  *
  * @Component
  */
-export const Directive: IDirectiveDecorator = createClassDecorator<IDirectiveMetadata>('Directive', [
+export const Component: IComponentDecorator = createClassDecorator<IComponentMetadata>('Component', [
     (ctx, next) => {
         if (isString(ctx.currArg)) {
             ctx.metadata.selector = ctx.currArg;

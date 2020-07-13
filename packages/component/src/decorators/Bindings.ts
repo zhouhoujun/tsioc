@@ -1,5 +1,5 @@
 import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType } from '@tsdi/ioc';
-import { BindingMetadata } from './BindingMetadata';
+import { BindingMetadata } from './metadata';
 import { BindingDirection, isBindingDriection } from '../bindings/IBinding';
 /**
  * Bindings decorator.

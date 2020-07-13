@@ -1,5 +1,5 @@
 import { isString, isToken, Registration, ClassType, Token, createPropDecorator, isClassType } from '@tsdi/ioc';
-import { BindingMetadata } from './BindingMetadata';
+import { BindingMetadata } from './metadata';
 
 
 export type RefChildDectorator = (target: Object, propertyKey: string | symbol) => void;

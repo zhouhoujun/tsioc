@@ -4,9 +4,12 @@ import {
     CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF,
     CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_TEMPLATE_SCOPE
 } from './ComponentRef';
-import { IComponentMetadata } from './decorators/IComponentMetadata';
+import { IComponentMetadata } from './decorators/metadata';
 import { IComponentReflect } from './IComponentReflect';
 
+/**
+ * component option.
+ */
 export interface IComponentOption extends IBuildOption {
 
     /**
@@ -20,7 +23,9 @@ export interface IComponentOption extends IBuildOption {
     sub?: boolean;
 }
 
-
+/**
+ * component context.
+ */
 export interface IComponentContext<T extends IComponentOption = IComponentOption> extends IBuildContext<T> {
     readonly name: string;
     getResultRef(): IComponentRef | ITemplateRef;

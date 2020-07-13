@@ -1,5 +1,5 @@
 import { CTX_CURR_DECOR, DesignContext, IProviders, DecoratorProvider, lang } from '@tsdi/ioc';
-import { IDirectiveMetadata } from '../decorators/IComponentMetadata';
+import { IDirectiveMetadata } from '../decorators/metadata';
 import { IDirectiveReflect } from '../IDirectiveReflect';
 import { CompilerFacade } from '../compile/CompilerFacade';
 

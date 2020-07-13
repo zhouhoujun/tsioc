@@ -1,5 +1,5 @@
 import { Abstract, IProviders, InjectorProvider } from '@tsdi/ioc';
-import { IComponentMetadata, IDirectiveMetadata } from '../decorators/IComponentMetadata';
+import { IComponentMetadata, IDirectiveMetadata } from '../decorators/metadata';
 
 /**
  * compiler identifiers providers.

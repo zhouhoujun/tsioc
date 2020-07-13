@@ -1,5 +1,5 @@
 import { DesignContext, CTX_CURR_DECOR, IProviders, DecoratorProvider, lang } from '@tsdi/ioc';
-import { IComponentMetadata } from '../decorators/IComponentMetadata';
+import { IComponentMetadata } from '../decorators/metadata';
 import { IComponentReflect } from '../IComponentReflect';
 import { CompilerFacade } from '../compile/CompilerFacade';
 
@@ -28,32 +28,6 @@ export const ComponentCompileAction = function (ctx: DesignContext, next: () => 
         compRefl.componentDef = compiler.compileComponent(lang.first(metas));
         // todo: compiler componet to componentDef.
     }
-
-    // metas.forEach(meta => {
-    //     if (!meta.selector) {
-    //         return;
-    //     }
-    //     if (meta.selector.indexOf(',') > 0) {
-    //         meta.selector.split(',').forEach(sel => {
-    //             sel = sel.trim();
-    //             if (attrExp.test(sel)) {
-    //                 compRefl.attrSelector = sel;
-    //                 injector.bindProvider(compdr.toAttrSelectorToken(sel), ctx.type);
-    //             } else {
-    //                 compRefl.selector = sel;
-    //                 injector.bindProvider(compdr.toSelectorToken(sel), ctx.type);
-    //             }
-    //         })
-    //     } else {
-    //         if (attrExp.test(meta.selector)) {
-    //             compRefl.attrSelector = meta.selector;
-    //             injector.bindProvider(compdr.toAttrSelectorToken(meta.selector), ctx.type);
-    //         } else {
-    //             compRefl.selector = meta.selector;
-    //             injector.bindProvider(compdr.toSelectorToken(meta.selector), ctx.type);
-    //         }
-    //     }
-    // });
 
     next();
 

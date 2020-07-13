@@ -4,8 +4,7 @@ export * from './bindings/IPipeTransform';
 export * from './bindings/EventEmitter';
 
 // decorators
-export * from './decorators/BindingMetadata';
-export * from './decorators/IComponentMetadata';
+export * from './decorators/metadata';
 export * from './decorators/Component';
 export * from './decorators/Input';
 export * from './decorators/Output';
@@ -25,9 +24,9 @@ export * from './compile/interface';
 
 
 // registers
-export * from './registers/BindingPropTypeAction';
+export * from './registers/ComponentDefAction';
+export * from './registers/DirectiveDefAction';
 export * from './registers/PipeRegAction';
-export * from './registers/RegVaildateAction';
 
 export * from './ComponentLifecycle';
 export * from './ComponentRef';
