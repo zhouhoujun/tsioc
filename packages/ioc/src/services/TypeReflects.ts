@@ -11,7 +11,7 @@ import { isUndefined, isClassType, lang } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
-import { Singleton } from '../decorators/Singleton';
+import { Singleton } from '../decorators';
 import { DecoratorProvider } from './DecoratorProvider';
 import { ITypeReflects } from './ITypeReflects';
 import { IActionInjector } from '../actions/Action';

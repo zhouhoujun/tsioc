@@ -3,10 +3,8 @@ import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
 import { IParameter } from '../IParameter';
 import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../context-tokens';
 import { isToken } from '../utils/isToken';
-import { ParameterMetadata } from '../metadatas/ParameterMetadata';
-import { Inject } from '../decorators/Inject';
-import { AutoWired } from '../decorators/AutoWried';
-import { Param } from '../decorators/Param';
+import { ParameterMetadata, AutorunMetadata } from '../metadatas';
+import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
 import { IActionSetup } from './Action';
 import {
@@ -14,11 +12,6 @@ import {
     ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
 } from './IocRegAction';
 import { IocCacheManager } from './IocCacheManager';
-import { AutorunMetadata } from '../metadatas/AutorunMetadata';
-import { Singleton } from '../decorators/Singleton';
-import { Injectable } from '../decorators/Injectable';
-import { IocExt } from '../decorators/IocExt';
-import { Autorun } from '../decorators/AutoRun';
 import { ParamProviders } from '../providers/types';
 import { createContext } from './IocAction';
 import { IInjector } from '../IInjector';

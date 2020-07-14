@@ -2,21 +2,11 @@ import { INJECTOR, IInjector } from '../IInjector';
 import { DecoratorScope } from '../types';
 import { IActionSetup } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
-import { Autorun } from '../decorators/AutoRun';
-import { IocExt } from '../decorators/IocExt';
+import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decorators';
 import { CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../context-tokens';
-import { AutorunMetadata } from '../metadatas/AutorunMetadata';
+import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../metadatas';
 import { isFunction, isArray, isClass } from '../utils/lang';
-import { InjectableMetadata } from '../metadatas/InjectableMetadata';
-import { MethodMetadata } from '../metadatas/MethodMetadata';
-import { PropertyMetadata } from '../metadatas/PropertyMetadata';
-import { Injectable } from '../decorators/Injectable';
-import { Singleton } from '../decorators/Singleton';
-import { Providers } from '../decorators/Providers';
-import { Refs } from '../decorators/Refs';
 import { ParamProviders } from '../providers/types';
-import { AutoWired } from '../decorators/AutoWried';
-import { Inject } from '../decorators/Inject';
 import {
     IocRegAction, IocRegScope, RegOption, RegContext, ExecDecoratorAtion,
     DecorsRegisterer, DesignRegisterer, IocDecorScope

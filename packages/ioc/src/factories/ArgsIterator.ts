@@ -1,4 +1,4 @@
-import { Metadate } from '../metadatas/Metadate';
+import { Metadate } from '../metadatas';
 import { Handler } from '../utils/lang';
 
 /**

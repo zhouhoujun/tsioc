@@ -5,15 +5,10 @@ import {
     isFunction, isNumber, isArray, lang, chain, isBoolean, isString
 } from '../utils/lang';
 import { Type, AbstractType, ObjectMap, ClassType, ProvideToken, Token } from '../types';
-import { Metadate } from '../metadatas/Metadate';
-import { ClassMetadata } from '../metadatas/ClassMetadata';
-import { MethodMetadata } from '../metadatas/MethodMetadata';
-import { PropertyMetadata } from '../metadatas/PropertyMetadata';
-import { ParameterMetadata } from '../metadatas/ParameterMetadata';
-import { TypeMetadata } from '../metadatas/TypeMetadata';
-import { MethodPropMetadata } from '../metadatas/MethodPropMetadata';
-import { MethodParamPropMetadata } from '../metadatas/MethodParamPropMetadata';
-import { ParamPropMetadata } from '../metadatas/ParamPropMetadata';
+import {
+    Metadate, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
+    TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata
+} from '../metadatas';
 import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
 import { isToken, isProvideToken } from '../utils/isToken';
 import { ParamProviders, ProviderTypes } from '../providers/types';
