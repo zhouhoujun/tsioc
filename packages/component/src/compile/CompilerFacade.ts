@@ -9,7 +9,7 @@ export class Identifiers extends InjectorProvider {
 }
 
 /**
- * ivy compiler.
+ * compiler facade.
  */
 @Abstract()
 export abstract class CompilerFacade {
