@@ -74,7 +74,7 @@ export interface ProviderMetadata {
      * @type {SymbolType}
      * @memberof IProviderMetadata
      */
-    provide?:  Token;
+    provide?: Token;
     /**
      * provide alias.
      *
