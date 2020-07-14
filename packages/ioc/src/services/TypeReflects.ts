@@ -1,8 +1,7 @@
-import { ClassType, ObjectMap, Type, Token } from '../types';
+import { ClassType, ObjectMap, Type, Token, MetadataTypes, DefineClassTypes  } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
-import { MetadataTypes, DefineClassTypes } from '../factories/DecoratorType';
 import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames

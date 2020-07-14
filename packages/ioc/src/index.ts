@@ -57,7 +57,6 @@ export * from './decorators/IocExt';
 
 // factories
 export * from './factories/ArgsIterator';
-export * from './factories/DecoratorType';
 export * from './factories/DecoratorFactory';
 
 // providers

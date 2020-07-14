@@ -98,3 +98,16 @@ export class Registration<T = any> {
     }
 }
 
+/**
+ * get token key.
+ * @param token token.
+ * @param alias alias.
+ */
+export function getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
+    if (alias) {
+        return new Registration(token, alias).toString();
+    } else if (token instanceof Registration) {
+        return token.toString();
+    }
+    return token;
+}

@@ -158,6 +158,11 @@ export interface Express2<T1, T2, TResult> {
     (arg1: T1, arg2: T2): TResult
 }
 
+
+export type DefineClassTypes = 'class' | 'method' | 'property';
+export type DecoratorTypes = DefineClassTypes | 'parameter';
+export type MetadataTypes = DecoratorTypes | 'constructor';
+
 /**
  * decorator scopes.
  *
