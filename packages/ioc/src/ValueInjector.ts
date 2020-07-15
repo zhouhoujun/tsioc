@@ -1,7 +1,7 @@
 import { IocDestoryable } from './Destoryable';
 import { SymbolType, Type, Token } from './types';
 import { isClass, isNullOrUndefined, ClassTypes } from './utils/lang';
-import { Registration } from './Registration';
+import { Registration, getTokenKey } from './Registration';
 import { IValueInjector } from './IInjector';
 
 /**
@@ -11,7 +11,7 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
     /**
      * class type.
      */
-    static d0CT: ClassTypes = 'injector';
+    static ρCT: ClassTypes = 'injector';
     /**
      * values.
      */
@@ -66,12 +66,7 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
      * @memberof BaseInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-        if (alias) {
-            return new Registration(token, alias).toString();
-        } else if (token instanceof Registration) {
-            return token.toString();
-        }
-        return token;
+        return getTokenKey(token, alias);
     }
 
     setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>) {

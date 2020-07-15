@@ -102,23 +102,23 @@ export interface AbstractType<T = any> extends Function {
     /**
      * class annations
      */
-    d0Ann?(): ClassAnnations;
+    ρAnn?(): ClassAnnations;
     /**
      * get component def.
      */
-    d0Cmp?(): any;
+    ρCmp?(): any;
     /**
      * get directive def.
      */
-    d0Dir?(): any;
+    ρDir?(): any;
     /**
      * class flag. none poincut for aop.
      */
-    d0NPT?: boolean;
+    ρNPT?: boolean;
     /**
      * class type flag.
      */
-    d0CT?: ClassTypes;
+    ρCT?: ClassTypes;
 }
 
 
@@ -157,6 +157,11 @@ export interface Express<T, TResult> {
 export interface Express2<T1, T2, TResult> {
     (arg1: T1, arg2: T2): TResult
 }
+
+
+export type DefineClassTypes = 'class' | 'method' | 'property';
+export type DecoratorTypes = DefineClassTypes | 'parameter';
+export type MetadataTypes = DecoratorTypes | 'constructor';
 
 /**
  * decorator scopes.

@@ -6,7 +6,7 @@ import { ActivityMetadata } from './ActivityMetadata';
 
 @Abstract()
 export abstract class Activity<T = any, TCtx extends IActivityContext = IActivityContext> {
-    static d0CT: ClassTypes = 'activity';
+    static ρCT: ClassTypes = 'activity';
     /**
      * activity display name.
      *

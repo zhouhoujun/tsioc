@@ -45,5 +45,5 @@ export abstract class IocDestoryable extends Destoryable {
     /**
      * none poincut for aop.
      */
-    static d0NPT = true;
+    static ρNPT = true;
 }

@@ -1,12 +1,12 @@
 import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
 import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './types';
-import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
     isBaseObject, isArray, isDefined, isClassType
 } from './utils/lang';
 import { isToken } from './utils/isToken';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
+import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { IIocContainer } from './IIocContainer';
 import { MethodAccessorToken, MethodType } from './IMethodAccessor';
 import { IParameter } from './IParameter';

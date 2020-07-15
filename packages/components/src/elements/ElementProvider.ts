@@ -32,7 +32,7 @@ export class ElementProvider extends ComponentProvider {
     }
 
     isElementType(element: ClassType): boolean {
-        return element?.d0CT === 'directive';
+        return element?.ρCT === 'directive';
     }
 
     isTemplateContext(context: IAnnoationContext): boolean {

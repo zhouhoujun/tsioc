@@ -34,5 +34,3 @@ export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements
             .use(AnnoScope);
     }
 }
-
-

@@ -1,7 +1,6 @@
 import { IMetadataAccess } from './MetadataAccess';
-import { ClassType, Token, ObjectMap, Type, TokenId } from '../types';
+import { ClassType, Token, ObjectMap, Type, TokenId, DefineClassTypes } from '../types';
 import { ITypeReflect } from './ITypeReflect';
-import { DefineClassTypes } from '../factories/DecoratorType';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { tokenId } from '../InjectToken';

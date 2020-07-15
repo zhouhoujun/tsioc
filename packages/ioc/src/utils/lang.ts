@@ -118,7 +118,7 @@ export namespace lang {
      * @returns
      */
     export function getClassAnnations(target: ClassType) {
-        return target.d0Ann?.() ?? target['getClassAnnations']?.() ?? null;
+        return target.ρAnn?.() ?? target['ρAnn']?.() ?? null;
     }
 
     /**
@@ -129,7 +129,7 @@ export namespace lang {
      * @returns {boolean}
      */
     export function hasClassAnnations(target: ClassType): boolean {
-        if (isFunction(target.d0Ann) || isFunction(target['getClassAnnations'])) {
+        if (isFunction(target.ρAnn) || isFunction(target['ρAnn'])) {
             return true;
         }
         return false

@@ -3,7 +3,7 @@ import { lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
 import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers/types';
-import { InjectableMetadata } from '../metadatas/InjectableMetadata';
+import { InjectableMetadata } from '../metadatas';
 
 
 export interface ITypeDecoractors {

@@ -6,7 +6,7 @@ import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { IInjector, IProviders, INJECTOR, PROVIDERS, isInjector } from '../IInjector';
 import { ActCtxOption, Action, ActionType, IActionInjector } from './Action';
 import { IDestoryable, IocDestoryable } from '../Destoryable';
-import { Inject } from '../decorators/Inject';
+import { Inject } from '../decorators';
 import { isToken } from '../utils/isToken';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
 

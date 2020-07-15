@@ -1,8 +1,7 @@
-import { ClassType, ObjectMap, Type, Token } from '../types';
+import { ClassType, ObjectMap, Type, Token, MetadataTypes, DefineClassTypes  } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
-import { MetadataTypes, DefineClassTypes } from '../factories/DecoratorType';
 import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
@@ -12,7 +11,7 @@ import { isUndefined, isClassType, lang } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
 import { MethodAccessorToken } from '../IMethodAccessor';
-import { Singleton } from '../decorators/Singleton';
+import { Singleton } from '../decorators';
 import { DecoratorProvider } from './DecoratorProvider';
 import { ITypeReflects } from './ITypeReflects';
 import { IActionInjector } from '../actions/Action';
