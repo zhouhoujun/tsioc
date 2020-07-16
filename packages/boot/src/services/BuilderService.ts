@@ -2,13 +2,13 @@ import {
     IocCoreService, Inject, Singleton, isFunction, isString, isClassType,
     ClassType, TypeReflectsToken, ITypeReflects, INJECTOR, lang
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
+import { ICoreInjector } from '@tsdi/core';
 import { BootContext, BootOption, IBootContext, isBootContext } from '../BootContext';
 import { IBootApplication } from '../IBootApplication';
 import { RunnableBuildLifeScope } from '../boots/RunnableBuildLifeScope';
 import { BootLifeScope } from '../boots/BootLifeScope';
 import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
-import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS } from '../context-tokens';
+import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS, ROOT_INJECTOR } from '../context-tokens';
 import { ResolveMoudleScope } from '../builder/build-hanles';
 import { BuildContext } from '../builder/BuildContext';
 import { IBuildOption } from '../builder/IBuildOption';
@@ -28,8 +28,8 @@ import { IAnnoationContext } from '../AnnoationContext';
 @Singleton(BuilderServiceToken)
 export class BuilderService extends IocCoreService implements IBuilderService {
 
-    @Inject(ContainerToken)
-    protected container: IContainer;
+    @Inject(ROOT_INJECTOR)
+    protected root: ICoreInjector;
 
     @Inject(TypeReflectsToken)
     protected reflects: ITypeReflects;
@@ -61,7 +61,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             md = target.type || target.module;
             injector = target.injector ?? target.parent?.injector;
             if (!injector) {
-                injector = md ? this.reflects.getInjector(md) : this.container;
+                injector = md ? this.reflects.getInjector(md) : this.root;
             }
             options = target;
         }
@@ -124,7 +124,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ...args);
 
         if (isFunction(opt.regExports) && ctx.hasValue(CTX_MODULE_EXPORTS)) {
-            opt.regExports(ctx as T, this.container);
+            opt.regExports(ctx as T, this.root);
         }
         return ctx as T;
 
@@ -170,7 +170,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                 injector = target.injector;
             }
             if (!injector) {
-                injector = this.reflects.hasRegister(md) ? this.reflects.getInjector(md) : this.container;
+                injector = this.reflects.hasRegister(md) ? this.reflects.getInjector(md) : this.root;
             }
             ctx = injector.getService<IBootContext>({ token: BootContext, target: md, defaultToken: BootContext }) as T;
             ctx.setValue(INJECTOR, injector);

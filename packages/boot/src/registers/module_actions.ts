@@ -1,6 +1,6 @@
 import {
     DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders,
-    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId
+    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId, IocContainer
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../services/AnnotationMerger';
@@ -176,7 +176,7 @@ export const RegModuleRefAction = function (ctx: DesignContext, next: () => void
 
 
 export const RegModuleExportsAction = function (ctx: DesignContext, next: () => void): void {
-    if (ctx.hasValue(CTX_MODULE_EXPORTS) && ctx.targetReflect.regIn !== 'root') {
+    if (ctx.hasValue(CTX_MODULE_EXPORTS)) {
         let parent = ctx.injector.getInstance(ParentInjectorToken);
         if (parent) {
             if (parent instanceof ModuleInjector) {

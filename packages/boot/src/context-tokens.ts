@@ -1,9 +1,14 @@
 import { Type, tokenId, IProviders, Token, TokenId } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { IStartup } from './runnable/Startup';
-import { ICoreInjector } from '@tsdi/core';
 
+
+/**
+ * appliction root injector token.
+ */
+export const ROOT_INJECTOR: TokenId<ICoreInjector> = tokenId<ICoreInjector>('ROOT_INJECTOR');
 
 export const CTX_MODULE: TokenId<Type> = tokenId<Type>('CTX_MODULE');
 export const CTX_MODULE_DECTOR = tokenId<string>('CTX_MODULE_DECTOR');
