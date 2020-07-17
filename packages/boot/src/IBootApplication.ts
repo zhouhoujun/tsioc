@@ -1,5 +1,5 @@
 import { ClassType } from '@tsdi/ioc';
-import { LoadType, IContainer } from '@tsdi/core';
+import { LoadType, IContainer, ICoreInjector } from '@tsdi/core';
 import { IBootContext, BootOption } from './BootContext';
 
 
@@ -62,5 +62,7 @@ export interface IBootApplication<T extends IBootContext = IBootContext> extends
      * @memberof IBootApplication
      */
     getContainer(): IContainer;
+
+    getRootInjector(): ICoreInjector;
 
 }

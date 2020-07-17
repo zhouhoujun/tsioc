@@ -1,9 +1,11 @@
-import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
-import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer } from '@tsdi/core';
+import { isArray, isString, isInjector, ClassType, isClassType, Destoryable, Injector } from '@tsdi/ioc';
+import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BuilderServiceToken } from './services/IBuilderService';
 import { BootModule } from './BootModule';
+import { ROOT_INJECTOR } from './context-tokens';
+import { ModuleInjector } from './modules/ModuleInjector';
 
 
 /**
@@ -52,6 +54,9 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
             container.registerType(BootContext);
         }
 
+        if (!this.container.has(ROOT_INJECTOR)) {
+            this.container.setValue(ROOT_INJECTOR, this.container.get(ModuleInjector));
+        }
         container.setValue(BootApplication, this);
 
     }
@@ -99,10 +104,14 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
      * @memberof BootApplication
      */
     async run(...args: string[]): Promise<T> {
-        await this.getContainer().load(...this.getBootDeps());
-        await this.getContainer().load(...this.getTargetDeps(this.target));
-        let ctx = await this.getContainer().getInstance(BuilderServiceToken).bootApp(this, ...args);
+        const root = this.getRootInjector();
+        await root.load(...this.getBootDeps());
+        let ctx = await root.getInstance(BuilderServiceToken).bootApp(this, ...args);
         return ctx as T;
+    }
+
+    getRootInjector(): ICoreInjector {
+        return this.container.get(ROOT_INJECTOR);
     }
 
     private container: IContainer;
@@ -111,15 +120,6 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
             this.container = this.createContainerBuilder().create();
         }
         return this.container;
-    }
-
-    protected getTargetDeps(target: ClassType | BootOption | T) {
-        let dependences = [];
-        if (!isClassType(target)) {
-            let options = target instanceof BootContext ? target.getOptions() : target;
-            options.deps && dependences.push(...options.deps);
-        }
-        return dependences;
     }
 
     protected getBootDeps(): LoadType[] {

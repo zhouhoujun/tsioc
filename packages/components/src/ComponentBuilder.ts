@@ -33,7 +33,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
      */
     async buildTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ITemplateContext> {
         let injector = options.injector ?? options.parent?.injector;
-        let ctx = TemplateContext.parse(injector || this.container, options);
+        let ctx = TemplateContext.parse(injector || this.root, options);
         providers.length && ctx.providers.inject(...providers);
         await this.reflects.getActionInjector().getInstance(TemplateParseScope)
             .execute(ctx);
