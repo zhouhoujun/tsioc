@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/logs",
-  "version": "6.0.27",
+  "version": "6.0.28",
   "description": "@tsdi/logs is logger for boot application, Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -31,9 +31,9 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.27",
-    "@tsdi/aop": "~6.0.27",
-    "@tsdi/core": "~6.0.27",
+    "@tsdi/ioc": "~6.0.28",
+    "@tsdi/aop": "~6.0.28",
+    "@tsdi/core": "~6.0.28",
     "tslib": "^1.13.0"
   },
   "directories": {

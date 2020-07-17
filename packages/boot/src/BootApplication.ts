@@ -1,4 +1,4 @@
-import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, isClassType, Destoryable, Injector } from '@tsdi/ioc';
 import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
@@ -54,7 +54,9 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
             container.registerType(BootContext);
         }
 
-        this.container.setValue(ROOT_INJECTOR, this.container.get(ModuleInjector));
+        if (!this.container.has(ROOT_INJECTOR)) {
+            this.container.setValue(ROOT_INJECTOR, this.container.get(ModuleInjector));
+        }
         container.setValue(BootApplication, this);
 
     }
