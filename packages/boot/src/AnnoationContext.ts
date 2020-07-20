@@ -3,9 +3,9 @@ import {
     isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, TokenId
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
-import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
 import { ModuleRef } from './modules/ModuleRef';
 import { IAnnotationMetadata, IAnnoationReflect } from './annotations/IAnnoationReflect';
+import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
 
 /**
  * annoation action option.

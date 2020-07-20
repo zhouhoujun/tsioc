@@ -12,7 +12,6 @@ export const ComponentDefAction = function (ctx: DesignContext, next: () => void
 
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let compRefl = ctx.targetReflect as IComponentReflect;
-    let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
     let prdrs: IProviders;
     if (!compRefl.getDecorProviders) {

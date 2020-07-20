@@ -7,8 +7,8 @@ import {
     CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS
 } from './context-tokens';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
-import { IBuildContext } from './builder/IBuildContext';
 import { ConfigureManager } from './annotations/ConfigureManager';
+import { IBuildContext } from './builder/IBuildContext';
 import { AnnoationOption, AnnoationContext } from './AnnoationContext';
 import { IModuleReflect } from './modules/IModuleReflect';
 import { BootstrapMetadata } from './decorators/Bootstrap';
