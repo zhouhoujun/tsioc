@@ -1,19 +1,19 @@
 import { Type, Token, ProvideToken } from './types';
 import { ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata } from './metadatas';
-import { createClassDecorator, IClassMethodDecorator, ClassMethodDecorator, createClassMethodDecorator, IMethodPropParamDecorator, createMethodPropParamDecorator, IParamPropDecorator, createParamPropDecorator, IClassDecorator, ITypeDecorator, IParameterDecorator, createParamDecorator, createDecorator } from './factories/DecoratorFactory';
+import { createClassDecorator, IClassMethodDecorator, ClassMethodDecorator, createClassMethodDecorator, IMethodPropParamDecorator, createMethodPropParamDecorator, IParamPropDecorator, createParamPropDecorator, IClassDecorator, ITypeDecorator, IParameterDecorator, createParamDecorator, createDecorator, PropParamDecorator } from './factories/DecoratorFactory';
 import { isString, isNumber, isArray } from './utils/lang';
 import { IIocContainer } from './IIocContainer';
 import { ProviderTypes } from './providers/types';
 import { isToken } from './utils/isToken';
 
 
-export interface IAbstractDecorator<T> {
+export interface IAbstractDecorator {
     /**
      * define class is abstract class.
      *
      * @param {T} [metadata] metadata map.
      */
-    (metadata?: T): ClassDecorator;
+    (metadata?: ClassMetadata): ClassDecorator;
     /**
      * define class is abstract class.
      */
@@ -25,7 +25,7 @@ export interface IAbstractDecorator<T> {
  *
  * @Abstract
  */
-export const Abstract: IAbstractDecorator<ClassMetadata> = createClassDecorator<ClassMetadata>('Abstract');
+export const Abstract: IAbstractDecorator = createClassDecorator<ClassMetadata>('Abstract');
 
 
 /**
@@ -35,13 +35,34 @@ export const Abstract: IAbstractDecorator<ClassMetadata> = createClassDecorator<
  */
 export const AutoWired: IMethodPropParamDecorator<AutoWiredMetadata> = createMethodPropParamDecorator<AutoWiredMetadata>('AutoWired');
 
+/**
+ * inject decoator.
+ */
+export interface IInjectDecorator {
+    /**
+     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param {Token<T>} provider define provider to resolve value to the parameter or property.
+     */
+    (provider: Token): PropParamDecorator;
+    /**
+     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
+     */
+    (metadata?: InjectMetadata): PropParamDecorator;
+    /**
+     * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     */
+    (target: object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>): void;
+}
 
 /**
  * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
  *
  * @Inject
  */
-export const Inject: IParamPropDecorator<InjectMetadata> = createParamPropDecorator<InjectMetadata>('Inject');
+export const Inject: IInjectDecorator = createParamPropDecorator<InjectMetadata>('Inject');
+
 
 /**
  * param decorator, define for parameter. use to auto wried type instance or value to the instance of one class with the decorator.

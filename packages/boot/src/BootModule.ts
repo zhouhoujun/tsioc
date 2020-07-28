@@ -3,15 +3,13 @@ import {
     RegSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { DIModule } from './decorators/DIModule';
-import { Message } from './decorators/Message';
+import { DIModule, Message, Boot, Bootstrap } from './decorators';
 import { MessageContext } from './messages/MessageContext';
 import { MessageQueue } from './messages/MessageQueue';
 import { RootMessageQueue } from './messages/RootMessageQueue';
 import { InjDIModuleScope } from './registers/InjDIModuleScope';
 import { MessageRegisterAction } from './registers/MessageRegisterAction';
 import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope } from './registers/module_actions';
-import { Bootstrap } from './decorators/Bootstrap';
 import { ConfigureManager, ConfigureMerger } from './annotations/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
@@ -21,7 +19,6 @@ import { ResolveMoudleScope } from './builder/build-hanles';
 import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
 import { BootLifeScope } from './boots/BootLifeScope';
 import { BuildContext } from './builder/BuildContext';
-import { Boot } from './decorators/Boot';
 import { StartupRegisterAction } from './registers/StartupRegisterAction';
 
 

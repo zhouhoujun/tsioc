@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { AdvisorToken } from '../IAdvisor';
 import { ProceedingScope } from '../proceeding/ProceedingScope';
-import { NonePointcut } from '../decorators/NonePointcut';
+import { NonePointcut } from '../decorators';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
 import { AdviceMatcherToken } from '../IAdviceMatcher';

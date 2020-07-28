@@ -3,7 +3,7 @@ import {
     RuntimeMthScope, TypeProviderAction, RegSingletionAction, RuntimeLifeScope,
     CtorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken
 } from '@tsdi/ioc';
-import { Aspect } from './decorators/Aspect';
+import { Aspect } from './decorators';
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
 import {

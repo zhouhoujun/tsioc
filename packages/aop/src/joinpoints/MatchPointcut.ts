@@ -1,5 +1,5 @@
 import { IPointcut } from './IPointcut';
-import { AdviceMetadata } from '../metadatas/AdviceMetadata';
+import { AdviceMetadata } from '../metadatas';
 
 export interface MatchPointcut extends IPointcut {
 

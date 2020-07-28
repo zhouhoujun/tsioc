@@ -96,7 +96,7 @@ export abstract class Startup<T = any> extends Destoryable implements IStartup<T
      * destorying. default do nothing.
      */
     protected destroying() {
-        
+
     }
 
 }

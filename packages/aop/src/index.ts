@@ -1,22 +1,8 @@
 // decorators
-export * from './decorators/Advice';
-export * from './decorators/Aspect';
-export * from './decorators/After';
-export * from './decorators/AfterReturning';
-export * from './decorators/AfterThrowing';
-export * from './decorators/Around';
-export * from './decorators/Before';
-export * from './decorators/Pointcut';
-export * from './decorators/NonePointcut';
+export * from './decorators';
 
 // metadatas
-export * from './metadatas/AdviceMetadata';
-export * from './metadatas/AfterReturningMetadata';
-export * from './metadatas/AfterThrowingMetadata';
-export * from './metadatas/PointcutMetadata';
-export * from './metadatas/AroundMetadata';
-export * from './metadatas/AspectMetadata';
-
+export * from './metadatas';
 
 // joinpoints
 export * from './joinpoints/JoinpointState';

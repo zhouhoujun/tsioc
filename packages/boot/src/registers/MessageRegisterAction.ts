@@ -1,6 +1,6 @@
 import { DesignContext, CTX_CURR_DECOR, isClass, lang } from '@tsdi/ioc';
 import { RootMessageQueueToken, IMessageQueue } from '../messages/IMessageQueue';
-import { MessageMetadata } from '../decorators/Message';
+import { MessageMetadata } from '../decorators';
 
 
 export const MessageRegisterAction = function (ctx: DesignContext, next: () => void): void {

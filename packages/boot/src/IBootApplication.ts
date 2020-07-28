@@ -63,6 +63,9 @@ export interface IBootApplication<T extends IBootContext = IBootContext> extends
      */
     getContainer(): IContainer;
 
+    /**
+     * get root injector.
+     */
     getRootInjector(): ICoreInjector;
 
 }
