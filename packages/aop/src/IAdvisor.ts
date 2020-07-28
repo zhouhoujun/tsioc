@@ -1,6 +1,6 @@
 import { Type, ObjectMap, ParamProviders, tokenId, TokenId } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
-import { AdviceMetadata } from './metadatas/AdviceMetadata';
+import { AdviceMetadata } from './metadatas';
 
 
 /**

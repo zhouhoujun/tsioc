@@ -1,5 +1,5 @@
 import { DesignContext, CTX_CURR_DECOR, isString } from '@tsdi/ioc';
-import { BootMetadata } from '../decorators/Boot';
+import { BootMetadata } from '../decorators';
 import { STARTUPS } from '../services/StartupService';
 
 export const StartupRegisterAction = function (ctx: DesignContext, next: () => void): void {

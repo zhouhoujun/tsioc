@@ -1,4 +1,4 @@
-import { isString, createClassDecorator, isClass, ITypeDecorator, lang, ClassType } from '@tsdi/ioc';
+import { isString, createClassDecorator, isClass, lang, ClassType } from '@tsdi/ioc';
 import { ActivityMetadata } from '../core/ActivityMetadata';
 
 
@@ -7,18 +7,17 @@ import { ActivityMetadata } from '../core/ActivityMetadata';
  *
  * @export
  * @interface ITaskDecorator
- * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface ITaskDecorator<T extends ActivityMetadata = ActivityMetadata> extends ITypeDecorator<T> {
+export interface ITaskDecorator {
     /**
      * Activity decorator, use to define class as Activity element.
      *
      * @Task
      *
-     * @param {T} [metadata] Activity metadate configure.
+     * @param {ActivityMetadata} [metadata] Activity metadate configure.
      */
-    (metadata?: T): ClassDecorator;
+    (metadata?: ActivityMetadata): ClassDecorator;
 
     /**
      * Activity decorator, use to define class as Activity element.
@@ -41,7 +40,7 @@ export interface ITaskDecorator<T extends ActivityMetadata = ActivityMetadata> e
  *
  * @Task
  */
-export const Task: ITaskDecorator<ActivityMetadata> = createClassDecorator<ActivityMetadata>('Task',
+export const Task: ITaskDecorator = createClassDecorator<ActivityMetadata>('Task',
     [
         (ctx, next) => {
             if (isString(ctx.currArg)) {
@@ -55,5 +54,5 @@ export const Task: ITaskDecorator<ActivityMetadata> = createClassDecorator<Activ
             metadata.name = lang.getClassName(metadata.type);
         }
         return metadata;
-    }) as ITaskDecorator<ActivityMetadata>;
+    }) as ITaskDecorator;
 

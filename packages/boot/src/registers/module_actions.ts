@@ -1,6 +1,6 @@
 import {
     DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders,
-    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId, IocContainer
+    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../services/AnnotationMerger';

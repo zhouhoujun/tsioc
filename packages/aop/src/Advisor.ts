@@ -2,8 +2,8 @@ import {
     Type, ObjectMap, ParamProviders, Inject, TypeReflectsToken, ITypeReflects
 } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
-import { Advice } from './decorators/Advice';
-import { AdviceMetadata } from './metadatas/AdviceMetadata';
+import { Advice } from './decorators';
+import { AdviceMetadata } from './metadatas';
 import { IAdvisor } from './IAdvisor';
 
 /**

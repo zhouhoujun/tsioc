@@ -11,7 +11,7 @@ import { ConfigureManager } from './annotations/ConfigureManager';
 import { IBuildContext } from './builder/IBuildContext';
 import { AnnoationOption, AnnoationContext } from './AnnoationContext';
 import { IModuleReflect } from './modules/IModuleReflect';
-import { BootstrapMetadata } from './decorators/Bootstrap';
+import { BootstrapMetadata } from './decorators';
 
 
 /**

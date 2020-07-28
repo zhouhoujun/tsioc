@@ -18,21 +18,16 @@ export * from './runnable/Startup';
 export * from './runnable/Runnable';
 export * from './runnable/Service';
 
-
 // decorators
-export * from './decorators/Boot';
-export * from './decorators/Bootstrap';
-export * from './decorators/DIModule';
-export * from './decorators/Message';
-
+export * from './decorators';
 
 export * from './AnnoationContext';
+
 // registers
 export * from './registers/MessageRegisterAction';
 export * from './registers/StartupRegisterAction';
 export * from './registers/module_actions';
 export * from './registers/InjDIModuleScope';
-
 
 // modules
 export * from './modules/IModuleReflect';

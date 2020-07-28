@@ -1,15 +1,10 @@
 import { isNumber, lang, PromiseUtil, Injectable, Refs } from '@tsdi/ioc';
 import { Runnable, Startup, IBootContext } from '@tsdi/boot';
-import { Before } from '../decorators/Before';
-import { BeforeEach } from '../decorators/BeforeEach';
-import { Test } from '../decorators/Test';
-import { AfterEach } from '../decorators/AfterEach';
-import { After } from '../decorators/After';
-import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata } from '../metadata/TestMetadata';
+import { Before, BeforeEach, Test, After, AfterEach } from '../decorators';
+import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 import { ISuiteRunner } from './ISuiteRunner';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
-import { SuiteMetadata } from '../metadata/SuiteMetadata';
 
 /**
  * Suite runner.
