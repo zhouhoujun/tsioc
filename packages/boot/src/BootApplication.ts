@@ -1,4 +1,4 @@
-import { isArray, isString, isInjector, ClassType, isClassType, Destoryable, Injector } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
 import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
 import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
