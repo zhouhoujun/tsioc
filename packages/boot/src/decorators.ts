@@ -40,15 +40,15 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
  * @interface IBootDecorator
  * @template T
  */
-export interface IBootDecorator<T extends BootMetadata> {
+export interface IBootDecorator {
     /**
      * Boot decorator, use to define class as statup service when bootstrap application.
      *
      * @Boot
      *
-     * @param {T} [metadata] bootstrap metadate config.
+     * @param {BootMetadata} [metadata] bootstrap metadate config.
      */
-    (metadata?: T): BootDecorator;
+    (metadata?: BootMetadata): BootDecorator;
 
     /**
      * Boot decorator, use to define class as statup service when bootstrap application.
@@ -64,14 +64,14 @@ export interface IBootDecorator<T extends BootMetadata> {
  * @param {string} name
  * @param {ArgsIteratorAction<T>[]} [actions]
  * @param {MetadataExtends<T>} [metaExtends]
- * @returns {IBootDecorator<T>}
+ * @returns {IBootDecorator}
  */
 export function createBootDecorator<T extends BootMetadata>(
     name: string,
     actions?: ArgsIteratorAction<T>[],
-    metaExtends?: MetadataExtends<T>): IBootDecorator<T> {
+    metaExtends?: MetadataExtends<T>): IBootDecorator {
 
-    return createClassDecorator<BootMetadata>(name,
+    return createClassDecorator<T>(name,
         actions,
         meta => {
             if (metaExtends) {
@@ -81,7 +81,7 @@ export function createBootDecorator<T extends BootMetadata>(
                 meta.singleton = true;
             }
             return meta;
-        }) as IBootDecorator<T>;
+        }) as IBootDecorator;
 }
 
 
@@ -90,7 +90,7 @@ export function createBootDecorator<T extends BootMetadata>(
  *
  * @Boot
  */
-export const Boot: IBootDecorator<BootMetadata> = createBootDecorator<BootMetadata>('Boot');
+export const Boot: IBootDecorator = createBootDecorator<BootMetadata>('Boot');
 
 
 
