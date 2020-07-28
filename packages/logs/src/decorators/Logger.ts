@@ -1,4 +1,4 @@
-import { Express, TypeMetadata, IClassMethodDecorator, createClassMethodDecorator, ClassMethodDecorator, isString, isFunction } from '@tsdi/ioc';
+import { Express, TypeMetadata, createClassMethodDecorator, ClassMethodDecorator, isString, isFunction, Type } from '@tsdi/ioc';
 import { Level } from '../Level';
 
 
@@ -46,10 +46,9 @@ export interface LoggerMetadata extends TypeMetadata {
  *
  * @export
  * @interface ILoggerDecorator
- * @extends {IClassMethodDecorator<T>}
  * @template T
  */
-export interface ILoggerDecorator<T extends LoggerMetadata> extends IClassMethodDecorator<T> {
+export interface ILoggerDecorator<T extends LoggerMetadata> {
     /**
      * define logger annotation pointcut to this class or method.
      * @Logger
@@ -77,6 +76,27 @@ export interface ILoggerDecorator<T extends LoggerMetadata> extends IClassMethod
      * @param {Level} [level] set log level to this message.
      */
     (logname: string, express: Express<any, boolean>, message: string, level?: Level): ClassMethodDecorator;
+
+    /**
+     * define logger annotation pointcut to this class or method.
+     *
+     * @Logger
+     *
+     * @param {T} [metadata] logger metadata.
+     */
+    (metadata?: T): ClassMethodDecorator;
+
+    /**
+     * define logger annotation pointcut to this class or method.
+     *
+     * @Logger
+     */
+    (target: Type): void;
+    /**
+     * define logger annotation pointcut to this class or method.
+     */
+    (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
+
 }
 
 /**

@@ -1,5 +1,5 @@
 import {
-    ITypeDecorator, MetadataExtends, createClassDecorator, ArgsIteratorAction, isUndefined, ClassType,
+    MetadataExtends, createClassDecorator, ArgsIteratorAction, isUndefined, ClassType,
     TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
@@ -38,18 +38,22 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
  *
  * @export
  * @interface IBootDecorator
- * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface IBootDecorator<T extends BootMetadata> extends ITypeDecorator<T> {
+export interface IBootDecorator<T extends BootMetadata> {
     /**
      * Boot decorator, use to define class as statup service when bootstrap application.
      *
-     * @Build
+     * @Boot
      *
      * @param {T} [metadata] bootstrap metadate config.
      */
-    (metadata: T): BootDecorator;
+    (metadata?: T): BootDecorator;
+
+    /**
+     * Boot decorator, use to define class as statup service when bootstrap application.
+     **/
+    (target: Type): void;
 }
 
 /**
@@ -114,10 +118,9 @@ export interface DIModuleMetadata extends ModuleConfigure {
  *
  * @export
  * @interface IDIModuleDecorator
- * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface IDIModuleDecorator<T extends DIModuleMetadata> extends ITypeDecorator<T> {
+export interface IDIModuleDecorator<T extends DIModuleMetadata> {
     /**
      * DIModule decorator, use to define class as DI Module.
      *
@@ -290,10 +293,9 @@ export interface BootstrapMetadata extends ModuleConfigure {
  *
  * @export
  * @interface IBootstrapDecorator
- * @extends {ITypeDecorator<T>}
  * @template T
  */
-export interface IBootstrapDecorator<T extends BootstrapMetadata> extends ITypeDecorator<T> {
+export interface IBootstrapDecorator<T extends BootstrapMetadata> {
     /**
      * Bootstrap decorator, use to define class as Application Bootstrap element.
      *

@@ -1,5 +1,4 @@
-export * from './metadata/SuiteMetadata';
-export * from './metadata/TestMetadata';
+export * from './metadata';
 
 export * from './decorators';
 

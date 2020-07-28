@@ -1,6 +1,6 @@
 import { Type, Token, ProvideToken } from './types';
 import { ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata } from './metadatas';
-import { createClassDecorator, IClassMethodDecorator, ClassMethodDecorator, createClassMethodDecorator, IMethodPropParamDecorator, createMethodPropParamDecorator, IParamPropDecorator, createParamPropDecorator, IClassDecorator, ITypeDecorator, IParameterDecorator, createParamDecorator, createDecorator, PropParamDecorator } from './factories/DecoratorFactory';
+import { createClassDecorator, ClassMethodDecorator, createClassMethodDecorator, createMethodPropParamDecorator, createParamPropDecorator, createParamDecorator, createDecorator, PropParamDecorator } from './factories/DecoratorFactory';
 import { isString, isNumber, isArray } from './utils/lang';
 import { IIocContainer } from './IIocContainer';
 import { ProviderTypes } from './providers/types';
@@ -27,13 +27,39 @@ export interface IAbstractDecorator {
  */
 export const Abstract: IAbstractDecorator = createClassDecorator<ClassMetadata>('Abstract');
 
+/**
+ * AutoWired decoator.
+ */
+export interface IAutoWiredDecorator {
+    /**
+     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     *
+     * @param {Token<T>} provider define provider to resolve value to the parameter or property.
+     */
+    (provider: Token): PropParamDecorator;
+    /**
+     * AutoWired decorator with providers for method.
+     *
+     * @param {Token<T>} provider the providers for the method.
+     */
+    (providers: ProviderTypes[]): MethodDecorator;
+    /**
+     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
+     */
+    (metadata?: AutoWiredMetadata): PropParamDecorator;
+    /**
+     * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
+     */
+    (target: object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>): void;
+}
 
 /**
  * AutoWired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
  *
  * @AutoWired
  */
-export const AutoWired: IMethodPropParamDecorator<AutoWiredMetadata> = createMethodPropParamDecorator<AutoWiredMetadata>('AutoWired');
+export const AutoWired: IAutoWiredDecorator = createMethodPropParamDecorator<AutoWiredMetadata>('AutoWired');
 
 /**
  * inject decoator.
@@ -45,6 +71,12 @@ export interface IInjectDecorator {
      * @param {Token<T>} provider define provider to resolve value to the parameter or property.
      */
     (provider: Token): PropParamDecorator;
+    /**
+     * Inject decorator with providers for method.
+     *
+     * @param {Token<T>} provider the providers for the method.
+     */
+    (providers: ProviderTypes[]): MethodDecorator;
     /**
      * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
@@ -65,11 +97,35 @@ export const Inject: IInjectDecorator = createParamPropDecorator<InjectMetadata>
 
 
 /**
+ * Parameter decorator.
+ *
+ * @export
+ * @interface IParamDecorator
+ */
+export interface IParamDecorator {
+    /**
+     * define parameter decorator with param.
+     *
+     * @param {Token} provider define provider to resolve value to the parameter.
+     */
+    (provider: Token): ParameterDecorator;
+    /**
+     * define parameter decorator with metadata map.
+     * @param {T} [metadata] define matadata map to resolve value to the parameter.
+     */
+    (metadata?: ParameterMetadata): ParameterDecorator;
+    /**
+     * define paramete decorator.
+     */
+    (target: object, propertyKey: string | symbol, parameterIndex: number): void;
+}
+
+/**
  * param decorator, define for parameter. use to auto wried type instance or value to the instance of one class with the decorator.
  *
  * @Param
  */
-export const Param: IParameterDecorator<ParameterMetadata> = createParamDecorator<ParameterMetadata>('Param');
+export const Param: IParamDecorator = createParamDecorator<ParameterMetadata>('Param');
 
 
 /**
@@ -79,7 +135,7 @@ export const Param: IParameterDecorator<ParameterMetadata> = createParamDecorato
  * @interface IInjectableDecorator
  * @extends {IClassDecorator<InjectableMetadata>}
  */
-export interface IInjectableDecorator extends IClassDecorator<InjectableMetadata> {
+export interface IInjectableDecorator {
     /**
      * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
      *
@@ -88,6 +144,57 @@ export interface IInjectableDecorator extends IClassDecorator<InjectableMetadata
      * @param {InjectableMetadata} [metadata] metadata map.
      */
     (metadata?: InjectableMetadata): ClassDecorator;
+
+    /**
+     * Injectable decorator setting with params.
+     *
+     * @param {ProvideToken} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     */
+    (provide: ProvideToken<any>): ClassDecorator;
+
+    /**
+     * Injectable decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     */
+    (provide: Token, alias: string): ClassDecorator;
+
+    /**
+     * Injectable decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {Token} [refTarget]  define the class as service of target.
+     */
+    (provide: Token, alias: string, refTarget: Token): ClassDecorator;
+
+    /**
+     * Injectable decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {boolean} [singlton] define this class as singlton.
+     * @param {Token} [refTarget]  define the class as service of target.
+     */
+    (provide: Token, alias: string, singlton: boolean, refTarget: Token): ClassDecorator;
+
+    /**
+     * Injectable decorator setting with params.
+     *
+     * @param {Token} provide define this class provider for provide.
+     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {boolean} [singlton] define this class as singlton.
+     * @param {number} [cache]  define class cahce expris when is not singlton.
+     * @param {Token} [refTarget]  define the class as service of target.
+     */
+    (provide: Token, alias: string, cache: number, refTarget: Token): ClassDecorator;
+
+    /**
+     * Injectable decorator.
+     */
+    (target: Type): void;
 }
 
 
@@ -224,7 +331,7 @@ export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', [
  * @interface ISingletonDecorator
  * @extends {IClassDecorator<ClassMetadata>}
  */
-export interface ISingletonDecorator extends ITypeDecorator<ClassMetadata> {
+export interface ISingletonDecorator {
     /**
      * Singleton decorator, for class. use to define the class is singleton.
      *
@@ -252,6 +359,11 @@ export interface ISingletonDecorator extends ITypeDecorator<ClassMetadata> {
      * @param {ClassMetadata} [metadata] metadata map.
      */
     (metadata?: ClassMetadata): ClassDecorator;
+
+    /**
+     * Singleton decorator.
+     */
+    (target: Type): void;
 }
 
 /**
@@ -283,7 +395,7 @@ export type IocExtentdDecorator = <TFunction extends Type<IocExtentd>>(target: T
  *
  * @IocExt
  */
-export interface IocExtDecorator extends ITypeDecorator<AutorunMetadata> {
+export interface IocExtDecorator {
     /**
      * IocExt decorator. define for class, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
      *
@@ -292,6 +404,11 @@ export interface IocExtDecorator extends ITypeDecorator<AutorunMetadata> {
      * @param {string} [autorun] auto run special method.
      */
     (): IocExtentdDecorator;
+
+    /**
+     * IocExt decorator.
+     */
+    (target: Type): void;
 }
 
 /**
@@ -316,7 +433,7 @@ export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('Io
  * @interface IAutorunDecorator
  * @extends {IClassMethodDecorator<AutorunMetadata>}
  */
-export interface IAutorunDecorator extends IClassMethodDecorator<AutorunMetadata> {
+export interface IAutorunDecorator {
     /**
      * Autorun decorator, for class.  use to define the class auto run (via a method or not) after registered.
      * @Autorun
@@ -340,6 +457,12 @@ export interface IAutorunDecorator extends IClassMethodDecorator<AutorunMetadata
      * @param {AutorunMetadata} [metadata] metadata map.
      */
     (metadata?: AutorunMetadata): ClassMethodDecorator;
+
+
+    /**
+     * Autorun decorator.
+     */
+    (target: Type): void;
 }
 
 /**

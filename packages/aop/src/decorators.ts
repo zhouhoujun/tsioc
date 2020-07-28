@@ -1,4 +1,4 @@
-import { createMethodDecorator, IMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction, isArray, createClassDecorator, isClass, ITypeDecorator, ClassType, Registration, ClassMetadata, Type } from '@tsdi/ioc';
+import { createMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction, isArray, createClassDecorator, isClass, ClassType, Registration, ClassMetadata, Type } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata } from './metadatas';
 import { AdviceTypes } from './AdviceTypes';
 
@@ -8,9 +8,8 @@ import { AdviceTypes } from './AdviceTypes';
  *
  * @export
  * @interface IAspectDecorator
- * @extends {ITypeDecorator<AspectMetadata>}
  */
-export interface IAspectDecorator extends ITypeDecorator<AspectMetadata> {
+export interface IAspectDecorator {
     /**
      * Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
      *
@@ -33,6 +32,13 @@ export interface IAspectDecorator extends ITypeDecorator<AspectMetadata> {
      * @param {AspectMetadata} [metadata] metadata map.
      */
     (metadata?: AspectMetadata): ClassDecorator;
+
+    /**
+     * Aspect decorator, define for class.  use to define class as aspect.
+     *
+     * @Aspect
+     */
+    (target: Type): void;
 }
 
 
@@ -66,9 +72,8 @@ export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('As
  *
  * @export
  * @interface INonePointcutDecorator
- * @extends {ITypeDecorator<ClassMetadata>}
  */
-export interface INonePointcutDecorator extends ITypeDecorator<ClassMetadata> {
+export interface INonePointcutDecorator {
     /**
      * NonePointcut decorator, define class not work with aop.
      *
@@ -76,6 +81,13 @@ export interface INonePointcutDecorator extends ITypeDecorator<ClassMetadata> {
      *
      */
     (): ClassDecorator;
+    /**
+     * NonePointcut decorator, define class not work with aop.
+     *
+     * @NonePointcut
+     */
+    (target: Type): void;
+
     /**
      * NonePointcut decorator, define class not work with aop.
      *
@@ -100,7 +112,7 @@ export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMe
  * @extends {IMethodDecorator<T>}
  * @template T
  */
-export interface IAdviceDecorator<T extends AdviceMetadata> extends IMethodDecorator<T> {
+export interface IAdviceDecorator<T extends AdviceMetadata> {
     /**
      * define advice with params.
      *

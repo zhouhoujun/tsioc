@@ -1,5 +1,5 @@
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { Suite } from './decorators/Suite';
+import { Suite } from './decorators';
 import {
     Inject, IocExt, RegSingletionAction, ProviderTypes, InjectReference,
     DesignRegisterer, RuntimeRegisterer, DecoratorProvider
