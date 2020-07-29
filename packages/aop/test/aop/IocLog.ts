@@ -7,7 +7,7 @@ export class IocLog {
     @Around('execution(*)')
     log(joinPoint: Joinpoint) {
         if (joinPoint.target) {
-            let key = 'around_' + joinPoint.name +'_' + joinPoint.state.toString();
+            let key = 'around_' + joinPoint.name + '_' + joinPoint.state.toString();
             if (!joinPoint.target[key]) {
                 joinPoint.target[key] = true;
             }

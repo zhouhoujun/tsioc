@@ -95,7 +95,7 @@ describe('aop test', () => {
 
     });
 
-    it('Aop ann with data', ()=> {
+    it('Aop ann with data', () => {
         container.register(AnnotationAspect);
         container.register(CheckRightAspect);
         container.register(MethodTest2);

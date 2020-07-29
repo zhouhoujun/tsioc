@@ -109,10 +109,8 @@ export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMe
  *
  * @export
  * @interface IAdviceDecorator
- * @extends {IMethodDecorator<T>}
- * @template T
  */
-export interface IAdviceDecorator<T extends AdviceMetadata> {
+export interface IAdviceDecorator {
     /**
      * define advice with params.
      *
@@ -148,15 +146,15 @@ export interface IAdviceDecorator<T extends AdviceMetadata> {
 
     /**
      * define advice with metadata map.
-     * @param {T} [metadata]
+     * @param {AdviceMetadata} [metadata]
      */
-    (metadata?: T): MethodDecorator;
+    (metadata?: AdviceMetadata): MethodDecorator;
 }
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string,
     actions?: ArgsIteratorAction<T>[],
     afterPointcutActions?: ArgsIteratorAction<T> | ArgsIteratorAction<T>[],
-    metadataExtends?: MetadataExtends<T>): IAdviceDecorator<T> {
+    metadataExtends?: MetadataExtends<T>) {
     actions = actions || [];
 
     actions.push((ctx, next) => {
@@ -199,7 +197,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             }
             metadata.adviceName = adviceName as AdviceTypes;
             return metadata;
-        }) as IAdviceDecorator<T>;
+        });
 }
 
 /**
@@ -207,30 +205,178 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
  *
  * @Advice
  */
-export const Advice: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator('Advice');
+export const Advice: IAdviceDecorator = createAdviceDecorator('Advice');
+
+
+/**
+ * Pointcut decorator for method.
+ *
+ * @export
+ * @interface IPointcutDecorator
+ */
+export interface IPointcutDecorator {
+    /**
+     * Pointcut advice with params.
+     *
+     * ### Usage
+     * - path or module name, match express.
+     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Pointcut('"execution(moduelName.*.*(..)")')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * - match method with a decorator annotation.
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Pointcut('@annotation(DecoratorName)')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * @param {(string | RegExp)} [pointcut] define pointcut advice match express for pointcut.
+     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
+     */
+    (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
+
+    /**
+     * Pointcut advice with metadata map.
+     *
+     * @param {AdviceMetadata} [metadata]
+     */
+    (metadata?: AdviceMetadata): MethodDecorator;
+}
 
 /**
  * aop Pointcut advice decorator.
  *
  * @Pointcut
  */
-export const Pointcut: IAdviceDecorator<AdviceMetadata> =
-    createAdviceDecorator<AdviceMetadata>('Pointcut') as IAdviceDecorator<AdviceMetadata>;
+export const Pointcut: IPointcutDecorator =
+    createAdviceDecorator<AdviceMetadata>('Pointcut') as IPointcutDecorator;
 
+
+
+/**
+ * Before decorator for method.
+ *
+ * @export
+ * @interface IBeforeDecorator
+ */
+export interface IBeforeDecorator {
+    /**
+     * Before advice with params.
+     *
+     * ### Usage
+     * - path or module name, match express.
+     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Before('"execution(moduelName.*.*(..)")')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * - match method with a decorator annotation.
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Before('@annotation(DecoratorName)')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * @param {(string | RegExp)} [pointcut] define before advice match express for pointcut.
+     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
+     */
+    (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
+
+    /**
+     * Before advice with metadata map.
+     *
+     * @param {AdviceMetadata} [metadata]
+     */
+    (metadata?: AdviceMetadata): MethodDecorator;
+}
 
 /**
  * aop Before advice decorator.
  *
  * @Before
  */
-export const Before: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator<AdviceMetadata>('Before') as IAdviceDecorator<AdviceMetadata>;
+export const Before: IBeforeDecorator = createAdviceDecorator<AdviceMetadata>('Before') as IBeforeDecorator;
+
+
+/**
+ * After decorator for method.
+ *
+ * @export
+ * @interface IAfterDecorator
+ */
+export interface IAfterDecorator {
+    /**
+     * After advice with params.
+     *
+     * ### Usage
+     * - path or module name, match express.
+     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @After('"execution(moduelName.*.*(..)")')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * - match method with a decorator annotation.
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @After('@annotation(DecoratorName)')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * @param {(string | RegExp)} [pointcut] define after advice match express for pointcut.
+     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
+     */
+    (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
+
+    /**
+     * After advice with metadata map.
+     *
+     * @param {AdviceMetadata} [metadata]
+     */
+    (metadata?: AdviceMetadata): MethodDecorator;
+}
 
 /**
  * aop after advice decorator.
  *
  * @After
  */
-export const After: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator<AdviceMetadata>('After') as IAdviceDecorator<AdviceMetadata>;
+export const After: IAfterDecorator = createAdviceDecorator<AdviceMetadata>('After') as IAfterDecorator;
+
 
 
 
@@ -239,19 +385,58 @@ export const After: IAdviceDecorator<AdviceMetadata> = createAdviceDecorator<Adv
  *
  * @export
  * @interface IAroundDecorator
- * @extends {IAdviceDecorator<T>}
- * @template T
  */
-export interface IAroundDecorator<T extends AroundMetadata> extends IAdviceDecorator<T> {
+export interface IAroundDecorator {
+
     /**
-     * define aop around advice.
+     * Around advice with params.
      *
-     * @param {(string | RegExp)} [pointcut] define advice match express for pointcut.
+     * ### Usage
+     * - path or module name, match express.
+     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Around('"execution(moduelName.*.*(..)")')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * - match method with a decorator annotation.
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @Around('@annotation(DecoratorName)')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * @param {(string | RegExp)} [pointcut] define around advice match express for pointcut.
+     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
+     */
+    (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
+
+    /**
+     * Around advice.
+     *
+     * @param {(string | RegExp)} [pointcut] define around advice match express for pointcut.
      * @param {string} [returning] set name provider of pointcut returing data for advices.
      * @param {string} [throwing] set name provider of pointcut throwing error for advices.
      * @param {string} [annotation] annotation name, special annotation metadata for annotation advices.
      */
-    (pointcut?: string | RegExp, args?: string, returning?: string, throwing?: string, annotation?: string): MethodDecorator
+    (pointcut?: string | RegExp, args?: string, returning?: string, throwing?: string, annotation?: string): MethodDecorator;
+
+    /**
+     * Around advice with metadata map.
+     *
+     * @param {AroundMetadata} [metadata]
+     */
+    (metadata?: AroundMetadata): MethodDecorator;
 }
 
 /**
@@ -259,7 +444,7 @@ export interface IAroundDecorator<T extends AroundMetadata> extends IAdviceDecor
  *
  * @Around
  */
-export const Around: IAroundDecorator<AroundMetadata> =
+export const Around: IAroundDecorator =
     createAdviceDecorator<AroundMetadata>(
         'Around',
         null,
@@ -285,7 +470,7 @@ export const Around: IAroundDecorator<AroundMetadata> =
                     ctx.next(next);
                 }
             }
-        ]) as IAroundDecorator<AroundMetadata>;
+        ]) as IAroundDecorator;
 
 
 /**
@@ -293,18 +478,57 @@ export const Around: IAroundDecorator<AroundMetadata> =
  *
  * @export
  * @interface IAfterReturningDecorator
- * @extends {IAdviceDecorator<T>}
- * @template T
  */
-export interface IAfterReturningDecorator<T extends AfterReturningMetadata> extends IAdviceDecorator<T> {
+export interface IAfterReturningDecorator {
+
     /**
      * define aop after returning advice.
      *
-     * @param {(string | RegExp)} [pointcut] define advice match express for pointcut.
+     * @param {(string | RegExp)} [pointcut] define after returning advice match express for pointcut.
      * @param {string} [returning] set name provider of pointcut returing data for advices.
      * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
      */
     (pointcut?: string | RegExp, returning?: string, annotation?: string): MethodDecorator;
+
+    /**
+     * AfterReturning advice with params.
+     *
+     * ### Usage
+     * - path or module name, match express.
+     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @AfterReturning('"execution(moduelName.*.*(..)")')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * - match method with a decorator annotation.
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @AfterReturning('@annotation(DecoratorName)')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * @param {(string | RegExp)} [pointcut] define after returning advice match express for pointcut.
+     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
+     */
+    (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
+
+    /**
+     * AfterReturning advice with metadata.
+     *
+     * @param {AfterReturningMetadata} [metadata]
+     */
+    (metadata?: AfterReturningMetadata): MethodDecorator;
 }
 
 /**
@@ -312,7 +536,7 @@ export interface IAfterReturningDecorator<T extends AfterReturningMetadata> exte
  *
  * @AfterReturning
  */
-export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
+export const AfterReturning: IAfterReturningDecorator =
     createAdviceDecorator<AfterReturningMetadata>(
         'AfterReturning',
         null,
@@ -323,25 +547,63 @@ export const AfterReturning: IAfterReturningDecorator<AfterReturningMetadata> =
                 ctx.next(next);
             }
         }
-    ) as IAfterReturningDecorator<AfterReturningMetadata>;
+    ) as IAfterReturningDecorator;
 
 /**
  * aop after throwing decorator.
  *
  * @export
  * @interface IAfterThrowingDecorator
- * @extends {IAdviceDecorator<T>}
- * @template T
  */
-export interface IAfterThrowingDecorator<T extends AfterThrowingMetadata> extends IAdviceDecorator<T> {
+export interface IAfterThrowingDecorator {
     /**
      * define aop after throwing advice.
      *
-     * @param {(string | RegExp)} [pointcut] define advice match express for pointcut.
+     * @param {(string | RegExp)} [pointcut] define after throwing advice match express for pointcut.
      * @param {string} [throwing] set name provider of pointcut throwing error for advices.
      * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
      */
-    (pointcut?: string | RegExp, throwing?: string, annotation?: string): MethodDecorator
+    (pointcut?: string | RegExp, throwing?: string, annotation?: string): MethodDecorator;
+
+    /**
+     * AfterThrowing advice with params.
+     *
+     * ### Usage
+     * - path or module name, match express.
+     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @AfterThrowing('"execution(moduelName.*.*(..)")')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * - match method with a decorator annotation.
+     *
+     * ```
+     * @Aspect()
+     * class AspectClass {
+     *   @AfterThrowing('@annotation(DecoratorName)')
+     *   process(joinPoint: JointPoint){
+     *   }
+     * }
+     * ```
+     *
+     * @param {(string | RegExp)} [pointcut] define after throwing advice match express for pointcut.
+     * @param { string } [annotation] annotation name, special annotation metadata for annotation advices.
+     */
+    (pointcut?: string | RegExp, annotation?: string): MethodDecorator;
+
+    /**
+     * AfterThrowing advice with metadata.
+     *
+     * @param {AfterThrowingMetadata} [metadata]
+     */
+    (metadata?: AfterThrowingMetadata): MethodDecorator;
 }
 
 /**
@@ -349,7 +611,7 @@ export interface IAfterThrowingDecorator<T extends AfterThrowingMetadata> extend
  *
  * @AfterThrowing
  */
-export const AfterThrowing: IAfterThrowingDecorator<AfterThrowingMetadata> =
+export const AfterThrowing: IAfterThrowingDecorator =
     createAdviceDecorator<AfterThrowingMetadata>(
         'AfterThrowing',
         null,
@@ -360,4 +622,4 @@ export const AfterThrowing: IAfterThrowingDecorator<AfterThrowingMetadata> =
                 ctx.next(next);
             }
         }
-    ) as IAfterThrowingDecorator<AfterThrowingMetadata>;
+    ) as IAfterThrowingDecorator;
