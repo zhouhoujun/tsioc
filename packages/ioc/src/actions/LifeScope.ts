@@ -1,9 +1,5 @@
 import { IocContext, IocCompositeAction } from './IocAction';
-import {
-    RuntimeDecorAction, RuntimeParamScope, IocGetCacheAction, CtorArgsAction,
-    BeforeCtorScope, CreateInstanceAction, AfterCtorScope, RuntimePropScope,
-    RuntimeMthScope, RuntimeAnnoScope, RuntimeContext
-} from './runtime-actions';
+import * as ra from './runtime-actions';
 import { RegContext, InitReflectAction } from './IocRegAction';
 
 /**
@@ -41,9 +37,9 @@ export class RegisterLifeScope<T extends RegContext = RegContext> extends IocCom
  * @class RuntimeLifeScope
  * @extends {LifeScope}
  */
-export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
+export class RuntimeLifeScope extends RegisterLifeScope<ra.RuntimeContext> {
 
-    execute(ctx: RuntimeContext, next?: () => void): void {
+    execute(ctx: ra.RuntimeContext, next?: () => void): void {
         if (!ctx.target) {
             super.execute(ctx, next);
         }
@@ -53,18 +49,18 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
 
     setup() {
         this.actInjector
-            .regAction(RuntimeDecorAction)
-            .regAction(RuntimeParamScope);
+            .regAction(ra.RuntimeDecorAction)
+            .regAction(ra.RuntimeParamScope);
 
         this.use(InitReflectAction)
-            .use(IocGetCacheAction)
-            .use(CtorArgsAction)
-            .use(BeforeCtorScope)
-            .use(CreateInstanceAction)
-            .use(AfterCtorScope)
-            .use(RuntimePropScope)
-            .use(RuntimeMthScope)
-            .use(RuntimeAnnoScope);
+            .use(ra.IocGetCacheAction)
+            .use(ra.CtorArgsAction)
+            .use(ra.BeforeCtorScope)
+            .use(ra.CreateInstanceAction)
+            .use(ra.AfterCtorScope)
+            .use(ra.RuntimePropScope)
+            .use(ra.RuntimeMthScope)
+            .use(ra.RuntimeAnnoScope);
 
     }
 

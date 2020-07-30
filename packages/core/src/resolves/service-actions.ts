@@ -3,7 +3,7 @@ import {
     IocResolveScope, IActionSetup, isToken, lang
 } from '@tsdi/ioc';
 import { ServiceContext } from './ServiceContext';
-import { CTX_CURR_TOKEN, CTX_TARGET_REFS } from '../context-tokens';
+import { CTX_CURR_TOKEN, CTX_TARGET_REFS } from '../tk';
 
 
 export class ResolveServiceScope extends IocResolveScope<ServiceContext> implements IActionSetup {

@@ -3,7 +3,7 @@ import {
     isToken, lang, InjectReference, ProviderTypes
 } from '@tsdi/ioc';
 import { ServicesContext } from './ServicesContext';
-import { CTX_TARGET_REFS } from '../context-tokens';
+import { CTX_TARGET_REFS } from '../tk';
 
 
 export class ResolveServicesScope extends IocResolveScope implements IActionSetup {

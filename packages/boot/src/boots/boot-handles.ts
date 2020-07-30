@@ -5,7 +5,7 @@ import { AnnotationMerger } from '../services/AnnotationMerger';
 import {
     CTX_APP_CONFIGURE, CTX_MODULE_ANNOATION, CTX_MODULE_INST, CTX_MODULE_BOOT,
     CTX_MODULE_BOOT_TOKEN, CTX_APP_STARTUPS, CTX_MODULE_STARTUP
-} from '../context-tokens';
+} from '../tk';
 import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
 import { ConfigureManager } from '../annotations/ConfigureManager';
 import { ConfigureRegister } from '../annotations/ConfigureRegister';

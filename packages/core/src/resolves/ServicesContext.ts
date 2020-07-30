@@ -1,6 +1,6 @@
 import { createContext, IInjector, ClassType, Type } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext } from './ServiceContext';
-import { CTX_TYPES } from '../context-tokens';
+import { CTX_TYPES } from '../tk';
 
 /**
  * services context options

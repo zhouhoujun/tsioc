@@ -8,7 +8,7 @@ import { ActCtxOption, Action, ActionType, IActionInjector } from './Action';
 import { IDestoryable, IocDestoryable } from '../Destoryable';
 import { Inject } from '../decorators';
 import { isToken } from '../utils/isToken';
-import { CTX_OPTIONS, CTX_PROVIDERS } from '../context-tokens';
+import { CTX_OPTIONS, CTX_PROVIDERS } from '../utils/tk';
 
 
 /**

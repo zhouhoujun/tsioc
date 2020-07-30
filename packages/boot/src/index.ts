@@ -68,6 +68,6 @@ export * from './boots/BootLifeScope';
 
 export * from './IBootApplication';
 export * from './BootApplication';
-export * from './context-tokens';
+export * from './tk';
 export * from './BootContext';
 export * from './BootModule';

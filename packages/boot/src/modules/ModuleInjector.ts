@@ -1,4 +1,4 @@
-import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProviders, InjectorProvider, TypeReflectsToken, InjectorProxy, TokenId, isClass } from '@tsdi/ioc';
+import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProviders, InjectorProvider, TypeReflectsToken, InjectorProxy, TokenId } from '@tsdi/ioc';
 import { CoreInjector, IContainer } from '@tsdi/core';
 import { ModuleRef } from './ModuleRef';
 
@@ -72,7 +72,7 @@ export class ModuleInjector extends CoreInjector {
     }
 
     unexport(ref: ModuleRef) {
-        return lang.remove(this.exports, ref);
+        return lang.del(this.exports, ref);
     }
 
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {

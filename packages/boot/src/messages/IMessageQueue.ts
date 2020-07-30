@@ -1,4 +1,5 @@
-import { ProviderTypes, Token, tokenId, TokenId } from '@tsdi/ioc';
+import { Token, tokenId, TokenId } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { HandleType, IHandle } from '../handles/Handle';
 import { MessageContext, MessageOption } from './MessageContext';
 
@@ -36,12 +37,11 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      * send message
      *
      * @template TOpt
-     * @param {TOpt} options
-     * @param {() => T} [fac]
+     * @param {MessageOption} options
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send<TOpt extends MessageOption>(options: TOpt, fac?: () => T): Promise<void>;
+    send(options: MessageOption): Promise<void>;
     /**
      * send message
      *
@@ -50,19 +50,18 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
-
+    send(event: string, data: any, injector?: ICoreInjector): Promise<void>;
     /**
      * send message
      *
      * @param {string} event
      * @param {string} type
      * @param {*} data
-     * @param {(...providers: ProviderTypes[]) => T} [fac]
+     * @param {ICoreInjector} [injector]
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, type: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
+    send(event: string, type: string, data: any, injector?: ICoreInjector): Promise<void>;
 
     /**
      * subescribe message.

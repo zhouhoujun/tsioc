@@ -1,10 +1,10 @@
-import { isClass, Injectable, isString, ProviderTypes, isFunction, Token, isUndefined, INJECTOR, Inject, PromiseUtil, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy, TypeReflectsToken, ClassType } from '@tsdi/ioc';
+import { isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy, TypeReflectsToken, ClassType, isInjector } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './MessageContext';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
-import { CTX_CURR_INJECTOR } from '../context-tokens';
+import { CTX_CURR_INJECTOR } from '../tk';
 
 
 
@@ -66,11 +66,10 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      *
      * @template TOpt
      * @param {MessageOption} options
-     * @param {() => T} [fac]
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(options: MessageOption, fac?: () => T): Promise<void>;
+    send(options: MessageOption): Promise<void>;
     /**
      * send message
      *
@@ -79,31 +78,28 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
+    send(event: string, data: any, injector?: ICoreInjector): Promise<void>;
     /**
      * send message
      *
      * @param {string} event
      * @param {string} type
      * @param {*} data
-     * @param {(...providers: ProviderTypes[]) => T} [fac]
+     * @param {ICoreInjector} [injector]
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, type: string, data: any, fac?: (...providers: ProviderTypes[]) => T): Promise<void>;
-    send(event: any, type?: any, data?: any, fac?: () => T): Promise<void> {
+    send(event: string, type: string, data: any, injector?: ICoreInjector): Promise<void>;
+    send(event: any, type?: any, data?: any, injector?: ICoreInjector): Promise<void> {
         if (event instanceof MessageContext) {
             return this.execute(event as T);
         } else {
-            if (isFunction(type)) {
-                fac = type;
-                type = undefined;
-            } else if (isFunction(data)) {
-                fac = data;
+            if (isInjector(data)) {
+                injector = data as ICoreInjector;
                 data = undefined;
             }
-            let injector = this.getInjector();
-            let ctx = fac ? fac() : injector.getService({ token: MessageContext, target: this, defaultToken: MessageContext });
+            injector = injector || this.getInjector();
+            let ctx = injector.getService({ token: MessageContext, target: this, defaultToken: MessageContext });
             if (isString(event)) {
                 if (!isString(type)) {
                     data = type;
@@ -123,9 +119,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 }
                 ctx.setOptions(event);
             }
-            if (!fac) {
-                ctx.setValue(INJECTOR, injector);
-            }
+            ctx.setValue(INJECTOR, injector);
 
             return this.execute(ctx as T);
         }

@@ -5,7 +5,7 @@ import { IStartup } from './runnable/Startup';
 import {
     CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN,
     CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS
-} from './context-tokens';
+} from './tk';
 import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
 import { IBuildContext } from './builder/IBuildContext';
 import { ConfigureManager } from './annotations/ConfigureManager';

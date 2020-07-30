@@ -1,5 +1,5 @@
 export * from './types';
-export * from './context-tokens';
+export * from './tk';
 export * from './IContainer';
 export * from './Container';
 export * from './ICoreInjector';

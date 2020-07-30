@@ -17,6 +17,7 @@ export * from './ValueInjector';
 export * from './utils/isToken';
 export * from './utils/lang';
 export * from './utils/PromiseUtil';
+export * from './utils/tk';
 
 // services
 export * from './services/ITypeReflect';
@@ -39,7 +40,6 @@ export * from './providers/Provider';
 export * from './providers/types';
 
 // actions
-export * from './context-tokens';
 export * from './actions/Action';
 export * from './actions/IocAction';
 export * from './actions/ActionInjector';
