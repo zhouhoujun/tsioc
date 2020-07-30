@@ -1,8 +1,5 @@
 import { IActionSetup } from './Action';
-import {
-    DesignContext, DesignDecorAction, DesignPropScope,
-    DesignMthScope, DesignClassScope, AnnoScope
-} from './design-actions';
+import * as da from './design-actions';
 import { isClass } from '../utils/lang';
 import { RegisterLifeScope } from './LifeScope';
 import { InitReflectAction } from './IocRegAction';
@@ -16,8 +13,8 @@ import { InitReflectAction } from './IocRegAction';
  * @class DesignLifeScope
  * @extends {LifeScope}
  */
-export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements IActionSetup {
-    execute(ctx: DesignContext, next?: () => void): void {
+export class DesignLifeScope extends RegisterLifeScope<da.DesignContext> implements IActionSetup {
+    execute(ctx: da.DesignContext, next?: () => void): void {
         if (isClass(ctx.type)) {
             super.execute(ctx, next);
         }
@@ -25,12 +22,12 @@ export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements
         ctx.destroy();
     }
     setup() {
-        this.actInjector.regAction(DesignDecorAction);
+        this.actInjector.regAction(da.DesignDecorAction);
 
         this.use(InitReflectAction)
-            .use(DesignClassScope)
-            .use(DesignPropScope)
-            .use(DesignMthScope)
-            .use(AnnoScope);
+            .use(da.DesignClassScope)
+            .use(da.DesignPropScope)
+            .use(da.DesignMthScope)
+            .use(da.AnnoScope);
     }
 }

@@ -32,7 +32,7 @@ export abstract class Handles<T extends IHandleContext> extends Handle<T> {
     }
 
     unuse(handle: HandleType<T>) {
-        if (lang.remove(this.handles, handle)) {
+        if (lang.del(this.handles, handle)) {
             this.resetFuncs();
         }
         return this;

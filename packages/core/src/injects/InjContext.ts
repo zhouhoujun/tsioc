@@ -1,5 +1,5 @@
 import { ActCtxOption, Type, Modules, IocContext, createContext, CTX_CURR_DECOR, IInjector } from '@tsdi/ioc';
-import { CTX_INJ_MODULE } from '../context-tokens';
+import { CTX_INJ_MODULE } from '../tk';
 
 
 /**

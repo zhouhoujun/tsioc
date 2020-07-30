@@ -3,7 +3,7 @@ import { DecoratorScope } from '../types';
 import { IActionSetup } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decorators';
-import { CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../context-tokens';
+import { CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../utils/tk';
 import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../metadatas';
 import { isFunction, isArray, isClass } from '../utils/lang';
 import { ParamProviders } from '../providers/types';

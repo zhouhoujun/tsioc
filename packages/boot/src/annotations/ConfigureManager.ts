@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject, isBaseObject, lang, Type } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken, IConfigureMerger, ConfigureMergerToken } from './IConfigureManager';
 import { RunnableConfigure, ProcessRunRootToken } from './RunnableConfigure';
@@ -39,7 +39,7 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
         }
         // clean cached config.
         this.config = null;
-        lang.remove(this.configs, config);
+        lang.del(this.configs, config);
         if (!this.baseURL && isBaseObject(config)) {
             this.baseURL = config.baseURL;
         }

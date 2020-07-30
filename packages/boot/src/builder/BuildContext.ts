@@ -3,7 +3,7 @@ import { ICoreInjector } from '@tsdi/core';
 import { IBuildContext } from './IBuildContext';
 import { AnnoationContext } from '../AnnoationContext';
 import { IBuildOption } from './IBuildOption';
-import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '../context-tokens';
+import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '../tk';
 
 @Injectable
 export class BuildContext<T extends IBuildOption = IBuildOption> extends AnnoationContext<T> implements IBuildContext<T> {

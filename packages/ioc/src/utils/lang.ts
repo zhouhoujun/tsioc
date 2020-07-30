@@ -88,7 +88,16 @@ export namespace lang {
             return null;
         }
         let elm = isFunction(el) ? list.find(el) : el;
-        const index = list.indexOf(elm);
+        return del(list, elm);
+    }
+
+    /**
+     * delete item of list.
+     * @param list list
+     * @param el element
+     */
+    export function del<T>(list: T[], el: T) {
+        const index = isArray(list) ? list.indexOf(el) : -1;
         if (index > -1) {
             return list.splice(index, 1);
         }
@@ -119,7 +128,7 @@ export namespace lang {
      */
     export function getClassAnnations(target: ClassType) {
         let annf: Function = target.ρAnn || target['d0Ann'] || target['getClassAnnations'];
-        return isFunction(annf) ? annf.call(target)  : null;
+        return isFunction(annf) ? annf.call(target) : null;
     }
 
     /**

@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/typeorm-adapter",
-  "version": "6.0.28",
+  "version": "6.0.29",
   "description": "@tsdi/typeorm-adapter is typeorm adapter orm for boot application, mvc frameworks on server.",
   "main": "./bundles/typeorm-adapter.js",
   "typings": "./lib/index.d.ts",
@@ -42,11 +42,11 @@
   },
   "peerDependencies": {
     "reflect-metadata": "^0.1.13",
-    "@tsdi/annotations": "~6.0.28",
-    "@tsdi/ioc": "~6.0.28",
-    "@tsdi/boot": "~6.0.28",
-    "@tsdi/core": "~6.0.28",
-    "@tsdi/logs": "~6.0.28",
+    "@tsdi/annotations": "~6.0.29",
+    "@tsdi/ioc": "~6.0.29",
+    "@tsdi/boot": "~6.0.29",
+    "@tsdi/core": "~6.0.29",
+    "@tsdi/logs": "~6.0.29",
     "tslib": "^1.13.0"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter#readme#readme"

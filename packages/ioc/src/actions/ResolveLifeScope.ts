@@ -2,7 +2,7 @@ import { Token } from '../types';
 import { isToken } from '../utils/isToken';
 import { ProviderTypes } from '../providers/types';
 import { ResolveContext, ResolveOption, IResolveContext } from './IocResolveAction';
-import { IocResolveScope } from './resolve-actions';
+import * as rla from './resolve-actions';
 import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { isNullOrUndefined } from '../utils/lang';
 
@@ -14,7 +14,7 @@ import { isNullOrUndefined } from '../utils/lang';
  * @extends {IocResolveScope<ResolveContext<T>>}
  * @template T
  */
-export class ResolveLifeScope<T> extends IocResolveScope<IResolveContext<T>> {
+export class ResolveLifeScope<T> extends rla.IocResolveScope<IResolveContext<T>> {
 
     execute(ctx: IResolveContext, next?: () => void): void {
         if (isNullOrUndefined(ctx.instance)) {
@@ -26,7 +26,7 @@ export class ResolveLifeScope<T> extends IocResolveScope<IResolveContext<T>> {
     }
 
     setup() {
-        this.use(IocResolveScope);
+        this.use(rla.IocResolveScope);
     }
 
     /**

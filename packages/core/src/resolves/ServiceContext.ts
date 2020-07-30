@@ -1,5 +1,5 @@
 import { Token, ResolveContext, ResolveOption, createContext, IInjector, isArray } from '@tsdi/ioc';
-import { CTX_TOKENS, CTX_TARGET_REFS, CTX_ALIAS } from '../context-tokens';
+import { CTX_TOKENS, CTX_TARGET_REFS, CTX_ALIAS } from '../tk';
 
 /**
  * service context option.

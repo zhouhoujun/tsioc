@@ -3,9 +3,9 @@ import {
     isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, TokenId
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
+import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './tk';
 import { ModuleRef } from './modules/ModuleRef';
 import { IAnnotationMetadata, IAnnoationReflect } from './annotations/IAnnoationReflect';
-import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './context-tokens';
 
 /**
  * annoation action option.
@@ -224,7 +224,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
     removeChild(contex: IAnnoationContext) {
         let chiledren = this.getChildren();
         if (chiledren) {
-            return lang.remove(chiledren, contex);
+            return lang.del(chiledren, contex);
         }
         return [];
     }

@@ -1,6 +1,6 @@
 import { ResolveContext, IResolveContext } from './IocResolveAction';
 import { isNullOrUndefined, lang, isClass } from '../utils/lang';
-import { CTX_DEFAULT_TOKEN, CTX_TARGET_TOKEN } from '../context-tokens';
+import { CTX_DEFAULT_TOKEN, CTX_TARGET_TOKEN } from '../utils/tk';
 import { InjectReference } from '../InjectReference';
 import { PROVIDERS } from '../IInjector';
 import { IocCompositeAction } from './IocAction';
@@ -93,8 +93,8 @@ export const ResolveInRootAction = function (ctx: ResolveContext, next: () => vo
 
 export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.hasValue(CTX_TARGET_TOKEN)) {
-        let tk = new InjectReference(PROVIDERS, ctx.getValue(CTX_TARGET_TOKEN));
-        let privPdr = ctx.injector.get(tk);
+        let tkn = new InjectReference(PROVIDERS, ctx.getValue(CTX_TARGET_TOKEN));
+        let privPdr = ctx.injector.get(tkn);
         if (privPdr && privPdr.has(ctx.token)) {
             ctx.instance = privPdr.get(ctx.token, ctx.providers);
         }
@@ -107,8 +107,8 @@ export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => v
 
 export const ResolveRefAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.hasValue(CTX_TARGET_TOKEN)) {
-        let tk = new InjectReference(ctx.token, ctx.getValue(CTX_TARGET_TOKEN));
-        ctx.instance = ctx.injector.get(tk, ctx.providers);
+        let tkn = new InjectReference(ctx.token, ctx.getValue(CTX_TARGET_TOKEN));
+        ctx.instance = ctx.injector.get(tkn, ctx.providers);
     }
     if (isNullOrUndefined(ctx.instance) && !ctx.getOptions().tagOnly) {
         next();

@@ -1,7 +1,7 @@
 import { Token, Type, DecoratorScope } from '../types';
 import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
 import { IParameter } from '../IParameter';
-import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../context-tokens';
+import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../utils/tk';
 import { isToken } from '../utils/isToken';
 import { ParameterMetadata, AutorunMetadata } from '../metadatas';
 import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decorators';
