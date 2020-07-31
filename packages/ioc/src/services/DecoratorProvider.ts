@@ -1,9 +1,7 @@
-import { Token, Factory, TokenId } from '../types';
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
-import { ProviderTypes, InjectTypes } from '../providers/types';
+import { Token, ProviderTypes, InjectTypes, Factory, TokenId, tokenId } from '../tokens';
 import { IInjector, PROVIDERS, IProviders, InjectorProxy } from '../IInjector';
-import { tokenId } from '../InjectToken';
 import { ITypeReflects } from './ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
 

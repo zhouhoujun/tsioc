@@ -1,5 +1,8 @@
-import { ClassType, ObjectMap, Type, Token, MetadataTypes, DefineClassTypes  } from '../types';
+import { ClassType, ObjectMap, Type, MetadataTypes, DefineClassTypes  } from '../types';
 import { IocCoreService } from '../IocCoreService';
+import { isUndefined, isClassType, lang } from '../utils/lang';
+import { Token, ParamProviders } from '../tokens';
+import { IInjector, InjectorProxy } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import {
@@ -7,17 +10,14 @@ import {
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
 import { MetadataAccess } from './MetadataAccess';
-import { isUndefined, isClassType, lang } from '../utils/lang';
-import { ParamProviders } from '../providers/types';
-import { IParameter } from '../IParameter';
-import { MethodAccessorToken } from '../IMethodAccessor';
+import { IParameter, MethodAccessorToken } from '../IMethodAccessor';
 import { Singleton } from '../decorators';
 import { DecoratorProvider } from './DecoratorProvider';
 import { ITypeReflects } from './ITypeReflects';
 import { IActionInjector } from '../actions/Action';
 import { TypeDecorators, RuntimeDecorators } from '../actions/TypeDecorators';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/IocRegAction';
-import { IInjector, InjectorProxy } from '../IInjector';
+
 
 /**
  * type reflects.

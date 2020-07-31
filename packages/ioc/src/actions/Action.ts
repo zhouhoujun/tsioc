@@ -1,8 +1,7 @@
-import { Token, Type, TokenId } from '../types';
+import { Type } from '../types';
 import { Handler } from '../utils/lang';
-import { ProviderTypes } from '../providers/types';
+import { Token, tokenId, TokenId, ProviderTypes } from '../tokens';
 import { IInjector, IProviders } from '../IInjector';
-import { tokenId } from '../InjectToken';
 
 /**
  * action context option.

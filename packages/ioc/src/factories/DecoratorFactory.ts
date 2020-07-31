@@ -1,16 +1,17 @@
 import 'reflect-metadata';
-import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined,
     isFunction, isNumber, isArray, lang, chain, isBoolean, isString
 } from '../utils/lang';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
+import { isToken, isProvideToken } from '../tokens';
 import {
     Metadate, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
     TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata
 } from '../metadatas';
+import { ArgsContext, ArgsIteratorAction } from './ArgsIterator';
 import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
-import { isToken, isProvideToken } from '../utils/isToken';
+
 
 
 
@@ -77,7 +78,7 @@ function argsToMetadata<T extends Metadate>(args: any[], actions?: ArgsIteratorA
         if (args.length === 1 && isMetadataObject(args[0])) {
             metadata = args[0];
         } else if (actions) {
-            let ctx = new ArgsIteratorContext<T>(args);
+            let ctx = new ArgsContext<T>(args);
             chain(actions, ctx);
             metadata = ctx.getMetadate();
         }

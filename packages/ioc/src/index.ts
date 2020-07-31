@@ -1,4 +1,5 @@
 export * from './types';
+export * from './tokens';
 export * from './Destoryable';
 export * from './IInjector';
 export * from './IIocContainer';
@@ -7,14 +8,8 @@ export * from './IMethodAccessor';
 export * from './IocCoreService';
 export * from './BaseInjector';
 export * from './Injector';
-export * from './Registration';
-export * from './InjectReference';
-export * from './InjectToken';
-export * from './IParameter';
-export * from './ValueInjector';
 
 // utils
-export * from './utils/isToken';
 export * from './utils/lang';
 export * from './utils/PromiseUtil';
 export * from './utils/tk';
@@ -36,8 +31,7 @@ export * from './factories/ArgsIterator';
 export * from './factories/DecoratorFactory';
 
 // providers
-export * from './providers/Provider';
-export * from './providers/types';
+export * from './providers';
 
 // actions
 export * from './actions/Action';
@@ -51,12 +45,12 @@ export * from './actions/MethodAccessor';
 export * from './actions/TypeDecorators';
 
 // runtime actions
-export * from './actions/runtime-actions';
+export * from './actions/runtimes';
 
 // resolve
 export * from './actions/IocResolveAction';
-export * from './actions/resolve-actions';
+export * from './actions/resolves';
 
 // design time action.
-export * from './actions/design-actions';
+export * from './actions/designs';
 export * from './actions/DesignLifeScope';

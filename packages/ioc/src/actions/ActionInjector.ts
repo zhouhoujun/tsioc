@@ -1,7 +1,7 @@
-import { Token, Type } from '../types';
-import { IActionSetup, Action, IActionInjector } from './Action';
+import { Type } from '../types';
 import { isFunction, lang } from '../utils/lang';
-import { isToken } from '../utils/isToken';
+import { Token, isToken } from '../tokens';
+import { IActionSetup, Action, IActionInjector } from './Action';
 import { Injector } from '../Injector';
 
 export class ActionInjector extends Injector implements IActionInjector {

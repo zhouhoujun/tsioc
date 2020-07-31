@@ -1,8 +1,9 @@
-import { Token, Type, DecoratorScope } from '../types';
+import { Type, DecoratorScope } from '../types';
 import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
-import { IParameter } from '../IParameter';
+import { Token, ParamProviders, isToken } from '../tokens';
+import { IParameter } from '../IMethodAccessor';
+import { IInjector } from '../IInjector';
 import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../utils/tk';
-import { isToken } from '../utils/isToken';
 import { ParameterMetadata, AutorunMetadata } from '../metadatas';
 import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
@@ -12,9 +13,7 @@ import {
     ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
 } from './IocRegAction';
 import { IocCacheManager } from './IocCacheManager';
-import { ParamProviders } from '../providers/types';
 import { createContext } from './IocAction';
-import { IInjector } from '../IInjector';
 
 /**
  *  runtime action option.

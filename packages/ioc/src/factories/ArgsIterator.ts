@@ -5,10 +5,9 @@ import { Handler } from '../utils/lang';
  * args iterator context.
  *
  * @export
- * @class ArgsIteratorContext
- * @extends {IocActionContext}
+ * @class ArgsContext
  */
-export class ArgsIteratorContext<T extends Metadate = Metadate> {
+export class ArgsContext<T extends Metadate = Metadate> {
     constructor(public args: any[]) {
         this.currIndex = 0;
         this.metadata = {} as T;
@@ -44,4 +43,4 @@ export class ArgsIteratorContext<T extends Metadate = Metadate> {
 /**
  * args iterator action.
  */
-export type ArgsIteratorAction<T extends Metadate = Metadate> = Handler<ArgsIteratorContext<T>>;
+export type ArgsIteratorAction<T extends Metadate = Metadate> = Handler<ArgsContext<T>>;

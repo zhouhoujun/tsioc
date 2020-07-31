@@ -1,13 +1,12 @@
-import { Token, SymbolType, Type } from '../types';
+import { Type } from '../types';
 import { Handler, chain, isBoolean, isClass, isArray, lang } from '../utils/lang';
-import { ProviderTypes, InjectTypes } from '../providers/types';
+import { Token, ProviderTypes, InjectTypes, SymbolType, isToken } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { IInjector, IProviders, INJECTOR, PROVIDERS, isInjector } from '../IInjector';
 import { ActCtxOption, Action, ActionType, IActionInjector } from './Action';
 import { IDestoryable, IocDestoryable } from '../Destoryable';
 import { Inject } from '../decorators';
-import { isToken } from '../utils/isToken';
 import { CTX_OPTIONS, CTX_PROVIDERS } from '../utils/tk';
 
 

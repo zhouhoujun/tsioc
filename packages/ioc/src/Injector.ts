@@ -1,9 +1,10 @@
-import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
+import { Type } from './types';
+import { lang, isClassType, isMetadataObject } from './utils/lang';
+import { Token, Factory, SymbolType, InjectTypes, InstanceFactory, ProviderTypes, isToken } from './tokens';
 import { IInjector, IProviders, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
-import { InjectTypes } from './providers/types';
-import { lang, isClassType } from './utils/lang';
+import { ObjectMapProvider, Provider } from './providers';
 
 // use core-js in browser.
 
@@ -145,6 +146,21 @@ export class InjectorProvider extends Injector implements IProviders {
     protected initReg() {
     }
 }
+
+/**
+ * is provider or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is ProviderTypes}
+ */
+export function isProvider(target: any): target is ProviderTypes {
+    return target instanceof InjectorProvider
+        || target instanceof ObjectMapProvider
+        || target instanceof Provider
+        || (isMetadataObject(target, 'provide') && isToken(target.provide));
+}
+
 
 /**
  * invoked providers
