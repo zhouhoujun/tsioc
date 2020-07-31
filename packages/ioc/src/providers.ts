@@ -1,7 +1,8 @@
 import { Type, ObjectMap } from './types';
 import { isUndefined } from './utils/lang';
-import { Token, ProviderTypes } from './tokens'
+import { Token, ProviderTypes } from './tokens';
 import { IInjector } from './IInjector';
+import { MethodAccessorToken } from './IMethodAccessor';
 
 /**
  * Provider interface.
@@ -224,6 +225,20 @@ export class Provider {
     }
 
     /**
+     * create invoked provider.
+     *
+     * @static
+     * @param {Token} token
+     * @param {string} method
+     * @param {(any)} [value]
+     * @returns {InvokeProvider}
+     * @memberof Provider
+     */
+    static createInvoke(token: Token, method: string, value?: any): InvokeProvider {
+        return new InvokeProvider(token, method, value);
+    }
+
+    /**
      * create param provider.
      *
      * @static
@@ -241,12 +256,42 @@ export class Provider {
 }
 
 /**
+ * InvokeProvider
+ *
+ * @export
+ * @class InvokeProvider
+ * @extends {Provider}
+ */
+export class InvokeProvider extends Provider {
+    /**
+     * service value is the result of type instance invoke the method return value.
+     *
+     * @type {string}
+     * @memberof Provider
+     */
+    protected method?: string;
+
+    constructor(type?: Token, method?: string, value?: any) {
+        super(type, value);
+        this.method = method;
+    }
+
+    resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
+        if (this.method) {
+            return injector.getInstance(MethodAccessorToken).invoke<T>(injector, this.type, this.method, ...providers);
+        }
+        return super.resolve(injector, ...providers);
+    }
+}
+
+
+/**
  * param provider.
  *
  * @export
  * @interface ParamProvider
  */
-export class ParamProvider extends Provider {
+export class ParamProvider extends InvokeProvider {
     /**
      * param index, param name.
      *
@@ -255,8 +300,8 @@ export class ParamProvider extends Provider {
      */
     index?: number;
 
-    constructor(token?: Token, public value?: any, index?: number, method?: string) {
-        super(token, method);
+    constructor(token?: Token, value?: any, index?: number, method?: string) {
+        super(token, method, value);
         this.index = index;
     }
 
