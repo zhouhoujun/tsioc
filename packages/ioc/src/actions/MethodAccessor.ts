@@ -3,9 +3,9 @@ import { lang, isFunction, isBaseType } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { Token, isToken } from '../tokens';
 import { IInjector, IProviders } from '../IInjector';
-import { IParameter, IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
-import { RuntimeContext, RuntimeParamScope } from './runtime-actions';
 import { TypeReflectsToken } from '../services/ITypeReflects';
+import { IParameter, IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
+import { RuntimeContext, RuntimeParamScope } from './runtimes';
 
 
 /**

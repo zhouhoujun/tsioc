@@ -14,7 +14,7 @@ import {
 } from './IocRegAction';
 import { RuntimeLifeScope } from './LifeScope';
 import { createContext } from './IocAction';
-import { RuntimeContext } from './runtime-actions';
+import { RuntimeContext } from './runtimes';
 
 
 /**

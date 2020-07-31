@@ -1,7 +1,4 @@
 
-
-export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
-
 /**
  * module types.
  */
@@ -120,6 +117,7 @@ export interface Express2<T1, T2, TResult> {
 }
 
 
+export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
 export type DefineClassTypes = 'class' | 'method' | 'property';
 export type DecoratorTypes = DefineClassTypes | 'parameter';
 export type MetadataTypes = DecoratorTypes | 'constructor';

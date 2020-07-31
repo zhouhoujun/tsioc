@@ -3,7 +3,7 @@ import { ProviderTypes } from '../providers/types';
 import { Token, isToken } from '../tokens';
 import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { ResolveContext, ResolveOption, IResolveContext } from './IocResolveAction';
-import * as rla from './resolve-actions';
+import * as rla from './resolves';
 
 
 /**

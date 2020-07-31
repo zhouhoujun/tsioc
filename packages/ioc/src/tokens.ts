@@ -1,7 +1,7 @@
-import { IInjector } from './IInjector';
-import { ProviderTypes } from './providers/types';
-import { isClass, isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { AbstractType, Type, ClassType } from './types';
+import { ProviderTypes } from './providers/types';
+import { IInjector } from './IInjector';
+import { isClass, isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
 
 /**

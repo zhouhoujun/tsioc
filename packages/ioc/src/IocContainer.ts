@@ -8,7 +8,7 @@ import { registerCores } from './registerCores';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
-import { DesignContext } from './actions/design-actions';
+import { DesignContext } from './actions/designs';
 import { DesignLifeScope } from './actions/DesignLifeScope';
 
 

@@ -1,5 +1,5 @@
 import { IocContext, IocCompositeAction } from './IocAction';
-import * as ra from './runtime-actions';
+import * as ra from './runtimes';
 import { RegContext, InitReflectAction } from './IocRegAction';
 
 /**

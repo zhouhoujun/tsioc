@@ -46,12 +46,12 @@ export * from './actions/MethodAccessor';
 export * from './actions/TypeDecorators';
 
 // runtime actions
-export * from './actions/runtime-actions';
+export * from './actions/runtimes';
 
 // resolve
 export * from './actions/IocResolveAction';
-export * from './actions/resolve-actions';
+export * from './actions/resolves';
 
 // design time action.
-export * from './actions/design-actions';
+export * from './actions/designs';
 export * from './actions/DesignLifeScope';

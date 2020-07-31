@@ -1,8 +1,8 @@
-import { IActionSetup } from './Action';
-import * as da from './design-actions';
 import { isClass } from '../utils/lang';
-import { RegisterLifeScope } from './LifeScope';
+import { IActionSetup } from './Action';
 import { InitReflectAction } from './IocRegAction';
+import * as da from './designs';
+import { RegisterLifeScope } from './LifeScope';
 
 
 
