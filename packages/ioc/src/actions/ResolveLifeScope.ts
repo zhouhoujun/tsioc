@@ -1,10 +1,10 @@
-import { Token } from '../types';
-import { isToken } from '../utils/isToken';
+import { isNullOrUndefined } from '../utils/lang';
 import { ProviderTypes } from '../providers/types';
+import { Token, isToken } from '../tokens';
+import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { ResolveContext, ResolveOption, IResolveContext } from './IocResolveAction';
 import * as rla from './resolve-actions';
-import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
-import { isNullOrUndefined } from '../utils/lang';
+
 
 /**
  * resolve life scope.

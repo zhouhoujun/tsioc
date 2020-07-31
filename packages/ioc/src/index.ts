@@ -1,4 +1,5 @@
 export * from './types';
+export * from './tokens';
 export * from './Destoryable';
 export * from './IInjector';
 export * from './IIocContainer';
@@ -7,14 +8,10 @@ export * from './IMethodAccessor';
 export * from './IocCoreService';
 export * from './BaseInjector';
 export * from './Injector';
-export * from './Registration';
-export * from './InjectReference';
-export * from './InjectToken';
 export * from './IParameter';
 export * from './ValueInjector';
 
 // utils
-export * from './utils/isToken';
 export * from './utils/lang';
 export * from './utils/PromiseUtil';
 export * from './utils/tk';

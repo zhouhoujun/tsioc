@@ -1,7 +1,7 @@
-import { tokenId } from '../InjectToken';
+import { Type } from '../types';
 import { ActCtxOption } from '../actions/Action';
 import { IParameter } from '../IParameter';
-import { Token, Type, TokenId } from '../types';
+import { Token, tokenId, TokenId } from '../tokens';
 import { ITypeReflect } from '../services/ITypeReflect';
 import { IProviders } from '../IInjector';
 

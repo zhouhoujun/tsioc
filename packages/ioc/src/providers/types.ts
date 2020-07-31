@@ -1,9 +1,9 @@
-import { ProviderType, ParamProvider, ObjectMapProvider, Provider } from './Provider';
 import { Type, Modules } from '../types';
+import { isMetadataObject } from '../utils/lang';
+import { isToken } from '../tokens';
 import { IProviders } from '../IInjector';
 import { InjectorProvider } from '../Injector';
-import { isMetadataObject } from '../utils/lang';
-import { isToken } from '../utils/isToken';
+import { ProviderType, ParamProvider, ObjectMapProvider, Provider } from './Provider';
 
 
 /**

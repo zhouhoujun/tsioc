@@ -1,5 +1,5 @@
 // use core-js in browser.
-import { ObjectMap, Type, AbstractType, Token, ClassType, Modules } from '../types';
+import { ObjectMap, Type, AbstractType, Modules, ClassType } from '../types';
 import { clsUglifyExp, clsStartExp } from './exps';
 
 
@@ -230,7 +230,7 @@ export namespace lang {
      * @param {(ClassType | ((type: ClassType) => boolean))} baseClass
      * @returns {boolean}
      */
-    export function isExtendsClass<T extends ClassType>(target: Token, baseClass: T | ((type: T) => boolean)): target is T {
+    export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass: T | ((type: T) => boolean)): target is T {
         let isExtnds = false;
         if (isClassType(target) && baseClass) {
             let isCls = isClassType(baseClass);
@@ -327,7 +327,6 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
     return dispatch(0);
 }
 
-export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
 
 /**
  * check target is function or not.

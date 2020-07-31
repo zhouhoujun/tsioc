@@ -1,10 +1,10 @@
-import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
-import { Token, InstanceFactory, SymbolType, Factory, Type, Modules } from './types';
+import { Type, Modules } from './types';
+import { Token, InstanceFactory, SymbolType, Factory, InjectReference, isToken } from './tokens';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
     isBaseObject, isArray, isDefined, isClassType
 } from './utils/lang';
-import { isToken } from './utils/isToken';
+import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
 import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
 import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { IIocContainer } from './IIocContainer';
@@ -13,7 +13,6 @@ import { IParameter } from './IParameter';
 import { ResolveOption } from './actions/IocResolveAction';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
-import { InjectReference } from './InjectReference';
 import { ActionInjectorToken } from './actions/Action';
 import { TypeReflectsToken } from './services/ITypeReflects';
 import { ValueInjector } from './ValueInjector';

@@ -1,10 +1,10 @@
-import { Token, Type } from '../types';
-import { IParameter } from '../IParameter';
+import { Type } from '../types';
 import { lang, isFunction, isBaseType } from '../utils/lang';
-import { isToken } from '../utils/isToken';
+import { ParamProviders } from '../providers/types';
+import { Token, isToken } from '../tokens';
+import { IParameter } from '../IParameter';
 import { IInjector, IProviders } from '../IInjector';
 import { IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
-import { ParamProviders } from '../providers/types';
 import { RuntimeContext, RuntimeParamScope } from './runtime-actions';
 import { TypeReflectsToken } from '../services/ITypeReflects';
 

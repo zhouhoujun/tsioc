@@ -1,9 +1,9 @@
 import { IMetadataAccess } from './MetadataAccess';
-import { ClassType, Token, ObjectMap, Type, TokenId, DefineClassTypes } from '../types';
+import { ClassType, ObjectMap, Type, DefineClassTypes } from '../types';
+import { TokenId, Token, tokenId } from '../tokens';
 import { ITypeReflect } from './ITypeReflect';
 import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IParameter';
-import { tokenId } from '../InjectToken';
 import { IInjector } from '../IInjector';
 import { IActionInjector } from '../actions/Action';
 import { IIocContainer } from '../IIocContainer';

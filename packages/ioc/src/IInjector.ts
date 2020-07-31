@@ -1,13 +1,12 @@
-import { Token, InstanceFactory, SymbolType, Factory, Type, Modules, TokenId } from './types';
+import { Type, Modules } from './types';
+import { lang } from './utils/lang';
 import { IParameter } from './IParameter';
-import { tokenId } from './InjectToken';
 import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
+import { SymbolType, Token, InstanceFactory, Factory, InjectReference, TokenId, tokenId } from './tokens';
 import { ResolveOption } from './actions/IocResolveAction';
-import { InjectReference } from './InjectReference';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
-import { lang } from './utils/lang';
 
 /**
  * value injector.

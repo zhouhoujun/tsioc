@@ -1,7 +1,6 @@
-import { Registration } from './Registration';
-import { ProviderTypes } from './providers/types';
-import { IInjector } from './IInjector';
-import { ClassTypes } from './utils/lang';
+
+
+export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
 
 /**
  * module types.
@@ -9,49 +8,6 @@ import { ClassTypes } from './utils/lang';
 export type Modules = Type | Object;
 
 
-/**
- *  token interface.
- */
-export interface IToken<T = any> {
-    (): T;
-    tokenId: true;
-}
-
-/**
- *  token id.
- */
-export type TokenId<T = any> =  string | symbol | IToken<T>;
-
-/**
- * class type.
- */
-export type ClassType<T = any> = Type<T> | AbstractType<T>;
-/**
- * symbol type
- */
-export type SymbolType<T = any> = ClassType<T> | TokenId<T>;
-
-/**
- * factory tocken.
- */
-export type Token<T = any> = Registration<T> | SymbolType<T>;
-
-
-/**
- * provide token
- */
-export type ProvideToken<T> = Registration<T> | TokenId<T>;
-
-/**
- * instance factory.
- */
-export type InstanceFactory<T = any> = (...providers: ProviderTypes[]) => T;
-
-
-/**
- * Factory of Token
- */
-export type Factory<T> = T | Type<T> | ((injector?: IInjector) => T);
 
 /**
  * object map.
@@ -132,6 +88,11 @@ export interface AbstractType<T = any> extends Function {
 export interface Type<T = any> extends AbstractType<T> {
     new(...args: any[]): T;
 }
+
+/**
+ * class type.
+ */
+export type ClassType<T = any> = Type<T> | AbstractType<T>;
 
 /**
  * express.

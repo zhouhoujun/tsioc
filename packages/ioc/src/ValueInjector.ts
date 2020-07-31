@@ -1,7 +1,7 @@
+import { Type, ClassTypes } from './types';
 import { IocDestoryable } from './Destoryable';
-import { SymbolType, Type, Token } from './types';
-import { isClass, isNullOrUndefined, ClassTypes } from './utils/lang';
-import { Registration, getTokenKey } from './Registration';
+import { isClass, isNullOrUndefined } from './utils/lang';
+import { SymbolType, Registration, getTokenKey, Token } from './tokens';
 import { IValueInjector } from './IInjector';
 
 /**

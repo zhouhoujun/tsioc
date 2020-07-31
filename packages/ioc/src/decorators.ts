@@ -1,10 +1,10 @@
-import { Type, Token, ProvideToken } from './types';
+import { Type } from './types';
+import { isString, isNumber, isArray } from './utils/lang';
+import { ProviderTypes } from './providers/types';
+import { isToken, Token, ProvideToken } from './tokens';
+import { IIocContainer } from './IIocContainer';
 import { ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata } from './metadatas';
 import { createClassDecorator, ClassMethodDecorator, createClassMethodDecorator, createMethodPropParamDecorator, createParamPropDecorator, createParamDecorator, createDecorator, PropParamDecorator } from './factories/DecoratorFactory';
-import { isString, isNumber, isArray } from './utils/lang';
-import { IIocContainer } from './IIocContainer';
-import { ProviderTypes } from './providers/types';
-import { isToken } from './utils/isToken';
 
 
 export interface IAbstractDecorator {

@@ -1,9 +1,10 @@
-import { Token, Factory, SymbolType, Type, InstanceFactory } from './types';
+import { Type } from './types';
+import { lang, isClassType } from './utils/lang';
+import { Token, Factory, SymbolType, InstanceFactory } from './tokens';
 import { IInjector, IProviders, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
 import { InjectTypes } from './providers/types';
-import { lang, isClassType } from './utils/lang';
 
 // use core-js in browser.
 

@@ -1,5 +1,6 @@
-import { ITypeReflect } from './ITypeReflect';
 import { ClassType, ObjectMap } from '../types';
+import { ITypeReflect } from './ITypeReflect';
+
 
 /**
  * metadata access for decorator.

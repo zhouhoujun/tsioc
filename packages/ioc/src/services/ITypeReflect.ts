@@ -1,9 +1,11 @@
-import { Token, ClassType, ObjectMap, DecoratorScope } from '../types';
+import { ClassType, ObjectMap, DecoratorScope } from '../types';
 import { lang } from '../utils/lang';
-import { IInjector } from '../IInjector';
-import { IParameter } from '../IParameter';
 import { ParamProviders } from '../providers/types';
+import { Token } from '../tokens';
+import { IParameter } from '../IParameter';
+import { IInjector } from '../IInjector';
 import { InjectableMetadata } from '../metadatas';
+
 
 
 export interface ITypeDecoractors {

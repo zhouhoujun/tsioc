@@ -1,16 +1,17 @@
 import 'reflect-metadata';
-import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import {
     isClass, isAbstractClass, isMetadataObject, isUndefined,
     isFunction, isNumber, isArray, lang, chain, isBoolean, isString
 } from '../utils/lang';
 import { Type, AbstractType, ObjectMap, ClassType } from '../types';
+import { isToken, isProvideToken } from '../tokens';
 import {
     Metadate, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
     TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata
 } from '../metadatas';
+import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
 import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
-import { isToken, isProvideToken } from '../utils/isToken';
+
 
 
 

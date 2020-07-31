@@ -1,12 +1,12 @@
-import { IIocContainer } from './IIocContainer';
-import { Type, Token, Factory, SymbolType, InstanceFactory } from './types';
+import { Type } from './types';
+import { InjectToken, Token, Factory, SymbolType, InstanceFactory } from './tokens';
 import { isClass, isFunction, isDefined } from './utils/lang';
-import { registerCores } from './registerCores';
 import { ParamProviders, InjectTypes } from './providers/types';
 import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
+import { IIocContainer } from './IIocContainer';
+import { registerCores } from './registerCores';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
-import { InjectToken } from './InjectToken';
 import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
 import { DesignContext } from './actions/design-actions';
 import { DesignLifeScope } from './actions/DesignLifeScope';

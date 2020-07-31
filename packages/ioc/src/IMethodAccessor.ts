@@ -1,7 +1,7 @@
-import { Type, Token, TokenId } from './types';
+import { Type } from './types';
+import { tokenId, Token, TokenId } from './tokens';
 import { ParamProviders } from './providers/types';
 import { IParameter } from './IParameter';
-import { tokenId } from './InjectToken';
 import { IInjector, IProviders } from './IInjector';
 
 
