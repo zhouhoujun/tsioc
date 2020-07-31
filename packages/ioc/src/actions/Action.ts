@@ -1,7 +1,6 @@
 import { Type } from '../types';
 import { Handler } from '../utils/lang';
-import { ProviderTypes } from '../providers/types';
-import { Token, tokenId, TokenId } from '../tokens';
+import { Token, tokenId, TokenId, ProviderTypes } from '../tokens';
 import { IInjector, IProviders } from '../IInjector';
 
 /**

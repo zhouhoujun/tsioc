@@ -1,8 +1,7 @@
-import { Type, ObjectMap } from '../types';
-import { isUndefined } from '../utils/lang';
-import { Token } from '../tokens';
-import { ProviderTypes } from './types';
-import { IInjector } from '../IInjector';
+import { Type, ObjectMap } from './types';
+import { isUndefined } from './utils/lang';
+import { Token, ProviderTypes } from './tokens'
+import { IInjector } from './IInjector';
 
 /**
  * Provider interface.

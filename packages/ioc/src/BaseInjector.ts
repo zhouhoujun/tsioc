@@ -1,12 +1,14 @@
 import { Type, Modules, ClassTypes } from './types';
-import { Token, InstanceFactory, SymbolType, Factory, InjectReference, isToken, Registration, getTokenKey } from './tokens';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
     isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined
 } from './utils/lang';
+import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers';
+import {
+    Token, InstanceFactory, SymbolType, Factory, ProviderTypes, ParamProviders,
+    InjectTypes, InjectReference, isToken, Registration, getTokenKey
+} from './tokens';
 import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy, IValueInjector } from './IInjector';
-import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers/Provider';
-import { ProviderTypes, ParamProviders, InjectTypes } from './providers/types';
 import { IIocContainer } from './IIocContainer';
 import { MethodAccessorToken, MethodType, IParameter } from './IMethodAccessor';
 import { TypeReflectsToken } from './services/ITypeReflects';

@@ -1,6 +1,5 @@
 import { ClassType } from './types';
-import { InjectTypes, ProviderTypes } from './providers/types';
-import { Token } from './tokens';
+import { Token, InjectTypes, ProviderTypes } from './tokens';
 
 /**
  * metadata

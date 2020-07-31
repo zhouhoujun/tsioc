@@ -1,6 +1,6 @@
 import { DecoratorScope } from '../types';
 import { isFunction, isArray, isClass } from '../utils/lang';
-import { ParamProviders } from '../providers/types';
+import { ParamProviders } from '../tokens';
 import { IActionSetup } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { INJECTOR, IInjector } from '../IInjector';

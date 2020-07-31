@@ -31,8 +31,7 @@ export * from './factories/ArgsIterator';
 export * from './factories/DecoratorFactory';
 
 // providers
-export * from './providers/Provider';
-export * from './providers/types';
+export * from './providers';
 
 // actions
 export * from './actions/Action';

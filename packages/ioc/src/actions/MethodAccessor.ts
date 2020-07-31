@@ -1,7 +1,6 @@
 import { Type } from '../types';
 import { lang, isFunction, isBaseType } from '../utils/lang';
-import { ParamProviders } from '../providers/types';
-import { Token, isToken } from '../tokens';
+import { Token, isToken, ParamProviders } from '../tokens';
 import { IInjector, IProviders } from '../IInjector';
 import { TypeReflectsToken } from '../services/ITypeReflects';
 import { IParameter, IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';

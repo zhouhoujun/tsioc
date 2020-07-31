@@ -1,8 +1,7 @@
 import { ClassType, ObjectMap, Type, MetadataTypes, DefineClassTypes  } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { isUndefined, isClassType, lang } from '../utils/lang';
-import { ParamProviders } from '../providers/types';
-import { Token } from '../tokens';
+import { Token, ParamProviders } from '../tokens';
 import { IInjector, InjectorProxy } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';

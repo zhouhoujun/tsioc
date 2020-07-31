@@ -1,8 +1,9 @@
-import { AbstractType, Type, ClassType } from './types';
-import { ProviderTypes } from './providers/types';
-import { IInjector } from './IInjector';
+import { AbstractType, Type, ClassType, Modules } from './types';
+import { IInjector, IProviders } from './IInjector';
 import { isClass, isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
+import { ProviderType, ParamProvider  } from './providers';
+
 
 /**
  *  token interface.
@@ -145,6 +146,22 @@ export type Token<T = any> = Registration<T> | SymbolType<T>;
  * provide token
  */
 export type ProvideToken<T> = Registration<T> | TokenId<T>;
+
+/**
+ * providers.
+ * note: ObjectMap provider can not resolve token.
+ */
+export type ProviderTypes = IProviders | ProviderType;
+
+/**
+ * params providers.
+ */
+export type ParamProviders = ProviderTypes | ParamProvider;
+
+/**
+ * inject types
+ */
+export type InjectTypes = Type | ProviderTypes | Modules[];
 
 /**
  * instance factory.

@@ -1,7 +1,6 @@
 import { Type } from '../types';
 import { Handler, chain, isBoolean, isClass, isArray, lang } from '../utils/lang';
-import { ProviderTypes, InjectTypes } from '../providers/types';
-import { Token, SymbolType, isToken } from '../tokens';
+import { Token, ProviderTypes, InjectTypes, SymbolType, isToken } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { IInjector, IProviders, INJECTOR, PROVIDERS, isInjector } from '../IInjector';

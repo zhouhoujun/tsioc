@@ -1,7 +1,6 @@
 import { Type } from './types';
-import { InjectToken, Token, Factory, SymbolType, InstanceFactory } from './tokens';
 import { isClass, isFunction, isDefined } from './utils/lang';
-import { ParamProviders, InjectTypes } from './providers/types';
+import { InjectToken, Token, Factory, SymbolType, ParamProviders, InjectTypes, InstanceFactory } from './tokens';
 import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { registerCores } from './registerCores';

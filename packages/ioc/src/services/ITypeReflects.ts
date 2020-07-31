@@ -1,7 +1,6 @@
 import { ClassType, ObjectMap, Type, DefineClassTypes } from '../types';
-import { TokenId, Token, tokenId } from '../tokens';
+import { TokenId, Token, tokenId, ParamProviders } from '../tokens';
 import { ITypeReflect } from './ITypeReflect';
-import { ParamProviders } from '../providers/types';
 import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';

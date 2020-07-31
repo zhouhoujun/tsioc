@@ -1,7 +1,9 @@
 import { Type, Modules } from './types';
 import { lang } from './utils/lang';
-import { ProviderTypes, InjectTypes, ParamProviders } from './providers/types';
-import { SymbolType, Token, InstanceFactory, Factory, InjectReference, TokenId, tokenId } from './tokens';
+import {
+    SymbolType, Token, InstanceFactory, Factory, InjectReference,
+    ProviderTypes, ParamProviders, InjectTypes, TokenId, tokenId
+} from './tokens';
 import { ResolveOption } from './actions/IocResolveAction';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';

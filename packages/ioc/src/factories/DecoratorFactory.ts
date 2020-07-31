@@ -9,7 +9,7 @@ import {
     Metadate, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
     TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata
 } from '../metadatas';
-import { ArgsIteratorContext, ArgsIteratorAction } from './ArgsIterator';
+import { ArgsContext, ArgsIteratorAction } from './ArgsIterator';
 import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
 
 
@@ -78,7 +78,7 @@ function argsToMetadata<T extends Metadate>(args: any[], actions?: ArgsIteratorA
         if (args.length === 1 && isMetadataObject(args[0])) {
             metadata = args[0];
         } else if (actions) {
-            let ctx = new ArgsIteratorContext<T>(args);
+            let ctx = new ArgsContext<T>(args);
             chain(actions, ctx);
             metadata = ctx.getMetadate();
         }

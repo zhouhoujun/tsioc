@@ -1,6 +1,5 @@
 import { isNullOrUndefined } from '../utils/lang';
-import { ProviderTypes } from '../providers/types';
-import { Token, isToken } from '../tokens';
+import { Token, isToken, ProviderTypes } from '../tokens';
 import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { ResolveContext, ResolveOption, IResolveContext } from './IocResolveAction';
 import * as rla from './resolves';
