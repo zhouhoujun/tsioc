@@ -6,10 +6,20 @@ import { isFunction } from './utils/lang';
  */
 export interface IDestoryable {
     readonly destroyed: boolean;
+    /**
+     * destory this.
+     */
     destroy(): void;
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
     onDestroy?(callback: () => void): void;
 }
 
+/**
+ * Destoryable.
+ */
 export abstract class Destoryable implements IDestoryable {
 
     constructor() {
@@ -21,7 +31,9 @@ export abstract class Destoryable implements IDestoryable {
     get destroyed() {
         return this._destroyed;
     }
-
+    /**
+    * destory this.
+    */
     destroy(): void {
         if (!this.destroyed) {
             this._destroyed = true;
@@ -34,6 +46,10 @@ export abstract class Destoryable implements IDestoryable {
 
     protected abstract destroying();
 
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
     onDestroy(callback: () => void): void {
         if (this.destroyCbs) {
             this.destroyCbs.push(callback);

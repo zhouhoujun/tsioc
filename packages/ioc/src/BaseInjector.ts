@@ -13,10 +13,10 @@ import { IIocContainer } from './IIocContainer';
 import { MethodAccessorToken, MethodType, IParameter } from './IMethodAccessor';
 import { TypeReflectsToken } from './services/ITypeReflects';
 import { IocDestoryable } from './Destoryable';
+import { ActionInjectorToken } from './actions/Action';
 import { ResolveOption } from './actions/IocResolveAction';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
-import { ActionInjectorToken } from './actions/Action';
 
 /**
  * value injector.
