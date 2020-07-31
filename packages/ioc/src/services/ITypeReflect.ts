@@ -2,7 +2,7 @@ import { ClassType, ObjectMap, DecoratorScope } from '../types';
 import { lang } from '../utils/lang';
 import { ParamProviders } from '../providers/types';
 import { Token } from '../tokens';
-import { IParameter } from '../IParameter';
+import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
 import { InjectableMetadata } from '../metadatas';
 

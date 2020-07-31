@@ -1,11 +1,42 @@
 import { Type } from './types';
 import { tokenId, Token, TokenId } from './tokens';
 import { ParamProviders } from './providers/types';
-import { IParameter } from './IParameter';
 import { IInjector, IProviders } from './IInjector';
 
 
 export type MethodType<T> = string | ((tag: T) => Function);
+
+
+/**
+ * Parameter
+ *
+ * @export
+ * @interface IParameter
+ */
+export interface IParameter {
+    /**
+     * parameter name
+     *
+     * @type {string}
+     * @memberof IParameter
+     */
+    name: string;
+    /**
+     * parameter type.
+     *
+     * @type {Token}
+     * @memberof IParameter
+     */
+    type: Token;
+    /**
+     * provider for the parameter.
+     *
+     * @type {Token}
+     * @memberof IParameter
+     */
+    provider: Token;
+}
+
 /**
  * execution, invoke some type method.
  *

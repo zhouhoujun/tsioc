@@ -8,8 +8,6 @@ export * from './IMethodAccessor';
 export * from './IocCoreService';
 export * from './BaseInjector';
 export * from './Injector';
-export * from './IParameter';
-export * from './ValueInjector';
 
 // utils
 export * from './utils/lang';

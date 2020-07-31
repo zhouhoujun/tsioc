@@ -1,12 +1,12 @@
-import { IMetadataAccess } from './MetadataAccess';
 import { ClassType, ObjectMap, Type, DefineClassTypes } from '../types';
 import { TokenId, Token, tokenId } from '../tokens';
 import { ITypeReflect } from './ITypeReflect';
 import { ParamProviders } from '../providers/types';
-import { IParameter } from '../IParameter';
+import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
-import { IActionInjector } from '../actions/Action';
 import { IIocContainer } from '../IIocContainer';
+import { IActionInjector } from '../actions/Action';
+import { IMetadataAccess } from './MetadataAccess';
 
 /**
  * type reflects token.
