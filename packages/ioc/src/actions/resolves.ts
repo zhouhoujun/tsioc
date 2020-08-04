@@ -2,7 +2,7 @@ import { isNullOrUndefined, lang, isClass } from '../utils/lang';
 import { InjectReference, isToken } from '../tokens';
 import { PROVIDERS } from '../IInjector';
 import { CTX_DEFAULT_TOKEN, CTX_TARGET_TOKEN } from '../utils/tk';
-import { IocCompositeAction } from './IocAction';
+import { IocCompositeAction } from './Action';
 import { ResolveContext, IResolveContext } from './IocResolveAction';
 
 /**

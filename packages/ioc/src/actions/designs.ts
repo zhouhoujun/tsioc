@@ -1,7 +1,7 @@
 import { DecoratorScope } from '../types';
 import { isFunction, isArray, isClass } from '../utils/lang';
 import { ParamProviders } from '../tokens';
-import { IActionSetup } from './Action';
+import { IActionSetup, createContext } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { INJECTOR, IInjector } from '../IInjector';
 import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decorators';
@@ -13,7 +13,6 @@ import {
     DecorsRegisterer, DesignRegisterer, IocDecorScope
 } from './IocRegAction';
 import { RuntimeLifeScope } from './LifeScope';
-import { createContext } from './IocAction';
 import { RuntimeContext } from './runtimes';
 
 

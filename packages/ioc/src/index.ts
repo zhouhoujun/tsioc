@@ -35,7 +35,6 @@ export * from './providers';
 
 // actions
 export * from './actions/Action';
-export * from './actions/IocAction';
 export * from './actions/ActionInjector';
 export * from './actions/IocCacheManager';
 export * from './actions/IocRegAction';

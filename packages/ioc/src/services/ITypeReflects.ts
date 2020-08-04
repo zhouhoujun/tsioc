@@ -44,7 +44,10 @@ export interface ITypeReflects extends IMetadataAccess {
      * @param type the type.
      */
     get<T extends ITypeReflect>(type: ClassType): T;
-
+    /**
+     * delete reflect.
+     * @param type class type.
+     */
     delete(type: ClassType);
     /**
      * get container.
