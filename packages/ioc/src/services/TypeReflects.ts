@@ -9,7 +9,6 @@ import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
 } from '../factories/DecoratorFactory';
-import { MetadataAccess } from './MetadataAccess';
 import { IParameter, MethodAccessorToken } from '../IMethodAccessor';
 import { Singleton } from '../decorators';
 import { DecoratorProvider } from './DecoratorProvider';
@@ -125,7 +124,6 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): boolean;
     hasMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): boolean;
     hasMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): boolean {
-        let access = this.getDecorProvider().resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }
@@ -135,23 +133,23 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         }
         switch (type) {
             case 'class':
-                return access ? access.hasMetadata(decorator, target) : hasOwnClassMetadata(decorator, target);
+                return hasOwnClassMetadata(decorator, target);
             case 'constructor':
-                return access ? access.hasMetadata(decorator, target, type) : hasParamMetadata(decorator, target);
+                return hasParamMetadata(decorator, target);
             case 'property':
                 if (propertyKey) {
-                    return access ? access.hasMetadata(decorator, target, propertyKey, type) : hasPropertyMetadata(decorator, target, propertyKey);
+                    return hasPropertyMetadata(decorator, target, propertyKey);
                 } else {
-                    return access ? access.hasMetadata(decorator, target, type) : hasPropertyMetadata(decorator, target);
+                    return hasPropertyMetadata(decorator, target);
                 }
             case 'method':
                 if (propertyKey) {
-                    return access ? access.hasMetadata(decorator, target, propertyKey, type) : hasMethodMetadata(decorator, target, propertyKey);
+                    return hasMethodMetadata(decorator, target, propertyKey);
                 } else {
-                    return access ? access.hasMetadata(decorator, target, type) : hasMethodMetadata(decorator, target);
+                    return hasMethodMetadata(decorator, target);
                 }
             case 'parameter':
-                return access ? access.hasMetadata(decorator, target, propertyKey, type) : hasParamMetadata(decorator, target, propertyKey);
+                return hasParamMetadata(decorator, target, propertyKey);
 
         }
         return false;
@@ -189,7 +187,6 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'method' | 'property'): T[];
     getMetadata<T = any>(decorator: string | Function, target: any, propertyKey: string, type: 'parameter'): T[][];
     getMetadata(decorator: string | Function, target: any, propertyKey?: any, type?: MetadataTypes): any {
-        let access = this.getDecorProvider().resolve(decorator, MetadataAccess);
         if (!propertyKey) {
             type = 'class';
         }
@@ -199,23 +196,23 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
         }
         switch (type) {
             case 'class':
-                return access ? access.getMetadata(decorator, target) : getOwnTypeMetadata(decorator, target);
+                return getOwnTypeMetadata(decorator, target);
             case 'constructor':
-                return access ? access.getMetadata(decorator, target, type) : getParamMetadata(decorator, target);
+                return getParamMetadata(decorator, target);
             case 'property':
                 if (propertyKey) {
-                    return access ? access.getMetadata(decorator, target, propertyKey, type) : getPropertyMetadata(decorator, target)[propertyKey];
+                    return getPropertyMetadata(decorator, target)[propertyKey];
                 } else {
-                    return access ? access.getMetadata(decorator, target, type) : getPropertyMetadata(decorator, target);
+                    return getPropertyMetadata(decorator, target);
                 }
             case 'method':
                 if (propertyKey) {
-                    return access ? access.getMetadata(decorator, target, propertyKey, type) : getMethodMetadata(decorator, target)[propertyKey];
+                    return getMethodMetadata(decorator, target)[propertyKey];
                 } else {
-                    return access ? access.getMetadata(decorator, target, type) : getMethodMetadata(decorator, target);
+                    return getMethodMetadata(decorator, target);
                 }
             case 'parameter':
-                return access ? access.getMetadata(decorator, target, propertyKey, type) : getParamMetadata(decorator, target, propertyKey);
+                return getParamMetadata(decorator, target, propertyKey);
         }
     }
 

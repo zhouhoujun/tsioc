@@ -11,7 +11,6 @@ export * from './Injector';
 
 // utils
 export * from './utils/lang';
-export * from './utils/PromiseUtil';
 export * from './utils/tk';
 
 // services
@@ -35,7 +34,6 @@ export * from './providers';
 
 // actions
 export * from './actions/Action';
-export * from './actions/IocAction';
 export * from './actions/ActionInjector';
 export * from './actions/IocCacheManager';
 export * from './actions/IocRegAction';

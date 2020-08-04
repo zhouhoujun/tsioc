@@ -7,13 +7,12 @@ import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../utils/
 import { ParameterMetadata, AutorunMetadata } from '../metadatas';
 import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
-import { IActionSetup } from './Action';
+import { IActionSetup, createContext } from './Action';
 import {
     IocRegAction, InitReflectAction, IocRegScope, RegOption, RegContext,
     ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
 } from './IocRegAction';
 import { IocCacheManager } from './IocCacheManager';
-import { createContext } from './IocAction';
 
 /**
  *  runtime action option.

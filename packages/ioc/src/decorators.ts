@@ -11,7 +11,9 @@ import {
     createMethodPropParamDecorator, createParamPropDecorator, createParamDecorator, PropParamDecorator
 } from './factories/DecoratorFactory';
 
-
+/**
+ * Abstract decorator. define the class as abstract class.
+ */
 export interface IAbstractDecorator {
     /**
      * define class is abstract class.

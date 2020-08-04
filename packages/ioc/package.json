@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/ioc",
-  "version": "6.0.29",
+  "version": "6.0.30",
   "description": "@tsdi is base Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"

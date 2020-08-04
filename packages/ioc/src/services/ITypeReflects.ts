@@ -5,7 +5,6 @@ import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
 import { IActionInjector } from '../actions/Action';
-import { IMetadataAccess } from './MetadataAccess';
 
 /**
  * type reflects token.
@@ -15,7 +14,7 @@ export const TypeReflectsToken: TokenId<ITypeReflects> = tokenId<ITypeReflects>(
 /**
  *  type reflects interface.
  */
-export interface ITypeReflects extends IMetadataAccess {
+export interface ITypeReflects {
     /**
      * has reflect or not.
      * @param type the type
@@ -44,7 +43,10 @@ export interface ITypeReflects extends IMetadataAccess {
      * @param type the type.
      */
     get<T extends ITypeReflect>(type: ClassType): T;
-
+    /**
+     * delete reflect.
+     * @param type class type.
+     */
     delete(type: ClassType);
     /**
      * get container.
