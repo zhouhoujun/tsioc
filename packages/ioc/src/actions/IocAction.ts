@@ -1,9 +1,9 @@
 import { Type } from '../types';
 import { Handler, chain, isBoolean, isClass, isArray, lang } from '../utils/lang';
 import { Token, ProviderTypes, InjectTypes, SymbolType, isToken } from '../tokens';
+import { IInjector, IProviders, INJECTOR, PROVIDERS, isInjector } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
-import { IInjector, IProviders, INJECTOR, PROVIDERS, isInjector } from '../IInjector';
 import { ActCtxOption, Action, ActionType, IActionInjector } from './Action';
 import { IDestoryable, IocDestoryable } from '../Destoryable';
 import { Inject } from '../decorators';

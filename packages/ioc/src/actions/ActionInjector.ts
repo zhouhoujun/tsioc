@@ -4,6 +4,9 @@ import { Token, isToken } from '../tokens';
 import { IActionSetup, Action, IActionInjector } from './Action';
 import { Injector } from '../Injector';
 
+/**
+ * action injector.
+ */
 export class ActionInjector extends Injector implements IActionInjector {
 
     regAction<T extends Action>(type: Type<T>): this {

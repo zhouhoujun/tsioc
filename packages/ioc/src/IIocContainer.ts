@@ -27,7 +27,9 @@ export interface IIocContainer extends IInjector {
      * @param type
      */
     getInjector(type: Type): IInjector;
-
+    /**
+     * create injector.
+     */
     createInjector(): IInjector;
     /**
      * get type reflects manager in current container.
@@ -36,7 +38,6 @@ export interface IIocContainer extends IInjector {
      * @memberof IIocContainer
      */
     getTypeReflects(): ITypeReflects;
-
     /**
      * get action injector
      */
