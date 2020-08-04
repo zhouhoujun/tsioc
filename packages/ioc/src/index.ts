@@ -11,7 +11,6 @@ export * from './Injector';
 
 // utils
 export * from './utils/lang';
-export * from './utils/PromiseUtil';
 export * from './utils/tk';
 
 // services
