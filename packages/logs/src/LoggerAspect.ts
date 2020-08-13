@@ -5,6 +5,8 @@ import { Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
 import { ILogFormater, LogFormaterToken } from './LogFormater';
+import { IConfigureLoggerManager } from './IConfigureLoggerManager';
+import { LogConfigure } from './LogConfigure';
 
 /**
  * base looger aspect. for extends your logger aspect.
@@ -16,6 +18,7 @@ import { ILogFormater, LogFormaterToken } from './LogFormater';
 export abstract class LoggerAspect extends LogProcess {
 
     processLog(joinPoint: Joinpoint, ...messages: any[]);
+    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
     processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
     processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
     processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], level: Level, ...messages: any[])
@@ -86,7 +89,7 @@ export abstract class LoggerAspect extends LogProcess {
     _formater: ILogFormater;
     getFormater() {
         if (!this._formater) {
-            let config = this.logManger.config;
+            let config = (this.logManger as IConfigureLoggerManager).config || ({} as LogConfigure);
             let formater: ILogFormater;
             config.format = config.format || LogFormaterToken;
             if (isToken(config.format)) {

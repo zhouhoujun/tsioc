@@ -5,8 +5,8 @@ import { Level } from './Level';
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { ConfigureLoggerManger } from './ConfigureLoggerManger';
+import { ILoggerManager } from './ILoggerManager';
 
 
 
@@ -17,26 +17,35 @@ import { ConfigureLoggerManger } from './ConfigureLoggerManger';
 export abstract class LogProcess {
 
     private _logger: ILogger;
-    private _logManger: IConfigureLoggerManager;
+    private _logManger: ILoggerManager;
 
     constructor(@Inject(INJECTOR) protected injector: ICoreInjector, private config?: LogConfigure | Type<LogConfigure>) {
 
     }
 
+
+
     get logger(): ILogger {
         if (!this._logger) {
-            this._logger = this.logManger.getLogger();
+            this._logger = this.getLogger();
         }
         return this._logger;
     }
 
-    get logManger(): IConfigureLoggerManager {
+    get logManger(): ILoggerManager {
         if (!this._logManger) {
-            this._logManger = this.injector.resolve(ConfigureLoggerManger, ObjectMapProvider.parse({ config: this.config }));
+            this._logManger = this.getLoggerManager();
         }
         return this._logManger;
     }
 
+    protected getLoggerManager(): ILoggerManager {
+        return this.injector.resolve(ConfigureLoggerManger, ObjectMapProvider.parse({ config: this.config }));
+    }
+
+    protected getLogger(): ILogger {
+        return this.logManger.getLogger();
+    }
     abstract processLog(joinPoint: Joinpoint, ...messages: any[]);
     abstract processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]);
     abstract processLog(joinPoint: Joinpoint, annotation: LoggerMetadata[], ...messages: any[]);
