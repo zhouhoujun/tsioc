@@ -1,6 +1,5 @@
 import { DIModule } from '@tsdi/boot';
 import { BrowserModule } from '@tsdi/platform-browser';
-import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 import { TaskLogAspect } from './aop/TaskLogAspect';
 import { RunnerLogAspect } from './aop/RunnerLogAspect';
 
@@ -11,8 +10,7 @@ import { RunnerLogAspect } from './aop/RunnerLogAspect';
     ],
     providers: [
         TaskLogAspect,
-        RunnerLogAspect,
-        WorkflowConfigureRegister
+        RunnerLogAspect
     ]
 })
 export class BrowserActivitiesModule {

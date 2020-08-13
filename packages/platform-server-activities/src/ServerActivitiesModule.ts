@@ -5,7 +5,6 @@ import { ServerLogsModule } from '@tsdi/platform-server-logs';
 import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { TaskLogAspect } from './aop/TaskLogAspect';
 import { RunnerLogAspect } from './aop/RunnerLogAspect';
-import { WorkflowConfigureRegister } from './WorkflowConfigureRegister';
 import { ServerParallelExecutor } from './ServerParallelExecutor';
 
 
@@ -20,7 +19,6 @@ import { ServerParallelExecutor } from './ServerParallelExecutor';
         TaskLogAspect,
         ServerParallelExecutor,
         ServerBootstrapModule,
-        WorkflowConfigureRegister,
         { provide: ParallelExecutor, useExisting: ServerParallelExecutor }
     ]
 })
