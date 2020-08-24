@@ -2,7 +2,7 @@ import { AbstractType, Type, ClassType, Modules } from './types';
 import { IInjector, IProviders } from './IInjector';
 import { isClass, isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
-import { ProviderType, ParamProvider  } from './providers';
+import { ProviderType, ParamProvider } from './providers';
 
 
 /**
@@ -128,7 +128,7 @@ export function getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
 /**
  *  token id.
  */
-export type TokenId<T = any> =  string | symbol | IToken<T>;
+export type TokenId<T = any> = string | symbol | IToken<T>;
 
 
 /**
@@ -184,7 +184,7 @@ export type Factory<T> = T | Type<T> | ((injector?: IInjector) => T);
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectToken<T> extends Registration<T> {
+export class InjectToken<T = any> extends Registration<T> {
     constructor(desc: string | symbol) {
         super(desc, '');
     }
@@ -194,7 +194,7 @@ export class InjectToken<T> extends Registration<T> {
  * parse id string to token id.
  * @param key id
  */
-export function tokenId<T>(key: string): TokenId<T> {
+export function tokenId<T = any>(key: string): TokenId<T> {
     return Symbol(key);
 }
 
