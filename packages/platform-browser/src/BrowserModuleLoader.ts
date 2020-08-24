@@ -1,4 +1,3 @@
-import { lang } from '@tsdi/ioc';
 import { ModuleLoader, IModuleLoader } from '@tsdi/core';
 
 declare let System: any;
