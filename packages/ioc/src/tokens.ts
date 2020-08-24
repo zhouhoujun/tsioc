@@ -208,7 +208,7 @@ export function tokenId<T = any>(key: string): TokenId<T> {
  * @extends {Registration<T>}
  * @template T
  */
-export class InjectReference<T> extends Registration<T> {
+export class InjectReference<T = any> extends Registration<T> {
     constructor(provideType: Token<T>, private target: Token) {
         super(provideType, '');
     }
