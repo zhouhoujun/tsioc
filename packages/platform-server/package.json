@@ -34,7 +34,7 @@
     "globby": "^11.0.0"
   },
   "peerDependencies": {
-    "tslib": "^1.13.0",
+    "tslib": "^2.0.1",
     "@tsdi/ioc": "~6.0.31",
     "@tsdi/core": "~6.0.31"
   },
