@@ -42,7 +42,7 @@
     "@tsdi/aop": "~6.0.31",
     "@tsdi/boot": "~6.0.31",
     "@tsdi/logs": "~6.0.31",
-    "tslib": "^1.13.0"
+    "tslib": "^2.0.1"
   },
   "directories": {
     "lib": "lib",

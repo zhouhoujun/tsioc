@@ -44,7 +44,7 @@
     "@tsdi/boot": "~6.0.31",
     "@tsdi/activities": "~6.0.31",
     "@tsdi/platform-browser": "~6.0.31",
-    "tslib": "^1.13.0"
+    "tslib": "^2.0.1"
   },
   "directories": {
     "lib": "lib",

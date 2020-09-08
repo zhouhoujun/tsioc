@@ -37,7 +37,8 @@
     "@tsdi/ioc": "~6.0.31",
     "@tsdi/core": "~6.0.31",
     "@tsdi/boot": "~6.0.31",
-    "tslib": "^1.13.0"
+    "rxjs": "^6.3.3",
+    "tslib": "^2.0.1"
   },
   "directories": {
     "lib": "lib",

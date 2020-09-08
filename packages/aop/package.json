@@ -32,7 +32,7 @@
   "dependencies": {},
   "peerDependencies": {
     "@tsdi/ioc": "~6.0.31",
-    "tslib": "^1.13.0"
+    "tslib": "^2.0.1"
   },
   "directories": {
     "lib": "lib",

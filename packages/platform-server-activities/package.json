@@ -43,7 +43,7 @@
     "interpret": "^2.0.0",
     "pretty-hrtime": "^1.0.3",
     "time-stamp": "^2.2.0",
-    "tslib": "^1.13.0",
+    "tslib": "^2.0.1",
     "ts-node": "^8.10.1",
     "tsconfig-paths": "^3.9.0",
     "zone.js": "^0.10.3"
