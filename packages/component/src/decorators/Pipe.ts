@@ -1,4 +1,4 @@
-import { Type, TypeMetadata, createClassDecorator, isString, ITypeDecorator, isBoolean, ProviderMetadata, isUndefined } from '@tsdi/ioc';
+import { Type, TypeMetadata, createClassDecorator, isString, isBoolean, ProviderMetadata, isUndefined } from '@tsdi/ioc';
 import { IPipeTransform } from '../bindings/IPipeTransform';
 
 /**
@@ -30,9 +30,8 @@ export interface IPipeMetadata extends TypeMetadata, ProviderMetadata {
  *
  * @export
  * @interface IInjectableDecorator
- * @extends {ITypeDecorator<IPipeMetadata>}
  */
-export interface IPipeDecorator extends ITypeDecorator<IPipeMetadata> {
+export interface IPipeDecorator  {
     /**
      * Pipe decorator, define the class as pipe.
      *

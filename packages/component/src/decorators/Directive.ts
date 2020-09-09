@@ -1,4 +1,4 @@
-import { createClassDecorator, isString, ITypeDecorator } from '@tsdi/ioc';
+import { createClassDecorator, isString } from '@tsdi/ioc';
 import { IDirectiveMetadata } from './metadata';
 
 /**
@@ -6,9 +6,8 @@ import { IDirectiveMetadata } from './metadata';
  *
  * @export
  * @interface IDirectiveDecorator
- * @extends {IClassDecorator<IDirectiveMetadata>}
  */
-export interface IDirectiveDecorator extends ITypeDecorator<IDirectiveMetadata> {
+export interface IDirectiveDecorator {
     /**
      * Component decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`ComponentLifecycle`]
      *
