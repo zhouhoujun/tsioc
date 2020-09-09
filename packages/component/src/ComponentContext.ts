@@ -4,7 +4,7 @@ import {
     CTX_COMPONENT_DECTOR, CTX_COMPONENT, CTX_COMPONENT_REF, CTX_TEMPLATE_REF,
     CTX_ELEMENT_REF, IComponentRef, ITemplateRef, CTX_TEMPLATE_SCOPE
 } from './ComponentRef';
-import { IComponentMetadata } from './decorators/metadata';
+import { ComponentMetadata } from './metadata';
 import { IComponentReflect } from './IReflect';
 
 /**
@@ -35,7 +35,7 @@ export interface IComponentContext<T extends IComponentOption = IComponentOption
     /**
      * annoation metadata.
      */
-    getAnnoation(): IComponentMetadata;
+    getAnnoation(): ComponentMetadata;
 
     /**
      * component instance.
@@ -72,7 +72,7 @@ export class ComponentContext<T extends IComponentOption = IComponentOption>
     /**
      * annoation metadata.
      */
-    getAnnoation(): IComponentMetadata {
+    getAnnoation(): ComponentMetadata {
         return super.getAnnoation();
     }
 

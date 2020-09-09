@@ -1,5 +1,4 @@
-import { Directive } from '../decorators/Directive';
-import { Input } from '../decorators/Input';
+import { Directive, Input } from '../decorators';
 import { ITemplateRef } from '../ComponentRef';
 
 @Directive('[if]')

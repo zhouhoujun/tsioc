@@ -1,5 +1,5 @@
 import { lang, isString, isArray } from '@tsdi/ioc';
-import { Pipe } from '../decorators/Pipe';
+import { Pipe } from '../decorators';
 import { IPipeTransform } from '../bindings/IPipeTransform';
 
 

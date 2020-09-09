@@ -1,4 +1,4 @@
-import { Pipe } from '../decorators/Pipe';
+import { Pipe } from '../decorators';
 import { IPipeTransform } from '../bindings/IPipeTransform';
 
 @Pipe('json', false)

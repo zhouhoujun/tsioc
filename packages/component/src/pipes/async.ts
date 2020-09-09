@@ -1,6 +1,6 @@
 import { OnDestroy, isPromise, isObservable, lang } from '@tsdi/ioc';
 import { IPipeTransform } from '../bindings/IPipeTransform';
-import { Pipe } from '../decorators/Pipe';
+import { Pipe } from '../decorators';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { EventEmitter } from '../bindings/EventEmitter';
 import { ChangeDetectorRef } from '../bindings/change_ref';

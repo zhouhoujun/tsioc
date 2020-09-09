@@ -1,5 +1,5 @@
 import { DesignContext, CTX_CURR_DECOR, IProviders, DecoratorProvider, lang } from '@tsdi/ioc';
-import { IComponentMetadata } from '../decorators/metadata';
+import { ComponentMetadata } from '../metadata';
 import { IComponentReflect } from '../IReflect';
 import { CompilerFacade } from '../compile/CompilerFacade';
 
@@ -12,7 +12,7 @@ export const ComponentDefAction = function (ctx: DesignContext, next: () => void
 
     let currDecor = ctx.getValue(CTX_CURR_DECOR);
     let compRefl = ctx.targetReflect as IComponentReflect;
-    let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
+    let metas = ctx.reflects.getMetadata<ComponentMetadata>(currDecor, ctx.type);
     let prdrs: IProviders;
     if (!compRefl.getDecorProviders) {
         prdrs = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).getProviders(currDecor);

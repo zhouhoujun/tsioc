@@ -1,4 +1,4 @@
-import { Directive } from '../decorators/Directive';
+import { Directive } from '../decorators';
 import { DirectiveIf } from './if';
 
 /**

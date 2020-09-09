@@ -4,9 +4,8 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { ResolveMoudleScope, AnnoationAction, BuildContext } from '@tsdi/boot';
-import { Component } from './decorators/Component';
-import { Directive } from './decorators/Directive';
-import { Pipe } from './decorators/Pipe';
+import { Component, Directive, Pipe } from './decorators';
+
 
 import { PipeRegAction } from './registers/PipeRegAction';
 import { ComponentContext } from './ComponentContext';
