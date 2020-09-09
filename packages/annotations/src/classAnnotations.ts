@@ -69,8 +69,10 @@ export function iocAnnotations(contents: string): string {
                 let paramNames = node.parameters.map(param => {
                     return param.name.getText();
                 });
-                let method = node.name.getText();
-                annations.params[method] = paramNames;
+                if (paramNames.length) {
+                    let method = node.name.getText();
+                    annations.params[method] = paramNames;
+                }
             }
         }
     }
