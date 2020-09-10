@@ -4,7 +4,7 @@ import { TypeReflectsToken } from './services/ITypeReflects';
 import { MethodAccessorToken, INVOKED_PROVIDERS } from './IMethodAccessor';
 import { ActionInjector } from './actions/ActionInjector';
 import { RuntimeRegisterer, DesignRegisterer } from './actions/IocRegAction';
-import { Injector, InjectorProvider, InvokedProviders } from './Injector';
+import { Injector, ProviderInjector, InvokedProvider } from './Injector';
 import { DecoratorProvider } from './services/DecoratorProvider';
 import { MethodAccessor } from './actions/MethodAccessor';
 import { RuntimeLifeScope } from './actions/LifeScope';
@@ -25,8 +25,8 @@ export function registerCores(container: IIocContainer) {
     container.setSingleton(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
-    container.set(PROVIDERS, () => new InjectorProvider(fac), InjectorProvider);
-    container.set(INVOKED_PROVIDERS, () => new InvokedProviders(fac), InvokedProviders);
+    container.set(PROVIDERS, () => new ProviderInjector(fac), ProviderInjector);
+    container.set(INVOKED_PROVIDERS, () => new InvokedProvider(fac), InvokedProvider);
     container.setSingleton(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);

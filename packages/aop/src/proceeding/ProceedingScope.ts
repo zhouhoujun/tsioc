@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProvider, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction,
+    Type, isFunction, lang, IProvider, InvokedProvider, ITypeReflects, TypeReflectsToken, IocCompositeAction,
     IParameter, IActionSetup, isArray, isDefined, tokenId, isPromise, PromiseUtil, TokenId
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
@@ -121,7 +121,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
         return (...args: any[]) => {
             let larg = lang.last(args);
             let cuurPrd: IProvider = null;
-            if (larg instanceof InvokedProviders) {
+            if (larg instanceof InvokedProvider) {
                 args = args.slice(0, args.length - 1);
                 cuurPrd = larg;
             }

@@ -1,5 +1,5 @@
 import { Type } from './types';
-import { lang, isClassType, isMetadataObject } from './utils/lang';
+import { lang, isClassType, isMetadataObject, isArray, isClass, isObject } from './utils/lang';
 import { Token, Factory, SymbolType, Provider, InstanceFactory, isToken } from './tokens';
 import { IInjector, IProvider, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
@@ -140,7 +140,7 @@ export class Injector extends BaseInjector implements IInjector {
  * @class ContextInjector
  * @extends {Injector}
  */
-export class InjectorProvider extends Injector implements IProvider {
+export class ProviderInjector extends Injector implements IProvider {
     protected initReg() {
     }
 }
@@ -153,15 +153,16 @@ export class InjectorProvider extends Injector implements IProvider {
  * @returns {target is Provider}
  */
 export function isProvider(target: any): target is Provider {
-    return target instanceof InjectorProvider
-        || (isMetadataObject(target, 'provide') && isToken(target.provide));
+    return target instanceof ProviderInjector
+        || (isMetadataObject(target, 'provide') && isToken(target.provide))
+        || (isArray(target) && target.some(it => isClass(it) || (isObject(it) && Object.values(it).some(s => isClass(it)))));
 }
 
 
 /**
- * invoked providers
+ * invoked provider
  */
-export class InvokedProviders extends Injector implements IProvider {
+export class InvokedProvider extends Injector implements IProvider {
     protected initReg() {
     }
 }
