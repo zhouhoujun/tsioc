@@ -9,10 +9,14 @@ import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType, IParameter } from './IMethodAccessor';
 
+
 /**
- * value injector.
+ * injector interface.
+ *
+ * @export
+ * @interface IInjector
  */
-export interface IValueInjector extends IDestoryable {
+export interface IInjector extends IDestoryable {
     /**
      * resolver size.
      *
@@ -83,15 +87,6 @@ export interface IValueInjector extends IDestoryable {
     * @memberof IInjector
     */
     registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-}
-
-/**
- * injector interface.
- *
- * @export
- * @interface IInjector
- */
-export interface IInjector extends IValueInjector {
     /**
      * get root container.
      */

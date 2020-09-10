@@ -1,5 +1,5 @@
 import { Type, isFunction, Destoryable, IDestoryable, tokenId, Injectable, Inject, Express, isBoolean, TokenId } from '@tsdi/ioc';
-import { IAnnoationContext, CTX_TEMPLATE, AnnoationOption,  } from '@tsdi/boot';
+import { IAnnoationContext, CTX_TEMPLATE, AnnoationOption, } from '@tsdi/boot';
 
 export const CTX_COMPONENT_DECTOR: TokenId<string> = tokenId<string>('CTX_COMPONENT_DECTOR');
 export const CTX_COMPONENT = tokenId<any>('CTX_COMPONENT');
@@ -30,7 +30,7 @@ export class ContextNode<TCtx extends IAnnoationContext = IAnnoationContext> ext
 
     protected destroying(): void {
         this._context.destroy();
-        delete this._context;
+        this._context = null;
     }
 }
 
@@ -100,8 +100,7 @@ export class NodeRef<T = NodeType, TCtx extends IAnnoationContext = IAnnoationCo
                     node.destroy();
                 }
             });
-        this._rootNodes.length = 0;
-        delete this._rootNodes;
+        this._rootNodes = [];
         super.destroying();
     }
 }

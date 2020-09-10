@@ -257,8 +257,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
                     node.destroy();
                 }
             });
-        this._rootNodes.length = 0;
-        delete this._rootNodes;
+        this._rootNodes = [];
         super.destroying();
     }
 }

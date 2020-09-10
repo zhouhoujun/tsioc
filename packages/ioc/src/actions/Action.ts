@@ -2,7 +2,7 @@ import { Type } from '../types';
 import { Handler, chain, isBoolean, isClass, isArray, lang } from '../utils/lang';
 import { Token, tokenId, TokenId, Provider, SymbolType, isToken } from '../tokens';
 import { IInjector, IProvider, INJECTOR, PROVIDERS, isInjector } from '../IInjector';
-import { IDestoryable, IocDestoryable } from '../Destoryable';
+import { IDestoryable, Destoryable } from '../Destoryable';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
 import { Inject } from '../decorators';
@@ -347,7 +347,12 @@ export class IocCompositeAction<T extends IIocContext = IIocContext> extends Ioc
  * @export
  * @class IocActCtx
  */
-export abstract class IocActCtx extends IocDestoryable {
+export abstract class IocActCtx extends Destoryable {
+
+    /**
+     * none poincut for aop.
+     */
+    static ρNPT = true;
 
     /**
      * reflects.
@@ -383,7 +388,7 @@ export abstract class IocContext<
     T extends ActCtxOption = ActCtxOption,
     TJ extends IInjector = IInjector> extends IocActCtx implements IIocContext<T, TJ> {
 
-    public readonly context: IProvider;
+    public context: IProvider;
 
     constructor(@Inject(INJECTOR) injector: TJ) {
         super();
@@ -560,6 +565,7 @@ export abstract class IocContext<
 
     protected destroying() {
         this.context.destroy();
+        this.context = null;
     }
 
 }

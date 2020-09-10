@@ -8,25 +8,34 @@ import {
     Token, InstanceFactory, SymbolType, Factory, Provider, InjectReference,
     isToken, Registration, getTokenKey
 } from './tokens';
-import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy, IValueInjector } from './IInjector';
+import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { MethodAccessorToken, MethodType, IParameter } from './IMethodAccessor';
 import { TypeReflectsToken } from './services/ITypeReflects';
-import { IocDestoryable } from './Destoryable';
+import { Destoryable } from './Destoryable';
 import { ActionInjectorToken } from './actions/Action';
 import { ResolveOption } from './actions/IocResolveAction';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
-import { Providers } from './decorators';
+
 
 /**
- * value injector.
+ * Base Injector.
+ *
+ * @export
+ * @abstract
+ * @class BaseInjector
+ * @implements {IInjector}
  */
-export class ValueInjector extends IocDestoryable implements IValueInjector {
+export abstract class BaseInjector extends Destoryable implements IInjector {
     /**
      * class type.
      */
     static ρCT: ClassTypes = 'injector';
+    /**
+     * none poincut for aop.
+     */
+    static ρNPT = true;
     /**
      * values.
      */
@@ -39,20 +48,39 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
      * @memberof BaseInjector
      */
     protected provideTypes: Map<SymbolType, Type>;
+    /**
+     * factories.
+     *
+     * @protected
+     * @type {Map<Token, Function>}
+     * @memberof BaseInjector
+     */
+    protected factories: Map<SymbolType, InstanceFactory>;
+    /**
+     * singleton map.
+     *
+     * @protected
+     * @type {Map<SymbolType, any>}
+     * @memberof BaseInjector
+     */
+    protected singletons: Map<SymbolType, any>;
+
 
     constructor() {
         super();
         this.init();
-    }
-
-    protected init() {
-        this.values = new Map();
-        this.provideTypes = new Map();
+        this.initReg();
     }
 
     get size(): number {
-        return this.values.size;
+        return this.factories.size + this.values.size + this.singletons.size;
     }
+
+    getProxy(): InjectorProxy<this> {
+        return this.getSingleton(InjectorProxyToken) as InjectorProxy<this>;
+    }
+
+    abstract getContainer(): IIocContainer;
 
     /**
      * get token.
@@ -143,57 +171,6 @@ export class ValueInjector extends IocDestoryable implements IValueInjector {
     protected getValueInRoot<T>(key: SymbolType<T>): T {
         return null;
     }
-
-    protected destroying() {
-        this.values.clear();
-        this.provideTypes.clear();
-        delete this.values;
-        delete this.provideTypes;
-    }
-}
-
-
-/**
- * Base Injector.
- *
- * @export
- * @abstract
- * @class BaseInjector
- * @implements {IInjector}
- */
-export abstract class BaseInjector extends ValueInjector implements IInjector {
-    /**
-     * factories.
-     *
-     * @protected
-     * @type {Map<Token, Function>}
-     * @memberof BaseInjector
-     */
-    protected factories: Map<SymbolType, InstanceFactory>;
-    /**
-     * singleton map.
-     *
-     * @protected
-     * @type {Map<SymbolType, any>}
-     * @memberof BaseInjector
-     */
-    protected singletons: Map<SymbolType, any>;
-
-
-    constructor() {
-        super();
-        this.initReg();
-    }
-
-    get size(): number {
-        return this.factories.size + this.values.size + this.singletons.size;
-    }
-
-    getProxy(): InjectorProxy<this> {
-        return this.getSingleton(InjectorProxyToken) as InjectorProxy<this>;
-    }
-
-    abstract getContainer(): IIocContainer;
 
     /**
      * register type.
@@ -632,7 +609,8 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     }
 
     protected init() {
-        super.init();
+        this.values = new Map();
+        this.provideTypes = new Map();
         this.factories = new Map();
         this.singletons = new Map();
     }
@@ -682,11 +660,14 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     }
 
     protected destroying() {
-        super.destroying();
+        this.values.clear();
+        this.provideTypes.clear();
         this.singletons.clear();
-        delete this.singletons;
         this.factories.clear();
-        delete this.factories;
+        this.values = null;
+        this.provideTypes = null;
+        this.factories = null;
+        this.singletons = null;
     }
 }
 
