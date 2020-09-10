@@ -2,7 +2,7 @@ import { Type, Modules } from './types';
 import { lang } from './utils/lang';
 import {
     SymbolType, Token, InstanceFactory, Factory, InjectReference,
-    ProviderTypes, ParamProviders, InjectTypes, TokenId, tokenId
+    Provider, TokenId, tokenId
 } from './tokens';
 import { ResolveOption } from './actions/IocResolveAction';
 import { IIocContainer } from './IIocContainer';
@@ -149,32 +149,32 @@ export interface IInjector extends IValueInjector {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    get<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+    get<T>(token: Token<T>, ...providers: Provider[]): T;
     /**
      * get token instace in current injector or root container.
      *
      * @template T
      * @param {Token<T>} token
      * @param {string} alias
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IInjector
      */
-    get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
+    get<T>(token: Token<T>, alias: string, ...providers: Provider[]): T;
     /**
      * get token instance in current injector or root container.
      *
      * @template T
      * @param {SymbolType<T>} key
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IInjector
      */
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
+    getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T;
     /**
      * get singleton instance.
      * @param key token key.
@@ -196,21 +196,21 @@ export interface IInjector extends IValueInjector {
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     /**
      * resolve token instance with token and param provider.
      *
      * @template T
      * @param {ResolveOption<T>} option  resolve option
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolve<T>(option: ResolveOption<T>, ...providers: ProviderTypes[]): T;
+    resolve<T>(option: ResolveOption<T>, ...providers: Provider[]): T;
     /**
     * get token implement class type.
     *
@@ -291,15 +291,15 @@ export interface IInjector extends IValueInjector {
      * @param target
      * @param providers
      */
-    bindTagProvider<T>(target: Token, ...providers: InjectTypes[]): InjectReference<IInjector>;
+    bindTagProvider<T>(target: Token, ...providers: Provider[]): InjectReference<IInjector>;
     /**
      * inject providers.
      *
-     * @param {...InjectTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {this}
      * @memberof IInjector
      */
-    inject(...providers: InjectTypes[]): this;
+    inject(...providers: Provider[]): this;
     /**
      * inject modules
      *
@@ -367,11 +367,11 @@ export interface IInjector extends IValueInjector {
      * @template T
      * @param {(Token<T> | T)} target type class
      * @param {MethodType<T>} propertyKey
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR;
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     /**
      * create params instances with IParameter and provider
      *
@@ -380,7 +380,7 @@ export interface IInjector extends IValueInjector {
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(params: IParameter[], ...providers: ParamProviders[]): any[];
+    createParams(params: IParameter[], ...providers: Provider[]): any[];
 }
 
 const injectorKey = 'injector';
@@ -413,14 +413,14 @@ export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
 /**
  * provider interface.
  */
-export interface IProviders extends IInjector {
+export interface IProvider extends IInjector {
 
 }
 
 /**
  *  injector provider token. create new injector provider.
  */
-export const PROVIDERS = tokenId<IProviders>('DI_PROVIDERS');
+export const PROVIDERS = tokenId<IProvider>('DI_PROVIDERS');
 
 /**
  *  injector token. create new injector.

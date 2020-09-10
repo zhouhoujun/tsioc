@@ -1,4 +1,4 @@
-import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProviders, InjectorProvider, TypeReflectsToken, InjectorProxy, TokenId } from '@tsdi/ioc';
+import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProvider, InjectorProvider, TypeReflectsToken, InjectorProxy, TokenId } from '@tsdi/ioc';
 import { CoreInjector, IContainer } from '@tsdi/core';
 import { ModuleRef } from './ModuleRef';
 
@@ -121,7 +121,7 @@ export class ModuleInjector extends CoreInjector {
 
 export const MODULE_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('MODULE_INJECTOR');
 
-export class ModuleProviders extends InjectorProvider implements IProviders {
+export class ModuleProviders extends InjectorProvider implements IProvider {
 
     moduleInjector: ModuleInjector;
 

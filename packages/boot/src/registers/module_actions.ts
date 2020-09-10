@@ -1,5 +1,5 @@
 import {
-    DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProviders,
+    DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProvider,
     IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
@@ -30,7 +30,7 @@ export const AnnoationAction = function (ctx: DesignContext, next: () => void): 
     let decorator = cuurDec || tgRef.decorator;
     let metas = ctx.reflects.getMetadata(decorator, ctx.type);
     if (metas.length) {
-        let proder: IProviders;
+        let proder: IProvider;
         if (!tgRef.getDecorProviders) {
             proder = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).getProviders(decorator);
             if (proder) {

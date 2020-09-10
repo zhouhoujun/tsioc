@@ -1,7 +1,7 @@
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
-import { Token, ProviderTypes, InjectTypes, Factory, TokenId, tokenId } from '../tokens';
-import { IInjector, PROVIDERS, IProviders, InjectorProxy } from '../IInjector';
+import { Token, Provider, Factory, TokenId, tokenId } from '../tokens';
+import { IInjector, PROVIDERS, IProvider, InjectorProxy } from '../IInjector';
 import { ITypeReflects } from './ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
 
@@ -74,11 +74,11 @@ export class DecoratorProvider extends IocCoreService {
      * @template T
      * @param {string} decorator
      * @param {Token<T>} provide
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof DecoratorProvider
      */
-    resolve<T>(decorator: string | Function | object, provide: Token<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(decorator: string | Function | object, provide: Token<T>, ...providers: Provider[]): T {
         decorator = this.getKey(decorator);
         if (decorator && this.map.has(decorator)) {
             return this.map.get(decorator).get(provide, ...providers);
@@ -99,16 +99,16 @@ export class DecoratorProvider extends IocCoreService {
         return this;
     }
 
-    bindProviders(decorator: string | Function, ...providers: InjectTypes[]): this {
+    bindProviders(decorator: string | Function, ...providers: Provider[]): this {
         this.existify(decorator).inject(...providers);
         return this;
     }
 
-    getProviders(decorator: string | Function): IProviders {
+    getProviders(decorator: string | Function): IProvider {
         return this.map.get(this.getKey(decorator));
     }
 
-    existify(decorator: string | Function): IProviders {
+    existify(decorator: string | Function): IProvider {
         decorator = this.getKey(decorator);
         if (!this.map.has(decorator)) {
             this.map.set(decorator, this.proxy().getInstance(PROVIDERS).inject({ provide: DECORATOR, useValue: decorator }));

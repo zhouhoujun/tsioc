@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProviders, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction,
+    Type, isFunction, lang, IProvider, InvokedProviders, ITypeReflects, TypeReflectsToken, IocCompositeAction,
     IParameter, IActionSetup, isArray, isDefined, tokenId, isPromise, PromiseUtil, TokenId
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
@@ -38,7 +38,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
         return this._reflects;
     }
 
-    beforeConstr(targetType: Type, params: IParameter[], args: any[], providers: IProviders) {
+    beforeConstr(targetType: Type, params: IParameter[], args: any[], providers: IProvider) {
         let propertykey = ctor;
         let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
         if (!advices) {
@@ -59,7 +59,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
         this.execute(joinPoint);
     }
 
-    afterConstr(target: any, targetType: Type, params: IParameter[], args: any[], providers: IProviders) {
+    afterConstr(target: any, targetType: Type, params: IParameter[], args: any[], providers: IProvider) {
         let propertykey = ctor;
         let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
         if (!advices) {
@@ -120,7 +120,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
         let self = this;
         return (...args: any[]) => {
             let larg = lang.last(args);
-            let cuurPrd: IProviders = null;
+            let cuurPrd: IProvider = null;
             if (larg instanceof InvokedProviders) {
                 args = args.slice(0, args.length - 1);
                 cuurPrd = larg;

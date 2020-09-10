@@ -1,5 +1,5 @@
 import {
-    Type, ObjectMap, ParamProviders, Inject, TypeReflectsToken, ITypeReflects
+    Type, ObjectMap, Provider, Inject, TypeReflectsToken, ITypeReflects
 } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { Advice } from './decorators';
@@ -92,11 +92,11 @@ export class Advisor implements IAdvisor {
      *
      * @template T
      * @param {Type<T>} aspect
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof Advisor
      */
-    resolve<T>(aspect: Type<T>, ...providers: ParamProviders[]): T {
+    resolve<T>(aspect: Type<T>, ...providers: Provider[]): T {
         return this.reflects.getInjector(aspect).resolve(aspect, ...providers);
     }
 }

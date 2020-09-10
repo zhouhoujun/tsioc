@@ -1,6 +1,6 @@
 import { DecoratorScope } from '../types';
 import { isFunction, isArray, isClass } from '../utils/lang';
-import { ParamProviders } from '../tokens';
+import { Provider } from '../tokens';
 import { IActionSetup, createContext } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { INJECTOR, IInjector } from '../IInjector';
@@ -131,7 +131,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let singleton = ctx.targetReflect.singleton;
     let actInjector = ctx.reflects.getActionInjector();
     const container = injector.getContainer();
-    let factory = (...providers: ParamProviders[]) => {
+    let factory = (...providers: Provider[]) => {
         if (singleton && container.hasSingleton(type)) {
             return container.getSingleton(type);
         }

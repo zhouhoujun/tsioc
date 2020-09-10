@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, ObjectMapProvider, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { ConfigureMgrToken, ConfigureLoaderToken, IConfigureManager, DefaultConfigureToken, IConfigureMerger, ConfigureMergerToken } from './IConfigureManager';
 import { RunnableConfigure, ProcessRunRootToken } from './RunnableConfigure';
@@ -100,7 +100,7 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
      */
     protected async loadConfig(src: string): Promise<T> {
         if (this.container.has(ConfigureLoaderToken)) {
-            let loader = this.container.resolve(ConfigureLoaderToken, ObjectMapProvider.parse({ baseURL: this.baseURL, container: this.container }));
+            let loader = this.container.resolve(ConfigureLoaderToken, { provide: 'baseURL', useValue: this.baseURL }, { provide: 'container', useValue: this.container });
             return await loader.load(src) as T;
         } else if (src) {
             let cfg = await this.container.getLoader().load([src])

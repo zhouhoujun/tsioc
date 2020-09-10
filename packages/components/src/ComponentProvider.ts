@@ -1,5 +1,5 @@
 import {
-    Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProviders,
+    Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProvider,
     SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject,
     ClassType, Injectable, isTypeObject, isFunction, isDefined, TokenId
 } from '@tsdi/ioc';
@@ -46,8 +46,8 @@ export abstract class ComponentProvider {
     @Inject(TypeReflectsToken) reflects: ITypeReflects;
 
 
-    private providers: IProviders;
-    getProviders(): IProviders {
+    private providers: IProvider;
+    getProviders(): IProvider {
         if (!this.providers) {
             this.providers = this.reflects.getActionInjector().get(DecoratorProvider).getProviders(this.dectorator);
         }

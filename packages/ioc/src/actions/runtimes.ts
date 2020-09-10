@@ -1,6 +1,6 @@
 import { Type, DecoratorScope } from '../types';
 import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
-import { Token, ParamProviders, isToken } from '../tokens';
+import { Token, Provider, isToken } from '../tokens';
 import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
 import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../utils/tk';
@@ -48,10 +48,10 @@ export interface RuntimeOption extends RegOption {
     /**
      * exter providers for resolve. origin providers
      *
-     * @type {ParamProviders[]}
+     * @type {Provider[]}
      * @memberof RegisterActionContext
      */
-    providers?: ParamProviders[];
+    providers?: Provider[];
 }
 
 

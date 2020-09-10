@@ -1,4 +1,4 @@
-import { Abstract, IProviders, InjectorProvider } from '@tsdi/ioc';
+import { Abstract, IProvider, InjectorProvider } from '@tsdi/ioc';
 import { ComponentMetadata, DirectiveMetadata } from '../metadata';
 
 /**
@@ -16,7 +16,7 @@ export abstract class CompilerFacade {
     /**
      * compiler providers. the IInjector compiler registered in.
      */
-    abstract getCompilerProviders(): IProviders;
+    abstract getCompilerProviders(): IProvider;
 
     abstract compileTemplate(template: any): any;
 

@@ -1,7 +1,7 @@
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Suite } from './decorators';
 import {
-    Inject, IocExt, RegSingletionAction, ProviderTypes, InjectReference,
+    Inject, IocExt, RegSingletionAction, Provider, InjectReference,
     DesignRegisterer, RuntimeRegisterer, DecoratorProvider
 } from '@tsdi/ioc';
 import { BootContext, AnnoationAction } from '@tsdi/boot';
@@ -39,7 +39,7 @@ export class UnitSetup {
                 {
                     provide: BootContext,
                     deps: [ContainerToken],
-                    useFactory: (container: IContainer, ...providers: ProviderTypes[]) => {
+                    useFactory: (container: IContainer, ...providers: Provider[]) => {
                         let ref = new InjectReference(BootContext, Suite.toString());
                         if (container.has(ref)) {
                             return container.get(ref, ...providers);

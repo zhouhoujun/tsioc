@@ -1,5 +1,5 @@
 import {
-    Singleton, ProviderTypes, lang, isString, isBoolean,
+    Singleton, Provider, lang, isString, isBoolean,
     isDate, isObject, isArray, isNumber, isUndefined
 } from '@tsdi/ioc';
 import { BuilderService } from '@tsdi/boot';
@@ -28,10 +28,10 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
      * build template.
      *
      * @param {ITemplateOption} options
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {Promise<ITemplateContext>}
      */
-    async buildTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ITemplateContext> {
+    async buildTemplate(options: ITemplateOption, ...providers: Provider[]): Promise<ITemplateContext> {
         let injector = options.injector ?? options.parent?.injector;
         let ctx = TemplateContext.parse(injector || this.root, options);
         providers.length && ctx.providers.inject(...providers);
@@ -55,7 +55,7 @@ export class ComponentBuilder extends BuilderService implements IComponentBuilde
         return ctx;
     }
 
-    async resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any> {
+    async resolveTemplate(options: ITemplateOption, ...providers: Provider[]): Promise<any> {
         let ctx = await this.buildTemplate(options, ...providers);
         return !ctx.destroyed ? ctx.getResultRef() : ctx.value;
     }

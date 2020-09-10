@@ -1,6 +1,6 @@
 import {
     IocResolveScope, IActionSetup, PROVIDERS, isClassType, DecoratorProvider,
-    isToken, lang, InjectReference, ProviderTypes
+    isToken, lang, InjectReference, Provider
 } from '@tsdi/ioc';
 import { ServicesContext } from './ServicesContext';
 import { CTX_TARGET_REFS } from '../tk';
@@ -71,7 +71,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             types.forEach(ty => {
                 let reftk = new InjectReference(ty, tk);
                 if (!services.has(reftk, alias) && injector.hasRegister(reftk)) {
-                    services.set(reftk, (...providers: ProviderTypes[]) => injector.resolve(reftk, ...providers))
+                    services.set(reftk, (...providers: Provider[]) => injector.resolve(reftk, ...providers))
                 }
             });
         });

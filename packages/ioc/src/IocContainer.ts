@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
-import { InjectToken, Token, Factory, SymbolType, ParamProviders, InjectTypes, InstanceFactory } from './tokens';
+import { InjectToken, Token, Factory, SymbolType, Provider, InstanceFactory } from './tokens';
 import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { registerCores } from './registerCores';
@@ -130,13 +130,13 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         registerCores(this);
     }
 
-    protected parse(...providers: InjectTypes[]): IInjector {
+    protected parse(...providers: Provider[]): IInjector {
         return this.getInstance(PROVIDERS).inject(...providers);
     }
 
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
         return singleton ?
-            (...providers: ParamProviders[]) => {
+            (...providers: Provider[]) => {
                 if (injector.hasSingleton(key)) {
                     return injector.getSingleton(key);
                 }
@@ -144,6 +144,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 injector.setSingleton(key, instance);
                 return instance;
             }
-            : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
+            : (...providers: Provider[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
     }
 }

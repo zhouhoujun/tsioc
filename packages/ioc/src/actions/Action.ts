@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { Handler, chain, isBoolean, isClass, isArray, lang } from '../utils/lang';
-import { Token, tokenId, TokenId, ProviderTypes, SymbolType, isToken, InjectTypes } from '../tokens';
-import { IInjector, IProviders, INJECTOR, PROVIDERS, isInjector } from '../IInjector';
+import { Token, tokenId, TokenId, Provider, SymbolType, isToken } from '../tokens';
+import { IInjector, IProvider, INJECTOR, PROVIDERS, isInjector } from '../IInjector';
 import { IDestoryable, IocDestoryable } from '../Destoryable';
 import { ITypeReflects, TypeReflectsToken } from '../services/ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
@@ -18,10 +18,10 @@ export interface ActCtxOption {
     /**
      * providers for contexts.
      *
-     * @type {(ProviderTypes[] | IProviders)}
+     * @type {(Provider[] | IProvider)}
      * @memberof BootOption
      */
-    contexts?: ProviderTypes[] | IProviders;
+    contexts?: Provider[] | IProvider;
 }
 
 /**
@@ -83,7 +83,7 @@ export interface IIocContext<
     /**
      * current context providers.
      */
-    readonly context: IProviders;
+    readonly context: IProvider;
     /**
      * reflects.
      */
@@ -137,9 +137,9 @@ export interface IIocContext<
     /**
      * set context provider of boot application.
      *
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      */
-    set(...providers: ProviderTypes[]);
+    set(...providers: Provider[]);
     /**
      * get root container.
      */
@@ -383,7 +383,7 @@ export abstract class IocContext<
     T extends ActCtxOption = ActCtxOption,
     TJ extends IInjector = IInjector> extends IocActCtx implements IIocContext<T, TJ> {
 
-    public readonly context: IProviders;
+    public readonly context: IProvider;
 
     constructor(@Inject(INJECTOR) injector: TJ) {
         super();
@@ -488,9 +488,9 @@ export abstract class IocContext<
     /**
      * set context provider of boot application.
      *
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      */
-    set(...providers: ProviderTypes[]);
+    set(...providers: Provider[]);
     set(...providers: any[]) {
         if (providers.length === 2 && isToken(providers[0])) {
             let provde = providers[0];
@@ -571,7 +571,7 @@ export interface IocPdrsOption extends ActCtxOption {
     /**
      *  providers.
      */
-    providers?: InjectTypes[] | IInjector;
+    providers?: Provider[] | IInjector;
 }
 
 export interface IIocPdrsContext<
@@ -580,7 +580,7 @@ export interface IIocPdrsContext<
     /**
      * get providers of options.
      */
-    readonly providers: IProviders;
+    readonly providers: IProvider;
 }
 
 
@@ -591,7 +591,7 @@ export abstract class IocPdrsContext<
     /**
      * get providers of options.
      */
-    get providers(): IProviders {
+    get providers(): IProvider {
         return this.context.getValue(CTX_PROVIDERS) ?? this.getProviders();
     }
 

@@ -1,4 +1,4 @@
-import { ProviderTypes } from '@tsdi/ioc';
+import { Provider } from '@tsdi/ioc';
 
 /**
  * Flags passed into template functions to determine which blocks (i.e. creation, update)
@@ -62,7 +62,7 @@ export interface DirectiveMetadataFacade {
     outputs: string[];
     usesInheritance: boolean;
     exportAs?: string[];
-    providers?: ProviderTypes[];
+    providers?: Provider[];
     viewQueries: QueryMetadataFacade[];
 }
 
@@ -73,7 +73,7 @@ export interface ComponentMetadataFacade extends DirectiveMetadataFacade {
     pipes: Map<string, any>;
     directives: { selector: string, expression: any }[];
     styles: string[];
-    viewProviders?: ProviderTypes[];
+    viewProviders?: Provider[];
     interpolation?: [string, string];
     changeDetection?: number;
 }

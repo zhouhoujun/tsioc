@@ -1,6 +1,6 @@
 import { Type } from './types';
-import { tokenId, Token, TokenId, ParamProviders } from './tokens';
-import { IInjector, IProviders } from './IInjector';
+import { tokenId, Token, TokenId, Provider } from './tokens';
+import { IInjector, IProvider } from './IInjector';
 
 
 export type MethodType<T> = string | ((tag: T) => Function);
@@ -74,11 +74,11 @@ export interface IMethodAccessor {
      * @param { IInjector } injector
      * @param {(Token<T> | T)} target
      * @param {MethodType} propertyKey
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR;
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
 
     /**
      * create params instances with IParameter and provider
@@ -89,7 +89,7 @@ export interface IMethodAccessor {
      * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createParams(injector: IInjector, params: IParameter[], ...providers: ParamProviders[]): any[];
+    createParams(injector: IInjector, params: IParameter[], ...providers: Provider[]): any[];
 }
 
 /**
@@ -97,4 +97,4 @@ export interface IMethodAccessor {
  */
 export const MethodAccessorToken: TokenId<IMethodAccessor> = tokenId<IMethodAccessor>('DI_METHOD_ACCESSOR');
 
-export const INVOKED_PROVIDERS = tokenId<IProviders>('INVOKED_PROVIDERS');
+export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');

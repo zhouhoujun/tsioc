@@ -1,5 +1,5 @@
 import {
-    Type, MethodMetadata, IParameter, ClassMetadata, IProviders, TypeMetadata, tokenId, Token,
+    Type, MethodMetadata, IParameter, ClassMetadata, IProvider, TypeMetadata, tokenId, Token,
     isNullOrUndefined, IocContext, ActCtxOption, IInjector, createContext, PROVIDERS, TokenId
 } from '@tsdi/ioc';
 import { JoinpointState } from './JoinpointState';
@@ -18,7 +18,7 @@ export interface JoinpointOption extends ActCtxOption {
     annotations?: (ClassMetadata | MethodMetadata)[];
     target?: any;
     targetType: Type;
-    providers?: IProviders;
+    providers?: IProvider;
 }
 
 export const AOP_METHOD_NAME: TokenId<string> = tokenId<string>('AOP_METHOD_NAME');
@@ -26,7 +26,7 @@ export const AOP_METHOD_FULLNAME = tokenId<string>('AOP_METHOD_FULLNAME');
 export const AOP_METHOD_ORIGIN = tokenId<Function>('AOP_METHOD_ORIGIN');
 export const AOP_METHOD_PARAMS = tokenId<IParameter[]>('AOP_METHOD_PARAMS');
 export const AOP_METHOD_ANNOTATIONS = tokenId<(ClassMetadata | MethodMetadata)[]>('AOP_METHOD_ANNOTATIONS');
-export const AOP_METHOD_PROVIDERS = tokenId<IProviders>('AOP_METHOD_PROVIDERS');
+export const AOP_METHOD_PROVIDERS = tokenId<IProvider>('AOP_METHOD_PROVIDERS');
 export const AOP_PROV_JOINPOINT = tokenId<Joinpoint>('AOP_PROV_JOINPOINT');
 export const AOP_ARGS = tokenId<any[]>('AOP_ARGS');
 export const AOP_TARGET = tokenId<any>('AOP_TARGET');
@@ -179,15 +179,15 @@ export class Joinpoint extends IocContext {
         return this.getValue(AOP_TARGET_TYPE);
     }
 
-    get providers(): IProviders {
+    get providers(): IProvider {
         if (!this.hasValue(AOP_METHOD_PROVIDERS)) {
             this.setValue(AOP_METHOD_PROVIDERS, this.injector.getInstance(PROVIDERS));
         }
         return this.getValue(AOP_METHOD_PROVIDERS)
     }
 
-    getProvProviders(): IProviders[] {
-        let pdrs: IProviders[] = [];
+    getProvProviders(): IProvider[] {
+        let pdrs: IProvider[] = [];
         let currj: Joinpoint = this.provJoinpoint;
         while (currj) {
             let pdr = currj.hasValue(AOP_METHOD_PROVIDERS) ? currj.providers : null;

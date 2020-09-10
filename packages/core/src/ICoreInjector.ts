@@ -1,4 +1,4 @@
-import { IInjector, Token, ProviderTypes, IProviders, Type } from '@tsdi/ioc';
+import { IInjector, Token, Provider, IProvider, Type } from '@tsdi/ioc';
 import { ServiceOption } from './resolves/ServiceContext';
 import { ServicesOption } from './resolves/ServicesContext';
 import { ServiceProvider } from './services/ServiceProvider';
@@ -42,31 +42,31 @@ export interface ICoreInjector extends IInjector {
      *
      * @template T
      * @param {(Token<T> | ServiceOption<T>)} target servive token.
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IContainer
      */
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T;
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T;
 
     /**
      * get all service extends type.
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T[]} all service instance type of token type.
      * @memberof IContainer
      */
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[];
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[];
 
     /**
      * get all provider service in the injector.
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target
-     * @returns {IProviders}
+     * @returns {IProvider}
      * @memberof IServicesResolver
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProviders;
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
 }

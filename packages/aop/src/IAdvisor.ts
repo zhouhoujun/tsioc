@@ -1,4 +1,4 @@
-import { Type, ObjectMap, ParamProviders, tokenId, TokenId } from '@tsdi/ioc';
+import { Type, ObjectMap, Provider, tokenId, TokenId } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { AdviceMetadata } from './metadatas';
 
@@ -80,9 +80,9 @@ export interface IAdvisor {
      *
      * @template T
      * @param {Type<T>} aspect
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IAdvisor
      */
-    resolve<T>(aspect: Type<T>, ...providers: ParamProviders[]): T;
+    resolve<T>(aspect: Type<T>, ...providers: Provider[]): T;
 }

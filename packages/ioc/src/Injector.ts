@@ -1,11 +1,9 @@
 import { Type } from './types';
 import { lang, isClassType, isMetadataObject } from './utils/lang';
-import { Token, Factory, SymbolType, InjectTypes, InstanceFactory, ProviderTypes, isToken } from './tokens';
-import { IInjector, IProviders, InjectorProxy } from './IInjector';
+import { Token, Factory, SymbolType, Provider, InstanceFactory, isToken } from './tokens';
+import { IInjector, IProvider, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
-import { ObjectMapProvider, Provider } from './providers';
-
 // use core-js in browser.
 
 /**
@@ -101,7 +99,7 @@ export class Injector extends BaseInjector implements IInjector {
         }
     }
 
-    protected parse(...providers: InjectTypes[]): IInjector {
+    protected parse(...providers: Provider[]): IInjector {
         return new (lang.getClass(this))(this.proxy).inject(...providers);
     }
 
@@ -142,7 +140,7 @@ export class Injector extends BaseInjector implements IInjector {
  * @class ContextInjector
  * @extends {Injector}
  */
-export class InjectorProvider extends Injector implements IProviders {
+export class InjectorProvider extends Injector implements IProvider {
     protected initReg() {
     }
 }
@@ -152,12 +150,10 @@ export class InjectorProvider extends Injector implements IProviders {
  *
  * @export
  * @param {*} target
- * @returns {target is ProviderTypes}
+ * @returns {target is Provider}
  */
-export function isProvider(target: any): target is ProviderTypes {
+export function isProvider(target: any): target is Provider {
     return target instanceof InjectorProvider
-        || target instanceof ObjectMapProvider
-        || target instanceof Provider
         || (isMetadataObject(target, 'provide') && isToken(target.provide));
 }
 
@@ -165,7 +161,7 @@ export function isProvider(target: any): target is ProviderTypes {
 /**
  * invoked providers
  */
-export class InvokedProviders extends Injector implements IProviders {
+export class InvokedProviders extends Injector implements IProvider {
     protected initReg() {
     }
 }

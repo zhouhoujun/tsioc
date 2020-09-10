@@ -2,10 +2,10 @@ import { Type } from '../types';
 import { Token, tokenId, TokenId } from '../tokens';
 import { IParameter } from '../IMethodAccessor';
 import { ITypeReflect } from '../services/ITypeReflect';
-import { IProviders } from '../IInjector';
+import { IProvider } from '../IInjector';
 import { ActCtxOption } from '../actions/Action';
 
-export const CTX_PROVIDERS: TokenId<IProviders> = tokenId<IProviders>('DI_PROVIDERS');
+export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('DI_PROVIDERS');
 export const CTX_OPTIONS = tokenId<ActCtxOption>('CTX_OPTIONS');
 export const CTX_PARAMS = tokenId<IParameter[]>('CTX_PARAMS');
 export const CTX_ARGS = tokenId<any[]>('CTX_ARGS');

@@ -1,4 +1,4 @@
-import { IocCoreService, IInjector, Token, ProviderTypes, isToken, IProviders, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext } from '../resolves/ServiceContext';
 import { ResolveServiceScope } from '../resolves/service-actions';
 import { ServicesOption, ServicesContext } from '../resolves/ServicesContext';
@@ -17,11 +17,11 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      *
      * @template T
      * @param {(Token<T> | ServiceOption<T>)} target
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
+    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
         let context = ServiceContext.parse(injector, isToken(target) ? { token: target } : target);
         let pdr = context.providers;
         providers.length && pdr.inject(...providers);
@@ -43,11 +43,11 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T[]} all service instance type of token type.
      * @memberof IContainer
      */
-    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[] {
+    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
         let maps = this.getServiceProviders(injector, target);
         let services = [];
         let pdr = injector.get(PROVIDERS).inject(...providers);
@@ -68,10 +68,10 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      * @template T
      * @param {Token<T>} target
      * @param {ServicesContext} [ctx]
-     * @returns {IProviders}
+     * @returns {IProvider}
      * @memberof Container
      */
-    getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProviders {
+    getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
         let context = ServicesContext.parse(injector, isToken(target) ? { token: target } : target);
         this.proxy().getActionInjector()
             .getInstance(ResolveServicesScope)

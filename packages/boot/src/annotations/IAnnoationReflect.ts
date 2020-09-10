@@ -1,4 +1,4 @@
-import { ITypeReflect, ClassMetadata, RegInMetadata, Token, ClassType, IProviders } from '@tsdi/ioc';
+import { ITypeReflect, ClassMetadata, RegInMetadata, Token, ClassType, IProvider } from '@tsdi/ioc';
 
 
 /**
@@ -32,7 +32,7 @@ export interface IAnnoationReflect extends ITypeReflect {
     /**
      * get decorator providers.
      */
-    getDecorProviders?(): IProviders;
+    getDecorProviders?(): IProvider;
 
      /**
      * get annoation.

@@ -1,7 +1,7 @@
 import { ClassType, ObjectMap, Type, MetadataTypes, DefineClassTypes  } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { isUndefined, isClassType, lang } from '../utils/lang';
-import { Token, ParamProviders } from '../tokens';
+import { Token, Provider } from '../tokens';
 import { IInjector, InjectorProxy } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
@@ -285,10 +285,10 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
      * @template T
      * @param {ClassType<T>} type
      * @param {string} propertyKey
-     * @returns {ParamProviders[]}
+     * @returns {Provider[]}
      * @memberof TypeReflects
      */
-    getParamProviders<T>(type: ClassType<T>, propertyKey: string): ParamProviders[] {
+    getParamProviders<T>(type: ClassType<T>, propertyKey: string): Provider[] {
         let tref = this.get(type);
         if (tref.methodParamProviders) {
             return tref.methodParamProviders.get(propertyKey) || [];

@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { lang, isFunction, isBaseType } from '../utils/lang';
-import { Token, isToken, ParamProviders } from '../tokens';
-import { IInjector, IProviders } from '../IInjector';
+import { Token, isToken, Provider } from '../tokens';
+import { IInjector, IProvider } from '../IInjector';
 import { TypeReflectsToken } from '../services/ITypeReflects';
 import { IParameter, IMethodAccessor, MethodType, INVOKED_PROVIDERS } from '../IMethodAccessor';
 import { RuntimeContext, RuntimeParamScope } from './runtimes';
@@ -26,11 +26,11 @@ export class MethodAccessor implements IMethodAccessor {
      * @param {IInjector} injector
      * @param {*} target
      * @param {(string | ((tag: T) => Function))} propertyKey
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR {
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
         let targetClass: Type;
         let instance: T;
         if (isToken(target)) {
@@ -76,15 +76,15 @@ export class MethodAccessor implements IMethodAccessor {
      *
      * @param {IInjector} injector
      * @param {IParameter[]} params
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {any[]}
      * @memberof MethodAccessor
      */
-    createParams(injector: IInjector, params: IParameter[], ...providers: ParamProviders[]): any[] {
+    createParams(injector: IInjector, params: IParameter[], ...providers: Provider[]): any[] {
         return this.resolveParams(injector, params, injector.getInstance(INVOKED_PROVIDERS).inject(...providers));
     }
 
-    protected resolveParams(injector: IInjector, params: IParameter[], providers: IProviders): any[] {
+    protected resolveParams(injector: IInjector, params: IParameter[], providers: IProvider): any[] {
         return params.map((param, index) => {
             if (param.provider && providers.has(param.provider)) {
                 return providers.get(param.provider);

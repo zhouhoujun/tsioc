@@ -1,4 +1,4 @@
-import { ProviderTypes, IocContainer, Type, Token, IProviders } from '@tsdi/ioc';
+import { Provider, IocContainer, Type, Token, IProvider } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
 import { ModuleLoader, IModuleLoader } from './services/ModuleLoader';
@@ -67,11 +67,11 @@ export class Container extends IocContainer implements IContainer {
      *
      * @template T
      * @param {(Token<T> | ServiceOption<T>)} target
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
         return this.getServiceProvider().getService(this, target, ...providers);
     }
 
@@ -80,11 +80,11 @@ export class Container extends IocContainer implements IContainer {
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T[]}
      * @memberof Container
      */
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[] {
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
         return this.getServiceProvider().getServices(this, target, ...providers);
     }
 
@@ -97,7 +97,7 @@ export class Container extends IocContainer implements IContainer {
      * @returns {Injector}
      * @memberof Container
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProviders {
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
         return this.getServiceProvider().getServiceProviders(this, target);
     }
 }

@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { isString, isNumber, isArray } from './utils/lang';
-import { isToken, Token, ProvideToken, ProviderTypes } from './tokens';
+import { isToken, Token, ProvideToken, Provider } from './tokens';
 import { IIocContainer } from './IIocContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata,
@@ -49,7 +49,7 @@ export interface IAutoWiredDecorator {
      *
      * @param {Token<T>} provider the providers for the method.
      */
-    (providers: ProviderTypes[]): MethodDecorator;
+    (providers: Provider[]): MethodDecorator;
     /**
      * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
@@ -83,7 +83,7 @@ export interface IInjectDecorator {
      *
      * @param {Token<T>} provider the providers for the method.
      */
-    (providers: ProviderTypes[]): MethodDecorator;
+    (providers: Provider[]): MethodDecorator;
     /**
      * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
@@ -230,7 +230,7 @@ export interface IProvidersDecorator {
      *
      * @param {(Registration | symbol | string)} providers provider reference service to target.
      */
-    (providers: ProviderTypes[]): ClassMethodDecorator;
+    (providers: Provider[]): ClassMethodDecorator;
 
     /**
      * Providers decorator, for class. use to add ref service to the class.

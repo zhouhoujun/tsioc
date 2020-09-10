@@ -1,5 +1,5 @@
 import {
-    Type, createContext, IocPdrsOption, IocPdrsContext, IProviders, IIocContext, isDefined,
+    Type, createContext, IocPdrsOption, IocPdrsContext, IProvider, IIocContext, isDefined,
     isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, TokenId
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
@@ -58,7 +58,7 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
 
     getAnnoation(): IAnnotationMetadata;
 
-    readonly providers: IProviders;
+    readonly providers: IProvider;
 
     readonly injector: ICoreInjector;
 

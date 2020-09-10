@@ -1,5 +1,5 @@
 import { isNullOrUndefined } from '../utils/lang';
-import { Token, isToken, ProviderTypes } from '../tokens';
+import { Token, isToken, Provider } from '../tokens';
 import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
 import { ResolveContext, ResolveOption, IResolveContext } from './IocResolveAction';
 import * as rla from './resolves';
@@ -33,11 +33,11 @@ export class ResolveLifeScope<T> extends rla.IocResolveScope<IResolveContext<T>>
      *
      * @template T
      * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof ResolveLifeScope
      */
-    resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         let ctx = ResolveContext.parse(injector, isToken(token) ? { token: token } : token);
         let pdr = ctx.providers;
         providers.length && pdr.inject(...providers);

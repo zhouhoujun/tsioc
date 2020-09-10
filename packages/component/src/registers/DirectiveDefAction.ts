@@ -1,4 +1,4 @@
-import { CTX_CURR_DECOR, DesignContext, IProviders, DecoratorProvider, lang } from '@tsdi/ioc';
+import { CTX_CURR_DECOR, DesignContext, IProvider, DecoratorProvider, lang } from '@tsdi/ioc';
 import { DirectiveMetadata } from '../metadata';
 import { IDirectiveReflect } from '../IReflect';
 import { CompilerFacade } from '../compile/CompilerFacade';
@@ -11,7 +11,7 @@ export const DirectiveDefAction = function (ctx: DesignContext, next: () => void
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<DirectiveMetadata>(currDecor, ctx.type);
     let compRefl = ctx.targetReflect as IDirectiveReflect;
-    let prdrs: IProviders;
+    let prdrs: IProvider;
     if (!compRefl.getDecorProviders) {
         prdrs = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).getProviders(currDecor);
         if (prdrs) {

@@ -1,4 +1,4 @@
-import { Injector, Type, Token, ProviderTypes, IProviders } from '@tsdi/ioc';
+import { Injector, Type, Token, Provider, IProvider } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
 import { ServiceProvider } from './services/ServiceProvider';
 import { ModuleProvider } from './services/ModuleProvider';
@@ -58,11 +58,11 @@ export class CoreInjector extends Injector implements ICoreInjector {
      *
      * @template T
      * @param {(Token<T> | ServiceOption<T>)} target
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof Container
      */
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderTypes[]): T {
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
         return this.getServiceProvider().getService(this, target, ...providers);
     }
 
@@ -71,11 +71,11 @@ export class CoreInjector extends Injector implements ICoreInjector {
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T[]}
      * @memberof Container
      */
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderTypes[]): T[] {
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
         return this.getServiceProvider().getServices(this, target, ...providers);
     }
 
@@ -88,7 +88,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @returns {Injector}
      * @memberof Container
      */
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProviders {
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
         return this.getServiceProvider().getServiceProviders(this, target);
     }
 }

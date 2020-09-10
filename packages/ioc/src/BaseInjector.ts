@@ -3,10 +3,10 @@ import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
     isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined
 } from './utils/lang';
-import { Provider, ParamProvider, ObjectMapProvider, StaticProviders } from './providers';
+import { StaticProviders } from './providers';
 import {
-    Token, InstanceFactory, SymbolType, Factory, ProviderTypes, ParamProviders,
-    InjectTypes, InjectReference, isToken, Registration, getTokenKey
+    Token, InstanceFactory, SymbolType, Factory, Provider, InjectReference,
+    isToken, Registration, getTokenKey
 } from './tokens';
 import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy, IValueInjector } from './IInjector';
 import { IIocContainer } from './IIocContainer';
@@ -17,6 +17,7 @@ import { ActionInjectorToken } from './actions/Action';
 import { ResolveOption } from './actions/IocResolveAction';
 import { ResolveLifeScope } from './actions/ResolveLifeScope';
 import { IocCacheManager } from './actions/IocCacheManager';
+import { Providers } from './decorators';
 
 /**
  * value injector.
@@ -291,7 +292,7 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
         return refToken;
     }
 
-    bindTagProvider<T>(target: Token, ...providers: InjectTypes[]): InjectReference<IInjector> {
+    bindTagProvider<T>(target: Token, ...providers: Provider[]): InjectReference<IInjector> {
         let refToken = new InjectReference(PROVIDERS, target);
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
@@ -304,11 +305,11 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
     /**
      * inject providers.
      *
-     * @param {...InjectTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {this}
      * @memberof BaseInjector
      */
-    inject(...providers: InjectTypes[]): this {
+    inject(...providers: Provider[]): this {
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
@@ -317,23 +318,8 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
                 this.injectModule(...p);
             } else if (p instanceof BaseInjector) {
                 this.copy(p);
-            } else if (p instanceof Provider) {
-                if (p instanceof ParamProvider) {
-                    this.factories.set(this.getTokenKey(p.getToken()), (...providers: ParamProviders[]) => p.resolve(this, ...providers));
-                } else {
-                    this.factories.set(this.getTokenKey(p.type), (...providers: ParamProviders[]) => p.resolve(this, ...providers));
-                }
             } else if (isClass(p)) {
                 this.registerType(p);
-            } else if (p instanceof ObjectMapProvider) {
-                let pr = p.get();
-                lang.forIn(pr, (val, name) => {
-                    if (name && isString(name)) {
-                        // object this can not resolve token. set all fileld as value factory.
-                        this.values.set(name, val);
-                    }
-                });
-
             } else if (isBaseObject(p)) {
                 let pr = p as StaticProviders;
                 if (isToken(pr.provide)) {
@@ -351,10 +337,11 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
                     } else if (isClass(pr.useClass)) {
                         this.registerType(pr.useClass, pr.provide, pr.singleton);
                     } else if (isFunction(pr.useFactory)) {
-                        this.factories.set(provide, (...providers: ProviderTypes[]) => {
+                        let deps = pr.deps;
+                        this.factories.set(provide, (...providers: Provider[]) => {
                             let args = [];
-                            if (isArray(pr.deps) && pr.deps.length) {
-                                args = pr.deps.map(d => {
+                            if (isArray(deps) && deps.length) {
+                                args = deps.map(d => {
                                     if (isToken(d)) {
                                         return this.resolve(d, ...providers);
                                     } else {
@@ -366,6 +353,22 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
                         });
                     } else if (isToken(pr.useExisting)) {
                         this.factories.set(provide, (...providers) => this.resolve(pr.useExisting, ...providers));
+                    } else if (isClass(pr.provide)) {
+                        let Ctor = pr.provide;
+                        let deps = pr.deps;
+                        this.factories.set(provide, (...providers) => {
+                            let args = [];
+                            if (isArray(deps) && deps.length) {
+                                args = deps.map(d => {
+                                    if (isToken(d)) {
+                                        return this.resolve(d, ...providers);
+                                    } else {
+                                        return d;
+                                    }
+                                });
+                            }
+                            return new Ctor(...args);
+                        });
                     }
                 }
             }
@@ -470,12 +473,12 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {(string | ProviderTypes)} [alias]
-     * @param {...ProviderTypes[]} providers
+     * @param {(string | Provider)} [alias]
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof BaseInjector
      */
-    get<T>(token: Token<T>, alias?: string | ProviderTypes, ...providers: ProviderTypes[]): T {
+    get<T>(token: Token<T>, alias?: string | Provider, ...providers: Provider[]): T {
         let key;
         if (isString(alias)) {
             key = this.getTokenKey(token, alias);
@@ -488,7 +491,7 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
         return this.getInstance(key, ...providers);
     }
 
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T {
+    getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T {
         return this.getSingleton(key) ?? this.getValue(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
     }
 
@@ -501,11 +504,11 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      *
      * @template T
      * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IocContainer
      */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderTypes[]): T {
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         return this.getSingleton(ActionInjectorToken).getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
@@ -589,15 +592,15 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      * @param {(T | Type<T>)} target type of class or instance
      * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {TR}
      * @memberof BaseInjector
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR {
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
         return this.getSingleton(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
     }
 
-    createParams(params: IParameter[], ...providers: ParamProviders[]): any[] {
+    createParams(params: IParameter[], ...providers: Provider[]): any[] {
         return this.getSingleton(MethodAccessorToken).createParams(this, params, ...providers);
     }
 
@@ -644,7 +647,7 @@ export abstract class BaseInjector extends ValueInjector implements IInjector {
      * parse providers to new injector.
      * @param providers
      */
-    protected abstract parse(...providers: InjectTypes[]): IInjector;
+    protected abstract parse(...providers: Provider[]): IInjector;
 
     protected hasInRoot(key: SymbolType): boolean {
         return false;
