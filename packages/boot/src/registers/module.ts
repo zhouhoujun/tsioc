@@ -4,10 +4,10 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../annotations/merger';
-import { IModuleReflect } from '../modules/IModuleReflect';
-import { ModuleConfigure } from '../modules/ModuleConfigure';
+import { IModuleReflect } from '../modules/reflect';
+import { ModuleConfigure } from '../modules/configure';
 import { CTX_MODULE_ANNOATION, CTX_MODULE_EXPORTS, ParentInjectorToken } from '../tk';
-import { ModuleInjector, ModuleProviders } from '../modules/ModuleInjector';
+import { ModuleInjector, ModuleProviders } from '../modules/injector';
 import { ModuleRef } from '../modules/ModuleRef';
 
 /**

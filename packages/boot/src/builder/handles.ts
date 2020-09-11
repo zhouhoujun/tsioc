@@ -1,6 +1,6 @@
 import { ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup, Inject, INJECTOR, isClass, isNullOrUndefined } from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
-import { IAnnoationReflect } from '../annotations/IAnnoationReflect';
+import { IAnnoationReflect } from '../annotations/reflect';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
 

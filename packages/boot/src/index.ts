@@ -7,11 +7,11 @@ export * from './services/IBuilderService';
 export * from './services/BuilderService';
 
 // annotations
-export * from './annotations/IAnnoationReflect';
+export * from './annotations/reflect';
 export * from './configure/Configure';
 export * from './configure/IConfigureManager';
-export * from './configure/ConfigureManager';
-export * from './configure/ConfigureRegister';
+export * from './configure/manager';
+export * from './configure/register';
 
 // runnables
 export * from './runnable/Startup';
@@ -31,10 +31,10 @@ export * from './registers/module';
 export * from './registers/Inj-module';
 
 // modules
-export * from './modules/IModuleReflect';
+export * from './modules/reflect';
 export * from './modules/ModuleRef';
-export * from './modules/ModuleInjector';
-export * from './modules/ModuleConfigure';
+export * from './modules/injector';
+export * from './modules/configure';
 
 // handles
 export * from './handles/Handle';

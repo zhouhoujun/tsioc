@@ -7,9 +7,9 @@ import {
     CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS, ProcessRunRootToken
 } from './tk';
 import { Configure } from './configure/Configure';
-import { ConfigureManager } from './configure/ConfigureManager';
+import { ConfigureManager } from './configure/manager';
 import { AnnoationContext } from './AnnoationContext';
-import { IModuleReflect } from './modules/IModuleReflect';
+import { IModuleReflect } from './modules/reflect';
 import { BootstrapMetadata } from './decorators';
 import { BootOption, IBootContext } from './Context';
 

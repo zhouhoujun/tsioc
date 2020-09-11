@@ -1,5 +1,5 @@
 import { Token, Modules } from '@tsdi/ioc';
-import { IAnnotationMetadata } from '../annotations/IAnnoationReflect';
+import { IAnnotationMetadata } from '../annotations/reflect';
 
 
 /**

@@ -4,7 +4,7 @@ import { BootContext } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { ApplicationContextToken, BuilderServiceToken, ROOT_INJECTOR } from './tk';
-import { ModuleInjector } from './modules/ModuleInjector';
+import { ModuleInjector } from './modules/injector';
 import { BootOption } from './Context';
 
 

@@ -1,6 +1,6 @@
 import { Type, tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { ModuleConfigure } from './modules/ModuleConfigure';
+import { ModuleConfigure } from './modules/configure';
 import { Configure } from './configure/Configure';
 import { IStartup } from './runnable/Startup';
 import { IAnnoationContext, IBootContext } from './Context';

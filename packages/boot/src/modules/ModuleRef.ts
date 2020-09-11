@@ -1,5 +1,5 @@
 import { Type, IInjector } from '@tsdi/ioc';
-import { IModuleReflect } from './IModuleReflect';
+import { IModuleReflect } from './reflect';
 
 
 export class ModuleRef<T = any> {

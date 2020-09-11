@@ -3,7 +3,7 @@ import {
     TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
-import { ModuleConfigure } from './modules/ModuleConfigure';
+import { ModuleConfigure } from './modules/configure';
 import { IMessage } from './messages/IMessageQueue';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';

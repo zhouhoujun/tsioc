@@ -7,8 +7,8 @@ import {
     ProcessRunRootToken, BuilderServiceToken, CTX_APP_CONFIGURE, CTX_MODULE_ANNOATION, CTX_MODULE_INST, CTX_MODULE_BOOT,
     CTX_MODULE_BOOT_TOKEN, CTX_APP_STARTUPS, CTX_MODULE_STARTUP
 } from '../tk';
-import { ConfigureManager } from '../configure/ConfigureManager';
-import { ConfigureRegister } from '../configure/ConfigureRegister';
+import { ConfigureManager } from '../configure/manager';
+import { ConfigureRegister } from '../configure/register';
 import { BuildHandles, BuildHandle } from '../builder/handles';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Startup } from '../runnable/Startup';

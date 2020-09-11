@@ -96,6 +96,4 @@ export interface Configure extends ProvidersMetadata {
  * boot configure.
  * @deprecated use Configure instead.
  */
-export interface RunnableConfigure extends Configure {
-
-}
+export type RunnableConfigure = Configure;

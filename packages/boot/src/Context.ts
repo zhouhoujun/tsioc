@@ -2,10 +2,10 @@ import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ActionType, AsyncHandler, ClassType, IIocContext, IocPdrsOption, IProvider, ObjectMap, RegInMetadata, Token, Type } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
-import { IAnnoationReflect, IAnnotationMetadata } from './annotations/IAnnoationReflect';
+import { IAnnoationReflect, IAnnotationMetadata } from './annotations/reflect';
 import { Configure } from './configure/Configure';
 import { BootstrapMetadata } from './decorators';
-import { IModuleReflect } from './modules/IModuleReflect';
+import { IModuleReflect } from './modules/reflect';
 import { ModuleRef } from './modules/ModuleRef';
 import { IStartup } from './runnable/Startup';
 

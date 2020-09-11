@@ -1,7 +1,7 @@
 import { Type } from '@tsdi/ioc';
-import { ModuleConfigure } from './ModuleConfigure';
+import { ModuleConfigure } from './configure';
 import { ModuleRef } from './ModuleRef';
-import { IAnnoationReflect } from '../annotations/IAnnoationReflect';
+import { IAnnoationReflect } from '../annotations/reflect';
 
 export interface IModuleReflect extends IAnnoationReflect {
     /**
