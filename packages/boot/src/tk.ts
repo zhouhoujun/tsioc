@@ -8,7 +8,6 @@ import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configu
 import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
-import { IModelParser } from './orm/IModelParser';
 
 export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
 export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
@@ -17,8 +16,13 @@ export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
 /**
  *  current application boot context token.
  */
-export const ApplicationContextToken: TokenId<IBootContext> = tokenId<IBootContext>('APP__CONTEXT');
+export const BOOTCONTEXT: TokenId<IBootContext> = tokenId<IBootContext>('BOOT__CONTEXT');
 
+/**
+ * current application boot context token.
+ * @deprecated use BOOTCONTEXT instead.
+ */
+export const ApplicationContextToken = BOOTCONTEXT;
 
 /**
  * configure manager token.

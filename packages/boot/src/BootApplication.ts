@@ -3,7 +3,7 @@ import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContaine
 import { BootContext } from './boot/ctx';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
-import { ApplicationContextToken, BuilderServiceToken, ROOT_INJECTOR } from './tk';
+import { BOOTCONTEXT, BuilderServiceToken, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption } from './Context';
 
@@ -77,7 +77,7 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
     }
 
     protected bindContextToken(ctx: T) {
-        this.getContainer().setValue(ApplicationContextToken, ctx);
+        this.getContainer().setValue(BOOTCONTEXT, ctx);
     }
 
     /**
