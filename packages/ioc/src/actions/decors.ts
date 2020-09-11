@@ -2,7 +2,7 @@ import { ClassType, DecoratorScope, ObjectMap } from '../types';
 import { ITypeDecoractors, IRuntimeDecorators } from '../services/ITypeReflect';
 import { ITypeReflects } from '../services/ITypeReflects';
 import { befAnn, cls, ann, aftAnn, prop, mth, befCtor, aftCtor, parm  } from '../utils/exps';
-import { DecorsRegisterer } from './IocRegAction';
+import { DecorsRegisterer } from './reg';
 
 /**
  * type decorators.

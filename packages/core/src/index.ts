@@ -15,16 +15,14 @@ export * from './services/ModuleProvider';
 export * from './services/ServiceProvider';
 
 // injector actions
-export * from './injects/InjContext';
-export * from './injects/InjLifeScope';
-export * from './injects/inj-actions';
+export * from './injects/context';
+export * from './injects/lifescope';
+export * from './injects/actions';
 
 // resolves actions
 // service
-export * from './resolves/ServiceContext';
-export * from './resolves/service-actions';
-// services
-export * from './resolves/ServicesContext';
-export * from './resolves/services-actions';
+export * from './resolves/context';
+export * from './resolves/actions';
+
 
 

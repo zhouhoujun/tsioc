@@ -8,16 +8,16 @@ import {
     Token, InstanceFactory, SymbolType, Factory, Provider, InjectReference,
     isToken, Registration, getTokenKey
 } from './tokens';
-import { IInjector, INJECTOR, PROVIDERS, InjectorProxyToken, InjectorProxy } from './IInjector';
+
+import { IInjector, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
-import { MethodAccessorToken, MethodType, IParameter } from './IMethodAccessor';
-import { TypeReflectsToken } from './services/ITypeReflects';
+import { MethodType, IParameter } from './IMethodAccessor';
 import { Destoryable } from './Destoryable';
 import { ActionInjectorToken } from './actions/Action';
-import { ResolveOption } from './actions/IocResolveAction';
-import { ResolveLifeScope } from './actions/ResolveLifeScope';
-import { IocCacheManager } from './actions/IocCacheManager';
-
+import { ResolveOption } from './actions/res';
+import { ResolveLifeScope } from './actions/resolve';
+import { IocCacheManager } from './actions/cache';
+import { INJECTOR, PROVIDERS, InjectorProxyToken, MethodAccessorToken, TypeReflectsToken } from './tk';
 
 /**
  * Base Injector.

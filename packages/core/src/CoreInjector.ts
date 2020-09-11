@@ -2,12 +2,12 @@ import { Injector, Type, Token, Provider, IProvider } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
 import { ServiceProvider } from './services/ServiceProvider';
 import { ModuleProvider } from './services/ModuleProvider';
-import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
+import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader, ModuleLoader } from './services/ModuleLoader';
-import { ServiceOption } from './resolves/ServiceContext';
-import { ServicesOption } from './resolves/ServicesContext';
+import { ServiceOption, ServicesOption } from './resolves/context';
 import { IContainer } from './IContainer';
 import { LoadType } from './types';
+import { ContainerBuilderToken } from './tk';
 
 export class CoreInjector extends Injector implements ICoreInjector {
 

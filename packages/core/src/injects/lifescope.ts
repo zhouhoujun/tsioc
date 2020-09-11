@@ -1,6 +1,6 @@
 import { LifeScope, Type, Modules, DesignRegisterer, IInjector, IocExt } from '@tsdi/ioc';
-import { InjDecorRegisterer, InjIocExtScope, InjModuleToTypesAction, InjModuleScope} from './inj-actions';
-import { InjContext } from './InjContext';
+import { InjDecorRegisterer, InjIocExtScope, InjModuleToTypesAction, InjModuleScope} from './actions';
+import { InjContext } from './context';
 
 /**
  * module inject life scope.

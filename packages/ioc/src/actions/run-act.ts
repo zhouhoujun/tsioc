@@ -3,7 +3,7 @@ import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
 import { Token, Provider, isToken } from '../tokens';
 import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
-import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../utils/tk';
+import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../tk';
 import { ParameterMetadata, AutorunMetadata } from '../metadatas';
 import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
@@ -11,8 +11,8 @@ import { IActionSetup, createContext } from './Action';
 import {
     IocRegAction, InitReflectAction, IocRegScope, RegOption, RegContext,
     ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
-} from './IocRegAction';
-import { IocCacheManager } from './IocCacheManager';
+} from './reg';
+import { IocCacheManager } from './cache';
 
 /**
  *  runtime action option.

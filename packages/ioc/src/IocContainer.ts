@@ -1,14 +1,15 @@
 import { Type } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { InjectToken, Token, Factory, SymbolType, Provider, InstanceFactory } from './tokens';
-import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
+import { IInjector } from './IInjector';
 import { IIocContainer } from './IIocContainer';
-import { registerCores } from './registerCores';
+import { registerCores } from './regs';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
-import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
-import { DesignContext } from './actions/designs';
-import { DesignLifeScope } from './actions/DesignLifeScope';
+import { ITypeReflects } from './services/ITypeReflects';
+import { DesignContext } from './actions/des-act';
+import { DesignLifeScope } from './actions/design';
+import { InjectorFactoryToken, PROVIDERS, TypeReflectsToken } from './tk';
 
 
 /**

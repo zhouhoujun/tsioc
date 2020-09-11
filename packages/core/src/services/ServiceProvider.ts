@@ -1,8 +1,6 @@
 import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy } from '@tsdi/ioc';
-import { ServiceOption, ServiceContext } from '../resolves/ServiceContext';
-import { ResolveServiceScope } from '../resolves/service-actions';
-import { ServicesOption, ServicesContext } from '../resolves/ServicesContext';
-import { ResolveServicesScope } from '../resolves/services-actions';
+import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
+import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
 import { IContainer } from '../IContainer';

@@ -1,17 +1,15 @@
-import { IIocContainer, IocContainerToken } from './IIocContainer';
+import { IIocContainer } from './IIocContainer';
 import { TypeReflects } from './services/TypeReflects';
-import { TypeReflectsToken } from './services/ITypeReflects';
-import { MethodAccessorToken, INVOKED_PROVIDERS } from './IMethodAccessor';
-import { ActionInjector } from './actions/ActionInjector';
-import { RuntimeRegisterer, DesignRegisterer } from './actions/IocRegAction';
+import { ActionInjector } from './actions/injector';
+import { RuntimeRegisterer, DesignRegisterer } from './actions/reg';
 import { Injector, ProviderInjector, InvokedProvider } from './Injector';
-import { DecoratorProvider } from './services/DecoratorProvider';
-import { MethodAccessor } from './actions/MethodAccessor';
-import { RuntimeLifeScope } from './actions/LifeScope';
-import { ResolveLifeScope } from './actions/ResolveLifeScope';
-import { PROVIDERS, InjectorFactoryToken } from './IInjector';
+import { DecoratorProvider } from './services/decor-pdr';
+import { MethodAccessor } from './actions/accessor';
 import { ActionInjectorToken } from './actions/Action';
-import { DesignLifeScope } from './actions/DesignLifeScope';
+import { PROVIDERS, InjectorFactoryToken, MethodAccessorToken, IocContainerToken, INVOKED_PROVIDERS, TypeReflectsToken } from './tk';
+import { DesignLifeScope } from './actions/design';
+import { RuntimeLifeScope } from './actions/runtime';
+import { ResolveLifeScope } from './actions/resolve';
 
 /**
  * register core for container.

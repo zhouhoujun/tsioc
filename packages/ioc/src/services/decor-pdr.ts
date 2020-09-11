@@ -1,9 +1,10 @@
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { Token, Provider, Factory, TokenId, tokenId } from '../tokens';
-import { IInjector, PROVIDERS, IProvider, InjectorProxy } from '../IInjector';
+import { IInjector, IProvider, InjectorProxy } from '../IInjector';
 import { ITypeReflects } from './ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
+import { PROVIDERS } from '../tk';
 
 /**
  * current decorator provide token key

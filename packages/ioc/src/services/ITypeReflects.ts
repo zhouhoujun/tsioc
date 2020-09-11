@@ -7,11 +7,6 @@ import { IIocContainer } from '../IIocContainer';
 import { IActionInjector } from '../actions/Action';
 
 /**
- * type reflects token.
- */
-export const TypeReflectsToken: TokenId<ITypeReflects> = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
-
-/**
  *  type reflects interface.
  */
 export interface ITypeReflects {

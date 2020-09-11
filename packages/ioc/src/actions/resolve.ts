@@ -1,9 +1,9 @@
+import * as rla from './res-act';
+import { IInjector } from '../IInjector';
+import { isToken, Provider, Token } from '../tokens';
+import { IResolveContext, ResolveContext, ResolveOption } from './res';
+import { INJECTOR, InjectorProxyToken } from '../tk';
 import { isNullOrUndefined } from '../utils/lang';
-import { Token, isToken, Provider } from '../tokens';
-import { IInjector, INJECTOR, InjectorProxyToken } from '../IInjector';
-import { ResolveContext, ResolveOption, IResolveContext } from './IocResolveAction';
-import * as rla from './resolves';
-
 
 /**
  * resolve life scope.

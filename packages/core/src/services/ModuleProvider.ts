@@ -1,6 +1,6 @@
 import { IInjector, Type, IocCoreService, ActionInjectorToken, InjectorProxy } from '@tsdi/ioc';
 import { IModuleLoader, ModuleLoader } from './ModuleLoader';
-import { InjLifeScope } from '../injects/InjLifeScope';
+import { InjLifeScope } from '../injects/lifescope';
 import { IContainer } from '../IContainer';
 import { LoadType } from '../types';
 

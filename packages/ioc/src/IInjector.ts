@@ -1,10 +1,7 @@
 import { Type, Modules } from './types';
 import { lang } from './utils/lang';
-import {
-    SymbolType, Token, InstanceFactory, Factory, InjectReference,
-    Provider, TokenId, tokenId
-} from './tokens';
-import { ResolveOption } from './actions/IocResolveAction';
+import { SymbolType, Token, InstanceFactory, Factory, InjectReference, Provider } from './tokens';
+import { ResolveOption } from './actions/res';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType, IParameter } from './IMethodAccessor';
@@ -390,20 +387,10 @@ export function isInjector(target: any): target is IInjector {
     return lang.getClass(target)?.ρCT === injectorKey;
 }
 
-
-/**
- * injector instance token of self.
- */
-export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
-
 /**
  * injector proxy of current injector.
  */
 export type InjectorProxy<T extends IInjector = IInjector> = () => T;
-/**
- * the token of injector factory in current injector.
- */
-export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
 
 /**
  * provider interface.
@@ -411,13 +398,3 @@ export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
 export interface IProvider extends IInjector {
 
 }
-
-/**
- *  injector provider token. create new injector provider.
- */
-export const PROVIDERS = tokenId<IProvider>('DI_PROVIDERS');
-
-/**
- *  injector token. create new injector.
- */
-export const InjectorFactoryToken = tokenId<IInjector>('DI_INJECTOR_FACTORY');

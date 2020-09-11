@@ -3,17 +3,17 @@ import { isFunction, isArray, isClass } from '../utils/lang';
 import { Provider } from '../tokens';
 import { IActionSetup, createContext } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
-import { INJECTOR, IInjector } from '../IInjector';
+import { IInjector } from '../IInjector';
 import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decorators';
-import { CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../utils/tk';
+import { INJECTOR, CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../tk';
 import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../metadatas';
 
 import {
     IocRegAction, IocRegScope, RegOption, RegContext, ExecDecoratorAtion,
     DecorsRegisterer, DesignRegisterer, IocDecorScope
-} from './IocRegAction';
-import { RuntimeLifeScope } from './LifeScope';
-import { RuntimeContext } from './runtimes';
+} from './reg';
+import { RuntimeLifeScope } from './runtime';
+import { RuntimeContext } from './run-act';
 
 
 /**

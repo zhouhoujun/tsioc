@@ -9,7 +9,7 @@ import {
 import {
     createDecorator, createClassDecorator, ClassMethodDecorator, createClassMethodDecorator,
     createMethodPropParamDecorator, createParamPropDecorator, createParamDecorator, PropParamDecorator
-} from './factories/DecoratorFactory';
+} from './factories/factory';
 
 /**
  * Abstract decorator. define the class as abstract class.

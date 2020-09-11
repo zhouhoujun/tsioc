@@ -91,10 +91,3 @@ export interface IMethodAccessor {
      */
     createParams(injector: IInjector, params: IParameter[], ...providers: Provider[]): any[];
 }
-
-/**
- * method accessor.
- */
-export const MethodAccessorToken: TokenId<IMethodAccessor> = tokenId<IMethodAccessor>('DI_METHOD_ACCESSOR');
-
-export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');

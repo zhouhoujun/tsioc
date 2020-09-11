@@ -1,5 +1,5 @@
 import { DesignRegisterer, CTX_CURR_DECOR, chain, IActionSetup, IocDecorRegisterer, ObjectMap, Type, isArray, isClass, lang, IocCompositeAction, DecoratorScope } from '@tsdi/ioc';
-import { InjContext } from './InjContext';
+import { InjContext } from './context';
 import { CTX_CURR_TYPE } from '../tk';
 
 export abstract class InjScope extends IocCompositeAction<InjContext> {

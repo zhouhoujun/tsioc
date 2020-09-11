@@ -1,9 +1,10 @@
 import { Modules } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { IContainerBuilder, ContainerBuilderToken } from './IContainerBuilder';
+import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader, ModuleLoader } from './services/ModuleLoader';
 import { LoadType } from './types';
+import { ContainerBuilderToken } from './tk';
 
 /**
  * default container builder.

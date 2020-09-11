@@ -1,5 +1,5 @@
 import { Token, Provider, IInjector, IProvider } from '@tsdi/ioc';
-import { ServicesOption } from '../resolves/ServicesContext';
+import { ServicesOption } from '../resolves/context';
 
 /**
  * services resolver.

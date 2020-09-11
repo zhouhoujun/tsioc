@@ -9,7 +9,7 @@ import {
     Metadate, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
     TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata
 } from '../metadatas';
-import { ArgsContext, ArgsIteratorAction } from './ArgsIterator';
+import { ArgsContext, ArgsIteratorAction } from './args';
 import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
 
 
