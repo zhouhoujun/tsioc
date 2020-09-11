@@ -2,8 +2,7 @@ import { Inject, Injectable, INJECTOR, isClass, isString, Registration, Singleto
 import { ICoreInjector } from '@tsdi/core';
 import { NonePointcut } from '@tsdi/aop';
 import { LogConfigure } from './LogConfigure';
-import { IConfigureLoggerManager } from './IConfigureLoggerManager';
-import { ILoggerManager, LoggerConfig } from './ILoggerManager';
+import { ILoggerManager, LoggerConfig, IConfigureLoggerManager } from './ILoggerManager';
 import { ILogger } from './ILogger';
 import { Levels } from './Level';
 import { LogConfigureToken, LoggerManagerToken } from './tk';

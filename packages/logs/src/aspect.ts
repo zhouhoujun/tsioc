@@ -5,7 +5,7 @@ import { Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
 import { ILogFormater, LogFormaterToken } from './formater';
-import { IConfigureLoggerManager } from './IConfigureLoggerManager';
+import { IConfigureLoggerManager } from './ILoggerManager';
 import { LogConfigure } from './LogConfigure';
 
 /**
