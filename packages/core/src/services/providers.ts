@@ -1,9 +1,12 @@
-import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy, Type, ActionInjectorToken } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
 import { IContainer } from '../IContainer';
+import { IModuleLoader, ModuleLoader } from './loader';
+import { LoadType } from '../types';
+import { InjLifeScope } from '../injects/lifescope';
 
 export class ServiceProvider extends IocCoreService implements IServiceResolver, IServicesResolver {
     constructor(private proxy: InjectorProxy<IContainer>) {
@@ -76,5 +79,39 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
             .execute(context);
 
         return context.services;
+    }
+}
+
+
+
+
+
+export class ModuleProvider extends IocCoreService {
+
+    constructor(private proxy: InjectorProxy<IContainer>) {
+        super();
+    }
+
+    /**
+     * get module loader.
+     *
+     * @returns {IModuleLoader}
+     * @memberof IContainer
+     */
+    getLoader(): IModuleLoader {
+        return this.proxy().getInstance(ModuleLoader);
+    }
+
+    /**
+     * load modules.
+     *
+     * @param {IInjector} injector
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type[]>}  types loaded.
+     * @memberof IContainer
+     */
+    async load(injector: IInjector, ...modules: LoadType[]): Promise<Type[]> {
+        let mdls = await this.getLoader().load(...modules);
+        return this.proxy().getInstance(ActionInjectorToken).getInstance(InjLifeScope).register(injector, ...mdls);
     }
 }

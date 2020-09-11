@@ -1,9 +1,8 @@
 import { Injector, Type, Token, Provider, IProvider } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
-import { ServiceProvider } from './services/ServiceProvider';
-import { ModuleProvider } from './services/ModuleProvider';
+import { ServiceProvider, ModuleProvider } from './services/providers';
 import { IContainerBuilder } from './IContainerBuilder';
-import { IModuleLoader, ModuleLoader } from './services/ModuleLoader';
+import { IModuleLoader, ModuleLoader } from './services/loader';
 import { ServiceOption, ServicesOption } from './resolves/context';
 import { IContainer } from './IContainer';
 import { LoadType } from './types';

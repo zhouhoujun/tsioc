@@ -1,10 +1,9 @@
 import { InjectorFactoryToken } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
-import { ModuleLoader } from './services/ModuleLoader';
+import { ModuleLoader } from './services/loader';
 import { InjLifeScope } from './injects/lifescope';
 import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
-import { ModuleProvider } from './services/ModuleProvider';
-import { ServiceProvider } from './services/ServiceProvider';
+import { ServiceProvider, ModuleProvider } from './services/providers';
 import { CoreInjector } from './CoreInjector';
 import { ContainerToken } from './tk';
 

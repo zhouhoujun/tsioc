@@ -10,9 +10,8 @@ export * from './ContainerBuilder';
 
 export * from './services/IServiceResolver';
 export * from './services/IServicesResolver';
-export * from './services/ModuleLoader';
-export * from './services/ModuleProvider';
-export * from './services/ServiceProvider';
+export * from './services/loader';
+export * from './services/providers';
 
 // injector actions
 export * from './injects/context';
