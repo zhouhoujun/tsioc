@@ -4,9 +4,9 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../services/AnnotationMerger';
-import { IModuleReflect, ParentInjectorToken } from '../modules/IModuleReflect';
+import { IModuleReflect } from '../modules/IModuleReflect';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
-import { CTX_MODULE_ANNOATION, CTX_MODULE_EXPORTS } from '../tk';
+import { CTX_MODULE_ANNOATION, CTX_MODULE_EXPORTS, ParentInjectorToken } from '../tk';
 import { ModuleInjector, ModuleProviders } from '../modules/ModuleInjector';
 import { ModuleRef } from '../modules/ModuleRef';
 

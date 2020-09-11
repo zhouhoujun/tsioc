@@ -1,5 +1,6 @@
 import { lang, AsyncHandler } from '@tsdi/ioc';
-import { IHandleContext, HandleType, Handle } from './Handle';
+import { IHandleContext } from '../Context';
+import { HandleType, Handle } from './Handle';
 
 /**
  * composite handles.

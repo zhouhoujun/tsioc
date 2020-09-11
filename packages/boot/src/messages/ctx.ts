@@ -1,6 +1,6 @@
 import { Injectable, IocContext, ActCtxOption, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IHandleContext } from '../handles/Handle';
+import { IHandleContext } from '../Context';
 import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT, CTX_CURR_INJECTOR } from '../tk';
 
 

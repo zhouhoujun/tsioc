@@ -1,10 +1,10 @@
-import { isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy, TypeReflectsToken, ClassType, isInjector } from '@tsdi/ioc';
+import { isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy, TypeReflectsToken, ClassType, isInjector, Singleton } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { MessageContext, MessageOption } from './MessageContext';
+import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
-import { CTX_CURR_INJECTOR } from '../tk';
+import { CTX_CURR_INJECTOR, RootMessageQueueToken } from '../tk';
 
 
 
@@ -193,4 +193,18 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         }
         return null;
     }
+}
+
+/**
+ * message queue.
+ *
+ * @export
+ * @class MessageQueue
+ * @extends {BuildHandles<T>}
+ * @template T
+ */
+
+@Singleton(RootMessageQueueToken)
+export class RootMessageQueue<T extends MessageContext = MessageContext> extends MessageQueue<T> {
+
 }

@@ -1,6 +1,6 @@
 import { ClassType } from '@tsdi/ioc';
 import { LoadType, IContainer, ICoreInjector } from '@tsdi/core';
-import { IBootContext, BootOption } from './BootContext';
+import { IBootContext, BootOption } from './Context';
 
 
 /**

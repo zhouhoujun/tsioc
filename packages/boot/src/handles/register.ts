@@ -1,7 +1,10 @@
 import { IHandle } from './Handle';
-import { DecorsRegisterer, AsyncHandler } from '@tsdi/ioc';
-import { IocBuildDecoratorRegisterer } from './IocBuildDecoratorRegisterer';
+import { DecorsRegisterer, AsyncHandler, DecorRegisterer } from '@tsdi/ioc';
 
+
+export class IocBuildDecoratorRegisterer<T extends IHandle = IHandle> extends DecorRegisterer<AsyncHandler> {
+
+}
 
 /**
  * register application startup build process of decorator.

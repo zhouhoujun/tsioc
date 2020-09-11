@@ -1,7 +1,7 @@
-import { Token, tokenId, TokenId } from '@tsdi/ioc';
+import { Token } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { HandleType, IHandle } from '../handles/Handle';
-import { MessageContext, MessageOption } from './MessageContext';
+import { MessageContext, MessageOption } from './ctx';
 
 
 /**
@@ -151,7 +151,3 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
 
 }
 
-/**
- * root message queue token.
- */
-export const RootMessageQueueToken: TokenId<IMessageQueue<MessageContext>> = tokenId<IMessageQueue<MessageContext>>('BOOT_ROOT_MessageQueue');

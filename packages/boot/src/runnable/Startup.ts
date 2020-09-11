@@ -1,5 +1,6 @@
 import { lang, Type, Abstract, Inject, IDestoryable, Destoryable } from '@tsdi/ioc';
-import { IBootContext, BootContext } from '../BootContext';
+import { IBootContext } from '../Context';
+import { BootContext } from '../BootContext';
 
 
 /**

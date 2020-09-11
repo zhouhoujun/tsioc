@@ -1,5 +1,5 @@
 import { Abstract, Destoryable } from '@tsdi/ioc';
-import { IBootContext } from '../BootContext';
+import { IBootContext } from '../Context';
 
 /**
  * startup db connections of application.

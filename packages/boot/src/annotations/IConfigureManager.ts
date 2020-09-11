@@ -1,16 +1,4 @@
-import { tokenId, TokenId } from '@tsdi/ioc';
 import { RunnableConfigure } from './RunnableConfigure';
-
-/**
- * configure manager token.
- */
-export const ConfigureMgrToken: TokenId<IConfigureManager> = tokenId<IConfigureManager>('CONFIG-MGR');
-
-/**
- * default configuration token.
- */
-export const DefaultConfigureToken: TokenId<RunnableConfigure> = tokenId<RunnableConfigure>('BOOT_DEFAULT_CONFIG');
-
 
 /**
  * configure loader.
@@ -29,10 +17,6 @@ export interface IConfigureLoader<T extends RunnableConfigure = RunnableConfigur
     load(uri?: string): Promise<T>;
 }
 
-/**
- * configure loader token.
- */
-export const ConfigureLoaderToken: TokenId<IConfigureLoader> = tokenId<IConfigureLoader>('BOOT_Configure_Loader');
 
 /**
  * configure merge provider
@@ -46,11 +30,6 @@ export interface IConfigureMerger {
      */
     merge(config1: RunnableConfigure, config2: RunnableConfigure): RunnableConfigure;
 }
-
-/**
- * configure merger token.
- */
-export const ConfigureMergerToken = tokenId<IConfigureMerger>('BOOT_Configure_Loader');
 
 /**
  * configure manager.

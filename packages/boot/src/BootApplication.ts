@@ -1,11 +1,11 @@
 import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
 import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
-import { BootContext, BootOption, ApplicationContextToken } from './BootContext';
+import { BootContext } from './BootContext';
 import { IBootApplication, ContextInit } from './IBootApplication';
-import { BuilderServiceToken } from './services/IBuilderService';
 import { BootModule } from './BootModule';
-import { ROOT_INJECTOR } from './tk';
+import { ApplicationContextToken, BuilderServiceToken, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/ModuleInjector';
+import { BootOption } from './Context';
 
 
 /**

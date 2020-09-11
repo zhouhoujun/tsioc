@@ -1,105 +1,13 @@
 import {
-    Type, createContext, IocPdrsOption, IocPdrsContext, IProvider, IIocContext, isDefined,
-    isToken, ClassType, RegInMetadata, lang, tokenId, CTX_TARGET_RELF, Token, TokenId
+    Type, createContext, IocPdrsContext, isDefined,
+    isToken, ClassType, lang, CTX_TARGET_RELF, Token
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
-import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR } from './tk';
+import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT } from './tk';
 import { ModuleRef } from './modules/ModuleRef';
 import { IAnnotationMetadata, IAnnoationReflect } from './annotations/IAnnoationReflect';
+import { AnnoationOption, IAnnoationContext } from './Context';
 
-/**
- * annoation action option.
- *
- * @export
- * @interface AnnoationOption
- * @extends {ActionContextOption}
- */
-export interface AnnoationOption<T = any> extends IocPdrsOption, RegInMetadata {
-    /**
-     * target module type.
-     *
-     * @type {ClassType}
-     * @memberof AnnoationActionOption
-     */
-    type?: ClassType<T>;
-    /**
-     * target module type.
-     *
-     * @type {ClassType}
-     * @memberof AnnoationActionOption
-     */
-    module?: ClassType<T>;
-    /**
-     *  parent context.
-     */
-    parent?: IAnnoationContext;
-
-}
-
-/**
- * annoation context interface.
- */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IIocContext<T, ICoreInjector> {
-    /**
-    * current build type.
-    */
-    readonly type: Type;
-    /**
-     * current annoation type decorator.
-     */
-    readonly decorator: string;
-
-    /**
-     * get current DI module ref.
-     */
-    getModuleRef(): ModuleRef;
-
-    getTargetReflect(): IAnnoationReflect;
-
-    getAnnoation(): IAnnotationMetadata;
-
-    readonly providers: IProvider;
-
-    readonly injector: ICoreInjector;
-
-    /**
-     * set parent context
-     * @param context
-     */
-    setParent(context: IAnnoationContext): this;
-
-    getParent<T extends IAnnoationContext>(): T;
-
-    addChild(contex: IAnnoationContext);
-
-    removeChild(contex: IAnnoationContext);
-
-    hasChildren(): boolean;
-
-    getChildren<T extends IAnnoationContext>(): T[];
-    /**
-     * get token providers service route in root contexts.
-     * @param token
-     * @param success
-     */
-    getContext<T>(token: Token<T>, success?: (value: T) => void): T
-    /**
-     * resolve token value route in root contexts.
-     * @param token
-     * @param success
-     */
-    getContextValue<T>(token: Token<T>, success?: (value: T) => void): T;
-
-    /**
-     * get root container.
-     */
-    getContainer(): IContainer;
-
-}
-
-
-export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
-export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
 /**
  * annoation context.
  *

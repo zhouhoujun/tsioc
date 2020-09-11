@@ -1,17 +1,15 @@
 import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, PromiseUtil } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
-import { IBootContext, BootContext } from '../BootContext';
+import { IAnnoationContext, IBootContext } from '../Context';
+import { BootContext } from '../BootContext';
 import { AnnotationMerger } from '../services/AnnotationMerger';
 import {
-    CTX_APP_CONFIGURE, CTX_MODULE_ANNOATION, CTX_MODULE_INST, CTX_MODULE_BOOT,
+    ProcessRunRootToken, BuilderServiceToken, CTX_APP_CONFIGURE, CTX_MODULE_ANNOATION, CTX_MODULE_INST, CTX_MODULE_BOOT,
     CTX_MODULE_BOOT_TOKEN, CTX_APP_STARTUPS, CTX_MODULE_STARTUP
 } from '../tk';
-import { ProcessRunRootToken } from '../annotations/RunnableConfigure';
 import { ConfigureManager } from '../annotations/ConfigureManager';
 import { ConfigureRegister } from '../annotations/ConfigureRegister';
-import { BuildHandles, BuildHandle } from '../builder/BuildHandles';
-import { IAnnoationContext } from '../AnnoationContext';
-import { BuilderServiceToken } from '../services/IBuilderService';
+import { BuildHandles, BuildHandle } from '../builder/handles';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Startup } from '../runnable/Startup';
 import { Runnable } from '../runnable/Runnable';

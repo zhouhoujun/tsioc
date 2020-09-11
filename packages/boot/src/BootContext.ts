@@ -1,183 +1,18 @@
-import { Type, Injectable, createContext, Token, isToken, isDefined, tokenId, TokenId } from '@tsdi/ioc';
-import { LoadType, IModuleLoader, ICoreInjector } from '@tsdi/core';
+import { Type, Injectable, createContext, Token, isToken, isDefined } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { IStartup } from './runnable/Startup';
 import {
     CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN,
-    CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS
+    CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS, ProcessRunRootToken
 } from './tk';
-import { RunnableConfigure, ProcessRunRootToken } from './annotations/RunnableConfigure';
+import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { ConfigureManager } from './annotations/ConfigureManager';
-import { IBuildContext } from './builder/IBuildContext';
-import { AnnoationOption, AnnoationContext } from './AnnoationContext';
+import { AnnoationContext } from './AnnoationContext';
 import { IModuleReflect } from './modules/IModuleReflect';
 import { BootstrapMetadata } from './decorators';
+import { BootOption, IBootContext } from './Context';
 
-
-/**
- *  current application boot context token.
- */
-export const ApplicationContextToken: TokenId<IBootContext> = tokenId<IBootContext>('APP__CONTEXT');
-
-/**
- * boot options
- *
- * @export
- * @interface BootOptions
- */
-export interface BootOption<T = any> extends AnnoationOption<T> {
-    /**
-     * boot base url.
-     *
-     * @type {string}
-     * @memberof BootOptions
-     */
-    baseURL?: string;
-    /**
-     * module loader
-     *
-     * @type {IModuleLoader}
-     * @memberof BootOptions
-     */
-    loader?: IModuleLoader;
-    /**
-     * custom configures
-     *
-     * @type {((string | RunnableConfigure)[])}
-     * @memberof BootOptions
-     */
-    configures?: (string | RunnableConfigure)[];
-    /**
-     * custom set first startups services.
-     */
-    startups?: Token[]
-    /**
-     * bootstrap instance.
-     *
-     * @memberof BootOptions
-     */
-    bootstrap?: Token;
-    /**
-     * render host container.
-     *
-     * @type {*}
-     * @memberof BootOption
-     */
-    renderHost?: any;
-    /**
-     * bind template
-     *
-     * @type {*}
-     * @memberof BootOption
-     */
-    template?: any;
-    /**
-     * boot run env args.
-     *
-     * @type {string[]}
-     * @memberof BootOptions
-     */
-    args?: string[];
-    /**
-     *  custom boot data of `BuildOptions`
-     *
-     * @type {*}
-     * @memberof BootOptions
-     */
-    data?: any;
-    /**
-    * auto statupe or not. default true.
-    *
-    * @type {boolean}
-    * @memberof BootOptions
-    */
-    autorun?: boolean;
-    /**
-     * boot dependencies.
-     *
-     * @type {LoadType[]}
-     * @memberof BootOptions
-     */
-    deps?: LoadType[];
-    /**
-     * injector.
-     */
-    injector?: ICoreInjector;
-}
-
-export interface IBootContext<T extends BootOption = BootOption> extends IBuildContext<T> {
-
-    /**
-     * get log manager.
-     */
-    getLogManager(): ILoggerManager;
-    /**
-     * get service in context.
-     * @param token
-     */
-    getService<T>(token: Token<T>): T;
-    /**
-     * get statup service tokens.
-     */
-    getStarupTokens(): Token[];
-
-    /**
-     * boot base url.
-     *
-     * @type {string}
-     */
-    readonly baseURL: string;
-
-    /**
-     * boot run env args.
-     *
-     * @type {string[]}
-     * @memberof BootOptions
-     */
-    readonly args: string[];
-    /**
-     *  custom boot data of `BuildOptions`
-     *
-     * @type {*}
-     * @memberof BootOptions
-     */
-    readonly data: any;
-
-    readonly target: any;
-
-    readonly boot: any;
-
-    /**
-     * get boot statup.
-     */
-    getStartup(): IStartup;
-
-    /**
-     * configuration merge metadata config and all application config.
-     *
-     * @type {T}
-     * @memberof BootContext
-     */
-    getConfiguration(): RunnableConfigure;
-
-    /**
-     * get configure manager.
-     *
-     * @returns {ConfigureManager<RunnableConfigure>}
-     */
-    getConfigureManager(): ConfigureManager<RunnableConfigure>;
-
-    /**
-     * get target reflect.
-     */
-    getTargetReflect(): IModuleReflect;
-
-    /**
-     * annoation metadata.
-     */
-    getAnnoation(): BootstrapMetadata;
-
-}
 
 /**
  * application boot context.

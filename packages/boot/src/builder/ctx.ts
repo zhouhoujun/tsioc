@@ -1,8 +1,7 @@
 import { Injectable, createContext } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IBuildContext } from './IBuildContext';
+import { IBuildContext, IBuildOption } from '../Context';
 import { AnnoationContext } from '../AnnoationContext';
-import { IBuildOption } from './IBuildOption';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '../tk';
 
 @Injectable

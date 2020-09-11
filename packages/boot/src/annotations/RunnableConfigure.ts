@@ -1,13 +1,10 @@
-import { ObjectMap, tokenId, Type, ProvidersMetadata, TokenId } from '@tsdi/ioc';
+import { ObjectMap, Type, ProvidersMetadata } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
 
 /**
- *  process run root.
+ * connection
  */
-export const ProcessRunRootToken: TokenId<string> = tokenId<string>('BOOT_PROCESS_ROOT');
-
-
-export interface IConnectionOptions {
+export interface IConnectionOptions extends ObjectMap<any> {
     asDefault?: boolean;
     name?: string;
     /**

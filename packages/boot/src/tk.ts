@@ -1,9 +1,71 @@
-import { Type, tokenId, IProvider, Token, TokenId } from '@tsdi/ioc';
+import { Type, tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { RunnableConfigure } from './annotations/RunnableConfigure';
 import { IStartup } from './runnable/Startup';
+import { IAnnoationContext, IBootContext } from './Context';
+import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './annotations/IConfigureManager';
+import { IBuilderService } from './services/IBuilderService';
+import { IMessageQueue } from './messages/IMessageQueue';
+import { IBaseTypeParser } from './services/IBaseTypeParser';
+import { IModelParser } from './orm/IModelParser';
 
+export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
+export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
+
+
+/**
+ *  current application boot context token.
+ */
+export const ApplicationContextToken: TokenId<IBootContext> = tokenId<IBootContext>('APP__CONTEXT');
+
+
+/**
+ * configure manager token.
+ */
+export const ConfigureMgrToken: TokenId<IConfigureManager> = tokenId<IConfigureManager>('CONFIG-MGR');
+
+/**
+ * default configuration token.
+ */
+export const DefaultConfigureToken: TokenId<RunnableConfigure> = tokenId<RunnableConfigure>('BOOT_DEFAULT_CONFIG');
+
+/**
+ * configure loader token.
+ */
+export const ConfigureLoaderToken: TokenId<IConfigureLoader> = tokenId<IConfigureLoader>('BOOT_Configure_Loader');
+
+/**
+ * configure merger token.
+ */
+export const ConfigureMergerToken = tokenId<IConfigureMerger>('BOOT_Configure_Loader');
+
+/**
+ *  process run root.
+ */
+export const ProcessRunRootToken: TokenId<string> = tokenId<string>('BOOT_PROCESS_ROOT');
+
+
+/**
+ * build service token.
+ */
+export const BuilderServiceToken: TokenId<IBuilderService> = tokenId<IBuilderService>('BOOT_BuilderService');
+
+/**
+ * root message queue token.
+ */
+export const RootMessageQueueToken: TokenId<IMessageQueue> = tokenId<IMessageQueue>('BOOT_ROOT_MessageQueue');
+
+
+/**
+ * parent injector token.
+ */
+export const ParentInjectorToken: TokenId<IInjector> = tokenId<IInjector>('IOC_PARENT_INJECTOR');
+
+/**
+ * base type parser token.
+ */
+export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('BaseTypeParser');
 
 /**
  * appliction root injector token.

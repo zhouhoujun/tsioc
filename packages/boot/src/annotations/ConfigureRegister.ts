@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { RunnableConfigure } from './RunnableConfigure';
-import { IBootContext } from '../BootContext';
+import { IBootContext } from '../Context';
 
 /**
  * configure register.

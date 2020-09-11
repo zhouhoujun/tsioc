@@ -5,9 +5,9 @@ import {
 import { IStartupService } from './services/StartupService';
 import { ModuleConfigure } from './modules/ModuleConfigure';
 import { IMessage } from './messages/IMessageQueue';
-import { MessageQueue } from './messages/MessageQueue';
-import { MessageContext } from './messages/MessageContext';
-import { MessageHandle } from './messages/MessageHandle';
+import { MessageQueue } from './messages/queue';
+import { MessageContext } from './messages/ctx';
+import { MessageHandle } from './messages/handle';
 
 export type BootDecorator = <TFunction extends ClassType<IStartupService>>(target: TFunction) => TFunction | void;
 

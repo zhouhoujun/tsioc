@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { MessageContext } from './MessageContext';
+import { MessageContext } from './ctx';
 import { Handle } from '../handles/Handle';
 
 

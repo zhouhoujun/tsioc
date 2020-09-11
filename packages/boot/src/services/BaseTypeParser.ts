@@ -1,5 +1,6 @@
 import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNullOrUndefined, IocCoreService } from '@tsdi/ioc';
-import { IBaseTypeParser, BaseTypeParserToken } from './IBaseTypeParser';
+import { BaseTypeParserToken } from '../tk';
+import { IBaseTypeParser } from './IBaseTypeParser';
 
 /**
  * base type parser.
