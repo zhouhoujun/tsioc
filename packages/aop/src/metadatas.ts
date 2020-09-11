@@ -1,5 +1,5 @@
 import { MethodMetadata, ClassType, ClassMetadata, MethodPropMetadata } from '@tsdi/ioc';
-import { AdviceTypes } from './AdviceTypes';
+import { AdviceTypes } from './types';
 
 /**
  * advice metadata.

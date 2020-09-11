@@ -9,10 +9,9 @@ import { AdviceMatcher } from './AdviceMatcher';
 import {
     RegistAspectAction, BeforeCtorAdviceAction, AfterCtorAdviceAction,
     BindMthPointcutAction, MatchPointcutAction
-} from './actions/aop-actions';
-import { ProceedingScope } from './proceeding/ProceedingScope';
-import { AdvisorToken } from './IAdvisor';
-import { AdviceMatcherToken } from './IAdviceMatcher';
+} from './actions/aop';
+import { ProceedingScope } from './actions/proceed';
+import { AdvisorToken, AdviceMatcherToken } from './tk';
 
 
 

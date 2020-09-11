@@ -5,10 +5,10 @@ import {
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint, AOP_RETURNING, AOP_STATE, AOP_THROWING } from '../joinpoints/Joinpoint';
-import { JoinpointState } from '../joinpoints/JoinpointState';
-import { AdvisorToken } from '../IAdvisor';
+import { JoinpointState } from '../joinpoints/state';
 import { aExp } from '../regexps';
 import { Advicer } from '../advices/Advicer';
+import { AdvisorToken } from '../tk';
 
 const proxyFlag = '_proxy';
 const ctor = 'constructor';

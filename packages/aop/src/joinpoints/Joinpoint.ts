@@ -2,7 +2,7 @@ import {
     Type, MethodMetadata, IParameter, ClassMetadata, IProvider, TypeMetadata, tokenId, Token,
     isNullOrUndefined, IocContext, ActCtxOption, IInjector, createContext, PROVIDERS, TokenId
 } from '@tsdi/ioc';
-import { JoinpointState } from './JoinpointState';
+import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
 
 

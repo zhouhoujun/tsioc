@@ -2,12 +2,11 @@ import {
     RuntimeContext, lang, isClass, Type, isBaseType, DesignContext,
     ITypeReflects, ActionInjectorToken, CTX_PARAMS, CTX_ARGS
 } from '@tsdi/ioc';
-import { AdvisorToken } from '../IAdvisor';
-import { ProceedingScope } from '../proceeding/ProceedingScope';
+import { ProceedingScope } from './proceed';
 import { NonePointcut } from '../decorators';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
-import { AdviceMatcherToken } from '../IAdviceMatcher';
+import { AdvisorToken, AdviceMatcherToken } from '../tk';
 
 
 /**
