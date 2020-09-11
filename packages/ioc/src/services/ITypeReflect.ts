@@ -3,7 +3,7 @@ import { lang } from '../utils/lang';
 import { Token, Provider } from '../tokens';
 import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
-import { InjectableMetadata } from '../metadatas';
+import { InjectableMetadata } from '../decor/metadatas';
 
 
 

@@ -17,7 +17,7 @@ import { ActionInjectorToken } from './actions/Action';
 import { ResolveOption } from './actions/res';
 import { ResolveLifeScope } from './actions/resolve';
 import { IocCacheManager } from './actions/cache';
-import { INJECTOR, PROVIDERS, InjectorProxyToken, MethodAccessorToken, TypeReflectsToken } from './tk';
+import { INJECTOR, PROVIDERS, InjectorProxyToken, MethodAccessorToken, TypeReflectsToken } from './utils/tk';
 
 /**
  * Base Injector.

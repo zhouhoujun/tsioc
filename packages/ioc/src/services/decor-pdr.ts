@@ -4,7 +4,7 @@ import { Token, Provider, Factory, TokenId, tokenId } from '../tokens';
 import { IInjector, IProvider, InjectorProxy } from '../IInjector';
 import { ITypeReflects } from './ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
-import { PROVIDERS } from '../tk';
+import { PROVIDERS } from '../utils/tk';
 
 /**
  * current decorator provide token key

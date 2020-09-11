@@ -1,11 +1,11 @@
-import { Type } from './types';
-import { Token, tokenId, TokenId } from './tokens';
-import { IMethodAccessor, IParameter } from './IMethodAccessor';
-import { ITypeReflect } from './services/ITypeReflect';
-import { IInjector, InjectorProxy, IProvider } from './IInjector';
-import { ActCtxOption } from './actions/Action';
-import { IIocContainer } from './IIocContainer';
-import { ITypeReflects } from './services/ITypeReflects';
+import { Type } from '../types';
+import { Token, tokenId, TokenId } from '../tokens';
+import { IMethodAccessor, IParameter } from '../IMethodAccessor';
+import { ITypeReflect } from '../services/ITypeReflect';
+import { IInjector, InjectorProxy, IProvider } from '../IInjector';
+import { ActCtxOption } from '../actions/Action';
+import { IIocContainer } from '../IIocContainer';
+import { ITypeReflects } from '../services/ITypeReflects';
 
 
 /**

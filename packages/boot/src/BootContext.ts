@@ -1,6 +1,6 @@
 import { Type, Injectable, createContext, Token, isToken, isDefined, tokenId, TokenId } from '@tsdi/ioc';
 import { LoadType, IModuleLoader, ICoreInjector } from '@tsdi/core';
-import { ILoggerManager, ConfigureLoggerManger } from '@tsdi/logs';
+import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { IStartup } from './runnable/Startup';
 import {
     CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN,
@@ -193,7 +193,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * get log manager.
      */
     getLogManager(): ILoggerManager {
-        return this.injector.resolve(ConfigureLoggerManger);
+        return this.injector.resolve(ConfigureLoggerManager);
     }
 
     /**

@@ -4,7 +4,7 @@ import { Token, isToken, Provider } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IParameter, IMethodAccessor, MethodType } from '../IMethodAccessor';
 import { RuntimeContext, RuntimeParamScope } from './run-act';
-import { INVOKED_PROVIDERS, TypeReflectsToken } from '../tk';
+import { INVOKED_PROVIDERS, TypeReflectsToken } from '../utils/tk';
 
 
 /**

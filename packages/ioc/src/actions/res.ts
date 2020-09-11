@@ -1,7 +1,7 @@
 import { Token } from '../tokens';
 import { IInjector } from '../IInjector';
 import { IocAction, createContext, IocPdrsContext, IocPdrsOption, IIocPdrsContext } from './Action';
-import { CTX_TOKEN, CTX_DEFAULT_TOKEN }  from '../tk';
+import { CTX_TOKEN, CTX_DEFAULT_TOKEN }  from '../utils/tk';
 
 /**
  * resovle action option.

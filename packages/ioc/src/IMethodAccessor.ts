@@ -1,6 +1,6 @@
 import { Type } from './types';
-import { tokenId, Token, TokenId, Provider } from './tokens';
-import { IInjector, IProvider } from './IInjector';
+import { Token, Provider } from './tokens';
+import { IInjector } from './IInjector';
 
 
 export type MethodType<T> = string | ((tag: T) => Function);

@@ -1,10 +1,13 @@
-import { Injectable, Inject, isString, Token, Registration, Type, isClass, INJECTOR } from '@tsdi/ioc';
+import { Inject, Injectable, INJECTOR, isClass, isString, Registration, Singleton, Token, Type } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { NonePointcut } from '@tsdi/aop';
-import { ILoggerManager, LoggerManagerToken } from './ILoggerManager';
-import { LogConfigure, LogConfigureToken } from './LogConfigure';
+import { LogConfigure } from './LogConfigure';
 import { IConfigureLoggerManager } from './IConfigureLoggerManager';
+import { ILoggerManager, LoggerConfig } from './ILoggerManager';
 import { ILogger } from './ILogger';
+import { Levels } from './Level';
+import { LogConfigureToken, LoggerManagerToken } from './tk';
+
 
 
 /**
@@ -16,7 +19,7 @@ import { ILogger } from './ILogger';
  */
 @NonePointcut()
 @Injectable
-export class ConfigureLoggerManger implements IConfigureLoggerManager {
+export class ConfigureLoggerManager implements IConfigureLoggerManager {
 
     private _config: LogConfigure;
     private _logManger: ILoggerManager;
@@ -82,5 +85,94 @@ export class ConfigureLoggerManger implements IConfigureLoggerManager {
 
     getLogger(name?: string): ILogger {
         return this.logManger.getLogger(name);
+    }
+}
+
+
+/**
+ * console logger configuration.
+ *
+ * @export
+ * @interface ConsoleLoggerConfig
+ * @extends {LoggerConfig}
+ */
+export interface ConsoleLoggerConfig extends LoggerConfig {
+    level?: string;
+}
+
+/**
+ * console log manager.
+ *
+ * @export
+ * @class ConsoleLogManager
+ * @implements {ILoggerManager}
+ */
+@NonePointcut()
+@Singleton()
+@Injectable(LoggerManagerToken, 'console')
+export class ConsoleLogManager implements ILoggerManager {
+    private logger: ILogger;
+    constructor() {
+        this.logger = new ConsoleLog();
+    }
+    configure(config: ConsoleLoggerConfig) {
+        if (config && config.level) {
+            this.logger.level = config.level;
+        }
+    }
+    getLogger(name?: string): ILogger {
+        return this.logger;
+    }
+
+}
+
+/**
+ * console log.
+ *
+ * @class ConsoleLog
+ * @implements {ILogger}
+ */
+class ConsoleLog implements ILogger {
+
+    level: string;
+
+    constructor() {
+
+    }
+
+    log(...args: any[]): void {
+        console.log(...args);
+    }
+
+    trace(...args: any[]): void {
+        if (!this.level || Levels[this.level] === 0) {
+            console.debug(...args);
+        }
+    }
+    debug(...args: any[]): void {
+        // console.debug in nuix will not console.
+        if (!this.level || Levels[this.level] <= 1) {
+            console.debug(...args);
+        }
+    }
+    info(...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 2) {
+            console.info(...args);
+        }
+    }
+    warn(...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 3) {
+            console.warn(...args);
+        }
+    }
+    error(...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 4) {
+            console.error(...args);
+        }
+    }
+    fatal(...args: any[]): void {
+        if (!this.level || Levels[this.level] <= 5) {
+            console.error(...args);
+        }
     }
 }

@@ -1,8 +1,8 @@
 import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
-import { LoggerAspect } from '../LoggerAspect';
+import { LoggerAspect } from '../aspect';
 import { Level } from '../Level';
-import { ConsoleLogManager } from '../ConsoleLogManager';
+import { ConsoleLogManager } from '../manager';
 
 /**
  * debug log aspect.

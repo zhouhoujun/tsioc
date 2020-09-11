@@ -4,7 +4,7 @@ import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
 import { ITypeReflect } from '../services/ITypeReflect';
 import { IActionInjector, Action, IocAction, IocCompositeAction, IocPdrsContext, IocPdrsOption } from './Action';
-import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON, CTX_CURR_DECOR_SCOPE } from '../tk';
+import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON, CTX_CURR_DECOR_SCOPE } from '../utils/tk';
 
 /**
  * register action option.

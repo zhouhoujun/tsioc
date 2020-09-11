@@ -1,10 +1,10 @@
-import { Abstract, isFunction, isToken, isObject, isArray, isString, isDefined } from '@tsdi/ioc';
-import { Joinpoint, JoinpointState } from '@tsdi/aop';
+import { Abstract, isFunction, isToken, isObject, isArray, isString, isDefined, Singleton } from '@tsdi/ioc';
+import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { LoggerMetadata } from './decorators/Logger';
 import { Level } from './Level';
 import { ILogger } from './ILogger';
 import { LogProcess } from './LogProcess';
-import { ILogFormater, LogFormaterToken } from './LogFormater';
+import { ILogFormater, LogFormaterToken } from './formater';
 import { IConfigureLoggerManager } from './IConfigureLoggerManager';
 import { LogConfigure } from './LogConfigure';
 
@@ -114,5 +114,23 @@ export abstract class LoggerAspect extends LogProcess {
         timestamp && messages.unshift(timestamp);
 
         return messages;
+    }
+}
+
+
+/**
+ * Annotation logger aspect. log for class or method with @Logger decorator.
+ *
+ * @export
+ * @class AnnotationLogerAspect
+ * @extends {LoggerAspect}
+ */
+@Singleton()
+@Aspect()
+export class AnnotationLoggerAspect extends LoggerAspect {
+
+    @Pointcut('@annotation(Logger)', 'annotation')
+    logging(joinPoint: Joinpoint, annotation: LoggerMetadata[]) {
+        this.processLog(joinPoint, annotation);
     }
 }

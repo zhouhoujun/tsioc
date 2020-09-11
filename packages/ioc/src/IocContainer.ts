@@ -3,13 +3,13 @@ import { isClass, isFunction, isDefined } from './utils/lang';
 import { InjectToken, Token, Factory, SymbolType, Provider, InstanceFactory } from './tokens';
 import { IInjector } from './IInjector';
 import { IIocContainer } from './IIocContainer';
-import { registerCores } from './regs';
+import { registerCores } from './utils/regs';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
 import { ITypeReflects } from './services/ITypeReflects';
 import { DesignContext } from './actions/des-act';
 import { DesignLifeScope } from './actions/design';
-import { InjectorFactoryToken, PROVIDERS, TypeReflectsToken } from './tk';
+import { InjectorFactoryToken, PROVIDERS, TypeReflectsToken } from './utils/tk';
 
 
 /**

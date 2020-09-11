@@ -4,9 +4,9 @@ import { Provider } from '../tokens';
 import { IActionSetup, createContext } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { IInjector } from '../IInjector';
-import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decorators';
-import { INJECTOR, CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../tk';
-import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../metadatas';
+import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decor/decorators';
+import { INJECTOR, CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../utils/tk';
+import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../decor/metadatas';
 
 import {
     IocRegAction, IocRegScope, RegOption, RegContext, ExecDecoratorAtion,

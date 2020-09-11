@@ -1,7 +1,7 @@
-import { Type } from './types';
-import { isString, isNumber, isArray } from './utils/lang';
-import { isToken, Token, ProvideToken, Provider } from './tokens';
-import { IIocContainer } from './IIocContainer';
+import { Type } from '../types';
+import { isString, isNumber, isArray } from '../utils/lang';
+import { isToken, Token, ProvideToken, Provider } from '../tokens';
+import { IIocContainer } from '../IIocContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata
@@ -9,7 +9,7 @@ import {
 import {
     createDecorator, createClassDecorator, ClassMethodDecorator, createClassMethodDecorator,
     createMethodPropParamDecorator, createParamPropDecorator, createParamDecorator, PropParamDecorator
-} from './factories/factory';
+} from './factory';
 
 /**
  * Abstract decorator. define the class as abstract class.

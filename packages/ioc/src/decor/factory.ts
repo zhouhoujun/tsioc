@@ -8,7 +8,7 @@ import { isToken, isProvideToken } from '../tokens';
 import {
     Metadate, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
     TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata
-} from '../metadatas';
+} from './metadatas';
 import { ArgsContext, ArgsIteratorAction } from './args';
 import { clsUglifyExp, STRIP_COMMENTS, ARGUMENT_NAMES, ParamerterName } from '../utils/exps';
 

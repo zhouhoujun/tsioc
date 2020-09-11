@@ -8,15 +8,15 @@ import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
     hasParamMetadata, hasPropertyMetadata, hasMethodMetadata, getOwnTypeMetadata, getParamerterNames
-} from '../factories/factory';
+} from '../decor/factory';
 import { IParameter } from '../IMethodAccessor';
-import { Singleton } from '../decorators';
+import { Singleton } from '../decor/decorators';
 import { DecoratorProvider } from './decor-pdr';
 import { ITypeReflects } from './ITypeReflects';
 import { IActionInjector } from '../actions/Action';
 import { TypeDecorators, RuntimeDecorators } from '../actions/decors';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/reg';
-import { MethodAccessorToken } from '../tk';
+import { MethodAccessorToken } from '../utils/tk';
 
 
 /**

@@ -1,4 +1,4 @@
-import { ObjectMap, tokenId, TokenId } from '@tsdi/ioc';
+import { ObjectMap } from '@tsdi/ioc';
 import { ILogger } from './ILogger';
 
 /**
@@ -11,11 +11,7 @@ import { ILogger } from './ILogger';
 export interface LoggerConfig extends ObjectMap {
 }
 
-/**
- * LoggerManger interface token.
- * it is a token id, you can register yourself LoggerManger for this.
- */
-export const LoggerManagerToken: TokenId<ILoggerManager> = tokenId<ILoggerManager>('DI_ILoggerManager');
+
 /**
  * logger manager.
  *

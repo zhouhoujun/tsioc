@@ -5,8 +5,8 @@ import { IInjector, IProvider, isInjector } from '../IInjector';
 import { IDestoryable, Destoryable } from '../Destoryable';
 import { ITypeReflects } from '../services/ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
-import { Inject } from '../decorators';
-import { INJECTOR, PROVIDERS, CTX_OPTIONS, CTX_PROVIDERS, TypeReflectsToken } from '../tk';
+import { Inject } from '../decor/decorators';
+import { INJECTOR, PROVIDERS, CTX_OPTIONS, CTX_PROVIDERS, TypeReflectsToken } from '../utils/tk';
 
 /**
  * action context option.

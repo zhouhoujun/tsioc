@@ -1,5 +1,5 @@
 import { Type } from './types';
-import { Token, Factory, tokenId, TokenId } from './tokens';
+import { Token, Factory } from './tokens';
 import { IInjector } from './IInjector';
 import { ITypeReflects } from './services/ITypeReflects';
 import { IActionInjector } from './actions/Action';

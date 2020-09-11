@@ -11,23 +11,20 @@ export * from './Injector';
 
 // utils
 export * from './utils/lang';
-export * from './tk';
+export * from './utils/tk';
 
 // services
 export * from './services/ITypeReflect';
 export * from './services/ITypeReflects';
 export * from './services/decor-pdr';
 
-// metadates
-export * from './metadatas';
 
-// decorators
-export * from './decorators';
+// decoractors
+export * from './decor/args';
+export * from './decor/factory';
+export * from './decor/metadatas';
+export * from './decor/decorators';
 
-
-// decoractor factories
-export * from './factories/args';
-export * from './factories/factory';
 
 // providers
 export * from './providers';
