@@ -1,10 +1,10 @@
 import { Type, tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from './modules/ModuleConfigure';
-import { RunnableConfigure } from './annotations/RunnableConfigure';
+import { Configure } from './configure/Configure';
 import { IStartup } from './runnable/Startup';
 import { IAnnoationContext, IBootContext } from './Context';
-import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './annotations/IConfigureManager';
+import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
 import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
@@ -28,7 +28,7 @@ export const ConfigureMgrToken: TokenId<IConfigureManager> = tokenId<IConfigureM
 /**
  * default configuration token.
  */
-export const DefaultConfigureToken: TokenId<RunnableConfigure> = tokenId<RunnableConfigure>('BOOT_DEFAULT_CONFIG');
+export const DefaultConfigureToken: TokenId<Configure> = tokenId<Configure>('BOOT_DEFAULT_CONFIG');
 
 /**
  * configure loader token.
@@ -94,7 +94,7 @@ export const CTX_MODULE_BOOT = tokenId<any>('CTX_MODULE_BOOT');
 export const CTX_MODULE_STARTUP = tokenId<IStartup>('CTX_MODULE_STARTUP');
 
 export const CTX_APP_ENVARGS = tokenId<string[]>('CTX_APP_ENVARGS');
-export const CTX_APP_CONFIGURE = tokenId<RunnableConfigure>('CTX_APP_CONFIGURE');
+export const CTX_APP_CONFIGURE = tokenId<Configure>('CTX_APP_CONFIGURE');
 
 /**
  * application statup service

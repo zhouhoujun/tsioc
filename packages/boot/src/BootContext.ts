@@ -6,8 +6,8 @@ import {
     CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN,
     CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS, ProcessRunRootToken
 } from './tk';
-import { RunnableConfigure } from './annotations/RunnableConfigure';
-import { ConfigureManager } from './annotations/ConfigureManager';
+import { Configure } from './configure/Configure';
+import { ConfigureManager } from './configure/ConfigureManager';
 import { AnnoationContext } from './AnnoationContext';
 import { IModuleReflect } from './modules/IModuleReflect';
 import { BootstrapMetadata } from './decorators';
@@ -77,17 +77,17 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      *
      * @memberof BootContext
      */
-    getConfiguration(): RunnableConfigure {
+    getConfiguration(): Configure {
         return this.context.getValue(CTX_APP_CONFIGURE);
     }
 
     /**
      * get configure manager.
      *
-     * @returns {ConfigureManager<RunnableConfigure>}
+     * @returns {ConfigureManager<Configure>}
      * @memberof BootContext
      */
-    getConfigureManager(): ConfigureManager<RunnableConfigure> {
+    getConfigureManager(): ConfigureManager<Configure> {
         return this.injector.resolve(ConfigureManager);
     }
 

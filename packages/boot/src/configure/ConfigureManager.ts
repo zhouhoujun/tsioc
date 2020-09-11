@@ -1,7 +1,7 @@
 import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { IConfigureManager, IConfigureMerger } from './IConfigureManager';
-import { RunnableConfigure } from './RunnableConfigure';
+import { Configure } from './Configure';
 import { ConfigureMgrToken, ConfigureLoaderToken, DefaultConfigureToken, ConfigureMergerToken, ProcessRunRootToken } from '../tk';
 
 
@@ -12,7 +12,7 @@ import { ConfigureMgrToken, ConfigureLoaderToken, DefaultConfigureToken, Configu
  * @class ConfigureManager
  */
 @Singleton(ConfigureMgrToken)
-export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> implements IConfigureManager<T> {
+export class ConfigureManager<T extends Configure = Configure> implements IConfigureManager<T> {
 
     @Inject(ContainerToken) container: IContainer;
     private config: T;
@@ -129,7 +129,7 @@ export class ConfigureManager<T extends RunnableConfigure = RunnableConfigure> i
 
 @Singleton(ConfigureMergerToken)
 export class ConfigureMerger implements IConfigureMerger {
-    merge(config1: RunnableConfigure, config2: RunnableConfigure): RunnableConfigure {
+    merge(config1: Configure, config2: Configure): Configure {
         let setting = { ...config1?.setting, ...config2?.setting };
         let deps = [...config1?.deps || [], ...config2?.deps || []];
         let providers = [...config1?.providers || [], ...config2?.providers || []];

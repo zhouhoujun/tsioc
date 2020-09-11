@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RunnableConfigure } from './RunnableConfigure';
+import { Configure } from './Configure';
 import { IBootContext } from '../Context';
 
 /**
@@ -13,12 +13,12 @@ export interface IConfigureRegister<T extends IBootContext = IBootContext> {
     /**
      * register config setting.
      *
-     * @param {RunnableConfigure} config
+     * @param {Configure} config
      * @param {T} [ctx]
      * @returns {Promise<void>}
      * @memberof IConfigureRegister
      */
-    register(config: RunnableConfigure, ctx?: T): Promise<void>;
+    register(config: Configure, ctx?: T): Promise<void>;
 }
 
 /**
@@ -40,10 +40,10 @@ export abstract class ConfigureRegister<T extends IBootContext = IBootContext> i
      * register config setting.
      *
      * @abstract
-     * @param {RunnableConfigure} config
+     * @param {Configure} config
      * @param {T} [ctx]
      * @returns {Promise<void>}
      * @memberof ConfigureRegister
      */
-    abstract register(config: RunnableConfigure, ctx?: T): Promise<void>;
+    abstract register(config: Configure, ctx?: T): Promise<void>;
 }

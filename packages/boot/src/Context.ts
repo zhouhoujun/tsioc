@@ -1,9 +1,9 @@
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ActionType, AsyncHandler, ClassType, IIocContext, IocPdrsOption, IProvider, ObjectMap, RegInMetadata, Token, Type } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
-import { IConfigureManager } from './annotations/IConfigureManager';
+import { IConfigureManager } from './configure/IConfigureManager';
 import { IAnnoationReflect, IAnnotationMetadata } from './annotations/IAnnoationReflect';
-import { RunnableConfigure } from './annotations/RunnableConfigure';
+import { Configure } from './configure/Configure';
 import { BootstrapMetadata } from './decorators';
 import { IModuleReflect } from './modules/IModuleReflect';
 import { ModuleRef } from './modules/ModuleRef';
@@ -125,10 +125,10 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
     /**
      * custom configures
      *
-     * @type {((string | RunnableConfigure)[])}
+     * @type {((string | Configure)[])}
      * @memberof BootOptions
      */
-    configures?: (string | RunnableConfigure)[];
+    configures?: (string | Configure)[];
     /**
      * custom set first startups services.
      */
@@ -299,14 +299,14 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
      * @type {T}
      * @memberof BootContext
      */
-    getConfiguration(): RunnableConfigure;
+    getConfiguration(): Configure;
 
     /**
      * get configure manager.
      *
-     * @returns {IConfigureManager<RunnableConfigure>}
+     * @returns {IConfigureManager<Configure>}
      */
-    getConfigureManager(): IConfigureManager<RunnableConfigure>;
+    getConfigureManager(): IConfigureManager<Configure>;
 
     /**
      * get target reflect.

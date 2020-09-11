@@ -2,16 +2,16 @@
 export * from './services/IBaseTypeParser';
 export * from './services/BaseTypeParser';
 export * from './services/StartupService';
-export * from './services/AnnotationMerger';
+export * from './annotations/merger';
 export * from './services/IBuilderService';
 export * from './services/BuilderService';
 
 // annotations
 export * from './annotations/IAnnoationReflect';
-export * from './annotations/RunnableConfigure';
-export * from './annotations/IConfigureManager';
-export * from './annotations/ConfigureManager';
-export * from './annotations/ConfigureRegister';
+export * from './configure/Configure';
+export * from './configure/IConfigureManager';
+export * from './configure/ConfigureManager';
+export * from './configure/ConfigureRegister';
 
 // runnables
 export * from './runnable/Startup';

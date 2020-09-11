@@ -21,13 +21,13 @@ export interface IConnectionOptions extends ObjectMap<any> {
 }
 
 /**
- * runnable configure.
+ * boot configure.
  *
  * @export
- * @interface RunnableConfigure
- * @extends {ModuleConfigure}
+ * @interface Configure
+ * @extends {ProvidersMetadata}
  */
-export interface RunnableConfigure extends ProvidersMetadata {
+export interface Configure extends ProvidersMetadata {
     /**
      * module base url.
      *
@@ -39,7 +39,7 @@ export interface RunnableConfigure extends ProvidersMetadata {
      * deps.
      *
      * @type {LoadType[]}
-     * @memberof RunnableConfigure
+     * @memberof Configure
      */
     deps?: LoadType[];
     /**
@@ -84,10 +84,18 @@ export interface RunnableConfigure extends ProvidersMetadata {
     /**
      * models of boot application.
      */
-    models?: (string| Type)[];
+    models?: (string | Type)[];
 
     /**
      * repositories of orm.
      */
     repositories?: (string | Type)[];
+}
+
+/**
+ * boot configure.
+ * @deprecated use Configure instead.
+ */
+export interface RunnableConfigure extends Configure {
+
 }

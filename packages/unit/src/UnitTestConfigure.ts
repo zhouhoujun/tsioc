@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { BootOption, RunnableConfigure } from '@tsdi/boot';
+import { BootOption, Configure } from '@tsdi/boot';
 import { ITestReport } from './reports/ITestReport';
 
 /**
@@ -20,7 +20,7 @@ export interface UnitTestOptions extends BootOption {
  * @interface UnitTestConfigure
  * @extends {AppConfigure}
  */
-export interface UnitTestConfigure extends RunnableConfigure {
+export interface UnitTestConfigure extends Configure {
     /**
      * test source
      *

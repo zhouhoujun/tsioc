@@ -2,13 +2,13 @@ import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType,
 import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { BootContext } from '../BootContext';
-import { AnnotationMerger } from '../services/AnnotationMerger';
+import { AnnotationMerger } from '../annotations/merger';
 import {
     ProcessRunRootToken, BuilderServiceToken, CTX_APP_CONFIGURE, CTX_MODULE_ANNOATION, CTX_MODULE_INST, CTX_MODULE_BOOT,
     CTX_MODULE_BOOT_TOKEN, CTX_APP_STARTUPS, CTX_MODULE_STARTUP
 } from '../tk';
-import { ConfigureManager } from '../annotations/ConfigureManager';
-import { ConfigureRegister } from '../annotations/ConfigureRegister';
+import { ConfigureManager } from '../configure/ConfigureManager';
+import { ConfigureRegister } from '../configure/ConfigureRegister';
 import { BuildHandles, BuildHandle } from '../builder/handles';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Startup } from '../runnable/Startup';

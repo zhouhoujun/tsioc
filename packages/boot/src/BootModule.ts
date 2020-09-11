@@ -9,7 +9,7 @@ import { MessageQueue, RootMessageQueue } from './messages/queue';
 import { InjDIModuleScope } from './registers/Inj-module';
 import { MessageRegisterAction } from './registers/message';
 import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope } from './registers/module';
-import { ConfigureManager, ConfigureMerger } from './annotations/ConfigureManager';
+import { ConfigureManager, ConfigureMerger } from './configure/ConfigureManager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/register';

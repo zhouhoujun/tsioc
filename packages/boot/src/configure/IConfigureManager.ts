@@ -1,4 +1,4 @@
-import { RunnableConfigure } from './RunnableConfigure';
+import { Configure } from './Configure';
 
 /**
  * configure loader.
@@ -6,7 +6,7 @@ import { RunnableConfigure } from './RunnableConfigure';
  * @export
  * @interface IConfigureLoader
  */
-export interface IConfigureLoader<T extends RunnableConfigure = RunnableConfigure> {
+export interface IConfigureLoader<T extends Configure = Configure> {
     /**
      * load config.
      *
@@ -28,7 +28,7 @@ export interface IConfigureMerger {
      * @param config2 coniig 2
      * @returns merged config.
      */
-    merge(config1: RunnableConfigure, config2: RunnableConfigure): RunnableConfigure;
+    merge(config1: Configure, config2: Configure): Configure;
 }
 
 /**
@@ -38,7 +38,7 @@ export interface IConfigureMerger {
  * @interface IConfigureManager
  * @template T
  */
-export interface IConfigureManager<T extends RunnableConfigure = RunnableConfigure> {
+export interface IConfigureManager<T extends Configure = Configure> {
     /**
      * use configuration.
      *

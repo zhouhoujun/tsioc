@@ -3,7 +3,7 @@ import {
     IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { AnnotationMerger } from '../services/AnnotationMerger';
+import { AnnotationMerger } from '../annotations/merger';
 import { IModuleReflect } from '../modules/IModuleReflect';
 import { ModuleConfigure } from '../modules/ModuleConfigure';
 import { CTX_MODULE_ANNOATION, CTX_MODULE_EXPORTS, ParentInjectorToken } from '../tk';

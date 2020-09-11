@@ -1,5 +1,5 @@
 import { IBootContext } from '../Context';
-import { ConnectionStatupService } from './statup';
+import { ConnectionStatupService } from './startup';
 
 export const ConnectionsHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let servers = ctx.injector.getServices(ConnectionStatupService);
