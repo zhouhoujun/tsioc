@@ -4,9 +4,9 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext, BootOption, IBootContext, IBuildOption, IBuildContext } from '../Context';
-import { BootContext, isBootContext } from '../BootContext';
+import { BootContext, isBootContext } from '../boot/ctx';
 import { IBootApplication } from '../IBootApplication';
-import { BootLifeScope, RunnableBuildLifeScope } from '../boots/lifescope';
+import { BootLifeScope, RunnableBuildLifeScope } from '../boot/lifescope';
 import { IBuilderService, BootSubAppOption } from './IBuilderService';
 import { BuilderServiceToken, CTX_APP_ENVARGS, CTX_MODULE_EXPORTS, ROOT_INJECTOR } from '../tk';
 import { ResolveMoudleScope } from '../builder/handles';

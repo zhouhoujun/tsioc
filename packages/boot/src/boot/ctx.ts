@@ -1,17 +1,17 @@
 import { Type, Injectable, createContext, Token, isToken, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { IStartup } from './runnable/Startup';
+import { IStartup } from '../runnable/Startup';
 import {
     CTX_APP_CONFIGURE, CTX_DATA, CTX_APP_ENVARGS, CTX_TEMPLATE, CTX_MODULE_BOOT_TOKEN,
     CTX_MODULE_BOOT, CTX_MODULE_INST, CTX_MODULE_STARTUP, CTX_APP_STARTUPS, ProcessRunRootToken
-} from './tk';
-import { Configure } from './configure/Configure';
-import { ConfigureManager } from './configure/manager';
-import { AnnoationContext } from './AnnoationContext';
-import { IModuleReflect } from './modules/reflect';
-import { BootstrapMetadata } from './decorators';
-import { BootOption, IBootContext } from './Context';
+} from '../tk';
+import { Configure } from '../configure/Configure';
+import { ConfigureManager } from '../configure/manager';
+import { AnnoationContext } from '../annotations/ctx';
+import { IModuleReflect } from '../modules/reflect';
+import { BootstrapMetadata } from '../decorators';
+import { BootOption, IBootContext } from '../Context';
 
 
 /**

@@ -1,5 +1,5 @@
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
-import { ActionType, AsyncHandler, ClassType, IIocContext, IocPdrsOption, IProvider, ObjectMap, RegInMetadata, Token, Type } from '@tsdi/ioc';
+import { ClassType, IIocContext, IocPdrsOption, IProvider, ObjectMap, RegInMetadata, Token, Type } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
 import { IAnnoationReflect, IAnnotationMetadata } from './annotations/reflect';

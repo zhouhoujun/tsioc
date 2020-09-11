@@ -3,10 +3,10 @@ import {
     isToken, ClassType, lang, CTX_TARGET_RELF, Token
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
-import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT } from './tk';
-import { ModuleRef } from './modules/ModuleRef';
-import { IAnnotationMetadata, IAnnoationReflect } from './annotations/reflect';
-import { AnnoationOption, IAnnoationContext } from './Context';
+import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT } from '../tk';
+import { ModuleRef } from '../modules/ModuleRef';
+import { IAnnotationMetadata, IAnnoationReflect } from './reflect';
+import { AnnoationOption, IAnnoationContext } from '../Context';
 
 /**
  * annoation context.

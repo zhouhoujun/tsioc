@@ -15,7 +15,7 @@ import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/register';
 import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
-import { RunnableBuildLifeScope, BootLifeScope } from './boots/lifescope';
+import { RunnableBuildLifeScope, BootLifeScope } from './boot/lifescope';
 import { BuildContext } from './builder/ctx';
 import { StartupRegisterAction } from './registers/startup';
 
