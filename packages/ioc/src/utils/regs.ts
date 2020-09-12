@@ -2,7 +2,7 @@ import { IIocContainer } from '../IIocContainer';
 import { TypeReflects } from '../services/TypeReflects';
 import { ActionInjector } from '../actions/injector';
 import { RuntimeRegisterer, DesignRegisterer } from '../actions/reg';
-import { Injector, ProviderInjector, InvokedProvider } from '../Injector';
+import { Injector, ContextProvider, InvokedProvider } from '../Injector';
 import { DecoratorProvider } from '../services/decor-pdr';
 import { MethodAccessor } from '../actions/accessor';
 import { ActionInjectorToken } from '../actions/Action';
@@ -23,7 +23,7 @@ export function registerCores(container: IIocContainer) {
     container.setSingleton(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
-    container.set(PROVIDERS, () => new ProviderInjector(fac), ProviderInjector);
+    container.set(PROVIDERS, () => new ContextProvider(fac), ContextProvider);
     container.set(INVOKED_PROVIDERS, () => new InvokedProvider(fac), InvokedProvider);
     container.setSingleton(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
 

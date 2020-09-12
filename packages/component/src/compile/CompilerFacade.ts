@@ -1,10 +1,10 @@
-import { Abstract, IProvider, InjectorProvider } from '@tsdi/ioc';
+import { Abstract, IProvider, ContextProvider } from '@tsdi/ioc';
 import { ComponentMetadata, DirectiveMetadata } from '../metadata';
 
 /**
  * compiler identifiers providers.
  */
-export class Identifiers extends InjectorProvider {
+export class Identifiers extends ContextProvider {
 
 }
 

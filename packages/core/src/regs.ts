@@ -3,7 +3,7 @@ import { IContainer } from './IContainer';
 import { ModuleLoader } from './services/loader';
 import { InjLifeScope } from './injects/lifescope';
 import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
-import { ServiceProvider, ModuleProvider } from './services/providers';
+import { ServiceProvider } from './services/providers';
 import { CoreInjector } from './CoreInjector';
 import { ContainerToken } from './tk';
 
@@ -17,7 +17,6 @@ export function registerCores(container: IContainer) {
 
     let fac = container.getProxy();
     container.set(InjectorFactoryToken, () => new CoreInjector(fac), CoreInjector);
-    container.setSingleton(ModuleProvider, new ModuleProvider(fac));
     container.setSingleton(ServiceProvider, new ServiceProvider(fac));
 
     let actInjector = container.getActionInjector();

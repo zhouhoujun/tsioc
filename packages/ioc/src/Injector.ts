@@ -134,13 +134,13 @@ export class Injector extends BaseInjector implements IInjector {
 }
 
 /**
- * context injector.
+ * context provider.
  *
  * @export
- * @class ContextInjector
+ * @class ContextProvider
  * @extends {Injector}
  */
-export class ProviderInjector extends Injector implements IProvider {
+export class ContextProvider extends Injector implements IProvider {
     protected initReg() {
     }
 }
@@ -153,7 +153,7 @@ export class ProviderInjector extends Injector implements IProvider {
  * @returns {target is Provider}
  */
 export function isProvider(target: any): target is Provider {
-    return target instanceof ProviderInjector
+    return target instanceof ContextProvider
         || (isMetadataObject(target, 'provide') && isToken(target.provide))
         || (isArray(target) && target.some(it => isClass(it) || (isObject(it) && Object.values(it).some(s => isClass(it)))));
 }

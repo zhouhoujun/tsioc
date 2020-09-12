@@ -1,12 +1,13 @@
-import { Injector, Type, Token, Provider, IProvider } from '@tsdi/ioc';
+import { Injector, Type, Token, Provider, IProvider, ActionInjectorToken } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
-import { ServiceProvider, ModuleProvider } from './services/providers';
+import { ServiceProvider } from './services/providers';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader, ModuleLoader } from './services/loader';
 import { ServiceOption, ServicesOption } from './resolves/context';
 import { IContainer } from './IContainer';
 import { LoadType } from './types';
 import { ContainerBuilderToken } from './tk';
+import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends Injector implements ICoreInjector {
 
@@ -38,7 +39,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.getInstance(ModuleLoader);
+        return this.getSingleton(ModuleLoader);
     }
 
     /**
@@ -48,8 +49,9 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @returns {Promise<Type[]>}  types loaded.
      * @memberof IContainer
      */
-    load(...modules: LoadType[]): Promise<Type[]> {
-        return this.getSingleton(ModuleProvider).load(this, ...modules);
+    async load(...modules: LoadType[]): Promise<Type[]> {
+        let mdls = await this.getLoader().load(...modules);
+        return this.getInstance(ActionInjectorToken).getInstance(InjLifeScope).register(this, ...mdls);
     }
 
     /**
