@@ -206,11 +206,11 @@ export abstract class IocAction<T extends IIocContext> extends Action {
  * composite action.
  *
  * @export
- * @class IocCompositeAction
+ * @class IocActions
  * @extends {IocAction<T>}
  * @template T
  */
-export class IocCompositeAction<T extends IIocContext = IIocContext> extends IocAction<T> {
+export class IocActions<T extends IIocContext = IIocContext> extends IocAction<T> {
 
     protected actions: ActionType[];
     protected befores: ActionType[];
@@ -338,7 +338,11 @@ export class IocCompositeAction<T extends IIocContext = IIocContext> extends Ioc
     }
 
 }
-
+/**
+ * @deprecated
+ * use IocActions instead.
+ */
+export abstract class IocCompositeAction<T extends IIocContext = IIocContext> extends IocActions<T> {}
 
 
 /**

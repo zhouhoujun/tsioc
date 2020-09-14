@@ -1,4 +1,4 @@
-import { IocContext, IocCompositeAction } from './Action';
+import { IocContext, IocActions } from './Action';
 
 import { RegContext } from './reg';
 
@@ -7,9 +7,9 @@ import { RegContext } from './reg';
  *
  * @export
  * @class LifeScope
- * @extends {IocCompositeAction<T>}
+ * @extends {IocActions<T>}
  */
-export class LifeScope<T extends IocContext> extends IocCompositeAction<T> {
+export class LifeScope<T extends IocContext> extends IocActions<T> {
 
 }
 
@@ -22,7 +22,7 @@ export class LifeScope<T extends IocContext> extends IocCompositeAction<T> {
  * @extends {IocRegScope<T>}
  * @template T
  */
-export class RegisterLifeScope<T extends RegContext = RegContext> extends IocCompositeAction<T> {
+export class RegisterLifeScope<T extends RegContext = RegContext> extends IocActions<T> {
 
     register(ctx: T, next?: () => void) {
         this.execute(ctx, next);

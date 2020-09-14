@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProvider, InvokedProvider, ITypeReflects, TypeReflectsToken, IocCompositeAction,
+    Type, isFunction, lang, IProvider, InvokedProvider, ITypeReflects, TypeReflectsToken, IocActions,
     IParameter, IActionSetup, isArray, isDefined, tokenId, isPromise, PromiseUtil, TokenId
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
@@ -22,7 +22,7 @@ export const AOP_ADVICE_INVOKER: TokenId<(joinPoint: Joinpoint, advicer: Advicer
  * @class ProxyMethod
  * @implements {IProxyMethod}
  */
-export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IActionSetup {
+export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
 
     execute(ctx: Joinpoint, next?: () => void) {
         ctx.providers.inject({ provide: Joinpoint, useValue: ctx });
@@ -191,7 +191,7 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
 }
 
 
-export class CtorAdvicesScope extends IocCompositeAction<Joinpoint> implements IActionSetup {
+export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
     execute(ctx: Joinpoint, next?: () => void) {
         if (ctx.name === ctor) {
             super.execute(ctx);
@@ -241,7 +241,7 @@ export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void)
     next();
 }
 
-export class MethodAdvicesScope extends IocCompositeAction<Joinpoint> implements IActionSetup {
+export class MethodAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
 
     execute(ctx: Joinpoint, next?: () => void) {
         ctx.providers.inject(...ctx.getProvProviders());

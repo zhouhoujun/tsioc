@@ -3,7 +3,7 @@ import { IocCoreService } from '../IocCoreService';
 import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
 import { ITypeReflect } from '../services/ITypeReflect';
-import { IActionInjector, Action, IocAction, IocCompositeAction, IocPdrsContext, IocPdrsOption } from './Action';
+import { IActionInjector, Action, IocAction, IocActions, IocPdrsContext, IocPdrsOption } from './Action';
 import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON, CTX_CURR_DECOR_SCOPE } from '../utils/tk';
 
 /**
@@ -112,7 +112,7 @@ export abstract class IocRegAction<T extends RegContext> extends IocAction<T> {
  * ` container.registerSingleton(SubRegisterAction, () => new SubRegisterAction(container));`
  *
  */
-export abstract class IocRegScope<T extends RegContext = RegContext> extends IocCompositeAction<T> {
+export abstract class IocRegScope<T extends RegContext = RegContext> extends IocActions<T> {
 
 }
 
@@ -388,7 +388,7 @@ export abstract class ExecDecoratorAtion extends IocRegAction<RegContext> {
 }
 
 
-export abstract class IocDecorScope<T extends RegContext> extends IocCompositeAction<T> {
+export abstract class IocDecorScope<T extends RegContext> extends IocActions<T> {
     execute(ctx: T, next?: () => void): void {
         this.getDecorators(ctx)
             .forEach(dec => {

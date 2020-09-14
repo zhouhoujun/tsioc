@@ -1,7 +1,7 @@
 import { isNullOrUndefined, lang, isClass } from '../utils/lang';
 import { InjectReference, isToken } from '../tokens';
 import { PROVIDERS, CTX_DEFAULT_TOKEN, CTX_TARGET_TOKEN } from '../utils/tk';
-import { IocCompositeAction } from './Action';
+import { IocActions } from './Action';
 import { ResolveContext, IResolveContext } from './res';
 
 /**
@@ -12,10 +12,10 @@ import { ResolveContext, IResolveContext } from './res';
  * @export
  * @abstract
  * @class IocResolveScope
- * @extends {IocCompositeAction<T>}
+ * @extends {IocActions<T>}
  * @template T
  */
-export class IocResolveScope<T extends IResolveContext = IResolveContext> extends IocCompositeAction<T> {
+export class IocResolveScope<T extends IResolveContext = IResolveContext> extends IocActions<T> {
 
     execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {
