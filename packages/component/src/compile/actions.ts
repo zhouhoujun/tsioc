@@ -1,5 +1,5 @@
 import { IComponentContext } from '../ComponentContext';
-import { CompilerFacade } from './CompilerFacade';
+import { CompilerFacade } from './facade';
 
 /**
  * parse template handle

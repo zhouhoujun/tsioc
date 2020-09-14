@@ -1,7 +1,7 @@
 import { DesignContext, CTX_CURR_DECOR, IProvider, DecoratorProvider, lang } from '@tsdi/ioc';
 import { ComponentMetadata } from '../metadata';
 import { IComponentReflect } from '../IReflect';
-import { CompilerFacade } from '../compile/CompilerFacade';
+import { CompilerFacade } from '../compile/facade';
 
 /**
  * component def compile action.

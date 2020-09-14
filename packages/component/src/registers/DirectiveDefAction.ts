@@ -1,7 +1,7 @@
 import { CTX_CURR_DECOR, DesignContext, IProvider, DecoratorProvider, lang } from '@tsdi/ioc';
 import { DirectiveMetadata } from '../metadata';
 import { IDirectiveReflect } from '../IReflect';
-import { CompilerFacade } from '../compile/CompilerFacade';
+import { CompilerFacade } from '../compile/facade';
 
 /**
  * Directive def compile action.

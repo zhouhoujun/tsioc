@@ -58,6 +58,14 @@ export interface AfterContentInit {
     onAfterContentInit(): void;
 }
 
+export interface Changes {
+    [p: string]: {previous: any, current: any, firstChange?: boolean}
+}
+
+export interface OnChanges {
+    onChanges(changs: Changes);
+}
+
 /**
  * after view init.
  *

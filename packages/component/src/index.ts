@@ -10,7 +10,7 @@ export * from './decorators';
 
 export * from './ComponentContext';
 // compile
-export * from './compile/CompilerFacade';
+export * from './compile/facade';
 export * from './compile/actions';
 export * from './compile/interface';
 
@@ -21,6 +21,6 @@ export * from './registers/DirectiveDefAction';
 export * from './registers/PipeRegAction';
 
 export * from './IReflect';
-export * from './ComponentLifecycle';
+export * from './lifecycle';
 export * from './ComponentRef';
 export * from './ComponentModule';

@@ -1,7 +1,10 @@
 import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../builder/handles';
 import { IAnnoationContext } from '../Context';
-import { RegisterModuleScope, ModuleBuildScope, ResolveRunnableScope, StartupBootHandle, RegBootEnvScope, BootConfigureRegisterHandle, StatupServiceScope } from './handles';
+import {
+    RegisterModuleScope, ModuleBuildScope, ResolveRunnableScope, StartupBootHandle,
+    RegBootEnvScope, BootConfigureRegisterHandle, StatupServiceScope
+} from './handles';
 
 
 export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
