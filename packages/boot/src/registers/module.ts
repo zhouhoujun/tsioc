@@ -69,7 +69,7 @@ export const AnnoationRegInAction = function (ctx: DesignContext, next: () => vo
  *
  * @export
  * @class AnnoationRegisterScope
- * @extends {IocCompositeAction<AnnoationContext>}
+ * @extends {IocRegScope<DesignContext>}
  */
 export class AnnoationRegisterScope extends IocRegScope<DesignContext> implements IActionSetup {
     execute(ctx: DesignContext, next?: () => void): void {

@@ -203,7 +203,7 @@ export abstract class IocAction<T extends IIocContext> extends Action {
 
 
 /**
- * composite action.
+ * actions.
  *
  * @export
  * @class IocActions
@@ -252,7 +252,7 @@ export class IocActions<T extends IIocContext = IIocContext> extends IocAction<T
      * @param {ActionType} action
      * @param {ActionType} [before]
      * @returns {this}
-     * @memberof IocCompositeAction
+     * @memberof IocActions
      */
     useBefore(action: ActionType, before?: ActionType): this {
         if (this.has(action)) {
@@ -274,7 +274,7 @@ export class IocActions<T extends IIocContext = IIocContext> extends IocAction<T
      * @param {ActionType} action
      * @param {ActionType} [after]
      * @returns {this}
-     * @memberof IocCompositeAction
+     * @memberof IocActions
      */
     useAfter(action: ActionType, after?: ActionType): this {
         if (this.has(action)) {
@@ -294,7 +294,7 @@ export class IocActions<T extends IIocContext = IIocContext> extends IocAction<T
      * register actions before run this scope.
      *
      * @param {ActionType} action
-     * @memberof IocCompositeAction
+     * @memberof IocActions
      */
     before(action: ActionType): this {
         if (this.befores.indexOf(action) < 0) {
@@ -309,7 +309,7 @@ export class IocActions<T extends IIocContext = IIocContext> extends IocAction<T
      * register actions after run this scope.
      *
      * @param {ActionType} action
-     * @memberof IocCompositeAction
+     * @memberof IocActions
      */
     after(action: ActionType): this {
         if (this.afters.indexOf(action) < 0) {
@@ -338,7 +338,9 @@ export class IocActions<T extends IIocContext = IIocContext> extends IocAction<T
     }
 
 }
+
 /**
+ * composite actions.
  * @deprecated
  * use IocActions instead.
  */
