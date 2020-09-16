@@ -3,6 +3,9 @@ import { Token, Provider } from './tokens';
 import { IInjector } from './IInjector';
 
 
+/**
+ * method type.
+ */
 export type MethodType<T> = string | ((tag: T) => Function);
 
 

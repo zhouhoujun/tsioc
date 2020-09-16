@@ -283,7 +283,7 @@ export interface IInjector extends IDestoryable {
      * @param target
      * @param providers
      */
-    bindTagProvider<T>(target: Token, ...providers: Provider[]): InjectReference<IInjector>;
+    bindTagProvider(target: Token, ...providers: Provider[]): InjectReference<IInjector>;
     /**
      * inject providers.
      *

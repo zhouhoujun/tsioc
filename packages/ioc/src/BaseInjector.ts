@@ -269,7 +269,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         return refToken;
     }
 
-    bindTagProvider<T>(target: Token, ...providers: Provider[]): InjectReference<IInjector> {
+    bindTagProvider(target: Token, ...providers: Provider[]): InjectReference<IInjector> {
         let refToken = new InjectReference(PROVIDERS, target);
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);

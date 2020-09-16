@@ -12,7 +12,7 @@ import { ComponentContext } from './ComponentContext';
 import { DirectiveDefAction } from './registers/DirectiveDefAction';
 import { ComponentDefAction } from './registers/ComponentDefAction';
 import { ParseTemplateHandle } from './compile/actions';
-import { Identifiers } from './compile/CompilerFacade';
+import { Identifiers } from './compile/facade';
 
 
 /**
