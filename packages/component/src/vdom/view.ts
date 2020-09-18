@@ -1,14 +1,12 @@
-
-
+import { IInjector, Token } from '@tsdi/ioc';
 import {LContainer} from './container';
-import {ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, ViewQueriesFunction} from './definition';
+import {ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, SchemaMetadata, ViewQueriesFunction} from './definition';
 
 import {TConstants, TElementNode, TNode, TNodeTypeAsString, TViewNode} from './node';
 import {PlayerHandler} from './player';
 import {LQueries, TQueries} from './query';
 import {VComment, VElement } from './types';
 import {TStylingKey, TStylingRange} from './styling';
-import { IInjector } from '@tsdi/ioc';
 
 
 
@@ -819,7 +817,7 @@ export type DestroyHookData = (HookEntry|HookData)[];
  */
 export type TData =
     (TNode|PipeDef<any>|DirectiveDef<any>|ComponentDef<any>|number|TStylingRange|TStylingKey|
-     Type<any>|InjectionToken<any>|TI18n|I18nUpdateOpCodes|null|string)[];
+     Token<any>|TI18n|I18nUpdateOpCodes|null|string)[];
 
 // Note: This hack is necessary so we don't erroneously get a circular dependency
 // failure based on types.
