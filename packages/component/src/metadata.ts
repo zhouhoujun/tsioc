@@ -78,7 +78,7 @@ export interface BindingMetadata extends ParamPropMetadata {
      * binding direction.
      *
      * @type {BindingDirections}
-     * @memberof IBinding
+     * @memberof BindingMetadata
      */
     direction?: BindingDirection;
 }
@@ -94,7 +94,7 @@ export interface HostBindingMetadata extends ParamPropMetadata {
      * host property name.
      *
      * @type {string}
-     * @memberof BindingPropertyMetadata
+     * @memberof HostBindingMetadata
      */
     hostPropertyName?: string;
 }
@@ -109,14 +109,14 @@ export interface HostListenerMetadata extends ParamPropMetadata {
      * event name.
      *
      * @type {string}
-     * @memberof BindingPropertyMetadata
+     * @memberof HostListenerMetadata
      */
     eventName?: string;
     /**
      * default value.
      *
      * @type {*}
-     * @memberof BindingPropertyMetadata
+     * @memberof HostListenerMetadata
      */
     args?: string[];
 }
