@@ -1,107 +1,45 @@
 import { Type, DecoratorScope } from '../types';
 import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
-import { Token, Provider, isToken } from '../tokens';
+import { Token, isToken } from '../tokens';
 import { IParameter } from '../IMethodAccessor';
-import { IInjector } from '../IInjector';
 import { ParameterMetadata, AutorunMetadata } from '../decor/metadatas';
 import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decor/decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
-import { IActionSetup, createContext } from './Action';
+import { IActionSetup } from './Action';
 import {
-    IocRegAction, InitReflectAction, IocRegScope, RegOption, RegContext,
+    IocRegAction, InitReflectAction, IocRegScope, RegContext,
     ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
 } from './reg';
 import { IocCacheManager } from './cache';
-import { CTX_CURR_DECOR, CTX_ARGS, CTX_PARAMS, CTX_PROPERTYKEY } from '../utils/tk';
-
-/**
- *  runtime action option.
- *
- */
-export interface RuntimeOption extends RegOption {
-    /**
-     * the args.
-     *
-     * @type {any[]}
-     * @memberof RuntimeActionContext
-     */
-    args?: any[];
-
-    /**
-     * property key.
-     */
-    propertyKey?: string;
-    /**
-     * args params types.
-     *
-     * @type {IParameter[]}
-     * @memberof RuntimeActionContext
-     */
-    params?: IParameter[];
-    /**
-     * target instance.
-     *
-     * @type {*}
-     * @memberof RegisterActionContext
-     */
-    target?: any;
-    /**
-     * exter providers for resolve. origin providers
-     *
-     * @type {Provider[]}
-     * @memberof RegisterActionContext
-     */
-    providers?: Provider[];
-}
-
 
 /**
  * Ioc Register action context.
  *
  * @extends {RegContext}
  */
-export class RuntimeContext extends RegContext<RuntimeOption> {
+export interface RuntimeContext extends RegContext {
     /**
      * target instance.
      *
      * @type {*}
      * @memberof RuntimeActionContext
      */
-    target?: any;
-
-    get propertyKey() {
-        return this.getValue(CTX_PROPERTYKEY);
-    }
+    instance?: any;
 
     /**
-     * create register context.
-     *
-     * @static
-     * @param {IInjector} injector
-     * @param {RuntimeOption} options
-     * @returns {RegContext}
-     * @memberof RegisterActionContext
+     * property key
      */
-    static parse(injector: IInjector, options: RuntimeOption): RuntimeContext {
-        return createContext(injector, RuntimeContext, options);
-    }
+    propertyKey?: string;
 
-    setOptions(options: RuntimeOption) {
-        if (!options) {
-            return this;
-        }
-        if (options.target) {
-            this.target = options.target;
-        }
-        if (options.args) {
-            this.context.setValue(CTX_ARGS, options.args);
-        }
-        if (options.params) {
-            this.context.setValue(CTX_PARAMS, options.params);
-        }
-        this.context.setValue(CTX_PROPERTYKEY, options.propertyKey || 'constructor');
-        return super.setOptions(options);
-    }
+    /**
+     * args of the propertyKey method.
+     */
+    args?: any[];
+
+    /**
+     * params of the propertyKey method.
+     */
+    params?: IParameter[];
 }
 
 /**
@@ -142,7 +80,7 @@ export const BindDeignParamTypeAction = function (ctx: RuntimeContext, next: () 
     if (!ctx.targetReflect.methodParams.has(propertyKey)) {
         ctx.targetReflect.methodParams.set(
             propertyKey,
-            createDesignParams(ctx, ctx.type, ctx.target, propertyKey));
+            createDesignParams(ctx, ctx.type, ctx.instance, propertyKey));
     }
     next();
 };
@@ -158,14 +96,14 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
         return next();
     }
 
-    let target = ctx.target;
+    let target = ctx.instance;
     let type = ctx.type;
 
     let designParams = createDesignParams(ctx, type, target, propertyKey);
 
     let refs = ctx.reflects;
     let injector = ctx.injector;
-    let currDecoractor = ctx.getValue(CTX_CURR_DECOR);
+    let currDecoractor = ctx.currDecoractor;
     let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
     if (isArray(parameters) && parameters.length) {
         parameters.forEach(params => {
@@ -239,16 +177,16 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
  *
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
-    if (!ctx.hasValue(CTX_ARGS)) {
+    if (!ctx.args) {
         let targetReflect = ctx.targetReflect;
         let injector = ctx.injector;
         if (targetReflect.methodParams.has('constructor')) {
-            ctx.setValue(CTX_PARAMS, targetReflect.methodParams.get('constructor'));
+            ctx.params = targetReflect.methodParams.get('constructor');
         } else {
             ctx.reflects.getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
-            ctx.setValue(CTX_PARAMS, targetReflect.methodParams.get('constructor'));
+            ctx.params = targetReflect.methodParams.get('constructor');
         }
-        ctx.setValue(CTX_ARGS, injector.createParams(ctx.get(CTX_PARAMS), ctx.providers));
+        ctx.args = injector.createParams(ctx.params, ctx.providers);
     }
     next();
 };
@@ -262,8 +200,8 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
  * @extends {IocRuntimeAction}
  */
 export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => void): void {
-    if (!ctx.target) {
-        ctx.target = new ctx.type(...ctx.getValue(CTX_ARGS));
+    if (!ctx.instance) {
+        ctx.instance = new ctx.type(...ctx.args);
     }
     next();
 };
@@ -280,11 +218,11 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
 
     props.forEach((token, propertyKey) => {
         let key = `${propertyKey}_INJECTED`
-        if (isToken(token) && !ctx.hasValue(key)) {
+        if (isToken(token) && !ctx[key]) {
             let val = injector.resolve({ token, target: ctx.type }, providers);
             if (isDefined(val)) {
-                ctx.target[propertyKey] = val;
-                ctx.set(key, true);
+                ctx.instance[propertyKey] = val;
+                ctx[key] = true;
             }
         }
     });
@@ -305,7 +243,7 @@ export abstract class RuntimeDecorScope extends IocDecorScope<RuntimeContext> {
             case prop:
                 return ctx.targetReflect.decorators.runtime.propsDecors;
             case parm:
-                return ctx.targetReflect.decorators.runtime.getParamDecors(ctx.propertyKey, ctx.target);
+                return ctx.targetReflect.decorators.runtime.getParamDecors(ctx.propertyKey, ctx.instance);
             case befCtor:
                 return ctx.targetReflect.decorators.runtime.beforeCstrDecors;
             case aftCtor:
@@ -383,11 +321,11 @@ export abstract class IocExtendRegAction extends IocRuntimeAction {
  */
 export const IocGetCacheAction = function (ctx: RuntimeContext, next: () => void): void {
     let targetReflect = ctx.targetReflect;
-    if (!ctx.target && !targetReflect.singleton && targetReflect.expires > 0) {
-        let cache = ctx.injector.getInstance(IocCacheManager).get(ctx.target, targetReflect.expires);
+    if (!ctx.instance && !targetReflect.singleton && targetReflect.expires > 0) {
+        let cache = ctx.injector.getInstance(IocCacheManager).get(ctx.instance, targetReflect.expires);
         if (cache) {
-            ctx.target = cache;
-            if (ctx.target) {
+            ctx.instance = cache;
+            if (ctx.instance) {
                 return;
             }
         }
@@ -407,7 +345,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
     }
     let cacheManager = ctx.injector.getInstance(IocCacheManager);
     if (!cacheManager.hasCache(ctx.type)) {
-        cacheManager.cache(ctx.type, ctx.target, targetReflect.expires);
+        cacheManager.cache(ctx.type, ctx.instance, targetReflect.expires);
     }
     next();
 };
@@ -421,7 +359,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    let currDec = ctx.getValue(CTX_CURR_DECOR);
+    let currDec = ctx.currDecoractor;
     let injector = ctx.injector;
     if (ctx.reflects.hasMethodMetadata(currDec, ctx.type)) {
         let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(currDec, ctx.type);
@@ -442,7 +380,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
         lastmetas.sort((au1, au2) => {
             return au1.order - au2.order;
         }).forEach(aut => {
-            injector.invoke(ctx.target || ctx.type, aut.autorun, ctx.target);
+            injector.invoke(ctx.instance || ctx.type, aut.autorun, ctx.instance);
         });
     }
 
@@ -458,9 +396,9 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
  * @extends {IocRuntimeAction}
  */
 export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
-    if (ctx.type && ctx.target && ctx.targetReflect.singleton) {
+    if (ctx.type && ctx.instance && ctx.targetReflect.singleton) {
         if (!ctx.injector.hasSingleton(ctx.type)) {
-            ctx.injector.setSingleton(ctx.type, ctx.target);
+            ctx.injector.setSingleton(ctx.type, ctx.instance);
         }
     }
     next();

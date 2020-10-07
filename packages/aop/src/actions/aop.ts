@@ -15,13 +15,13 @@ import { AdvisorToken, AdviceMatcherToken } from '../tk';
 export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     let reflects = ctx.reflects;
-    if (!ctx.target || !isValAspectTag(ctx.type, reflects)) {
+    if (!ctx.instance || !isValAspectTag(ctx.type, reflects)) {
         return next();
     }
 
     let scope = reflects.getActionInjector().getInstance(ProceedingScope);
 
-    let target = ctx.target;
+    let target = ctx.instance;
     let targetType = ctx.type;
 
     let className = lang.getClassName(targetType);
@@ -76,13 +76,13 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
 export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     let reflects = ctx.reflects;
-    if (!ctx.target || !isValAspectTag(ctx.type, reflects)) {
+    if (!ctx.instance || !isValAspectTag(ctx.type, reflects)) {
         return next();
     }
 
     reflects.getActionInjector().getInstance(ActionInjectorToken)
         .getInstance(ProceedingScope)
-        .afterConstr(ctx.target, ctx.type, ctx.getValue(CTX_PARAMS), ctx.getValue(CTX_ARGS), ctx.providers);
+        .afterConstr(ctx.instance, ctx.type, ctx.getValue(CTX_PARAMS), ctx.getValue(CTX_ARGS), ctx.providers);
 
     next();
 };
@@ -116,7 +116,7 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
     let targetType = ctx.type;
 
     advisor.aspects.forEach((adviceMetas, type) => {
-        let matchpoints = matcher.match(type, targetType, adviceMetas, ctx.target);
+        let matchpoints = matcher.match(type, targetType, adviceMetas, ctx.instance);
         matchpoints.forEach(mpt => {
             let name = mpt.name;
             let advice = mpt.advice;

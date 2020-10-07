@@ -2,32 +2,8 @@ import { Type, DecoratorScope } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
+import { IActionInjector, Action, IocAction, IocActions, IocContext } from './Action';
 import { ITypeReflect } from '../services/ITypeReflect';
-import { IActionInjector, Action, IocAction, IocActions, IocPdrsContext, IocPdrsOption } from './Action';
-import { CTX_CURR_DECOR, CTX_TARGET_RELF, CTX_TOKEN, CTX_TYPE, CTX_SINGLETON, CTX_CURR_DECOR_SCOPE } from '../utils/tk';
-
-/**
- * register action option.
- *
- * @export
- * @interface RegOption
- */
-export interface RegOption extends IocPdrsOption {
-    /**
-     * resolve token.
-     */
-    token?: Token;
-    /**
-     * target type.
-     */
-    type: Type;
-
-    /**
-     * custom set singleton or not.
-     */
-    singleton?: boolean;
-
-}
 
 
 /**
@@ -37,61 +13,40 @@ export interface RegOption extends IocPdrsOption {
  * @class RegContext
  * @extends {IocActionContext}
  */
-export class RegContext<T extends RegOption = RegOption> extends IocPdrsContext<T> {
+export interface RegContext extends IocContext {
     /**
      * resolve token.
      *
      */
-    get token(): Token {
-        return this.getValue(CTX_TOKEN);
-    }
+    token?: Token;
 
     /**
      * target type.
      *
      */
-    get type(): Type {
-        return this.getValue(CTX_TYPE);
-    }
+    type: Type;
 
-    get currDecoractor(): string {
-        return this.getValue(CTX_CURR_DECOR);
-    }
+    /**
+     * current decor.
+     */
+    currDecoractor?: string;
+
+    /**
+     * current decorator scope.
+     */
+    currDecorScope?: any;
 
     /**
      * custom set singleton or not.
      *
      */
-    get singleton(): boolean {
-        return this.getValue(CTX_SINGLETON) === true;
-    }
+    singleton?: boolean;
 
-    get targetReflect(): ITypeReflect {
-        return this.getValue(CTX_TARGET_RELF) ?? this.getTargetReflect();
-    }
+    /**
+     * target reflect.
+     */
+    targetReflect: ITypeReflect;
 
-    protected getTargetReflect() {
-        let refl = this.reflects.get(this.type);
-        refl && this.context.setValue(CTX_TARGET_RELF, refl);
-        return refl;
-    }
-
-    setOptions(options: T) {
-        if (!options) {
-            return this;
-        }
-        if (options.token) {
-            this.setValue(CTX_TOKEN, options.token);
-        }
-
-        if (options.type) {
-            this.setValue(CTX_TYPE, options.type);
-        }
-        if (options.singleton) {
-            this.setValue(CTX_SINGLETON, options.singleton);
-        }
-        return super.setOptions(options);
-    }
 }
 
 
@@ -373,10 +328,10 @@ export abstract class ExecDecoratorAtion extends IocRegAction<RegContext> {
     }
 
     execute(ctx: RegContext, next?: () => void): void {
-        if (ctx.hasValue(CTX_CURR_DECOR)) {
+        if (ctx.currDecoractor) {
             let decor = this.getScopeRegisterer();
-            let currDec = ctx.getValue(CTX_CURR_DECOR);
-            let currScope = ctx.getValue(CTX_CURR_DECOR_SCOPE);
+            let currDec = ctx.currDecoractor;
+            let currScope = ctx.currDecorScope;
             if (decor.has(currDec, currScope)) {
                 let actions = decor.getFuncs(this.actInjector, currDec, currScope);
                 this.execFuncs(ctx, actions);
@@ -392,8 +347,8 @@ export abstract class IocDecorScope<T extends RegContext> extends IocActions<T> 
     execute(ctx: T, next?: () => void): void {
         this.getDecorators(ctx)
             .forEach(dec => {
-                ctx.setValue(CTX_CURR_DECOR, dec);
-                ctx.setValue(CTX_CURR_DECOR_SCOPE, this.getDecorScope());
+                ctx.currDecoractor = dec;
+                ctx.currDecorScope = this.getDecorScope();
                 super.execute(ctx);
             });
         next && next();

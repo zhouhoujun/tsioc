@@ -22,16 +22,6 @@ export interface IInjector extends IDestoryable {
      */
     readonly size: number;
     /**
-     * has value or not in current injector.
-     * @param key
-     */
-    hasValue<T>(key: SymbolType<T>): boolean;
-    /**
-     * has registered value or not.
-     * @param key
-     */
-    hasRegisterValue<T>(key: SymbolType<T>): boolean;
-    /**
      * get token.
      *
      * @template T
@@ -51,39 +41,6 @@ export interface IInjector extends IDestoryable {
      * @memberof IInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
-    /**
-     * get singleton value instance, the injector registered.
-     * @param key token key.
-     */
-    getValue<T>(key: SymbolType<T>): T;
-    /**
-     * set value.
-     * @param key token key.
-     * @param value value.
-     *  @param {Type<T>} [provider] the value provider.
-     */
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
-    /**
-     * delete value.
-     * @param key token key.
-     */
-    delValue<T>(key: SymbolType<T>): void;
-    /**
-     * get the first singleton value instance, the injector registered.
-     * @param key token keys.
-     */
-    getFirstValue<T>(...keys: SymbolType<T>[]): T;
-    /**
-    * register value.
-    *
-    * @template T
-    * @param {Token<T>} token
-    * @param {T} value
-    * @param {Type<T>} provider the token provider
-    * @returns {this}
-    * @memberof IInjector
-    */
-    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     /**
      * get root container.
      */

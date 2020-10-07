@@ -1,5 +1,5 @@
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
-import { ClassType, IIocContext, IocPdrsOption, IProvider, ObjectMap, RegInMetadata, Token, Type } from '@tsdi/ioc';
+import { ClassType, IocContext, IocPdrsOption, IProvider, ObjectMap, RegInMetadata, Token, Type } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
 import { IAnnoationReflect, IAnnotationMetadata } from './annotations/reflect';
@@ -41,7 +41,7 @@ export interface AnnoationOption<T = any> extends IocPdrsOption, RegInMetadata {
 /**
  * annoation context interface.
  */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IIocContext<T, ICoreInjector> {
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IocContext<T, ICoreInjector> {
     /**
     * current build type.
     */

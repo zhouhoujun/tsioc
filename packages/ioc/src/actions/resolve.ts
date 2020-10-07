@@ -1,9 +1,9 @@
 import { isNullOrUndefined } from '../utils/lang';
 import { IInjector } from '../IInjector';
 import { isToken, Provider, Token } from '../tokens';
-import { IResolveContext, ResolveContext, ResolveOption } from './res';
-import { INJECTOR, InjectorProxyToken } from '../utils/tk';
+import { INJECTOR, InjectorProxyToken, PROVIDERS } from '../utils/tk';
 import * as rla from './res-act';
+import { ResolveContext, ResolveOption } from './res';
 
 /**
  * resolve life scope.
@@ -13,15 +13,12 @@ import * as rla from './res-act';
  * @extends {IocResolveScope<ResolveContext<T>>}
  * @template T
  */
-export class ResolveLifeScope<T> extends rla.IocResolveScope<IResolveContext<T>> {
+export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
 
-    execute(ctx: IResolveContext, next?: () => void): void {
+    execute(ctx: ResolveContext, next?: () => void): void {
         if (isNullOrUndefined(ctx.instance)) {
             super.execute(ctx, next);
         }
-
-        // after all clean.
-        ctx.destroy();
     }
 
     setup() {
@@ -38,11 +35,13 @@ export class ResolveLifeScope<T> extends rla.IocResolveScope<IResolveContext<T>>
      * @memberof ResolveLifeScope
      */
     resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
-        let ctx = ResolveContext.parse(injector, isToken(token) ? { token: token } : token);
-        let pdr = ctx.providers;
-        providers.length && pdr.inject(...providers);
-        if (!pdr.hasTokenKey(INJECTOR)) {
-            pdr.inject(
+        let ctx = {
+            injector,
+            ... (isToken(token) ? { token: token } : token),
+            providers: injector.get(PROVIDERS).inject(...providers)
+        } as ResolveContext;
+        if (!ctx.providers.hasTokenKey(INJECTOR)) {
+            ctx.providers.inject(
                 { provide: INJECTOR, useValue: injector },
                 { provide: InjectorProxyToken, useValue: injector.getProxy() });
         }

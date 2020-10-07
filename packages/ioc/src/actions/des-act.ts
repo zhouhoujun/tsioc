@@ -1,49 +1,27 @@
 import { DecoratorScope } from '../types';
 import { isFunction, isArray, isClass } from '../utils/lang';
 import { Provider } from '../tokens';
-import { IActionSetup, createContext } from './Action';
+import { IActionSetup } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
-import { IInjector } from '../IInjector';
 import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decor/decorators';
-import { INJECTOR, CTX_CURR_DECOR, CTX_TYPE_REGIN } from '../utils/tk';
 import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../decor/metadatas';
 
 import {
-    IocRegAction, IocRegScope, RegOption, RegContext, ExecDecoratorAtion,
+    IocRegAction, IocRegScope, RegContext, ExecDecoratorAtion,
     DecorsRegisterer, DesignRegisterer, IocDecorScope
 } from './reg';
 import { RuntimeLifeScope } from './runtime';
+import { PROVIDERS } from '../utils/tk';
 import { RuntimeContext } from './run-act';
-
-
-/**
- * design action option.
- *
- * @extends {RegOption}
- */
-export interface DesignOption extends RegOption {
-
-}
 
 /**
  * design action context.
  */
-export class DesignContext extends RegContext<DesignOption> {
-
+export interface DesignContext extends RegContext {
     /**
-     * parse design action context.
-     *
-     * @static
-     *
-     * @param { IInjector } injecor
-     * @param {DesignOption} options
-     * @returns {DesignContext}
-     * @memberof DesignActionContext
+     * type register in.
      */
-    static parse(injecor: IInjector, options: DesignOption): DesignContext {
-        return createContext(injecor, DesignContext, options);
-    }
-
+    regIn?: string;
 }
 
 
@@ -117,8 +95,8 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         return regIn;
     });
     if (regIn === 'root') {
-        ctx.setValue(CTX_TYPE_REGIN, regIn);
-        ctx.setValue(INJECTOR, ctx.getContainer());
+        ctx.regIn = regIn;
+        ctx.injector = ctx.injector.getContainer();
     }
     next();
 };
@@ -135,17 +113,23 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
         if (singleton && container.hasSingleton(type)) {
             return container.getSingleton(type);
         }
-        let ctx = RuntimeContext.parse(injector, {
+        const ctx = {
+            injector,
             token: provide,
-            type: type,
-            singleton: singleton,
-            providers: providers
-        });
+            type,
+            singleton,
+            providers: this.injector.get(PROVIDERS).inject(...providers)
+        } as RuntimeContext;
         actInjector.getInstance(RuntimeLifeScope).register(ctx);
         if (singleton) {
-            container.setSingleton(type, ctx.target);
+            container.setSingleton(type, ctx.instance);
         }
-        return ctx.target;
+        const instance = ctx.instance;
+        // clean context
+        Object.keys(ctx).forEach(k => {
+            ctx[k] = null;
+        });
+        return instance;
     };
 
     if (provide && provide !== type) {
@@ -204,7 +188,7 @@ export class DesignPropDecorScope extends DesignDecorScope {
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     let tgReflect = ctx.targetReflect;
     let injector = ctx.injector;
-    let currDecor = ctx.getValue(CTX_CURR_DECOR);
+    let currDecor = ctx.currDecoractor;
     if (!tgReflect.decorator) {
         tgReflect.decorator = currDecor;
     }
@@ -257,7 +241,7 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
     let injector = ctx.injector;
     let targetReflect = ctx.targetReflect;
     targetReflect.defines.extendTypes.forEach(ty => {
-        let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.getValue(CTX_CURR_DECOR), ty);
+        let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.currDecoractor, ty);
         Object.keys(propMetas).forEach(key => {
             let props = propMetas[key];
             props.forEach(prop => {
@@ -302,10 +286,8 @@ export class DesignMthDecorScope extends DesignDecorScope {
  * @export
  */
 export const MthProviderAction = function (ctx: DesignContext, next: () => void) {
-    let refs = ctx.reflects;
-    let targetReflect = ctx.targetReflect;
-    targetReflect.defines.extendTypes.forEach(ty => {
-        let metas = refs.getMethodMetadata<MethodMetadata>(ctx.getValue(CTX_CURR_DECOR), ty);
+    ctx.targetReflect.defines.extendTypes.forEach(ty => {
+        let metas = ctx.reflects.getMethodMetadata<MethodMetadata>(ctx.currDecoractor, ty);
         Object.keys(metas).forEach(propertyKey => {
             let metadatas = metas[propertyKey];
             let providers = [];
@@ -316,10 +298,10 @@ export const MthProviderAction = function (ctx: DesignContext, next: () => void)
                     }
                 });
             }
-            if (targetReflect.methodParamProviders.has(propertyKey)) {
-                targetReflect.methodParamProviders.get(propertyKey).push(...providers);
+            if (ctx.targetReflect.methodParamProviders.has(propertyKey)) {
+                ctx.targetReflect.methodParamProviders.get(propertyKey).push(...providers);
             } else {
-                targetReflect.methodParamProviders.set(propertyKey, providers);
+                ctx.targetReflect.methodParamProviders.set(propertyKey, providers);
             }
         });
     });
@@ -336,13 +318,11 @@ export const MthProviderAction = function (ctx: DesignContext, next: () => void)
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    let refs = ctx.reflects;
-    let currDec = ctx.getValue(CTX_CURR_DECOR);
-    if (!refs.hasMetadata(currDec, ctx.type)) {
+    if (!ctx.reflects.hasMetadata(ctx.currDecoractor, ctx.type)) {
         return next();
     }
     let injector = ctx.injector;
-    let metadatas = refs.getMetadata<AutorunMetadata>(currDec, ctx.type);
+    let metadatas = ctx.reflects.getMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.type);
     metadatas.forEach(meta => {
         if (meta && meta.autorun) {
             let instance = injector.get(ctx.token || ctx.type);

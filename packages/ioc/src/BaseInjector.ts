@@ -37,10 +37,6 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      */
     static ρNPT = true;
     /**
-     * values.
-     */
-    protected values: Map<SymbolType, any>;
-    /**
      * provide types.
      *
      * @protected
@@ -73,7 +69,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     get size(): number {
-        return this.factories.size + this.values.size + this.singletons.size;
+        return this.factories.size + this.singletons.size;
     }
 
     getProxy(): InjectorProxy<this> {
@@ -110,66 +106,6 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         return getTokenKey(token, alias);
-    }
-
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>) {
-        this.values.set(key, value);
-        if (provider && isClass(provider)) {
-            this.values.set(provider, value);
-            this.provideTypes.set(key, provider);
-        }
-        return this;
-    }
-
-    delValue<T>(key: SymbolType<T>): void {
-        this.values.delete(key);
-    }
-
-    /**
-     * register value.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} value
-     * @returns {this}
-     * @memberof BaseInjector
-     */
-    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
-        let key = this.getTokenKey(token);
-        return this.setValue(key, value, provider);
-    }
-
-    hasValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key);
-    }
-
-    hasRegisterValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key) || this.hasValueInRoot(key);
-    }
-
-    getValue<T>(key: SymbolType<T>): T {
-        return this.tryGetValue(key) ?? this.getValueInRoot(key);
-    }
-
-    getFirstValue<T>(...keys: SymbolType<T>[]): T {
-        let value: T;
-        keys.some(k => {
-            value = this.getValue(k);
-            return !isNullOrUndefined(value);
-        })
-        return value;
-    }
-
-    protected hasValueInRoot(key: SymbolType): boolean {
-        return false;
-    }
-
-    protected tryGetValue<T>(key: SymbolType<T>): T {
-        return this.values.get(key) ?? null;
-    }
-
-    protected getValueInRoot<T>(key: SymbolType<T>): T {
-        return null;
     }
 
     /**
@@ -251,7 +187,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
             this.factories.set(provideKey, (...providers) => this.getInstance(ptk, ...providers));
 
         } else {
-            this.values.set(provideKey, provider);
+            this.singletons.set(provideKey, provider);
         }
         return this;
     }
@@ -274,7 +210,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {
-            this.registerValue(refToken, this.get(PROVIDERS).inject(...providers));
+            this.registerSingleton(refToken, this.get(PROVIDERS).inject(...providers));
         }
         return refToken;
     }
@@ -310,7 +246,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
                     }
                     if (isDefined(pr.useValue)) {
                         let val = pr.useValue;
-                        this.values.set(provide, val);
+                        this.singletons.set(provide, val);
                     } else if (isClass(pr.useClass)) {
                         this.registerType(pr.useClass, pr.provide, pr.singleton);
                     } else if (isFunction(pr.useFactory)) {
@@ -421,7 +357,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key) || this.values.has(key) || this.factories.has(key);
+        return this.singletons.has(key) || this.factories.has(key);
     }
 
     hasSingleton<T>(key: SymbolType<T>): boolean {
@@ -469,7 +405,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T {
-        return this.getSingleton(key) ?? this.getValue(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
+        return this.getSingleton(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
     }
 
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
@@ -515,7 +451,6 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         let key = this.getTokenKey(token);
         if (this.has(key)) {
             this.factories.delete(key);
-            this.values.delete(key);
             this.singletons.delete(key);
             this.provideTypes.delete(key);
             if (isClass(key)) {
@@ -551,11 +486,8 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
 
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
         let next = !Array.from(this.singletons.keys()).some(tk => isToken(tk) ? callbackfn(() => this.singletons.get(tk), tk, this) === false : false);
-        if (!next) {
-            next = !Array.from(this.values.keys()).some(tk => isToken(tk) ? callbackfn(() => this.values.get(tk), tk, this) === false : false);
-        }
         return next ? !Array.from(this.factories.keys()).some(tk => {
-            if (!this.singletons.has(tk) && !this.values.has(tk) && isToken(tk)) {
+            if (!this.singletons.has(tk) && isToken(tk)) {
                 return callbackfn(this.factories.get(tk), tk, this) === false;
             }
             return false;
@@ -609,7 +541,6 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     protected init() {
-        this.values = new Map();
         this.provideTypes = new Map();
         this.factories = new Map();
         this.singletons = new Map();
@@ -645,12 +576,6 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
             }
             to.singletons.set(key, sgl);
         });
-        from.values.forEach((val, key) => {
-            if (filter && !filter(key)) {
-                return;
-            }
-            to.values.set(key, val);
-        });
         from.provideTypes.forEach((fac, key) => {
             if (filter && !filter(key)) {
                 return;
@@ -660,11 +585,9 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     protected destroying() {
-        this.values.clear();
         this.provideTypes.clear();
         this.singletons.clear();
         this.factories.clear();
-        this.values = null;
         this.provideTypes = null;
         this.factories = null;
         this.singletons = null;

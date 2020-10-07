@@ -11,11 +11,9 @@ import * as ra from './run-act';
 export class RuntimeLifeScope extends RegisterLifeScope<ra.RuntimeContext> {
 
     execute(ctx: ra.RuntimeContext, next?: () => void): void {
-        if (!ctx.target) {
+        if (!ctx.instance) {
             super.execute(ctx, next);
         }
-        // after all clean.
-        ctx.destroy();
     }
 
     setup() {
