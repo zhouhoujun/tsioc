@@ -1,7 +1,7 @@
 import { Type, Modules, ClassTypes } from './types';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
-    isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined
+    isBaseObject, isArray, isDefined, isClassType
 } from './utils/lang';
 import { StaticProviders } from './providers';
 import {
@@ -61,6 +61,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      */
     protected singletons: Map<SymbolType, any>;
 
+    private rslScope: ResolveLifeScope;
 
     constructor() {
         super();
@@ -422,7 +423,10 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
-        return this.getSingleton(ActionInjectorToken).getInstance(ResolveLifeScope).resolve(this, token, ...providers);
+        if (!this.rslScope) {
+            this.rslScope = this.getSingleton(ActionInjectorToken).getInstance(ResolveLifeScope);
+        }
+        return this.rslScope.resolve(this, token, ...providers);
     }
 
     /**
@@ -588,6 +592,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         this.provideTypes.clear();
         this.singletons.clear();
         this.factories.clear();
+        this.rslScope = null;
         this.provideTypes = null;
         this.factories = null;
         this.singletons = null;

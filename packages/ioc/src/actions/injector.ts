@@ -41,7 +41,7 @@ export class ActionInjector extends Injector implements IActionInjector {
 
     protected setupAction(type: Type<Action>): Action {
         let instance = new type(this);
-        this.setValue(type, instance);
+        this.setSingleton(type, instance);
         return instance;
     }
 

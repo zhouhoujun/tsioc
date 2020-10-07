@@ -46,6 +46,13 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
                 { provide: InjectorProxyToken, useValue: injector.getProxy() });
         }
         this.execute(ctx);
-        return ctx.instance;
+        const instance = ctx.instance;
+        // clean
+        setTimeout(() => {
+            Object.keys(ctx).forEach(k => {
+                ctx[k] = null;
+            });
+        });
+        return instance;
     }
 }

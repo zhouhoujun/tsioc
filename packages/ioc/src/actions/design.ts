@@ -17,8 +17,6 @@ export class DesignLifeScope extends RegisterLifeScope<da.DesignContext> impleme
         if (isClass(ctx.type)) {
             super.execute(ctx, next);
         }
-        // after all clean.
-        ctx.destroy();
     }
     setup() {
         this.actInjector.regAction(da.DesignDecorAction);

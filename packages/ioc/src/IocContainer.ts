@@ -21,12 +21,20 @@ import { InjectorFactoryToken, PROVIDERS, TypeReflectsToken } from './utils/tk';
  */
 export class IocContainer extends BaseInjector implements IIocContainer {
 
+    private reflects: ITypeReflects;
     getTypeReflects(): ITypeReflects {
-        return this.getSingleton(TypeReflectsToken);
+        if (!this.reflects) {
+            this.reflects = this.getSingleton(TypeReflectsToken);
+        }
+        return this.reflects;
     }
 
+    private actionInj: IActionInjector;
     getActionInjector(): IActionInjector {
-        return this.getSingleton(ActionInjectorToken);
+        if (!this.actionInj) {
+            this.actionInj = this.getSingleton(ActionInjectorToken);
+        }
+        return this.actionInj;
     }
 
     getContainer(): this {
@@ -150,5 +158,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
                 return instance;
             }
             : (...providers: Provider[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
+    }
+
+    protected destroying() {
+        super.destroying();
+        this.reflects =  null;
+        this.actionInj = null;
     }
 }

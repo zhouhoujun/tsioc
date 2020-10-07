@@ -126,8 +126,10 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
         }
         const instance = ctx.instance;
         // clean context
-        Object.keys(ctx).forEach(k => {
-            ctx[k] = null;
+        setTimeout(() => {
+            Object.keys(ctx).forEach(k => {
+                ctx[k] = null;
+            });
         });
         return instance;
     };

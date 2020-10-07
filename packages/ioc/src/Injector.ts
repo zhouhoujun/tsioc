@@ -107,14 +107,6 @@ export class Injector extends BaseInjector implements IInjector {
         return this.getContainer().hasTokenKey(key);
     }
 
-    protected hasValueInRoot(key: SymbolType): boolean {
-        return this.getContainer().hasRegisterValue(key);
-    }
-
-    protected getValueInRoot<T>(key: SymbolType<T>): T {
-        return this.getContainer().getValue(key);
-    }
-
     protected getFcty<T>(key: SymbolType<T>): InstanceFactory<T> {
         return this.factories.get(key) ?? null;
     }
