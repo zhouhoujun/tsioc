@@ -1,6 +1,6 @@
 import {
     RuntimeContext, lang, isClass, Type, isBaseType, DesignContext,
-    ITypeReflects, ActionInjectorToken, CTX_PARAMS, CTX_ARGS
+    ITypeReflects, ActionInjectorToken
 } from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { NonePointcut } from '../decorators';
@@ -61,7 +61,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
 
     reflects.getActionInjector().getInstance(ActionInjectorToken)
         .getInstance(ProceedingScope)
-        .beforeConstr(ctx.type, ctx.getValue(CTX_PARAMS), ctx.getValue(CTX_ARGS), ctx.providers);
+        .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.providers);
 
     next();
 
@@ -82,7 +82,7 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
 
     reflects.getActionInjector().getInstance(ActionInjectorToken)
         .getInstance(ProceedingScope)
-        .afterConstr(ctx.instance, ctx.type, ctx.getValue(CTX_PARAMS), ctx.getValue(CTX_ARGS), ctx.providers);
+        .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.providers);
 
     next();
 };

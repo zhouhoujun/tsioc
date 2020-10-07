@@ -4,6 +4,7 @@ import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
 import { IActionInjector, Action, IocAction, IocActions, IocContext } from './Action';
 import { ITypeReflect } from '../services/ITypeReflect';
+import { TypeReflectsToken } from '../utils/tk';
 
 
 /**
@@ -369,6 +370,7 @@ export const InitReflectAction = function (ctx: RegContext, next?: () => void): 
     if (!isClass(ctx.type)) {
         return;
     }
+    ctx.reflects = ctx.injector.getSingleton(TypeReflectsToken);
     ctx.reflects.create(ctx.type);
     let targetReflect = ctx.targetReflect;
     if (ctx.singleton) {

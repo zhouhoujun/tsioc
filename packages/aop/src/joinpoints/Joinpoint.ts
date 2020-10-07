@@ -1,6 +1,6 @@
 import {
     Type, MethodMetadata, IParameter, ClassMetadata, IProvider, TypeMetadata, tokenId, Token,
-    isNullOrUndefined, IocContext, ActCtxOption, IInjector, createContext, PROVIDERS, TokenId
+    isNullOrUndefined, IocContext, ActCtxOption, IInjector, createContext, PROVIDERS, TokenId, ITypeReflects
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -44,16 +44,16 @@ export const AOP_ADVICES = tokenId<Advices>('AOP_ADVICES');
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-export class Joinpoint extends IocContext {
+export class Joinpoint implements IocContext {
+    injector: IInjector;
+    reflects: ITypeReflects;
     /**
      * method name
      *
      * @type {string}
      * @memberof Joinpoint
      */
-    get name(): string {
-        return this.getValue(AOP_METHOD_NAME);
-    }
+    name: string;
 
     /**
      * prov joinpoint.
@@ -61,9 +61,7 @@ export class Joinpoint extends IocContext {
      * @type {IJoinpoint}
      * @memberof Joinpoint
      */
-    get provJoinpoint(): Joinpoint {
-        return this.getValue(AOP_PROV_JOINPOINT);
-    }
+    provJoinpoint: Joinpoint;
 
     routeValue<T>(token: Token<T>): T {
         let value: T;
