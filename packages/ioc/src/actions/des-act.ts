@@ -1,5 +1,5 @@
 import { DecoratorScope } from '../types';
-import { isFunction, isArray, isClass } from '../utils/lang';
+import { isFunction, isArray, isClass, lang } from '../utils/lang';
 import { Provider } from '../tokens';
 import { IActionSetup } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
@@ -126,11 +126,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
         }
         const instance = ctx.instance;
         // clean context
-        setTimeout(() => {
-            Object.keys(ctx).forEach(k => {
-                ctx[k] = null;
-            });
-        });
+        lang.cleanObj(ctx);
         return instance;
     };
 

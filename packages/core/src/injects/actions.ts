@@ -1,6 +1,5 @@
-import { DesignRegisterer, CTX_CURR_DECOR, chain, IActionSetup, IocDecorRegisterer, ObjectMap, Type, isArray, isClass, lang, IocActions, DecoratorScope } from '@tsdi/ioc';
+import { DesignRegisterer, chain, IActionSetup, IocDecorRegisterer, ObjectMap, Type, isArray, isClass, lang, IocActions, DecoratorScope } from '@tsdi/ioc';
 import { InjContext } from './context';
-import { CTX_CURR_TYPE } from '../tk';
 
 export abstract class InjScope extends IocActions<InjContext> {
 
@@ -27,7 +26,6 @@ export class InjModuleScope extends InjScope implements IActionSetup {
 
 
 const inj: DecoratorScope = 'Inj';
-const DECOR_STATE = 'CTX_DECOR_STATE';
 
 /**
  * inject module by decorator.
@@ -37,7 +35,7 @@ export class InjDecorScope extends InjScope implements IActionSetup {
         if (!this.isCompleted(ctx)) {
             this.getDecorators(ctx)
                 .some(dec => {
-                    ctx.setValue(CTX_CURR_DECOR, dec);
+                    ctx.currDecoractor = dec;
                     super.execute(ctx);
                     this.done(ctx);
                     return this.isCompleted(ctx);
@@ -53,19 +51,19 @@ export class InjDecorScope extends InjScope implements IActionSetup {
     }
 
     protected getState(ctx: InjContext): ObjectMap<boolean> {
-        if (!ctx.hasValue(DECOR_STATE)) {
-            ctx.setValue(DECOR_STATE, this.getRegisterer()
+        if (!ctx.state) {
+            ctx.state = this.getRegisterer()
                 .getDecorators()
                 .reduce((obj, dec) => {
                     obj[dec] = false;
                     return obj;
-                }, {}));
+                }, {});
         }
-        return ctx.getValue(DECOR_STATE);
+        return ctx.state;
     }
 
     protected done(ctx: InjContext): boolean {
-        return this.getState(ctx)[ctx.getValue(CTX_CURR_DECOR)] = true;
+        return this.getState(ctx)[ctx.currDecoractor] = true;
     }
     protected isCompleted(ctx: InjContext): boolean {
         return ctx.types.length === 0 || !Object.values(this.getState(ctx)).some(inj => !inj);
@@ -82,10 +80,10 @@ export class InjDecorScope extends InjScope implements IActionSetup {
 }
 
 export const InjDecorAction = function (ctx: InjContext, next?: () => void): void {
-    if (ctx.hasValue(CTX_CURR_DECOR)) {
+    if (ctx.currDecoractor) {
         let actInj = ctx.reflects.getActionInjector()
         let decRgr = actInj.getInstance(DesignRegisterer).getRegisterer(inj);
-        chain(decRgr.getFuncs(actInj, ctx.getValue(CTX_CURR_DECOR)), ctx, next);
+        chain(decRgr.getFuncs(actInj, ctx.currDecoractor), ctx, next);
     } else {
         next && next();
     }
@@ -109,7 +107,7 @@ export abstract class InjRegScope extends InjScope implements IActionSetup {
             let injector = ctx.injector;
             types.forEach(ty => {
                 if (!injector.has(ty)) {
-                    ctx.setValue(CTX_CURR_TYPE, ty);
+                    ctx.currType = ty;
                     super.execute(ctx);
                 }
             });
@@ -134,7 +132,7 @@ export class InjRegTypesScope extends InjRegScope {
 
 
 export const InjRegTypeAction = function (ctx: InjContext, next: () => void): void {
-    let currType = ctx.getValue(CTX_CURR_TYPE);
+    let currType = ctx.currType;
     if (isClass(currType)) {
         ctx.injector.registerType(currType);
         ctx.registered.push(currType);
@@ -147,7 +145,7 @@ export const InjRegTypeAction = function (ctx: InjContext, next: () => void): vo
  */
 export class InjIocExtScope extends InjRegScope {
     protected getTypes(ctx: InjContext): Type[] {
-        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.getValue(CTX_CURR_DECOR), ty));
+        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.currDecoractor, ty));
     }
 
     protected setNextRegTypes(ctx: InjContext, registered: Type[]) {

@@ -1,5 +1,5 @@
-import { LifeScope, Type, Modules, DesignRegisterer, IInjector, IocExt } from '@tsdi/ioc';
-import { InjDecorRegisterer, InjIocExtScope, InjModuleToTypesAction, InjModuleScope} from './actions';
+import { LifeScope, Type, Modules, DesignRegisterer, IInjector, IocExt, lang } from '@tsdi/ioc';
+import { InjDecorRegisterer, InjIocExtScope, InjModuleToTypesAction, InjModuleScope } from './actions';
 import { InjContext } from './context';
 
 /**
@@ -8,8 +8,6 @@ import { InjContext } from './context';
 export class InjLifeScope extends LifeScope<InjContext> {
     execute(ctx: InjContext, next?: () => void): void {
         super.execute(ctx, next);
-        // after all clean.
-        ctx.destroy();
     }
 
     setup() {
@@ -17,7 +15,7 @@ export class InjLifeScope extends LifeScope<InjContext> {
         this.actInjector.regAction(InjIocExtScope);
         this.actInjector.getInstance(DesignRegisterer)
             .setRegisterer('Inj', ijdr);
-        this.actInjector.setValue(InjDecorRegisterer, ijdr);
+        this.actInjector.setSingleton(InjDecorRegisterer, ijdr);
 
         ijdr.register(IocExt, InjIocExtScope);
 
@@ -28,11 +26,15 @@ export class InjLifeScope extends LifeScope<InjContext> {
     register(injector: IInjector, ...modules: Modules[]): Type[] {
         let types: Type[] = [];
         modules.forEach(md => {
-            let ctx = InjContext.parse(injector, { module: md });
+            let ctx = {
+                injector,
+                module: md
+            } as InjContext;
             this.execute(ctx);
             if (ctx.registered) {
                 types.push(...ctx.registered);
             }
+            lang.cleanObj(ctx);
         });
         return types;
     }

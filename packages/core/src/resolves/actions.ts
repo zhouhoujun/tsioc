@@ -1,9 +1,8 @@
 import {
-    DecoratorProvider, isNullOrUndefined, isClassType, CTX_TARGET_TOKEN, InjectReference,
+    DecoratorProvider, isNullOrUndefined, isClassType, InjectReference,
     IocResolveScope, IActionSetup, isToken, lang, Provider, PROVIDERS
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
-import { CTX_CURR_TOKEN, CTX_TARGET_REFS } from '../tk';
 
 // service actions
 
@@ -24,9 +23,6 @@ export class ResolveServiceScope extends IocResolveScope<ServiceContext> impleme
                 ctx.instance = ctx.injector.get(defaultTk, ctx.providers);
             }
         }
-        // after all clean.
-        ctx.destroy();
-
     }
 
     setup() {
@@ -39,19 +35,19 @@ export class ResolveServiceScope extends IocResolveScope<ServiceContext> impleme
 export class RsvTagSericeScope extends IocResolveScope<ServiceContext> implements IActionSetup {
 
     execute(ctx: ServiceContext, next?: () => void): void {
-        if (ctx.hasValue(CTX_TARGET_REFS)) {
+        if (ctx.targetRefs) {
             let tokens = ctx.tokens;
-            ctx.getValue(CTX_TARGET_REFS).some(t => {
+            ctx.targetRefs.some(t => {
                 let tgtk = isToken(t) ? t : lang.getClass(t);
-                ctx.setValue(CTX_TARGET_TOKEN, tgtk);
+                ctx.targetToken = tgtk;
                 return tokens.some(tk => {
-                    ctx.setValue(CTX_CURR_TOKEN, tk);
+                    ctx.currTK = tk;
                     super.execute(ctx);
                     return !!ctx.instance;
                 });
             });
 
-            ctx.remove(CTX_CURR_TOKEN, CTX_TARGET_TOKEN);
+            ctx.currTK = null;
         }
         if (!ctx.instance) {
             next && next();
@@ -66,12 +62,12 @@ export class RsvTagSericeScope extends IocResolveScope<ServiceContext> implement
 
 
 export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => void): void {
-    let clasType = ctx.getValue(CTX_TARGET_TOKEN);
+    let clasType = ctx.targetToken;
     let reflects = ctx.reflects;
     let injector = ctx.injector;
     if (isClassType(clasType)) {
         let dprvoider = reflects.getActionInjector().getInstance(DecoratorProvider);
-        let tk = ctx.getValue(CTX_CURR_TOKEN);
+        let tk = ctx.currTK;
         reflects.getDecorators(clasType)
             .some(dec => {
                 if (dprvoider.has(dec, tk)) {
@@ -95,14 +91,14 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
 
 export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () => void): void {
     let injector = ctx.injector;
-    let tgtk = ctx.getValue(CTX_TARGET_TOKEN);
+    let tgtk = ctx.targetToken;
     if (isClassType(tgtk)) {
         ctx.reflects.getExtends(tgtk).some(ty => {
-            ctx.instance = injector.resolve({ token: ctx.getValue(CTX_CURR_TOKEN), target: ty, tagOnly: true }, ctx.providers);
+            ctx.instance = injector.resolve({ token: ctx.currTK, target: ty, tagOnly: true }, ctx.providers);
             return ctx.instance;
         });
     } else {
-        ctx.instance = injector.resolve({ token: ctx.getValue(CTX_CURR_TOKEN), target: tgtk, tagOnly: true }, ctx.providers);
+        ctx.instance = injector.resolve({ token: ctx.currTK, target: tgtk, tagOnly: true }, ctx.providers);
     }
 
     if (isNullOrUndefined(ctx.instance)) {
@@ -123,6 +119,7 @@ export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => 
 }
 
 
+
 // services actions
 
 export class ResolveServicesScope extends IocResolveScope implements IActionSetup {
@@ -131,6 +128,11 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
         if (!ctx.tokens || !ctx.tokens.length) {
             return;
         }
+        ctx.types = [
+            ...ctx.tokens.map(t => ctx.injector.getTokenProvider(t)).filter(t => t),
+            ...ctx.types
+        ];
+
         ctx.services = ctx.injector.get(PROVIDERS);
         super.execute(ctx);
 
@@ -146,8 +148,6 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
                 }
             }
         }
-        // after all clean.
-        ctx.destroy();
     }
     setup() {
         this.use(RsvSuperServicesAction)
@@ -158,7 +158,7 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
 
 
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
-    let targetRefs = ctx.getValue(CTX_TARGET_REFS);
+    let targetRefs = ctx.targetRefs;
 
     if (targetRefs && targetRefs.length) {
         let reflects = ctx.reflects;
@@ -195,7 +195,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             });
         });
     }
-    if (!ctx.getOptions().tagOnly) {
+    if (!ctx.tagOnly) {
         next();
     }
 };

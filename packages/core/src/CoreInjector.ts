@@ -1,4 +1,4 @@
-import { Injector, Type, Token, Provider, IProvider, ActionInjectorToken } from '@tsdi/ioc';
+import { Injector, Type, Token, Provider, IProvider } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
 import { ServiceProvider } from './services/providers';
 import { IContainerBuilder } from './IContainerBuilder';

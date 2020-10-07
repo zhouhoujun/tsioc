@@ -1,4 +1,4 @@
-import { isNullOrUndefined } from '../utils/lang';
+import { isNullOrUndefined, lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
 import { isToken, Provider, Token } from '../tokens';
 import { INJECTOR, InjectorProxyToken, PROVIDERS } from '../utils/tk';
@@ -48,11 +48,7 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
         this.execute(ctx);
         const instance = ctx.instance;
         // clean
-        setTimeout(() => {
-            Object.keys(ctx).forEach(k => {
-                ctx[k] = null;
-            });
-        });
+        lang.cleanObj(ctx);
         return instance;
     }
 }

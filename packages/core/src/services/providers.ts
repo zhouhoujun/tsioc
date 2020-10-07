@@ -1,4 +1,4 @@
-import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy, Type, ActionInjectorToken } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy, Type, ActionInjectorToken, isArray, lang } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceResolver } from './IServiceResolver';
@@ -6,6 +6,9 @@ import { IServicesResolver } from './IServicesResolver';
 import { IContainer } from '../IContainer';
 
 export class ServiceProvider extends IocCoreService implements IServiceResolver, IServicesResolver {
+
+    private serviceScope: ResolveServiceScope;
+    private servicesScope: ResolveServicesScope;
     constructor(private proxy: InjectorProxy<IContainer>) {
         super();
     }
@@ -20,9 +23,18 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      * @memberof Container
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
-        let context = ServiceContext.parse(injector, isToken(target) ? { token: target } : target);
+        let context = {
+            injector,
+            ...isToken(target) ? { token: target } : target
+        } as ServiceContext;
+        if (isArray(context.providers)) {
+            context.providers = injector.get(PROVIDERS).inject(...context.providers);
+        } else {
+            context.providers = injector.get(PROVIDERS);
+        }
         let pdr = context.providers;
         providers.length && pdr.inject(...providers);
+        this.initTargetRef(context);
         if (!pdr.hasTokenKey(INJECTOR)) {
             pdr.inject(
                 { provide: INJECTOR, useValue: injector },
@@ -30,10 +42,17 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
             );
         }
 
-        this.proxy().getActionInjector()
-            .getInstance(ResolveServiceScope)
-            .execute(context);
-        return context.instance as T || null;
+        if (!this.serviceScope) {
+            this.serviceScope = this.proxy()
+                .getActionInjector()
+                .getInstance(ResolveServiceScope);
+        }
+
+        this.serviceScope.execute(context);
+        const instance = context.instance;
+        // clean obj.
+        lang.cleanObj(context);
+        return instance || null;
     }
 
     /**
@@ -64,17 +83,38 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
      * get service providers.
      *
      * @template T
-     * @param {Token<T>} target
-     * @param {ServicesContext} [ctx]
+     * @param {IInjector} injector
+     * @param {Token<T> | ServicesOption<T>} target
      * @returns {IProvider}
-     * @memberof Container
      */
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
-        let context = ServicesContext.parse(injector, isToken(target) ? { token: target } : target);
-        this.proxy().getActionInjector()
-            .getInstance(ResolveServicesScope)
-            .execute(context);
+        let context = {
+            injector,
+            ...isToken(target) ? { token: target } : target
+        } as ServicesContext;
+        if (isArray(context.providers)) {
+            context.providers = injector.get(PROVIDERS).inject(...context.providers);
+        } else {
+            context.providers = injector.get(PROVIDERS);
+        }
+        this.initTargetRef(context);
+        if (!this.servicesScope) {
+            this.servicesScope = this.proxy()
+                .getActionInjector()
+                .getInstance(ResolveServicesScope);
+        }
+        this.servicesScope.execute(context);
+        const services = context.services;
+        // clean obj.
+        lang.cleanObj(context);
+        return services;
+    }
 
-        return context.services;
+    private initTargetRef(ctx: ServiceContext) {
+        let targets = (isArray(ctx.target) ? ctx.target : [ctx.target]).filter(t => t);
+        if (targets.length) {
+            ctx.targetRefs = targets;
+        }
+        ctx.reflects = this.proxy().getTypeReflects();
     }
 }
