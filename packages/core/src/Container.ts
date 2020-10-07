@@ -1,4 +1,4 @@
-import { Provider, IocContainer, Type, Token, IProvider, ActionInjectorToken } from '@tsdi/ioc';
+import { Provider, IocContainer, Type, Token, IProvider } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { IContainerBuilder } from './IContainerBuilder';
 import { ModuleLoader, IModuleLoader } from './services/loader';
@@ -22,13 +22,19 @@ import { InjLifeScope } from './injects/lifescope';
  */
 export class Container extends IocContainer implements IContainer {
 
+    private servPdr: ServiceProvider;
+    private injScope: InjLifeScope;
     protected initReg() {
         super.initReg();
         registerCores(this);
     }
 
+
     getServiceProvider(): ServiceProvider {
-        return this.getSingleton(ServiceProvider)
+        if (!this.servPdr) {
+            this.servPdr = this.getSingleton(ServiceProvider);
+        }
+        return this.servPdr;
     }
 
     /**
@@ -60,7 +66,10 @@ export class Container extends IocContainer implements IContainer {
      */
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
-        return this.getInstance(ActionInjectorToken).getInstance(InjLifeScope).register(this, ...mdls);
+        if (!this.injScope) {
+            this.injScope = this.getActionInjector().getInstance(InjLifeScope)
+        }
+        return this.injScope.register(this, ...mdls);
     }
 
     /**
@@ -100,6 +109,12 @@ export class Container extends IocContainer implements IContainer {
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
         return this.getServiceProvider().getServiceProviders(this, target);
+    }
+
+    protected destroying() {
+        super.destroying();
+        this.servPdr = null;
+        this.injScope = null;
     }
 }
 

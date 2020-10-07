@@ -11,8 +11,14 @@ import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends Injector implements ICoreInjector {
 
+    private servPdr: ServiceProvider;
+    private injScope: InjLifeScope;
+
     getServiceProvider(): ServiceProvider {
-        return this.getSingleton(ServiceProvider)
+        if (!this.servPdr) {
+            this.servPdr = this.getSingleton(ServiceProvider);
+        }
+        return this.servPdr;
     }
 
     /**
@@ -51,7 +57,10 @@ export class CoreInjector extends Injector implements ICoreInjector {
      */
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
-        return this.getInstance(ActionInjectorToken).getInstance(InjLifeScope).register(this, ...mdls);
+        if (!this.injScope) {
+            this.injScope = this.getContainer().getActionInjector().getInstance(InjLifeScope);
+        }
+        return this.injScope.register(this, ...mdls);
     }
 
     /**
@@ -91,5 +100,11 @@ export class CoreInjector extends Injector implements ICoreInjector {
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
         return this.getServiceProvider().getServiceProviders(this, target);
+    }
+
+    protected destroying() {
+        super.destroying();
+        this.servPdr = null;
+        this.injScope = null;
     }
 }

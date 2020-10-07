@@ -10,7 +10,7 @@ import { ContainerToken } from './tk';
 
 export function registerCores(container: IContainer) {
 
-    container.setValue(ContainerToken, container);
+    container.setSingleton(ContainerToken, container);
     if (!container.has(ModuleLoader)) {
         container.setSingleton(ModuleLoader, new ModuleLoader());
     }
