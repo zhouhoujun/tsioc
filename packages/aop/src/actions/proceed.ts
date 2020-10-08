@@ -324,14 +324,11 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
     ctx.state = JoinpointState.AfterReturning;
     const advices = ctx.advices;
     const invoker = ctx.invokeHandle;
-    let result;
-    const returning = ctx.returning;
-    ctx.returning =  PromiseUtil.step([
-        ctx.returning.then(v=> { result = v;}),
+    ctx.returning = PromiseUtil.step([
         ...advices.Around.map(a => () => invoker(ctx, a)),
         ...advices.AfterReturning.map(a => () => invoker(ctx, a)),
-        ()=> ctx.returning === returning? result : ctx.returning 
-    ]).catch(err=> {
+        ctx.returning
+    ]).catch(err => {
         ctx.throwing = err;
         next();
     });
