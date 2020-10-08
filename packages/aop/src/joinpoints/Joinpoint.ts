@@ -84,12 +84,17 @@ export class Joinpoint implements IocContext {
      */
     args: any[];
     /**
-     * pointcut returing
+     * pointcut origin returing
      *
      * @type {*}
      * @memberof Joinpoint
      */
     returning: any;
+
+    /**
+     * to change returning value.
+     */
+    changedReturning?: any;
 
     /**
      * pointcut throwing error.

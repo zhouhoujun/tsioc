@@ -324,14 +324,21 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
     ctx.state = JoinpointState.AfterReturning;
     const advices = ctx.advices;
     const invoker = ctx.invokeHandle;
+    let val;
     ctx.returning = PromiseUtil.step([
+        ctx.returning.then(v => { val = v; }),
         ...advices.Around.map(a => () => invoker(ctx, a)),
         ...advices.AfterReturning.map(a => () => invoker(ctx, a)),
-        ctx.returning
-    ]).catch(err => {
-        ctx.throwing = err;
-        next();
-    });
+        () => isDefined(ctx.changedReturning) ? ctx.changedReturning : val
+    ])
+        .then(v => {
+            ctx.changedReturning = null;
+            return v;
+        })
+        .catch(err => {
+            ctx.throwing = err;
+            next();
+        });
 
 }
 
@@ -339,7 +346,7 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     if (ctx.throwing) {
         return next();
     }
-    if (ctx.returning) {
+    if (isDefined(ctx.returning)) {
         ctx.state = JoinpointState.AfterReturning;
         const advices = ctx.advices;
         const invoker = ctx.invokeHandle;
@@ -349,6 +356,10 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
         advices.AfterReturning.forEach(advicer => {
             invoker(ctx, advicer);
         });
+        if (isDefined(ctx.changedReturning)) {
+            ctx.returning = ctx.changedReturning;
+            ctx.changedReturning = null;
+        }
     }
 }
 
