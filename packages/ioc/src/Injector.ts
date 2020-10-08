@@ -42,18 +42,18 @@ export class Injector extends BaseInjector implements IInjector {
     }
 
     hasValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key) || this.hasSgltnRoot(key);
+        return this.values.has(key) || this.hasValInRoot(key);
     }
 
-    protected hasSgltnRoot<T>(key: SymbolType<T>) {
+    protected hasValInRoot<T>(key: SymbolType<T>) {
         return this.getContainer().hasValue(key)
     }
 
     getValue<T>(key: SymbolType<T>): T {
-        return this.values.get(key) ?? this.getSgltnRoot(key);
+        return this.values.get(key) ?? this.getValInRoot(key);
     }
 
-    protected getSgltnRoot<T>(key: SymbolType<T>) {
+    protected getValInRoot<T>(key: SymbolType<T>) {
         return this.getContainer().getValue(key)
     }
 

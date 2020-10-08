@@ -1,6 +1,6 @@
 import {
     Type, isFunction, lang, IProvider, InvokedProvider, ITypeReflects, TypeReflectsToken, IocActions,
-    IParameter, IActionSetup, isArray, isDefined, tokenId, isPromise, PromiseUtil, TokenId
+    IParameter, IActionSetup, isArray, isDefined, isPromise, PromiseUtil
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';

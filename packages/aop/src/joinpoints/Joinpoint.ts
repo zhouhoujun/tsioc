@@ -116,6 +116,12 @@ export class Joinpoint implements IocContext {
     get annotations(): TypeMetadata[] {
         return this.routeValue(AOP_METHOD_ANNOTATIONS);
     }
+    /**
+     * set annotations.
+     */
+    set annotations(meta: TypeMetadata[]){
+        this.providers.setValue(AOP_METHOD_ANNOTATIONS, meta);
+    }
 
     invokeHandle: (joinPoint: Joinpoint, advicer: Advicer) => any;
 
@@ -137,18 +143,18 @@ export class Joinpoint implements IocContext {
 
     private pdr:IProvider;
     set providers(pdr: IProvider) {
-        this.pdr = pdr;
+        this.pdr.inject(pdr);
+        //reset
+        this.pdr.inject({ provide: Joinpoint, useValue: this });
     }
     get providers(): IProvider {
-        if(!this.pdr){
-           this.pdr = this.injector.get(PROVIDERS);
-        }
         return this.pdr;
     }
 
 
     constructor(public injector: IInjector){
-        this.providers = injector.get(PROVIDERS);
+        this.pdr = injector.get(PROVIDERS);
+        this.pdr.inject({ provide: Joinpoint, useValue: this });
     }
 
     routeValue<T>(token: Token<T>): T {
@@ -187,7 +193,6 @@ export class Joinpoint implements IocContext {
     static parse<T>(injector: IInjector, options: JoinpointOption): Joinpoint {
         let jpt = new Joinpoint(injector);
         jpt = Object.assign(jpt, options);
-        jpt.providers.inject({ provide: Joinpoint, useValue: jpt });
         return jpt;
     }
 }

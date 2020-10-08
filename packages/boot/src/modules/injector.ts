@@ -31,11 +31,11 @@ export class ModuleInjector extends CoreInjector {
     }
 
     hasValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key) || this.hasSgltnRoot(key) || this.hasSgltnInExports(key);
+        return this.values.has(key) || this.hasValInRoot(key) || this.hasSgltnInExports(key);
     }
 
     getValue<T>(key: SymbolType<T>): T {
-        return this.values.get(key) ?? this.getSgltnInExports(key) ?? this.getSgltnRoot(key);
+        return this.values.get(key) ?? this.getSgltnInExports(key) ?? this.getValInRoot(key);
     }
 
     clearCache(targetType: Type) {
