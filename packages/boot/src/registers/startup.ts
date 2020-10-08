@@ -1,4 +1,4 @@
-import { DesignContext, CTX_CURR_DECOR, isString } from '@tsdi/ioc';
+import { DesignContext, isString } from '@tsdi/ioc';
 import { BootMetadata } from '../decorators';
 import { STARTUPS } from '../services/StartupService';
 
@@ -6,7 +6,7 @@ export const StartupRegisterAction = function (ctx: DesignContext, next: () => v
     const injector = ctx.injector;
     const classType = ctx.type;
     let startups = injector.get(STARTUPS) || [];
-    let metas = ctx.reflects.getMetadata<BootMetadata>(ctx.getValue(CTX_CURR_DECOR), classType);
+    let metas = ctx.reflects.getMetadata<BootMetadata>(ctx.currDecor, classType);
     const meta = metas[0] || <BootMetadata>{};
     let idx = -1;
     if (meta.before) {

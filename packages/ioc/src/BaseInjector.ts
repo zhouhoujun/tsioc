@@ -1,7 +1,7 @@
 import { Type, Modules, ClassTypes } from './types';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
-    isBaseObject, isArray, isDefined, isClassType
+    isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined
 } from './utils/lang';
 import { StaticProviders } from './providers';
 import {
@@ -367,6 +367,15 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
 
     getValue<T>(token: Token<T>): T {
         return this.values.get(this.getTokenKey(token));
+    }
+
+    getFirstValue<T>(...tokens: Token<T>[]): T {
+        let value: T;
+        tokens.some(k => {
+            value = this.getValue(k);
+            return !isNullOrUndefined(value);
+        })
+        return value;
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {

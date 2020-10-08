@@ -1,28 +1,34 @@
 import {
-    DesignContext, lang, DecoratorProvider, CTX_CURR_DECOR, IProvider,
-    IocRegScope, IActionSetup, tokenId, Type, CTX_TYPE_REGIN, INJECTOR, TokenId
+    DesignContext, lang, DecoratorProvider, IProvider,
+    IocRegScope, IActionSetup, tokenId, Type, TokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { AnnotationMerger } from '../annotations/merger';
 import { IModuleReflect } from '../modules/reflect';
 import { ModuleConfigure } from '../modules/configure';
-import { CTX_MODULE_ANNOATION, CTX_MODULE_EXPORTS, ParentInjectorToken } from '../tk';
+import { ParentInjectorToken } from '../tk';
 import { ModuleInjector, ModuleProviders } from '../modules/injector';
 import { ModuleRef } from '../modules/ModuleRef';
+
+export interface AnnoDesignContext extends DesignContext {
+    annoation?: ModuleConfigure;
+    exports?: IProvider;
+    moduleRef?: ModuleRef;
+}
 
 /**
  * annoation class type design action.
  * @param ctx
  * @param next
  */
-export const AnnoationAction = function (ctx: DesignContext, next: () => void): void {
+export const AnnoationAction = function (ctx: AnnoDesignContext, next: () => void): void {
     let tgRef = ctx.targetReflect as IModuleReflect;
     if (tgRef.getAnnoation) {
-        ctx.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
+        ctx.annoation = tgRef.getAnnoation();
         return next();
     }
 
-    let cuurDec = ctx.getValue(CTX_CURR_DECOR);
+    let cuurDec = ctx.currDecor;
     if (!tgRef.decorator) {
         tgRef.decorator = cuurDec;
     }
@@ -48,17 +54,17 @@ export const AnnoationAction = function (ctx: DesignContext, next: () => void): 
             return { ...merged };
         };
 
-        ctx.setValue(CTX_MODULE_ANNOATION, tgRef.getAnnoation());
+        ctx.annoation = tgRef.getAnnoation();
     }
     next();
 };
 
 
 export const AnnoationRegInAction = function (ctx: DesignContext, next: () => void): void {
-    if (!ctx.hasValue(CTX_TYPE_REGIN)) {
+    if (!ctx.regIn) {
         let injector = ctx.injector.getInstance(ModuleInjector);
         injector.setValue(ParentInjectorToken, ctx.injector);
-        ctx.setValue(INJECTOR, injector);
+        ctx.injector = injector;
     }
     next();
 };
@@ -71,9 +77,9 @@ export const AnnoationRegInAction = function (ctx: DesignContext, next: () => vo
  * @class AnnoationRegisterScope
  * @extends {IocRegScope<DesignContext>}
  */
-export class AnnoationRegisterScope extends IocRegScope<DesignContext> implements IActionSetup {
-    execute(ctx: DesignContext, next?: () => void): void {
-        if (ctx.hasValue(CTX_MODULE_ANNOATION)) {
+export class AnnoationRegisterScope extends IocRegScope<AnnoDesignContext> implements IActionSetup {
+    execute(ctx: AnnoDesignContext, next?: () => void): void {
+        if (ctx.annoation) {
             super.execute(ctx, next);
         }
     }
@@ -86,8 +92,8 @@ export class AnnoationRegisterScope extends IocRegScope<DesignContext> implement
     }
 }
 
-export const RegModuleImportsAction = function (ctx: DesignContext, next: () => void): void {
-    let annoation = ctx.getValue(CTX_MODULE_ANNOATION)
+export const RegModuleImportsAction = function (ctx: AnnoDesignContext, next: () => void): void {
+    let annoation = ctx.annoation
     if (annoation.imports) {
         (<ICoreInjector>ctx.injector).use(...annoation.imports);
     }
@@ -116,9 +122,9 @@ export interface IModuleProvidersBuilder {
  */
 export const ModuleProvidersBuilderToken: TokenId<IModuleProvidersBuilder> = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
 
-export const RegModuleProvidersAction = function (ctx: DesignContext, next: () => void): void {
+export const RegModuleProvidersAction = function (ctx: AnnoDesignContext, next: () => void): void {
     let reflects = ctx.reflects;
-    let annoation = ctx.getValue(CTX_MODULE_ANNOATION);
+    let annoation = ctx.annoation;
 
     let injector = ctx.injector as ModuleInjector;
     let mdReft = ctx.targetReflect as IModuleReflect;
@@ -159,30 +165,34 @@ export const RegModuleProvidersAction = function (ctx: DesignContext, next: () =
     exptypes.forEach(ty => {
         map.export(ty);
     });
-    map.size && ctx.setValue(CTX_MODULE_EXPORTS, map);
+    if (map.size) {
+        ctx.exports = map;
+    } else {
+        map.destroy();
+    }
     next();
 };
 
-export const RegModuleRefAction = function (ctx: DesignContext, next: () => void): void {
+export const RegModuleRefAction = function (ctx: AnnoDesignContext, next: () => void): void {
     let reflect = ctx.targetReflect as IModuleReflect;
     if (reflect) {
-        let mdRef = new ModuleRef(ctx.type, reflect, ctx.getValue(CTX_MODULE_EXPORTS));
+        let mdRef = new ModuleRef(ctx.type, reflect, ctx.exports);
         ctx.injector.setValue(ModuleRef, mdRef);
-        ctx.setValue(ModuleRef, mdRef);
+        ctx.moduleRef = mdRef;
         reflect.getModuleRef = () => mdRef;
     }
     next();
 };
 
 
-export const RegModuleExportsAction = function (ctx: DesignContext, next: () => void): void {
-    if (ctx.hasValue(CTX_MODULE_EXPORTS)) {
+export const RegModuleExportsAction = function (ctx: AnnoDesignContext, next: () => void): void {
+    if (ctx.exports) {
         let parent = ctx.injector.getInstance(ParentInjectorToken);
         if (parent) {
             if (parent instanceof ModuleInjector) {
-                parent.export(ctx.getValue(ModuleRef));
+                parent.export(ctx.moduleRef);
             } else {
-                parent.copy(ctx.getValue(CTX_MODULE_EXPORTS));
+                parent.copy(ctx.exports);
             }
         }
     }

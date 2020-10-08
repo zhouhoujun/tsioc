@@ -103,7 +103,7 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
 
     let refs = ctx.reflects;
     let injector = ctx.injector;
-    let currDecoractor = ctx.currDecoractor;
+    let currDecoractor = ctx.currDecor;
     let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
     if (isArray(parameters) && parameters.length) {
         parameters.forEach(params => {
@@ -359,7 +359,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    let currDec = ctx.currDecoractor;
+    let currDec = ctx.currDecor;
     let injector = ctx.injector;
     if (ctx.reflects.hasMethodMetadata(currDec, ctx.type)) {
         let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(currDec, ctx.type);

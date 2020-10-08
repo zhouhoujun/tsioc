@@ -26,16 +26,12 @@ export class ModuleInjector extends CoreInjector {
         return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
     }
 
-    hasRegisterValue<T>(key: SymbolType<T>): boolean {
-        return super.hasRegisterValue(key) || this.exports.some(r => r.exports.hasRegisterValue(key));
-    }
-
     hasValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key) || this.hasValInRoot(key) || this.hasSgltnInExports(key);
+        return this.values.has(key) || this.hasValInRoot(key) || this.hasValInExports(key);
     }
 
     getValue<T>(key: SymbolType<T>): T {
-        return this.values.get(key) ?? this.getSgltnInExports(key) ?? this.getValInRoot(key);
+        return this.values.get(key) ?? this.getValInExports(key) ?? this.getValInRoot(key);
     }
 
     clearCache(targetType: Type) {
@@ -87,11 +83,6 @@ export class ModuleInjector extends CoreInjector {
         }
     }
 
-    protected tryGetValue<T>(key: SymbolType<T>): T {
-        return this.values.has(key) ? this.values.get(key)
-            : this.exports.find(r => r.exports.hasRegisterValue(key))?.exports.getValue(key);
-    }
-
     protected getFcty<T>(key: SymbolType<T>): InstanceFactory<T> {
         return this.factories.has(key) ? this.factories.get(key)
             : this.exports.find(r => r.exports.hasTokenKey(key))?.exports.getTokenFactory(key);
@@ -110,11 +101,11 @@ export class ModuleInjector extends CoreInjector {
         }
     }
 
-    protected hasSgltnInExports<T>(key: SymbolType<T>): boolean {
+    protected hasValInExports<T>(key: SymbolType<T>): boolean {
         return this.exports.some(r => r.exports.hasValue(key));
     }
 
-    protected getSgltnInExports<T>(key: SymbolType<T>): T {
+    protected getValInExports<T>(key: SymbolType<T>): T {
         return this.exports.find(r => r.exports.hasValue(key))?.exports.getValue(key);
     }
 }

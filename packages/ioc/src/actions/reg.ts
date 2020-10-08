@@ -28,9 +28,9 @@ export interface RegContext extends IocContext {
     type: Type;
 
     /**
-     * current decor.
+     * current decoractor.
      */
-    currDecoractor?: string;
+    currDecor?: string;
 
     /**
      * current decorator scope.
@@ -329,9 +329,9 @@ export abstract class ExecDecoratorAtion extends IocRegAction<RegContext> {
     }
 
     execute(ctx: RegContext, next?: () => void): void {
-        if (ctx.currDecoractor) {
+        if (ctx.currDecor) {
             let decor = this.getScopeRegisterer();
-            let currDec = ctx.currDecoractor;
+            let currDec = ctx.currDecor;
             let currScope = ctx.currDecorScope;
             if (decor.has(currDec, currScope)) {
                 let actions = decor.getFuncs(this.actInjector, currDec, currScope);
@@ -348,7 +348,7 @@ export abstract class IocDecorScope<T extends RegContext> extends IocActions<T> 
     execute(ctx: T, next?: () => void): void {
         this.getDecorators(ctx)
             .forEach(dec => {
-                ctx.currDecoractor = dec;
+                ctx.currDecor = dec;
                 ctx.currDecorScope = this.getDecorScope();
                 super.execute(ctx);
             });

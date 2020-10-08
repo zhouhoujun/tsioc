@@ -1,5 +1,6 @@
-import { Injectable, createContext, lang, tokenId, isDefined, TokenId } from '@tsdi/ioc';
+import { Injectable, lang, tokenId, isDefined, TokenId } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
+import { createContext } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { PropBinding } from '../bindings/PropBinding';
 import { ComponentContext, IComponentContext, IComponentOption } from '../ComponentContext';

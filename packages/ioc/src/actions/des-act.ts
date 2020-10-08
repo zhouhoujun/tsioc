@@ -118,7 +118,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
             token: provide,
             type,
             singleton,
-            providers: this.injector.get(PROVIDERS).inject(...providers)
+            providers: injector.get(PROVIDERS).inject(...providers)
         } as RuntimeContext;
         actInjector.getInstance(RuntimeLifeScope).register(ctx);
         if (singleton) {
@@ -186,7 +186,7 @@ export class DesignPropDecorScope extends DesignDecorScope {
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     let tgReflect = ctx.targetReflect;
     let injector = ctx.injector;
-    let currDecor = ctx.currDecoractor;
+    let currDecor = ctx.currDecor;
     if (!tgReflect.decorator) {
         tgReflect.decorator = currDecor;
     }
@@ -239,7 +239,7 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
     let injector = ctx.injector;
     let targetReflect = ctx.targetReflect;
     targetReflect.defines.extendTypes.forEach(ty => {
-        let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.currDecoractor, ty);
+        let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.currDecor, ty);
         Object.keys(propMetas).forEach(key => {
             let props = propMetas[key];
             props.forEach(prop => {
@@ -285,7 +285,7 @@ export class DesignMthDecorScope extends DesignDecorScope {
  */
 export const MthProviderAction = function (ctx: DesignContext, next: () => void) {
     ctx.targetReflect.defines.extendTypes.forEach(ty => {
-        let metas = ctx.reflects.getMethodMetadata<MethodMetadata>(ctx.currDecoractor, ty);
+        let metas = ctx.reflects.getMethodMetadata<MethodMetadata>(ctx.currDecor, ty);
         Object.keys(metas).forEach(propertyKey => {
             let metadatas = metas[propertyKey];
             let providers = [];
@@ -316,11 +316,11 @@ export const MthProviderAction = function (ctx: DesignContext, next: () => void)
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    if (!ctx.reflects.hasMetadata(ctx.currDecoractor, ctx.type)) {
+    if (!ctx.reflects.hasMetadata(ctx.currDecor, ctx.type)) {
         return next();
     }
     let injector = ctx.injector;
-    let metadatas = ctx.reflects.getMetadata<AutorunMetadata>(ctx.currDecoractor, ctx.type);
+    let metadatas = ctx.reflects.getMetadata<AutorunMetadata>(ctx.currDecor, ctx.type);
     metadatas.forEach(meta => {
         if (meta && meta.autorun) {
             let instance = injector.get(ctx.token || ctx.type);
