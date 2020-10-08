@@ -1,7 +1,9 @@
-import { Injectable, IocContext, ActCtxOption, isDefined } from '@tsdi/ioc';
+import { Injectable, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IHandleContext } from '../Context';
+import { IHandleContext, ProdverOption } from '../Context';
+import { DestoryableContext } from '../annotations/ctx';
 import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT, CTX_CURR_INJECTOR } from '../tk';
+
 
 
 /**
@@ -10,7 +12,7 @@ import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT, CTX_CURR_INJECTO
  * @export
  * @interface MessageOption
  */
-export interface MessageOption extends ActCtxOption {
+export interface MessageOption extends ProdverOption {
     /**
      * message type
      *
@@ -55,7 +57,7 @@ export interface MessageOption extends ActCtxOption {
  * @extends {HandleContext}
  */
 @Injectable
-export class MessageContext<T extends MessageOption = MessageOption> extends IocContext<T, ICoreInjector> implements IHandleContext {
+export class MessageContext<T extends MessageOption = MessageOption> extends DestoryableContext<T> implements IHandleContext {
 
     /**
      * get injector of current message queue.

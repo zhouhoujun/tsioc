@@ -3,11 +3,12 @@ import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from './modules/configure';
 import { Configure } from './configure/Configure';
 import { IStartup } from './runnable/Startup';
-import { IAnnoationContext, IBootContext } from './Context';
+import { AnnoationOption, IAnnoationContext, IBootContext } from './Context';
 import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
 import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
+import { IAnnoationReflect } from './annotations/reflect';
 
 export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
 export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
@@ -76,7 +77,12 @@ export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypePa
  */
 export const ROOT_INJECTOR: TokenId<ICoreInjector> = tokenId<ICoreInjector>('ROOT_INJECTOR');
 
-export const CTX_MODULE: TokenId<Type> = tokenId<Type>('CTX_MODULE');
+
+export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
+export const CTX_OPTIONS = tokenId<AnnoationOption>('CTX_OPTIONS');
+export const CTX_TARGET_RELF = tokenId<IAnnoationReflect>('CTX_TARGET_RELF');
+
+export const CTX_MODULE  = tokenId<Type>('CTX_MODULE');
 export const CTX_MODULE_DECTOR = tokenId<string>('CTX_MODULE_DECTOR');
 export const CTX_MODULE_EXPORTS = tokenId<IProvider>('CTX_MODULE_EXPORTS');
 export const CTX_MODULE_ANNOATION = tokenId<ModuleConfigure>('CTX_MODULE_ANNOATION');

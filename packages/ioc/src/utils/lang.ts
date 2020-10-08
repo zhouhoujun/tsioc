@@ -720,7 +720,7 @@ export class Defer<T> {
      * @type {Promise<T>}
      * @memberof Defer
      */
-    promise: Promise<T>
+    promise: Promise<T>;
     /**
      * resolve.
      *

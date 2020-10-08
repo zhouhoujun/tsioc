@@ -1,12 +1,214 @@
-import {
-    Type, createContext, IocPdrsContext, isDefined,
-    isToken, ClassType, lang, CTX_TARGET_RELF, Token
-} from '@tsdi/ioc';
+import { Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, IProvider, Destoryable, PROVIDERS, ITypeReflects, TypeReflectsToken, tokenId, TokenId, SymbolType, Provider, isInjector, isArray, isBoolean } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
-import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT } from '../tk';
+import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT, CTX_OPTIONS, CTX_TARGET_RELF, CTX_PROVIDERS } from '../tk';
 import { ModuleRef } from '../modules/ModuleRef';
 import { IAnnotationMetadata, IAnnoationReflect } from './reflect';
-import { AnnoationOption, IAnnoationContext } from '../Context';
+import { AnnoationOption, IAnnoationContext, ProdverOption } from '../Context';
+
+
+export function createContext<Ctx extends IAnnoationContext>(injector: IInjector, CtxType: Type<Ctx>, options: AnnoationOption): Ctx {
+    let ctx = new CtxType(injector);
+    options && ctx.setOptions(options);
+    return ctx;
+}
+
+export class DestoryableContext<T extends ProdverOption> extends Destoryable {
+    public context: IProvider;
+
+    constructor(@Inject(INJECTOR) injector: ICoreInjector) {
+        super();
+        this.context = injector.get(PROVIDERS);
+        this.context.setValue(INJECTOR, injector);
+    }
+
+    /**
+     * raise injector of this context.
+     */
+    get injector(): ICoreInjector {
+        return this.context.getValue(INJECTOR) as ICoreInjector;
+    }
+
+    /**
+     * get type reflects.
+     */
+    get reflects(): ITypeReflects {
+        return this.context.getValue(TypeReflectsToken) ?? this.getReflects();
+    }
+
+    protected getReflects() {
+        let reflects = this.injector.getInstance(TypeReflectsToken);
+        this.context.setValue(TypeReflectsToken, reflects);
+        return reflects;
+    }
+
+    /**
+     * get providers of options.
+     */
+    get providers(): IProvider {
+        return this.context.getValue(CTX_PROVIDERS) ?? this.getProviders();
+    }
+
+    private _originPdr: boolean;
+    protected getProviders() {
+        this._originPdr = true;
+        let providers = this.injector.get(PROVIDERS);
+        this.setValue(CTX_PROVIDERS, providers);
+        return providers;
+    }
+
+    /**
+     * has register in context or not.
+     * @param token
+     */
+    has(token: Token): boolean {
+        return this.context.hasRegister(token);
+    }
+
+    /**
+     * has value in context or not.
+     * @param token
+     */
+    hasValue(token: SymbolType): boolean {
+        return this.context.hasValue(token);
+    }
+
+    /**
+     * remove contexts.
+     * @param tokens
+     */
+    remove(...tokens: SymbolType[]) {
+        tokens.forEach(tk => {
+            this.context.delValue(tk);
+        });
+    }
+    /**
+     * get context provider of boot application.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {T}
+     * @memberof BootContext
+     */
+    get<T>(token: Token<T>): T {
+        return this.context.get(token);
+    }
+
+    /**
+     * get context provider of boot application.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {T}
+     * @memberof BootContext
+     */
+    getInstance<T>(token: SymbolType<T>): T {
+        return this.context.getInstance(token);
+    }
+
+    /**
+     * get value from context.
+     * @param key token key
+     */
+    getValue<T>(key: SymbolType<T>): T {
+        return this.context.getValue(key);
+    }
+
+    /**
+     * set value to this contet.
+     * @param key token key
+     * @param value value of key.
+     */
+    setValue<T>(key: SymbolType<T>, value: T) {
+        this.context.setValue(key, value);
+        return this;
+    }
+
+    /**
+     * set provider of this context.
+     *
+     * @param {Token} token context provider token.
+     * @param {*} value context value.
+     */
+    set(token: Token, value: any);
+    /**
+     * set context provider of boot application.
+     *
+     * @param {...Provider[]} providers
+     */
+    set(...providers: Provider[]);
+    set(...providers: any[]) {
+        if (providers.length === 2 && isToken(providers[0])) {
+            let provde = providers[0];
+            let value = providers[1];
+            this.context.setValue(provde, value);
+        } else {
+            this.context.inject(...providers);
+        }
+        return this;
+    }
+
+    /**
+     * get root container.
+     */
+    getContainer(): IContainer {
+        return this.injector.getContainer();
+    }
+
+    /**
+     * set options for context.
+     * @param options options.
+     */
+    setOptions(options: T): this {
+        if (!options) {
+            return;
+        }
+        if (options.contexts) {
+            if (isInjector(options.contexts)) {
+                this.context.copy(options.contexts);
+            } else if (isArray(options.contexts)) {
+                this.context.inject(...options.contexts);
+            }
+        }
+        options = this.context.hasValue(CTX_OPTIONS) ? Object.assign(this.getOptions(), options) : options;
+        this.context.setValue(CTX_OPTIONS, options);
+        return this;
+    }
+
+    /**
+     * get options of context.
+     *
+     * @returns {T}
+     * @memberof IocRaiseContext
+     */
+    getOptions(): T {
+        return this.context.getValue(CTX_OPTIONS) as T;
+    }
+
+    clone(): this;
+    /**
+     * clone the context.
+     * @param empty empty context or not.
+     */
+    clone(empty: boolean): this;
+    clone(options: T): this;
+    /**
+     * clone contexts.
+     */
+    clone(options?: T | boolean): this {
+        if (isBoolean(options)) {
+            return options ? createContext(this.injector, lang.getClass(this), null)
+                : createContext(this.injector, lang.getClass(this), this.getOptions());
+        } else {
+            return createContext(this.injector, lang.getClass(this), { ...this.getOptions(), contexts: this.context.clone(), ...options || {} });
+        }
+    }
+
+    protected destroying() {
+        this.context.destroy();
+        this.context = null;
+    }
+}
+
 
 /**
  * annoation context.
@@ -15,8 +217,7 @@ import { AnnoationOption, IAnnoationContext } from '../Context';
  * @class AnnoationContext
  * @extends {HandleContext}
  */
-export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
-    extends IocPdrsContext<T, ICoreInjector> implements IAnnoationContext<T> {
+export class AnnoationContext<T extends AnnoationOption = AnnoationOption> extends DestoryableContext<T> implements IAnnoationContext<T> {
 
     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
@@ -106,10 +307,6 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
         return value ?? null;
     }
 
-    getContainer(): IContainer {
-        return super.getContainer() as IContainer;
-    }
-
     setParent(context: IAnnoationContext): this {
         if (context === null) {
             this.remove(CTX_PARENT_CONTEXT);
@@ -162,7 +359,6 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
         return anno;
     }
 
-
     setOptions(options: T) {
         if (!options) {
             return this;
@@ -176,4 +372,5 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption>
         }
         return super.setOptions(options);
     }
+
 }

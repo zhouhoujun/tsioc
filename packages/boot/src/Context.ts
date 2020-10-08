@@ -1,5 +1,8 @@
+import {
+    ClassType, IDestoryable, IInjector, IocContext, IProvider, ITypeReflects, ObjectMap, Provider,
+    RegInMetadata, SymbolType, Token, Type
+} from '@tsdi/ioc';
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
-import { ClassType, IocContext, IocPdrsOption, IProvider, ObjectMap, RegInMetadata, Token, Type } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
 import { IAnnoationReflect, IAnnotationMetadata } from './annotations/reflect';
@@ -9,6 +12,20 @@ import { IModuleReflect } from './modules/reflect';
 import { ModuleRef } from './modules/ModuleRef';
 import { IStartup } from './runnable/Startup';
 
+export interface ProdverOption {
+    /**
+     * providers for contexts.
+     *
+     * @type {(Provider[] | IProvider)}
+     */
+    contexts?: Provider[] | IProvider;
+
+    /**
+     *  providers.
+     */
+    providers?: Provider[] | IInjector;
+}
+
 /**
  * annoation action option.
  *
@@ -16,7 +33,7 @@ import { IStartup } from './runnable/Startup';
  * @interface AnnoationOption
  * @extends {ActionContextOption}
  */
-export interface AnnoationOption<T = any> extends IocPdrsOption, RegInMetadata {
+export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
     /**
      * target module type.
      *
@@ -41,7 +58,7 @@ export interface AnnoationOption<T = any> extends IocPdrsOption, RegInMetadata {
 /**
  * annoation context interface.
  */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IocContext<T, ICoreInjector> {
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IocContext, IDestoryable {
     /**
     * current build type.
     */
@@ -52,6 +69,25 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     readonly decorator: string;
 
     /**
+     * current injector.
+     */
+    readonly injector: ICoreInjector;
+
+    /**
+     * current context providers.
+     */
+    readonly context: IProvider;
+    /**
+     * reflects.
+     */
+    readonly reflects: ITypeReflects;
+    /**
+     * get providers of options.
+     */
+    readonly providers: IProvider;
+
+
+    /**
      * get current DI module ref.
      */
     getModuleRef(): ModuleRef;
@@ -59,10 +95,6 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     getTargetReflect(): IAnnoationReflect;
 
     getAnnoation(): IAnnotationMetadata;
-
-    readonly providers: IProvider;
-
-    readonly injector: ICoreInjector;
 
     /**
      * set parent context
@@ -93,9 +125,90 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     getContextValue<T>(token: Token<T>, success?: (value: T) => void): T;
 
     /**
+     * has register in context or not.
+     * @param token
+     */
+    has(token: Token): boolean;
+    /**
+    * has value in context or not.
+    * @param token
+    */
+    hasValue(token: SymbolType): boolean;
+    /**
+     * remove contexts.
+    
+     * @param tokens
+     */
+    remove(...tokens: SymbolType[]);
+    /**
+     * get context provider of boot application.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {T}
+     */
+    get<T>(token: Token<T>): T;
+    /**
+     * get instance.
+     * @param token the token key of instance.
+     */
+    getInstance<T>(token: SymbolType<T>): T;
+    /**
+     * get value from context.
+     * @param key token key
+     */
+    getValue<T>(key: SymbolType<T>): T;
+    /**
+     * set value to this contet.
+     * @param key token key
+     * @param value value of key.
+     */
+    setValue<T>(key: SymbolType<T>, value: T): this;
+    /**
+     * set provider of this context.
+     *
+     * @param {Token} token context provider token.
+     * @param {*} value context value.
+     */
+    set(token: Token, value: any);
+    /**
+     * set context provider of boot application.
+     *
+     * @param {...Provider[]} providers
+     */
+    set(...providers: Provider[]);
+    /**
      * get root container.
      */
     getContainer(): IContainer;
+    /**
+     * get options of context.
+     *
+     * @returns {T}
+     * @memberof IocRaiseContext
+     */
+    getOptions(): T;
+
+    /**
+     * set options for context.
+     * @param options options.
+     */
+    setOptions(options: T): this;
+
+    /**
+     * clone this context.
+     */
+    clone(): this;
+    /**
+     * clone this context with out options.
+     * @param empty empty context or not.
+     */
+    clone(empty: boolean): this;
+    /**
+     * clone this context with custom options.
+     * @param options custom options.
+     */
+    clone(options: T): this;
 
 }
 

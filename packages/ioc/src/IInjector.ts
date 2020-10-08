@@ -128,18 +128,18 @@ export interface IInjector extends IDestoryable {
      * get value.
      * @param key token key.
      */
-    getValue<T>(key: SymbolType<T>): T;
+    getValue<T>(key: Token<T>): T;
     /**
      * set value.
      * @param key provide key
      * @param value vaule
      */
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
+    setValue<T>(key: Token<T>, value: T, provider?: Type<T>): this;
     /**
      * delete value.
      * @param key key
      */
-    delValue<T>(key: SymbolType<T>): void;
+    delValue<T>(key: Token<T>): void;
     /**
      * resolve token instance with token and param provider.
      *

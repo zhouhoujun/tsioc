@@ -361,15 +361,16 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         return this.values.has(key) || this.factories.has(key);
     }
 
-    hasValue<T>(key: SymbolType<T>): boolean {
-        return this.values.has(key);
+    hasValue<T>(token: Token<T>): boolean {
+        return this.values.has(this.getTokenKey(token));
     }
 
-    getValue<T>(key: SymbolType<T>): T {
-        return this.values.get(key);
+    getValue<T>(token: Token<T>): T {
+        return this.values.get(this.getTokenKey(token));
     }
 
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this {
+    setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
+        const key = this.getTokenKey(token);
         this.values.set(key, value);
         if (provider && isClass(provider)) {
             this.values.set(provider, value);
@@ -378,8 +379,8 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         return this;
     }
 
-    delValue(key: SymbolType) {
-        this.values.delete(key);
+    delValue(token: Token) {
+        this.values.delete(this.getTokenKey(token));
     }
 
     /**
