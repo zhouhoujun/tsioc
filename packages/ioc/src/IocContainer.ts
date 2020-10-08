@@ -24,7 +24,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     private reflects: ITypeReflects;
     getTypeReflects(): ITypeReflects {
         if (!this.reflects) {
-            this.reflects = this.getSingleton(TypeReflectsToken);
+            this.reflects = this.getValue(TypeReflectsToken);
         }
         return this.reflects;
     }
@@ -32,7 +32,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     private actionInj: IActionInjector;
     getActionInjector(): IActionInjector {
         if (!this.actionInj) {
-            this.actionInj = this.getSingleton(ActionInjectorToken);
+            this.actionInj = this.getValue(ActionInjectorToken);
         }
         return this.actionInj;
     }
@@ -150,11 +150,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: Provider[]) => {
-                if (injector.hasSingleton(key)) {
-                    return injector.getSingleton(key);
+                if (injector.hasValue(key)) {
+                    return injector.getValue(key);
                 }
                 let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-                injector.setSingleton(key, instance);
+                injector.setValue(key, instance);
                 return instance;
             }
             : (...providers: Provider[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));

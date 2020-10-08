@@ -20,18 +20,18 @@ import { ResolveLifeScope } from '../actions/resolve';
 export function registerCores(container: IIocContainer) {
     let fac = container.getProxy();
     container.set(IocContainerToken, fac);
-    container.setSingleton(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
+    container.setValue(TypeReflectsToken, new TypeReflects(fac), TypeReflects);
 
     container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
     container.set(PROVIDERS, () => new ContextProvider(fac), ContextProvider);
     container.set(INVOKED_PROVIDERS, () => new InvokedProvider(fac), InvokedProvider);
-    container.setSingleton(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
+    container.setValue(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);
-    container.setSingleton(ActionInjectorToken, actInjector, ActionInjector);
-    actInjector.setSingleton(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
-    actInjector.setSingleton(DesignRegisterer, new DesignRegisterer(actInjector));
-    actInjector.setSingleton(DecoratorProvider, new DecoratorProvider(fac));
+    container.setValue(ActionInjectorToken, actInjector, ActionInjector);
+    actInjector.setValue(RuntimeRegisterer, new RuntimeRegisterer(actInjector));
+    actInjector.setValue(DesignRegisterer, new DesignRegisterer(actInjector));
+    actInjector.setValue(DecoratorProvider, new DecoratorProvider(fac));
 
     // bing action.
     actInjector

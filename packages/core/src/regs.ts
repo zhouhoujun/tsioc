@@ -10,14 +10,14 @@ import { ContainerToken } from './tk';
 
 export function registerCores(container: IContainer) {
 
-    container.setSingleton(ContainerToken, container);
+    container.setValue(ContainerToken, container);
     if (!container.has(ModuleLoader)) {
-        container.setSingleton(ModuleLoader, new ModuleLoader());
+        container.setValue(ModuleLoader, new ModuleLoader());
     }
 
     let fac = container.getProxy();
     container.set(InjectorFactoryToken, () => new CoreInjector(fac), CoreInjector);
-    container.setSingleton(ServiceProvider, new ServiceProvider(fac));
+    container.setValue(ServiceProvider, new ServiceProvider(fac));
 
     let actInjector = container.getActionInjector();
     // register action

@@ -16,7 +16,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
 
     getServiceProvider(): ServiceProvider {
         if (!this.servPdr) {
-            this.servPdr = this.getSingleton(ServiceProvider);
+            this.servPdr = this.getValue(ServiceProvider);
         }
         return this.servPdr;
     }
@@ -35,7 +35,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.getSingleton(ContainerBuilderToken);
+        return this.getValue(ContainerBuilderToken);
     }
 
     /**
@@ -45,7 +45,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.getSingleton(ModuleLoader);
+        return this.getValue(ModuleLoader);
     }
 
     /**

@@ -60,7 +60,7 @@ export interface IocContext {
     /**
      * reflects.
      */
-    reflects: ITypeReflects;
+    reflects?: ITypeReflects;
 
     /**
      *  providers.

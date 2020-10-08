@@ -53,13 +53,13 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      */
     protected factories: Map<SymbolType, InstanceFactory>;
     /**
-     * singleton map.
+     * values map.
      *
      * @protected
      * @type {Map<SymbolType, any>}
      * @memberof BaseInjector
      */
-    protected singletons: Map<SymbolType, any>;
+    protected values: Map<SymbolType, any>;
 
     private rslScope: ResolveLifeScope;
 
@@ -70,11 +70,11 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     get size(): number {
-        return this.factories.size + this.singletons.size;
+        return this.factories.size + this.values.size;
     }
 
     getProxy(): InjectorProxy<this> {
-        return this.getSingleton(InjectorProxyToken) as InjectorProxy<this>;
+        return this.getValue(InjectorProxyToken) as InjectorProxy<this>;
     }
 
     abstract getContainer(): IIocContainer;
@@ -188,7 +188,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
             this.factories.set(provideKey, (...providers) => this.getInstance(ptk, ...providers));
 
         } else {
-            this.singletons.set(provideKey, provider);
+            this.values.set(provideKey, provider);
         }
         return this;
     }
@@ -247,7 +247,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
                     }
                     if (isDefined(pr.useValue)) {
                         let val = pr.useValue;
-                        this.singletons.set(provide, val);
+                        this.values.set(provide, val);
                     } else if (isClass(pr.useClass)) {
                         this.registerType(pr.useClass, pr.provide, pr.singleton);
                     } else if (isFunction(pr.useFactory)) {
@@ -358,28 +358,28 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key) || this.factories.has(key);
+        return this.values.has(key) || this.factories.has(key);
     }
 
-    hasSingleton<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key);
+    hasValue<T>(key: SymbolType<T>): boolean {
+        return this.values.has(key);
     }
 
-    getSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.get(key);
+    getValue<T>(key: SymbolType<T>): T {
+        return this.values.get(key);
     }
 
-    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this {
-        this.singletons.set(key, value);
+    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this {
+        this.values.set(key, value);
         if (provider && isClass(provider)) {
-            this.singletons.set(provider, value);
+            this.values.set(provider, value);
             this.provideTypes.set(key, provider);
         }
         return this;
     }
 
-    delSingleton(key: SymbolType) {
-        this.singletons.delete(key);
+    delValue(key: SymbolType) {
+        this.values.delete(key);
     }
 
     /**
@@ -406,7 +406,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T {
-        return this.getSingleton(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
+        return this.getValue(key) ?? this.getTokenFactory(key)?.(...providers) ?? null;
     }
 
     getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T> {
@@ -424,7 +424,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         if (!this.rslScope) {
-            this.rslScope = this.getSingleton(ActionInjectorToken).getInstance(ResolveLifeScope);
+            this.rslScope = this.getValue(ActionInjectorToken).getInstance(ResolveLifeScope);
         }
         return this.rslScope.resolve(this, token, ...providers);
     }
@@ -455,23 +455,23 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         let key = this.getTokenKey(token);
         if (this.has(key)) {
             this.factories.delete(key);
-            this.singletons.delete(key);
+            this.values.delete(key);
             this.provideTypes.delete(key);
             if (isClass(key)) {
                 let keys = [];
-                this.delSingleton(key);
+                this.delValue(key);
                 this.provideTypes.forEach((v, k) => {
                     if (v === key) {
                         keys.push(k);
                     }
                 });
                 keys.forEach(k => {
-                    this.singletons.delete(key);
+                    this.values.delete(key);
                     this.factories.delete(key);
                     this.provideTypes.delete(key);
                 });
                 this.clearCache(key);
-                this.getSingleton(TypeReflectsToken).delete(key);
+                this.getValue(TypeReflectsToken).delete(key);
             }
         }
         return this;
@@ -489,9 +489,9 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     }
 
     iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        let next = !Array.from(this.singletons.keys()).some(tk => isToken(tk) ? callbackfn(() => this.singletons.get(tk), tk, this) === false : false);
+        let next = !Array.from(this.values.keys()).some(tk => isToken(tk) ? callbackfn(() => this.values.get(tk), tk, this) === false : false);
         return next ? !Array.from(this.factories.keys()).some(tk => {
-            if (!this.singletons.has(tk) && isToken(tk)) {
+            if (!this.values.has(tk) && isToken(tk)) {
                 return callbackfn(this.factories.get(tk), tk, this) === false;
             }
             return false;
@@ -510,11 +510,11 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      * @memberof BaseInjector
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
-        return this.getSingleton(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
+        return this.getValue(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
     }
 
     createParams(params: IParameter[], ...providers: Provider[]): any[] {
-        return this.getSingleton(MethodAccessorToken).createParams(this, params, ...providers);
+        return this.getValue(MethodAccessorToken).createParams(this, params, ...providers);
     }
 
     /**
@@ -547,13 +547,13 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     protected init() {
         this.provideTypes = new Map();
         this.factories = new Map();
-        this.singletons = new Map();
+        this.values = new Map();
     }
 
     protected initReg() {
-        this.setSingleton(INJECTOR, this, lang.getClass(this));
-        this.setSingleton(InjectorProxyToken, () => this);
-        this.setSingleton(IocCacheManager, new IocCacheManager(this));
+        this.setValue(INJECTOR, this, lang.getClass(this));
+        this.setValue(InjectorProxyToken, () => this);
+        this.setValue(IocCacheManager, new IocCacheManager(this));
     }
 
     /**
@@ -574,11 +574,11 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
             }
             to.factories.set(key, fac);
         });
-        from.singletons.forEach((sgl, key) => {
+        from.values.forEach((sgl, key) => {
             if (filter && !filter(key)) {
                 return;
             }
-            to.singletons.set(key, sgl);
+            to.values.set(key, sgl);
         });
         from.provideTypes.forEach((fac, key) => {
             if (filter && !filter(key)) {
@@ -590,12 +590,12 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
 
     protected destroying() {
         this.provideTypes.clear();
-        this.singletons.clear();
+        this.values.clear();
         this.factories.clear();
         this.rslScope = null;
         this.provideTypes = null;
         this.factories = null;
-        this.singletons = null;
+        this.values = null;
     }
 }
 

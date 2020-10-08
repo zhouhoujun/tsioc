@@ -78,10 +78,10 @@ export interface IInjector extends IDestoryable {
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
-     * has singleton or not in root.
+     * has value or not.
      * @param key
      */
-    hasSingleton<T>(key: SymbolType<T>): boolean;
+    hasValue<T>(key: SymbolType<T>): boolean;
     /**
      * has register in the injector or root container.
      * @param token the token.
@@ -125,21 +125,21 @@ export interface IInjector extends IDestoryable {
      */
     getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T;
     /**
-     * get singleton instance.
+     * get value.
      * @param key token key.
      */
-    getSingleton<T>(key: SymbolType<T>): T;
+    getValue<T>(key: SymbolType<T>): T;
     /**
-     * set singleton.
+     * set value.
      * @param key provide key
      * @param value vaule
      */
-    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
+    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
     /**
-     * delete singleton instance.
+     * delete value.
      * @param key key
      */
-    delSingleton<T>(key: SymbolType<T>): void;
+    delValue<T>(key: SymbolType<T>): void;
     /**
      * resolve token instance with token and param provider.
      *

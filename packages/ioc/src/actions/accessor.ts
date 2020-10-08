@@ -44,7 +44,7 @@ export class MethodAccessor implements IMethodAccessor {
             instance = target;
         }
 
-        let reflects = injector.getSingleton(TypeReflectsToken);
+        let reflects = injector.getValue(TypeReflectsToken);
         let tgRefl = reflects.get(targetClass);
         let key: string;
         if (isFunction(propertyKey)) {

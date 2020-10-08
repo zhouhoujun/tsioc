@@ -397,8 +397,8 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
  */
 export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
     if (ctx.type && ctx.instance && ctx.targetReflect.singleton) {
-        if (!ctx.injector.hasSingleton(ctx.type)) {
-            ctx.injector.setSingleton(ctx.type, ctx.instance);
+        if (!ctx.injector.hasValue(ctx.type)) {
+            ctx.injector.setValue(ctx.type, ctx.instance);
         }
     }
     next();

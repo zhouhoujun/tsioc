@@ -370,9 +370,8 @@ export const InitReflectAction = function (ctx: RegContext, next?: () => void): 
     if (!isClass(ctx.type)) {
         return;
     }
-    ctx.reflects = ctx.injector.getSingleton(TypeReflectsToken);
-    ctx.reflects.create(ctx.type);
-    let targetReflect = ctx.targetReflect;
+    ctx.reflects = ctx.injector.getValue(TypeReflectsToken);
+    const targetReflect = ctx.targetReflect = ctx.reflects.create(ctx.type);
     if (ctx.singleton) {
         targetReflect.singleton = ctx.singleton;
     }

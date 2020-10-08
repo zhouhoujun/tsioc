@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
-import { Joinpoint, AOP_RETURNING, AOP_STATE, AOP_THROWING } from '../joinpoints/Joinpoint';
+import { Joinpoint } from '../joinpoints/Joinpoint';
 import { JoinpointState } from '../joinpoints/state';
 import { aExp } from '../regexps';
 import { Advicer } from '../advices/Advicer';
@@ -12,8 +12,6 @@ import { AdvisorToken } from '../tk';
 
 const proxyFlag = '_proxy';
 const ctor = 'constructor';
-export const AOP_ADVICE_INVOKER: TokenId<(joinPoint: Joinpoint, advicer: Advicer) => any>
-    = tokenId<(joinPoint: Joinpoint, advicer: Advicer) => any>('AOP_ADVICE_INVOKER');
 
 /**
  * Proxy method.
@@ -25,8 +23,7 @@ export const AOP_ADVICE_INVOKER: TokenId<(joinPoint: Joinpoint, advicer: Advicer
 export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
 
     execute(ctx: Joinpoint, next?: () => void) {
-        ctx.providers.inject({ provide: Joinpoint, useValue: ctx });
-        ctx.setValue(AOP_ADVICE_INVOKER, (j, a) => this.invokeAdvice(j, a, this.reflects));
+        ctx.invokeHandle = (j, a) => this.invokeAdvice(j, a, this.reflects);
         super.execute(ctx, next);
     }
 
@@ -178,7 +175,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             });
         }
 
-        if (joinPoint.hasValue(AOP_RETURNING) && metadata.returning) {
+        if (isDefined(joinPoint.returning) && metadata.returning) {
             providers.inject({ provide: metadata.returning, useValue: joinPoint.returning })
         }
 
@@ -207,8 +204,8 @@ export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSe
 
 export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.state === JoinpointState.Before) {
-        let advices = ctx.advices;
-        let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
+        const advices = ctx.advices;
+        const invoker = ctx.invokeHandle;
         advices.Before.forEach(advicer => {
             invoker(ctx, advicer);
         });
@@ -228,8 +225,8 @@ export const CtorBeforeAdviceAction = function (ctx: Joinpoint, next: () => void
 
 export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.state === JoinpointState.After) {
-        let advices = ctx.advices;
-        let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
+        const advices = ctx.advices;
+        const invoker = ctx.invokeHandle;
         advices.After.forEach(advicer => {
             invoker(ctx, advicer);
         });
@@ -264,10 +261,9 @@ export const BeforeAdvicesAction = function (ctx: Joinpoint, next: () => void): 
     if (ctx.throwing) {
         return next();
     }
-    ctx.setValue(AOP_STATE, JoinpointState.Before);
-
-    let advices = ctx.advices;
-    let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
+    ctx.state = JoinpointState.Before;
+    const advices = ctx.advices;
+    const invoker = ctx.invokeHandle;
     advices.Around.forEach(advicer => {
         invoker(ctx, advicer);
     });
@@ -282,9 +278,9 @@ export const PointcutAdvicesAction = function (ctx: Joinpoint, next: () => void)
     if (ctx.throwing) {
         return next();
     }
-    ctx.setValue(AOP_STATE, JoinpointState.Pointcut);
-    let advices = ctx.advices;
-    let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
+    ctx.state = JoinpointState.Pointcut;
+    const advices = ctx.advices;
+    const invoker = ctx.invokeHandle;
     advices.Pointcut.forEach(advicer => {
         invoker(ctx, advicer);
     });
@@ -297,9 +293,9 @@ export const ExecuteOriginMethodAction = function (ctx: Joinpoint, next: () => v
     }
     try {
         let val = ctx.originMethod(...ctx.args);
-        ctx.setValue(AOP_RETURNING, val);
+        ctx.returning = val;
     } catch (err) {
-        ctx.setValue(AOP_THROWING, err);
+        ctx.throwing = err;
     }
     next();
 }
@@ -308,9 +304,9 @@ export const AfterAdvicesAction = function (ctx: Joinpoint, next: () => void): v
     if (ctx.throwing) {
         return next();
     }
-    ctx.setValue(AOP_STATE, JoinpointState.After);
-    let advices = ctx.advices;
-    let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
+    ctx.state = JoinpointState.After;
+    const advices = ctx.advices;
+    const invoker = ctx.invokeHandle;
     advices.Around.forEach(advicer => {
         invoker(ctx, advicer);
     });
@@ -325,15 +321,20 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
         return next();
     }
 
-    ctx.setValue(AOP_STATE, JoinpointState.AfterReturning);
-    let advices = ctx.advices;
-    let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
-    ctx.setValue(AOP_RETURNING, PromiseUtil.step([
-        ctx.returning,
+    ctx.state = JoinpointState.AfterReturning;
+    const advices = ctx.advices;
+    const invoker = ctx.invokeHandle;
+    let result;
+    const returning = ctx.returning;
+    ctx.returning =  PromiseUtil.step([
+        ctx.returning.then(v=> { result = v;}),
         ...advices.Around.map(a => () => invoker(ctx, a)),
         ...advices.AfterReturning.map(a => () => invoker(ctx, a)),
-        ctx.returning
-    ]));
+        ()=> ctx.returning === returning? result : ctx.returning 
+    ]).catch(err=> {
+        ctx.throwing = err;
+        next();
+    });
 
 }
 
@@ -341,10 +342,10 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     if (ctx.throwing) {
         return next();
     }
-    if (ctx.hasValue(AOP_RETURNING)) {
-        ctx.setValue(AOP_STATE, JoinpointState.AfterReturning);
-        let advices = ctx.advices;
-        let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
+    if (ctx.returning) {
+        ctx.state = JoinpointState.AfterReturning;
+        const advices = ctx.advices;
+        const invoker = ctx.invokeHandle;
         advices.Around.forEach(advicer => {
             invoker(ctx, advicer);
         });
@@ -356,10 +357,10 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
 
 export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
     if (ctx.throwing) {
-        ctx.setValue(AOP_STATE, JoinpointState.AfterThrowing);
+        ctx.state = JoinpointState.AfterThrowing;
     }
-    let advices = ctx.advices;
-    let invoker = ctx.getValue(AOP_ADVICE_INVOKER);
+    const advices = ctx.advices;
+    const invoker = ctx.invokeHandle;
     advices.Around.forEach(advicer => {
         invoker(ctx, advicer);
     });

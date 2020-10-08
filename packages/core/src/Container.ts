@@ -32,7 +32,7 @@ export class Container extends IocContainer implements IContainer {
 
     getServiceProvider(): ServiceProvider {
         if (!this.servPdr) {
-            this.servPdr = this.getSingleton(ServiceProvider);
+            this.servPdr = this.getValue(ServiceProvider);
         }
         return this.servPdr;
     }
@@ -44,7 +44,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.getSingleton(ContainerBuilderToken);
+        return this.getValue(ContainerBuilderToken);
     }
 
     /**
@@ -54,7 +54,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.getSingleton(ModuleLoader);
+        return this.getValue(ModuleLoader);
     }
 
     /**

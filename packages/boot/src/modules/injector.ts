@@ -30,12 +30,12 @@ export class ModuleInjector extends CoreInjector {
         return super.hasRegisterValue(key) || this.exports.some(r => r.exports.hasRegisterValue(key));
     }
 
-    hasSingleton<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key) || this.hasSgltnRoot(key) || this.hasSgltnInExports(key);
+    hasValue<T>(key: SymbolType<T>): boolean {
+        return this.values.has(key) || this.hasSgltnRoot(key) || this.hasSgltnInExports(key);
     }
 
-    getSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.get(key) ?? this.getSgltnInExports(key) ?? this.getSgltnRoot(key);
+    getValue<T>(key: SymbolType<T>): T {
+        return this.values.get(key) ?? this.getSgltnInExports(key) ?? this.getSgltnRoot(key);
     }
 
     clearCache(targetType: Type) {
@@ -111,11 +111,11 @@ export class ModuleInjector extends CoreInjector {
     }
 
     protected hasSgltnInExports<T>(key: SymbolType<T>): boolean {
-        return this.exports.some(r => r.exports.hasSingleton(key));
+        return this.exports.some(r => r.exports.hasValue(key));
     }
 
     protected getSgltnInExports<T>(key: SymbolType<T>): T {
-        return this.exports.find(r => r.exports.hasSingleton(key))?.exports.getSingleton(key);
+        return this.exports.find(r => r.exports.hasValue(key))?.exports.getValue(key);
     }
 }
 
@@ -134,7 +134,7 @@ export class ModuleProviders extends ContextProvider implements IProvider {
 
     export(type: Type) {
         this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
-        this.getSingleton(TypeReflectsToken).get(type).provides?.forEach(p => {
+        this.getValue(TypeReflectsToken).get(type).provides?.forEach(p => {
             this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
         });
     }

@@ -186,7 +186,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         if (handleType instanceof Action) {
             return handleType.toAction() as AsyncHandler<T>;
         } else if (isToken(handleType)) {
-            const handle = this.getInjector().get<Action>(handleType) ?? this.getInjector().getSingleton(TypeReflectsToken).get(handleType as ClassType)?.getInjector()?.get(handleType);
+            const handle = this.getInjector().get<Action>(handleType) ?? this.getInjector().getValue(TypeReflectsToken).get(handleType as ClassType)?.getInjector()?.get(handleType);
             return handle?.toAction?.() as AsyncHandler<T>;
         } else if (isFunction(handleType)) {
             return handleType as AsyncHandler<T>;

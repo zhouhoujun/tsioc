@@ -41,20 +41,20 @@ export class Injector extends BaseInjector implements IInjector {
         return this.getFcty(key) ?? this.getFctyInRoot(key);
     }
 
-    hasSingleton<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key) || this.hasSgltnRoot(key);
+    hasValue<T>(key: SymbolType<T>): boolean {
+        return this.values.has(key) || this.hasSgltnRoot(key);
     }
 
     protected hasSgltnRoot<T>(key: SymbolType<T>) {
-        return this.getContainer().hasSingleton(key)
+        return this.getContainer().hasValue(key)
     }
 
-    getSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.get(key) ?? this.getSgltnRoot(key);
+    getValue<T>(key: SymbolType<T>): T {
+        return this.values.get(key) ?? this.getSgltnRoot(key);
     }
 
     protected getSgltnRoot<T>(key: SymbolType<T>) {
-        return this.getContainer().getSingleton(key)
+        return this.getContainer().getValue(key)
     }
 
     /**
