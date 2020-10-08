@@ -329,10 +329,10 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
         ctx.returning.then(v => { val = v; }),
         ...advices.Around.map(a => () => invoker(ctx, a)),
         ...advices.AfterReturning.map(a => () => invoker(ctx, a)),
-        () => isDefined(ctx.changedReturning) ? ctx.changedReturning : val
+        () => isDefined(ctx.resetReturning) ? ctx.resetReturning : val
     ])
         .then(v => {
-            ctx.changedReturning = null;
+            ctx.resetReturning = null;
             return v;
         })
         .catch(err => {
@@ -356,9 +356,9 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
         advices.AfterReturning.forEach(advicer => {
             invoker(ctx, advicer);
         });
-        if (isDefined(ctx.changedReturning)) {
-            ctx.returning = ctx.changedReturning;
-            ctx.changedReturning = null;
+        if (isDefined(ctx.resetReturning)) {
+            ctx.returning = ctx.resetReturning;
+            ctx.resetReturning = null;
         }
     }
 }

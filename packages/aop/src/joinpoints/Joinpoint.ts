@@ -92,9 +92,9 @@ export class Joinpoint implements IocContext {
     returning: any;
 
     /**
-     * to change returning value.
+     * to reset returning for AfterReturning, Around advice.
      */
-    changedReturning?: any;
+    resetReturning?: any;
 
     /**
      * pointcut throwing error.
