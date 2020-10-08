@@ -169,6 +169,13 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable {
                 this.context.inject(...options.contexts);
             }
         }
+        if (options.providers) {
+            if (isInjector(options.providers)) {
+                this.setValue(CTX_PROVIDERS, options.providers)
+            } else if (isArray(options.providers)) {
+                this.providers.inject(...options.providers);
+            }
+        }
         options = this.context.hasValue(CTX_OPTIONS) ? Object.assign(this.getOptions(), options) : options;
         this.context.setValue(CTX_OPTIONS, options);
         return this;

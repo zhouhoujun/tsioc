@@ -1,4 +1,4 @@
-import { Token } from '../tokens';
+import { Provider, Token } from '../tokens';
 import { IocAction, IocContext } from './Action';
 
 /**
@@ -28,6 +28,11 @@ export interface ResolveOption<T = any> {
      *
      */
     regify?: boolean;
+
+    /**
+     * resolve providers.
+     */
+    providers?: Provider;
 
 }
 
