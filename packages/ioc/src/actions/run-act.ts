@@ -182,7 +182,10 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
         if (ctx.targetReflect.methodParams.has('constructor')) {
             ctx.params = ctx.targetReflect.methodParams.get('constructor');
         } else {
+            const pkey = ctx.propertyKey;
+            ctx.propertyKey = 'constructor';
             ctx.reflects.getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
+            ctx.propertyKey = pkey;
             ctx.params = ctx.targetReflect.methodParams.get('constructor');
         }
         ctx.args = injector.createParams(ctx.params, ctx.providers);

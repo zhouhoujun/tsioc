@@ -115,6 +115,14 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         if (targets.length) {
             ctx.targetRefs = targets;
         }
+        let tokens = ctx.tokens || [];
+        if (tokens.length) {
+            tokens = tokens.filter(t => t).map(t => ctx.injector.getToken(t, ctx.alias));
+        }
+        if (ctx.token) {
+            tokens.unshift(ctx.injector.getToken(ctx.token, ctx.alias));
+        }
+        ctx.tokens = tokens;
         ctx.reflects = this.proxy().getTypeReflects();
     }
 }

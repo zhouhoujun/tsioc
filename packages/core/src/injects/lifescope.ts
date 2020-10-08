@@ -28,7 +28,8 @@ export class InjLifeScope extends LifeScope<InjContext> {
         modules.forEach(md => {
             let ctx = {
                 injector,
-                module: md
+                module: md,
+                reflects: injector.getContainer().getTypeReflects()
             } as InjContext;
             this.execute(ctx);
             if (ctx.registered) {

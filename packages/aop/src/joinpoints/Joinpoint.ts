@@ -119,7 +119,7 @@ export class Joinpoint implements IocContext {
     /**
      * set annotations.
      */
-    set annotations(meta: TypeMetadata[]){
+    set annotations(meta: TypeMetadata[]) {
         this.providers.setValue(AOP_METHOD_ANNOTATIONS, meta);
     }
 
@@ -141,10 +141,10 @@ export class Joinpoint implements IocContext {
      */
     targetType: Type;
 
-    private pdr:IProvider;
+    private pdr: IProvider;
     set providers(pdr: IProvider) {
         this.pdr.inject(pdr);
-        //reset
+        // reset
         this.pdr.inject({ provide: Joinpoint, useValue: this });
     }
     get providers(): IProvider {
@@ -152,7 +152,7 @@ export class Joinpoint implements IocContext {
     }
 
 
-    constructor(public injector: IInjector){
+    constructor(public injector: IInjector) {
         this.pdr = injector.get(PROVIDERS);
         this.pdr.inject({ provide: Joinpoint, useValue: this });
     }

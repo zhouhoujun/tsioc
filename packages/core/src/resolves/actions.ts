@@ -18,9 +18,8 @@ export class ResolveServiceScope extends IocResolveScope<ServiceContext> impleme
 
         if (!ctx.instance) {
             // after all resolve default.
-            let defaultTk = ctx.defaultToken;
-            if (defaultTk) {
-                ctx.instance = ctx.injector.get(defaultTk, ctx.providers);
+            if (ctx.defaultToken) {
+                ctx.instance = ctx.injector.get(ctx.defaultToken, ctx.providers);
             }
         }
     }
@@ -130,7 +129,7 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
         }
         ctx.types = [
             ...ctx.tokens.map(t => ctx.injector.getTokenProvider(t)).filter(t => t),
-            ...ctx.types
+            ...ctx.types || []
         ];
 
         ctx.services = ctx.injector.get(PROVIDERS);
