@@ -178,13 +178,12 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
-        let targetReflect = ctx.targetReflect;
-        let injector = ctx.injector;
-        if (targetReflect.methodParams.has('constructor')) {
-            ctx.params = targetReflect.methodParams.get('constructor');
+        const injector = ctx.injector;
+        if (ctx.targetReflect.methodParams.has('constructor')) {
+            ctx.params = ctx.targetReflect.methodParams.get('constructor');
         } else {
             ctx.reflects.getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
-            ctx.params = targetReflect.methodParams.get('constructor');
+            ctx.params = ctx.targetReflect.methodParams.get('constructor');
         }
         ctx.args = injector.createParams(ctx.params, ctx.providers);
     }
