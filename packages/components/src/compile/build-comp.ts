@@ -24,7 +24,8 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
     async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
         let refl = ctx.getTargetReflect() as IModuleReflect;
         if (refl?.getModuleRef) {
-            return ctx.destroy();
+            setTimeout(() => ctx.destroy());
+            return;
         }
         if (!ctx.value) {
             return next();
@@ -60,7 +61,7 @@ export class BindingComponentScope extends BuildHandles<IBuildContext> implement
                 ctx.getParent()?.addChild(ctx);
                 ctx.value = ctx.getValue(CTX_ELEMENT_REF);
             } else {
-                ctx.destroy();
+                setTimeout(() => ctx.destroy());
             }
         }
         return next();
@@ -383,7 +384,7 @@ export const BindingOutputHandle = async function (ctx: IComponentContext, next:
                 });
                 await BindingScopeHandle(pctx);
                 pctx.dataBinding.bind(ctx.value);
-                pctx.destroy();
+                setTimeout(() => pctx.destroy());
             }
         }));
     }

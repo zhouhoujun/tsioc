@@ -26,7 +26,7 @@ export class TemplateParseScope extends BuildHandles<ITemplateContext> implement
 
         // after all clean.
         if (isNullOrUndefined(ctx.value)) {
-            ctx.destroy();
+            setTimeout(() => ctx.destroy());
         }
     }
     setup() {

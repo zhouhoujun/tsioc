@@ -86,7 +86,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
 
         // after all clean.
         if (isNullOrUndefined(ctx.value)) {
-            ctx.destroy();
+            setTimeout(() => ctx.destroy());
         }
     }
 
