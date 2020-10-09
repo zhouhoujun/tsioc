@@ -4,7 +4,8 @@ import { SymbolType, Token, InstanceFactory, Factory, InjectReference, Provider 
 import { ResolveOption } from './actions/res';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
-import { MethodType, IParameter } from './IMethodAccessor';
+import { MethodType } from './IMethodAccessor';
+import { ParameterMetadata } from './decor/metadatas';
 
 
 /**
@@ -329,12 +330,12 @@ export interface IInjector extends IDestoryable {
     /**
      * create params instances with IParameter and provider
      *
-     * @param {IParameter[]} params
+     * @param {ParameterMetadata[]} params
      * @param {...AsyncParamProvider[]} providers
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(params: IParameter[], ...providers: Provider[]): any[];
+    createParams(params: ParameterMetadata[], ...providers: Provider[]): any[];
 }
 
 const injectorKey = 'injector';

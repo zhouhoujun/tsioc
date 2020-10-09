@@ -2,7 +2,6 @@ import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { Token, Provider, Factory, TokenId, tokenId } from '../tokens';
 import { IInjector, IProvider, InjectorProxy } from '../IInjector';
-import { ITypeReflects } from './ITypeReflects';
 import { IIocContainer } from '../IIocContainer';
 import { PROVIDERS } from '../utils/tk';
 
@@ -25,14 +24,6 @@ export class DecoratorProvider extends IocCoreService {
         this.map = new Map();
     }
 
-    private reflects: ITypeReflects;
-    getTypeReflects() {
-        if (!this.reflects) {
-            this.reflects = this.proxy().getTypeReflects();
-        }
-        return this.reflects;
-    }
-
     /**
      * has provide or not.
      *
@@ -40,7 +31,7 @@ export class DecoratorProvider extends IocCoreService {
      * @returns {boolean}
      * @memberof ProviderMap
      */
-    has(decorator: string | Function | object, provide?: Token): boolean {
+    has(decorator: string | Function, provide?: Token): boolean {
         decorator = this.getKey(decorator);
         if (decorator && this.map.has(decorator)) {
             return provide ? this.map.get(decorator).has(provide) : true;
@@ -55,16 +46,11 @@ export class DecoratorProvider extends IocCoreService {
      * @returns {string}
      * @memberof DecoratorProvider
      */
-    getKey(decorator: string | Function | object): string {
+    getKey(decorator: string | Function): string {
         if (isString(decorator)) {
             return decorator;
         } else if (isFunction(decorator)) {
             return decorator.toString();
-        } else if (decorator) {
-            let refmate = this.getTypeReflects().get(lang.getClass(decorator));
-            if (refmate && refmate.decorator) {
-                return refmate.decorator;
-            }
         }
         return '';
     }
@@ -79,7 +65,7 @@ export class DecoratorProvider extends IocCoreService {
      * @returns {T}
      * @memberof DecoratorProvider
      */
-    resolve<T>(decorator: string | Function | object, provide: Token<T>, ...providers: Provider[]): T {
+    resolve<T>(decorator: string | Function, provide: Token<T>, ...providers: Provider[]): T {
         decorator = this.getKey(decorator);
         if (decorator && this.map.has(decorator)) {
             return this.map.get(decorator).get(provide, ...providers);

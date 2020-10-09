@@ -11,13 +11,14 @@ import {
 
 import { IInjector, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
-import { MethodType, IParameter } from './IMethodAccessor';
+import { MethodType } from './IMethodAccessor';
 import { Destoryable } from './Destoryable';
-import { ActionInjectorToken } from './actions/Action';
+import { ActionInjectorToken } from './actions/act';
 import { ResolveOption } from './actions/res';
 import { ResolveLifeScope } from './actions/resolve';
 import { IocCacheManager } from './actions/cache';
-import { INJECTOR, PROVIDERS, InjectorProxyToken, MethodAccessorToken, TypeReflectsToken } from './utils/tk';
+import { INJECTOR, PROVIDERS, InjectorProxyToken, MethodAccessorToken, REGISTERED } from './utils/tk';
+import { ParameterMetadata } from './decor/metadatas';
 
 /**
  * Base Injector.
@@ -481,7 +482,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
                     this.provideTypes.delete(key);
                 });
                 this.clearCache(key);
-                this.getValue(TypeReflectsToken).delete(key);
+                this.getContainer().getValue(REGISTERED).delete(key);
             }
         }
         return this;
@@ -523,7 +524,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         return this.getValue(MethodAccessorToken).invoke(this, target, propertyKey, ...providers);
     }
 
-    createParams(params: IParameter[], ...providers: Provider[]): any[] {
+    createParams(params: ParameterMetadata[], ...providers: Provider[]): any[] {
         return this.getValue(MethodAccessorToken).createParams(this, params, ...providers);
     }
 

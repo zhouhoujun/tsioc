@@ -2,7 +2,8 @@ import { tokenId, TokenId } from '../tokens';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { IInjector, InjectorProxy, IProvider } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
-import { ITypeReflects } from '../services/ITypeReflects';
+// import { ITypeReflects } from '../services/ITypeReflects';
+import { ClassType } from '../types';
 
 
 /**
@@ -14,7 +15,7 @@ export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
  */
 export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
 
-
+export const REGISTERED = tokenId<Map<ClassType, InjectorProxy>>('REG_TYPES');
 /**
  *  injector provider token. create new injector provider.
  */
@@ -34,10 +35,10 @@ export const MethodAccessorToken: TokenId<IMethodAccessor> = tokenId<IMethodAcce
 export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');
 
 
-/**
- * type reflects token.
- */
-export const TypeReflectsToken: TokenId<ITypeReflects> = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
+// /**
+//  * type reflects token.
+//  */
+// export const TypeReflectsToken: TokenId<ITypeReflects> = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
 
 /**
  * root ioc container token.

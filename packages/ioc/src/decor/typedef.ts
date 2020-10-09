@@ -2,17 +2,6 @@ import { ClassType, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, clsUglifyExp, STRIP_COMMENTS } from '../utils/exps';
 import { isFunction, lang } from '../utils/lang';
 
-function getParamNames(func) {
-    if (!isFunction(func)) {
-        return [];
-    }
-    let fnStr = func.toString().replace(STRIP_COMMENTS, '');
-    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-    if (result === null) {
-        result = [];
-    }
-    return result;
-}
 
 const name = '__name';
 export class TypeDefine {
@@ -123,4 +112,16 @@ export class TypeDefine {
     isExtends(type: ClassType): boolean {
         return this.extendTypes.indexOf(type) >= 0;
     }
+}
+
+function getParamNames(func) {
+    if (!isFunction(func)) {
+        return [];
+    }
+    let fnStr = func.toString().replace(STRIP_COMMENTS, '');
+    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+    if (result === null) {
+        result = [];
+    }
+    return result;
 }

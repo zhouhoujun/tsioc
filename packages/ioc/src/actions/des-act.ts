@@ -11,7 +11,7 @@ import {
     DecorsRegisterer, DesignRegisterer, IocDecorScope
 } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { PROVIDERS } from '../utils/tk';
+import { PROVIDERS, REGISTERED } from '../utils/tk';
 import { RuntimeContext } from './run-act';
 
 /**
@@ -83,17 +83,7 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 }
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-    let regIn: string;
-    let reflects = ctx.reflects;
-    ctx.targetReflect.decorators.classDecors.some(d => {
-        if (reflects.hasMetadata(d, ctx.type)) {
-            let meta = reflects.getMetadata<InjectableMetadata>(d, ctx.type).find(m => m.regIn);
-            if (meta) {
-                regIn = meta.regIn;
-            }
-        }
-        return regIn;
-    });
+    const regIn = ctx.targetReflect.regIn;
     if (regIn === 'root') {
         ctx.regIn = regIn;
         ctx.injector = ctx.injector.getContainer();
@@ -106,9 +96,9 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let injector = ctx.injector;
     let provide = injector.getTokenKey(ctx.token);
     let type = ctx.type;
-    let singleton = ctx.targetReflect.singleton;
-    let actInjector = ctx.reflects.getActionInjector();
+    let singleton = ctx.singleton || ctx.targetReflect.singleton;
     const container = injector.getContainer();
+    const actInjector = container.getActionInjector();
     let factory = (...providers: Provider[]) => {
         if (singleton && container.hasValue(type)) {
             return container.getValue(type);
@@ -136,7 +126,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
         injector.set(type, factory);
     }
 
-    ctx.targetReflect.getInjector = () => injector;
+    container.get(REGISTERED).set(type, () => injector);
 
     next();
 };

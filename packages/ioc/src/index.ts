@@ -15,15 +15,15 @@ export * from './utils/lang';
 export * from './utils/tk';
 
 // services
-export * from './services/ITypeReflects';
 export * from './services/decor-pdr';
 
 
 // decoractors
 export * from './decor/args';
 export * from './decor/typedef';
-export * from './decor/factory';
 export * from './decor/metadatas';
+export * from './decor/reflects';
+export * from './decor/factory';
 export * from './decor/decorators';
 
 
@@ -37,7 +37,6 @@ export * from './actions/cache';
 export * from './actions/reg'
 export * from './actions/lifescope';
 export * from './actions/accessor';
-export * from './actions/decors';
 
 // runtime actions
 export * from './actions/run-act';

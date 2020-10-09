@@ -1,5 +1,5 @@
 import { isClass } from '../utils/lang';
-import { IActionSetup } from './Action';
+import { IActionSetup } from '../Action';
 import { InitReflectAction } from './reg';
 import { RegisterLifeScope } from './lifescope';
 import * as da from './des-act';

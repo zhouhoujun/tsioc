@@ -3,9 +3,9 @@ import { IocCoreService } from '../IocCoreService';
 import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
 import { IActionInjector, IocActions, IocContext } from './act';
-import { ITypeReflect } from '../services/ITypeReflect';
-import { TypeReflectsToken } from '../utils/tk';
 import { Action, IocAction } from '../Action';
+import { TypeReflect } from '../decor/metadatas';
+import { refl } from '../decor/reflects';
 
 
 /**
@@ -47,7 +47,7 @@ export interface RegContext extends IocContext {
     /**
      * target reflect.
      */
-    targetReflect: ITypeReflect;
+    targetReflect: TypeReflect;
 
 }
 
@@ -371,10 +371,9 @@ export const InitReflectAction = function (ctx: RegContext, next?: () => void): 
     if (!isClass(ctx.type)) {
         return;
     }
-    ctx.reflects = ctx.injector.getValue(TypeReflectsToken);
-    const targetReflect = ctx.targetReflect = ctx.reflects.create(ctx.type);
-    if (ctx.singleton) {
-        targetReflect.singleton = ctx.singleton;
+    const targetReflect = ctx.targetReflect = refl.getIfy(ctx.type);
+    if (targetReflect.singleton) {
+        ctx.singleton = targetReflect.singleton;
     }
 
     if (next) {

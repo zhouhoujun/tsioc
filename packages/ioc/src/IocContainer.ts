@@ -5,11 +5,10 @@ import { IInjector } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { registerCores } from './utils/regs';
 import { BaseInjector } from './BaseInjector';
-import { ActionInjectorToken, IActionInjector } from './actions/Action';
-import { ITypeReflects } from './services/ITypeReflects';
+import { ActionInjectorToken, IActionInjector } from './actions/act';
 import { DesignContext } from './actions/des-act';
 import { DesignLifeScope } from './actions/design';
-import { InjectorFactoryToken, PROVIDERS, TypeReflectsToken } from './utils/tk';
+import { InjectorFactoryToken, PROVIDERS, REGISTERED } from './utils/tk';
 
 
 /**
@@ -20,14 +19,6 @@ import { InjectorFactoryToken, PROVIDERS, TypeReflectsToken } from './utils/tk';
  * @implements {IIocContainer}
  */
 export class IocContainer extends BaseInjector implements IIocContainer {
-
-    private reflects: ITypeReflects;
-    getTypeReflects(): ITypeReflects {
-        if (!this.reflects) {
-            this.reflects = this.getValue(TypeReflectsToken);
-        }
-        return this.reflects;
-    }
 
     private actionInj: IActionInjector;
     getActionInjector(): IActionInjector {
@@ -46,7 +37,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * @param type
      */
     getInjector(type: Type): IInjector {
-        return this.getTypeReflects().getInjector(type);
+        return this.get(REGISTERED).get(type)?.() || null;
     }
 
     createInjector(): IInjector {
@@ -116,7 +107,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      */
     registerIn<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean) {
         // make sure class register once.
-        if (this.getTypeReflects().hasRegister(type) || this.hasRegister(type)) {
+        if (this.getValue(REGISTERED).has(type) || this.hasRegister(type)) {
             if (provide) {
                 this.set(provide, (...providers) => injector.resolve(type, ...providers));
             }
@@ -162,7 +153,6 @@ export class IocContainer extends BaseInjector implements IIocContainer {
 
     protected destroying() {
         super.destroying();
-        this.reflects =  null;
         this.actionInj = null;
     }
 }

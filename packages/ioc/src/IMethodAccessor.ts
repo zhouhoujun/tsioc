@@ -1,43 +1,13 @@
 import { Type } from './types';
 import { Token, Provider } from './tokens';
 import { IInjector } from './IInjector';
+import { ParameterMetadata } from './decor/metadatas';
 
 
 /**
  * method type.
  */
 export type MethodType<T> = string | ((tag: T) => Function);
-
-
-/**
- * Parameter
- *
- * @export
- * @interface IParameter
- */
-export interface IParameter {
-    /**
-     * parameter name
-     *
-     * @type {string}
-     * @memberof IParameter
-     */
-    name: string;
-    /**
-     * parameter type.
-     *
-     * @type {Token}
-     * @memberof IParameter
-     */
-    type: Token;
-    /**
-     * provider for the parameter.
-     *
-     * @type {Token}
-     * @memberof IParameter
-     */
-    provider: Token;
-}
 
 /**
  * execution, invoke some type method.
@@ -56,7 +26,7 @@ export interface IMethodAccessor {
      * @returns {IParameter[]}
      * @memberof MethodAccessor
      */
-    getParameters<T>(injector: IInjector, type: Type<T>): IParameter[];
+    getParameters<T>(injector: IInjector, type: Type<T>): ParameterMetadata[];
     /**
      * get method parameters of type.
      *
@@ -68,7 +38,7 @@ export interface IMethodAccessor {
      * @returns {IParameter[]}
      * @memberof MethodAccessor
      */
-    getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): IParameter[];
+    getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): ParameterMetadata[];
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
@@ -87,10 +57,10 @@ export interface IMethodAccessor {
      * create params instances with IParameter and provider
      *
      * @param { IInjector } injector
-     * @param {IParameter[]} params
+     * @param {ParameterMetadata[]} params
      * @param {...AsyncParamProvider[]} providers
      * @returns {any[]}
      * @memberof IMethodAccessor
      */
-    createParams(injector: IInjector, params: IParameter[], ...providers: Provider[]): any[];
+    createParams(injector: IInjector, params: ParameterMetadata[], ...providers: Provider[]): any[];
 }

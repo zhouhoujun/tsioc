@@ -1,8 +1,7 @@
 import { Type, DecoratorScope } from '../types';
-import { isClass, isArray, isDefined, lang, isNumber } from '../utils/lang';
+import { isClass, isArray, isDefined } from '../utils/lang';
 import { Token, isToken } from '../tokens';
-import { IParameter } from '../IMethodAccessor';
-import { ParameterMetadata, AutorunMetadata } from '../decor/metadatas';
+import { ParameterMetadata } from '../decor/metadatas';
 import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decor/decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
 import { IActionSetup } from '../Action';
@@ -39,7 +38,7 @@ export interface RuntimeContext extends RegContext {
     /**
      * params of the propertyKey method.
      */
-    params?: IParameter[];
+    params?: ParameterMetadata[];
 }
 
 /**
@@ -101,7 +100,6 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
 
     let designParams = createDesignParams(ctx, type, target, propertyKey);
 
-    let refs = ctx.reflects;
     let injector = ctx.injector;
     let currDecoractor = ctx.currDecor;
     let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
@@ -128,7 +126,7 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
 
     if (propertyKey === 'constructor') {
         if (designParams.some(pa => !pa.type && !pa.provider)) {
-            targetReflect.defines.extendTypes.forEach(ty => {
+            targetReflect.class.extendTypes.forEach(ty => {
                 if (ty === ctx.type) {
                     return true;
                 }
@@ -156,7 +154,7 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
                 }).forEach(parm => {
                     if (parm.provider) {
                         designParams.forEach(pa => {
-                            if (!pa.type && !pa.provider && pa.name === parm.name) {
+                            if (!pa.type && !pa.provider && pa.paramName === parm.name) {
                                 pa.provider = parm.provider;
                             }
                         });
@@ -184,7 +182,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
         } else {
             const pkey = ctx.propertyKey;
             ctx.propertyKey = 'constructor';
-            ctx.reflects.getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
+            injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
             ctx.propertyKey = pkey;
             ctx.params = ctx.targetReflect.methodParams.get('constructor');
         }
@@ -361,25 +359,10 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    let currDec = ctx.currDecor;
-    let injector = ctx.injector;
-    if (ctx.reflects.hasMethodMetadata(currDec, ctx.type)) {
-        let metas = ctx.reflects.getMethodMetadata<AutorunMetadata>(currDec, ctx.type);
-        let lastmetas: AutorunMetadata[] = [];
-        let idx = Object.keys(metas).length;
-        lang.forIn(metas, (mm, key) => {
-            if (mm && mm.length) {
-                let m = mm[0];
-                m.autorun = key;
-                idx++;
-                if (!isNumber(m.order)) {
-                    m.order = idx;
-                }
-                lastmetas.push(m);
-            }
-        });
-
-        lastmetas.sort((au1, au2) => {
+    const injector = ctx.injector;
+    const autoruns = ctx.targetReflect.autoruns;
+    if (autoruns.length) {
+        autoruns.sort((au1, au2) => {
             return au1.order - au2.order;
         }).forEach(aut => {
             injector.invoke(ctx.instance || ctx.type, aut.autorun, ctx.instance);
@@ -503,7 +486,7 @@ export class RuntimeParamDecorScope extends RuntimeDecorScope {
 }
 
 
-function createDesignParams(ctx: RuntimeContext, type: Type, target: any, propertyKey: string): IParameter[] {
+function createDesignParams(ctx: RuntimeContext, type: Type, target: any, propertyKey: string): ParameterMetadata[] {
     let paramTokens: Token[];
     if (target && propertyKey) {
         paramTokens = Reflect.getMetadata('design:paramtypes', target, propertyKey) || [];
@@ -518,18 +501,18 @@ function createDesignParams(ctx: RuntimeContext, type: Type, target: any, proper
             injector.registerType(dtype);
         }
     });
-    let names = ctx.reflects.getParamerterNames(type, propertyKey);
-    let params: IParameter[];
+    let names = ctx.targetReflect.class.getParamNames(propertyKey);
+    let params: ParameterMetadata[];
     if (names.length) {
         params = names.map((name, idx) => {
-            return <IParameter>{
+            return {
                 name: name,
                 type: paramTokens.length ? checkParamType(paramTokens[idx]) : undefined
             }
         });
     } else if (paramTokens.length) {
         params = paramTokens.map((tk, idx) => {
-            return <IParameter>{
+            return {
                 name: names.length ? names[idx] : '',
                 type: checkParamType(tk)
             }

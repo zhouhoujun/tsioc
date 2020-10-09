@@ -1,6 +1,5 @@
 import { ClassType, DecoratorTypes } from '../types';
 import { Token, Provider } from '../tokens';
-import { IParameter } from '../IMethodAccessor';
 import { TypeDefine } from './typedef';
 
 /**
@@ -222,6 +221,8 @@ export interface ParameterMetadata extends PropertyMetadata {
      */
     index?: number;
 
+    paramName?: string;
+
     /**
      * default value
      *
@@ -293,7 +294,10 @@ export interface PatternMetadata {
  * @interface ClassMetadata
  */
 export interface ClassMetadata extends PatternMetadata, ProviderMetadata, ProvidersMetadata, RefMetadata, TypeMetadata {
-
+    /**
+     * is abstract or not.
+     */
+    abstract?: boolean;
 }
 
 /**
@@ -338,6 +342,13 @@ export interface AutorunDefine {
 }
 
 export interface DecorDefine {
+    /**
+     * decorator name.
+     */
+    name: string;
+    /**
+     * decorator name with '@'
+     */
     decor: string;
     type: DecoratorTypes;
     propertyKey?: string;
@@ -349,6 +360,11 @@ export interface DecorDefine {
  * type reflect metadata.
  */
 export interface TypeReflect extends PatternMetadata, RegInMetadata {
+    type: ClassType;
+    /**
+     * is abstract or not.
+     */
+    abstract?: boolean;
     /**
      * decorator defines of the class type.
      */

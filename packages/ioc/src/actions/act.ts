@@ -2,7 +2,6 @@ import { Type } from '../types';
 import { Handler, isClass } from '../utils/lang';
 import { Token, tokenId, TokenId } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
-import { ITypeReflects } from '../services/ITypeReflects';
 import { Action, Actions } from '../Action';
 
 /**
@@ -32,10 +31,6 @@ export interface IocContext {
      * current injector.
      */
     injector: IInjector;
-    /**
-     * reflects.
-     */
-    reflects?: ITypeReflects;
 
     /**
      *  providers.

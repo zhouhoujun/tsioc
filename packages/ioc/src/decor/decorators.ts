@@ -32,7 +32,10 @@ export interface IAbstractDecorator {
  *
  * @Abstract
  */
-export const Abstract: IAbstractDecorator = createClassDecorator<ClassMetadata>('Abstract');
+export const Abstract: IAbstractDecorator = createClassDecorator<ClassMetadata>('Abstract', null, (metadata) => {
+    metadata.abstract = true;
+    return metadata;
+});
 
 /**
  * AutoWired decoator.
