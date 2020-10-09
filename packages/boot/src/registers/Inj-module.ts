@@ -19,7 +19,7 @@ export class InjDIModuleScope extends InjRegScope implements IActionSetup {
     }
 
     protected getTypes(ctx: InjContext): Type[] {
-        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.currDecoractor, ty));
+        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.currDecor, ty));
     }
 
     protected setNextRegTypes(ctx: InjContext, registered: Type[]) {

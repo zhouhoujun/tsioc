@@ -29,8 +29,14 @@ export interface InjContext extends IocContext {
      */
     types: Type[];
 
-    currDecoractor?: string;
+    /**
+     * current decorator.
+     */
+    currDecor?: string;
 
+    /**
+     * current type.
+     */
     currType?: ClassType;
 
     /**
