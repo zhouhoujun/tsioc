@@ -1,5 +1,6 @@
 export * from './types';
 export * from './tokens';
+export * from './Action';
 export * from './Destoryable';
 export * from './IInjector';
 export * from './IIocContainer';
@@ -14,13 +15,13 @@ export * from './utils/lang';
 export * from './utils/tk';
 
 // services
-export * from './services/ITypeReflect';
 export * from './services/ITypeReflects';
 export * from './services/decor-pdr';
 
 
 // decoractors
 export * from './decor/args';
+export * from './decor/typedef';
 export * from './decor/factory';
 export * from './decor/metadatas';
 export * from './decor/decorators';
@@ -30,7 +31,7 @@ export * from './decor/decorators';
 export * from './providers';
 
 // actions
-export * from './actions/Action';
+export * from './actions/act';
 export * from './actions/injector';
 export * from './actions/cache';
 export * from './actions/reg'

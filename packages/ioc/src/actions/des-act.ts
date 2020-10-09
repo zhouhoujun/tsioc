@@ -1,7 +1,7 @@
 import { DecoratorScope } from '../types';
 import { isFunction, isArray, isClass, lang } from '../utils/lang';
 import { Provider } from '../tokens';
-import { IActionSetup } from './Action';
+import { IActionSetup } from '../Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decor/decorators';
 import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../decor/metadatas';

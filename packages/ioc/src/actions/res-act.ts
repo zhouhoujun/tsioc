@@ -1,7 +1,7 @@
 import { isNullOrUndefined, lang, isClass } from '../utils/lang';
 import { InjectReference, isToken } from '../tokens';
 import { PROVIDERS } from '../utils/tk';
-import { IocActions } from './Action';
+import { IocActions } from './act';
 import { ResolveContext } from './res';
 
 /**

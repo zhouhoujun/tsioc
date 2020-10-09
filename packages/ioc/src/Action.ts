@@ -1,26 +1,5 @@
-import { Type } from '../types';
-import { Handler, chain, isBoolean, isClass } from '../utils/lang';
-import { Token, tokenId, TokenId } from '../tokens';
-import { IInjector, IProvider } from '../IInjector';
-import { ITypeReflects } from '../services/ITypeReflects';
-
-/**
- * action injector.
- */
-export interface IActionInjector extends IInjector {
-    /**
-     * register action, simple create instance via `new type(this)`.
-     * @param type
-     */
-    regAction<T extends Action>(type: Type<T>): this;
-    /**
-     * get action via target.
-     * @param target target.
-     */
-    getAction<T extends Function>(target: Token<Action> | Action | Function): T;
-}
-
-export const ActionInjectorToken: TokenId<IActionInjector> = tokenId<IActionInjector>('ACTION_INJECTOR');
+import { Token } from './tokens';
+import { chain, Handler, isBoolean } from './utils/lang';
 
 /**
  * action interface.
@@ -29,7 +8,7 @@ export abstract class Action {
     constructor() {
     }
 
-    abstract toAction(): Function;
+    abstract toAction(): Handler;
 }
 
 /**
@@ -50,34 +29,13 @@ export type ActionType<T extends Action = Action, TAction = Handler> = Token<T> 
 
 
 /**
- * context interface.
- */
-export interface IocContext {
-    /**
-     * current injector.
-     */
-    injector: IInjector;
-    /**
-     * reflects.
-     */
-    reflects?: ITypeReflects;
-
-    /**
-     *  providers.
-     */
-    providers?: IProvider;
-}
-
-
-/**
  * action.
  *
  * @export
  * @abstract
- * @class Action
- * @extends {IocCoreService}
+ * @class IocAction
  */
-export abstract class IocAction<T extends IocContext> extends Action {
+export abstract class IocAction<T> extends Action {
 
     abstract execute(ctx: T, next: () => void): void;
 
@@ -97,21 +55,21 @@ export abstract class IocAction<T extends IocContext> extends Action {
 
 
 /**
- * actions.
+ * actions scope.
  *
  * @export
  * @class IocActions
  * @extends {IocAction<T>}
  * @template T
  */
-export class IocActions<T extends IocContext = IocContext> extends IocAction<T> {
+export abstract class Actions<T> extends IocAction<T> {
 
     protected actions: ActionType[];
     protected befores: ActionType[];
     protected afters: ActionType[];
     private handlers: Handler[];
 
-    constructor(protected actInjector: IActionInjector) {
+    constructor() {
         super();
         this.befores = [];
         this.actions = [];
@@ -216,28 +174,17 @@ export class IocActions<T extends IocContext = IocContext> extends IocAction<T> 
 
     execute(ctx: T, next?: () => void): void {
         if (!this.handlers) {
-            this.handlers = [...this.befores, ...this.actions, ...this.afters].map(ac => this.actInjector.getAction<Handler<T>>(ac)).filter(f => f);
+            this.handlers = [...this.befores, ...this.actions, ...this.afters].map(ac => this.toHandle(ac)).filter(f => f);
         }
         this.execFuncs(ctx, this.handlers, next);
     }
 
-    protected regAction(ac: any) {
-        if (isClass(ac)) {
-            this.actInjector.regAction(ac);
-        }
-    }
+    protected abstract regAction(ac: any);
+
+    protected abstract toHandle(ac: any): Handler;
 
     protected resetFuncs() {
         this.handlers = null;
     }
 
 }
-
-/**
- * composite actions.
- * @deprecated
- * use IocActions instead.
- */
-export abstract class IocCompositeAction<T extends IocContext = IocContext> extends IocActions<T> {}
-
-

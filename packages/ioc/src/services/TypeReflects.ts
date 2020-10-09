@@ -13,7 +13,7 @@ import { IParameter } from '../IMethodAccessor';
 import { Singleton } from '../decor/decorators';
 import { DecoratorProvider } from './decor-pdr';
 import { ITypeReflects } from './ITypeReflects';
-import { IActionInjector } from '../actions/Action';
+import { IActionInjector } from '../actions/act';
 import { TypeDecorators, RuntimeDecorators } from '../actions/decors';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/reg';
 import { MethodAccessorToken } from '../utils/tk';

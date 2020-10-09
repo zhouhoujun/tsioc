@@ -1,5 +1,7 @@
-import { ClassType } from '../types';
+import { ClassType, DecoratorTypes } from '../types';
 import { Token, Provider } from '../tokens';
+import { IParameter } from '../IMethodAccessor';
+import { TypeDefine } from './typedef';
 
 /**
  * metadata
@@ -327,4 +329,72 @@ export interface AutoWiredMetadata extends MethodParamPropMetadata {
 export interface AutorunMetadata extends TypeMetadata, PatternMetadata, RegInMetadata {
     autorun?: string;
     order?: number;
+}
+
+
+export interface AutorunDefine {
+    autorun: string;
+    order?: number;
+}
+
+export interface DecorDefine {
+    decor: string;
+    type: DecoratorTypes;
+    propertyKey?: string;
+    parameterIndex?: number;
+    matedata?: any;
+}
+
+/**
+ * type reflect metadata.
+ */
+export interface TypeReflect extends PatternMetadata, RegInMetadata {
+    /**
+     * decorator defines of the class type.
+     */
+    decors: DecorDefine[];
+    /**
+     * class define.
+     */
+    class: TypeDefine;
+    /**
+     * class providers.
+     */
+    providers: ProviderMetadata[];
+    /**
+     * refs
+     */
+    refs: RefProvider[];
+    /**
+     * class extends providers.
+     */
+    extProviders: Provider[];
+    /**
+     * props.
+     *
+     * @type {Map<string, PropertyMetadata[]>}
+     * @memberof ITypeReflect
+     */
+    propProviders: Map<string, PropertyMetadata[]>;
+
+    /**
+     * method params.
+     *
+     * @type {ObjectMap<IParameter[]>}
+     * @memberof ITypeReflect
+     */
+    methodParams: Map<string, ParameterMetadata[]>;
+
+    /**
+     * method providers.
+     *
+     * @type {ObjectMap<Provider[]>}
+     * @memberof ITypeReflect
+     */
+    methodExtProviders: Map<string, Provider[]>;
+
+    /**
+     * auto run defines.
+     */
+    autoruns: AutorunDefine[];
 }

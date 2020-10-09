@@ -2,9 +2,10 @@ import { Type, DecoratorScope } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
-import { IActionInjector, Action, IocAction, IocActions, IocContext } from './Action';
+import { IActionInjector, IocActions, IocContext } from './act';
 import { ITypeReflect } from '../services/ITypeReflect';
 import { TypeReflectsToken } from '../utils/tk';
+import { Action, IocAction } from '../Action';
 
 
 /**
@@ -78,7 +79,7 @@ export abstract class IocRegScope<T extends RegContext = RegContext> extends Ioc
  * decorator action registerer.
  *
  */
-export abstract class DecorRegisterer<TAction extends Function = Handler> extends IocCoreService {
+export abstract class DecorRegisterer<TAction extends Handler = Handler> extends IocCoreService {
     protected actionMap: Map<string, (TAction | Type<Action>)[]>;
     protected funcs: Map<string, TAction[]>;
     constructor() {
@@ -206,7 +207,7 @@ export interface IScopeAction<TAction extends Function = Handler> {
  * @export
  * @class DecoratorRegisterer
  */
-export abstract class DecorsRegisterer<TAction extends Function = Handler> extends IocCoreService {
+export abstract class DecorsRegisterer<TAction extends Handler = Handler> extends IocCoreService {
     protected map: Map<Token, any>;
     constructor(protected registerer: IActionInjector) {
         super()
@@ -310,7 +311,7 @@ export class RuntimeRegisterer extends DecorsRegisterer {
 /**
  * ioc decorator registerer.
  */
-export class IocDecorRegisterer<T extends Function = Handler> extends DecorRegisterer<T> {
+export class IocDecorRegisterer<T extends Handler = Handler> extends DecorRegisterer<T> {
 
 }
 

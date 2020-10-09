@@ -5,7 +5,7 @@ import { IParameter } from '../IMethodAccessor';
 import { ParameterMetadata, AutorunMetadata } from '../decor/metadatas';
 import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decor/decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
-import { IActionSetup } from './Action';
+import { IActionSetup } from '../Action';
 import {
     IocRegAction, InitReflectAction, IocRegScope, RegContext,
     ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope

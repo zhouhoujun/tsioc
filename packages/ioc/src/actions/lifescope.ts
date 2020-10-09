@@ -1,5 +1,4 @@
-import { IocContext, IocActions } from './Action';
-
+import { IocContext, IocActions } from './act';
 import { RegContext } from './reg';
 
 /**

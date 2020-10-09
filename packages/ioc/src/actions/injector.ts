@@ -1,8 +1,9 @@
 import { Type } from '../types';
-import { isFunction, lang } from '../utils/lang';
+import { Handler, isFunction, lang } from '../utils/lang';
 import { Token, isToken } from '../tokens';
-import { IActionSetup, Action, IActionInjector } from './Action';
+import { IActionSetup, Action } from '../Action';
 import { Injector } from '../Injector';
+import { IActionInjector } from './act';
 
 /**
  * action injector.
@@ -45,7 +46,7 @@ export class ActionInjector extends Injector implements IActionInjector {
         return instance;
     }
 
-    getAction<T extends Function>(target: Token<Action> | Action | Function): T {
+    getAction<T extends Handler>(target: Token<Action> | Action | Function): T {
         if (target instanceof Action) {
             return target.toAction() as T;
         } else if (isToken(target)) {
