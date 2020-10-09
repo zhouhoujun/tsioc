@@ -122,7 +122,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
         injector.inject(...config.providers);
     }
 
-    if (config.baseURL && !ctx.hasValue(ProcessRunRootToken)) {
+    if (config.baseURL) {
         ctx.setValue(ProcessRunRootToken, config.baseURL);
         injector.setValue(ProcessRunRootToken, config.baseURL);
     }
