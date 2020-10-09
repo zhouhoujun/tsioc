@@ -1,11 +1,22 @@
-import { Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, IProvider, Destoryable, PROVIDERS, ITypeReflects, TypeReflectsToken, tokenId, TokenId, SymbolType, Provider, isInjector, isArray, isBoolean } from '@tsdi/ioc';
+import {
+    Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, IProvider, Destoryable,
+    PROVIDERS, ITypeReflects, TypeReflectsToken, SymbolType, Provider, isInjector, isArray, isBoolean
+} from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
-import { CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT, CTX_OPTIONS, CTX_TARGET_RELF, CTX_PROVIDERS } from '../tk';
+import {
+    CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT,
+    CTX_OPTIONS, CTX_TARGET_RELF, CTX_PROVIDERS
+} from '../tk';
 import { ModuleRef } from '../modules/ModuleRef';
 import { IAnnotationMetadata, IAnnoationReflect } from './reflect';
 import { AnnoationOption, IAnnoationContext, ProdverOption } from '../Context';
 
-
+/**
+ * context factory.
+ * @param injector
+ * @param CtxType
+ * @param option
+ */
 export function createContext<Ctx extends IAnnoationContext>(injector: IInjector, CtxType: Type<Ctx>, options: AnnoationOption): Ctx {
     let ctx = new CtxType(injector);
     options && ctx.setOptions(options);

@@ -1,6 +1,6 @@
 import {
-    ClassType, IDestoryable, IInjector, IocContext, IProvider, ITypeReflects, ObjectMap, Provider,
-    RegInMetadata, SymbolType, Token, Type
+    ClassType, IDestoryable, IInjector, IocContext, IProvider, ITypeReflects, ObjectMap,
+    Provider, RegInMetadata, SymbolType, Token, Type
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
@@ -136,7 +136,6 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     hasValue(token: SymbolType): boolean;
     /**
      * remove contexts.
-    
      * @param tokens
      */
     remove(...tokens: SymbolType[]);

@@ -131,7 +131,7 @@ export interface IInjector extends IDestoryable {
     getValue<T>(token: Token<T>): T;
     /**
      * get the first value via tokens.
-     * @param tokens 
+     * @param tokens
      */
     getFirstValue<T>(...tokens: Token<T>[]): T;
     /**
