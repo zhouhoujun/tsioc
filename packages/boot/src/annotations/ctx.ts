@@ -1,6 +1,6 @@
 import {
     Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, IProvider, Destoryable,
-    PROVIDERS, ITypeReflects, TypeReflectsToken, SymbolType, Provider, isInjector, isArray, isBoolean
+    PROVIDERS, SymbolType, Provider, isInjector, isArray, isBoolean, refl
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import {
@@ -37,19 +37,6 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable {
      */
     get injector(): ICoreInjector {
         return this.context.getValue(INJECTOR) as ICoreInjector;
-    }
-
-    /**
-     * get type reflects.
-     */
-    get reflects(): ITypeReflects {
-        return this.context.getValue(TypeReflectsToken) ?? this.getReflects();
-    }
-
-    protected getReflects() {
-        let reflects = this.injector.getInstance(TypeReflectsToken);
-        this.context.setValue(TypeReflectsToken, reflects);
-        return reflects;
     }
 
     /**
@@ -257,7 +244,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption> exten
     }
 
     protected getDecorator() {
-        let dec = this.type ? this.getTargetReflect()?.decorator : null;
+        let dec = this.type ? this.getTargetReflect()?.annoDecor : null;
         dec && this.setValue(CTX_MODULE_DECTOR, dec);
         return dec;
     }
@@ -271,9 +258,9 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption> exten
     }
 
     protected getParentTargetReflect(): IAnnoationReflect {
-        let refl = this.type ? this.reflects.get(this.type) : null;
-        refl && this.setValue(CTX_TARGET_RELF, refl);
-        return refl
+        let rft = this.type ? refl.get(this.type) : null;
+        rft && this.setValue(CTX_TARGET_RELF, rft);
+        return rft
     }
 
     /**
@@ -372,7 +359,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption> exten
     }
 
     protected getReflAnnoation(): IAnnotationMetadata {
-        let anno = this.type ? this.getTargetReflect()?.getAnnoation?.() : null;
+        let anno = this.type ? this.getTargetReflect()?.annoMetadata : null;
         anno && this.setValue(CTX_MODULE_ANNOATION, anno);
         return anno;
     }

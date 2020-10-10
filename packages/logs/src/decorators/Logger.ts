@@ -104,8 +104,8 @@ export interface ILoggerDecorator<T extends LoggerMetadata> {
  *
  * @Logger
  */
-export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorator<LoggerMetadata>('Logger',
-    [
+export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorator<LoggerMetadata>('Logger', {
+    actions: [
         (ctx, next) => {
             let arg = ctx.currArg;
             if (isString(arg)) {
@@ -151,4 +151,5 @@ export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorat
                 ctx.metadata.level = Level[arg];
             }
         },
-    ]) as ILoggerDecorator<LoggerMetadata>;
+    ]
+}) as ILoggerDecorator<LoggerMetadata>;

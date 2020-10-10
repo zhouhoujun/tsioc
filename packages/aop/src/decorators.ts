@@ -1,6 +1,6 @@
-import { createMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction, isArray, createClassDecorator, isClass, ClassType, Registration, ClassMetadata, Type } from '@tsdi/ioc';
+import { createMethodDecorator, isString, isRegExp, ArgsIteratorAction, isArray, createClassDecorator, isClass, ClassType, Registration, ClassMetadata, Type, refl, DecoratorOption } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata } from './metadatas';
-import { AdviceTypes } from './types';
+import { AdviceTypes, AopReflect } from './types';
 
 
 /**
@@ -47,8 +47,21 @@ export interface IAspectDecorator {
  *
  * @Aspect
  */
-export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect',
-    [
+export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect', {
+    actionType: 'annoation',
+    handler: [
+        {
+            type: 'class',
+            handles: [
+                (ctx, next) => {
+                    let rlt = ctx.reflect as AopReflect;
+                    rlt.aspect = ctx.matedata;
+                    return next();
+                }
+            ]
+        }
+    ],
+    actions: [
         (ctx, next) => {
             let arg = ctx.currArg;
             if (isString(arg)) {
@@ -63,8 +76,9 @@ export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('As
                 ctx.next(next);
             }
         }
-    ], true) as IAspectDecorator;
-
+    ],
+    classAnno: true
+}) as IAspectDecorator;
 
 
 /**
@@ -101,7 +115,20 @@ export interface INonePointcutDecorator {
  *
  * @NonePointcut
  */
-export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMetadata>('NonePointcut');
+export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMetadata>('NonePointcut', {
+    handler: [
+        {
+            type: 'class',
+            handles: [
+                (ctx, next) => {
+                    const rlt = ctx.reflect as AopReflect;
+                    rlt.nonePointcut = true;
+                    return next();
+                }
+            ]
+        }
+    ]
+});
 
 
 /**
@@ -151,11 +178,14 @@ export interface IAdviceDecorator {
     (metadata?: AdviceMetadata): MethodDecorator;
 }
 
-export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string,
-    actions?: ArgsIteratorAction<T>[],
+export interface AdviceDecorOption<T> extends DecoratorOption<T> {
     afterPointcutActions?: ArgsIteratorAction<T> | ArgsIteratorAction<T>[],
-    metadataExtends?: MetadataExtends<T>) {
-    actions = actions || [];
+}
+
+export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string, options?: AdviceDecorOption<T>) {
+    options = options || {};
+
+    let actions = options.actions || [];
 
     actions.push((ctx, next) => {
         let arg = ctx.currArg;
@@ -164,11 +194,11 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             ctx.next(next);
         }
     });
-    if (afterPointcutActions) {
-        if (isArray(afterPointcutActions)) {
-            actions.push(...afterPointcutActions);
+    if (options.afterPointcutActions) {
+        if (isArray(options.afterPointcutActions)) {
+            actions.push(...options.afterPointcutActions);
         } else {
-            actions.push(afterPointcutActions);
+            actions.push(options.afterPointcutActions);
         }
     }
 
@@ -189,15 +219,34 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         }
     );
 
-    return createMethodDecorator<AdviceMetadata>('Advice',
+    const append = options.append;
+
+    return createMethodDecorator<T>('Advice', {
+        ...options,
         actions,
-        metadata => {
-            if (metadataExtends) {
-                metadataExtends(metadata as T);
+        handler: [
+            {
+                type: 'method',
+                handles: [
+                    (ctx, next) => {
+                        let ret = ctx.reflect as AopReflect;
+                        if (!ret.advices) {
+                            ret.advices = [];
+                        }
+                        ret.advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
+                        return next();
+                    }
+                ]
+            }
+        ],
+        append: (metadata) => {
+            if (append) {
+                append(metadata);
             }
             metadata.adviceName = adviceName as AdviceTypes;
             return metadata;
-        });
+        }
+    });
 }
 
 /**
@@ -445,10 +494,8 @@ export interface IAroundDecorator {
  * @Around
  */
 export const Around: IAroundDecorator =
-    createAdviceDecorator<AroundMetadata>(
-        'Around',
-        null,
-        [
+    createAdviceDecorator<AroundMetadata>('Around', {
+        afterPointcutActions: [
             (ctx, next) => {
                 let arg = ctx.currArg;
                 if (isString(arg)) {
@@ -470,7 +517,8 @@ export const Around: IAroundDecorator =
                     ctx.next(next);
                 }
             }
-        ]) as IAroundDecorator;
+        ]
+    }) as IAroundDecorator;
 
 
 /**
@@ -537,17 +585,15 @@ export interface IAfterReturningDecorator {
  * @AfterReturning
  */
 export const AfterReturning: IAfterReturningDecorator =
-    createAdviceDecorator<AfterReturningMetadata>(
-        'AfterReturning',
-        null,
-        (ctx, next) => {
+    createAdviceDecorator<AfterReturningMetadata>('AfterReturning', {
+        afterPointcutActions: (ctx, next) => {
             let arg = ctx.currArg;
             if (isString(arg)) {
                 ctx.metadata.returning = arg;
                 ctx.next(next);
             }
         }
-    ) as IAfterReturningDecorator;
+    }) as IAfterReturningDecorator;
 
 /**
  * aop after throwing decorator.
@@ -612,14 +658,12 @@ export interface IAfterThrowingDecorator {
  * @AfterThrowing
  */
 export const AfterThrowing: IAfterThrowingDecorator =
-    createAdviceDecorator<AfterThrowingMetadata>(
-        'AfterThrowing',
-        null,
-        (ctx, next) => {
+    createAdviceDecorator<AfterThrowingMetadata>('AfterThrowing', {
+        afterPointcutActions: (ctx, next) => {
             let arg = ctx.currArg;
             if (isString(arg)) {
                 ctx.metadata.throwing = arg;
                 ctx.next(next);
             }
         }
-    ) as IAfterThrowingDecorator;
+    }) as IAfterThrowingDecorator;

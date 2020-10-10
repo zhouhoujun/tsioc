@@ -1,4 +1,4 @@
-import { Type, IActionSetup } from '@tsdi/ioc';
+import { Type, IActionSetup, refl } from '@tsdi/ioc';
 import { InjContext, InjRegScope } from '@tsdi/core';
 
 
@@ -19,7 +19,7 @@ export class InjDIModuleScope extends InjRegScope implements IActionSetup {
     }
 
     protected getTypes(ctx: InjContext): Type[] {
-        return ctx.types.filter(ty => ctx.reflects.hasMetadata(ctx.currDecor, ty));
+        return ctx.types.filter(ty => refl.getIfy(ty).hasMetadata(ctx.currDecor));
     }
 
     protected setNextRegTypes(ctx: InjContext, registered: Type[]) {

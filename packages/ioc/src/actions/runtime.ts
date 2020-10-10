@@ -1,5 +1,5 @@
 import { RegisterLifeScope } from './lifescope';
-import { InitReflectAction } from './reg';
+import { InitReflectAction, RuntimeContext } from './reg';
 import * as ra from './run-act';
 /**
  * runtime life scope.
@@ -8,9 +8,9 @@ import * as ra from './run-act';
  * @class RuntimeLifeScope
  * @extends {LifeScope}
  */
-export class RuntimeLifeScope extends RegisterLifeScope<ra.RuntimeContext> {
+export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
 
-    execute(ctx: ra.RuntimeContext, next?: () => void): void {
+    execute(ctx: RuntimeContext, next?: () => void): void {
         if (!ctx.instance) {
             super.execute(ctx, next);
         }

@@ -2,44 +2,15 @@ import { Type, DecoratorScope } from '../types';
 import { isClass, isArray, isDefined } from '../utils/lang';
 import { Token, isToken } from '../tokens';
 import { ParameterMetadata } from '../decor/metadatas';
-import { Inject, AutoWired, Param, Singleton, Injectable, IocExt, Autorun } from '../decor/decorators';
+import { Inject, AutoWired, Param, Autorun } from '../decor/decorators';
 import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
 import { IActionSetup } from '../Action';
 import {
-    IocRegAction, InitReflectAction, IocRegScope, RegContext,
-    ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer
+    IocRegAction, InitReflectAction, IocRegScope, ExecDecoratorAtion,
+    DecorsRegisterer, RuntimeRegisterer, IocDecorScope, RuntimeContext
 } from './reg';
 import { IocCacheManager } from './cache';
 
-/**
- * Ioc Register action context.
- *
- * @extends {RegContext}
- */
-export interface RuntimeContext extends RegContext {
-    /**
-     * target instance.
-     *
-     * @type {*}
-     * @memberof RuntimeActionContext
-     */
-    instance?: any;
-
-    /**
-     * property key
-     */
-    propertyKey?: string;
-
-    /**
-     * args of the propertyKey method.
-     */
-    args?: any[];
-
-    /**
-     * params of the propertyKey method.
-     */
-    params?: ParameterMetadata[];
-}
 
 /**
  * ioc runtime register action.
@@ -235,21 +206,10 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
 export abstract class RuntimeDecorScope extends IocDecorScope<RuntimeContext> {
 
     protected getScopeDecorators(ctx: RuntimeContext, scope: DecoratorScope): string[] {
-        switch (scope) {
-            case cls:
-                return ctx.targetReflect.decorators.runtime.classDecors;
-            case mth:
-                return ctx.targetReflect.decorators.runtime.methodDecors;
-            case prop:
-                return ctx.targetReflect.decorators.runtime.propsDecors;
-            case parm:
-                return ctx.targetReflect.decorators.runtime.getParamDecors(ctx.propertyKey, ctx.instance);
-            case befCtor:
-                return ctx.targetReflect.decorators.runtime.beforeCstrDecors;
-            case aftCtor:
-                return ctx.targetReflect.decorators.runtime.afterCstrDecors
-        }
-        return ctx.targetReflect.decorators.runtime.getDecortors(scope);
+        const runtime = ctx.injector.getInstance(RuntimeRegisterer);
+        const registerer = runtime.getRegisterer(scope);
+        const decors = ctx.targetReflect.decors;
+        return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
     }
 
     setup() {
@@ -398,12 +358,9 @@ export const RegSingletionAction = function (ctx: RuntimeContext, next: () => vo
 export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
 
-        this.actInjector.getInstance(RuntimeRegisterer)
-            .register(Singleton, cls, RegSingletionAction)
-            .register(Injectable, cls, RegSingletionAction, IocSetCacheAction)
-            .register(IocExt, cls, RegSingletionAction);
-
-        this.use(RuntimeAnnoDecorScope);
+        this.use(IocSetCacheAction)
+            .use(RegSingletionAction)
+            .use(RuntimeAnnoDecorScope);
     }
 }
 
@@ -436,12 +393,8 @@ export class RuntimeMthDecorScope extends RuntimeDecorScope {
 
 export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
-
-        this.actInjector.getInstance(RuntimeRegisterer)
-            .register(Inject, prop, InjectPropAction)
-            .register(AutoWired, prop, InjectPropAction);
-
-        this.use(RuntimePropDecorScope);
+        this.use(InjectPropAction)
+            .use(RuntimePropDecorScope);
     }
 }
 

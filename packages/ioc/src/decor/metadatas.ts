@@ -1,4 +1,4 @@
-import { ClassType, DecoratorTypes } from '../types';
+import { ClassType } from '../types';
 import { Token, Provider } from '../tokens';
 import { TypeDefine } from './typedef';
 
@@ -341,6 +341,10 @@ export interface AutorunDefine {
     order?: number;
 }
 
+
+
+export type DecoratorType = 'class' | 'property' | 'method' | 'parameter';
+
 export interface DecorDefine {
     /**
      * decorator name.
@@ -350,7 +354,7 @@ export interface DecorDefine {
      * decorator name with '@'
      */
     decor: string;
-    type: DecoratorTypes;
+    type: DecoratorType;
     propertyKey?: string;
     parameterIndex?: number;
     matedata?: any;
@@ -369,6 +373,17 @@ export interface TypeReflect extends PatternMetadata, RegInMetadata {
      * decorator defines of the class type.
      */
     decors: DecorDefine[];
+
+    /**
+     * has decorator metadata.
+     * @param decor
+     * @param type
+     */
+    hasMetadata(decor: string, type?: DecoratorType): boolean;
+
+    getMetadata(decor: string, type?: DecoratorType): any;
+
+    getDecorDefine(decor: string, type?: DecoratorType): DecorDefine;
     /**
      * class define.
      */

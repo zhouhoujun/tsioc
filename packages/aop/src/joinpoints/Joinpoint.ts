@@ -1,6 +1,6 @@
 import {
-    Type, MethodMetadata, IParameter, ClassMetadata, IProvider, TypeMetadata, tokenId, Token,
-    isNullOrUndefined, IocContext, IInjector, PROVIDERS
+    Type, MethodMetadata, ClassMetadata, IProvider, TypeMetadata, tokenId, Token,
+    isNullOrUndefined, IocContext, IInjector, PROVIDERS, ParameterMetadata
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -11,7 +11,7 @@ export interface JoinpointOption {
     provJoinpoint?: Joinpoint;
     name: string;
     fullName: string;
-    params: IParameter[];
+    params: ParameterMetadata[];
     originMethod?: Function;
     args: any[];
     state?: JoinpointState;
@@ -71,10 +71,10 @@ export class Joinpoint implements IocContext {
     /**
      * params of pointcut.
      *
-     * @type {IParameter[]}
+     * @type {ParameterMetadata[]}
      * @memberof Joinpoint
      */
-    params: IParameter[];
+    params: ParameterMetadata[];
 
     /**
      * args of pointcut.

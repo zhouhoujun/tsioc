@@ -1,7 +1,6 @@
 import {
-    Inject, BeforeCtorScope, AfterCtorScope, IocContainerToken, IIocContainer,
-    RuntimeMthScope, TypeProviderAction, RegSingletionAction, RuntimeLifeScope,
-    CtorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken
+    Inject, IocContainerToken, IIocContainer, runtimes,
+    RuntimeLifeScope, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt
 } from '@tsdi/ioc';
 import { Aspect } from './decorators';
 import { Advisor } from './Advisor';
@@ -35,32 +34,29 @@ export class AopModule {
     setup(@Inject(IocContainerToken) container: IIocContainer) {
 
         const actInjector = container.getValue(ActionInjector);
-        const reflects = container.getValue(TypeReflectsToken);
 
         actInjector
-            .setValue(AdvisorToken, new Advisor(reflects), Advisor)
-            .setValue(AdviceMatcherToken, new AdviceMatcher(reflects), AdviceMatcher);
+            .setValue(AdvisorToken, new Advisor(container.getProxy()), Advisor)
+            .setValue(AdviceMatcherToken, new AdviceMatcher(container.getProxy()), AdviceMatcher);
 
         actInjector.regAction(ProceedingScope);
 
-        actInjector.getInstance(BeforeCtorScope)
+        actInjector.getInstance(runtimes.BeforeCtorScope)
             .useBefore(BeforeCtorAdviceAction);
 
-        actInjector.getInstance(AfterCtorScope)
+        actInjector.getInstance(runtimes.AfterCtorScope)
             // .use(ExetndsInstanceAction)
             .use(AfterCtorAdviceAction);
 
-        actInjector.getInstance(RuntimeMthScope)
+        actInjector.getInstance(runtimes.RuntimeMthScope)
             .useBefore(BindMthPointcutAction);
 
         actInjector.getInstance(RuntimeLifeScope)
-            .useBefore(MatchPointcutAction, CtorArgsAction);
+            .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Aspect, 'Class', TypeProviderAction, RegistAspectAction);
+            .register(Aspect, 'Class', RegistAspectAction);
 
-        actInjector.getInstance(RuntimeRegisterer)
-            .register(Aspect, 'Class', RegSingletionAction);
 
     }
 }

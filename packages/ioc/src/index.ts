@@ -39,15 +39,15 @@ export * from './actions/lifescope';
 export * from './actions/accessor';
 
 // runtime actions
-export * from './actions/run-act';
+export * as runtimes from './actions/run-act';
 export * from './actions/runtime';
 
 // resolve
 export * from './actions/res';
-export * from './actions/res-act';
+export * as resovles from './actions/res-act';
 export * from './actions/resolve';
 
 // design time action.
-export * from './actions/des-act';
+export * as designs from './actions/des-act';
 export * from './actions/design';
 

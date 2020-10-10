@@ -16,10 +16,10 @@ export interface IAdviceMatcher {
      *
      * @param {Type} aspectType
      * @param {Type} type
-     * @param {ObjectMap<AdviceMetadata[]>} [adviceMetas]
+     * @param {AdviceMetadata[]} [adviceMetas]
      * @param {*} [instance]
      * @returns {MatchPointcut[]}
      * @memberof IAdviceMatcher
      */
-    match(aspectType: Type, type: Type, adviceMetas?: ObjectMap<AdviceMetadata[]>, instance?: any): MatchPointcut[]
+    match(aspectType: Type, type: Type, adviceMetas?: AdviceMetadata[], instance?: any): MatchPointcut[]
 }

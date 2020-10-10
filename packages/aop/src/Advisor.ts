@@ -1,9 +1,5 @@
-import {
-    Type, ObjectMap, Provider, Inject, TypeReflectsToken, ITypeReflects
-} from '@tsdi/ioc';
+import { Type, Provider, InjectorProxy, IIocContainer } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
-import { Advice } from './decorators';
-import { AdviceMetadata } from './metadatas';
 import { IAdvisor } from './IAdvisor';
 
 /**
@@ -14,13 +10,6 @@ import { IAdvisor } from './IAdvisor';
  */
 export class Advisor implements IAdvisor {
     /**
-     * aspects.
-     *
-     * @type {Map<Type, ObjectMap<AdviceMetadata[]>>}
-     * @memberof AspectManager
-     */
-    aspects: Map<Type, ObjectMap<AdviceMetadata[]>>;
-    /**
      * method advices.
      *
      * @type {Map<Type, Map<string, Advices>>}
@@ -28,9 +17,11 @@ export class Advisor implements IAdvisor {
      */
     advices: Map<Type, Map<string, Advices>>;
 
-    constructor(@Inject(TypeReflectsToken) private reflects: ITypeReflects) {
-        this.aspects = new Map();
+    aspects: Type[];
+
+    constructor(private proxy: InjectorProxy<IIocContainer>) {
         this.advices = new Map();
+        this.aspects = [];
     }
 
     /**
@@ -77,14 +68,11 @@ export class Advisor implements IAdvisor {
      * add aspect.
      *
      * @param {Type} aspect
-     * @param {IInjector} injector
-     * @memberof Advisor
+     * @param {IIocContainer} raiseContainer
+     * @memberof IAdvisor
      */
     add(aspect: Type) {
-        if (!this.aspects.has(aspect)) {
-            let metas = this.reflects.getMethodMetadata<AdviceMetadata>(Advice, aspect);
-            this.aspects.set(aspect, metas);
-        }
+        this.aspects.push(aspect);
     }
 
     /**
@@ -97,6 +85,6 @@ export class Advisor implements IAdvisor {
      * @memberof Advisor
      */
     resolve<T>(aspect: Type<T>, ...providers: Provider[]): T {
-        return this.reflects.getInjector(aspect).resolve(aspect, ...providers);
+        return this.proxy().getInjector(aspect).resolve(aspect, ...providers);
     }
 }

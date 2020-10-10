@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, IProvider, InvokedProvider, ITypeReflects, TypeReflectsToken, IocActions,
-    IParameter, IActionSetup, isArray, isDefined, isPromise, PromiseUtil
+    Type, isFunction, lang, IProvider, InvokedProvider, IocActions,
+    IActionSetup, isArray, isDefined, isPromise, PromiseUtil, ParameterMetadata, refl, IIocContainer
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -23,19 +23,13 @@ const ctor = 'constructor';
 export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
 
     execute(ctx: Joinpoint, next?: () => void) {
-        ctx.invokeHandle = (j, a) => this.invokeAdvice(j, a, this.reflects);
+        const container = this.actInjector.getContainer();
+        ctx.invokeHandle = (j, a) => this.invokeAdvice(j, a, container);
         super.execute(ctx, next);
     }
 
-    private _reflects: ITypeReflects;
-    get reflects(): ITypeReflects {
-        if (!this._reflects) {
-            this._reflects = this.actInjector.getInstance(TypeReflectsToken);
-        }
-        return this._reflects;
-    }
 
-    beforeConstr(targetType: Type, params: IParameter[], args: any[], providers: IProvider) {
+    beforeConstr(targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
         let propertykey = ctor;
         let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
         if (!advices) {
@@ -43,7 +37,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         }
 
         let className = lang.getClassName(targetType);
-        let joinPoint = Joinpoint.parse(this.reflects.getInjector(targetType), {
+        let joinPoint = Joinpoint.parse(this.actInjector.getContainer().getInjector(targetType), {
             name: ctor,
             state: JoinpointState.Before,
             advices: advices,
@@ -56,7 +50,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         this.execute(joinPoint);
     }
 
-    afterConstr(target: any, targetType: Type, params: IParameter[], args: any[], providers: IProvider) {
+    afterConstr(target: any, targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
         let propertykey = ctor;
         let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
         if (!advices) {
@@ -64,7 +58,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         }
 
         let className = lang.getClassName(targetType);
-        let joinPoint = Joinpoint.parse(this.reflects.getInjector(targetType), {
+        let joinPoint = Joinpoint.parse(this.actInjector.getContainer().getInjector(targetType), {
             name: ctor,
             state: JoinpointState.After,
             advices: advices,
@@ -113,8 +107,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     proxy(propertyMethod: Function, advices: Advices, target: any, targetType: Type, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
         let fullName = pointcut.fullName;
         let methodName = pointcut.name;
-        let reflects = this.reflects;
         let self = this;
+        const container = this.actInjector.getContainer();
         return (...args: any[]) => {
             let larg = lang.last(args);
             let cuurPrd: IProvider = null;
@@ -122,17 +116,17 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 args = args.slice(0, args.length - 1);
                 cuurPrd = larg;
             }
-            let joinPoint = Joinpoint.parse(reflects.getInjector(targetType), {
+            let joinPoint = Joinpoint.parse(container.getInjector(targetType), {
                 name: methodName,
                 fullName: fullName,
-                params: reflects.getParameters(targetType, target, methodName),
+                params: refl.getParameters(targetType, target, methodName),
                 args: args,
                 target: target,
                 targetType: targetType,
                 advices: advices,
                 originMethod: propertyMethod,
                 provJoinpoint: provJoinpoint,
-                annotations: reflects.getMetadatas(targetType, methodName, 'method'),
+                annotations: refl.get(targetType).decors.filter(d => d.propertyKey === methodName).map(d => d.matedata),
                 providers: cuurPrd
             });
 
@@ -147,7 +141,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             .use(MethodAdvicesScope);
     }
 
-    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, reflects: ITypeReflects) {
+    protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, container: IIocContainer) {
         let metadata: any = advicer.advice;
         let providers = joinPoint.providers;
         if (isDefined(joinPoint.args) && metadata.args) {
@@ -182,7 +176,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         if (joinPoint.throwing && metadata.throwing) {
             providers.inject({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
-        return reflects.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
+        return container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
     }
 
 }

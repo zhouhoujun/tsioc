@@ -4,7 +4,7 @@ import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
 import { IActionInjector, IocActions, IocContext } from './act';
 import { Action, IocAction } from '../Action';
-import { TypeReflect } from '../decor/metadatas';
+import { ParameterMetadata, TypeReflect } from '../decor/metadatas';
 import { refl } from '../decor/reflects';
 
 
@@ -51,6 +51,45 @@ export interface RegContext extends IocContext {
 
 }
 
+/**
+ * design action context.
+ */
+export interface DesignContext extends RegContext {
+    /**
+     * type register in.
+     */
+    regIn?: string;
+}
+
+/**
+ * Ioc Register action context.
+ *
+ * @extends {RegContext}
+ */
+export interface RuntimeContext extends RegContext {
+    /**
+     * target instance.
+     *
+     * @type {*}
+     * @memberof RuntimeActionContext
+     */
+    instance?: any;
+
+    /**
+     * property key
+     */
+    propertyKey?: string;
+
+    /**
+     * args of the propertyKey method.
+     */
+    args?: any[];
+
+    /**
+     * params of the propertyKey method.
+     */
+    params?: ParameterMetadata[];
+}
 
 /**
  * ioc register action.

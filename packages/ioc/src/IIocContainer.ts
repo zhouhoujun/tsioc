@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { ClassType, Type } from './types';
 import { Token, Factory } from './tokens';
 import { IInjector } from './IInjector';
 import { IActionInjector } from './actions/act';
@@ -19,7 +19,7 @@ export interface IIocContainer extends IInjector {
      * get injector the type injected.
      * @param type
      */
-    getInjector(type: Type): IInjector;
+    getInjector(type: ClassType): IInjector;
     /**
      * create injector.
      */

@@ -1,12 +1,12 @@
 import {
     DecoratorProvider, isNullOrUndefined, isClassType, InjectReference,
-    IocResolveScope, IActionSetup, isToken, lang, Provider, PROVIDERS
+    IActionSetup, isToken, lang, Provider, PROVIDERS, refl, resovles
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
 
-export class ResolveServiceScope extends IocResolveScope<ServiceContext> implements IActionSetup {
+export class ResolveServiceScope extends resovles.IocResolveScope<ServiceContext> implements IActionSetup {
     execute(ctx: ServiceContext, next?: () => void): void {
         if (ctx.instance || !ctx.tokens || !ctx.tokens.length) {
             return;
@@ -31,7 +31,7 @@ export class ResolveServiceScope extends IocResolveScope<ServiceContext> impleme
 }
 
 
-export class RsvTagSericeScope extends IocResolveScope<ServiceContext> implements IActionSetup {
+export class RsvTagSericeScope extends resovles.IocResolveScope<ServiceContext> implements IActionSetup {
 
     execute(ctx: ServiceContext, next?: () => void): void {
         if (ctx.targetRefs) {
@@ -62,20 +62,20 @@ export class RsvTagSericeScope extends IocResolveScope<ServiceContext> implement
 
 export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => void): void {
     let clasType = ctx.targetToken;
-    let reflects = ctx.reflects;
     let injector = ctx.injector;
     if (isClassType(clasType)) {
-        let dprvoider = reflects.getActionInjector().getInstance(DecoratorProvider);
+        let dprvoider = injector.getContainer().getActionInjector().getInstance(DecoratorProvider);
         let tk = ctx.currTK;
-        reflects.getDecorators(clasType)
+        refl.getIfy(clasType)
+            .decors
             .some(dec => {
-                if (dprvoider.has(dec, tk)) {
-                    ctx.instance = dprvoider.resolve(dec, tk, ctx.providers);
+                if (dprvoider.has(dec.decor, tk)) {
+                    ctx.instance = dprvoider.resolve(dec.decor, tk, ctx.providers);
                 }
                 if (ctx.instance) {
                     return true;
                 }
-                let refDec = new InjectReference(tk, dec);
+                let refDec = new InjectReference(tk, dec.decor);
                 if (injector.hasRegister(refDec)) {
                     ctx.instance = injector.get(refDec, ctx.providers);
                 }
@@ -92,7 +92,7 @@ export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () =>
     let injector = ctx.injector;
     let tgtk = ctx.targetToken;
     if (isClassType(tgtk)) {
-        ctx.reflects.getExtends(tgtk).some(ty => {
+        refl.getIfy(tgtk).class.extendTypes.some(ty => {
             ctx.instance = injector.resolve({ token: ctx.currTK, target: ty, tagOnly: true }, ctx.providers);
             return ctx.instance;
         });
@@ -121,7 +121,7 @@ export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => 
 
 // services actions
 
-export class ResolveServicesScope extends IocResolveScope implements IActionSetup {
+export class ResolveServicesScope extends resovles.IocResolveScope implements IActionSetup {
 
     execute(ctx: ServicesContext, next?: () => void): void {
         if (!ctx.tokens || !ctx.tokens.length) {
@@ -148,6 +148,7 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
             }
         }
     }
+
     setup() {
         this.use(RsvSuperServicesAction)
             .use(RsvServicesAction);
@@ -160,31 +161,30 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
     let targetRefs = ctx.targetRefs;
 
     if (targetRefs && targetRefs.length) {
-        let reflects = ctx.reflects;
         let injector = ctx.injector;
         let types = ctx.types;
         let services = ctx.services;
-        let dprvoider = reflects.getActionInjector().getInstance(DecoratorProvider);
+        let dprvoider = injector.getContainer().getActionInjector().getInstance(DecoratorProvider);
         let alias = ctx.alias;
         targetRefs.forEach(t => {
             let tk = isToken(t) ? t : lang.getClass(t);
             let maps = injector.get(new InjectReference(PROVIDERS, tk));
             if (maps && maps.size) {
                 maps.iterator((fac, tk) => {
-                    if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
+                    if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty))) {
                         services.set(tk, fac);
                     }
                 });
             }
             if (isClassType(tk)) {
-                reflects.getDecorators(tk)
-                    .some(dec => {
-                        dprvoider.getProviders(dec)?.iterator((fac, tk) => {
-                            if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
-                                services.set(tk, fac);
-                            }
-                        });
+                const rlt = refl.getIfy(tk);
+                rlt.decors.some(dec => {
+                    dprvoider.getProviders(dec.decor)?.iterator((fac, tk) => {
+                        if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => rlt.class.isExtends(ty))) {
+                            services.set(tk, fac);
+                        }
                     });
+                });
             }
             types.forEach(ty => {
                 let reftk = new InjectReference(ty, tk);
@@ -203,10 +203,9 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
     let types = ctx.types;
     let services = ctx.services;
-    let reflects = ctx.reflects;
     let alias = ctx.alias;
     ctx.injector.iterator((fac, tk) => {
-        if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
+        if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty))) {
             services.set(tk, fac);
         }
     }, true)

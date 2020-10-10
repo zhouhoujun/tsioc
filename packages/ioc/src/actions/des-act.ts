@@ -1,28 +1,15 @@
 import { DecoratorScope } from '../types';
-import { isFunction, isArray, isClass, lang } from '../utils/lang';
+import { isFunction, isClass, lang } from '../utils/lang';
 import { Provider } from '../tokens';
 import { IActionSetup } from '../Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
-import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decor/decorators';
-import { MethodMetadata, InjectableMetadata, PropertyMetadata, AutorunMetadata } from '../decor/metadatas';
-
 import {
     IocRegAction, IocRegScope, RegContext, ExecDecoratorAtion,
-    DecorsRegisterer, DesignRegisterer, IocDecorScope
+    DecorsRegisterer, DesignRegisterer, IocDecorScope, DesignContext, RuntimeContext
 } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS, REGISTERED } from '../utils/tk';
-import { RuntimeContext } from './run-act';
 
-/**
- * design action context.
- */
-export interface DesignContext extends RegContext {
-    /**
-     * type register in.
-     */
-    regIn?: string;
-}
 
 
 /**
@@ -43,8 +30,8 @@ export class DesignDecorAction extends ExecDecoratorAtion {
 export abstract class DesignDecorScope extends IocDecorScope<DesignContext> implements IActionSetup {
 
     protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
-        const register = ctx.injector.getInstance(DecorsRegisterer);
-        const registerer = register.getRegisterer(scope);
+        const design = ctx.injector.getInstance(DesignRegisterer);
+        const registerer = design.getRegisterer(scope);
         const decors = ctx.targetReflect.decors;
         return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
     }
@@ -58,14 +45,9 @@ export abstract class DesignDecorScope extends IocDecorScope<DesignContext> impl
 export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
-        this.actInjector.getInstance(DesignRegisterer)
-            .register(Injectable, cls, TypeProviderAction)
-            .register(Singleton, cls, TypeProviderAction)
-            .register(Providers, cls, TypeProviderAction)
-            .register(Refs, cls, TypeProviderAction);
-
         this.use(AnnoRegInAction)
             .use(BeforeAnnoDecorScope)
+            .use(TypeProviderAction)
             .use(RegClassAction)
             .use(DesignClassDecorScope);
     }
@@ -73,10 +55,13 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
     const regIn = ctx.targetReflect.regIn;
+    const container = ctx.injector.getContainer();
     if (regIn === 'root') {
         ctx.regIn = regIn;
-        ctx.injector = ctx.injector.getContainer();
+        ctx.injector = container;
     }
+    const injector = ctx.injector;
+    container.get(REGISTERED).set(ctx.type, { provides: [], getInjector: () => injector });
     next();
 };
 
@@ -114,8 +99,6 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     } else {
         injector.set(type, factory);
     }
-
-    container.get(REGISTERED).set(type, () => injector);
 
     next();
 };
@@ -163,9 +146,10 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     const injector = ctx.injector;
     const type = tgReflect.type;
 
-
+    const registed = injector.getValue(REGISTERED).get(type);
     tgReflect.providers.forEach(anno => {
         let provide = injector.getToken(anno.provide, anno.alias);
+        registed.provides.push(provide);
         injector.bindProvider(provide, type);
     });
 
@@ -174,6 +158,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
             rf.provide ? rf.provide : type,
             type,
             rf.provide ? rf.alias : '');
+        registed.provides.push(tk);
     });
 
     // class private provider.
@@ -181,8 +166,8 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
         let refKey = injector.bindTagProvider(
             type,
             ...tgReflect.extProviders);
+        registed.provides.push(refKey);
     }
-
 
     next();
 };
@@ -252,12 +237,9 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
 export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
-        this.actInjector.getInstance(DesignRegisterer)
-            .register(Autorun, aftAnn, IocAutorunAction)
-            .register(IocExt, aftAnn, IocAutorunAction);
-
         this.use(AnnoDecorScope)
-            .use(AfterAnnoDecorScope);
+            .use(AfterAnnoDecorScope)
+            .use(IocAutorunAction);
     }
 }
 

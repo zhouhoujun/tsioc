@@ -1,4 +1,4 @@
-import { ITypeReflect, ClassMetadata, RegInMetadata, Token, ClassType, IProvider } from '@tsdi/ioc';
+import { ClassMetadata, RegInMetadata, Token, ClassType, IProvider, TypeReflect } from '@tsdi/ioc';
 
 
 /**
@@ -27,20 +27,9 @@ export interface IAnnotationMetadata<T = any> extends ClassMetadata, RegInMetada
 
 }
 
-export interface IAnnoationReflect extends ITypeReflect {
+export interface IAnnoationReflect extends TypeReflect {
 
-    /**
-     * get decorator providers.
-     */
-    getDecorProviders?(): IProvider;
+    annoDecor?: string;
 
-     /**
-     * get annoation.
-     *
-     * @template T
-     * @param {boolean} [clone] default true.
-     * @returns {T}
-     * @memberof IModuleReflect
-     */
-    getAnnoation?<T extends IAnnotationMetadata>(clone?: boolean): T;
+    annoMetadata?: IAnnotationMetadata;
 }

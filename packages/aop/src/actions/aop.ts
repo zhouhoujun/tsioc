@@ -1,12 +1,9 @@
-import {
-    RuntimeContext, lang, isClass, Type, isBaseType, DesignContext,
-    ITypeReflects, ActionInjectorToken
-} from '@tsdi/ioc';
+import { isClass, Type, isBaseType, RuntimeContext, DesignContext, refl} from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
-import { NonePointcut } from '../decorators';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
 import { AdvisorToken, AdviceMatcherToken } from '../tk';
+import { AopReflect } from '../types';
 
 
 /**
@@ -14,19 +11,20 @@ import { AdvisorToken, AdviceMatcherToken } from '../tk';
  */
 export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    let reflects = ctx.reflects;
-    if (!ctx.instance || !isValAspectTag(ctx.type, reflects)) {
+    const reflect = ctx.targetReflect as AopReflect;
+    if (!ctx.instance || !isValAspectTag(ctx.type, reflect)) {
         return next();
     }
 
-    let scope = reflects.getActionInjector().getInstance(ProceedingScope);
+    const actInjtor = ctx.injector.getContainer().getActionInjector();
+    let scope = actInjtor.getInstance(ProceedingScope);
 
     let target = ctx.instance;
     let targetType = ctx.type;
 
-    let className = lang.getClassName(targetType);
-    let decorators = ctx.targetReflect.defines.getPropertyDescriptors();
-    let advisor = reflects.getActionInjector().getInstance(AdvisorToken);
+    let className = reflect.class.className;
+    let decorators = reflect.class.getPropertyDescriptors();
+    let advisor = actInjtor.getInstance(AdvisorToken);
     let advicesMap = advisor.getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
@@ -54,12 +52,12 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
  */
 export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    let reflects = ctx.reflects;
-    if (!isValAspectTag(ctx.type, reflects)) {
+    const reflect = ctx.targetReflect as AopReflect;
+    if (!isValAspectTag(ctx.type, reflect)) {
         return next();
     }
 
-    reflects.getActionInjector().getInstance(ActionInjectorToken)
+    ctx.injector.getContainer().getActionInjector()
         .getInstance(ProceedingScope)
         .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.providers);
 
@@ -75,12 +73,12 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
  */
 export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    let reflects = ctx.reflects;
-    if (!ctx.instance || !isValAspectTag(ctx.type, reflects)) {
+    const reflect = ctx.targetReflect as AopReflect;
+    if (!ctx.instance || !isValAspectTag(ctx.type, reflect)) {
         return next();
     }
 
-    reflects.getActionInjector().getInstance(ActionInjectorToken)
+    ctx.injector.getContainer().getActionInjector()
         .getInstance(ProceedingScope)
         .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.providers);
 
@@ -94,8 +92,8 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
  */
 export const RegistAspectAction = function (ctx: DesignContext, next: () => void): void {
     let type = ctx.type;
-    let aspectMgr = ctx.reflects.getActionInjector().getInstance(AdvisorToken);
-    aspectMgr.add(type);
+    let advisor = ctx.injector.getContainer().getActionInjector().getInstance(AdvisorToken);
+    advisor.add(type);
     next();
 };
 
@@ -106,17 +104,19 @@ export const RegistAspectAction = function (ctx: DesignContext, next: () => void
  */
 export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    let reflects = ctx.reflects;
-    if (!isValAspectTag(ctx.type, reflects)) {
+    const reflect = ctx.targetReflect as AopReflect;
+    if (!isValAspectTag(ctx.type, reflect)) {
         return next();
     }
 
-    let advisor = reflects.getActionInjector().getInstance(AdvisorToken);
-    let matcher = reflects.getActionInjector().getInstance(AdviceMatcherToken);
+    const actInjtor = ctx.injector.getContainer().getActionInjector();
+    let advisor = actInjtor.getInstance(AdvisorToken);
+    let matcher = actInjtor.getInstance(AdviceMatcherToken);
     let targetType = ctx.type;
 
-    advisor.aspects.forEach((adviceMetas, type) => {
-        let matchpoints = matcher.match(type, targetType, adviceMetas, ctx.instance);
+    advisor.aspects.forEach(type => {
+        let aopRef = refl.get<AopReflect>(type);
+        let matchpoints = matcher.match(type, targetType, aopRef.advices, ctx.instance);
         matchpoints.forEach(mpt => {
             let name = mpt.name;
             let advice = mpt.advice;
@@ -180,12 +180,12 @@ function equals(a: Advicer, b: Advicer) {
  * @param {Type} targetType
  * @returns {boolean}
  */
-function isValAspectTag(targetType: Type, reflects: ITypeReflects): boolean {
+function isValAspectTag(targetType: Type, reflect: AopReflect): boolean {
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
     if (targetType.ρNPT) {
         return false;
     }
-    return !reflects.hasMetadata(NonePointcut, targetType)
+    return !reflect.nonePointcut
 }

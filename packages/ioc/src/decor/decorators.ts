@@ -32,9 +32,11 @@ export interface IAbstractDecorator {
  *
  * @Abstract
  */
-export const Abstract: IAbstractDecorator = createClassDecorator<ClassMetadata>('Abstract', null, (metadata) => {
-    metadata.abstract = true;
-    return metadata;
+export const Abstract: IAbstractDecorator = createClassDecorator<ClassMetadata>('Abstract', {
+    append: (metadata) => {
+        metadata.abstract = true;
+        return metadata;
+    }
 });
 
 /**
@@ -213,7 +215,7 @@ export interface IInjectableDecorator {
  *
  * @Injectable
  */
-export const Injectable: IInjectableDecorator = createClassDecorator<InjectableMetadata>('Injectable', true);
+export const Injectable: IInjectableDecorator = createClassDecorator<InjectableMetadata>('Injectable', { classAnno: true });
 
 
 /**
@@ -250,15 +252,17 @@ export interface IProvidersDecorator {
  *
  * @Providers
  */
-export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isArray(arg)) {
-            ctx.metadata.providers = arg;
-            ctx.next(next);
+export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isArray(arg)) {
+                ctx.metadata.providers = arg;
+                ctx.next(next);
+            }
         }
-    }
-]) as IProvidersDecorator;
+    ]
+}) as IProvidersDecorator;
 
 
 
@@ -307,29 +311,31 @@ export interface IRefsDecorator {
  *
  * @Refs
  */
-export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isToken(arg)) {
-            ctx.metadata.refs = { target: arg };
-            ctx.next(next);
+export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isToken(arg)) {
+                ctx.metadata.refs = { target: arg };
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isToken(arg)) {
+                ctx.metadata.refs.provide = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.refs.alias = arg;
+                ctx.next(next);
+            }
         }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isToken(arg)) {
-            ctx.metadata.refs.provide = arg;
-            ctx.next(next);
-        }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg)) {
-            ctx.metadata.refs.alias = arg;
-            ctx.next(next);
-        }
-    }
-]) as IRefsDecorator;
+    ]
+}) as IRefsDecorator;
 
 
 /**
@@ -381,10 +387,13 @@ export interface ISingletonDecorator {
  *
  * @Singleton
  */
-export const Singleton: ISingletonDecorator = createClassDecorator<ClassMetadata>('Singleton', null, (metadata) => {
-    metadata.singleton = true;
-    return metadata;
-}, true) as ISingletonDecorator;
+export const Singleton: ISingletonDecorator = createClassDecorator<ClassMetadata>('Singleton', {
+    append: (metadata) => {
+        metadata.singleton = true;
+        return metadata;
+    },
+    classAnno: true
+}) as ISingletonDecorator;
 
 
 
@@ -426,13 +435,14 @@ export interface IocExtDecorator {
  *
  * @IocExt
  */
-export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('IocExt', null,
-    (metadata) => {
+export const IocExt: IocExtDecorator = createDecorator<AutorunMetadata>('IocExt', {
+    append: (metadata) => {
         metadata.autorun = 'setup';
         metadata.singleton = true;
         metadata.regIn = 'root';
         return metadata;
-    }) as IocExtDecorator;
+    }
+}) as IocExtDecorator;
 
 
 
@@ -480,20 +490,23 @@ export interface IAutorunDecorator {
  *
  * @Autorun
  */
-export const Autorun: IAutorunDecorator = createClassMethodDecorator<AutorunMetadata>('Autorun', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg) || isNumber(arg)) {
-            if (isString(arg)) {
-                ctx.metadata.autorun = arg;
-                ctx.next(next);
-            } else {
-                ctx.metadata.order = arg;
-                ctx.next(next);
+export const Autorun: IAutorunDecorator = createClassMethodDecorator<AutorunMetadata>('Autorun', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg) || isNumber(arg)) {
+                if (isString(arg)) {
+                    ctx.metadata.autorun = arg;
+                    ctx.next(next);
+                } else {
+                    ctx.metadata.order = arg;
+                    ctx.next(next);
+                }
             }
         }
+    ],
+    append: (metadata) => {
+        metadata.singleton = true;
+        return metadata;
     }
-], (metadata) => {
-    metadata.singleton = true;
-    return metadata;
 }) as IAutorunDecorator;

@@ -1,6 +1,5 @@
-import { Type, ObjectMap, Provider } from '@tsdi/ioc';
+import { Type, Provider } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
-import { AdviceMetadata } from './metadatas';
 
 /**
  * aspect and advices manager.
@@ -9,13 +8,7 @@ import { AdviceMetadata } from './metadatas';
  * @interface IAdvisor
  */
 export interface IAdvisor {
-    /**
-     * aspects
-     *
-     * @type {Map<Type, ObjectMap<AdviceMetadata[]>>}
-     * @memberof IAdvisor
-     */
-    aspects: Map<Type, ObjectMap<AdviceMetadata[]>>;
+    aspects: Type[];
     /**
      * advices
      *

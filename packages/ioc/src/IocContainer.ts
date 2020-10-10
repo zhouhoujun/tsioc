@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { ClassType, Type } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { InjectToken, Token, Factory, SymbolType, Provider, InstanceFactory } from './tokens';
 import { IInjector } from './IInjector';
@@ -6,7 +6,7 @@ import { IIocContainer } from './IIocContainer';
 import { registerCores } from './utils/regs';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/act';
-import { DesignContext } from './actions/des-act';
+import { DesignContext } from './actions/reg';
 import { DesignLifeScope } from './actions/design';
 import { InjectorFactoryToken, PROVIDERS, REGISTERED } from './utils/tk';
 
@@ -36,8 +36,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * get injector
      * @param type
      */
-    getInjector(type: Type): IInjector {
-        return this.get(REGISTERED).get(type)?.() || null;
+    getInjector(type: ClassType): IInjector {
+        return this.get(REGISTERED).get(type)?.getInjector() || this;
     }
 
     createInjector(): IInjector {

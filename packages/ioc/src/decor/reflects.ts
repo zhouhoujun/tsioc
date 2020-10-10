@@ -1,14 +1,69 @@
 import { Action, Actions } from '../Action';
 import { ClassType, Type } from '../types';
-import { Handler, isDefined, isFunction, lang } from '../utils/lang';
-import { DecorDefine, ParameterMetadata, PropertyMetadata, TypeReflect, RefMetadata, ClassMetadata } from './metadatas';
+import { chain, Handler, isArray, isClass, isDefined, isFunction, lang } from '../utils/lang';
+import { DecorDefine, ParameterMetadata, PropertyMetadata, TypeReflect, ProvidersMetadata, ClassMetadata, AutorunMetadata, ProviderMetadata, DecoratorType } from './metadatas';
 import { TypeDefine } from './typedef';
 
 
 export namespace refl {
 
+    export type DecorActionType = 'inject' | 'annoation' | 'autorun' | 'providers';
+
     export interface DecorContext extends DecorDefine {
         reflect: TypeReflect;
+    }
+
+    export interface DecorHanleOption {
+        type: DecoratorType;
+        handles?: Handler<DecorContext>[];
+    }
+
+    /**
+     * decorator register options.
+     */
+    export interface DecorRegisterOption {
+        /**
+         * decorator metadata store handler.
+         */
+        handler?: DecorHanleOption[];
+        actionType?: DecorActionType | DecorActionType[];
+    }
+
+    const decorsHandles = new Map<string, Map<DecoratorType, Handler<DecorContext>[]>>();
+
+    export function registerDecror(decor: string, options: DecorRegisterOption) {
+        if (options.actionType) {
+            isArray(options.actionType) ?
+                options.actionType.forEach(a => regActionType(decor, a))
+                : regActionType(decor, options.actionType);
+        }
+        if (options.handler) {
+            if (!decorsHandles.has(decor)) {
+                decorsHandles.set(decor, new Map());
+            }
+            const dechd = decorsHandles.get(decor);
+            options.handler.forEach(d => {
+                if (d.handles) {
+                    dechd.set(d.type, [...dechd.get(d.type), ...d.handles]);
+                }
+            });
+        }
+    }
+
+    function regActionType(decor: string, type: DecorActionType) {
+        switch (type) {
+            case 'annoation':
+                classAnnoDecors.push(decor);
+            case 'inject':
+                injectParamDecors.push(decor)
+                injectPropDecors.push(decor);
+            case 'autorun':
+                autorunDecors.push(decor);
+            case 'providers':
+                methodProvidersDecors.push(decor);
+            default:
+                return;
+        }
     }
 
     export const injectParamDecors = ['@Inject', '@AutoWired', '@Param'];
@@ -80,6 +135,41 @@ export namespace refl {
         return next();
     };
 
+    export const autorunDecors = ['@Autorun', '@IocExt'];
+    export const AutorunAction = (ctx: DecorContext, next: () => void) => {
+        if (autorunDecors.indexOf(ctx.decor) > 0) {
+            const reflect = ctx.reflect;
+            const meta = ctx.matedata as AutorunMetadata;
+            reflect.autoruns.push({
+                autorun: meta.autorun,
+                order: ctx.type === 'class' ? 0 : meta.order
+            });
+            reflect.autoruns = reflect.autoruns.sort((au1, au2) => {
+                return au1.order - au2.order;
+            });
+        }
+    }
+
+    export const methodProvidersDecors = ['@Providers'];
+    export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
+        if (autorunDecors.indexOf(ctx.decor) > 0) {
+            const reflect = ctx.reflect;
+            const meta = ctx.matedata as ProvidersMetadata;
+            if (!reflect.methodExtProviders.has(ctx.propertyKey)) {
+                reflect.methodExtProviders.set(ctx.propertyKey, []);
+            }
+            reflect.methodExtProviders.get(ctx.propertyKey).push(...meta.providers);
+        }
+    }
+
+    export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
+        if (decorsHandles.has(ctx.decor)) {
+            const handles = decorsHandles.get(ctx.decor).get(ctx.type);
+            chain(handles, ctx);
+        }
+        return next()
+    }
+
 
     class DecorActions extends Actions<DecorContext> {
         protected regAction(ac: any) {
@@ -88,6 +178,9 @@ export namespace refl {
         protected toHandle(ac: any): Handler {
             if (ac instanceof Action) {
                 return ac.toAction();
+            } else if (isClass(ac)) {
+                const act = new ac();
+                return act instanceof Action ? act.toAction() : null;
             } else if (isFunction(ac)) {
                 return ac;
             }
@@ -101,9 +194,20 @@ export namespace refl {
     export const paramDecorActions: Actions<DecorContext> = new DecorActions();
 
 
-    typeDecorActions.use(ClassAnnoAction);
-    propDecorActions.use(InjectPropAction);
-    paramDecorActions.use(InjectParamAction);
+    typeDecorActions
+        .use(ClassAnnoAction)
+        .use(AutorunAction)
+        .use(ExecuteDecorHandle);
+    methodDecorActions
+        .use(MethodProvidersAction)
+        .use(AutorunAction)
+        .use(ExecuteDecorHandle);
+    propDecorActions
+        .use(InjectPropAction)
+        .use(ExecuteDecorHandle);
+    paramDecorActions
+        .use(InjectParamAction)
+        .use(ExecuteDecorHandle);
 
     function dispatch(actions: Actions<DecorContext>, type: ClassType, define: DecorDefine) {
         const ctx = {
@@ -156,6 +260,17 @@ export namespace refl {
             targetReflect = {
                 type,
                 decors: [],
+                hasMetadata: (decor: string, type?: DecoratorType) => {
+                    type = type || 'class'
+                    return targetReflect.decors.some(d => d.decor === decor && d.type === type);
+                },
+                getDecorDefine: (decor: string, type?: DecoratorType) => {
+                    type = type || 'class'
+                    return targetReflect.decors.find(d => d.decor === decor && d.type === type)
+                },
+                getMetadata: (decor: string, type?: DecoratorType) => {
+                    return targetReflect.getDecorDefine(decor, type)?.matedata;
+                },
                 class: new TypeDefine(type),
                 providers: [],
                 extProviders: [],

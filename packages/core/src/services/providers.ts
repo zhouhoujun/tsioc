@@ -123,6 +123,5 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
             tokens.unshift(ctx.injector.getToken(ctx.token, ctx.alias));
         }
         ctx.tokens = tokens;
-        ctx.reflects = this.proxy().getTypeReflects();
     }
 }

@@ -1,6 +1,6 @@
 import {
-    MetadataExtends, createClassDecorator, ArgsIteratorAction, isUndefined, ClassType,
-    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token
+    createClassDecorator, isUndefined, ClassType,
+    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, DecoratorOption
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -62,26 +62,23 @@ export interface IBootDecorator {
  * @export
  * @template T
  * @param {string} name
- * @param {ArgsIteratorAction<T>[]} [actions]
- * @param {MetadataExtends<T>} [metaExtends]
+ * @param {DecoratorOption<T>} [options]
  * @returns {IBootDecorator}
  */
-export function createBootDecorator<T extends BootMetadata>(
-    name: string,
-    actions?: ArgsIteratorAction<T>[],
-    metaExtends?: MetadataExtends<T>): IBootDecorator {
-
-    return createClassDecorator<T>(name,
-        actions,
-        meta => {
-            if (metaExtends) {
-                metaExtends(meta as T);
+export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
+    const append = options?.append;
+    return createClassDecorator<T>(name, {
+        ...options,
+        append: (meta) => {
+            if (append) {
+                append(meta);
             }
             if (isUndefined(meta.singleton)) {
                 meta.singleton = true;
             }
             return meta;
-        }) as IBootDecorator;
+        }
+    }) as IBootDecorator;
 }
 
 
@@ -137,27 +134,24 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
  * @export
  * @template T
  * @param {string} name decorator name.
- * @param {MetadataAdapter} [actions]
- * @param {MetadataExtends<T>} [metaExt]
+ * @param {DecoratorOption<T>} [options]
  * @returns {IDIModuleDecorator<T>}
  */
-export function createDIModuleDecorator<T extends DIModuleMetadata>(
-    name: string,
-    actions?: ArgsIteratorAction<T>[],
-    metaExt?: MetadataExtends<T>): IDIModuleDecorator<T> {
-
-    return createClassDecorator<DIModuleMetadata>(name,
-        actions,
-        meta => {
-            if (metaExt) {
-                metaExt(meta as T);
+export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
+    const append = options?.append;
+    return createClassDecorator<DIModuleMetadata>(name, {
+        ...options,
+        append: (meta) => {
+            if (append) {
+                append(meta as T);
             }
 
             if (!meta.name && isClass(meta.token)) {
                 meta.name = lang.getClassName(meta.token);
             }
             meta.decorType = name;
-        }) as IDIModuleDecorator<T>;
+        }
+    }) as IDIModuleDecorator<T>;
 }
 
 /**
@@ -187,11 +181,6 @@ export interface MessageMetadata extends TypeMetadata, PatternMetadata {
      * @memberof ModuleConfig
      */
     parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none';
-    /**
-     * message handle regster in. use parent instead.
-     * @deprecated
-     */
-    regIn?: Type<MessageQueue<MessageContext>> | 'root' | 'none';
 
     /**
      * register this message handle before this handle.
@@ -243,8 +232,9 @@ export interface IMessageDecorator {
  *
  * @Message
  */
-export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message',
-    [
+export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message', {
+    actionType: 'annoation',
+    actions: [
         (ctx, next) => {
             let arg = ctx.currArg;
             if (isClass(arg) && ctx.args.length > 0) {
@@ -259,14 +249,15 @@ export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>(
                 // ctx.next(next);
             }
         }
-    ], meta => {
+    ],
+    append: (meta) => {
         meta.singleton = true;
         // default register in root.
         if (!meta.parent) {
-            meta.parent = meta.regIn || 'root';
+            meta.parent = 'root';
         }
-        meta.regIn = undefined;
-    }) as IMessageDecorator;
+    }
+}) as IMessageDecorator;
 
 
 /**
@@ -313,27 +304,28 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> {
  * @export
  * @template T
  * @param {string} name
- * @param {MetadataAdapter} [actions]
- * @param {MetadataExtends<T>} [metaExt]
+ * @param {DecoratorOption<T>} [options]
  * @returns {IBootstrapDecorator<T>}
  */
-export function createBootstrapDecorator<T extends BootstrapMetadata>(
-    name: string,
-    actions?: ArgsIteratorAction<T>[],
-    metaExt?: MetadataExtends<T>): IBootstrapDecorator<T> {
+export function createBootstrapDecorator<T extends BootstrapMetadata>(name: string, options?: DecoratorOption<T>): IBootstrapDecorator<T> {
 
-    return createClassDecorator<BootstrapMetadata>(name, actions, (meta: T) => {
-        if (metaExt) {
-            metaExt(meta);
-        }
-
-        // static main.
-        if (isClass(meta.type) && isFunction(meta.type['main'])) {
-            setTimeout(() => {
-                meta.type['main'](meta);
-            }, 100);
-        }
-        return meta;
+    return createClassDecorator<BootstrapMetadata>(name, {
+        handler: [
+            {
+                type: 'class',
+                handles: [
+                    (ctx, next) => {
+                        // static main.
+                        if (isClass(ctx.type) && isFunction(ctx.type['main'])) {
+                            setTimeout(() => {
+                                ctx.type['main'](ctx.matedata);
+                            }, 500);
+                        }
+                    }
+                ]
+            }
+        ],
+        ...options
     }) as IBootstrapDecorator<T>;
 }
 
