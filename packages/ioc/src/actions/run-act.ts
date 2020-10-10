@@ -7,7 +7,7 @@ import { parm, cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
 import { IActionSetup } from '../Action';
 import {
     IocRegAction, InitReflectAction, IocRegScope, RegContext,
-    ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
+    ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer
 } from './reg';
 import { IocCacheManager } from './cache';
 

@@ -81,8 +81,6 @@ export namespace refl {
     };
 
 
-
-
     class DecorActions extends Actions<DecorContext> {
         protected regAction(ac: any) {
 
@@ -107,33 +105,31 @@ export namespace refl {
     propDecorActions.use(InjectPropAction);
     paramDecorActions.use(InjectParamAction);
 
-
-    export function dispatchTypeDecor(type: ClassType, define: DecorDefine) {
-        typeDecorActions.execute({
+    function dispatch(actions: Actions<DecorContext>, type: ClassType, define: DecorDefine) {
+        const ctx = {
             ...define,
             reflect: getIfy(type)
+        }
+        actions.execute(ctx, () => {
+            ctx.reflect.decors.push(define);
         });
+        lang.cleanObj(ctx);
+    }
+
+    export function dispatchTypeDecor(type: ClassType, define: DecorDefine) {
+        dispatch(typeDecorActions, type, define);
     }
 
     export function dispatchPorpDecor(type: ClassType, define: DecorDefine) {
-        propDecorActions.execute({
-            ...define,
-            reflect: getIfy(type)
-        });
+        dispatch(propDecorActions, type, define);
     }
 
     export function dispatchMethodDecor(type: ClassType, define: DecorDefine) {
-        methodDecorActions.execute({
-            ...define,
-            reflect: getIfy(type)
-        });
+        dispatch(methodDecorActions, type, define);
     }
 
     export function dispatchParamDecor(type: ClassType, define: DecorDefine) {
-        paramDecorActions.execute({
-            ...define,
-            reflect: getIfy(type)
-        });
+        dispatch(paramDecorActions, type, define);
     }
 
     const refFiled = 'ρ_reflect_';

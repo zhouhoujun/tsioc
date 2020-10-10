@@ -2,9 +2,11 @@ import { Type } from '../types';
 import { lang, isFunction, isBaseType } from '../utils/lang';
 import { Token, isToken, Provider } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
-import { IParameter, IMethodAccessor, MethodType } from '../IMethodAccessor';
+import { IMethodAccessor, MethodType } from '../IMethodAccessor';
 import { RuntimeContext, RuntimeParamScope } from './run-act';
-import { INVOKED_PROVIDERS, TypeReflectsToken } from '../utils/tk';
+import { INVOKED_PROVIDERS } from '../utils/tk';
+import { refl } from '../decor/reflects';
+import { ParameterMetadata } from '../decor/metadatas';
 
 
 /**
@@ -44,12 +46,11 @@ export class MethodAccessor implements IMethodAccessor {
             instance = target;
         }
 
-        let reflects = injector.getValue(TypeReflectsToken);
-        let tgRefl = reflects.get(targetClass);
+        let tgRefl = refl.get(targetClass);
         let key: string;
         if (isFunction(propertyKey)) {
-            let descriptors = tgRefl.defines.getPropertyDescriptors();
-            key = tgRefl.defines.getPropertyName(propertyKey(descriptors as any) as TypedPropertyDescriptor<any>);
+            let descriptors = tgRefl.class.getPropertyDescriptors();
+            key = tgRefl.class.getPropertyName(propertyKey(descriptors as any) as TypedPropertyDescriptor<any>);
         } else {
             key = propertyKey;
         }
@@ -58,7 +59,7 @@ export class MethodAccessor implements IMethodAccessor {
             throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         }
 
-        let pds = tgRefl.methodParamProviders.get(key) || [];
+        let pds = tgRefl.methodExtProviders.get(key) || [];
         providers = providers.concat(pds);
         let parameters = tgRefl.methodParams.has(key) ? tgRefl.methodParams.get(key) : this.getParameters(injector, targetClass, instance, key);
         let providerMap = injector.getInstance(INVOKED_PROVIDERS).inject(...providers);
@@ -80,16 +81,16 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {any[]}
      * @memberof MethodAccessor
      */
-    createParams(injector: IInjector, params: IParameter[], ...providers: Provider[]): any[] {
+    createParams(injector: IInjector, params: ParameterMetadata[], ...providers: Provider[]): any[] {
         return this.resolveParams(injector, params, injector.getInstance(INVOKED_PROVIDERS).inject(...providers));
     }
 
-    protected resolveParams(injector: IInjector, params: IParameter[], providers: IProvider): any[] {
+    protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider): any[] {
         return params.map((param, index) => {
             if (param.provider && providers.has(param.provider)) {
-                return providers.get(param.provider);
-            } else if (param.name && providers.has(param.name)) {
-                return providers.get(param.name);
+                return providers.get(param.provider, param.alias);
+            } else if (param.paramName && providers.has(param.paramName)) {
+                return providers.get(param.paramName, param.alias);
             } else if (param.provider) {
                 return injector.get(param.provider, providers);
             } else if (isToken(param.type)) {
@@ -97,11 +98,11 @@ export class MethodAccessor implements IMethodAccessor {
                     return providers.get(param.type);
                 }
                 if (isFunction(param.type) && isBaseType(param.type)) {
-                    return undefined;
+                    return param.defaultValue;
                 }
                 return injector.get(param.type, providers);
             } else {
-                return undefined;
+                return param.defaultValue;
             }
         });
     }
@@ -115,7 +116,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {IParameter[]}
      * @memberof MethodAccessor
      */
-    getParameters<T>(container: IInjector, type: Type<T>): IParameter[];
+    getParameters<T>(container: IInjector, type: Type<T>): ParameterMetadata[];
     /**
      * get method parameters of type.
      *
@@ -127,8 +128,8 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {IParameter[]}
      * @memberof MethodAccessor
      */
-    getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): IParameter[];
-    getParameters<T>(injector: IInjector, type: Type<T>, instance?: T, propertyKey?: string): IParameter[] {
+    getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): ParameterMetadata[];
+    getParameters<T>(injector: IInjector, type: Type<T>, instance?: T, propertyKey?: string): ParameterMetadata[] {
         let ctx = {
             injector,
             type,

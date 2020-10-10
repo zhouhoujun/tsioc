@@ -43,21 +43,10 @@ export class DesignDecorAction extends ExecDecoratorAtion {
 export abstract class DesignDecorScope extends IocDecorScope<DesignContext> implements IActionSetup {
 
     protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
-        switch (scope) {
-            case befAnn:
-                return ctx.targetReflect.decorators.design.beforeAnnoDecors;
-            case cls:
-                return ctx.targetReflect.decorators.design.classDecors;
-            case ann:
-                return ctx.targetReflect.decorators.design.annoDecors;
-            case aftAnn:
-                return ctx.targetReflect.decorators.design.afterAnnoDecors;
-            case mth:
-                return ctx.targetReflect.decorators.design.methodDecors;
-            case prop:
-                return ctx.targetReflect.decorators.design.propsDecors;
-        }
-        return ctx.targetReflect.decorators.design.getDecortors(scope);
+        const register = ctx.injector.getInstance(DecorsRegisterer);
+        const registerer = register.getRegisterer(scope);
+        const decors = ctx.targetReflect.decors;
+        return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
     }
 
     setup() {
@@ -149,12 +138,8 @@ export class DesignClassDecorScope extends DesignDecorScope {
 export class DesignPropScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
-
-        this.actInjector.getInstance(DesignRegisterer)
-            .register(Inject, prop, PropProviderAction)
-            .register(AutoWired, prop, PropProviderAction);
-
-        this.use(DesignPropDecorScope);
+        this.use(PropProviderAction)
+            .use(DesignPropDecorScope);
     }
 }
 
@@ -174,47 +159,30 @@ export class DesignPropDecorScope extends DesignDecorScope {
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    let tgReflect = ctx.targetReflect;
-    let injector = ctx.injector;
-    let currDecor = ctx.currDecor;
-    if (!tgReflect.decorator) {
-        tgReflect.decorator = currDecor;
-    }
-    let targetType = ctx.type;
-    let metadatas = ctx.reflects.getMetadata<InjectableMetadata>(currDecor, targetType);
-    metadatas.forEach(anno => {
-        // bind all provider.
-        if (!anno) {
-            return;
-        }
-        if (!tgReflect.singleton) {
-            if (anno.singleton) {
-                tgReflect.singleton = anno.singleton;
-            }
-            if (anno.expires) {
-                tgReflect.expires = anno.expires;
-            }
-        }
-        if (anno.provide) {
-            let provide = injector.getToken(anno.provide, anno.alias);
-            tgReflect.provides.push(provide);
-            injector.bindProvider(provide, anno.type);
-        }
-        if (anno.refs && anno.refs.target) {
-            let tk = injector.bindRefProvider(anno.refs.target,
-                anno.refs.provide ? anno.refs.provide : anno.type,
-                anno.type,
-                anno.refs.provide ? anno.refs.alias : '');
-            tgReflect.provides.push(tk);
-        }
-        // class private provider.
-        if (anno.providers && anno.providers.length) {
-            let refKey = injector.bindTagProvider(
-                anno.type,
-                ...anno.providers);
-            tgReflect.provides.push(refKey);
-        }
+    const tgReflect = ctx.targetReflect;
+    const injector = ctx.injector;
+    const type = tgReflect.type;
+
+
+    tgReflect.providers.forEach(anno => {
+        let provide = injector.getToken(anno.provide, anno.alias);
+        injector.bindProvider(provide, type);
     });
+
+    tgReflect.refs.forEach(rf => {
+        let tk = injector.bindRefProvider(rf.target,
+            rf.provide ? rf.provide : type,
+            type,
+            rf.provide ? rf.alias : '');
+    });
+
+    // class private provider.
+    if (tgReflect.extProviders && tgReflect.extProviders.length) {
+        let refKey = injector.bindTagProvider(
+            type,
+            ...tgReflect.extProviders);
+    }
+
 
     next();
 };
@@ -225,37 +193,25 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
  * @export
  */
 export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
-    let refs = ctx.reflects;
     let injector = ctx.injector;
     let targetReflect = ctx.targetReflect;
-    targetReflect.defines.extendTypes.forEach(ty => {
-        let propMetas = refs.getPropertyMetadata<PropertyMetadata>(ctx.currDecor, ty);
-        Object.keys(propMetas).forEach(key => {
-            let props = propMetas[key];
-            props.forEach(prop => {
-                if (isClass(prop.provider) && !injector.hasRegister(prop.provider)) {
-                    injector.registerType(prop.provider);
-                }
-                if (isClass(prop.type) && !injector.hasRegister(prop.type)) {
-                    injector.registerType(prop.type);
-                }
-
-                if (!targetReflect.propProviders.has(key)) {
-                    targetReflect.propProviders.set(key, injector.getToken(prop.provider || prop.type, prop.alias));
-                }
-            });
+    targetReflect.propProviders.forEach((propMetas, name) => {
+        propMetas.forEach(prop => {
+            if (isClass(prop.provider) && !injector.hasRegister(prop.provider)) {
+                injector.registerType(prop.provider);
+            }
+            if (isClass(prop.type) && !injector.hasRegister(prop.type)) {
+                injector.registerType(prop.type);
+            }
         });
     });
+
+
     next();
 };
 
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
-
-        this.actInjector.getInstance(DesignRegisterer)
-            .register(AutoWired, mth, MthProviderAction)
-            .register(Providers, mth, MthProviderAction);
-
         this.use(DesignMthDecorScope);
     }
 }
@@ -269,36 +225,6 @@ export class DesignMthDecorScope extends DesignDecorScope {
 
 
 /**
- * bind method provider action.
- *
- * @export
- */
-export const MthProviderAction = function (ctx: DesignContext, next: () => void) {
-    ctx.targetReflect.defines.extendTypes.forEach(ty => {
-        let metas = ctx.reflects.getMethodMetadata<MethodMetadata>(ctx.currDecor, ty);
-        Object.keys(metas).forEach(propertyKey => {
-            let metadatas = metas[propertyKey];
-            let providers = [];
-            if (metadatas && isArray(metadatas) && metadatas.length > 0) {
-                metadatas.forEach(meta => {
-                    if (meta.providers && meta.providers.length > 0) {
-                        providers = providers.concat(meta.providers);
-                    }
-                });
-            }
-            if (ctx.targetReflect.methodParamProviders.has(propertyKey)) {
-                ctx.targetReflect.methodParamProviders.get(propertyKey).push(...providers);
-            } else {
-                ctx.targetReflect.methodParamProviders.set(propertyKey, providers);
-            }
-        });
-    });
-
-    next();
-};
-
-
-/**
  * method auto run action.
  *
  * @export
@@ -306,14 +232,15 @@ export const MthProviderAction = function (ctx: DesignContext, next: () => void)
  * @extends {IocDesignAction}
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
-    if (!ctx.reflects.hasMetadata(ctx.currDecor, ctx.type)) {
+    const injector = ctx.injector;
+    const autoruns = ctx.targetReflect.autoruns;
+    if (autoruns.length < 1) {
         return next();
     }
-    let injector = ctx.injector;
-    let metadatas = ctx.reflects.getMetadata<AutorunMetadata>(ctx.currDecor, ctx.type);
-    metadatas.forEach(meta => {
+
+    let instance = injector.get(ctx.token || ctx.type);
+    autoruns.forEach(meta => {
         if (meta && meta.autorun) {
-            let instance = injector.get(ctx.token || ctx.type);
             if (instance && isFunction(instance[meta.autorun])) {
                 injector.invoke(instance, meta.autorun);
             }
