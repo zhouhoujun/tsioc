@@ -38,108 +38,108 @@ export class RuntimeDecorAction extends ExecDecoratorAtion {
 }
 
 
-/**
- * bind parameter type action.
- *
- * @export
- * @class BindParameterTypeAction
- * @extends {ActionComposite}
- */
-export const BindDeignParamTypeAction = function (ctx: RuntimeContext, next: () => void) {
-    let propertyKey = ctx.propertyKey;
-    if (!ctx.targetReflect.methodParams.has(propertyKey)) {
-        ctx.targetReflect.methodParams.set(
-            propertyKey,
-            createDesignParams(ctx, ctx.type, ctx.instance, propertyKey));
-    }
-    next();
-};
+// /**
+//  * bind parameter type action.
+//  *
+//  * @export
+//  * @class BindParameterTypeAction
+//  * @extends {ActionComposite}
+//  */
+// export const BindDeignParamTypeAction = function (ctx: RuntimeContext, next: () => void) {
+//     let propertyKey = ctx.propertyKey;
+//     if (!ctx.targetReflect.methodParams.has(propertyKey)) {
+//         ctx.targetReflect.methodParams.set(
+//             propertyKey,
+//             createDesignParams(ctx, ctx.type, ctx.instance, propertyKey));
+//     }
+//     next();
+// };
 
-/**
- * bind parameter type action.
- *
- */
-export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => void) {
-    let propertyKey = ctx.propertyKey;
-    let targetReflect = ctx.targetReflect;
-    if (targetReflect.methodParams.has(propertyKey)) {
-        return next();
-    }
+// /**
+//  * bind parameter type action.
+//  *
+//  */
+// export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => void) {
+//     let propertyKey = ctx.propertyKey;
+//     let targetReflect = ctx.targetReflect;
+//     if (targetReflect.methodParams.has(propertyKey)) {
+//         return next();
+//     }
 
-    let target = ctx.instance;
-    let type = ctx.type;
+//     let target = ctx.instance;
+//     let type = ctx.type;
 
-    let designParams = createDesignParams(ctx, type, target, propertyKey);
+//     let designParams = createDesignParams(ctx, type, target, propertyKey);
 
-    let injector = ctx.injector;
-    let currDecoractor = ctx.currDecor;
-    let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
-    if (isArray(parameters) && parameters.length) {
-        parameters.forEach(params => {
-            let parm = (isArray(params) && params.length > 0) ? params[0] : null;
-            if (parm && parm.index >= 0) {
-                if (isClass(parm.provider)) {
-                    if (!injector.hasRegister(parm.provider)) {
-                        injector.registerType(parm.provider);
-                    }
-                }
-                if (isClass(parm.type)) {
-                    if (!injector.hasRegister(parm.type)) {
-                        injector.registerType(parm.type);
-                    }
-                }
-                if (isToken(parm.provider)) {
-                    designParams[parm.index].provider = injector.getTokenKey(parm.provider, parm.alias);
-                }
-            }
-        });
-    }
+//     let injector = ctx.injector;
+//     let currDecoractor = ctx.currDecor;
+//     let parameters = (target || propertyKey !== 'constructor') ? refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, target, propertyKey) : refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, type);
+//     if (isArray(parameters) && parameters.length) {
+//         parameters.forEach(params => {
+//             let parm = (isArray(params) && params.length > 0) ? params[0] : null;
+//             if (parm && parm.index >= 0) {
+//                 if (isClass(parm.provider)) {
+//                     if (!injector.hasRegister(parm.provider)) {
+//                         injector.registerType(parm.provider);
+//                     }
+//                 }
+//                 if (isClass(parm.type)) {
+//                     if (!injector.hasRegister(parm.type)) {
+//                         injector.registerType(parm.type);
+//                     }
+//                 }
+//                 if (isToken(parm.provider)) {
+//                     designParams[parm.index].provider = injector.getTokenKey(parm.provider, parm.alias);
+//                 }
+//             }
+//         });
+//     }
 
-    if (propertyKey === 'constructor') {
-        if (designParams.some(pa => !pa.type && !pa.provider)) {
-            targetReflect.class.extendTypes.forEach(ty => {
-                if (ty === ctx.type) {
-                    return true;
-                }
+//     if (propertyKey === 'constructor') {
+//         if (designParams.some(pa => !pa.type && !pa.provider)) {
+//             targetReflect.class.extendTypes.forEach(ty => {
+//                 if (ty === ctx.type) {
+//                     return true;
+//                 }
 
-                let parameters = refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, ty);
-                if (parameters.length < 1) {
-                    return true;
-                }
+//                 let parameters = refs.getParamerterMetadata<ParameterMetadata>(currDecoractor, ty);
+//                 if (parameters.length < 1) {
+//                     return true;
+//                 }
 
-                let names = refs.getParamerterNames(ty, propertyKey);
-                if (names.length < 1) {
-                    return true;
-                }
+//                 let names = refs.getParamerterNames(ty, propertyKey);
+//                 if (names.length < 1) {
+//                     return true;
+//                 }
 
-                parameters.map((params, idx) => {
-                    let parm = (isArray(params) && params.length > 0) ? params[0] : null;
-                    let n = (parm && names.length > parm.index) ? names[parm.index] : names[idx] || '';
-                    if (!parm) {
-                        return { name: n };
-                    }
-                    return {
-                        name: n,
-                        provider: injector.getTokenKey(parm.provider, parm.alias)
-                    }
-                }).forEach(parm => {
-                    if (parm.provider) {
-                        designParams.forEach(pa => {
-                            if (!pa.type && !pa.provider && pa.paramName === parm.name) {
-                                pa.provider = parm.provider;
-                            }
-                        });
-                    }
-                });
-                return false;
-            });
-        }
-    }
+//                 parameters.map((params, idx) => {
+//                     let parm = (isArray(params) && params.length > 0) ? params[0] : null;
+//                     let n = (parm && names.length > parm.index) ? names[parm.index] : names[idx] || '';
+//                     if (!parm) {
+//                         return { name: n };
+//                     }
+//                     return {
+//                         name: n,
+//                         provider: injector.getTokenKey(parm.provider, parm.alias)
+//                     }
+//                 }).forEach(parm => {
+//                     if (parm.provider) {
+//                         designParams.forEach(pa => {
+//                             if (!pa.type && !pa.provider && pa.paramName === parm.name) {
+//                                 pa.provider = parm.provider;
+//                             }
+//                         });
+//                     }
+//                 });
+//                 return false;
+//             });
+//         }
+//     }
 
-    targetReflect.methodParams.set(propertyKey, designParams);
+//     targetReflect.methodParams.set(propertyKey, designParams);
 
-    next();
-};
+//     next();
+// };
 
 /**
  * resolve constructor args action.
@@ -421,13 +421,8 @@ export class RuntimeParamScope extends IocRegScope<RuntimeContext> implements IA
 
     setup() {
 
-        this.actInjector.getInstance(RuntimeRegisterer)
-            .register(Inject, parm, BindParamTypeAction)
-            .register(AutoWired, parm, BindParamTypeAction)
-            .register(Param, parm, BindParamTypeAction);
-
-        this.use(RuntimeParamDecorScope)
-            .use(BindDeignParamTypeAction);
+        this.use(RuntimeParamDecorScope);
+            // .use(BindDeignParamTypeAction);
     }
 }
 

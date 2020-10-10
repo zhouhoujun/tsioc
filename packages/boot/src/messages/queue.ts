@@ -1,4 +1,7 @@
-import { isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy, TypeReflectsToken, ClassType, isInjector, Singleton } from '@tsdi/ioc';
+import {
+    isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken,
+    Action, AsyncHandler, InjectorProxyToken, InjectorProxy, ClassType, isInjector, Singleton
+} from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './IMessageQueue';
@@ -186,7 +189,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         if (handleType instanceof Action) {
             return handleType.toAction() as AsyncHandler<T>;
         } else if (isToken(handleType)) {
-            const handle = this.getInjector().get<Action>(handleType) ?? this.getInjector().getValue(TypeReflectsToken).get(handleType as ClassType)?.getInjector()?.get(handleType);
+            const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().getInjector(handleType as ClassType)?.get(handleType);
             return handle?.toAction?.() as AsyncHandler<T>;
         } else if (isFunction(handleType)) {
             return handleType as AsyncHandler<T>;

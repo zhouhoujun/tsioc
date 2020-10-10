@@ -3,10 +3,11 @@ import { lang, isFunction, isBaseType } from '../utils/lang';
 import { Token, isToken, Provider } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';
-import { RuntimeContext, RuntimeParamScope } from './run-act';
+import { RuntimeParamScope } from './run-act';
 import { INVOKED_PROVIDERS } from '../utils/tk';
 import { refl } from '../decor/reflects';
 import { ParameterMetadata } from '../decor/metadatas';
+import { RuntimeContext } from './reg';
 
 
 /**

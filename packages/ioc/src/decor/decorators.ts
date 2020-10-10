@@ -4,7 +4,7 @@ import { isToken, Token, ProvideToken, Provider } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, TypeMetadata
 } from './metadatas';
 import {
     createDecorator, createClassDecorator, ClassMethodDecorator, createClassMethodDecorator,
@@ -20,7 +20,7 @@ export interface IAbstractDecorator {
      *
      * @param {T} [metadata] metadata map.
      */
-    (metadata?: ClassMetadata): ClassDecorator;
+    (metadata?: TypeMetadata): ClassDecorator;
     /**
      * define class is abstract class.
      */
@@ -32,7 +32,7 @@ export interface IAbstractDecorator {
  *
  * @Abstract
  */
-export const Abstract: IAbstractDecorator = createClassDecorator<ClassMetadata>('Abstract', {
+export const Abstract: IAbstractDecorator = createClassDecorator<TypeMetadata>('Abstract', {
     append: (metadata) => {
         metadata.abstract = true;
         return metadata;

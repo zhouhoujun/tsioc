@@ -32,6 +32,10 @@ export interface TypeMetadata extends Metadate {
      * @memberof TypeMetadata
      */
     type?: ClassType;
+    /**
+     * is abstract or not.
+     */
+    abstract?: boolean;
 }
 
 
@@ -238,10 +242,9 @@ export interface ParameterMetadata extends PropertyMetadata {
  *
  * @export
  * @interface ParamPropMetadata
- * @extends {PropertyMetadata}
  * @extends {ParameterMetadata}
  */
-export interface ParamPropMetadata extends PropertyMetadata, ParameterMetadata {
+export interface ParamPropMetadata extends ParameterMetadata {
 
 }
 
@@ -293,20 +296,17 @@ export interface PatternMetadata {
  * @export
  * @interface ClassMetadata
  */
-export interface ClassMetadata extends PatternMetadata, ProviderMetadata, ProvidersMetadata, RefMetadata, TypeMetadata {
-    /**
-     * is abstract or not.
-     */
-    abstract?: boolean;
+export interface ClassMetadata extends PatternMetadata, ProviderMetadata, RefMetadata, TypeMetadata {
+
 }
 
 /**
- * Injectable. default a
+ * Injectable decorator metadata.
  *
  * @export
  * @interface InjectableMetadata
  */
-export interface InjectableMetadata extends ClassMetadata, RegInMetadata {
+export interface InjectableMetadata extends ClassMetadata, RegInMetadata, ProvidersMetadata {
 
 }
 
@@ -341,9 +341,8 @@ export interface AutorunDefine {
     order?: number;
 }
 
-
-
-export type DecoratorType = 'class' | 'property' | 'method' | 'parameter';
+export type DecorMemberType = 'property' | 'method' | 'parameter';
+export type DecoratorType = 'class' | DecorMemberType;
 
 export interface DecorDefine {
     /**
@@ -363,12 +362,7 @@ export interface DecorDefine {
 /**
  * type reflect metadata.
  */
-export interface TypeReflect extends PatternMetadata, RegInMetadata {
-    type: ClassType;
-    /**
-     * is abstract or not.
-     */
-    abstract?: boolean;
+export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadata {
     /**
      * decorator defines of the class type.
      */
@@ -380,10 +374,10 @@ export interface TypeReflect extends PatternMetadata, RegInMetadata {
      * @param type
      */
     hasMetadata(decor: string, type?: DecoratorType): boolean;
-
-    getMetadata(decor: string, type?: DecoratorType): any;
-
-    getDecorDefine(decor: string, type?: DecoratorType): DecorDefine;
+    getDecorDefine(decor: string): DecorDefine;
+    getDecorDefine(decor: string, propertyKey: string, type: DecorMemberType): DecorDefine;
+    getMetadata(decor: string): any;
+    getMetadata(decor: string, propertyKey: string, type: DecorMemberType): any;
     /**
      * class define.
      */

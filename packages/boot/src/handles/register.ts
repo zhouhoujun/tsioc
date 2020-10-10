@@ -1,8 +1,7 @@
-import { IHandle } from './Handle';
 import { DecorsRegisterer, AsyncHandler, DecorRegisterer } from '@tsdi/ioc';
 
 
-export class IocBuildDecoratorRegisterer<T extends IHandle = IHandle> extends DecorRegisterer<AsyncHandler> {
+export class IocBuildDecoratorRegisterer extends DecorRegisterer<AsyncHandler> {
 
 }
 
@@ -14,7 +13,7 @@ export class IocBuildDecoratorRegisterer<T extends IHandle = IHandle> extends De
  * @extends {DecorsRegisterer<T, AsyncHandler>}
  * @template T
  */
-export class StartupDecoratorRegisterer<T extends IHandle = IHandle> extends DecorsRegisterer<AsyncHandler> {
+export class StartupDecoratorRegisterer extends DecorsRegisterer<AsyncHandler> {
 
     protected createRegister(): IocBuildDecoratorRegisterer {
         return new IocBuildDecoratorRegisterer();

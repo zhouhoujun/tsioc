@@ -1,13 +1,13 @@
 import { Action, Actions } from '../Action';
 import { ClassType, Type } from '../types';
 import { chain, Handler, isArray, isClass, isDefined, isFunction, lang } from '../utils/lang';
-import { DecorDefine, ParameterMetadata, PropertyMetadata, TypeReflect, ProvidersMetadata, ClassMetadata, AutorunMetadata, ProviderMetadata, DecoratorType } from './metadatas';
+import { DecorDefine, ParameterMetadata, PropertyMetadata, TypeReflect, ProvidersMetadata, ClassMetadata, AutorunMetadata, DecorMemberType, DecoratorType } from './metadatas';
 import { TypeDefine } from './typedef';
 
 
 export namespace refl {
 
-    export type DecorActionType = 'inject' | 'annoation' | 'autorun' | 'providers';
+    export type DecorActionType = 'propInject' | 'paramInject' | 'annoation' | 'autorun' | 'typeProviders' | 'methodProviders';
 
     export interface DecorContext extends DecorDefine {
         reflect: TypeReflect;
@@ -53,22 +53,31 @@ export namespace refl {
     function regActionType(decor: string, type: DecorActionType) {
         switch (type) {
             case 'annoation':
-                classAnnoDecors.push(decor);
-            case 'inject':
-                injectParamDecors.push(decor)
-                injectPropDecors.push(decor);
+                typeAnnoDecors.push(decor);
+                break;
+            case 'paramInject':
+                paramInjectDecors.push(decor);
+                break;
+            case 'propInject':
+                propInjectDecors.push(decor);
+                break;
             case 'autorun':
                 autorunDecors.push(decor);
-            case 'providers':
+                break;
+            case 'typeProviders':
+                typeProvidersDecors.push(decor);
+                break;
+            case 'methodProviders':
                 methodProvidersDecors.push(decor);
+                break;
             default:
                 return;
         }
     }
 
-    export const injectParamDecors = ['@Inject', '@AutoWired', '@Param'];
-    export const InjectParamAction = (ctx: DecorContext, next: () => void) => {
-        if (injectParamDecors.indexOf(ctx.decor) > 0) {
+    export const paramInjectDecors = ['@Inject', '@AutoWired', '@Param'];
+    export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
+        if (paramInjectDecors.indexOf(ctx.decor) > 0) {
             const reflect = ctx.reflect;
             const meta = ctx.matedata as ParameterMetadata;
             const name = reflect.class.getParamName(ctx.propertyKey, ctx.parameterIndex);
@@ -88,9 +97,9 @@ export namespace refl {
         return next();
     };
 
-    export const injectPropDecors = ['@Inject', '@AutoWired'];
-    export const InjectPropAction = (ctx: DecorContext, next: () => void) => {
-        if (injectPropDecors.indexOf(ctx.decor) > 0) {
+    export const propInjectDecors = ['@Inject', '@AutoWired'];
+    export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
+        if (propInjectDecors.indexOf(ctx.decor) > 0) {
             const reflect = ctx.reflect;
             const meta = ctx.matedata as PropertyMetadata;
             if (!reflect.propProviders.has(ctx.propertyKey)) {
@@ -108,9 +117,9 @@ export namespace refl {
         return next();
     };
 
-    export const classAnnoDecors = ['@Injectable', '@Singleton', '@Abstract', '@Refs', '@Providers'];
-    export const ClassAnnoAction = (ctx: DecorContext, next: () => void) => {
-        if (classAnnoDecors.indexOf(ctx.decor) > 0) {
+    export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract', '@Refs'];
+    export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
+        if (typeAnnoDecors.indexOf(ctx.decor) > 0) {
             const reflect = ctx.reflect;
             const meta = ctx.matedata as ClassMetadata;
             if (meta.abstract) {
@@ -125,9 +134,7 @@ export namespace refl {
             if (meta.expires) {
                 reflect.expires = meta.expires;
             }
-            if (meta.providers) {
-                reflect.extProviders.push(...meta.providers);
-            }
+
             if (meta.refs) {
                 reflect.refs.push(meta.refs);
             }
@@ -148,11 +155,24 @@ export namespace refl {
                 return au1.order - au2.order;
             });
         }
+        return next();
     }
 
-    export const methodProvidersDecors = ['@Providers'];
+    export const typeProvidersDecors = ['@Injectable', '@Providers'];
+    export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
+        if (typeProvidersDecors.indexOf(ctx.decor) > 0) {
+            const reflect = ctx.reflect;
+            const meta = ctx.matedata as ProvidersMetadata;
+            if (meta.providers) {
+                reflect.extProviders.push(...meta.providers);
+            }
+        }
+        return next();
+    }
+
+    export const methodProvidersDecors = ['@Providers', '@AutoWired'];
     export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
-        if (autorunDecors.indexOf(ctx.decor) > 0) {
+        if (methodProvidersDecors.indexOf(ctx.decor) > 0) {
             const reflect = ctx.reflect;
             const meta = ctx.matedata as ProvidersMetadata;
             if (!reflect.methodExtProviders.has(ctx.propertyKey)) {
@@ -160,6 +180,7 @@ export namespace refl {
             }
             reflect.methodExtProviders.get(ctx.propertyKey).push(...meta.providers);
         }
+        return next();
     }
 
     export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
@@ -195,7 +216,8 @@ export namespace refl {
 
 
     typeDecorActions
-        .use(ClassAnnoAction)
+        .use(TypeAnnoAction)
+        .use(TypeProvidersAction)
         .use(AutorunAction)
         .use(ExecuteDecorHandle);
     methodDecorActions
@@ -203,10 +225,10 @@ export namespace refl {
         .use(AutorunAction)
         .use(ExecuteDecorHandle);
     propDecorActions
-        .use(InjectPropAction)
+        .use(PropInjectAction)
         .use(ExecuteDecorHandle);
     paramDecorActions
-        .use(InjectParamAction)
+        .use(ParamInjectAction)
         .use(ExecuteDecorHandle);
 
     function dispatch(actions: Actions<DecorContext>, type: ClassType, define: DecorDefine) {
@@ -264,12 +286,15 @@ export namespace refl {
                     type = type || 'class'
                     return targetReflect.decors.some(d => d.decor === decor && d.type === type);
                 },
-                getDecorDefine: (decor: string, type?: DecoratorType) => {
-                    type = type || 'class'
-                    return targetReflect.decors.find(d => d.decor === decor && d.type === type)
+                getDecorDefine: (decor: string, propertyKey?: string, type?: DecoratorType) => {
+                    if (!propertyKey) {
+                        type = 'class';
+                        return targetReflect.decors.find(d => d.decor === decor && d.type === type);
+                    }
+                    return targetReflect.decors.find(d => d.decor === decor && d.propertyKey === propertyKey && d.type === type);
                 },
-                getMetadata: (decor: string, type?: DecoratorType) => {
-                    return targetReflect.getDecorDefine(decor, type)?.matedata;
+                getMetadata: (decor: string, propertyKey?: string, type?: DecorMemberType) => {
+                    return targetReflect.getDecorDefine(decor, propertyKey, type)?.matedata;
                 },
                 class: new TypeDefine(type),
                 providers: [],

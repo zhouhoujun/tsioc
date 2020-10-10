@@ -299,7 +299,7 @@ export namespace lang {
 /**
 *  action handle.
 */
-export type Handler<T = any, TR = void> = (ctx: T, next?: () => TR) => TR;
+export type Handler<T = any, TR = any> = (ctx: T, next?: () => TR) => TR;
 
 /**
  * async action.
