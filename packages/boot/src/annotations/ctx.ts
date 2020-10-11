@@ -1,6 +1,6 @@
 import {
-    Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, IProvider, Destoryable,
-    PROVIDERS, SymbolType, Provider, isInjector, isArray, isBoolean, refl
+    Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, PROVIDERS,
+    IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, refl
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import {

@@ -18,7 +18,7 @@ export interface IHandle<T = any> {
      * @returns {Promise<void>}
      * @memberof IHandle
      */
-    execute(ctx: T, next: () => Promise<void>): Promise<void>;
+    execute(ctx: T, next?: () => Promise<void>): Promise<void>;
 
     /**
      * to action.

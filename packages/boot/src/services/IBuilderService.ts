@@ -1,23 +1,7 @@
 import { IocCoreService, ClassType } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
 import { BootOption, IBootContext, IBuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 
-export interface BootSubAppOption<T extends IBootContext> {
-    /**
-     * sub context init.
-     *
-     * @memberof SubAppBootOption
-     */
-    contextInit?: (ctx: T) => void;
-
-    /**
-     * custom reg current app exports to parent.
-     *
-     * @memberof SubAppBootOption
-     */
-    regExports?: (ctx: T, parent: ICoreInjector) => void;
-}
 
 /**
  * service run runnable module.
@@ -67,23 +51,11 @@ export interface IBuilderService extends IocCoreService {
     /**
      * boot application.
      *
-     * @template T
-     * @template Topt
-     * @param {(ClassType | Topt | T)} target
-     * @param {((ctx: T) => void | BootSubAppOption<T> | string)} [options]
-     * @param {...string[]} args
-     * @returns {Promise<T>}
-     * @memberof IBuilderService
-     */
-    boot<T extends IBootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, options?: (ctx: T) => void | BootSubAppOption<T> | string, ...args: string[]): Promise<T>;
-    /**
-     * boot application.
-     *
      * @param {IBootApplication} application
      * @param {...string[]} args
      * @returns {Promise<BootContext>}
      * @memberof IBuilderService
      */
-    bootApp(application: IBootApplication, ...args: string[]): Promise<IBootContext>;
+    boot(application: IBootApplication, ...args: string[]): Promise<IBootContext>;
 }
 

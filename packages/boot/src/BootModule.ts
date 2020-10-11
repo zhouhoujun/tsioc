@@ -1,6 +1,4 @@
-import {
-    Inject, IocExt, DesignRegisterer, RuntimeRegisterer, DecoratorScope
-} from '@tsdi/ioc';
+import { Inject, IocExt, DesignRegisterer, DecoratorScope } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
 import { MessageContext } from './messages/ctx';

@@ -23,7 +23,7 @@ export interface IIocContainer extends IInjector {
      * get injector the type registered in.
      * @param type
      */
-    getInjector(type: ClassType): IInjector;
+    getInjector<T extends IInjector = IInjector>(type: ClassType): T;
     /**
      * check the type registered or not.
      * @param type

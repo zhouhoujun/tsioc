@@ -76,7 +76,7 @@ export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypePa
 /**
  * appliction root module injector token.
  */
-export const ROOT_MODULE: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_MODULE');
+export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_MODULE');
 
 
 export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');

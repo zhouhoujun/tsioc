@@ -36,8 +36,8 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * get injector
      * @param type
      */
-    getInjector(type: ClassType): IInjector {
-        return this.getValue(REGISTERED).get(type)?.getInjector() || this;
+    getInjector<T extends IInjector = IInjector>(type: ClassType): T {
+        return (this.getValue(REGISTERED).get(type)?.getInjector() || this) as T;
     }
 
     getRegistered(type: ClassType): Registered {

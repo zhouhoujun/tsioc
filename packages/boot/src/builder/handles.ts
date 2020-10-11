@@ -1,4 +1,7 @@
-import { ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup, Inject, INJECTOR, isClass, isNullOrUndefined } from '@tsdi/ioc';
+import {
+    ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup, Inject, INJECTOR,
+    isClass, isNullOrUndefined
+} from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
 import { IAnnoationReflect } from '../annotations/reflect';
 import { Handle, HandleType } from '../handles/Handle';
@@ -67,10 +70,10 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
         }
 
         let targetReflect: IAnnoationReflect;
-        if (ctx.type && !ctx.reflects.hasRegister(ctx.type)) {
+        if (ctx.type && !ctx.getContainer().isRegistered(ctx.type)) {
             ctx.injector.registerType(ctx.type);
             targetReflect = ctx.getTargetReflect();
-            targetReflect && ctx.setValue(INJECTOR, targetReflect.getInjector())
+            targetReflect && ctx.setValue(INJECTOR, ctx.getContainer().getInjector(ctx.type))
         } else {
             targetReflect = ctx.getTargetReflect();
         }
