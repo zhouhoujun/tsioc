@@ -1,8 +1,7 @@
 import { Token, tokenId, TokenId } from '../tokens';
 import { IMethodAccessor } from '../IMethodAccessor';
-import { IInjector, InjectorProxy, IProvider } from '../IInjector';
+import { IInjector, InjectorProxy, IProvider, Registered } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
-// import { ITypeReflects } from '../services/ITypeReflects';
 import { ClassType } from '../types';
 
 
@@ -15,10 +14,6 @@ export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
  */
 export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
 
-export interface Registered {
-    provides: Token[];
-    getInjector(): IInjector;
-}
 
 export const REGISTERED = tokenId<Map<ClassType, Registered>>('REG_TYPES');
 /**

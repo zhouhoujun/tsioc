@@ -1,7 +1,7 @@
 import { ClassType, Type } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
 import { InjectToken, Token, Factory, SymbolType, Provider, InstanceFactory } from './tokens';
-import { IInjector } from './IInjector';
+import { IInjector, Registered } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { registerCores } from './utils/regs';
 import { BaseInjector } from './BaseInjector';
@@ -37,7 +37,15 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * @param type
      */
     getInjector(type: ClassType): IInjector {
-        return this.get(REGISTERED).get(type)?.getInjector() || this;
+        return this.getValue(REGISTERED).get(type)?.getInjector() || this;
+    }
+
+    getRegistered(type: ClassType): Registered {
+        return this.getValue(REGISTERED).get(type);
+    }
+
+    isRegistered(type: ClassType): boolean {
+        return this.getValue(REGISTERED).has(type);
     }
 
     createInjector(): IInjector {

@@ -3,7 +3,7 @@ import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContaine
 import { BootContext } from './boot/ctx';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
-import { BOOTCONTEXT, BuilderServiceToken, ROOT_INJECTOR } from './tk';
+import { BOOTCONTEXT, BuilderServiceToken, ROOT_MODULE } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption } from './Context';
 
@@ -54,8 +54,8 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
             container.registerType(BootContext);
         }
 
-        if (!this.container.has(ROOT_INJECTOR)) {
-            this.container.setValue(ROOT_INJECTOR, this.container.get(ModuleInjector));
+        if (!this.container.has(ROOT_MODULE)) {
+            this.container.setValue(ROOT_MODULE, this.container.get(ModuleInjector));
         }
         container.setValue(BootApplication, this);
 
@@ -111,7 +111,7 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
     }
 
     getRootInjector(): ICoreInjector {
-        return this.container.get(ROOT_INJECTOR);
+        return this.container.get(ROOT_MODULE);
     }
 
     private container: IContainer;

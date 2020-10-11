@@ -9,6 +9,7 @@ import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { IAnnoationReflect } from './annotations/reflect';
+import { ModuleInjector } from './modules/injector';
 
 export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
 export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
@@ -73,9 +74,9 @@ export const ParentInjectorToken: TokenId<IInjector> = tokenId<IInjector>('IOC_P
 export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('BaseTypeParser');
 
 /**
- * appliction root injector token.
+ * appliction root module injector token.
  */
-export const ROOT_INJECTOR: TokenId<ICoreInjector> = tokenId<ICoreInjector>('ROOT_INJECTOR');
+export const ROOT_MODULE: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_MODULE');
 
 
 export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');

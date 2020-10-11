@@ -1,8 +1,7 @@
 import { ClassType, Type } from './types';
 import { Token, Factory } from './tokens';
-import { IInjector } from './IInjector';
+import { IInjector, Registered } from './IInjector';
 import { IActionInjector } from './actions/act';
-
 
 /**
  * root container interface.
@@ -16,10 +15,20 @@ export interface IIocContainer extends IInjector {
      */
     getContainer(): this;
     /**
-     * get injector the type injected.
+     * get type registered info.
+     * @param type
+     */
+    getRegistered(type: ClassType): Registered;
+    /**
+     * get injector the type registered in.
      * @param type
      */
     getInjector(type: ClassType): IInjector;
+    /**
+     * check the type registered or not.
+     * @param type
+     */
+    isRegistered(type: ClassType): boolean;
     /**
      * create injector.
      */

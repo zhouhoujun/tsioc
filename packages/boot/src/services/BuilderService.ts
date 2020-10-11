@@ -8,7 +8,7 @@ import { BootContext, isBootContext } from '../boot/ctx';
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope } from '../boot/lifescope';
 import { IBuilderService, BootSubAppOption } from './IBuilderService';
-import { BuilderServiceToken, CTX_APP_ENVARGS, CTX_MODULE_EXPORTS, ROOT_INJECTOR } from '../tk';
+import { BuilderServiceToken, CTX_APP_ENVARGS, CTX_MODULE_EXPORTS, ROOT_MODULE } from '../tk';
 import { ResolveMoudleScope } from '../builder/handles';
 import { BuildContext } from '../builder/ctx';
 import { Handles } from '../handles/Handles';
@@ -25,7 +25,7 @@ import { Handles } from '../handles/Handles';
 @Singleton(BuilderServiceToken)
 export class BuilderService extends IocCoreService implements IBuilderService {
 
-    @Inject(ROOT_INJECTOR)
+    @Inject(ROOT_MODULE)
     protected root: ICoreInjector;
 
     @Inject(TypeReflectsToken)

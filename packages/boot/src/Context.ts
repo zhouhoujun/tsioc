@@ -1,5 +1,5 @@
 import {
-    ClassType, IDestoryable, IInjector, IocContext, IProvider, ITypeReflects, ObjectMap,
+    ClassType, IDestoryable, IInjector, IocContext, IProvider, ObjectMap,
     Provider, RegInMetadata, SymbolType, Token, Type
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
@@ -77,10 +77,6 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      * current context providers.
      */
     readonly context: IProvider;
-    /**
-     * reflects.
-     */
-    readonly reflects: ITypeReflects;
     /**
      * get providers of options.
      */

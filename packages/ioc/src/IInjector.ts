@@ -338,17 +338,11 @@ export interface IInjector extends IDestoryable {
     createParams(params: ParameterMetadata[], ...providers: Provider[]): any[];
 }
 
-const injectorKey = 'injector';
-/**
- * object is provider map or not.
- *
- * @export
- * @param {object} target
- * @returns {target is Injector}
- */
-export function isInjector(target: any): target is IInjector {
-    return lang.getClass(target)?.ρCT === injectorKey;
+export interface Registered {
+    provides: Token[];
+    getInjector(): IInjector;
 }
+
 
 /**
  * injector proxy of current injector.

@@ -1,4 +1,4 @@
-import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, PromiseUtil } from '@tsdi/ioc';
+import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, PromiseUtil, REGISTERED } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { BootContext } from './ctx';
@@ -145,19 +145,10 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
         if (isBaseType(ctx.type)) {
             return;
         }
-        let annoation = ctx.getAnnoation();
         // has module register or not.
-        if (!ctx.reflects.hasRegister(ctx.type)) {
+        if (!ctx.getContainer().isRegistered(ctx.type)) {
             await super.execute(ctx);
-            annoation = ctx.getAnnoation();
-            if (annoation) {
-                let config = ctx.getConfiguration();
-                let merger = ctx.getTargetReflect().getDecorProviders?.().getInstance(AnnotationMerger);
-                config = merger ? merger.merge([config, annoation]) : Object.assign({}, config, annoation);
-                ctx.setValue(CTX_APP_CONFIGURE, config);
-            }
-        }
-        if (annoation && next) {
+        } else if (next) {
             await next();
         }
     }
@@ -167,13 +158,13 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 };
 
 export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let targetReflect = ctx.getTargetReflect();
-    if (!targetReflect || !targetReflect.getInjector) {
+    const container = ctx.getContainer();
+    if (!container.isRegistered(ctx.type)) {
         ctx.injector.registerType(ctx.type);
-        targetReflect = ctx.getTargetReflect();
     }
+    let targetReflect = ctx.getTargetReflect();
     let annoation = targetReflect?.getAnnoation ? targetReflect.getAnnoation() : null;
-    ctx.setValue(INJECTOR, targetReflect.getInjector());
+    ctx.setValue(INJECTOR, container.getInjector(ctx.type));
     if (annoation) {
         ctx.setValue(CTX_MODULE_ANNOATION, annoation);
         if (annoation.baseURL) {
@@ -292,7 +283,6 @@ export class StatupServiceScope extends BuildHandles<IBootContext> implements IA
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let startups = ctx.getStarupTokens() || [];
     const injector = ctx.injector;
-    const reflects = ctx.reflects;
     if (startups.length) {
         await PromiseUtil.step(startups.map(tyser => () => {
             let ser: IStartupService;
