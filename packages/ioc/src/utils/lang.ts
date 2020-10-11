@@ -302,6 +302,11 @@ export namespace lang {
 export type Handler<T = any, TR = any> = (ctx: T, next?: () => TR) => TR;
 
 /**
+ * sync action.
+ */
+export type SyncHandler<T = any> = Handler<T, void>;
+
+/**
  * async action.
  */
 export type AsyncHandler<T = any> = Handler<T, Promise<void>>;

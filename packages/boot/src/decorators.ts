@@ -68,6 +68,7 @@ export interface IBootDecorator {
 export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
     const append = options?.append;
     return createDecorator<T>(name, {
+        actionType: 'annoation',
         ...options,
         append: (meta) => {
             if (append) {

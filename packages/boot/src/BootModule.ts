@@ -1,6 +1,5 @@
 import {
-    Inject, TypeProviderAction, IocSetCacheAction, IocAutorunAction, IocExt,
-    RegSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScope
+    Inject, IocExt, DesignRegisterer, RuntimeRegisterer, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
@@ -55,23 +54,11 @@ export class BootModule {
         registerModule(DIModule, desgReger);
         registerModule(Bootstrap, desgReger);
 
-        desgReger.register(Message,
-            { scope: cls, action: TypeProviderAction },
-            { scope: aftAnn, action: [IocAutorunAction, MessageRegisterAction] }
-        )
-            .register(Boot,
-                { scope: cls, action: TypeProviderAction },
-                { scope: aftAnn, action: [IocAutorunAction, StartupRegisterAction] });
+        desgReger.register(Message, { scope: aftAnn, action: MessageRegisterAction })
+            .register(Boot, { scope: aftAnn, action: StartupRegisterAction });
 
-        actInjector.getInstance(RuntimeRegisterer)
-            .register(DIModule, cls, RegSingletionAction, IocSetCacheAction)
-            .register(Boot, cls, RegSingletionAction, IocSetCacheAction)
-            .register(Message, cls, RegSingletionAction, IocSetCacheAction);
 
         container.inject(BuildContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
-
-        actInjector.getInstance(RuntimeRegisterer)
-            .register(Bootstrap, cls, RegSingletionAction, IocSetCacheAction);
 
     }
 }
@@ -88,7 +75,6 @@ export function registerModule(decorator: string | Function, registerer: DesignR
         { scope: 'Inj', action: InjDIModuleScope },
         { scope: 'BeforeAnnoation', action: AnnoationRegInAction },
         { scope: cls, action: AnnoationAction },
-        { scope: 'Annoation', action: AnnoationRegisterScope },
-        { scope: aftAnn, action: IocAutorunAction }
+        { scope: 'Annoation', action: AnnoationRegisterScope }
     );
 }

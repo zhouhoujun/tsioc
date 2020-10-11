@@ -1,6 +1,6 @@
 import { Type, DecoratorScope } from '../types';
 import { IocCoreService } from '../IocCoreService';
-import { isClass, Handler, isArray, isString } from '../utils/lang';
+import { isClass, Handler, isArray, isString, SyncHandler } from '../utils/lang';
 import { Token, Registration } from '../tokens';
 import { IActionInjector, IocActions, IocContext } from './act';
 import { Action, IocAction } from '../Action';
@@ -326,7 +326,7 @@ export abstract class DecorsRegisterer<TAction extends Handler = Handler> extend
  * @class DesignRegisterer
  * @extends {DecorsRegisterer}
  */
-export class DesignRegisterer extends DecorsRegisterer {
+export class DesignRegisterer extends DecorsRegisterer<SyncHandler> {
     protected createRegister(): DecorRegisterer {
         return new IocDecorRegisterer() as DecorRegisterer;
     }
@@ -339,7 +339,7 @@ export class DesignRegisterer extends DecorsRegisterer {
  * @class RuntimeRegisterer
  * @extends {DecorsRegisterer}
  */
-export class RuntimeRegisterer extends DecorsRegisterer {
+export class RuntimeRegisterer extends DecorsRegisterer<SyncHandler> {
     protected createRegister(): DecorRegisterer {
         return new IocDecorRegisterer() as DecorRegisterer;
     }
