@@ -34,12 +34,6 @@ export const MethodAccessorToken: TokenId<IMethodAccessor> = tokenId<IMethodAcce
 
 export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');
 
-
-// /**
-//  * type reflects token.
-//  */
-// export const TypeReflectsToken: TokenId<ITypeReflects> = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
-
 /**
  * root ioc container token.
  * it is a symbol id, you can use  `@Inject`, `@Autowried` or `@Param` to get container instance in yourself class.

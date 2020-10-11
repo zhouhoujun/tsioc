@@ -2,7 +2,6 @@
 export * from './services/IBaseTypeParser';
 export * from './services/BaseTypeParser';
 export * from './services/StartupService';
-export * from './annotations/merger';
 export * from './services/IBuilderService';
 export * from './services/BuilderService';
 
