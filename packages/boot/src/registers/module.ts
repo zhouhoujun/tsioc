@@ -34,7 +34,7 @@ export const AnnoationAction = function (ctx: AnnoDesignContext, next: () => voi
     }
 
     let decorator = cuurDec || tgRef.decorator;
-    let metas = ctx.reflects.getMetadata(decorator, ctx.type);
+    let metas = tgRef.getMetadata(decorator);
     if (metas.length) {
         let proder: IProvider;
         if (!tgRef.getDecorProviders) {
@@ -123,7 +123,6 @@ export interface IModuleProvidersBuilder {
 export const ModuleProvidersBuilderToken: TokenId<IModuleProvidersBuilder> = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
 
 export const RegModuleProvidersAction = function (ctx: AnnoDesignContext, next: () => void): void {
-    let reflects = ctx.reflects;
     let annoation = ctx.annoation;
 
     let injector = ctx.injector as ModuleInjector;

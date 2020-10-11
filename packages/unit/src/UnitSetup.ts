@@ -1,7 +1,7 @@
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { Suite } from './decorators';
 import {
-    Inject, IocExt, RegSingletionAction, Provider, InjectReference,
+    Inject, IocExt, Provider, InjectReference,
     DesignRegisterer, RuntimeRegisterer, DecoratorProvider
 } from '@tsdi/ioc';
 import { BootContext, AnnoationAction } from '@tsdi/boot';
@@ -30,9 +30,6 @@ export class UnitSetup {
         let actInjector = container.getActionInjector();
         actInjector.getInstance(DesignRegisterer)
             .register(Suite, 'Class', AnnoationAction);
-
-        actInjector.getInstance(RuntimeRegisterer)
-            .register(Suite, 'Class', RegSingletionAction);
 
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Suite,
