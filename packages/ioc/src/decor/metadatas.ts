@@ -374,10 +374,32 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
      * @param type
      */
     hasMetadata(decor: string, type?: DecoratorType): boolean;
+    /**
+     * get all class decorator defines.
+     * @param decor
+     */
+    getDecorDefines(decor: string): DecorDefine[];
+    /**
+     * get all decorator defines.
+     * @param decor decorator.
+     * @param type  decorator type.
+     */
+    getDecorDefines(decor: string, type: DecorMemberType): DecorDefine[];
+    /**
+     * get all metadata of class decorator.
+     * @param decor the class decorator.
+     */
+    getMetadatas<T = any>(decor: string): T[];
+    /**
+     * get all metadata of the decorator.
+     * @param decor the decorator.
+     * @param type decorator type.
+     */
+    getMetadatas<T = any>(decor: string, type: DecorMemberType): T[];
     getDecorDefine(decor: string): DecorDefine;
     getDecorDefine(decor: string, propertyKey: string, type: DecorMemberType): DecorDefine;
-    getMetadata(decor: string): any;
-    getMetadata(decor: string, propertyKey: string, type: DecorMemberType): any;
+    getMetadata<T = any>(decor: string): T;
+    getMetadata<T = any>(decor: string, propertyKey: string, type: DecorMemberType): T;
     /**
      * class define.
      */

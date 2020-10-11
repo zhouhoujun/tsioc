@@ -293,8 +293,17 @@ export namespace refl {
                     }
                     return targetReflect.decors.find(d => d.decor === decor && d.propertyKey === propertyKey && d.type === type);
                 },
+                getDecorDefines: (decor: string, type?: DecoratorType) => {
+                    if (!type) {
+                        type = 'class';
+                    }
+                    return targetReflect.decors.filter(d => d.decor === decor && d.type === type);
+                },
                 getMetadata: (decor: string, propertyKey?: string, type?: DecorMemberType) => {
                     return targetReflect.getDecorDefine(decor, propertyKey, type)?.matedata;
+                },
+                getMetadatas: (decor: string, type?: DecorMemberType) => {
+                    return targetReflect.getDecorDefines(decor, type).map(d => d.matedata).filter(d => d);
                 },
                 class: new TypeDefine(type),
                 providers: [],
