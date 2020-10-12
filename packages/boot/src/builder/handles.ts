@@ -72,7 +72,7 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
             ctx.injector.registerType(ctx.type);
             ctx.setValue(INJECTOR, ctx.getContainer().getInjector(ctx.type))
         }
-        if (ctx.type || ctx.getTemplate()) {
+        if (ctx.type || ctx.template) {
             // has build module instance.
             await super.execute(ctx);
         }

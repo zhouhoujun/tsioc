@@ -1,5 +1,4 @@
 import { lang, AsyncHandler } from '@tsdi/ioc';
-import { IHandleContext } from '../Context';
 import { HandleType, Handle } from './Handle';
 
 /**
@@ -10,7 +9,7 @@ import { HandleType, Handle } from './Handle';
  * @extends {BuildHandle<T>}
  * @template T
  */
-export abstract class Handles<T extends IHandleContext> extends Handle<T> {
+export abstract class Handles<T> extends Handle<T> {
 
     protected handles: HandleType<T>[] = [];
     private funcs: AsyncHandler<T>[];

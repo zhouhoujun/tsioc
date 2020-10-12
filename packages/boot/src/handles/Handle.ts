@@ -1,5 +1,4 @@
 import { Action, ActionType, AsyncHandler, chain } from '@tsdi/ioc';
-import { IHandleContext } from '../Context';
 
 
 /**
@@ -44,7 +43,7 @@ export type HandleType<T> = ActionType<IHandle<T>, AsyncHandler<T>>;
  * @extends {IocCoreService}
  * @template T
  */
-export abstract class Handle<T extends IHandleContext = any> extends Action implements IHandle<T> {
+export abstract class Handle<T> extends Action implements IHandle<T> {
 
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 

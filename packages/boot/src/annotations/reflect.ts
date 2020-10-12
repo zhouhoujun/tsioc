@@ -9,7 +9,7 @@ import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersM
  * @extends {ClassMetadata}
  * @template T
  */
-export interface IAnnotationMetadata<T = any> extends ClassMetadata, ProvidersMetadata, RegInMetadata {
+export interface AnnotationMetadata<T = any> extends ClassMetadata, ProvidersMetadata, RegInMetadata {
     /**
      * annotation for the type.
      *

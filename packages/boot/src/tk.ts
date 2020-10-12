@@ -78,11 +78,23 @@ export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypePa
 export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_MODULE');
 
 
+/**
+ * module boot startup instance.
+ */
+export const MODULE_STARTUP = tokenId<IStartup>('MODULE_STARTUP');
+
+/**
+ * application statup service
+ */
+export const MODULE_STARTUPS = tokenId<Token[]>('MODULE_STARTUPS');
+
+export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
+export const CTX_OPTIONS = tokenId<AnnoationOption>('CTX_OPTIONS');
+
+
 // export const CTX_PARENT_CONTEXT: TokenId<AnnoationContext> = tokenId<AnnoationContext>('CTX_PARENT_CONTEXT');
 // export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');
 
-// export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
-// export const CTX_OPTIONS = tokenId<AnnoationOption>('CTX_OPTIONS');
 // export const CTX_TARGET_RELF = tokenId<TypeReflect>('CTX_TARGET_RELF');
 
 // export const CTX_MODULE  = tokenId<Type>('CTX_MODULE');

@@ -8,6 +8,8 @@ import { IConfigureManager } from './configure/IConfigureManager';
 import { Configure } from './configure/Configure';
 import { ModuleReflect } from './modules/reflect';
 import { IStartup } from './runnable/Startup';
+import { AnnotationMetadata } from './annotations/reflect';
+import { BootstrapMetadata } from './decorators';
 
 export interface ProdverOption {
     /**
@@ -37,7 +39,7 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
      * @type {ClassType}
      * @memberof AnnoationActionOption
      */
-    type?: ClassType<T>;
+    type?: Type<T>;
 
 }
 
@@ -331,6 +333,8 @@ export interface BootContext extends AnnoationContext {
     boot?: any;
 
     getOptions(): BootOption;
+
+    getAnnoation(): BootstrapMetadata;
 
     /**
      * get boot statup.
