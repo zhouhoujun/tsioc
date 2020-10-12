@@ -1,24 +1,23 @@
-import { Type, tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
+import { Type, tokenId, IProvider, Token, TokenId, IInjector, TypeReflect } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from './modules/configure';
 import { Configure } from './configure/Configure';
 import { IStartup } from './runnable/Startup';
-import { AnnoationOption, IAnnoationContext, IBootContext } from './Context';
+import { AnnoationOption, AnnoationContext, BootContext } from './Context';
 import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
 import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
-import { IAnnoationReflect } from './annotations/reflect';
 import { ModuleInjector } from './modules/injector';
 
-export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
-export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
+export const CTX_PARENT_CONTEXT: TokenId<AnnoationContext> = tokenId<AnnoationContext>('CTX_PARENT_CONTEXT');
+export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');
 
 
 /**
  *  current application boot context token.
  */
-export const BOOTCONTEXT: TokenId<IBootContext> = tokenId<IBootContext>('BOOT__CONTEXT');
+export const BOOTCONTEXT: TokenId<BootContext> = tokenId<BootContext>('BOOT__CONTEXT');
 
 /**
  * current application boot context token.
@@ -81,7 +80,7 @@ export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('R
 
 export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
 export const CTX_OPTIONS = tokenId<AnnoationOption>('CTX_OPTIONS');
-export const CTX_TARGET_RELF = tokenId<IAnnoationReflect>('CTX_TARGET_RELF');
+export const CTX_TARGET_RELF = tokenId<TypeReflect>('CTX_TARGET_RELF');
 
 export const CTX_MODULE  = tokenId<Type>('CTX_MODULE');
 export const CTX_MODULE_DECTOR = tokenId<string>('CTX_MODULE_DECTOR');

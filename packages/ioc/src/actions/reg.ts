@@ -47,7 +47,7 @@ export interface RegContext extends IocContext {
     /**
      * target reflect.
      */
-    targetReflect: TypeReflect;
+    reflect: TypeReflect;
 
 }
 
@@ -410,7 +410,7 @@ export const InitReflectAction = function (ctx: RegContext, next?: () => void): 
     if (!isClass(ctx.type)) {
         return;
     }
-    const targetReflect = ctx.targetReflect = refl.getIfy(ctx.type);
+    const targetReflect = ctx.reflect = refl.getIfy(ctx.type);
     if (targetReflect.singleton) {
         ctx.singleton = targetReflect.singleton;
     }

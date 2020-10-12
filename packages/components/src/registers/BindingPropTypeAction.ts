@@ -9,11 +9,11 @@ import { IComponentReflect } from '../IComponentReflect';
  * @export
  */
 export const BindingPropTypeAction = function (ctx: DesignContext, next: () => void) {
-    let refl = ctx.targetReflect as IComponentReflect;
+    let refl = ctx.reflect as IComponentReflect;
     let currDecor = ctx.currDecor;
     let propBindings = refl?.getBindings?.(currDecor);
     if (propBindings) {
-        ctx.targetReflect.defines.extendTypes.forEach(ty => {
+        ctx.reflect.defines.extendTypes.forEach(ty => {
             let propMetas = ctx.reflects.getPropertyMetadata<BindingPropMetadata>(currDecor, ty);
             Object.keys(propMetas).forEach(key => {
                 if (!propBindings.has(key)) {

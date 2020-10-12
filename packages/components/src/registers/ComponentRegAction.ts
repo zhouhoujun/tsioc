@@ -12,7 +12,7 @@ export const ComponentRegAction = function (ctx: DesignContext, next: () => void
     let currDecor = ctx.currDecor;
     let injector = ctx.injector;
     let metas = ctx.reflects.getMetadata<IComponentMetadata>(currDecor, ctx.type);
-    let compRefl = ctx.targetReflect as IComponentReflect;
+    let compRefl = ctx.reflect as IComponentReflect;
     let prdrs: IProvider;
     if (!compRefl.getDecorProviders) {
         prdrs = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).getProviders(currDecor);

@@ -11,7 +11,7 @@ import { AopReflect } from '../types';
  */
 export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.targetReflect as AopReflect;
+    const reflect = ctx.reflect as AopReflect;
     if (!ctx.instance || !isValAspectTag(ctx.type, reflect)) {
         return next();
     }
@@ -52,7 +52,7 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
  */
 export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.targetReflect as AopReflect;
+    const reflect = ctx.reflect as AopReflect;
     if (!isValAspectTag(ctx.type, reflect)) {
         return next();
     }
@@ -73,7 +73,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
  */
 export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.targetReflect as AopReflect;
+    const reflect = ctx.reflect as AopReflect;
     if (!ctx.instance || !isValAspectTag(ctx.type, reflect)) {
         return next();
     }
@@ -104,7 +104,7 @@ export const RegistAspectAction = function (ctx: DesignContext, next: () => void
  */
 export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.targetReflect as AopReflect;
+    const reflect = ctx.reflect as AopReflect;
     if (!isValAspectTag(ctx.type, reflect)) {
         return next();
     }

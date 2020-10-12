@@ -2,8 +2,7 @@ import {
     ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup, Inject, INJECTOR,
     isClass, isNullOrUndefined
 } from '@tsdi/ioc';
-import { IAnnoationContext, IBuildContext } from '../Context';
-import { IAnnoationReflect } from '../annotations/reflect';
+import { AnnoationContext, BuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
 
@@ -18,7 +17,7 @@ import { Handles } from '../handles/Handles';
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> extends Handle<T> {
+export abstract class BuildHandle<T extends AnnoationContext = BuildContext> extends Handle<T> {
     constructor(@Inject(ActionInjectorToken) protected actInjector: IActionInjector) {
         super();
     }
@@ -32,7 +31,7 @@ export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> e
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends Handles<T> {
+export class BuildHandles<T extends AnnoationContext = BuildContext> extends Handles<T> {
     constructor(@Inject(ActionInjectorToken) protected actInjector: IActionInjector) {
         super();
     }
@@ -51,7 +50,7 @@ export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends H
 
 
 
-export abstract class ResolveHandle extends BuildHandle<IBuildContext> {
+export abstract class ResolveHandle extends BuildHandle<BuildContext> {
 
 }
 
@@ -62,23 +61,18 @@ export abstract class ResolveHandle extends BuildHandle<IBuildContext> {
  * @class ResolveMoudleScope
  * @extends {BuildHandles<BuildContext>}
  */
-export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements IActionSetup {
+export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IActionSetup {
 
-    async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.value) {
             return;
         }
 
-        let targetReflect: IAnnoationReflect;
         if (ctx.type && !ctx.getContainer().isRegistered(ctx.type)) {
             ctx.injector.registerType(ctx.type);
-            targetReflect = ctx.getTargetReflect();
-            targetReflect && ctx.setValue(INJECTOR, ctx.getContainer().getInjector(ctx.type))
-        } else {
-            targetReflect = ctx.getTargetReflect();
+            ctx.setValue(INJECTOR, ctx.getContainer().getInjector(ctx.type))
         }
-
-        if (targetReflect || ctx.getTemplate()) {
+        if (ctx.type || ctx.getTemplate()) {
             // has build module instance.
             await super.execute(ctx);
         }
@@ -98,7 +92,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
     }
 }
 
-export const ResolveModuleHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
+export const ResolveModuleHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
     if (!ctx.value && ctx.type) {
         ctx.value = ctx.injector.resolve(ctx.type, ctx.providers);
     }

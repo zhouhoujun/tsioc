@@ -13,7 +13,6 @@ import { StartupDecoratorRegisterer } from './handles/register';
 import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope } from './boot/lifescope';
-import { BuildContext } from './builder/ctx';
 import { StartupRegisterAction } from './registers/startup';
 
 
@@ -56,7 +55,7 @@ export class BootModule {
             .register(Boot, { scope: aftAnn, action: StartupRegisterAction });
 
 
-        container.inject(BuildContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
+        container.inject(BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 
     }
 }

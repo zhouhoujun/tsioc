@@ -1,16 +1,7 @@
-import { Type } from '@tsdi/ioc';
-import { ModuleConfigure } from './configure';
-import { ModuleRef } from './ModuleRef';
-import { IAnnoationReflect } from '../annotations/reflect';
+import { Type, TypeReflect } from '@tsdi/ioc';
+import { IModuleMetadata } from './configure';
 
-export interface IModuleReflect extends IAnnoationReflect {
-    /**
-     * baseurl.
-     *
-     * @type {string}
-     * @memberof IModuleReflect
-     */
-    baseURL?: string;
+export interface ModuleReflect extends TypeReflect {
     /**
      *  components of current module.
      */
@@ -19,18 +10,14 @@ export interface IModuleReflect extends IAnnoationReflect {
      * dectors of components.
      */
     componentDectors?: string[];
-    /**
-     * get annoation.
-     *
-     * @template T
-     * @param {boolean} [clone] default true.
-     * @returns {T}
-     * @memberof IModuleReflect
-     */
-    getAnnoation?<T extends ModuleConfigure>(clone?: boolean): T;
 
     /**
-     * get module exports.
+     * module decorator.
      */
-    getModuleRef?<T>(): ModuleRef<T>;
+    decorator?: string;
+    /**
+     * module metadata.
+     */
+    moduleMetadata?: IModuleMetadata;
+
 }

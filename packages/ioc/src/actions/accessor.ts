@@ -138,7 +138,7 @@ export class MethodAccessor implements IMethodAccessor {
             propertyKey
         } as RuntimeContext;
         injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
-        let params = ctx.targetReflect.methodParams.get(propertyKey);
+        let params = ctx.reflect.methodParams.get(propertyKey);
         return params || [];
     }
 }

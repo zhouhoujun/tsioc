@@ -32,7 +32,7 @@ export abstract class DesignDecorScope extends IocDecorScope<DesignContext> impl
     protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
         const design = ctx.injector.getInstance(DesignRegisterer);
         const registerer = design.getRegisterer(scope);
-        const decors = ctx.targetReflect.decors;
+        const decors = ctx.reflect.decors;
         return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
     }
 
@@ -54,7 +54,7 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 }
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-    const regIn = ctx.targetReflect.regIn;
+    const regIn = ctx.reflect.regIn;
     const container = ctx.injector.getContainer();
     if (regIn === 'root') {
         ctx.regIn = regIn;
@@ -70,7 +70,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let injector = ctx.injector;
     let provide = injector.getTokenKey(ctx.token);
     let type = ctx.type;
-    let singleton = ctx.singleton || ctx.targetReflect.singleton;
+    let singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
     const actInjector = container.getActionInjector();
     let factory = (...providers: Provider[]) => {
@@ -142,7 +142,7 @@ export class DesignPropDecorScope extends DesignDecorScope {
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    const tgReflect = ctx.targetReflect;
+    const tgReflect = ctx.reflect;
     const injector = ctx.injector;
     const type = tgReflect.type;
 
@@ -179,7 +179,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
  */
 export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
     let injector = ctx.injector;
-    let targetReflect = ctx.targetReflect;
+    let targetReflect = ctx.reflect;
     targetReflect.propProviders.forEach((propMetas, name) => {
         propMetas.forEach(prop => {
             if (isClass(prop.provider) && !injector.hasRegister(prop.provider)) {
@@ -218,7 +218,7 @@ export class DesignMthDecorScope extends DesignDecorScope {
  */
 export const IocAutorunAction = function (ctx: DesignContext, next: () => void) {
     const injector = ctx.injector;
-    const autoruns = ctx.targetReflect.autoruns;
+    const autoruns = ctx.reflect.autoruns;
     if (autoruns.length < 1) {
         return next();
     }

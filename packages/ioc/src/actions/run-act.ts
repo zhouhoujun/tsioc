@@ -148,14 +148,14 @@ export class RuntimeDecorAction extends ExecDecoratorAtion {
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         const injector = ctx.injector;
-        if (ctx.targetReflect.methodParams.has('constructor')) {
-            ctx.params = ctx.targetReflect.methodParams.get('constructor');
+        if (ctx.reflect.methodParams.has('constructor')) {
+            ctx.params = ctx.reflect.methodParams.get('constructor');
         } else {
             const pkey = ctx.propertyKey;
             ctx.propertyKey = 'constructor';
             injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
             ctx.propertyKey = pkey;
-            ctx.params = ctx.targetReflect.methodParams.get('constructor');
+            ctx.params = ctx.reflect.methodParams.get('constructor');
         }
         ctx.args = injector.createParams(ctx.params, ctx.providers);
     }
@@ -185,7 +185,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
     let providers = ctx.providers;
     let injector = ctx.injector;
 
-    let props = ctx.targetReflect.propProviders;
+    let props = ctx.reflect.propProviders;
 
     props.forEach((token, propertyKey) => {
         let key = `${propertyKey}_INJECTED`
@@ -208,7 +208,7 @@ export abstract class RuntimeDecorScope extends IocDecorScope<RuntimeContext> {
     protected getScopeDecorators(ctx: RuntimeContext, scope: DecoratorScope): string[] {
         const runtime = ctx.injector.getInstance(RuntimeRegisterer);
         const registerer = runtime.getRegisterer(scope);
-        const decors = ctx.targetReflect.decors;
+        const decors = ctx.reflect.decors;
         return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
     }
 
@@ -280,7 +280,7 @@ export abstract class IocExtendRegAction extends IocRuntimeAction {
  * @export
  */
 export const IocGetCacheAction = function (ctx: RuntimeContext, next: () => void): void {
-    let targetReflect = ctx.targetReflect;
+    let targetReflect = ctx.reflect;
     if (!ctx.instance && !targetReflect.singleton && targetReflect.expires > 0) {
         let cache = ctx.injector.getInstance(IocCacheManager).get(ctx.instance, targetReflect.expires);
         if (cache) {
@@ -299,7 +299,7 @@ export const IocGetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @export
  */
 export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
-    let targetReflect = ctx.targetReflect;
+    let targetReflect = ctx.reflect;
     if (targetReflect.singleton || !targetReflect.expires || targetReflect.expires <= 0) {
         return next();
     }
@@ -320,7 +320,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     const injector = ctx.injector;
-    const autoruns = ctx.targetReflect.autoruns;
+    const autoruns = ctx.reflect.autoruns;
     if (autoruns.length) {
         autoruns.sort((au1, au2) => {
             return au1.order - au2.order;
@@ -341,7 +341,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
  * @extends {IocRuntimeAction}
  */
 export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
-    if (ctx.type && ctx.instance && ctx.targetReflect.singleton) {
+    if (ctx.type && ctx.instance && ctx.reflect.singleton) {
         if (!ctx.injector.hasValue(ctx.type)) {
             ctx.injector.setValue(ctx.type, ctx.instance);
         }
@@ -413,7 +413,7 @@ export class RuntimePropDecorScope extends RuntimeDecorScope {
  */
 export class RuntimeParamScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     execute(ctx: RuntimeContext, next?: () => void): void {
-        if (!ctx.targetReflect) {
+        if (!ctx.reflect) {
             InitReflectAction(ctx);
         }
         super.execute(ctx, next);
@@ -449,7 +449,7 @@ function createDesignParams(ctx: RuntimeContext, type: Type, target: any, proper
             injector.registerType(dtype);
         }
     });
-    let names = ctx.targetReflect.class.getParamNames(propertyKey);
+    let names = ctx.reflect.class.getParamNames(propertyKey);
     let params: ParameterMetadata[];
     if (names.length) {
         params = names.map((name, idx) => {

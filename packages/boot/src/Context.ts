@@ -1,14 +1,13 @@
 import {
-    ClassType, IDestoryable, IInjector, IocContext, IProvider, ObjectMap,
-    Provider, RegInMetadata, SymbolType, Token, Type
+    ClassType, IDestoryable, IocContext, IProvider, ObjectMap,
+    Provider, RegInMetadata, SymbolType, Token, Type, TypeReflect
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
-import { IAnnoationReflect, IAnnotationMetadata } from './annotations/reflect';
 import { Configure } from './configure/Configure';
 import { BootstrapMetadata } from './decorators';
-import { IModuleReflect } from './modules/reflect';
+import { ModuleReflect } from './modules/reflect';
 import { ModuleRef } from './modules/ModuleRef';
 import { IStartup } from './runnable/Startup';
 
@@ -23,7 +22,7 @@ export interface ProdverOption {
     /**
      *  providers.
      */
-    providers?: Provider[] | IInjector;
+    providers?: Provider[] | IProvider;
 }
 
 /**
@@ -41,24 +40,13 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
      * @memberof AnnoationActionOption
      */
     type?: ClassType<T>;
-    /**
-     * target module type.
-     *
-     * @type {ClassType}
-     * @memberof AnnoationActionOption
-     */
-    module?: ClassType<T>;
-    /**
-     *  parent context.
-     */
-    parent?: IAnnoationContext;
 
 }
 
 /**
  * annoation context interface.
  */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IocContext, IDestoryable {
+export interface AnnoationContext extends IocContext, IDestoryable {
     /**
     * current build type.
     */
@@ -82,43 +70,14 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      */
     readonly providers: IProvider;
 
+    readonly reflect: TypeReflect;
+
+    getOptions(): AnnoationOption;
 
     /**
      * get current DI module ref.
-     */
+     *
     getModuleRef(): ModuleRef;
-
-    getTargetReflect(): IAnnoationReflect;
-
-    getAnnoation(): IAnnotationMetadata;
-
-    /**
-     * set parent context
-     * @param context
-     */
-    setParent(context: IAnnoationContext): this;
-
-    getParent<T extends IAnnoationContext>(): T;
-
-    addChild(contex: IAnnoationContext);
-
-    removeChild(contex: IAnnoationContext);
-
-    hasChildren(): boolean;
-
-    getChildren<T extends IAnnoationContext>(): T[];
-    /**
-     * get token providers service route in root contexts.
-     * @param token
-     * @param success
-     */
-    getContext<T>(token: Token<T>, success?: (value: T) => void): T
-    /**
-     * resolve token value route in root contexts.
-     * @param token
-     * @param success
-     */
-    getContextValue<T>(token: Token<T>, success?: (value: T) => void): T;
 
     /**
      * has register in context or not.
@@ -177,20 +136,6 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      */
     getContainer(): IContainer;
     /**
-     * get options of context.
-     *
-     * @returns {T}
-     * @memberof IocRaiseContext
-     */
-    getOptions(): T;
-
-    /**
-     * set options for context.
-     * @param options options.
-     */
-    setOptions(options: T): this;
-
-    /**
      * clone this context.
      */
     clone(): this;
@@ -199,11 +144,6 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      * @param empty empty context or not.
      */
     clone(empty: boolean): this;
-    /**
-     * clone this context with custom options.
-     * @param options custom options.
-     */
-    clone(options: T): this;
 
 }
 
@@ -304,7 +244,7 @@ export type Template = string | ObjectMap<any>;
  * @export
  * @interface IModuleResolveOption
  */
-export interface IBuildOption<T = any> extends AnnoationOption<T> {
+export interface BuildOption<T = any> extends AnnoationOption<T> {
     /**
      * name of component.
      */
@@ -322,15 +262,6 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
 
 
 
-/**
- * handle context.
- *
- * @export
- * @interface IHandleContext
- */
-export interface IHandleContext {
-
-}
 
 
 /**
@@ -340,7 +271,7 @@ export interface IHandleContext {
  * @interface IBuildContext
  * @extends {IHandleContext}
  */
-export interface IBuildContext<T extends IBuildOption = IBuildOption> extends IAnnoationContext<T>, IHandleContext {
+export interface BuildContext extends AnnoationContext {
 
     /**
      * build instance.
@@ -354,7 +285,12 @@ export interface IBuildContext<T extends IBuildOption = IBuildOption> extends IA
 }
 
 
-export interface IBootContext<T extends BootOption = BootOption> extends IBuildContext<T> {
+export interface BootContext extends BuildContext {
+
+    /**
+     * get target reflect.
+     */
+    readonly reflect: ModuleReflect;
 
     /**
      * get log manager.
@@ -375,7 +311,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
      *
      * @type {string}
      */
-    readonly baseURL: string;
+    baseURL: string;
 
     /**
      * boot run env args.
@@ -393,8 +329,27 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
     readonly data: any;
 
     readonly target: any;
+    /**
+    * auto statupe or not. default true.
+    *
+    * @type {boolean}
+    * @memberof BootOptions
+    */
+    readonly autorun?: boolean;
+    /**
+     * boot dependencies.
+     *
+     * @type {LoadType[]}
+     * @memberof BootOptions
+     */
+    readonly deps?: LoadType[];
 
-    readonly boot: any;
+    /**
+     * boot instance.
+     */
+    boot?: any;
+
+    getOptions(): BootOption;
 
     /**
      * get boot statup.
@@ -415,15 +370,5 @@ export interface IBootContext<T extends BootOption = BootOption> extends IBuildC
      * @returns {IConfigureManager<Configure>}
      */
     getConfigureManager(): IConfigureManager<Configure>;
-
-    /**
-     * get target reflect.
-     */
-    getTargetReflect(): IModuleReflect;
-
-    /**
-     * annoation metadata.
-     */
-    getAnnoation(): BootstrapMetadata;
 
 }

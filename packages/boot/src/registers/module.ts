@@ -22,7 +22,7 @@ export interface AnnoDesignContext extends DesignContext {
  * @param next
  */
 export const AnnoationAction = function (ctx: AnnoDesignContext, next: () => void): void {
-    let tgRef = ctx.targetReflect as IModuleReflect;
+    let tgRef = ctx.reflect as IModuleReflect;
     if (tgRef.getAnnoation) {
         ctx.annoation = tgRef.getAnnoation();
         return next();
@@ -126,7 +126,7 @@ export const RegModuleProvidersAction = function (ctx: AnnoDesignContext, next: 
     let annoation = ctx.annoation;
 
     let injector = ctx.injector as ModuleInjector;
-    let mdReft = ctx.targetReflect as IModuleReflect;
+    let mdReft = ctx.reflect as IModuleReflect;
     let components = annoation.components ? injector.injectModule(...annoation.components) : null;
 
     // inject module providers
@@ -173,7 +173,7 @@ export const RegModuleProvidersAction = function (ctx: AnnoDesignContext, next: 
 };
 
 export const RegModuleRefAction = function (ctx: AnnoDesignContext, next: () => void): void {
-    let reflect = ctx.targetReflect as IModuleReflect;
+    let reflect = ctx.reflect as IModuleReflect;
     if (reflect) {
         let mdRef = new ModuleRef(ctx.type, reflect, ctx.exports);
         ctx.injector.setValue(ModuleRef, mdRef);

@@ -27,9 +27,3 @@ export interface IAnnotationMetadata<T = any> extends ClassMetadata, ProvidersMe
 
 }
 
-export interface IAnnoationReflect extends TypeReflect {
-
-    annoDecor?: string;
-
-    annoMetadata?: IAnnotationMetadata;
-}
