@@ -1,4 +1,4 @@
-import { Token, tokenId, TokenId } from '@tsdi/ioc';
+import { Token } from '@tsdi/ioc';
 /**
  * base type parser.
  *

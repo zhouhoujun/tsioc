@@ -1,11 +1,10 @@
 import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
 import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
-import { BootContext } from './boot/ctx';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BuilderServiceToken, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
-import { BootOption } from './Context';
+import { BootOption, BootContext } from './Context';
 
 
 /**
@@ -24,24 +23,21 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
      */
     protected context: T;
 
-    constructor(public target?: ClassType | BootOption | T, public deps?: LoadType[], protected loader?: IModuleLoader) {
+    constructor(public target?: ClassType | BootOption, public deps?: LoadType[], protected loader?: IModuleLoader) {
         super()
         this.onInit(target);
     }
 
-    protected onInit(target: ClassType | BootOption | T) {
+    protected onInit(target: ClassType | BootOption) {
         this.deps = this.deps || [];
         let container: IContainer;
-        if (target) {
-            if (target instanceof BootContext) {
-                this.context = target;
-                container = this.context.getContainer();
-            } else if (!isClassType(target)) {
-                if (isInjector(target.injector)) {
-                    container = target.injector.getContainer();
-                }
+
+        if (!isClassType(target)) {
+            if (isInjector(target.injector)) {
+                container = target.injector.getContainer();
             }
         }
+
         if (container) {
             this.container = container;
         } else {
@@ -49,10 +45,6 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
         }
 
         container.registerType(BootModule);
-
-        if (!container.has(BootContext)) {
-            container.registerType(BootContext);
-        }
 
         if (!this.container.has(ROOT_INJECTOR)) {
             this.container.setValue(ROOT_INJECTOR, this.container.get(ModuleInjector));
@@ -85,13 +77,13 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
      *
      * @static
      * @template T
-     * @param {(ClassType<T> | BootOption | BootContext)} target
+     * @param {(ClassType<T> | BootOption)} target
      * @param {(LoadType[] | LoadType | string)} [deps]  application run depdences.
      * @param {...string[]} args
      * @returns {Promise<BootContext>}
      * @memberof BootApplication
      */
-    static run<T>(target: ClassType<T> | BootOption | BootContext, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
+    static run<T>(target: ClassType<T> | BootOption, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
         let { deps: dep, args: arg } = checkBootArgs(deps, ...args);
         return new BootApplication(target, dep).run(...arg);
     }

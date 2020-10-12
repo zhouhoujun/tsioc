@@ -21,7 +21,7 @@ export * from './runnable/Service';
 export * from './decorators';
 
 export * from './Context';
-export * from './annotations/ctx';
+// export * from './annotations/ctx';
 
 // registers
 export * from './registers/message';
@@ -50,12 +50,12 @@ export * from './messages/queue';
 export * from './orm';
 
 // builders
-export * from './builder/ctx';
+// export * from './builder/ctx';
 export * from './builder/handles';
 
 
 // boots
-export * from './boot/ctx';
+// export * from './boot/ctx';
 export * from './boot/handles';
 export * from './boot/lifescope';
 

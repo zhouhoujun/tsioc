@@ -1,5 +1,5 @@
 import { Type, TypeReflect } from '@tsdi/ioc';
-import { IModuleMetadata } from './configure';
+import { BootstrapMetadata } from '../decorators';
 
 export interface ModuleReflect extends TypeReflect {
     /**
@@ -14,10 +14,10 @@ export interface ModuleReflect extends TypeReflect {
     /**
      * module decorator.
      */
-    decorator?: string;
+    moduleDecorator?: string;
     /**
      * module metadata.
      */
-    moduleMetadata?: IModuleMetadata;
+    moduleMetadata?: BootstrapMetadata;
 
 }

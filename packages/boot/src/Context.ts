@@ -6,9 +6,7 @@ import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
 import { Configure } from './configure/Configure';
-import { BootstrapMetadata } from './decorators';
 import { ModuleReflect } from './modules/reflect';
-import { ModuleRef } from './modules/ModuleRef';
 import { IStartup } from './runnable/Startup';
 
 export interface ProdverOption {
@@ -148,7 +146,6 @@ export interface AnnoationContext extends IocContext, IDestoryable {
 }
 
 
-
 /**
  * boot options
  *
@@ -281,7 +278,7 @@ export interface BuildContext extends AnnoationContext {
     /**
      * current type attr data to binding.
      */
-    getTemplate(): Template;
+    getTemplate?(): Template;
 }
 
 

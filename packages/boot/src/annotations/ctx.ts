@@ -3,30 +3,14 @@
 //     IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, refl
 // } from '@tsdi/ioc';
 // import { IContainer, ICoreInjector } from '@tsdi/core';
-// import {
-//     CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT,
-//     CTX_OPTIONS, CTX_TARGET_RELF, CTX_PROVIDERS
-// } from '../tk';
-// import { ModuleRef } from '../modules/ModuleRef';
-// import { IAnnotationMetadata, IAnnoationReflect } from './reflect';
-// import { AnnoationOption, IAnnoationContext, ProdverOption } from '../Context';
+// import { AnnoationContext, ProdverOption } from '../Context';
 
-// /**
-//  * context factory.
-//  * @param injector
-//  * @param CtxType
-//  * @param option
-//  */
-// export function createContext<Ctx extends IAnnoationContext>(injector: IInjector, CtxType: Type<Ctx>, options: AnnoationOption): Ctx {
-//     let ctx = new CtxType(injector);
-//     options && ctx.setOptions(options);
-//     return ctx;
-// }
 
 // export class DestoryableContext<T extends ProdverOption> extends Destoryable {
+
 //     public context: IProvider;
 
-//     constructor(@Inject(INJECTOR) injector: ICoreInjector) {
+//     constructor(injector: ICoreInjector, private options: T) {
 //         super();
 //         this.context = injector.get(PROVIDERS);
 //         this.context.setValue(INJECTOR, injector);
@@ -186,7 +170,7 @@
 //      * @memberof IocRaiseContext
 //      */
 //     getOptions(): T {
-//         return this.context.getValue(CTX_OPTIONS) as T;
+//         return this.options;
 //     }
 
 //     clone(): this;
@@ -214,164 +198,170 @@
 //     }
 // }
 
-
-// /**
-//  * annoation context.
-//  *
-//  * @export
-//  * @class AnnoationContext
-//  * @extends {HandleContext}
-//  */
-// export class AnnoationContext<T extends AnnoationOption = AnnoationOption> extends DestoryableContext<T> implements IAnnoationContext<T> {
-
-//     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
-//         return createContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
-//     }
-
-//     type: Type;
-
-//     /**
-//      * current annoation type decorator.
-//      *
-//      * @readonly
-//      * @type {string}
-//      * @memberof AnnoationContext
-//      */
-//     decorator: string;
-
-//     protected getDecorator() {
-//         let dec = this.type ? this.getTargetReflect()?.annoDecor : null;
-//         dec && this.setValue(CTX_MODULE_DECTOR, dec);
-//         return dec;
-//     }
-
-//     getModuleRef(): ModuleRef {
-//         return this.injector.getValue(ModuleRef);
-//     }
-
-//     getTargetReflect(): IAnnoationReflect {
-//         return this.context.getValue(CTX_TARGET_RELF) ?? this.getParentTargetReflect();
-//     }
-
-//     protected getParentTargetReflect(): IAnnoationReflect {
-//         let rft = this.type ? refl.get(this.type) : null;
-//         rft && this.setValue(CTX_TARGET_RELF, rft);
-//         return rft
-//     }
-
-//     // /**
-//     //  * get token providers service route in root contexts.
-//     //  * @param token
-//     //  */
-//     // getContext<T>(token: Token<T>, success?: (value: T) => void): T {
-//     //     let key = this.injector.getTokenKey(token);
-//     //     let value = this.getInstance(key);
-//     //     if (isDefined(value)) {
-//     //         success && success(value);
-//     //         return value;
-//     //     }
-//     //     let ctx = this.getParent() as IAnnoationContext;
-//     //     while (ctx && !ctx.destroyed) {
-//     //         value = ctx.getInstance(key);
-//     //         if (isDefined(value)) {
-//     //             success && success(value);
-//     //             break;
-//     //         }
-//     //         ctx = ctx.getParent();
-//     //     }
-//     //     return value ?? null;
-//     // }
-
-//     // /**
-//     //  * resolve token route in root contexts.
-//     //  * @param token
-//     //  */
-//     // getContextValue<T>(token: Token<T>, success?: (value: T) => void): T {
-//     //     if (this.destroyed) {
-//     //         return null;
-//     //     }
-//     //     let key = this.injector.getTokenKey(token);
-//     //     let value = this.context.getValue(key);
-//     //     if (isDefined(value)) {
-//     //         success && success(value);
-//     //         return value;
-//     //     }
-//     //     let ctx = this.getParent() as IAnnoationContext;
-//     //     while (ctx && !ctx.destroyed) {
-//     //         value = ctx.context.getValue(key);
-//     //         if (isDefined(value)) {
-//     //             success && success(value);
-//     //             break;
-//     //         }
-//     //         ctx = ctx.getParent();
-//     //     }
-//     //     return value ?? null;
-//     // }
-
-//     // setParent(context: IAnnoationContext): this {
-//     //     if (context === null) {
-//     //         this.remove(CTX_PARENT_CONTEXT);
-//     //     } else {
-//     //         this.setValue(CTX_PARENT_CONTEXT, context);
-//     //     }
-//     //     return this;
-//     // }
-
-//     // getParent<T extends IAnnoationContext>(): T {
-//     //     return this.context.getValue(CTX_PARENT_CONTEXT) as T;
-//     // }
-
-//     // addChild(contex: IAnnoationContext) {
-//     //     let chiledren = this.getChildren();
-//     //     chiledren.push(contex);
-//     //     this.setValue(CTX_SUB_CONTEXT, chiledren);
-//     // }
-
-//     // removeChild(contex: IAnnoationContext) {
-//     //     let chiledren = this.getChildren();
-//     //     if (chiledren) {
-//     //         return lang.del(chiledren, contex);
-//     //     }
-//     //     return [];
-//     // }
-
-//     // hasChildren() {
-//     //     return this.hasValue(CTX_SUB_CONTEXT);
-//     // }
-
-//     // getChildren<T extends IAnnoationContext>(): T[] {
-//     //     return (this.context.getValue(CTX_SUB_CONTEXT) || []) as T[];
-//     // }
-
-
-//     /**
-//      * annoation metadata.
-//      *
-//      * @type {ModuleConfigure}
-//      * @memberof AnnoationContext
-//      */
-//     getAnnoation(): IAnnotationMetadata {
-//         return this.context.getValue(CTX_MODULE_ANNOATION) ?? this.getReflAnnoation();
-//     }
-
-//     protected getReflAnnoation(): IAnnotationMetadata {
-//         let anno = this.type ? this.getTargetReflect()?.annoMetadata : null;
-//         anno && this.setValue(CTX_MODULE_ANNOATION, anno);
-//         return anno;
-//     }
-
-//     setOptions(options: T) {
-//         if (!options) {
-//             return this;
-//         }
-//         options.type = options.type || options.module;
-//         if (options.type) {
-//             this.setValue(CTX_MODULE, options.type);
-//         }
-//         if (options.parent instanceof AnnoationContext) {
-//             this.setParent(options.parent);
-//         }
-//         return super.setOptions(options);
-//     }
-
+// export function createContext<Ctx extends AnnoationContext>(injector: IInjector, CtxType: Type<Ctx>, options: AnnoationOption): Ctx {
+//     let ctx = new CtxType(injector);
+//     options && ctx.setOptions(options);
+//     return ctx;
 // }
+
+
+// // /**
+// //  * annoation context.
+// //  *
+// //  * @export
+// //  * @class AnnoationContext
+// //  * @extends {HandleContext}
+// //  */
+// // export class AnnoationContext<T extends AnnoationOption = AnnoationOption> extends DestoryableContext<T> implements IAnnoationContext<T> {
+
+// //     static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
+// //         return createContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
+// //     }
+
+// //     type: Type;
+
+// //     /**
+// //      * current annoation type decorator.
+// //      *
+// //      * @readonly
+// //      * @type {string}
+// //      * @memberof AnnoationContext
+// //      */
+// //     decorator: string;
+
+// //     protected getDecorator() {
+// //         let dec = this.type ? this.getTargetReflect()?.annoDecor : null;
+// //         dec && this.setValue(CTX_MODULE_DECTOR, dec);
+// //         return dec;
+// //     }
+
+// //     getModuleRef(): ModuleRef {
+// //         return this.injector.getValue(ModuleRef);
+// //     }
+
+// //     getTargetReflect(): IAnnoationReflect {
+// //         return this.context.getValue(CTX_TARGET_RELF) ?? this.getParentTargetReflect();
+// //     }
+
+// //     protected getParentTargetReflect(): IAnnoationReflect {
+// //         let rft = this.type ? refl.get(this.type) : null;
+// //         rft && this.setValue(CTX_TARGET_RELF, rft);
+// //         return rft
+// //     }
+
+// //     // /**
+// //     //  * get token providers service route in root contexts.
+// //     //  * @param token
+// //     //  */
+// //     // getContext<T>(token: Token<T>, success?: (value: T) => void): T {
+// //     //     let key = this.injector.getTokenKey(token);
+// //     //     let value = this.getInstance(key);
+// //     //     if (isDefined(value)) {
+// //     //         success && success(value);
+// //     //         return value;
+// //     //     }
+// //     //     let ctx = this.getParent() as IAnnoationContext;
+// //     //     while (ctx && !ctx.destroyed) {
+// //     //         value = ctx.getInstance(key);
+// //     //         if (isDefined(value)) {
+// //     //             success && success(value);
+// //     //             break;
+// //     //         }
+// //     //         ctx = ctx.getParent();
+// //     //     }
+// //     //     return value ?? null;
+// //     // }
+
+// //     // /**
+// //     //  * resolve token route in root contexts.
+// //     //  * @param token
+// //     //  */
+// //     // getContextValue<T>(token: Token<T>, success?: (value: T) => void): T {
+// //     //     if (this.destroyed) {
+// //     //         return null;
+// //     //     }
+// //     //     let key = this.injector.getTokenKey(token);
+// //     //     let value = this.context.getValue(key);
+// //     //     if (isDefined(value)) {
+// //     //         success && success(value);
+// //     //         return value;
+// //     //     }
+// //     //     let ctx = this.getParent() as IAnnoationContext;
+// //     //     while (ctx && !ctx.destroyed) {
+// //     //         value = ctx.context.getValue(key);
+// //     //         if (isDefined(value)) {
+// //     //             success && success(value);
+// //     //             break;
+// //     //         }
+// //     //         ctx = ctx.getParent();
+// //     //     }
+// //     //     return value ?? null;
+// //     // }
+
+// //     // setParent(context: IAnnoationContext): this {
+// //     //     if (context === null) {
+// //     //         this.remove(CTX_PARENT_CONTEXT);
+// //     //     } else {
+// //     //         this.setValue(CTX_PARENT_CONTEXT, context);
+// //     //     }
+// //     //     return this;
+// //     // }
+
+// //     // getParent<T extends IAnnoationContext>(): T {
+// //     //     return this.context.getValue(CTX_PARENT_CONTEXT) as T;
+// //     // }
+
+// //     // addChild(contex: IAnnoationContext) {
+// //     //     let chiledren = this.getChildren();
+// //     //     chiledren.push(contex);
+// //     //     this.setValue(CTX_SUB_CONTEXT, chiledren);
+// //     // }
+
+// //     // removeChild(contex: IAnnoationContext) {
+// //     //     let chiledren = this.getChildren();
+// //     //     if (chiledren) {
+// //     //         return lang.del(chiledren, contex);
+// //     //     }
+// //     //     return [];
+// //     // }
+
+// //     // hasChildren() {
+// //     //     return this.hasValue(CTX_SUB_CONTEXT);
+// //     // }
+
+// //     // getChildren<T extends IAnnoationContext>(): T[] {
+// //     //     return (this.context.getValue(CTX_SUB_CONTEXT) || []) as T[];
+// //     // }
+
+
+// //     /**
+// //      * annoation metadata.
+// //      *
+// //      * @type {ModuleConfigure}
+// //      * @memberof AnnoationContext
+// //      */
+// //     getAnnoation(): IAnnotationMetadata {
+// //         return this.context.getValue(CTX_MODULE_ANNOATION) ?? this.getReflAnnoation();
+// //     }
+
+// //     protected getReflAnnoation(): IAnnotationMetadata {
+// //         let anno = this.type ? this.getTargetReflect()?.annoMetadata : null;
+// //         anno && this.setValue(CTX_MODULE_ANNOATION, anno);
+// //         return anno;
+// //     }
+
+// //     setOptions(options: T) {
+// //         if (!options) {
+// //             return this;
+// //         }
+// //         options.type = options.type || options.module;
+// //         if (options.type) {
+// //             this.setValue(CTX_MODULE, options.type);
+// //         }
+// //         if (options.parent instanceof AnnoationContext) {
+// //             this.setParent(options.parent);
+// //         }
+// //         return super.setOptions(options);
+// //     }
+
+// // }
