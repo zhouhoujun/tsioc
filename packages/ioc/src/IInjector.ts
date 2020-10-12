@@ -82,7 +82,7 @@ export interface IInjector extends IDestoryable {
      * has value or not.
      * @param key
      */
-    hasValue<T>(key: SymbolType<T>): boolean;
+    hasValue<T>(key: Token<T>): boolean;
     /**
      * has register in the injector or root container.
      * @param token the token.

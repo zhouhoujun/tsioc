@@ -5,7 +5,7 @@ import { isFunction } from './utils/lang';
  * destoryable interface.
  */
 export interface IDestoryable {
-    readonly destroyed: boolean;
+    readonly destroyed?: boolean;
     /**
      * destory this.
      */

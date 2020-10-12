@@ -24,6 +24,7 @@ export const BOOTCONTEXT: TokenId<BootContext> = tokenId<BootContext>('BOOT__CON
  */
 export const ApplicationContextToken = BOOTCONTEXT;
 
+export const CONFIGURATION = tokenId<Configure>('CONFIGURATION');
 /**
  * configure manager token.
  */

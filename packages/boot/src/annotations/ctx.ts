@@ -1,6 +1,6 @@
 // import {
 //     Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, PROVIDERS,
-//     IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, refl
+//     IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, refl, InjectorProxy
 // } from '@tsdi/ioc';
 // import { IContainer, ICoreInjector } from '@tsdi/core';
 // import { AnnoationContext, ProdverOption } from '../Context';
@@ -8,10 +8,11 @@
 
 // export class DestoryableContext<T extends ProdverOption> extends Destoryable {
 
-//     public context: IProvider;
+//     private context: IProvider;
 
-//     constructor(injector: ICoreInjector, private options: T) {
+//     constructor(private proxy: InjectorProxy<ICoreInjector>, private options: T) {
 //         super();
+//         const injector =  proxy();
 //         this.context = injector.get(PROVIDERS);
 //         this.context.setValue(INJECTOR, injector);
 //     }
@@ -20,7 +21,7 @@
 //      * raise injector of this context.
 //      */
 //     get injector(): ICoreInjector {
-//         return this.context.getValue(INJECTOR) as ICoreInjector;
+//         return this.proxy();
 //     }
 
 //     /**
@@ -76,22 +77,10 @@
 //     }
 
 //     /**
-//      * get context provider of boot application.
-//      *
-//      * @template T
-//      * @param {Token<T>} token
-//      * @returns {T}
-//      * @memberof BootContext
-//      */
-//     getInstance<T>(token: SymbolType<T>): T {
-//         return this.context.getInstance(token);
-//     }
-
-//     /**
 //      * get value from context.
 //      * @param key token key
 //      */
-//     getValue<T>(key: SymbolType<T>): T {
+//     getValue<T>(key: Token<T>): T {
 //         return this.context.getValue(key);
 //     }
 
@@ -100,7 +89,7 @@
 //      * @param key token key
 //      * @param value value of key.
 //      */
-//     setValue<T>(key: SymbolType<T>, value: T) {
+//     setValue<T>(key: Token<T>, value: T) {
 //         this.context.setValue(key, value);
 //         return this;
 //     }
@@ -174,11 +163,6 @@
 //     }
 
 //     clone(): this;
-//     /**
-//      * clone the context.
-//      * @param empty empty context or not.
-//      */
-//     clone(empty: boolean): this;
 //     clone(options: T): this;
 //     /**
 //      * clone contexts.

@@ -50,19 +50,9 @@ export interface AnnoationContext extends IocContext, IDestoryable {
     */
     readonly type: Type;
     /**
-     * current annoation type decorator.
-     */
-    readonly decorator: string;
-
-    /**
      * current injector.
      */
     readonly injector: ICoreInjector;
-
-    /**
-     * current context providers.
-     */
-    readonly context: IProvider;
     /**
      * get providers of options.
      */
@@ -91,7 +81,7 @@ export interface AnnoationContext extends IocContext, IDestoryable {
      * remove contexts.
      * @param tokens
      */
-    remove(...tokens: SymbolType[]);
+    remove(...tokens: Token[]);
     /**
      * get context provider of boot application.
      *
@@ -100,11 +90,6 @@ export interface AnnoationContext extends IocContext, IDestoryable {
      * @returns {T}
      */
     get<T>(token: Token<T>): T;
-    /**
-     * get instance.
-     * @param token the token key of instance.
-     */
-    getInstance<T>(token: SymbolType<T>): T;
     /**
      * get value from context.
      * @param key token key
@@ -136,12 +121,7 @@ export interface AnnoationContext extends IocContext, IDestoryable {
     /**
      * clone this context.
      */
-    clone(): this;
-    /**
-     * clone this context with out options.
-     * @param empty empty context or not.
-     */
-    clone(empty: boolean): this;
+    clone<T extends AnnoationOption>(options?: T): this;
 
 }
 
@@ -278,11 +258,11 @@ export interface BuildContext extends AnnoationContext {
     /**
      * current type attr data to binding.
      */
-    getTemplate?(): Template;
+    readonly template: Template;
 }
 
 
-export interface BootContext extends BuildContext {
+export interface BootContext extends AnnoationContext {
 
     /**
      * get target reflect.
@@ -325,7 +305,7 @@ export interface BootContext extends BuildContext {
      */
     readonly data: any;
 
-    readonly target: any;
+    readonly template: Template;
     /**
     * auto statupe or not. default true.
     *
@@ -341,6 +321,10 @@ export interface BootContext extends BuildContext {
      */
     readonly deps?: LoadType[];
 
+    readonly bootstrap: Token;
+
+
+    target: any;
     /**
      * boot instance.
      */

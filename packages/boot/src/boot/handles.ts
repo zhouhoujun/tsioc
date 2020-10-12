@@ -2,8 +2,7 @@ import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType,
 import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
 import { AnnoationContext, BootContext } from '../Context';
 import {
-    ProcessRunRootToken, BuilderServiceToken, CTX_APP_CONFIGURE, CTX_MODULE_ANNOATION, CTX_MODULE_INST, CTX_MODULE_BOOT,
-    CTX_MODULE_BOOT_TOKEN, CTX_APP_STARTUPS, CTX_MODULE_STARTUP, BOOTCONTEXT
+    ProcessRunRootToken, BuilderServiceToken, BOOTCONTEXT, CONFIGURATION
 } from '../tk';
 import { ConfigureManager } from '../configure/manager';
 import { ConfigureRegister } from '../configure/register';
@@ -104,12 +103,7 @@ export const BootConfigureLoadHandle = async function (ctx: BootContext, next: (
     }
     let config = await mgr.getConfig();
     let annoation = ctx.reflect.moduleMetadata;
-    if (annoation) {
-        let merger = ctx.getTargetReflect().getDecorProviders?.().getInstance(AnnotationMerger);
-        config = merger ? merger.merge([config, annoation]) : Object.assign({}, config, annoation);
-    }
-
-    ctx.setValue(CTX_APP_CONFIGURE, config);
+    ctx.setValue(CONFIGURATION, {...config, ...annoation});
 
     if (config.deps && config.deps.length) {
         injector.load(...config.deps);
@@ -131,7 +125,7 @@ export class RegisterModuleScope extends BuildHandles<AnnoationContext> implemen
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         if (!ctx.type) {
-            if (ctx.getTemplate() && next) {
+            if (ctx.template && next) {
                 return await next();
             }
             return;
@@ -160,9 +154,8 @@ export const RegisterAnnoationHandle = async function (ctx: BootContext, next: (
     let annoation = reflect.moduleMetadata;
     ctx.setValue(INJECTOR, container.getInjector(ctx.type));
     if (annoation) {
-        ctx.setValue(CTX_MODULE_ANNOATION, annoation);
         if (annoation.baseURL) {
-            ctx.setValue(ProcessRunRootToken, annoation.baseURL);
+            ctx.baseURL = annoation.baseURL;
             ctx.injector.setValue(ProcessRunRootToken, annoation.baseURL);
         }
         next();
@@ -200,11 +193,11 @@ export class ModuleBuildScope extends BuildHandles<BootContext> implements IActi
 
     async execute(ctx: BootContext, next?: () => Promise<void>): Promise<void> {
         // has build module instance.
-        if (!ctx.hasValue(CTX_MODULE_INST) && !ctx.hasValue(CTX_MODULE_BOOT)) {
+        if (!ctx.target && !ctx.boot) {
             await super.execute(ctx);
         }
-        if (!ctx.hasValue(CTX_MODULE_BOOT) && ctx.hasValue(CTX_MODULE_INST)) {
-            ctx.setValue(CTX_MODULE_BOOT, ctx.target)
+        if (!ctx.boot && ctx.target) {
+            ctx.boot = ctx.target;
         }
         if (next) {
             await next();
@@ -218,22 +211,22 @@ export class ModuleBuildScope extends BuildHandles<BootContext> implements IActi
 }
 
 export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.type && !ctx.hasValue(CTX_MODULE_INST)) {
+    if (ctx.type && !ctx.target) {
         let injector = ctx.injector;
         let target = await injector.getInstance(BuilderServiceToken).resolve({
             type: ctx.type,
-            parent: ctx,
+            // parent: ctx,
             providers: ctx.providers
         });
-        target && ctx.setValue(CTX_MODULE_INST, target);
+        ctx.target = target;
     }
     await next();
 };
 
 export const ResolveBootHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    let bootModule = ctx.getValue(CTX_MODULE_BOOT_TOKEN) || ctx.reflect.moduleMetadata?.bootstrap;
-    let template = ctx.getTemplate();
-    if (!ctx.hasValue(CTX_MODULE_BOOT) && (template || bootModule)) {
+    let bootModule = ctx.bootstrap || ctx.reflect.moduleMetadata?.bootstrap;
+    let template = ctx.template;
+    if (!ctx.boot && (template || bootModule)) {
         ctx.providers.inject(
             { provide: BOOTCONTEXT, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx }
@@ -241,12 +234,12 @@ export const ResolveBootHandle = async function (ctx: BootContext, next: () => P
         let injector = ctx.injector;
         let boot = await injector.getInstance(BuilderServiceToken).resolve({
             type: injector.getTokenProvider(bootModule),
-            parent: ctx,
+            // parent: ctx,
             template: template,
             providers: ctx.providers
         });
 
-        boot && ctx.setValue(CTX_MODULE_BOOT, boot);
+        ctx.boot = boot;
 
     }
     await next();
@@ -330,7 +323,7 @@ export class ResolveRunnableScope extends BuildHandles<BootContext> implements I
         if (!(boot instanceof Startup)) {
             super.execute(ctx);
         } else if (boot) {
-            ctx.setValue(CTX_MODULE_STARTUP, boot);
+            ctx.boot = boot;
         }
 
         if (ctx.getStartup()) {
