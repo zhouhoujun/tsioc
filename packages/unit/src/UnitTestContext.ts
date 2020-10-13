@@ -1,11 +1,11 @@
-import { Type, Refs, Injectable, isToken, IInjector } from '@tsdi/ioc';
-import { BootContext, BootOption, ConfigureManager, createContext } from '@tsdi/boot';
+import { Refs, Injectable } from '@tsdi/ioc';
+import { BootContext, ConfigureManager } from '@tsdi/boot';
 import { UnitTestConfigure, UnitTestOptions } from './UnitTestConfigure';
 
 
 @Injectable()
 @Refs('@Suite', BootContext)
-export class UnitTestContext extends BootContext<BootOption> {
+export class UnitTestContext extends BootContext<UnitTestOptions> {
 
     getConfiguration(): UnitTestConfigure {
         return super.getConfiguration();
@@ -13,9 +13,5 @@ export class UnitTestContext extends BootContext<BootOption> {
 
     getConfigureManager(): ConfigureManager<UnitTestConfigure> {
         return super.getConfigureManager();
-    }
-
-    static parse(injector: IInjector, target: Type | UnitTestOptions): UnitTestContext {
-        return createContext(injector, UnitTestContext, isToken(target) ? { module: target } : target);
     }
 }

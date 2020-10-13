@@ -8,6 +8,7 @@ import { IMessage } from './messages/IMessageQueue';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';
 import { MessageHandle } from './messages/handle';
+import { ModuleReflect } from './modules/reflect';
 
 export type BootDecorator = <TFunction extends ClassType<IStartupService>>(target: TFunction) => TFunction | void;
 
@@ -133,9 +134,23 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
  * @returns {IDIModuleDecorator<T>}
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
-    const append = options?.append;
+    options = options || {};
+    const append = options.append;
     return createDecorator<DIModuleMetadata>(name, {
         ...options,
+        handler: [
+            {
+                type: 'class',
+                handles: [
+                    (ctx, next) => {
+                        const reflect = ctx.reflect as ModuleReflect;
+                        reflect.moduleDecorator = ctx.decor;
+                        reflect.moduleMetadata = ctx.matedata;
+                    }
+                ]
+            },
+            ...options.handler || []
+        ],
         append: (meta) => {
             if (append) {
                 append(meta as T);
@@ -310,9 +325,9 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(name: stri
                 handles: [
                     (ctx, next) => {
                         // static main.
-                        if (isClass(ctx.type) && isFunction(ctx.type['main'])) {
+                        if (isClass(ctx.decorType) && isFunction(ctx.decorType['main'])) {
                             setTimeout(() => {
-                                ctx.type['main'](ctx.matedata);
+                                ctx.decorType['main'](ctx.matedata);
                             }, 500);
                         }
                     }

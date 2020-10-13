@@ -2,7 +2,7 @@ import {
     Inject, DecoratorProvider, DesignRegisterer, IocExt, TypeProviderAction
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { BootContext, StartupDecoratorRegisterer, BuildContext, AnnoationAction } from '@tsdi/boot';
+import { IBootContext, StartupDecoratorRegisterer, IBuildContext, AnnoationAction } from '@tsdi/boot';
 import {
     ComponentProvider, ComponentSelectorHandle, AstResolver,
     DefaultComponets, ELEMENT_REF, TEMPLATE_REF, COMPONENT_REF, BindingsCache, Input, Output, RefChild, Vaildate, ComponentRegAction

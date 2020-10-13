@@ -1,10 +1,10 @@
-import { BuildContext, BuildOption, Template } from '../Context';
-import { AnnoationContextImpl } from '../annotations/ctx';
-import { BuildContextFactory } from '../ContextFactory';
-import { ICoreInjector } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
+import { IBuildContext, BuildOption, Template } from '../Context';
+import { AnnoationContext } from '../annotations/ctx';
 
+@Injectable()
+export class BuildContext<T extends BuildOption = BuildOption> extends AnnoationContext<T> implements IBuildContext<T> {
 
-export class BuildContextImpl<T extends BuildOption = BuildOption> extends AnnoationContextImpl<T> implements BuildContext {
     /**
      * current target module
      *

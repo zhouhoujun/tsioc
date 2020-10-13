@@ -4,7 +4,7 @@ import { Provider } from '../tokens';
 import { IActionSetup } from '../Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import {
-    IocRegAction, IocRegScope, RegContext, ExecDecoratorAtion,
+    IocRegAction, IocRegScope, ExecDecoratorAtion,
     DecorsRegisterer, DesignRegisterer, IocDecorScope, DesignContext, RuntimeContext
 } from './reg';
 import { RuntimeLifeScope } from './runtime';
@@ -30,7 +30,7 @@ export class DesignDecorAction extends ExecDecoratorAtion {
 export abstract class DesignDecorScope extends IocDecorScope<DesignContext> implements IActionSetup {
 
     protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
-        const design = ctx.injector.getInstance(DesignRegisterer);
+        const design = this.actInjector.getInstance(DesignRegisterer);
         const registerer = design.getRegisterer(scope);
         const decors = ctx.reflect.decors;
         return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
@@ -144,9 +144,9 @@ export class DesignPropDecorScope extends DesignDecorScope {
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
     const tgReflect = ctx.reflect;
     const injector = ctx.injector;
-    const type = tgReflect.type;
+    const type = ctx.type;
 
-    const registed = injector.getValue(REGISTERED).get(type);
+    const registed = injector.getContainer().getRegistered(type);
     tgReflect.providers.forEach(anno => {
         let provide = injector.getToken(anno.provide, anno.alias);
         registed.provides.push(provide);

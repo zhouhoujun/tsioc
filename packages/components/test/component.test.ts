@@ -1,4 +1,4 @@
-import { DIModule, BootApplication, BootContext } from '@tsdi/boot';
+import { DIModule, BootApplication, IBootContext } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
 import { Component, Input, ComponentsModule, ElementModule, ComponentBuilder, RefChild, NonSerialize, ElementNode, ComponentRef, ElementRef, TemplateRef } from '../src';
 import expect = require('expect');
@@ -242,7 +242,7 @@ class ListModule {
 @Suite('component test')
 export class CTest {
 
-    ctx: BootContext;
+    ctx: IBootContext;
 
     @Before()
     async init() {

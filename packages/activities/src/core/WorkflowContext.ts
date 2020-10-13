@@ -1,5 +1,5 @@
 import { lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
-import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, BootContext } from '@tsdi/boot';
+import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, IBootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
     NodeSelector, CONTEXT_REF, NATIVE_ELEMENT, ROOT_NODES, COMPONENT_TYPE, COMPONENT_INST, TEMPLATE_REF, REFCHILD_SELECTOR

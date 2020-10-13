@@ -9,13 +9,7 @@ import { TypeDefine } from './typedef';
  * @interface Metadate
  */
 export interface Metadate {
-    /**
-     * decorator name.
-     *
-     * @type {string}
-     * @memberof Metadate
-     */
-    decorator?: string;
+
 }
 
 /**
@@ -353,7 +347,7 @@ export interface DecorDefine {
      * decorator name with '@'
      */
     decor: string;
-    type: DecoratorType;
+    decorType: DecoratorType;
     propertyKey?: string;
     parameterIndex?: number;
     matedata?: any;
@@ -363,6 +357,9 @@ export interface DecorDefine {
  * type reflect metadata.
  */
 export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadata {
+
+    readonly type: ClassType;
+
     /**
      * decorator defines of the class type.
      */

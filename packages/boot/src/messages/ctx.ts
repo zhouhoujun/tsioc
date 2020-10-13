@@ -1,8 +1,8 @@
-import { Injectable, isDefined } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ProdverOption } from '../Context';
-import { AnnoationContextImpl, DestoryableContext } from '../annotations/ctx';
-import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT, CTX_CURR_INJECTOR } from '../tk';
+import { DestoryableContext } from '../annotations/ctx';
+import { CTX_CURR_INJECTOR } from '../tk';
 
 
 
@@ -57,7 +57,7 @@ export interface MessageOption extends ProdverOption {
  * @extends {HandleContext}
  */
 @Injectable
-export class MessageContext<T extends MessageOption = MessageOption> extends AnnoationContextImpl<T>  {
+export class MessageContext<T extends MessageOption = MessageOption> extends DestoryableContext<T>  {
 
     /**
      * get injector of current message queue.
@@ -73,7 +73,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ann
      * @memberof MessageContext
      */
     get target(): any {
-        return this.getValue(CTX_MSG_TARGET);
+        return this.options.target;
     }
 
     /**
@@ -83,7 +83,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ann
      * @memberof MessageContext
      */
     get type(): string {
-        return this.context.getValue(CTX_MSG_TYPE);
+        return this.options.type;
     }
     /**
      * message event
@@ -92,7 +92,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ann
      * @memberof MessageContext
      */
     get event(): string {
-        return this.context.getValue(CTX_MSG_EVENT);
+        return this.options.event;
     }
 
     /**
@@ -102,28 +102,16 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Ann
      * @memberof MessageContext
      */
     get data(): any {
-        return this.context.getValue(CTX_DATA);
+        return this.options.data;
     }
 
     set data(data: any) {
-        this.setValue(CTX_DATA, data);
+        this.options.data = data;
     }
 
-    setOptions(options: T) {
+    protected setOptions(options: T) {
         if (!options) {
             return this;
-        }
-        if (isDefined(options.data)) {
-            this.setValue(CTX_DATA, options.data);
-        }
-        if (options.target) {
-            this.setValue(CTX_MSG_TARGET, options.target)
-        }
-        if (options.type) {
-            this.setValue(CTX_MSG_TYPE, options.type);
-        }
-        if (options.event) {
-            this.setValue(CTX_MSG_EVENT, options.event);
         }
         return super.setOptions(options);
     }

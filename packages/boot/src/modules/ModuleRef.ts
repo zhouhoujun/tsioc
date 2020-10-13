@@ -1,6 +1,9 @@
-import { Type, IInjector } from '@tsdi/ioc';
-import { ModuleReflect } from './reflect';
+import { Type, IInjector, Registered } from '@tsdi/ioc';
 
+
+export interface ModuleRegistered extends Registered {
+    moduleRef?: ModuleRef;
+}
 
 export class ModuleRef<T = any> {
 

@@ -1,5 +1,5 @@
 import { Injectable, Refs } from '@tsdi/ioc';
-import { BuildContext } from '@tsdi/boot';
+import { IBuildContext } from '@tsdi/boot';
 import { ActivityContext, CtxExpression, Activity } from '@tsdi/activities';
 import { IPlatformService, PlatformServiceToken } from './IPlatformService';
 

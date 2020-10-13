@@ -1,5 +1,5 @@
 import { lang, Type, Abstract, Inject, IDestoryable, Destoryable } from '@tsdi/ioc';
-import { BootContext } from '../Context';
+import { IBootContext } from '../Context';
 import { BOOTCONTEXT } from '../tk';
 
 
@@ -19,7 +19,7 @@ export interface IStartup<T = any> extends IDestoryable {
      * @type {TCtx}
      * @memberof IRunnable
      */
-    getContext(): BootContext;
+    getContext(): IBootContext;
 
     /**
      * get boot instance.
@@ -38,7 +38,7 @@ export interface IStartup<T = any> extends IDestoryable {
      * @returns {(Promise<void>)}
      * @memberof IStartup
      */
-    configureService(ctx: BootContext): Promise<void>;
+    configureService(ctx: IBootContext): Promise<void>;
 
     /**
      *  startup boot.
@@ -59,7 +59,7 @@ export interface IStartup<T = any> extends IDestoryable {
 @Abstract()
 export abstract class Startup<T = any> extends Destoryable implements IStartup<T> {
 
-    @Inject(BOOTCONTEXT) protected context: BootContext;
+    @Inject(BOOTCONTEXT) protected context: IBootContext;
 
     /**
      * runable context.
@@ -67,7 +67,7 @@ export abstract class Startup<T = any> extends Destoryable implements IStartup<T
      * @type {TCtx}
      * @memberof IRunnable
      */
-    getContext(): BootContext {
+    getContext(): IBootContext {
         return this.context;
     }
 
@@ -86,7 +86,7 @@ export abstract class Startup<T = any> extends Destoryable implements IStartup<T
      * @returns {(Promise<void>)}
      * @memberof IStartup
      */
-    abstract configureService(ctx: BootContext): Promise<void>;
+    abstract configureService(ctx: IBootContext): Promise<void>;
 
     /**
      *  startup boot.

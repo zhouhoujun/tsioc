@@ -150,14 +150,15 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
         const injector = ctx.injector;
         if (ctx.reflect.methodParams.has('constructor')) {
             ctx.params = ctx.reflect.methodParams.get('constructor');
-        } else {
-            const pkey = ctx.propertyKey;
-            ctx.propertyKey = 'constructor';
-            injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
-            ctx.propertyKey = pkey;
-            ctx.params = ctx.reflect.methodParams.get('constructor');
         }
-        ctx.args = injector.createParams(ctx.params, ctx.providers);
+        //  else {
+        //     const pkey = ctx.propertyKey;
+        //     ctx.propertyKey = 'constructor';
+        //     injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
+        //     ctx.propertyKey = pkey;
+        //     ctx.params = ctx.reflect.methodParams.get('constructor');
+        // }
+        ctx.args = injector.createParams(ctx.params || [], ctx.providers);
     }
     next();
 };
@@ -206,7 +207,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
 export abstract class RuntimeDecorScope extends IocDecorScope<RuntimeContext> {
 
     protected getScopeDecorators(ctx: RuntimeContext, scope: DecoratorScope): string[] {
-        const runtime = ctx.injector.getInstance(RuntimeRegisterer);
+        const runtime = this.actInjector.getInstance(RuntimeRegisterer);
         const registerer = runtime.getRegisterer(scope);
         const decors = ctx.reflect.decors;
         return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));

@@ -4,7 +4,7 @@ import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BuilderServiceToken, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
-import { BootOption, BootContext } from './Context';
+import { BootOption, IBootContext } from './Context';
 
 
 /**
@@ -13,7 +13,7 @@ import { BootOption, BootContext } from './Context';
  * @export
  * @class BootApplication
  */
-export class BootApplication<T extends BootContext = BootContext> extends Destoryable implements IBootApplication, ContextInit<T> {
+export class BootApplication<T extends IBootContext = IBootContext> extends Destoryable implements IBootApplication, ContextInit<T> {
 
     /**
      * application context.
@@ -80,10 +80,10 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
      * @param {(ClassType<T> | BootOption)} target
      * @param {(LoadType[] | LoadType | string)} [deps]  application run depdences.
      * @param {...string[]} args
-     * @returns {Promise<BootContext>}
+     * @returns {Promise<IBootContext>}
      * @memberof BootApplication
      */
-    static run<T>(target: ClassType<T> | BootOption, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<BootContext> {
+    static run<T>(target: ClassType<T> | BootOption, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<IBootContext> {
         let { deps: dep, args: arg } = checkBootArgs(deps, ...args);
         return new BootApplication(target, dep).run(...arg);
     }

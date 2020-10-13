@@ -37,11 +37,11 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      * @param type
      */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T {
-        return (this.getValue(REGISTERED).get(type)?.getInjector() || this) as T;
+        return this.getValue(REGISTERED).get(type)?.getInjector() as T;
     }
 
-    getRegistered(type: ClassType): Registered {
-        return this.getValue(REGISTERED).get(type);
+    getRegistered<T extends Registered>(type: ClassType): T {
+        return this.getValue(REGISTERED).get(type) as T;
     }
 
     isRegistered(type: ClassType): boolean {
@@ -115,7 +115,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      */
     registerIn<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean) {
         // make sure class register once.
-        if (this.getValue(REGISTERED).has(type) || this.hasRegister(type)) {
+        if (this.isRegistered(type) || this.hasRegister(type)) {
             if (provide) {
                 this.set(provide, (...providers) => injector.resolve(type, ...providers));
             }

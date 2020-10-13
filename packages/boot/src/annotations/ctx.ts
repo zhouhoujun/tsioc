@@ -1,32 +1,26 @@
 import {
     isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type,
-    IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, isClass
+    IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, isClass, Inject, Abstract
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
-import { AnnoationContext, AnnoationOption } from '../Context';
-import { CTX_PROVIDERS } from '../tk';
+import { AnnoationOption, IAnnoationContext, IDesctoryableContext, ProdverOption } from '../Context';
+import { CTX_OPTIONS, CTX_PROVIDERS } from '../tk';
 
 
-export class AnnoationContextImpl<T extends AnnoationOption, TRefl extends TypeReflect = TypeReflect> extends Destoryable implements AnnoationContext {
+/**
+ * annoation context.
+ */
+@Abstract()
+export class DestoryableContext<T extends ProdverOption> extends Destoryable implements IDesctoryableContext<T> {
 
     private context: IProvider;
     protected options: T;
 
-    constructor(injector: ICoreInjector, options: T) {
+    constructor(@Inject(INJECTOR) injector: ICoreInjector, @Inject(CTX_OPTIONS) options: T) {
         super();
         this.context = injector.get(PROVIDERS);
         this.setOptions(options);
         this.context.setValue(INJECTOR, injector);
-    }
-
-    private _type: Type;
-    get type() {
-        return this._type;
-    }
-
-    private _reflect: TRefl;
-    get reflect(): TRefl {
-        return this._reflect;
     }
 
     /**
@@ -138,11 +132,6 @@ export class AnnoationContextImpl<T extends AnnoationOption, TRefl extends TypeR
             return;
         }
 
-        if (options.type) {
-            this._type = isClass(options.type) ? options.type : this.injector.getTokenProvider(options.type);
-            this._reflect = refl.getIfy(this._type);
-        }
-
         if (options.contexts) {
             if (isInjector(options.contexts)) {
                 this.context.copy(options.contexts);
@@ -188,7 +177,43 @@ export class AnnoationContextImpl<T extends AnnoationOption, TRefl extends TypeR
 
     protected destroying() {
         this.context.destroy();
+        this.options = null;
         this.context = null;
+    }
+}
+
+/**
+ * annoation context.
+ */
+@Abstract()
+export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeReflect = TypeReflect> extends DestoryableContext<T> implements IAnnoationContext<T> {
+
+
+    private _type: Type;
+    get type() {
+        return this._type;
+    }
+
+    private _reflect: TRefl;
+    get reflect(): TRefl {
+        return this._reflect;
+    }
+
+    /**
+     * set options for context.
+     * @param options options.
+     */
+    protected setOptions(options: T): this {
+        if (!options) {
+            return;
+        }
+
+        if (options.type) {
+            this._type = isClass(options.type) ? options.type : this.injector.getTokenProvider(options.type);
+            this._reflect = refl.getIfy(this._type);
+        }
+
+        return super.setOptions(options);
     }
 }
 

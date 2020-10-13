@@ -23,7 +23,7 @@ export interface JoinpointOption {
 }
 
 
-export const AOP_METHOD_ANNOTATIONS = tokenId<(ClassMetadata | MethodMetadata)[]>('AOP_METHOD_ANNOTATIONS');
+export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
 
 
 /**
@@ -115,16 +115,16 @@ export class Joinpoint implements IocContext {
     /**
      * orgin pointcut method metadatas.
      *
-     * @type {TypeMetadata[]}
+     * @type {any[]}
      * @memberof Joinpoint
      */
-    get annotations(): TypeMetadata[] {
+    get annotations(): any[] {
         return this.routeValue(AOP_METHOD_ANNOTATIONS);
     }
     /**
      * set annotations.
      */
-    set annotations(meta: TypeMetadata[]) {
+    set annotations(meta: any[]) {
         this.providers.setValue(AOP_METHOD_ANNOTATIONS, meta);
     }
 

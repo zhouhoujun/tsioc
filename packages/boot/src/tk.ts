@@ -1,15 +1,13 @@
-import { Type, tokenId, IProvider, Token, TokenId, IInjector, TypeReflect } from '@tsdi/ioc';
+import { tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { ModuleConfigure } from './modules/configure';
 import { Configure } from './configure/Configure';
 import { IStartup } from './runnable/Startup';
-import { AnnoationOption, AnnoationContext, BootContext, BuildOption, BootOption, BuildContext } from './Context';
+import { IBootContext } from './Context';
 import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
 import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { ModuleInjector } from './modules/injector';
-import { ContextFactory } from './ContextFactory';
 
 
 
@@ -17,7 +15,7 @@ import { ContextFactory } from './ContextFactory';
 /**
  *  current application boot context token.
  */
-export const BOOTCONTEXT: TokenId<BootContext> = tokenId<BootContext>('BOOT__CONTEXT');
+export const BOOTCONTEXT: TokenId<IBootContext> = tokenId<IBootContext>('BOOT__CONTEXT');
 
 /**
  * current application boot context token.
@@ -76,7 +74,7 @@ export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypePa
 /**
  * appliction root module injector token.
  */
-export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_MODULE');
+export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_INJECTOR');
 
 /**
  * module boot startup instance.
@@ -90,9 +88,9 @@ export const MODULE_STARTUPS = tokenId<Token[]>('MODULE_STARTUPS');
 
 export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
 
-export const BUILD_CONTEX_FACTORY = tokenId<ContextFactory<BuildOption, BuildContext>>('BUILD_CONTEX_FACTORY');
+export const CTX_OPTIONS = tokenId<any>('CTX_OPTIONS');
 
-export const BOOT_CONTEX_FACTORY = tokenId<ContextFactory<BootOption, BootContext>>('BOOT_CONTEX_FACTORY');
+export const CTX_CURR_INJECTOR = tokenId<ICoreInjector>('CTX_CURR_INJECTOR');
 
 // export const CTX_PARENT_CONTEXT: TokenId<AnnoationContext> = tokenId<AnnoationContext>('CTX_PARENT_CONTEXT');
 // export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');

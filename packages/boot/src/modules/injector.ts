@@ -1,4 +1,4 @@
-import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProvider, ContextProvider, TypeReflectsToken, InjectorProxy, TokenId } from '@tsdi/ioc';
+import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProvider, ContextProvider, InjectorProxy, TokenId } from '@tsdi/ioc';
 import { CoreInjector, IContainer } from '@tsdi/core';
 import { ModuleRef } from './ModuleRef';
 
@@ -125,7 +125,7 @@ export class ModuleProviders extends ContextProvider implements IProvider {
 
     export(type: Type) {
         this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
-        this.getValue(TypeReflectsToken).get(type).provides?.forEach(p => {
+        this.getContainer().getRegistered(type).provides?.forEach(p => {
             this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
         });
     }

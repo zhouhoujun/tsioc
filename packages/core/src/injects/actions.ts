@@ -145,7 +145,7 @@ export const InjRegTypeAction = function (ctx: InjContext, next: () => void): vo
  */
 export class InjIocExtScope extends InjRegScope {
     protected getTypes(ctx: InjContext): Type[] {
-        return ctx.types.filter(ty => refl.getIfy(ty).decors.some(d => d.decor === ctx.currDecor && d.type === 'class'));
+        return ctx.types.filter(ty => refl.getIfy(ty).decors.some(d => d.decor === ctx.currDecor && d.decorType === 'class'));
     }
 
     protected setNextRegTypes(ctx: InjContext, registered: Type[]) {

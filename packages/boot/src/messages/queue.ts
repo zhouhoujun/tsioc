@@ -1,5 +1,5 @@
 import {
-    isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken,
+    isClass, Injectable, isString, isFunction, Token, isUndefined, Inject, isToken,
     Action, AsyncHandler, InjectorProxyToken, InjectorProxy, ClassType, isInjector, Singleton
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
@@ -7,7 +7,7 @@ import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
-import { CTX_CURR_INJECTOR, RootMessageQueueToken } from '../tk';
+import { CTX_CURR_INJECTOR, CTX_OPTIONS, RootMessageQueueToken } from '../tk';
 
 
 
@@ -102,7 +102,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                 data = undefined;
             }
             injector = injector || this.getInjector();
-            let ctx = injector.getService({ token: MessageContext, target: this, defaultToken: MessageContext });
+            let option;
             if (isString(event)) {
                 if (!isString(type)) {
                     data = type;
@@ -111,18 +111,18 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                     data = type;
                     type = undefined;
                 }
-                ctx.setOptions({
+                option = {
                     event: event,
                     type: type,
                     data: data
-                });
+                };
             } else {
                 if (event.injector) {
                     injector = event.injector;
                 }
-                ctx.setOptions(event);
+                option = event;
             }
-            ctx.setValue(INJECTOR, injector);
+            let ctx = injector.getService({ token: MessageContext, target: this, defaultToken: MessageContext }, { provide: CTX_OPTIONS, useValue: option });
 
             return this.execute(ctx as T);
         }

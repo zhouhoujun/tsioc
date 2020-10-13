@@ -27,6 +27,9 @@ export class TypeDefine {
     }
 
     getParamNames(method: string): string[] {
+        if (method === 'constructor') {
+            method = '__constructor';
+        }
         return this.getParams()[method] || [];
     }
 
@@ -56,20 +59,12 @@ export class TypeDefine {
                             }
                         }
                     });
-                    meta['constructor'] = getParamNames(ty.prototype.constructor);
-                }
-                // fix bug inherit with no constructor
-                if (meta['constructor'].length === 0) {
-                    lang.forInClassChain(ty, child => {
-                        let names = getParamNames(child.prototype.constructor);
-                        if (names.length) {
-                            meta['constructor'] = names;
-                            return false;
-                        }
-                        return true;
-                    })
+                    if (!meta['__constructor'] || meta['__constructor'].length < 1) {
+                        meta['__constructor'] = getParamNames(ty.prototype.constructor);
+                    }
                 }
             });
+
             this.params = meta;
         }
         return this.params;

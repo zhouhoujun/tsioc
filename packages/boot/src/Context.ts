@@ -8,7 +8,6 @@ import { IConfigureManager } from './configure/IConfigureManager';
 import { Configure } from './configure/Configure';
 import { ModuleReflect } from './modules/reflect';
 import { IStartup } from './runnable/Startup';
-import { AnnotationMetadata } from './annotations/reflect';
 import { BootstrapMetadata } from './decorators';
 
 export interface ProdverOption {
@@ -44,13 +43,9 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
 }
 
 /**
- * annoation context interface.
+ * destoryable context.
  */
-export interface AnnoationContext extends IocContext, IDestoryable {
-    /**
-    * current build type.
-    */
-    readonly type: Type;
+export interface IDesctoryableContext<T> extends IocContext, IDestoryable {
     /**
      * current injector.
      */
@@ -60,14 +55,7 @@ export interface AnnoationContext extends IocContext, IDestoryable {
      */
     readonly providers: IProvider;
 
-    readonly reflect: TypeReflect;
-
-    getOptions(): AnnoationOption;
-
-    /**
-     * get current DI module ref.
-     *
-    getModuleRef(): ModuleRef;
+    getOptions(): T;
 
     /**
      * has register in context or not.
@@ -123,7 +111,21 @@ export interface AnnoationContext extends IocContext, IDestoryable {
     /**
      * clone this context.
      */
-    clone<T extends AnnoationOption>(options?: T): this;
+    clone(options?: T): this;
+}
+
+/**
+ * annoation context interface.
+ */
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IDesctoryableContext<T> {
+    /**
+    * current build type.
+    */
+    readonly type: Type;
+    /**
+     * type reflect.
+     */
+    readonly reflect: TypeReflect;
 
 }
 
@@ -250,7 +252,7 @@ export interface BuildOption<T = any> extends AnnoationOption<T> {
  * @interface IBuildContext
  * @extends {IHandleContext}
  */
-export interface BuildContext extends AnnoationContext {
+export interface IBuildContext<T extends BuildOption = BuildOption> extends IAnnoationContext<T> {
 
     /**
      * build instance.
@@ -264,7 +266,7 @@ export interface BuildContext extends AnnoationContext {
 }
 
 
-export interface BootContext extends AnnoationContext {
+export interface IBootContext<T extends BootOption = BootOption> extends IAnnoationContext<T> {
 
     /**
      * get target reflect.
@@ -332,9 +334,7 @@ export interface BootContext extends AnnoationContext {
      */
     boot?: any;
 
-    getOptions(): BootOption;
-
-    getAnnoation(): BootstrapMetadata;
+    getAnnoation<T extends BootstrapMetadata>(): T;
 
     /**
      * get boot statup.

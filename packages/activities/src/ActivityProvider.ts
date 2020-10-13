@@ -1,6 +1,6 @@
 import { Type, Singleton, SymbolType, ClassType } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { AnnoationContext } from '@tsdi/boot';
+import { IAnnoationContext } from '@tsdi/boot';
 import { ComponentProvider, ITemplateOption, ITemplateContext, CONTEXT_REF, NATIVE_ELEMENT, IElementRef, IComponentRef } from '@tsdi/components';
 import { SequenceActivity } from './activities';
 import { Activity } from './core/Activity';
@@ -49,7 +49,7 @@ export class ActivityProvider extends ComponentProvider {
 
     parseRef = true;
 
-    isTemplateContext(context: AnnoationContext): boolean {
+    isTemplateContext(context: IAnnoationContext): boolean {
         return context instanceof ActivityContext;
     }
 

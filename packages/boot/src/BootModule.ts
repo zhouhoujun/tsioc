@@ -1,11 +1,11 @@
 import { Inject, IocExt, DesignRegisterer, DecoratorScope } from '@tsdi/ioc';
-import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
+import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
 import { MessageContext } from './messages/ctx';
 import { MessageQueue, RootMessageQueue } from './messages/queue';
 import { InjDIModuleScope } from './registers/Inj-module';
 import { MessageRegisterAction } from './registers/message';
-import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope } from './registers/module';
+import { AnnoationRegInAction, AnnoationRegisterScope } from './registers/module';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
@@ -13,11 +13,9 @@ import { StartupDecoratorRegisterer } from './handles/register';
 import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope } from './boot/lifescope';
-import { StartupRegisterAction } from './registers/startup';
-import { BOOT_CONTEX_FACTORY, BUILD_CONTEX_FACTORY } from './tk';
-import { BuildContextImpl } from './builder/ctx';
-import { BootOption, BuildOption } from './Context';
-import { BootContextImpl } from './boot/ctx';
+import { StartupRegisterAction } from './registers/startup'
+import { BuildContext } from './builder/ctx';
+import { BootContext } from './boot/ctx';
 
 
 /**
@@ -58,24 +56,7 @@ export class BootModule {
         desgReger.register(Message, { scope: aftAnn, action: MessageRegisterAction })
             .register(Boot, { scope: aftAnn, action: StartupRegisterAction });
 
-        container.inject(
-            {
-                provide: BUILD_CONTEX_FACTORY,
-                useValue: {
-                    create(injector: ICoreInjector, options: BuildOption) {
-                        return new BuildContextImpl(injector, options);
-                    }
-                }
-            },
-            {
-                provide: BOOT_CONTEX_FACTORY,
-                useValue: {
-                    create(injector: ICoreInjector, options: BootOption) {
-                        return new BootContextImpl(injector, options);
-                    }
-                }
-            },
-            BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
+        container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 
 
     }
@@ -92,7 +73,6 @@ export function registerModule(decorator: string | Function, registerer: DesignR
     return registerer.register(decorator,
         { scope: 'Inj', action: InjDIModuleScope },
         { scope: 'BeforeAnnoation', action: AnnoationRegInAction },
-        { scope: cls, action: AnnoationAction },
         { scope: 'Annoation', action: AnnoationRegisterScope }
     );
 }

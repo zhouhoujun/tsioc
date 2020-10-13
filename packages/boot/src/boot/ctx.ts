@@ -6,10 +6,10 @@ import {
 } from '../tk';
 import { Configure } from '../configure/Configure';
 import { ConfigureManager } from '../configure/manager';
-import { AnnoationContextImpl } from '../annotations/ctx';
+import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';
 import { BootstrapMetadata } from '../decorators';
-import { BootOption, BootContext, Template } from '../Context';
+import { BootOption, IBootContext, Template } from '../Context';
 
 
 /**
@@ -19,7 +19,7 @@ import { BootOption, BootContext, Template } from '../Context';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class BootContextImpl<T extends BootOption = BootOption> extends AnnoationContextImpl<T, ModuleReflect> implements BootContext {
+export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T, ModuleReflect> implements IBootContext<T> {
 
     /**
      * get log manager.
@@ -61,8 +61,8 @@ export class BootContextImpl<T extends BootOption = BootOption> extends Annoatio
         return url;
     }
 
-    getAnnoation(): BootstrapMetadata {
-        return this.reflect.moduleMetadata;
+    getAnnoation<T extends BootstrapMetadata>(): T {
+        return this.reflect.moduleMetadata as T;
     }
 
     /**

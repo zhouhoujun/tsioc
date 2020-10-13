@@ -2,7 +2,7 @@ import {
     ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup, Inject, INJECTOR,
     isClass, isNullOrUndefined
 } from '@tsdi/ioc';
-import { AnnoationContext, BuildContext } from '../Context';
+import { IAnnoationContext, IBuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
 
@@ -17,7 +17,7 @@ import { Handles } from '../handles/Handles';
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends AnnoationContext = BuildContext> extends Handle<T> {
+export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> extends Handle<T> {
     constructor(@Inject(ActionInjectorToken) protected actInjector: IActionInjector) {
         super();
     }
@@ -31,7 +31,7 @@ export abstract class BuildHandle<T extends AnnoationContext = BuildContext> ext
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends AnnoationContext = BuildContext> extends Handles<T> {
+export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends Handles<T> {
     constructor(@Inject(ActionInjectorToken) protected actInjector: IActionInjector) {
         super();
     }
@@ -50,7 +50,7 @@ export class BuildHandles<T extends AnnoationContext = BuildContext> extends Han
 
 
 
-export abstract class ResolveHandle extends BuildHandle<BuildContext> {
+export abstract class ResolveHandle extends BuildHandle<IBuildContext> {
 
 }
 
@@ -59,11 +59,11 @@ export abstract class ResolveHandle extends BuildHandle<BuildContext> {
  *
  * @export
  * @class ResolveMoudleScope
- * @extends {BuildHandles<BuildContext>}
+ * @extends {BuildHandles<IBuildContext>}
  */
-export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IActionSetup {
+export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements IActionSetup {
 
-    async execute(ctx: BuildContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.value) {
             return;
         }
@@ -92,7 +92,7 @@ export class ResolveMoudleScope extends BuildHandles<BuildContext> implements IA
     }
 }
 
-export const ResolveModuleHandle = async function (ctx: BuildContext, next: () => Promise<void>): Promise<void> {
+export const ResolveModuleHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
     if (!ctx.value && ctx.type) {
         ctx.value = ctx.injector.resolve(ctx.type, ctx.providers);
     }

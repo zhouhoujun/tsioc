@@ -1,13 +1,13 @@
 import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../builder/handles';
-import { AnnoationContext } from '../Context';
+import { IAnnoationContext } from '../Context';
 import {
     RegisterModuleScope, ModuleBuildScope, ResolveRunnableScope, StartupBootHandle,
     RegBootEnvScope, BootConfigureRegisterHandle, StatupServiceScope
 } from './handles';
 
 
-export class RunnableBuildLifeScope extends BuildHandles<AnnoationContext> implements IActionSetup {
+export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
         this.use(RegisterModuleScope)
@@ -19,7 +19,7 @@ export class RunnableBuildLifeScope extends BuildHandles<AnnoationContext> imple
 
 
 
-export class BootLifeScope extends BuildHandles<AnnoationContext> implements IActionSetup {
+export class BootLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
         this.use(RegBootEnvScope)

@@ -6,8 +6,7 @@ export const StartupRegisterAction = function (ctx: DesignContext, next: () => v
     const injector = ctx.injector;
     const classType = ctx.type;
     let startups = injector.get(STARTUPS) || [];
-    let metas = ctx.reflects.getMetadata<BootMetadata>(ctx.currDecor, classType);
-    const meta = metas[0] || <BootMetadata>{};
+    const meta = ctx.reflect.getMetadata<BootMetadata>(ctx.currDecor) || {};
     let idx = -1;
     if (meta.before) {
         idx = isString(meta.before) ? 0 : startups.indexOf(meta.before);
