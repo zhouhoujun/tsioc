@@ -99,11 +99,8 @@ export class AdviceMatcher implements IAdviceMatcher {
                 // }
             }
 
-            Object.getOwnPropertyNames(adviceMetas).forEach(name => {
-                let advices = adviceMetas[name];
-                advices.forEach(metadata => {
-                    matched = matched.concat(this.filterPointcut(tagref, points, metadata));
-                });
+            adviceMetas.forEach(metadata => {
+                matched = matched.concat(this.filterPointcut(tagref, points, metadata));
             });
         }
 

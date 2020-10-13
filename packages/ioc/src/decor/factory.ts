@@ -6,7 +6,7 @@ import {
 import { Type } from '../types';
 import { isToken, isProvideToken } from '../tokens';
 import {
-    Metadate, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
+    Metadata, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
     TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata, ProvideMetadata
 } from './metadatas';
 import { ArgsContext, ArgsIteratorAction } from './args';
@@ -68,7 +68,7 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
     return factory;
 }
 
-function argsToMetadata<T extends Metadate>(args: any[], actions?: ArgsIteratorAction<T>[]): T {
+function argsToMetadata<T extends Metadata>(args: any[], actions?: ArgsIteratorAction<T>[]): T {
     let metadata: T = null;
     if (args.length) {
         if (args.length === 1 && isMetadataObject(args[0])) {

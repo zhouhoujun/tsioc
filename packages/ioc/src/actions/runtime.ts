@@ -18,8 +18,7 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
 
     setup() {
         this.actInjector
-            .regAction(ra.RuntimeDecorAction)
-            .regAction(ra.RuntimeParamScope);
+            .regAction(ra.RuntimeDecorAction);
 
         this.use(InitReflectAction)
             .use(ra.IocGetCacheAction)

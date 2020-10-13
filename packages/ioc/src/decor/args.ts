@@ -1,4 +1,4 @@
-import { Metadate } from './metadatas';
+import { Metadata } from './metadatas';
 import { Handler } from '../utils/lang';
 
 /**
@@ -7,7 +7,7 @@ import { Handler } from '../utils/lang';
  * @export
  * @class ArgsContext
  */
-export class ArgsContext<T extends Metadate = Metadate> {
+export class ArgsContext<T extends Metadata = Metadata> {
     constructor(public args: any[]) {
         this.currIndex = 0;
         this.metadata = {} as T;
@@ -43,4 +43,4 @@ export class ArgsContext<T extends Metadate = Metadate> {
 /**
  * args iterator action.
  */
-export type ArgsIteratorAction<T extends Metadate = Metadate> = Handler<ArgsContext<T>>;
+export type ArgsIteratorAction<T extends Metadata = Metadata> = Handler<ArgsContext<T>>;

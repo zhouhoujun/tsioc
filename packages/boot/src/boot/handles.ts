@@ -103,7 +103,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     }
     let config = await mgr.getConfig();
     let annoation = ctx.reflect.moduleMetadata;
-    ctx.setValue(CONFIGURATION, {...config, ...annoation});
+    ctx.setValue(CONFIGURATION, { ...config, ...annoation });
 
     if (config.deps && config.deps.length) {
         injector.load(...config.deps);
@@ -136,7 +136,8 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
         // has module register or not.
         if (!ctx.getContainer().isRegistered(ctx.type)) {
             await super.execute(ctx);
-        } else if (next) {
+        }
+        if (next) {
             await next();
         }
     }
@@ -322,9 +323,8 @@ export class ResolveRunnableScope extends BuildHandles<IBootContext> implements 
         if (!(boot instanceof Startup)) {
             super.execute(ctx);
         } else if (boot) {
-            ctx.boot = boot;
+            ctx.setValue(MODULE_STARTUP, boot);
         }
-
         if (ctx.getStartup()) {
             await next();
         }

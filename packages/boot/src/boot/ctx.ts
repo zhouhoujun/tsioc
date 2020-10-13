@@ -1,8 +1,8 @@
-import { Token } from '@tsdi/ioc';
+import { Injectable, Token } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { IStartup } from '../runnable/Startup';
 import {
-    CONFIGURATION, MODULE_STARTUP, ProcessRunRootToken
+    CONFIGURATION, MODULE_STARTUP, MODULE_STARTUPS, ProcessRunRootToken
 } from '../tk';
 import { Configure } from '../configure/Configure';
 import { ConfigureManager } from '../configure/manager';
@@ -19,6 +19,7 @@ import { BootOption, IBootContext, Template } from '../Context';
  * @class BootContext
  * @extends {HandleContext}
  */
+@Injectable()
 export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T, ModuleReflect> implements IBootContext<T> {
 
     /**
@@ -40,7 +41,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * get statup service tokens.
      */
     getStarupTokens(): Token[] {
-        return this.options.startups;
+        return this.getValue(MODULE_STARTUPS);
     }
 
     /**

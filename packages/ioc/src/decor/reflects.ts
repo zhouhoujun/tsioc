@@ -98,7 +98,7 @@ export namespace refl {
             }
             meta.paramName = name;
             meta.type = type;
-            params.push(meta);
+            params.unshift(meta);
         }
         return next();
     };
@@ -251,6 +251,7 @@ export namespace refl {
     }
 
     export function dispatchTypeDecor(type: ClassType, define: DecorDefine) {
+        console.log(type, Reflect.getMetadata('design:paramtypes', type));
         dispatch(typeDecorActions, type, type, define);
     }
 
@@ -259,6 +260,7 @@ export namespace refl {
     }
 
     export function dispatchMethodDecor(type: any, define: DecorDefine) {
+        console.log(type.constructor, Reflect.getMetadata('design:paramtypes', type, define.propertyKey))
         dispatch(methodDecorActions, type, type.constructor, define);
     }
 
@@ -278,9 +280,9 @@ export namespace refl {
         return isDefined(type[refFiled]);
     }
 
-    export function set(type: ClassType, typeInfo: TypeReflect) {
-        type[refFiled] = () => typeInfo;
-    }
+    // export function set(type: ClassType, typeInfo: TypeReflect) {
+    //     type[refFiled] = () => typeInfo;
+    // }
 
     export function get<T extends TypeReflect>(type: ClassType): T {
         return type[refFiled]?.() as T || null;

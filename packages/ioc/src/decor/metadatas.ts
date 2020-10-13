@@ -6,10 +6,16 @@ import { TypeDefine } from './typedef';
  * metadata
  *
  * @export
- * @interface Metadate
+ * @interface Metadata
  */
-export interface Metadate {
-
+export interface Metadata {
+    /**
+     * property type
+     *
+     * @type {SymbolType}
+     * @memberof TypeMetadata
+     */
+    type?: ClassType;
 }
 
 /**
@@ -18,14 +24,8 @@ export interface Metadate {
  * @export
  * @interface TypeMetadata
  */
-export interface TypeMetadata extends Metadate {
-    /**
-     * property type
-     *
-     * @type {SymbolType}
-     * @memberof TypeMetadata
-     */
-    type?: ClassType;
+export interface TypeMetadata extends Metadata {
+
     /**
      * is abstract or not.
      */
@@ -156,7 +156,7 @@ export interface ProvidersMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface PropertyMetadata extends ProvideMetadata, TypeMetadata {
+export interface PropertyMetadata extends ProvideMetadata, Metadata {
     /**
      * property name
      *
@@ -172,7 +172,7 @@ export interface PropertyMetadata extends ProvideMetadata, TypeMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface MethodMetadata extends Metadate {
+export interface MethodMetadata extends Metadata {
     /**
      * param providers
      *

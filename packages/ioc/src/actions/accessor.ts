@@ -3,11 +3,9 @@ import { lang, isFunction, isBaseType } from '../utils/lang';
 import { Token, isToken, Provider } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';
-import { RuntimeParamScope } from './run-act';
 import { INVOKED_PROVIDERS } from '../utils/tk';
 import { refl } from '../decor/reflects';
 import { ParameterMetadata } from '../decor/metadatas';
-import { RuntimeContext } from './reg';
 
 
 /**
@@ -62,7 +60,7 @@ export class MethodAccessor implements IMethodAccessor {
 
         let pds = tgRefl.methodExtProviders.get(key) || [];
         providers = providers.concat(pds);
-        let parameters = tgRefl.methodParams.has(key) ? tgRefl.methodParams.get(key) : this.getParameters(injector, targetClass, instance, key);
+        let parameters = tgRefl.methodParams.get(key) || [];
         let providerMap = injector.getInstance(INVOKED_PROVIDERS).inject(...providers);
         let paramInstances = this.resolveParams(injector, parameters, providerMap);
         if (providerMap.size && instance[key]['_proxy']) {
@@ -108,37 +106,37 @@ export class MethodAccessor implements IMethodAccessor {
         });
     }
 
-    /**
-     * get type class constructor parameters.
-     *
-     * @template T
-     * @param {IInjector} container
-     * @param {Type<T>} type
-     * @returns {IParameter[]}
-     * @memberof MethodAccessor
-     */
-    getParameters<T>(container: IInjector, type: Type<T>): ParameterMetadata[];
-    /**
-     * get method parameters of type.
-     *
-     * @template T
-     * @param {IInjector} injector
-     * @param {Type<T>} type
-     * @param {T} instance
-     * @param {string} propertyKey
-     * @returns {IParameter[]}
-     * @memberof MethodAccessor
-     */
-    getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): ParameterMetadata[];
-    getParameters<T>(injector: IInjector, type: Type<T>, instance?: T, propertyKey?: string): ParameterMetadata[] {
-        let ctx = {
-            injector,
-            type,
-            instance,
-            propertyKey
-        } as RuntimeContext;
-        injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
-        let params = ctx.reflect.methodParams.get(propertyKey);
-        return params || [];
-    }
+    // /**
+    //  * get type class constructor parameters.
+    //  *
+    //  * @template T
+    //  * @param {IInjector} container
+    //  * @param {Type<T>} type
+    //  * @returns {IParameter[]}
+    //  * @memberof MethodAccessor
+    //  */
+    // getParameters<T>(container: IInjector, type: Type<T>): ParameterMetadata[];
+    // /**
+    //  * get method parameters of type.
+    //  *
+    //  * @template T
+    //  * @param {IInjector} injector
+    //  * @param {Type<T>} type
+    //  * @param {T} instance
+    //  * @param {string} propertyKey
+    //  * @returns {IParameter[]}
+    //  * @memberof MethodAccessor
+    //  */
+    // getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): ParameterMetadata[];
+    // getParameters<T>(injector: IInjector, type: Type<T>, instance?: T, propertyKey?: string): ParameterMetadata[] {
+    //     let ctx = {
+    //         injector,
+    //         type,
+    //         instance,
+    //         propertyKey
+    //     } as RuntimeContext;
+    //     injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
+    //     let params = ctx.reflect.methodParams.get(propertyKey);
+    //     return params || [];
+    // }
 }
