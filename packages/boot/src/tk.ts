@@ -78,8 +78,6 @@ export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypePa
  */
 export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_MODULE');
 
-export const MODULE_STARTUP = tokenId<IStartup>('MODULE_STARTUP');
-
 /**
  * module boot startup instance.
  */
