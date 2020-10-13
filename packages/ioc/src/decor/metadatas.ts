@@ -333,6 +333,7 @@ export interface AutorunMetadata extends TypeMetadata, PatternMetadata, RegInMet
 export interface AutorunDefine {
     autorun: string;
     order?: number;
+    decorType?: DecoratorType;
 }
 
 export type DecorMemberType = 'property' | 'method' | 'parameter';

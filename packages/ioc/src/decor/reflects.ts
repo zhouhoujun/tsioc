@@ -175,6 +175,7 @@ export namespace refl {
             const reflect = ctx.reflect;
             const meta = ctx.matedata as AutorunMetadata;
             reflect.autoruns.push({
+                decorType: ctx.decorType,
                 autorun: meta.autorun,
                 order: ctx.decorType === 'class' ? 0 : meta.order
             });
@@ -358,12 +359,12 @@ export namespace refl {
             const baseClassRef = get(type);
             targetReflect = Object.defineProperties({
                 type,
-                decors: baseClassRef ? baseClassRef.decors.slice(0) : [],
-                class: new TypeDefine(type),
+                decors: baseClassRef ? baseClassRef.decors.filter(d => d.decorType !== 'class') : [],
+                class: new TypeDefine(type, baseClassRef?.class),
                 providers: [],
                 extProviders: [],
                 refs: [],
-                autoruns: baseClassRef ? baseClassRef.autoruns.slice(0) : [],
+                autoruns: baseClassRef ? baseClassRef.autoruns.filter(a => a.decorType !== 'class') : [],
                 propProviders: baseClassRef ? new Map(baseClassRef.propProviders) : new Map(),
                 methodParams: baseClassRef ? new Map(baseClassRef.methodParams) : new Map(),
                 methodExtProviders: baseClassRef ? new Map(baseClassRef.methodParams) : new Map()
