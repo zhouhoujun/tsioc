@@ -1,18 +1,19 @@
-import { IContainer, ICoreInjector } from '@tsdi/core';
-import { Abstract, Injectable, isArray, isBoolean, isFunction, isProvider, isToken, lang, PROVIDERS, refl, SymbolType, Token } from '@tsdi/ioc';
-import { Configure } from './configure/Configure';
-import { IConfigureManager } from './configure/IConfigureManager';
-import { ConfigureManager } from './configure/manager';
-import { AnnoationContext, AnnoationOption, BootContext, BootOption, BuildContext, BuildOption } from './Context';
-import { IStartup } from './runnable/Startup';
-import { CONFIGURATION, ConfigureMgrToken } from './tk';
+import { ICoreInjector } from '@tsdi/core';
+import { Abstract } from '@tsdi/ioc';
+import { BootContext, BootOption, BuildContext, BuildOption } from './Context';
 
+/**
+ * context factory.
+ */
+export interface ContextFactory<T, Top> {
+    create(injector: ICoreInjector, option: Top): T;
+}
 
 /**
  * context factory.
  */
 @Abstract()
-export abstract class BuildContextFactory {
+export abstract class BuildContextFactory implements ContextFactory<BuildOption, BuildContext> {
 
     constructor() {
 
@@ -23,12 +24,12 @@ export abstract class BuildContextFactory {
      * @param option
      * @param injector
      */
-    abstract create(option: BuildOption, injector: ICoreInjector): BuildContext;
+    abstract create(injector: ICoreInjector, option: BuildOption): BuildContext;
 }
 
 
 @Abstract()
-export abstract class BootContextFactory {
+export abstract class BootContextFactory implements ContextFactory<BootOption, BootContext> {
     constructor() {
 
     }
@@ -38,115 +39,150 @@ export abstract class BootContextFactory {
      * @param option
      * @param injector
      */
-    abstract create(option: BootOption, injector: ICoreInjector): BootContext;
+    abstract create(injector: ICoreInjector, option: BootOption): BootContext;
 }
 
-export function createContext<TOP extends AnnoationOption, Tctx extends AnnoationContext>(option: TOP, injector: ICoreInjector, append?: (ctx: Tctx) => Tctx): Tctx {
-    const opt = { ...option };
-    const context = injector.get(PROVIDERS).inject(...isArray(opt.contexts) ? opt.contexts || [] : [opt.contexts]);
-    const providers = injector.get(PROVIDERS).inject(...isArray(opt.providers) ? opt.providers || [] : [opt.providers]);
-    const reflect = opt.type ? refl.getIfy(opt.type) : null;
-    const descb = [];
-    let destroyed = false;
-    const ctx = {
-        injector,
-        providers,
-        reflect,
-        type: opt.type,
-        getOptions() {
-            return opt;
-        },
-        has(token: Token) {
-            return context.has(token);
-        },
-        hasValue(token: Token): boolean {
-            return context.hasValue(token);
-        },
-        remove(...tokens: Token[]) {
-            tokens.forEach(tk => context.delValue(tk));
-        },
-        get<T>(token: Token<T>): T {
-            return context.get(token);
-        },
-        getValue<T>(token: Token<T>): T {
-            return context.getValue(token);
-        },
-        setValue<T>(token: Token<T>, value: T): Tctx {
-            context.setValue(token, value)
-            return ctx as Tctx;
-        },
-        set(...providers: any[]) {
-            if (providers.length === 2 && isToken(providers[0])) {
-                let provde = providers[0];
-                let value = providers[1];
-                context.setValue(provde, value);
-            } else {
-                context.inject(...providers);
-            }
-            return this;
-        },
-        getContainer(): IContainer {
-            return injector.getContainer();
-        },
-        clone: (options: BootOption) => {
-            if (options) {
-                return createContext({ ...opt, ...options }, injector);
-            } else {
-                return createContext({ ...opt }, injector);
-            }
-        },
-        onDestroy(callback: () => void): void {
-            descb.push(callback);
-        },
-        destroy() {
-            if (destroyed) {
-                return;
-            }
-            descb.forEach(cb => isFunction(cb) && cb());
-            ctx.providers.destroy();
-            context.destroy();
+// function getValue<T>(this: AnnoationContext, token: Token<T>): T {
+//     return this.context.getValue(token);
+// }
 
-            lang.cleanObj(ctx);
-            destroyed = true;
-        }
-    } as AnnoationContext;
+// function getOptions(this: AnnoationContext) {
+//     return this.getValue()
+// }
 
-    if (append) {
-        return append(ctx as Tctx);
-    }
-    return ctx as Tctx;
-}
+// function getContainer(this: AnnoationContext): IContainer {
+//     return this.injector.getContainer();
+// }
 
-@Injectable()
-export class DefaultBuildContextFactory extends BuildContextFactory {
-    create(option: BuildOption, injector: ICoreInjector): BuildContext {
-        return createContext(option, injector);
-    }
-}
+// export function createContext<TOP extends AnnoationOption>(option: TOP, injector: ICoreInjector): AnnoationContext {
+//     const opt = { ...option };
+//     const context = injector.get(PROVIDERS).inject(...isArray(opt.contexts) ? opt.contexts || [] : [opt.contexts]);
+//     const providers = injector.get(PROVIDERS).inject(...isArray(opt.providers) ? opt.providers || [] : [opt.providers]);
+//     const reflect = opt.type ? refl.getIfy(opt.type) : null;
+//     const descb = [];
+//     let destroyed = false;
+//     const ctx = {
+//         injector,
+//         context,
+//         providers,
+//         reflect,
+//         type: opt.type,
+//         getOptions() {
+//             return opt;
+//         },
+//         has(token: Token) {
+//             return context.has(token);
+//         },
+//         hasValue(token: Token): boolean {
+//             return context.hasValue(token);
+//         },
+//         remove(...tokens: Token[]) {
+//             tokens.forEach(tk => context.delValue(tk));
+//         },
+//         get<T>(token: Token<T>): T {
+//             return context.get(token);
+//         },
+//         getValue<T>(token: Token<T>): T {
+//             return context.getValue(token);
+//         },
+//         setValue<T>(token: Token<T>, value: T): Tctx {
+//             context.setValue(token, value);
+//             return ctx as Tctx;
+//         },
+//         set(...providers: any[]) {
+//             if (providers.length === 2 && isToken(providers[0])) {
+//                 let provde = providers[0];
+//                 let value = providers[1];
+//                 context.setValue(provde, value);
+//             } else {
+//                 context.inject(...providers);
+//             }
+//             return this;
+//         },
+//         getContainer(): IContainer {
+//             return injector.getContainer();
+//         },
+//         clone: (options: BootOption) => {
+//             if (options) {
+//                 return createContext({ ...opt, ...options }, injector);
+//             } else {
+//                 return createContext({ ...opt }, injector);
+//             }
+//         },
+//         onDestroy(callback: () => void): void {
+//             descb.push(callback);
+//         },
+//         destroy() {
+//             if (destroyed) {
+//                 return;
+//             }
+//             descb.forEach(cb => isFunction(cb) && cb());
+//             ctx.providers.destroy();
+//             context.destroy();
+
+//             lang.cleanObj(ctx);
+//             destroyed = true;
+//         }
+//     } as AnnoationContext;
+
+//     return ctx;
+// }
+
+// @Injectable()
+// export class DefaultBuildContextFactory extends BuildContextFactory {
+//     create(option: BuildOption, injector: ICoreInjector): BuildContext {
+//         const { template } = option;
+//         return {
+//             ...createContext(option, injector),
+//             template
+//         } as BootContext;
+//     }
+// }
 
 
-@Injectable()
-export class DefaultBootContextFactory extends BootContextFactory {
-    create(option: BootOption, injector: ICoreInjector): BootContext {
-        const { args, data, autorun, deps, template, bootstrap } = option;
-        return createContext(option, injector, ctx => {
-            const bootCtx = {
-                ...ctx,
-                args,
-                data,
-                autorun,
-                deps,
-                template,
-                bootstrap,
-                getConfiguration: () => {
-                    return bootCtx.getValue(CONFIGURATION)
-                },
-                getConfigureManager(): IConfigureManager<Configure> {
-                    return bootCtx.injector.resolve(ConfigureMgrToken);
-                }
-            };
-            return bootCtx;
-        });
-    }
+// function getStarupTokens(this: BootContext) {
+//     return this.getValue(MODULE_STARTUP);
+// }
 
-}
+// function getConfiguration(this: BootContext) {
+//     return this.getValue(CONFIGURATION);
+// }
+
+// function getConfigureManager(this: BootContext): IConfigureManager<Configure> {
+//     return this.injector.resolve(ConfigureMgrToken);
+// }
+
+// @Injectable()
+// export class DefaultBootContextFactory extends BootContextFactory {
+//     create(option: BootOption, injector: ICoreInjector): BootContext {
+//         const { args, data, autorun, deps, template, bootstrap } = option;
+//         const bootCtx = {
+//             ...createContext(option, injector),
+//             args,
+//             data,
+//             autorun,
+//             deps,
+//             template,
+//             bootstrap,
+//         };
+//         Object.defineProperties(bootCtx, {
+//             getStarupTokens: {
+//                 value: getStarupTokens,
+//                 writable: false,
+//                 enumerable: false
+//             },
+//             getConfiguration: {
+//                 value: getConfiguration,
+//                 writable: false,
+//                 enumerable: false
+//             },
+//             getConfigureManager: {
+//                 value: getConfigureManager,
+//                 writable: false,
+//                 enumerable: false
+//             }
+//         });
+//         return bootCtx as BootContext;
+//     }
+
+// }

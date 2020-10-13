@@ -6,10 +6,10 @@ import { BootOption, BootContext, BuildOption, BuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
-import { BuilderServiceToken, ROOT_INJECTOR } from '../tk';
+import { BOOT_CONTEX_FACTORY, BuilderServiceToken, BUILD_CONTEX_FACTORY, ROOT_INJECTOR } from '../tk';
 import { ResolveMoudleScope } from '../builder/handles';
 import { IHandle } from '../handles/Handle';
-import { BuildContextFactory, BootContextFactory, DefaultBootContextFactory, DefaultBuildContextFactory } from '../ContextFactory';
+import { BuildContextFactory, BootContextFactory } from '../ContextFactory';
 
 
 
@@ -59,7 +59,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             }
             options = target;
         }
-        let rctx = injector.getService({ token: BuildContextFactory, target: md, defaultToken: DefaultBuildContextFactory })?.create(options, injector);
+        let rctx = injector.getService({ token: BuildContextFactory, target: md, defaultToken: BUILD_CONTEX_FACTORY })?.create(injector, options);
         await container.getActionInjector().getInstance(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
@@ -125,7 +125,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             if (!injector) {
                 injector = container.isRegistered(md) ? container.getInjector(md) : this.root;
             }
-            ctx = injector.getService({ token: BootContextFactory, target: md, defaultToken: DefaultBootContextFactory })?.create(isClassType(target) ? { type: md, args } : { ...target, args }, injector) as T;
+            ctx = injector.getService({ token: BootContextFactory, target: md, defaultToken: BOOT_CONTEX_FACTORY })?.create(injector, isClassType(target) ? { type: md, args } : { ...target, args }) as T;
         }
 
         if (contextInit) {

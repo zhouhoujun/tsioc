@@ -3,12 +3,13 @@ import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from './modules/configure';
 import { Configure } from './configure/Configure';
 import { IStartup } from './runnable/Startup';
-import { AnnoationOption, AnnoationContext, BootContext } from './Context';
+import { AnnoationOption, AnnoationContext, BootContext, BuildOption, BootOption, BuildContext } from './Context';
 import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
 import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { ModuleInjector } from './modules/injector';
+import { ContextFactory } from './ContextFactory';
 
 
 
@@ -79,11 +80,25 @@ export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('R
 
 export const MODULE_STARTUP = tokenId<IStartup>('MODULE_STARTUP');
 
+/**
+ * module boot startup instance.
+ */
+export const MODULE_STARTUP = tokenId<IStartup>('MODULE_STARTUP');
+
+/**
+ * application statup service
+ */
+export const MODULE_STARTUPS = tokenId<Token[]>('MODULE_STARTUPS');
+
+export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
+
+export const BUILD_CONTEX_FACTORY = tokenId<ContextFactory<BuildOption, BuildContext>>('BUILD_CONTEX_FACTORY');
+
+export const BOOT_CONTEX_FACTORY = tokenId<ContextFactory<BootOption, BootContext>>('BOOT_CONTEX_FACTORY');
+
 // export const CTX_PARENT_CONTEXT: TokenId<AnnoationContext> = tokenId<AnnoationContext>('CTX_PARENT_CONTEXT');
 // export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');
 
-// export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
-// export const CTX_OPTIONS = tokenId<AnnoationOption>('CTX_OPTIONS');
 // export const CTX_TARGET_RELF = tokenId<TypeReflect>('CTX_TARGET_RELF');
 
 // export const CTX_MODULE  = tokenId<Type>('CTX_MODULE');

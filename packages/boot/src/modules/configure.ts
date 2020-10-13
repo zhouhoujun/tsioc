@@ -1,5 +1,5 @@
 import { Token, Modules } from '@tsdi/ioc';
-import { IAnnotationMetadata } from '../annotations/reflect';
+import { AnnotationMetadata } from '../annotations/reflect';
 
 
 /**
@@ -7,9 +7,9 @@ import { IAnnotationMetadata } from '../annotations/reflect';
  *
  * @export
  * @interface ModuleConfig
- * @extends {IAnnotationMetadata<T>}
+ * @extends {AnnotationMetadata<T>}
  */
-export interface IModuleMetadata<T = any> extends IAnnotationMetadata<T> {
+export interface IModuleMetadata<T = any> extends AnnotationMetadata<T> {
     /**
      * module base url.
      *

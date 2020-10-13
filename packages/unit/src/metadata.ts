@@ -1,5 +1,5 @@
 import { MethodMetadata } from '@tsdi/ioc';
-import { IAnnotationMetadata } from '@tsdi/boot';
+import { AnnotationMetadata } from '@tsdi/boot';
 
 /**
  * Test metadata.
@@ -83,7 +83,7 @@ export interface TestCaseMetadata extends TestMetadata {
  * @interface SuiteMetadata
  * @extends {ClassMetadata}
  */
-export interface SuiteMetadata extends IAnnotationMetadata {
+export interface SuiteMetadata extends AnnotationMetadata {
     /**
      * test suite describe message.
      *

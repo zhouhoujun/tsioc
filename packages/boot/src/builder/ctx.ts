@@ -1,40 +1,29 @@
-// import { Injectable } from '@tsdi/ioc';
-// import { ICoreInjector } from '@tsdi/core';
-// import { IBuildContext, IBuildOption } from '../Context';
-// import { AnnoationContext, createContext } from '../annotations/ctx';
-// import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '../tk';
+import { BuildContext, BuildOption, Template } from '../Context';
+import { AnnoationContextImpl } from '../annotations/ctx';
+import { BuildContextFactory } from '../ContextFactory';
+import { ICoreInjector } from '@tsdi/core';
 
-// @Injectable
-// export class BuildContext<T extends IBuildOption = IBuildOption> extends AnnoationContext<T> implements IBuildContext<T> {
-//     /**
-//      * current target module
-//      *
-//      * @type {*}
-//      * @memberof BuildContext
-//      */
-//     value: any;
 
-//     /**
-//      * current type attr data to binding.
-//      */
-//     getTemplate<T = any>(): T {
-//         return this.context.getValue(CTX_TEMPLATE);
-//     }
+export class BuildContextImpl<T extends BuildOption = BuildOption> extends AnnoationContextImpl<T> implements BuildContext {
+    /**
+     * current target module
+     *
+     * @type {*}
+     * @memberof BuildContext
+     */
+    value: any;
 
-//     static parse(injector: ICoreInjector, options: IBuildOption): BuildContext {
-//         return createContext(injector, BuildContext, options);
-//     }
+    /**
+     * current type attr data to binding.
+     */
+    get template(): Template {
+        return this.options.template;
+    }
 
-//     setOptions(options: T) {
-//         if (!options) {
-//             return this;
-//         }
-//         if (options.name) {
-//             this.setValue(CTX_ELEMENT_NAME, options.name)
-//         }
-//         if (options.template) {
-//             this.setValue(CTX_TEMPLATE, options.template);
-//         }
-//         return super.setOptions(options);
-//     }
-// }
+    protected setOptions(options: T) {
+        if (!options) {
+            return this;
+        }
+        return super.setOptions(options);
+    }
+}
