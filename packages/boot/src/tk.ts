@@ -77,6 +77,7 @@ export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypePa
  */
 export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_MODULE');
 
+export const MODULE_STARTUP = tokenId<IStartup>('MODULE_STARTUP');
 
 // export const CTX_PARENT_CONTEXT: TokenId<AnnoationContext> = tokenId<AnnoationContext>('CTX_PARENT_CONTEXT');
 // export const CTX_SUB_CONTEXT = tokenId<AnnoationContext[]>('CTX_SUB_CONTEXT');

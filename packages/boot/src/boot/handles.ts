@@ -2,7 +2,7 @@ import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType,
 import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
 import { AnnoationContext, BootContext } from '../Context';
 import {
-    ProcessRunRootToken, BuilderServiceToken, BOOTCONTEXT, CONFIGURATION
+    ProcessRunRootToken, BuilderServiceToken, BOOTCONTEXT, CONFIGURATION, MODULE_STARTUP
 } from '../tk';
 import { ConfigureManager } from '../configure/manager';
 import { ConfigureRegister } from '../configure/register';
@@ -309,7 +309,7 @@ export const ConfigureServiceHandle = async function (ctx: BootContext, next: ()
         }));
     }
 
-    ctx.setValue(CTX_APP_STARTUPS, startups);
+    ctx.getOptions().startups.push(...startups);
     await next();
 };
 
@@ -347,9 +347,9 @@ export const RefRunnableHandle = async function (ctx: BootContext, next: () => P
         { provide: BOOTCONTEXT, useValue: ctx },
         { provide: lang.getClass(ctx), useValue: ctx });
 
-    startup && ctx.setValue(CTX_MODULE_STARTUP, startup);
+    startup && ctx.setValue(MODULE_STARTUP, startup);
 
-    if (!ctx.hasValue(CTX_MODULE_STARTUP)) {
+    if (!ctx.hasValue(MODULE_STARTUP)) {
         await next();
     }
 };
