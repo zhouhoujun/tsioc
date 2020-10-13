@@ -5,7 +5,6 @@ import * as path from 'path';
 import * as chalk from 'chalk';
 import * as program from 'commander';
 import { execSync } from 'child_process';
-import { isString, isArray, isBoolean } from 'util';
 const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
@@ -46,7 +45,7 @@ program
 
         let packs = ['typescript', 'ts-node', 'tsconfig-paths', 'tslib', 'zone.js', 'bluebird'];
         let initcmds = `${packs.join('@latest ') + '@latest'} `;
-        let version = isString(options.version) ? `@${options.version || 'latest'} ` : '@latest ';
+        let version = typeof options.version === 'string' ? `@${options.version || 'latest'} ` : '@latest ';
         let cmds: string[];
         switch (action) {
             case 'activity':
@@ -145,11 +144,11 @@ function runActivity(fileName, options) {
     const wf = requireCwd('@tsdi/activities');
 
     let config;
-    if (options.config && isString(options.config)) {
+    if (options.config && typeof options.config === 'string') {
         config = requireCwd(options.config);
     }
     config = config || {};
-    if (isBoolean(options.debug)) {
+    if (typeof options.debug === 'boolean') {
         config.debug = options.debug;
     }
 
@@ -164,7 +163,7 @@ function vaildifyFile(fileName, defaultFile = 'taskfile'): string {
     if (!fileName) {
         defaultFile = defaultFile.trim().replace(/(\.ts|\.js)$/, '');
         ['.ts', '.js'].some(ext => {
-            if (fs.existsSync(path.join(processRoot, defaultFile +  ext))) {
+            if (fs.existsSync(path.join(processRoot, defaultFile + ext))) {
                 fileName = defaultFile + ext;
                 return true;
             }
@@ -188,10 +187,10 @@ program
     .option('--debug [bool]', 'enable debug log or not')
     .action((files, options) => {
         requireRegisters();
-        if (isArray(files)) {
-            files = files.filter(f => f && isString(f));
+        if (Array.isArray(files)) {
+            files = files.filter(f => f && typeof f === 'string');
         } else {
-            if (!files || !isString(files)) {
+            if (!files || !(typeof files === 'string')) {
                 files = 'test/**/*.(js|ts)';
             }
         }
@@ -203,12 +202,12 @@ program
             reporter = requireCwd('@tsdi/unit-console').ConsoleReporter;
         }
         let config;
-        if (isString(options.config)) {
+        if (typeof options.config === 'string') {
             config = requireCwd(options.config);
         }
         config = config || {};
         config.baseURL = config.baseURL || processRoot;
-        if (isBoolean(options.debug)) {
+        if (typeof options.debug === 'boolean') {
             config.debug = options.debug;
         }
         unit.runTest(files, config, reporter);
