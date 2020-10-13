@@ -83,22 +83,24 @@ export namespace refl {
     export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
         if (paramInjectDecors.indexOf(ctx.decor) >= 0) {
             const reflect = ctx.reflect;
-            const meta = ctx.matedata as ParameterMetadata;
-            const name = reflect.class.getParamName(ctx.propertyKey, ctx.parameterIndex);
+            let meta = ctx.matedata as ParameterMetadata;
             if (!reflect.methodParams.has(ctx.propertyKey)) {
-                reflect.methodParams.set(ctx.propertyKey, []);
+                const names = reflect.class.getParamNames(ctx.propertyKey);
+                let paramTypes: any[];
+                if (ctx.propertyKey === 'constructor') {
+                    paramTypes = Reflect.getMetadata('design:paramtypes', reflect.type);
+                } else {
+                    paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey);
+                }
+                if (paramTypes) {
+                    reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => {
+                        return { type, paramName: names[idx] };
+                    }));
+                }
             }
             const params = reflect.methodParams.get(ctx.propertyKey);
-            const target = ctx.target;
-            const propertyKey = ctx.propertyKey === 'constructor' ? undefined : ctx.propertyKey;
-            let type = Reflect.getOwnMetadata('design:type', target, propertyKey);
-            if (!type) {
-                // Needed to support react native inheritance
-                type = Reflect.getOwnMetadata('design:type', target.constructor, propertyKey);
-            }
-            meta.paramName = name;
-            meta.type = type;
-            params.unshift(meta);
+            meta = { ...meta, ...params[ctx.parameterIndex] };
+            params.splice(ctx.parameterIndex, 1, meta);
         }
         return next();
     };
@@ -123,6 +125,24 @@ export namespace refl {
         }
         return next();
     };
+
+
+    export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
+        const reflect = ctx.reflect;
+        if (!reflect.methodParams.has(ctx.propertyKey)) {
+            let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', reflect.type);
+            if (paramTypes) {
+                const names = reflect.class.getParamNames(ctx.propertyKey);
+                if (!paramTypes) {
+                    paramTypes = [];
+                }
+                reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => {
+                    return { type, paramName: names[idx] };
+                }));
+            }
+        }
+        return next();
+    }
 
     export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract', '@Refs'];
     export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
@@ -177,6 +197,18 @@ export namespace refl {
         return next();
     }
 
+    export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
+        const reflect = ctx.reflect;
+        if (!reflect.methodParams.has(ctx.propertyKey)) {
+            let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey);
+            const names = reflect.class.getParamNames(ctx.propertyKey);
+            reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => {
+                return { type, paramName: names[idx] };
+            }));
+        }
+        return next();
+    }
+
     export const methodProvidersDecors = ['@Providers', '@AutoWired'];
     export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
         if (methodProvidersDecors.indexOf(ctx.decor) >= 0) {
@@ -223,11 +255,13 @@ export namespace refl {
 
 
     typeDecorActions
+        .use(InitCtorDesignParams)
         .use(TypeAnnoAction)
         .use(TypeProvidersAction)
         .use(AutorunAction)
         .use(ExecuteDecorHandle);
     methodDecorActions
+        .use(InitMethodDesignParams)
         .use(MethodProvidersAction)
         .use(AutorunAction)
         .use(ExecuteDecorHandle);
@@ -245,13 +279,12 @@ export namespace refl {
             reflect: getIfy(type)
         }
         actions.execute(ctx, () => {
-            ctx.reflect.decors.push(define);
+            ctx.reflect.decors.unshift(define);
         });
         lang.cleanObj(ctx);
     }
 
     export function dispatchTypeDecor(type: ClassType, define: DecorDefine) {
-        console.log(type, Reflect.getMetadata('design:paramtypes', type));
         dispatch(typeDecorActions, type, type, define);
     }
 
@@ -260,7 +293,6 @@ export namespace refl {
     }
 
     export function dispatchMethodDecor(type: any, define: DecorDefine) {
-        console.log(type.constructor, Reflect.getMetadata('design:paramtypes', type, define.propertyKey))
         dispatch(methodDecorActions, type, type.constructor, define);
     }
 
@@ -277,12 +309,12 @@ export namespace refl {
     const refFiled = '_ρreflect_';
 
     export function has(type: ClassType): boolean {
-        return isDefined(type[refFiled]);
+        return type[refFiled];
     }
 
-    // export function set(type: ClassType, typeInfo: TypeReflect) {
-    //     type[refFiled] = () => typeInfo;
-    // }
+    export function hasOwn(type: ClassType): boolean {
+        return type[refFiled]?.()?.type === type;
+    }
 
     export function get<T extends TypeReflect>(type: ClassType): T {
         return type[refFiled]?.() as T || null;
@@ -321,19 +353,20 @@ export namespace refl {
     }
 
     export function getIfy<T extends TypeReflect>(type: ClassType, info?: T): T {
-        let targetReflect: TypeReflect = type[refFiled]?.();
-        if (!targetReflect) {
+        let targetReflect: TypeReflect;
+        if (!hasOwn(type)) {
+            const baseClassRef = get(type);
             targetReflect = Object.defineProperties({
                 type,
-                decors: [],
+                decors: baseClassRef ? baseClassRef.decors.slice(0) : [],
                 class: new TypeDefine(type),
                 providers: [],
                 extProviders: [],
                 refs: [],
-                autoruns: [],
-                propProviders: new Map(),
-                methodParams: new Map(),
-                methodExtProviders: new Map()
+                autoruns: baseClassRef ? baseClassRef.autoruns.slice(0) : [],
+                propProviders: baseClassRef ? new Map(baseClassRef.propProviders) : new Map(),
+                methodParams: baseClassRef ? new Map(baseClassRef.methodParams) : new Map(),
+                methodExtProviders: baseClassRef ? new Map(baseClassRef.methodParams) : new Map()
             }, {
                 getDecorDefine: {
                     value: getDecorDefine,
@@ -362,6 +395,8 @@ export namespace refl {
                 }
             });
             type[refFiled] = () => targetReflect;
+        } else {
+            targetReflect = get(type);
         }
         if (info) {
             Object.assign(targetReflect, info);
@@ -383,13 +418,12 @@ export namespace refl {
      *
      * @template T
      * @param {Type<T>} type
-     * @param {T} instance
      * @param {string} propertyKey
      * @returns {IParameter[]}
      * @memberof TypeReflects
      */
-    export function getParameters<T>(type: Type<T>, instance: T, propertyKey: string): ParameterMetadata[];
-    export function getParameters<T>(type: Type<T>, instance?: T, propertyKey?: string): ParameterMetadata[] {
+    export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
+    export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
         propertyKey = propertyKey || 'constructor';
         return getIfy(type).methodParams.get(propertyKey) || [];
     }

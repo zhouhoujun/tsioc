@@ -119,7 +119,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             let joinPoint = Joinpoint.parse(container.getInjector(targetType), {
                 name: methodName,
                 fullName: fullName,
-                params: refl.getParameters(targetType, target, methodName),
+                params: refl.getParameters(targetType, methodName),
                 args: args,
                 target: target,
                 targetType: targetType,
@@ -176,6 +176,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         if (joinPoint.throwing && metadata.throwing) {
             providers.inject({ provide: metadata.throwing, useValue: joinPoint.throwing });
         }
+
         return container.getInjector(advicer.aspectType).invoke(advicer.aspectType, advicer.advice.propertyKey, providers);
     }
 

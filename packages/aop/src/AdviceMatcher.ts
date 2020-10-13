@@ -1,11 +1,10 @@
 import {
-    Inject, isString, isRegExp, isDefined, Type, ObjectMap, lang, isArray, isFunction, refl, ClassType, InjectorProxy, IIocContainer
+    isString, isRegExp, isDefined, Type, lang, isArray, isFunction, refl, ClassType, InjectorProxy, IIocContainer
 } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
-import { AdviceMetadata, AspectMetadata } from './metadatas';
+import { AdviceMetadata } from './metadatas';
 import { IPointcut } from './joinpoints/IPointcut';
 import { MatchPointcut } from './joinpoints/MatchPointcut';
-import { Advice, Aspect } from './decorators';
 import {
     annPreChkExp, executionChkExp, preParam, endParam, annContentExp, aExp, execContentExp,
     mthNameExp, tgMthChkExp, replAny, replAny1, replDot, replNav, withInChkExp, targetChkExp
@@ -65,27 +64,19 @@ export class AdviceMatcher implements IAdviceMatcher {
         let matched: MatchPointcut[] = [];
 
         if (targetType === aspectType) {
-            let adviceNames = Object.keys(adviceMetas);
-            if (adviceNames.length > 1) {
-                let advices: AdviceMetadata[] = [];
-                adviceNames.forEach(n => {
-                    advices = advices.concat(adviceMetas[n]);
+            let decorators = tagref.class.getPropertyDescriptors();
+            Object.keys(decorators).forEach(n => {
+                adviceMetas.forEach(adv => {
+                    if (this.matchAspectSelf(n, adv)) {
+                        matched.push({
+                            name: n,
+                            fullName: `${className}.${n}`,
+                            advice: adv
+                        });
+                    }
                 });
+            });
 
-                adviceNames.forEach(n => {
-                    advices.forEach(adv => {
-                        if (adv.propertyKey !== n) {
-                            if (this.matchAspectSelf(n, adv)) {
-                                matched.push({
-                                    name: n,
-                                    fullName: `${className}.${n}`,
-                                    advice: adv
-                                });
-                            }
-                        }
-                    })
-                });
-            }
         } else {
             let points: IPointcut[] = [];
             let decorators = tagref.class.getPropertyDescriptors();

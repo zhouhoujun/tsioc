@@ -44,9 +44,9 @@ export class RuntimeDecorAction extends ExecDecoratorAtion {
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
-        if (ctx.reflect.methodParams.has('constructor')) {
-            ctx.params = ctx.reflect.methodParams.get('constructor');
-        }
+
+        ctx.params = ctx.reflect.methodParams.get('constructor') ?? [];
+
         ctx.args = ctx.injector.createParams(ctx.params || [], ctx.providers);
     }
     next();

@@ -31,7 +31,7 @@ const globals = typeof window !== 'undefined' ? window : global;
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Singleton
+@Singleton()
 export class OldTestRunner extends Destoryable implements ISuiteRunner {
 
 

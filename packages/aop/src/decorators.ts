@@ -221,7 +221,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
 
     const append = options.append;
 
-    return createMethodDecorator<T>('Advice', {
+    return createMethodDecorator<T>(adviceName, {
         ...options,
         actions,
         handler: [

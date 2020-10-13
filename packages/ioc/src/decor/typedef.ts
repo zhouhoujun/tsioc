@@ -27,7 +27,7 @@ export class TypeDefine {
     }
 
     getParamNames(method: string): string[] {
-        if (method === 'constructor') {
+        if (!method || method === 'constructor') {
             method = '__constructor';
         }
         return this.getParams()[method] || [];
@@ -45,7 +45,11 @@ export class TypeDefine {
                 let classAnnations = lang.getClassAnnations(ty);
                 if (classAnnations && classAnnations.params) {
                     anName = classAnnations.name;
-                    meta = { ...classAnnations.params, ...meta };
+                    meta = {
+                        ...classAnnations.params,
+                        __constructor: classAnnations.params['constructor'],
+                        ...meta
+                    };
                 }
                 if (!isUglify && ty.name !== anName) {
                     let descriptors = Object.getOwnPropertyDescriptors(ty.prototype);

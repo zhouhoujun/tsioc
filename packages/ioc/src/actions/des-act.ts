@@ -182,10 +182,10 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
     let targetReflect = ctx.reflect;
     targetReflect.propProviders.forEach((propMetas, name) => {
         propMetas.forEach(prop => {
-            if (isClass(prop.provider) && !injector.hasRegister(prop.provider)) {
+            if (isClass(prop.provider)) {
                 injector.registerType(prop.provider);
             }
-            if (isClass(prop.type) && !injector.hasRegister(prop.type)) {
+            if (isClass(prop.type)) {
                 injector.registerType(prop.type);
             }
         });
@@ -197,8 +197,24 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
 
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
-        this.use(DesignMthDecorScope);
+        this.use(RegMethodParamsType)
+            .use(DesignMthDecorScope);
     }
+}
+
+export const RegMethodParamsType = function (ctx: DesignContext, next: () => void) {
+    const injector = ctx.injector;
+    ctx.reflect.methodParams.forEach(pms => {
+        pms.forEach(pm => {
+            if (isClass(pm.type)) {
+                injector.registerType(pm.type);
+            }
+            if (isClass(pm.provider)) {
+                injector.registerType(pm.provider);
+            }
+        });
+    });
+    return next();
 }
 
 
