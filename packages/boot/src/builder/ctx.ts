@@ -1,5 +1,7 @@
 import { BuildContext, BuildOption, Template } from '../Context';
 import { AnnoationContextImpl } from '../annotations/ctx';
+import { BuildContextFactory } from '../ContextFactory';
+import { ICoreInjector } from '@tsdi/core';
 
 
 export class BuildContextImpl<T extends BuildOption = BuildOption> extends AnnoationContextImpl<T> implements BuildContext {

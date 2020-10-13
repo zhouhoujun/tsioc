@@ -1,4 +1,4 @@
-import { Type, Injectable, Token, isToken, isDefined } from '@tsdi/ioc';
+import { Token } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { IStartup } from '../runnable/Startup';
 import {

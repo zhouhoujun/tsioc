@@ -1,10 +1,10 @@
 import {
-    isToken, ClassType, lang, Token,  INJECTOR, PROVIDERS, refl, TypeReflect,
-    IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, Type
+    isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type,
+    IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, isClass
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { AnnoationContext, AnnoationOption } from '../Context';
-import { CTX_OPTIONS, CTX_PROVIDERS } from '../tk';
+import { CTX_PROVIDERS } from '../tk';
 
 
 export class AnnoationContextImpl<T extends AnnoationOption, TRefl extends TypeReflect = TypeReflect> extends Destoryable implements AnnoationContext {
@@ -139,7 +139,7 @@ export class AnnoationContextImpl<T extends AnnoationOption, TRefl extends TypeR
         }
 
         if (options.type) {
-            this._type = options.type;
+            this._type = isClass(options.type) ? options.type : this.injector.getTokenProvider(options.type);
             this._reflect = refl.getIfy(this._type);
         }
 
@@ -168,7 +168,7 @@ export class AnnoationContextImpl<T extends AnnoationOption, TRefl extends TypeR
      * @memberof IocRaiseContext
      */
     getOptions(): T {
-        return this.context.getValue(CTX_OPTIONS) as T;
+        return this.options;
     }
 
     clone(): this;

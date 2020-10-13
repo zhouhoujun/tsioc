@@ -1,5 +1,5 @@
 import { Inject, IocExt, DesignRegisterer, DecoratorScope } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, ContainerToken, ICoreInjector } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
 import { MessageContext } from './messages/ctx';
 import { MessageQueue, RootMessageQueue } from './messages/queue';
@@ -14,6 +14,10 @@ import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope } from './boot/lifescope';
 import { StartupRegisterAction } from './registers/startup';
+import { BOOT_CONTEX_FACTORY, BUILD_CONTEX_FACTORY } from './tk';
+import { BuildContextImpl } from './builder/ctx';
+import { BootOption, BuildOption } from './Context';
+import { BootContextImpl } from './boot/ctx';
 
 
 /**
@@ -54,8 +58,25 @@ export class BootModule {
         desgReger.register(Message, { scope: aftAnn, action: MessageRegisterAction })
             .register(Boot, { scope: aftAnn, action: StartupRegisterAction });
 
+        container.inject(
+            {
+                provide: BUILD_CONTEX_FACTORY,
+                useValue: {
+                    create(injector: ICoreInjector, options: BuildOption) {
+                        return new BuildContextImpl(injector, options);
+                    }
+                }
+            },
+            {
+                provide: BOOT_CONTEX_FACTORY,
+                useValue: {
+                    create(injector: ICoreInjector, options: BootOption) {
+                        return new BootContextImpl(injector, options);
+                    }
+                }
+            },
+            BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 
-        container.inject(BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 
     }
 }

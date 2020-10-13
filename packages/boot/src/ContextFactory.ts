@@ -2,13 +2,18 @@ import { ICoreInjector } from '@tsdi/core';
 import { Abstract } from '@tsdi/ioc';
 import { BootContext, BootOption, BuildContext, BuildOption } from './Context';
 
-
+/**
+ * context factory.
+ */
+export interface ContextFactory<T, Top> {
+    create(injector: ICoreInjector, option: Top): T;
+}
 
 /**
  * context factory.
  */
 @Abstract()
-export abstract class BuildContextFactory {
+export abstract class BuildContextFactory implements ContextFactory<BuildOption, BuildContext> {
 
     constructor() {
 
@@ -19,12 +24,12 @@ export abstract class BuildContextFactory {
      * @param option
      * @param injector
      */
-    abstract create(option: BuildOption, injector: ICoreInjector): BuildContext;
+    abstract create(injector: ICoreInjector, option: BuildOption): BuildContext;
 }
 
 
 @Abstract()
-export abstract class BootContextFactory {
+export abstract class BootContextFactory implements ContextFactory<BootOption, BootContext> {
     constructor() {
 
     }
@@ -34,7 +39,7 @@ export abstract class BootContextFactory {
      * @param option
      * @param injector
      */
-    abstract create(option: BootOption, injector: ICoreInjector): BootContext;
+    abstract create(injector: ICoreInjector, option: BootOption): BootContext;
 }
 
 // function getValue<T>(this: AnnoationContext, token: Token<T>): T {

@@ -39,7 +39,7 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
      * @type {ClassType}
      * @memberof AnnoationActionOption
      */
-    type?: Type<T>;
+    type?: ClassType<T>;
 
 }
 
