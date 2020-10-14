@@ -17,9 +17,9 @@ export namespace refl {
         reflect: TypeReflect;
     }
 
-    export interface DecorHanleOption {
+    interface DecorHanleOption {
         type: DecoratorType;
-        handles?: Handler<DecorContext>[];
+        handle?: Handler<DecorContext> | Handler<DecorContext>[];
     }
 
     /**
@@ -27,9 +27,21 @@ export namespace refl {
      */
     export interface DecorRegisterOption {
         /**
-         * decorator metadata store handler.
+         * class handlers
          */
-        handler?: DecorHanleOption[];
+        classHandle?: Handler<DecorContext> | Handler<DecorContext>[];
+        /**
+         * property handlers
+         */
+        propHandle?: Handler<DecorContext> | Handler<DecorContext>[];
+        /**
+         * method handlers
+         */
+        methodHandle?: Handler<DecorContext> | Handler<DecorContext>[];
+        /**
+         * parameter handlers
+         */
+        paramHandle?: Handler<DecorContext> | Handler<DecorContext>[];
         actionType?: DecorActionType | DecorActionType[];
     }
 
@@ -46,15 +58,30 @@ export namespace refl {
                 options.actionType.forEach(a => regActionType(decor, a))
                 : regActionType(decor, options.actionType);
         }
-        if (options.handler) {
+
+        const hanldes: DecorHanleOption[] = [];
+        if (options.classHandle) {
+            hanldes.push({ type: 'class', handle: options.classHandle })
+        }
+        if (options.propHandle) {
+            hanldes.push({ type: 'property', handle: options.propHandle })
+        }
+        if (options.methodHandle) {
+            hanldes.push({ type: 'method', handle: options.methodHandle })
+        }
+        if (options.paramHandle) {
+            hanldes.push({ type: 'parameter', handle: options.paramHandle })
+        }
+
+        if (hanldes.length) {
             if (!decorsHandles.has(decor)) {
                 decorsHandles.set(decor, new Map());
             }
             const dechd = decorsHandles.get(decor);
-            options.handler.forEach(d => {
-                if (d.handles) {
-                    dechd.set(d.type, [...dechd.get(d.type) || [], ...d.handles]);
-                }
+            hanldes.forEach(d => {
+                const rged = dechd.get(d.type) || [];
+                isArray(d.handle) ? rged.push(...d.handle) : rged.push(d.handle);
+                dechd.set(d.type, rged);
             });
         }
     }
@@ -340,7 +367,7 @@ export namespace refl {
     function getDectorId(decor: string | Function): string {
         return isString(decor) ? decor : decor.toString();
     }
-    function getDecorDefine(this: TypeReflect, decor: string | Function, type?: DecoratorType,  propertyKey?: string): DecorDefine {
+    function getDecorDefine(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): DecorDefine {
         type = type || 'class';
         decor = getDectorId(decor);
         return this.decors.find(d => d.decor === decor && d.decorType === type && (propertyKey ? propertyKey === d.propertyKey : true));

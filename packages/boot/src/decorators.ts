@@ -1,6 +1,6 @@
 import {
     createDecorator, DecoratorOption, isUndefined, ClassType,
-    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isString
+    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isString, isArray
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -69,22 +69,18 @@ export interface IBootDecorator {
 export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
     options = options || {};
     const append = options?.append;
+    const hd = options.classHandle;
     return createDecorator<T>(name, {
         actionType: 'annoation',
         ...options,
-        handler: [
-            {
-                type: 'class',
-                handles: [
-                    (ctx, next) => {
-                        const reflect = ctx.reflect as ModuleReflect;
-                        reflect.annoType = 'boot';
-                        reflect.annoDecor = ctx.decor;
-                        reflect.annotation = ctx.matedata;
-                    }
-                ]
+        classHandle: [
+            (ctx, next) => {
+                const reflect = ctx.reflect as ModuleReflect;
+                reflect.annoType = 'boot';
+                reflect.annoDecor = ctx.decor;
+                reflect.annotation = ctx.matedata;
             },
-            ...options.handler || []
+            ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
         append: (meta) => {
             if (append) {
@@ -151,21 +147,17 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
 export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
     options = options || {};
     const append = options.append;
+    const hd = options.classHandle;
     return createDecorator<DIModuleMetadata>(name, {
         ...options,
-        handler: [
-            {
-                type: 'class',
-                handles: [
-                    (ctx, next) => {
-                        const reflect = ctx.reflect as ModuleReflect;
-                        reflect.annoType = 'module';
-                        reflect.annoDecor = ctx.decor;
-                        reflect.annotation = ctx.matedata;
-                    }
-                ]
+        classHandle: [
+            (ctx, next) => {
+                const reflect = ctx.reflect as ModuleReflect;
+                reflect.annoType = 'module';
+                reflect.annoDecor = ctx.decor;
+                reflect.annotation = ctx.matedata;
             },
-            ...options.handler || []
+            ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
         append: (meta) => {
             if (append) {
@@ -335,25 +327,18 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> {
 export function createBootstrapDecorator<T extends BootstrapMetadata>(name: string, options?: DecoratorOption<T>): IBootstrapDecorator<T> {
 
     return createDecorator<BootstrapMetadata>(name, {
-        handler: [
-            {
-                type: 'class',
-                handles: [
-                    (ctx, next) => {
-                        const reflect = ctx.reflect as ModuleReflect;
-                        reflect.annoType = 'module';
-                        reflect.annoDecor = ctx.decor;
-                        reflect.annotation = ctx.matedata;
-                        // static main.
-                        if (isClass(ctx.decorType) && isFunction(ctx.decorType['main'])) {
-                            setTimeout(() => {
-                                ctx.decorType['main'](ctx.matedata);
-                            }, 500);
-                        }
-                    }
-                ]
+        classHandle: (ctx, next) => {
+            const reflect = ctx.reflect as ModuleReflect;
+            reflect.annoType = 'module';
+            reflect.annoDecor = ctx.decor;
+            reflect.annotation = ctx.matedata;
+            // static main.
+            if (isClass(ctx.decorType) && isFunction(ctx.decorType['main'])) {
+                setTimeout(() => {
+                    ctx.decorType['main'](ctx.matedata);
+                }, 500);
             }
-        ],
+        },
         ...options
     }) as IBootstrapDecorator<T>;
 }

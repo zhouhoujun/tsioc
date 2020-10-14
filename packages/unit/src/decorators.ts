@@ -1,4 +1,4 @@
-import { isString, isNumber, Type, createMethodDecorator, createDecorator, DecoratorOption } from '@tsdi/ioc';
+import { isString, isNumber, Type, createDecorator, DecoratorOption } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './metadata';
 
@@ -39,19 +39,12 @@ export interface ISuiteDecorator {
  */
 export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
-    handler: [
-        {
-            type: 'class',
-            handles: [
-                (ctx, next) => {
-                    const reflect = ctx.reflect as AnnotationReflect;
-                    reflect.annoType = 'suite';
-                    reflect.annoDecor = ctx.decor;
-                    reflect.annotation = ctx.matedata;
-                }
-            ]
-        }
-    ],
+    classHandle: (ctx, next) => {
+        const reflect = ctx.reflect as AnnotationReflect;
+        reflect.annoType = 'suite';
+        reflect.annoDecor = ctx.decor;
+        reflect.annotation = ctx.matedata;
+    },
     actions: [
         (ctx, next) => {
             let arg = ctx.currArg;

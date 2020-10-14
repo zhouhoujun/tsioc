@@ -49,18 +49,11 @@ export interface IAspectDecorator {
  */
 export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect', {
     actionType: 'annoation',
-    handler: [
-        {
-            type: 'class',
-            handles: [
-                (ctx, next) => {
-                    let rlt = ctx.reflect as AopReflect;
-                    rlt.aspect = ctx.matedata;
-                    return next();
-                }
-            ]
-        }
-    ],
+    classHandle: (ctx, next) => {
+        let rlt = ctx.reflect as AopReflect;
+        rlt.aspect = ctx.matedata;
+        return next();
+    },
     actions: [
         (ctx, next) => {
             let arg = ctx.currArg;
@@ -116,18 +109,11 @@ export interface INonePointcutDecorator {
  * @NonePointcut
  */
 export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMetadata>('NonePointcut', {
-    handler: [
-        {
-            type: 'class',
-            handles: [
-                (ctx, next) => {
-                    const rlt = ctx.reflect as AopReflect;
-                    rlt.nonePointcut = true;
-                    return next();
-                }
-            ]
-        }
-    ]
+    classHandle: (ctx, next) => {
+        const rlt = ctx.reflect as AopReflect;
+        rlt.nonePointcut = true;
+        return next();
+    }
 });
 
 
@@ -224,21 +210,14 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
     return createMethodDecorator<T>(adviceName, {
         ...options,
         actions,
-        handler: [
-            {
-                type: 'method',
-                handles: [
-                    (ctx, next) => {
-                        let ret = ctx.reflect as AopReflect;
-                        if (!ret.advices) {
-                            ret.advices = [];
-                        }
-                        ret.advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
-                        return next();
-                    }
-                ]
+        methodHandle: (ctx, next) => {
+            let ret = ctx.reflect as AopReflect;
+            if (!ret.advices) {
+                ret.advices = [];
             }
-        ],
+            ret.advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
+            return next();
+        },
         append: (metadata) => {
             if (append) {
                 append(metadata);
