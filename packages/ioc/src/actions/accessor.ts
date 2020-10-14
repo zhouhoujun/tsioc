@@ -105,38 +105,4 @@ export class MethodAccessor implements IMethodAccessor {
             }
         });
     }
-
-    // /**
-    //  * get type class constructor parameters.
-    //  *
-    //  * @template T
-    //  * @param {IInjector} container
-    //  * @param {Type<T>} type
-    //  * @returns {IParameter[]}
-    //  * @memberof MethodAccessor
-    //  */
-    // getParameters<T>(container: IInjector, type: Type<T>): ParameterMetadata[];
-    // /**
-    //  * get method parameters of type.
-    //  *
-    //  * @template T
-    //  * @param {IInjector} injector
-    //  * @param {Type<T>} type
-    //  * @param {T} instance
-    //  * @param {string} propertyKey
-    //  * @returns {IParameter[]}
-    //  * @memberof MethodAccessor
-    //  */
-    // getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): ParameterMetadata[];
-    // getParameters<T>(injector: IInjector, type: Type<T>, instance?: T, propertyKey?: string): ParameterMetadata[] {
-    //     let ctx = {
-    //         injector,
-    //         type,
-    //         instance,
-    //         propertyKey
-    //     } as RuntimeContext;
-    //     injector.getContainer().getActionInjector().getInstance(RuntimeParamScope).execute(ctx);
-    //     let params = ctx.reflect.methodParams.get(propertyKey);
-    //     return params || [];
-    // }
 }

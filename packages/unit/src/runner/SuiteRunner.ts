@@ -45,6 +45,7 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
             let desc = this.getSuiteDescribe();
             await this.runSuite(desc);
         } catch (err) {
+            throw err;
             // console.error(err);
         }
     }
