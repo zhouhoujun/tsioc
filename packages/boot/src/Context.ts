@@ -323,7 +323,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * @type {LoadType[]}
      * @memberof BootOptions
      */
-    readonly deps?: LoadType[];
+    readonly deps: LoadType[];
 
     readonly bootstrap: Token;
 

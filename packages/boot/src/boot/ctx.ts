@@ -10,6 +10,7 @@ import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';
 import { BootstrapMetadata } from '../decorators';
 import { BootOption, IBootContext, Template } from '../Context';
+import { LoadType } from '@tsdi/core';
 
 
 /**
@@ -102,6 +103,10 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
 
     get bootstrap(): Token {
         return this.options.bootstrap;
+    }
+
+    get deps(): LoadType[] {
+        return this.options.deps;
     }
 
     /**
