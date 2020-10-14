@@ -1,16 +1,17 @@
 import {
-    IocCoreService, Inject, Singleton, isFunction, isClassType, ClassType, Type, isString
+    IocCoreService, Inject, Singleton, isFunction, isClassType, ClassType, Type
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
-import { BootLifeScope, RunnableBuildLifeScope } from '../boot/lifescope';
+import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
 import { BuilderServiceToken, CTX_OPTIONS, ROOT_INJECTOR } from '../tk';
 import { ResolveMoudleScope } from '../builder/handles';
 import { IHandle } from '../handles/Handle';
 import { BuildContext } from '../builder/ctx';
 import { BootContext } from '../boot/ctx';
+import { IStartup } from '../runnable/Startup';
 
 
 
@@ -49,21 +50,41 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         const container = this.root.getContainer();
         let md: ClassType;
         if (isClassType(target)) {
-            injector = container.getInjector(target);
             options = { type: target };
             md = target;
         } else {
             md = target.type;
             injector = target.injector;
-            if (!injector) {
-                injector = md ? container.getInjector(md) : this.root;
-            }
             options = target;
+        }
+        if (!injector) {
+            injector = container.isRegistered(md) ? container.getInjector(md) || this.root : this.root;
         }
         let rctx = injector.getService({ token: BuildContext, target: md, defaultToken: BuildContext }, { provide: CTX_OPTIONS, useValue: options });
         await container.getActionInjector().getInstance(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
+    }
+
+    async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<IStartup<T>> {
+        const container = this.root.getContainer();
+        let md: ClassType;
+        let injector: ICoreInjector;
+        let options: BootOption<T>;
+        if (isClassType(target)) {
+            md = target;
+            options = { bootstrap: md };
+        } else {
+            md = target.type;
+            injector = target.injector;
+            options = { bootstrap: md, ...target };
+        }
+        if (!injector) {
+            injector = container.isRegistered(md) ? container.getInjector(md) || this.root : this.root;
+        }
+        const ctx = injector.getService({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
+        await container.getActionInjector().getInstance(StartupServiceScope).execute(ctx);
+        return ctx.getStartup();
     }
 
     /**
@@ -112,21 +133,24 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         ...args: string[]): Promise<T> {
 
         let ctx: T;
-        if (isBootContext(target)) {
+        if (isModuleContext(target)) {
             ctx = target as T;
         } else {
             let md: ClassType;
             let injector: ICoreInjector;
+            let options: BootOption;
             if (isClassType(target)) {
                 md = target;
+                options = { type: md, args };
             } else {
                 md = target.type;
                 injector = target.injector;
+                options = { ...target, args };
             }
             if (!injector) {
-                injector = container.isRegistered(md) ? container.getInjector(md) : this.root;
+                injector = container.isRegistered(md) ? container.getInjector(md) || this.root : this.root;
             }
-            ctx = injector.getService<T>({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: { ...target, args } });
+            ctx = injector.getService<T>({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
         }
 
         if (contextInit) {
@@ -137,6 +161,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 }
 
-export function isBootContext(target: any): target is IBootContext {
-    return isString((<IBootContext>target).reflect?.moduleDecorator);
+export function isModuleContext(target: any): target is IBootContext {
+    return (<IBootContext>target).reflect?.annoType === 'module';
 }

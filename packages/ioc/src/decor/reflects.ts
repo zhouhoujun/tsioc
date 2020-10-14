@@ -1,6 +1,6 @@
 import { Action, Actions } from '../Action';
 import { ClassType, Type } from '../types';
-import { chain, Handler, isArray, isClass, isDefined, isFunction, lang } from '../utils/lang';
+import { chain, Handler, isArray, isClass, isFunction, isString, lang } from '../utils/lang';
 import {
     DecorDefine, ParameterMetadata, PropertyMetadata, TypeReflect, ProvidersMetadata,
     ClassMetadata, AutorunMetadata, DecorMemberType, DecoratorType
@@ -325,49 +325,52 @@ export namespace refl {
         return lang.getClass(target)[refFiled]?.() as T || null;
     }
 
-    function hasMetadata(this: TypeReflect, decor: string, type?: DecoratorType): boolean {
-        type = type || 'class'
-        return this.decors.some(d => d.decor === decor && d.decorType === type);
+    function hasMetadata(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
+        type = type || 'class';
+        decor = getDectorId(decor);
+        return this.decors.some(d => d.decor === decor && d.decorType === type && (propertyKey ? propertyKey === d.propertyKey : true));
     }
 
-    function getDecorDefine(this: TypeReflect, decor: string, propertyKey?: string, type?: DecoratorType): DecorDefine {
-        if (!propertyKey) {
-            type = 'class';
-            return this.decors.find(d => d.decor === decor && d.decorType === type);
-        }
-        return this.decors.find(d => d.decor === decor && d.propertyKey === propertyKey && d.decorType === type);
+    function getDectorId(decor: string | Function): string {
+        return isString(decor) ? decor : decor.toString();
+    }
+    function getDecorDefine(this: TypeReflect, decor: string | Function, type?: DecoratorType,  propertyKey?: string): DecorDefine {
+        type = type || 'class';
+        decor = getDectorId(decor);
+        return this.decors.find(d => d.decor === decor && d.decorType === type && (propertyKey ? propertyKey === d.propertyKey : true));
     }
 
-    function getDecorDefines(this: TypeReflect, decor: string, type?: DecoratorType): DecorDefine[] {
+    function getDecorDefines(this: TypeReflect, decor: string | Function, type?: DecoratorType): DecorDefine[] {
+        decor = getDectorId(decor);
         if (!type) {
             type = 'class';
         }
         return this.decors.filter(d => d.decor === decor && d.decorType === type);
     }
 
-    function getMetadata<T = any>(this: TypeReflect, decor: string, propertyKey?: string, type?: DecorMemberType): T {
+    function getMetadata<T = any>(this: TypeReflect, decor: string | Function, propertyKey?: string, type?: DecorMemberType): T {
         return this.getDecorDefine(decor, propertyKey, type)?.matedata;
     }
 
-    function getMetadatas<T = any>(this: TypeReflect, decor: DecorMemberType): T[] {
-        return this.getDecorDefines(decor, decor).map(d => d.matedata).filter(d => d);
+    function getMetadatas<T = any>(this: TypeReflect, decor: string | Function, type?: DecorMemberType): T[] {
+        return this.getDecorDefines(decor, type).map(d => d.matedata).filter(d => d);
     }
 
     export function getIfy<T extends TypeReflect>(type: ClassType, info?: T): T {
         let targetReflect: TypeReflect;
         if (!hasOwn(type)) {
-            const baseClassRef = get(type);
+            const prRef = get(type);
             targetReflect = Object.defineProperties({
                 type,
-                decors: baseClassRef ? baseClassRef.decors.filter(d => d.decorType !== 'class') : [],
-                class: new TypeDefine(type, baseClassRef?.class),
+                decors: prRef ? prRef.decors.filter(d => d.decorType !== 'class') : [],
+                class: new TypeDefine(type, prRef?.class),
                 providers: [],
                 extProviders: [],
                 refs: [],
-                autoruns: baseClassRef ? baseClassRef.autoruns.filter(a => a.decorType !== 'class') : [],
-                propProviders: baseClassRef ? new Map(baseClassRef.propProviders) : new Map(),
-                methodParams: baseClassRef ? new Map(baseClassRef.methodParams) : new Map(),
-                methodExtProviders: baseClassRef ? new Map(baseClassRef.methodParams) : new Map()
+                autoruns: prRef ? prRef.autoruns.filter(a => a.decorType !== 'class') : [],
+                propProviders: prRef ? new Map(prRef.propProviders) : new Map(),
+                methodParams: prRef ? new Map(prRef.methodParams) : new Map(),
+                methodExtProviders: prRef ? new Map(prRef.methodParams) : new Map()
             }, {
                 getDecorDefine: {
                     value: getDecorDefine,

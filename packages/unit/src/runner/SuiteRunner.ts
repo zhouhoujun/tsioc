@@ -90,70 +90,57 @@ export class SuiteRunner extends Runnable<any> implements ISuiteRunner {
     }
 
     async runBefore(describe: ISuiteDescribe) {
-        let methodMaps = refl.get(this.getBootType()).getMetadatas<BeforeTestMetadata>(Before.toString(), 'method');
+        let befores = this.context.reflect.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
         await PromiseUtil.step(
-            Object.keys(methodMaps)
-                .map(key => () => {
-                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                    return this.runTimeout(
-                        key,
-                        'sutie before ' + key,
-                        meta ? meta.timeout : describe.timeout)
-                }));
+            befores.map(df => {
+                return this.runTimeout(
+                    df.propertyKey,
+                    'sutie before ' + df.propertyKey,
+                    df.matedata.timeout);
+            }));
     }
 
     async runBeforeEach() {
-        let methodMaps = refl.get(this.getBootType()).getMetadatas<BeforeEachTestMetadata>(BeforeEach.toString());
+        let befores = this.context.reflect.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
         await PromiseUtil.step(
-            Object.keys(methodMaps)
-                .map(key => () => {
-                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                    return this.runTimeout(
-                        key,
-                        'before each ' + key,
-                        meta ? meta.timeout : this.timeout);
-                }));
+            befores.map(df => () => {
+                return this.runTimeout(
+                    df.propertyKey,
+                    'before each ' + df.propertyKey,
+                    df.matedata.timeout);
+            }));
     }
 
     async runAfterEach() {
-        let methodMaps = refl.get(this.getBootType()).getMetadatas<BeforeEachTestMetadata>(AfterEach.toString());
-        await PromiseUtil.step(
-            Object.keys(methodMaps)
-                .map(key => () => {
-                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                    return this.runTimeout(
-                        key,
-                        'after each ' + key,
-                        meta ? meta.timeout : this.timeout);
-                }));
+        let afters = this.context.reflect.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
+        await PromiseUtil.step(afters.map(df => () => {
+            return this.runTimeout(
+                df.propertyKey,
+                'after each ' + df.propertyKey,
+                df.matedata.timeout);
+        }));
     }
 
     async runAfter(describe: ISuiteDescribe) {
-        let methodMaps = refl.get(this.getBootType()).getMetadatas<BeforeTestMetadata>(After.toString());
+        let afters = this.context.reflect.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
         await PromiseUtil.step(
-            Object.keys(methodMaps)
-                .map(key => () => {
-                    let meta = methodMaps[key].find(m => isNumber(m.timeout));
-                    return this.runTimeout(
-                        key,
-                        'sutie after ' + key,
-                        meta ? meta.timeout : describe.timeout)
-                }));
+            afters.map(df => () => {
+                return this.runTimeout(
+                    df.propertyKey,
+                    'sutie after ' + df.propertyKey,
+                    df.matedata.timeout)
+            }));
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let methodMaps = refl.get(this.getBootType()).getMetadatas<TestCaseMetadata>(Test.toString());
-        let keys = Object.keys(methodMaps);
+        let tests = this.context.reflect.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
         await PromiseUtil.step(
-            keys.map(key => {
-                let meta = methodMaps[key].find(m => isNumber(m.setp));
-                let timeoutMeta = methodMaps[key].find(m => isNumber(m.timeout));
-                let title = methodMaps[key].map(m => m.title).filter(t => t).join('; ');
+            tests.map(df => {
                 return {
-                    key: key,
-                    order: meta ? meta.setp : keys.length,
-                    timeout: timeoutMeta ? timeoutMeta.timeout : this.timeout,
-                    title: title || key
+                    key: df.propertyKey,
+                    order: df.matedata.setp,
+                    timeout: df.matedata.timeout,
+                    title: df.matedata.title
                 } as ICaseDescribe;
             })
                 .sort((a, b) => {

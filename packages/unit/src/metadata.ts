@@ -8,7 +8,7 @@ import { AnnotationMetadata } from '@tsdi/boot';
  * @interface TestMetadata
  * @extends {MethodMetadata}
  */
-export interface TestMetadata extends MethodMetadata {
+export interface TestMetadata {
     /**
      * test action type.
      *

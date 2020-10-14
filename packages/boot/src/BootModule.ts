@@ -12,7 +12,7 @@ import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/register';
 import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
-import { RunnableBuildLifeScope, BootLifeScope } from './boot/lifescope';
+import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
 import { StartupRegisterAction } from './registers/startup'
 import { BuildContext } from './builder/ctx';
 import { BootContext } from './boot/ctx';
@@ -46,6 +46,7 @@ export class BootModule {
             .regAction(AnnoationRegisterScope)
             .regAction(InjDIModuleScope)
             .regAction(ResolveMoudleScope)
+            .regAction(StartupServiceScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);
 

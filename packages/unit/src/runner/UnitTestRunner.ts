@@ -55,7 +55,7 @@ export class UnitTestRunner extends Runnable<any> {
         await oldRunner.run();
         const builder = injector.resolve(BuilderService);
         const suiteDecor = Suite.toString();
-        await PromiseUtil.step(suites.filter(v => isClass(v) && refl.getIfy(v).hasMetadata(suiteDecor)).map(s => () => builder.run({ type: s, injector: injector })));
+        await PromiseUtil.step(suites.filter(v => isClass(v) && refl.getIfy(v).hasMetadata(suiteDecor)).map(s => () => builder.statrup({ type: s, injector: injector })));
         await injector.resolve(TestReport).report();
     }
 }

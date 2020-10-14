@@ -64,7 +64,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     }
 
     getAnnoation<T extends BootstrapMetadata>(): T {
-        return this.reflect.moduleMetadata as T;
+        return this.reflect.annotation as T;
     }
 
     /**

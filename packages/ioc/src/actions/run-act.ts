@@ -79,9 +79,15 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
 
     props.forEach((metas, propertyKey) => {
         let key = `${propertyKey}_INJECTED`;
-        const meta = metas.find(m => m.provider);
-        if (isToken(meta.provider) && !ctx[key]) {
-            let val = injector.resolve({ token: injector.getTokenKey(meta.provider, meta.alias), target: ctx.type }, providers);
+        let meta = metas.find(m => m.provider);
+        let token;
+        if (meta) {
+            token = injector.getTokenKey(meta.provider, meta.alias);
+        } else {
+            token = metas.find(m => m.type)?.type;
+        }
+        if (isToken(token) && !ctx[key]) {
+            let val = injector.resolve({ token, target: ctx.type }, providers);
             if (isDefined(val)) {
                 ctx.instance[propertyKey] = val;
                 ctx[key] = true;

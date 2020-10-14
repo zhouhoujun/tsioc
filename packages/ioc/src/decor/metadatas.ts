@@ -339,7 +339,7 @@ export interface AutorunDefine {
 export type DecorMemberType = 'property' | 'method' | 'parameter';
 export type DecoratorType = 'class' | DecorMemberType;
 
-export interface DecorDefine {
+export interface DecorDefine<T = any> {
     /**
      * decorator name.
      */
@@ -351,7 +351,7 @@ export interface DecorDefine {
     decorType: DecoratorType;
     propertyKey?: string;
     parameterIndex?: number;
-    matedata?: any;
+    matedata?: T;
 }
 
 /**
@@ -371,33 +371,39 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
      * @param decor
      * @param type
      */
-    hasMetadata(decor: string, type?: DecoratorType): boolean;
+    hasMetadata(decor: string | Function): boolean;
+    /**
+     * has decorator metadata.
+     * @param decor
+     * @param type
+     */
+    hasMetadata(decor: string | Function, type: DecorMemberType, propertyKey?: string): boolean;
     /**
      * get all class decorator defines.
      * @param decor
      */
-    getDecorDefines(decor: string): DecorDefine[];
+    getDecorDefines(decor: string | Function): DecorDefine[];
     /**
      * get all decorator defines.
      * @param decor decorator.
      * @param type  decorator type.
      */
-    getDecorDefines(decor: string, type: DecorMemberType): DecorDefine[];
+    getDecorDefines<T = any>(decor: string | Function, type: DecorMemberType): DecorDefine<T>[];
     /**
      * get all metadata of class decorator.
      * @param decor the class decorator.
      */
-    getMetadatas<T = any>(decor: string): T[];
+    getMetadatas<T = any>(decor: string | Function): T[];
     /**
      * get all metadata of the decorator.
      * @param decor the decorator.
      * @param type decorator type.
      */
-    getMetadatas<T = any>(decor: string, type: DecorMemberType): T[];
-    getDecorDefine(decor: string): DecorDefine;
-    getDecorDefine(decor: string, propertyKey: string, type: DecorMemberType): DecorDefine;
-    getMetadata<T = any>(decor: string): T;
-    getMetadata<T = any>(decor: string, propertyKey: string, type: DecorMemberType): T;
+    getMetadatas<T = any>(decor: string | Function, type: DecorMemberType): T[];
+    getDecorDefine<T = any>(decor: string | Function): DecorDefine<T>;
+    getDecorDefine<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): DecorDefine<T>;
+    getMetadata<T = any>(decor: string | Function): T;
+    getMetadata<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): T;
     /**
      * class define.
      */

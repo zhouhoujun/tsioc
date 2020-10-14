@@ -67,10 +67,25 @@ export interface IBootDecorator {
  * @returns {IBootDecorator}
  */
 export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
+    options = options || {};
     const append = options?.append;
     return createDecorator<T>(name, {
         actionType: 'annoation',
         ...options,
+        handler: [
+            {
+                type: 'class',
+                handles: [
+                    (ctx, next) => {
+                        const reflect = ctx.reflect as ModuleReflect;
+                        reflect.annoType = 'boot';
+                        reflect.annoDecor = ctx.decor;
+                        reflect.annotation = ctx.matedata;
+                    }
+                ]
+            },
+            ...options.handler || []
+        ],
         append: (meta) => {
             if (append) {
                 append(meta);
@@ -144,8 +159,9 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 handles: [
                     (ctx, next) => {
                         const reflect = ctx.reflect as ModuleReflect;
-                        reflect.moduleDecorator = ctx.decor;
-                        reflect.moduleMetadata = ctx.matedata;
+                        reflect.annoType = 'module';
+                        reflect.annoDecor = ctx.decor;
+                        reflect.annotation = ctx.matedata;
                     }
                 ]
             },
@@ -324,6 +340,10 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(name: stri
                 type: 'class',
                 handles: [
                     (ctx, next) => {
+                        const reflect = ctx.reflect as ModuleReflect;
+                        reflect.annoType = 'module';
+                        reflect.annoDecor = ctx.decor;
+                        reflect.annotation = ctx.matedata;
                         // static main.
                         if (isClass(ctx.decorType) && isFunction(ctx.decorType['main'])) {
                             setTimeout(() => {

@@ -102,7 +102,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
         mgr.useConfiguration();
     }
     let config = await mgr.getConfig();
-    let annoation = ctx.reflect.moduleMetadata;
+    let annoation = ctx.reflect.annotation;
     ctx.setValue(CONFIGURATION, { ...config, ...annoation });
 
     if (config.deps && config.deps.length) {
@@ -224,7 +224,7 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 };
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let bootModule = ctx.bootstrap || ctx.reflect.moduleMetadata?.bootstrap;
+    let bootModule = ctx.bootstrap || ctx.reflect.annotation?.bootstrap;
     let template = ctx.template;
     if (!ctx.boot && (template || bootModule)) {
         ctx.providers.inject(

@@ -1,4 +1,5 @@
 import { isString, isNumber, Type, createMethodDecorator, createDecorator, DecoratorOption } from '@tsdi/ioc';
+import { AnnotationReflect } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './metadata';
 
 
@@ -38,6 +39,19 @@ export interface ISuiteDecorator {
  */
 export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
+    handler: [
+        {
+            type: 'class',
+            handles: [
+                (ctx, next) => {
+                    const reflect = ctx.reflect as AnnotationReflect;
+                    reflect.annoType = 'suite';
+                    reflect.annoDecor = ctx.decor;
+                    reflect.annotation = ctx.matedata;
+                }
+            ]
+        }
+    ],
     actions: [
         (ctx, next) => {
             let arg = ctx.currArg;
@@ -94,7 +108,7 @@ export interface TestDecorOption<T> extends DecoratorOption<T> {
  */
 export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): ITestDecorator<T> {
     options = options || {};
-    return createMethodDecorator<TestMetadata>(name, {
+    return createDecorator<TestMetadata>(name, {
         ...options,
         actions: [
             ...options.hasTitle ? [(ctx, next) => {
@@ -201,7 +215,7 @@ export interface IBeforeEachTestDecorator extends ITestDecorator<TestMetadata> {
  * @interface IBeforeEachTestDecorator
  * @template T
  */
-export const BeforeEach: IBeforeEachTestDecorator = createTestDecorator<TestMetadata>('TestBeforeEach') as IBeforeEachTestDecorator;
+export const BeforeEach: IBeforeEachTestDecorator = createTestDecorator<TestMetadata>('BeforeEach') as IBeforeEachTestDecorator;
 
 
 /**

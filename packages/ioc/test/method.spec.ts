@@ -1,4 +1,4 @@
-import { Inject, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param, isFunction, IocContainer } from '../src';
+import { Inject, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param, isFunction, IocContainer, refl } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -77,11 +77,11 @@ describe('method exec test', () => {
     });
 
     it('show has prop metadata', () => {
-        let refs = container.getTypeReflects();
-        expect(refs.hasPropertyMetadata(Inject, MethodTest2)).toBeTruthy();
-        expect(refs.hasPropertyMetadata(Inject, MethodTest2, 'testAt')).toBeTruthy();
-        expect(refs.hasPropertyMetadata(Inject, MethodTest2, 'tester')).toBeFalsy();
-        expect(refs.hasMethodMetadata(Inject, MethodTest3)).toBeFalsy();
+        let refs = refl.get(MethodTest2);
+        expect(refs.hasMetadata(Inject, 'property')).toBeTruthy();
+        expect(refs.hasMetadata(Inject, 'property',  'testAt')).toBeTruthy();
+        expect(refs.hasMetadata(Inject, 'property', 'tester')).toBeFalsy();
+        expect(refs.hasMetadata(Inject, 'method')).toBeFalsy();
     });
 
     // it('show has method metadata', () => {

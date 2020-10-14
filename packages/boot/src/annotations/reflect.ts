@@ -27,3 +27,22 @@ export interface AnnotationMetadata<T = any> extends ClassMetadata, ProvidersMet
 
 }
 
+export type AnnotationType = 'module' | 'component' | 'decorator' | 'directive' | 'pipe' | 'boot' | 'suite';
+/**
+ * AnnotationReflect
+ */
+export interface AnnotationReflect extends TypeReflect {
+    /**
+     * the type of annoation.
+     */
+    annoType?: AnnotationType;
+    /**
+     * annoation decorator.
+     */
+    annoDecor?: string;
+    /**
+     * annotation metadata.
+     */
+    annotation?: AnnotationMetadata;
+}
+

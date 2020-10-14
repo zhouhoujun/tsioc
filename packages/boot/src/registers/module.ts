@@ -16,7 +16,7 @@ export interface ModuleDesignContext extends DesignContext {
 }
 
 export const AnnoationRegInAction = function (ctx: ModuleDesignContext, next: () => void): void {
-    if (!ctx.regIn && ctx.reflect.moduleDecorator) {
+    if (!ctx.regIn && ctx.reflect.annoDecor) {
         let injector = ctx.injector.getInstance(ModuleInjector);
         injector.setValue(ParentInjectorToken, ctx.injector);
         ctx.injector = injector;
@@ -34,7 +34,7 @@ export const AnnoationRegInAction = function (ctx: ModuleDesignContext, next: ()
  */
 export class AnnoationRegisterScope extends IocRegScope<ModuleDesignContext> implements IActionSetup {
     execute(ctx: ModuleDesignContext, next?: () => void): void {
-        if (ctx.reflect.moduleMetadata) {
+        if (ctx.reflect.annotation) {
             super.execute(ctx, next);
         }
     }
@@ -47,8 +47,8 @@ export class AnnoationRegisterScope extends IocRegScope<ModuleDesignContext> imp
 }
 
 export const RegModuleImportsAction = function (ctx: ModuleDesignContext, next: () => void): void {
-    if (ctx.reflect.moduleMetadata.imports) {
-        (<ICoreInjector>ctx.injector).use(...ctx.reflect.moduleMetadata.imports);
+    if (ctx.reflect.annotation.imports) {
+        (<ICoreInjector>ctx.injector).use(...ctx.reflect.annotation.imports);
     }
     next();
 };
@@ -79,7 +79,7 @@ export const RegModuleProvidersAction = function (ctx: ModuleDesignContext, next
 
     let injector = ctx.injector as ModuleInjector;
     let mdReft = ctx.reflect;
-    const annoation = mdReft.moduleMetadata;
+    const annoation = mdReft.annotation;
 
     const map = ctx.exports = injector.getInstance(ModuleProviders);
     map.moduleInjector = injector;
