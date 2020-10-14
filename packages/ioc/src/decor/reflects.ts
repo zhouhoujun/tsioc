@@ -35,6 +35,11 @@ export namespace refl {
 
     const decorsHandles = new Map<string, Map<DecoratorType, Handler<DecorContext>[]>>();
 
+    /**
+     * register decorator.
+     * @param decor decorator.
+     * @param options options.
+     */
     export function registerDecror(decor: string, options: DecorRegisterOption) {
         if (options.actionType) {
             isArray(options.actionType) ?

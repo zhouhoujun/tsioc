@@ -224,7 +224,7 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 };
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let bootModule = ctx.bootstrap || ctx.reflect.annotation?.bootstrap;
+    let bootModule = ctx.bootstrap || ctx.getAnnoation()?.bootstrap;
     let template = ctx.template;
     if (!ctx.boot && (template || bootModule)) {
         ctx.providers.inject(

@@ -61,9 +61,8 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
         return storeMetadata(name, decor, args, metadata, options);
     }
 
-    if (options.handler) {
-        refl.registerDecror(decor, options);
-    }
+    refl.registerDecror(decor, options);
+
     factory.toString = () => decor;
     return factory;
 }

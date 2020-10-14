@@ -34,7 +34,7 @@ export const AnnoationRegInAction = function (ctx: ModuleDesignContext, next: ()
  */
 export class AnnoationRegisterScope extends IocRegScope<ModuleDesignContext> implements IActionSetup {
     execute(ctx: ModuleDesignContext, next?: () => void): void {
-        if (ctx.reflect.annotation) {
+        if (ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
             super.execute(ctx, next);
         }
     }
@@ -47,7 +47,8 @@ export class AnnoationRegisterScope extends IocRegScope<ModuleDesignContext> imp
 }
 
 export const RegModuleImportsAction = function (ctx: ModuleDesignContext, next: () => void): void {
-    if (ctx.reflect.annotation.imports) {
+    const annoation = ctx.reflect.annotation;
+    if (annoation.imports) {
         (<ICoreInjector>ctx.injector).use(...ctx.reflect.annotation.imports);
     }
     next();
@@ -123,7 +124,7 @@ export const RegModuleProvidersAction = function (ctx: ModuleDesignContext, next
 
 
 export const RegModuleExportsAction = function (ctx: ModuleDesignContext, next: () => void): void {
-    if (ctx.exports) {
+    if (ctx.exports.size) {
         let parent = ctx.injector.getInstance(ParentInjectorToken);
         if (parent) {
             if (parent instanceof ModuleInjector) {

@@ -282,7 +282,7 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
             meta.parent = 'root';
         }
     }
-}) as IMessageDecorator;
+});
 
 
 /**
