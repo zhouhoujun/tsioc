@@ -129,14 +129,15 @@ export namespace refl {
 
     export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
         const reflect = ctx.reflect;
-        if (!reflect.methodParams.has(ctx.propertyKey)) {
+        const propertyKey = 'constructor';
+        if (!reflect.methodParams.has(propertyKey)) {
             let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', reflect.type);
             if (paramTypes) {
-                const names = reflect.class.getParamNames(ctx.propertyKey);
+                const names = reflect.class.getParamNames(propertyKey);
                 if (!paramTypes) {
                     paramTypes = [];
                 }
-                reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => {
+                reflect.methodParams.set(propertyKey, paramTypes.map((type, idx) => {
                     return { type, paramName: names[idx] };
                 }));
             }

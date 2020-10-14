@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, IIocContainer, ParameterMetadata, Param, Registration, Inject, Singleton, IocContainer } from '../src';
+import { AutoWired, Injectable, IIocContainer, ParameterMetadata, Param, Registration, Inject, Singleton, IocContainer, refl } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
@@ -29,7 +29,6 @@ describe('custom register test', () => {
     it('should auto create constructor params', () => {
         container.register(ClassRoom);
         let instance = container.get(ClassRoom);
-        // console.log(instance);
         expect(instance).toBeDefined();
         expect(instance.service).toBeDefined();
         expect(instance.service.current instanceof Date).toBeTruthy();
