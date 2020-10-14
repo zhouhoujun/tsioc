@@ -1,6 +1,6 @@
 import {
     createDecorator, DecoratorOption, isUndefined, ClassType,
-    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token
+    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isString
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -262,8 +262,8 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
     actions: [
         (ctx, next) => {
             let arg = ctx.currArg;
-            if (isClass(arg) && ctx.args.length > 0) {
-                ctx.metadata.parent = arg;
+            if (isClass(arg) || isString(arg)) {
+                ctx.metadata.parent = arg as any;
                 ctx.next(next);
             }
         },

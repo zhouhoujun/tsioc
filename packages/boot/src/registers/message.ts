@@ -1,4 +1,5 @@
 import { DesignContext, isClass, lang } from '@tsdi/ioc';
+import { MessageMetadata } from '../decorators';
 import { IMessageQueue } from '../messages/IMessageQueue';
 import { RootMessageQueueToken } from '../tk';
 
@@ -6,7 +7,7 @@ import { RootMessageQueueToken } from '../tk';
 export const MessageRegisterAction = function (ctx: DesignContext, next: () => void): void {
     const classType = ctx.type;
     let reflect = ctx.reflect;
-    const { parent, before, after } = reflect.getMetadata(ctx.currDecor);
+    const { parent, before, after } = reflect.getMetadata<MessageMetadata>(ctx.currDecor);
     if (!parent || parent === 'none') {
         return next();
     }
