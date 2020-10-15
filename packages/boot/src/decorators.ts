@@ -79,6 +79,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
                 reflect.annoType = 'boot';
                 reflect.annoDecor = ctx.decor;
                 reflect.annotation = ctx.matedata;
+                return next();
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
@@ -156,6 +157,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 reflect.annoType = 'module';
                 reflect.annoDecor = ctx.decor;
                 reflect.annotation = ctx.matedata;
+                return next();
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
@@ -338,6 +340,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(name: stri
                     ctx.decorType['main'](ctx.matedata);
                 }, 500);
             }
+            return next();
         },
         ...options
     }) as IBootstrapDecorator<T>;

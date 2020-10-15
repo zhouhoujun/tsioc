@@ -1,14 +1,12 @@
 import {
-    TypeProviderAction, IocSetCacheAction, RegSingletionAction,
     Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { ResolveMoudleScope, AnnoationAction, IBuildContext } from '@tsdi/boot';
+import { BuildContext, ResolveMoudleScope } from '@tsdi/boot';
 import { Input } from './decorators/Input';
 import { Output } from './decorators/Output';
 import { RefChild } from './decorators/RefChild';
 import { Component } from './decorators/Component';
-import { Directive } from './decorators/Directive';
 import { Vaildate } from './decorators/Vaildate';
 import { Pipe } from './decorators/Pipe';
 import { BindingScope } from './compile/binding-comp';
@@ -20,7 +18,7 @@ import { BindingPropTypeAction } from './registers/BindingPropTypeAction';
 import { BindingsCache } from './registers/BindingsCache';
 import { RegVaildateAction } from './registers/RegVaildateAction';
 import { PipeRegAction } from './registers/PipeRegAction';
-import { BindingComponentScope, ParseTemplateHandle  } from './compile/build-comp';
+import { BindingComponentScope, ParseTemplateHandle } from './compile/build-comp';
 
 import { DefaultComponets } from './IComponentReflect';
 import { ComponentProvider, AstResolver } from './ComponentProvider';
@@ -69,17 +67,14 @@ export class ComponentsModule {
         const prty: DecoratorScope = 'Property';
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Component, cls, TypeProviderAction, AnnoationAction, ComponentRegAction)
-            .register(Directive, cls, TypeProviderAction, AnnoationAction)
-            .register(Pipe, cls, TypeProviderAction, PipeRegAction)
+            .register(Component, cls, ComponentRegAction)
+            .register(Pipe, cls, PipeRegAction)
             .register(Input, prty, BindingPropTypeAction)
             .register(Output, prty, BindingPropTypeAction)
             .register(RefChild, prty, BindingPropTypeAction)
             .register(Vaildate, prty, RegVaildateAction);
 
-        actInjector.getInstance(RuntimeRegisterer)
-            .register(Component, cls, RegSingletionAction, IocSetCacheAction)
-            .register(Directive, cls, RegSingletionAction, IocSetCacheAction);
+        actInjector.getInstance(RuntimeRegisterer);
 
         container.registerType(ComponentBuilder);
     }

@@ -1,9 +1,8 @@
 import {
-    TypeProviderAction, IocSetCacheAction, RegSingletionAction,
-    Inject, DecoratorProvider, DesignRegisterer, RuntimeRegisterer, IocExt, DecoratorScope
+    Inject, DecoratorProvider, DesignRegisterer, IocExt, DecoratorScope
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
-import { ResolveMoudleScope, AnnoationAction, BuildContext } from '@tsdi/boot';
+import { ResolveMoudleScope, BuildContext } from '@tsdi/boot';
 import { Component, Directive, Pipe } from './decorators';
 
 
@@ -22,7 +21,7 @@ import { Identifiers } from './compile/facade';
  * @class ComponentModule
  */
 @IocExt()
-export class ComponentModule {
+export class ComponentsModule {
 
     setup(@Inject(ContainerToken) container: IContainer) {
         let actInjector = container.getActionInjector();
@@ -39,14 +38,9 @@ export class ComponentModule {
         const cls: DecoratorScope = 'Class';
 
         actInjector.getInstance(DesignRegisterer)
-            .register(Component, cls, TypeProviderAction, AnnoationAction, ComponentDefAction)
-            .register(Directive, cls, TypeProviderAction, AnnoationAction, DirectiveDefAction)
-            .register(Pipe, cls, TypeProviderAction, PipeRegAction);
-
-        actInjector.getInstance(RuntimeRegisterer)
-            .register(Component, cls, RegSingletionAction, IocSetCacheAction)
-            .register(Directive, cls, RegSingletionAction, IocSetCacheAction)
-            .register(Pipe, cls, RegSingletionAction, IocSetCacheAction);
+            .register(Component, cls, ComponentDefAction)
+            .register(Directive, cls, DirectiveDefAction)
+            .register(Pipe, cls, PipeRegAction);
 
     }
 

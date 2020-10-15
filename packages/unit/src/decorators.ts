@@ -44,6 +44,7 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
         reflect.annoType = 'suite';
         reflect.annoDecor = ctx.decor;
         reflect.annotation = ctx.matedata;
+        return next();
     },
     actions: [
         (ctx, next) => {

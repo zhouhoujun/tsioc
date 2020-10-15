@@ -2,6 +2,8 @@ import { Token, isString, isToken, ClassType, Registration, createPropDecorator,
 import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, VaildateMetadata } from './metadata';
 import { BindingDirection, isBindingDriection } from './bindings/IBinding';
 import { IPipeTransform } from './bindings/IPipeTransform';
+import { AnnotationReflect } from '@tsdi/boot';
+import { ComponentReflect } from './reflect';
 
 
 
@@ -35,14 +37,24 @@ export interface IDirectiveDecorator {
  *
  * @Component
  */
-export const Directive: IDirectiveDecorator = createClassDecorator<DirectiveMetadata>('Directive', [
-    (ctx, next) => {
-        if (isString(ctx.currArg)) {
-            ctx.metadata.selector = ctx.currArg;
-            ctx.next(next);
+export const Directive: IDirectiveDecorator = createClassDecorator<DirectiveMetadata>('Directive', {
+    actionType: ['annoation', 'typeProviders'],
+    classHandle: (ctx, next) => {
+        const reflect = ctx.reflect as AnnotationReflect;
+        reflect.annoType = 'directive';
+        reflect.annoDecor = ctx.decor;
+        reflect.annotation = ctx.matedata;
+        return next();
+    },
+    actions: [
+        (ctx, next) => {
+            if (isString(ctx.currArg)) {
+                ctx.metadata.selector = ctx.currArg;
+                ctx.next(next);
+            }
         }
-    }
-]);
+    ]
+});
 
 
 
@@ -76,14 +88,24 @@ export interface IComponentDecorator {
  *
  * @Component
  */
-export const Component: IComponentDecorator = createClassDecorator<ComponentMetadata>('Component', [
-    (ctx, next) => {
-        if (isString(ctx.currArg)) {
-            ctx.metadata.selector = ctx.currArg;
-            ctx.next(next);
+export const Component: IComponentDecorator = createClassDecorator<ComponentMetadata>('Component', {
+    actionType: ['annoation', 'typeProviders'],
+    classHandle: (ctx, next) => {
+        const reflect = ctx.reflect as AnnotationReflect;
+        reflect.annoType = 'component';
+        reflect.annoDecor = ctx.decor;
+        reflect.annotation = ctx.matedata;
+        return next();
+    },
+    actions: [
+        (ctx, next) => {
+            if (isString(ctx.currArg)) {
+                ctx.metadata.selector = ctx.currArg;
+                ctx.next(next);
+            }
         }
-    }
-]);
+    ]
+});
 
 /**
  * Bindings decorator.
@@ -144,40 +166,43 @@ export interface BindingsPropertyDecorator {
 /**
  * Bindings decorator.
  */
-export const Bindings: BindingsPropertyDecorator = createPropDecorator<BindingMetadata>('Bindings', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isBindingDriection(arg)) {
-            ctx.metadata.direction = arg;
-            ctx.next(next);
-        }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg)) {
-            ctx.metadata.bindingName = arg;
-            ctx.next(next);
-        } else if (isClassType(arg) || arg instanceof Registration) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if ((ctx.args.length > 2 && isToken(arg))) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        } else {
-            ctx.metadata.defaultValue = arg;
-        }
+export const Bindings: BindingsPropertyDecorator = createPropDecorator<BindingMetadata>('Bindings', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isBindingDriection(arg)) {
+                ctx.metadata.direction = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.bindingName = arg;
+                ctx.next(next);
+            } else if (isClassType(arg) || arg instanceof Registration) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if ((ctx.args.length > 2 && isToken(arg))) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            } else {
+                ctx.metadata.defaultValue = arg;
+            }
 
-    },
-    (ctx, next) => {
-        ctx.metadata.defaultValue = ctx.currArg;
-    }
-], meta => {
-    if (!meta.direction) {
-        meta.direction = 'twoway';
+        },
+        (ctx, next) => {
+            ctx.metadata.defaultValue = ctx.currArg;
+        }
+    ],
+    append: meta => {
+        if (!meta.direction) {
+            meta.direction = 'twoway';
+        }
     }
 });
 
@@ -185,7 +210,16 @@ export const Bindings: BindingsPropertyDecorator = createPropDecorator<BindingMe
 /**
  * @NonSerialize decorator define component property not need serialized.
  */
-export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize');
+export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize', {
+    propHandle: (ctx, next) => {
+        const reflect = ctx.reflect as ComponentReflect;
+        if (!reflect.nonSerialize) {
+            reflect.nonSerialize = [];
+        }
+        reflect.nonSerialize.push(ctx.propertyKey);
+        return next();
+    }
+});
 
 
 
@@ -214,15 +248,17 @@ export interface HostBindingPropertyDecorator {
 /**
  * output property decorator.
  */
-export const HostBinding: HostBindingPropertyDecorator = createPropDecorator<HostBindingMetadata>('HostBinding', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg)) {
-            ctx.metadata.hostPropertyName = arg;
-            ctx.next(next);
+export const HostBinding: HostBindingPropertyDecorator = createPropDecorator<HostBindingMetadata>('HostBinding', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.hostPropertyName = arg;
+                ctx.next(next);
+            }
         }
-    }
-]);
+    ]
+});
 
 
 
@@ -251,21 +287,23 @@ export interface HostListenerPropertyDecorator {
 /**
  * output property decorator.
  */
-export const HostListener: HostListenerPropertyDecorator = createPropDecorator<HostListenerMetadata>('HostListener', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg)) {
-            ctx.metadata.eventName = arg;
-            ctx.next(next);
+export const HostListener: HostListenerPropertyDecorator = createPropDecorator<HostListenerMetadata>('HostListener', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.eventName = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isArray(arg)) {
+                ctx.metadata.args = arg;
+            }
         }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isArray(arg)) {
-            ctx.metadata.args = arg;
-        }
-    }
-]);
+    ]
+});
 
 
 /**
@@ -321,32 +359,35 @@ export interface InputPropertyDecorator {
 /**
  * Input decorator.
  */
-export const Input: InputPropertyDecorator = createPropDecorator<BindingMetadata>('Input', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg)) {
-            ctx.metadata.bindingName = arg;
-            ctx.next(next);
-        } else if (isClassType(arg) || arg instanceof Registration) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if ((ctx.args.length > 2 && isToken(arg))) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        } else {
-            ctx.metadata.defaultValue = arg;
-        }
+export const Input: InputPropertyDecorator = createPropDecorator<BindingMetadata>('Input', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.bindingName = arg;
+                ctx.next(next);
+            } else if (isClassType(arg) || arg instanceof Registration) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if ((ctx.args.length > 2 && isToken(arg))) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            } else {
+                ctx.metadata.defaultValue = arg;
+            }
 
-    },
-    (ctx, next) => {
-        ctx.metadata.defaultValue = ctx.currArg;
+        },
+        (ctx, next) => {
+            ctx.metadata.defaultValue = ctx.currArg;
+        }
+    ],
+    append: meta => {
+        meta.direction = 'input';
     }
-], meta => {
-    meta.direction = 'input';
 });
 
 
@@ -405,32 +446,35 @@ export interface OutputPropertyDecorator {
 /**
  * output property decorator.
  */
-export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetadata>('Output', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg)) {
-            ctx.metadata.bindingName = arg;
-            ctx.next(next);
-        } else if (isClassType(arg) || arg instanceof Registration) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (ctx.args.length > 2 && isToken(arg)) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        } else {
-            ctx.metadata.defaultValue = arg;
-        }
+export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetadata>('Output', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.bindingName = arg;
+                ctx.next(next);
+            } else if (isClassType(arg) || arg instanceof Registration) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (ctx.args.length > 2 && isToken(arg)) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            } else {
+                ctx.metadata.defaultValue = arg;
+            }
 
-    },
-    (ctx, next) => {
-        ctx.metadata.defaultValue = ctx.currArg;
+        },
+        (ctx, next) => {
+            ctx.metadata.defaultValue = ctx.currArg;
+        }
+    ],
+    append: meta => {
+        meta.direction = 'output';
     }
-], meta => {
-    meta.direction = 'output';
 });
 
 
@@ -447,7 +491,7 @@ export type PipeDecorator = <TFunction extends Type<IPipeTransform>>(target: TFu
  * @export
  * @interface IInjectableDecorator
  */
-export interface IPipeDecorator  {
+export interface IPipeDecorator {
     /**
      * Pipe decorator, define the class as pipe.
      *
@@ -472,21 +516,25 @@ export interface IPipeDecorator  {
  *
  * @Pipe
  */
-export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', [
-    (ctx, next) => {
-        if (isString(ctx.currArg)) {
-            ctx.metadata.name = ctx.currArg;
-            ctx.next(next);
+export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
+    actionType: ['annoation', 'typeProviders'],
+    actions: [
+        (ctx, next) => {
+            if (isString(ctx.currArg)) {
+                ctx.metadata.name = ctx.currArg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            if (isBoolean(ctx.currArg)) {
+                ctx.metadata.pure = ctx.currArg;
+            }
         }
-    },
-    (ctx, next) => {
-        if (isBoolean(ctx.currArg)) {
-            ctx.metadata.pure = ctx.currArg;
+    ],
+    append: meta => {
+        if (isUndefined(meta.pure)) {
+            meta.pure = true;
         }
-    }
-], meta => {
-    if (isUndefined(meta.pure)) {
-        meta.pure = true;
     }
 });
 
@@ -548,30 +596,32 @@ export interface IRefChildDecorator {
  *
  * @RefChild
  */
-export const RefChild: IRefChildDecorator = createPropDecorator<BindingMetadata>('RefChild', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isString(arg)) {
-            ctx.metadata.bindingName = arg;
-            ctx.next(next);
-        } else if (isClassType(arg) || arg instanceof Registration) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
+export const RefChild: IRefChildDecorator = createPropDecorator<BindingMetadata>('RefChild', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isString(arg)) {
+                ctx.metadata.bindingName = arg;
+                ctx.next(next);
+            } else if (isClassType(arg) || arg instanceof Registration) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (ctx.args.length > 2 && isToken(arg)) {
+                ctx.metadata.provider = arg;
+                ctx.next(next);
+            } else {
+                ctx.metadata.defaultValue = arg;
+            }
+        },
+        (ctx, next) => {
+            ctx.metadata.defaultValue = ctx.currArg;
         }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (ctx.args.length > 2 && isToken(arg)) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        } else {
-            ctx.metadata.defaultValue = arg;
-        }
-    },
-    (ctx, next) => {
-        ctx.metadata.defaultValue = ctx.currArg;
-    }
-]);
+    ]
+});
 
 
 /**
@@ -606,23 +656,25 @@ export interface VaildatePropertyDecorator {
 /**
  * Vaildate decorator.
  */
-export const Vaildate: VaildatePropertyDecorator = createPropDecorator<VaildateMetadata>('Vaildate', [
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if (isBoolean(arg)) {
-            ctx.metadata.required = arg;
-            ctx.next(next);
-        } else if (isFunction(arg)) {
-            ctx.metadata.vaild = arg;
-            ctx.next(next);
-        }
-    },
-    (ctx, next) => {
-        let arg = ctx.currArg;
-        if ((ctx.args.length > 2 && isString(arg))) {
-            ctx.metadata.errorMsg = arg;
-            ctx.next(next);
-        }
+export const Vaildate: VaildatePropertyDecorator = createPropDecorator<VaildateMetadata>('Vaildate', {
+    actions: [
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if (isBoolean(arg)) {
+                ctx.metadata.required = arg;
+                ctx.next(next);
+            } else if (isFunction(arg)) {
+                ctx.metadata.vaild = arg;
+                ctx.next(next);
+            }
+        },
+        (ctx, next) => {
+            let arg = ctx.currArg;
+            if ((ctx.args.length > 2 && isString(arg))) {
+                ctx.metadata.errorMsg = arg;
+                ctx.next(next);
+            }
 
-    }
-]) as VaildatePropertyDecorator;
+        }
+    ]
+}) as VaildatePropertyDecorator;
