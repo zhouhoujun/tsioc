@@ -63,8 +63,9 @@ export class BootModule {
     }
 }
 
-const cls: DecoratorScope = 'Class';
+
 const aftAnn: DecoratorScope = 'AfterAnnoation';
+
 /**
  * register decorator as module.
  * @param decorator decorator.
