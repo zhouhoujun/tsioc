@@ -4,12 +4,10 @@ import {
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { ResolveMoudleScope, BuildContext } from '@tsdi/boot';
 import { Component, Directive, Pipe } from './decorators';
-
-
-import { PipeRegAction } from './registers/PipeRegAction';
-import { ComponentContext } from './ComponentContext';
 import { DirectiveDefAction } from './registers/DirectiveDefAction';
 import { ComponentDefAction } from './registers/ComponentDefAction';
+import { PipeRegAction } from './registers/PipeRegAction';
+import { ComponentContext } from './context';
 import { ParseTemplateHandle } from './compile/actions';
 import { Identifiers } from './compile/facade';
 

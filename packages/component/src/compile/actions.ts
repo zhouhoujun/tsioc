@@ -1,4 +1,4 @@
-import { IComponentContext } from '../ComponentContext';
+import { ComponentContext } from '../context';
 import { CompilerFacade } from './facade';
 
 /**
@@ -8,8 +8,8 @@ import { CompilerFacade } from './facade';
  * @class ModuleBeforeInitHandle
  * @extends {ResolveComponentHandle}
  */
-export const ParseTemplateHandle = async function (ctx: IComponentContext, next?: () => Promise<void>): Promise<void> {
-    let temp = ctx.getTemplate();
+export const ParseTemplateHandle = async function (ctx: ComponentContext, next?: () => Promise<void>): Promise<void> {
+    let temp = ctx.template;
     if (!ctx.value && temp) {
         // use compiler of component, register in module of current injector.
         const injector = ctx.injector;

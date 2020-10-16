@@ -1,34 +1,26 @@
-import { CTX_CURR_DECOR, DesignContext, IProvider, DecoratorProvider, lang } from '@tsdi/ioc';
-import { DirectiveMetadata } from '../metadata';
-import { IDirectiveReflect } from '../IReflect';
+import { DesignContext } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { CompilerFacade } from '../compile/facade';
+import { DirectiveReflect } from '../reflect';
 
 /**
  * Directive def compile action.
  */
 export const DirectiveDefAction = function (ctx: DesignContext, next: () => void): void {
-    let currDecor = ctx.getValue(CTX_CURR_DECOR);
-    let injector = ctx.injector;
-    let metas = ctx.reflects.getMetadata<DirectiveMetadata>(currDecor, ctx.type);
-    let compRefl = ctx.targetReflect as IDirectiveReflect;
-    let prdrs: IProvider;
-    if (!compRefl.getDecorProviders) {
-        prdrs = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).getProviders(currDecor);
-        if (prdrs) {
-            compRefl.getDecorProviders = () => prdrs;
-        }
-    } else {
-        prdrs = compRefl.getDecorProviders();
+    const decorRefl = ctx.reflect as DirectiveReflect;
+    if (!(decorRefl.annoType === 'component')) {
+        return next();
     }
-    compRefl.decorator = currDecor;
-    compRefl.directive = true;
-
     if (ctx.type.ρDir) {
-        compRefl.directiveDef = ctx.type.ρDir();
-    } else {
-        const compiler = prdrs.getInstance(CompilerFacade);
-        compRefl.directiveDef = compiler.compileDirective(lang.first(metas));
+        decorRefl.directiveDef = ctx.type.ρDir();
+        return next();
     }
+
+    const currDecor = ctx.currDecor;
+    const injector = ctx.injector as ICoreInjector;
+
+    const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
+    ctx.type.ρCmp = decorRefl.directiveDef = compiler.compileDirective(decorRefl);
 
     next();
 };

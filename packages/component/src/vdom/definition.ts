@@ -1,5 +1,3 @@
-
-
 import { InstanceFactory, Type } from '@tsdi/ioc';
 import {TAttributes, TConstantsOrFactory} from './node';
 import {CssSelectorList} from './projection';
@@ -302,20 +300,6 @@ export interface DirectiveDef<T> {
            this: DirectiveDef<U>, instance: U, value: any, publicName: string,
            privateName: string) => void)|null;
 }
-
-/**
- * @codeGenApi
- */
-export type ɵɵComponentDefWithMeta<
-    T, Selector extends String, ExportAs extends
-        string[], InputMap extends {[key: string]: string},
-                                   OutputMap extends {[key: string]: string}, QueryFields extends
-            string[], NgContentSelectors extends string[]> = ComponentDef<T>;
-
-/**
- * @codeGenApi
- */
-export type ɵɵFactoryDef<T, CtorDependencies extends CtorDependency[]> = () => T;
 
 /**
  * Runtime link information for Components.

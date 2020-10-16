@@ -5,7 +5,7 @@ import { BindingTypes, BindingDirection } from './bindings/IBinding';
  * component metadata.
  *
  * @export
- * @interface IComponentMetadata
+ * @interface DirectiveMetadata
  * @extends {InjectableMetadata}
  */
 export interface DirectiveMetadata extends InjectableMetadata {
@@ -13,7 +13,7 @@ export interface DirectiveMetadata extends InjectableMetadata {
      * decotactor selector.
      *
      * @type {string}
-     * @memberof IComponentMetadata
+     * @memberof DirectiveMetadata
      */
     selector?: string;
 }
@@ -31,14 +31,14 @@ export interface ComponentMetadata extends DirectiveMetadata {
      * component selector.
      *
      * @type {string}
-     * @memberof IComponentMetadata
+     * @memberof ComponentMetadata
      */
     selector?: string;
     /**
      * template for component.
      *
      * @type {*}
-     * @memberof IComponentMetadata
+     * @memberof ComponentMetadata
      */
     template?: any;
 }

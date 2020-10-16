@@ -1,4 +1,4 @@
-import { DesignContext, CTX_CURR_DECOR } from '@tsdi/ioc';
+import { DesignContext } from '@tsdi/ioc';
 import { PipeMetadata } from '../metadata';
 
 /**
@@ -9,9 +9,9 @@ import { PipeMetadata } from '../metadata';
  * @extends {IocDesignAction}
  */
 export const PipeRegAction = function (ctx: DesignContext, next: () => void): void {
-    let currDecor = ctx.getValue(CTX_CURR_DECOR);
+    let currDecor = ctx.currDecor;
     let injector = ctx.injector;
-    let metas = ctx.reflects.getMetadata<PipeMetadata>(currDecor, ctx.type);
+    let metas = ctx.reflect;
 
     metas.forEach(meta => {
         if (meta.name) {

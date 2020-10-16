@@ -1,5 +1,5 @@
 import { Abstract, IProvider, ContextProvider } from '@tsdi/ioc';
-import { ComponentMetadata, DirectiveMetadata } from '../metadata';
+import { ComponentReflect, DirectiveReflect } from '../reflect';
 
 /**
  * compiler identifiers providers.
@@ -20,7 +20,7 @@ export abstract class CompilerFacade {
 
     abstract compileTemplate(template: any): any;
 
-    abstract compileComponent(meta: ComponentMetadata): any;
+    abstract compileComponent(meta: ComponentReflect): any;
 
-    abstract compileDirective(meta: DirectiveMetadata): any;
+    abstract compileDirective(meta: DirectiveReflect): any;
 }

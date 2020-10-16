@@ -1,7 +1,7 @@
-import { DesignContext, CTX_CURR_DECOR, IProvider, DecoratorProvider, lang } from '@tsdi/ioc';
-import { ComponentMetadata } from '../metadata';
-import { IComponentReflect } from '../IReflect';
+import { DesignContext } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { CompilerFacade } from '../compile/facade';
+import { ComponentReflect } from '../reflect';
 
 /**
  * component def compile action.
@@ -9,29 +9,20 @@ import { CompilerFacade } from '../compile/facade';
  * @param next
  */
 export const ComponentDefAction = function (ctx: DesignContext, next: () => void): void {
-
-    let currDecor = ctx.getValue(CTX_CURR_DECOR);
-    let compRefl = ctx.targetReflect as IComponentReflect;
-    let metas = ctx.reflects.getMetadata<ComponentMetadata>(currDecor, ctx.type);
-    let prdrs: IProvider;
-    if (!compRefl.getDecorProviders) {
-        prdrs = ctx.reflects.getActionInjector().getInstance(DecoratorProvider).getProviders(currDecor);
-        if (prdrs) {
-            compRefl.getDecorProviders = () => prdrs;
-        }
-    } else {
-        prdrs = compRefl.getDecorProviders();
+    const compRefl = ctx.reflect as ComponentReflect;
+    if (!(compRefl.annoType === 'component')) {
+        return next();
     }
-
-    compRefl.decorator = currDecor;
-    compRefl.component = true;
     if (ctx.type.ρCmp) {
         compRefl.componentDef = ctx.type.ρCmp();
-    } else {
-        const compiler = prdrs.getInstance(CompilerFacade);
-        compRefl.componentDef = compiler.compileComponent(lang.first(metas));
-        // todo: compiler componet to componentDef.
+        return next();
     }
+
+    const currDecor = ctx.currDecor;
+    const injector = ctx.injector as ICoreInjector;
+
+    const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
+    ctx.type.ρCmp = compRefl.componentDef = compiler.compileComponent(compRefl);
 
     next();
 
