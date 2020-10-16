@@ -13,11 +13,11 @@ export const PipeRegAction = function (ctx: DesignContext, next: () => void): vo
     let injector = ctx.injector;
     let metas = ctx.reflect;
 
-    metas.forEach(meta => {
-        if (meta.name) {
-            injector.bindProvider(meta.name, ctx.type);
-        }
-    });
+    // metas.forEach(meta => {
+    //     if (meta.name) {
+    //         injector.bindProvider(meta.name, ctx.type);
+    //     }
+    // });
 
     next();
 };

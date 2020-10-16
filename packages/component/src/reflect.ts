@@ -75,6 +75,9 @@ export interface ComponentReflect extends AnnotationReflect {
     inputs?: any[];
     outputs?: any[];
 
+    /**
+     * none serializes.
+     */
     nonSerialize?: string[];
 
 }

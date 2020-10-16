@@ -1,13 +1,15 @@
 import { OnDestroy, isPromise, isObservable, lang } from '@tsdi/ioc';
-import { IPipeTransform } from '../bindings/IPipeTransform';
-import { Pipe } from '../decorators';
 import { Observable, SubscriptionLike } from 'rxjs';
+import { PipeTransform } from './pipe';
+import { Pipe } from '../decorators';
 import { EventEmitter } from '../EventEmitter';
-import { ChangeDetectorRef } from '../refs/change';
+import { ChangeDetectorRef } from '../chage/change';
 
-
+/**
+ * async pipe.
+ */
 @Pipe('async', false)
-export class AsyncPipe implements OnDestroy, IPipeTransform {
+export class AsyncPipe implements OnDestroy, PipeTransform {
     private _latestValue: any = null;
     private _latestReturnedValue: any = null;
 

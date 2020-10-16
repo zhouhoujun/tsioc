@@ -1,5 +1,5 @@
 
-import { ViewRef } from '../refs/view';
+import { ViewRef } from '../chage/view';
 import {TNode} from './node';
 import {VComment, VElement} from './types';
 import {HOST, LView, NEXT, PARENT, T_HOST, TRANSPLANTED_VIEWS_TO_REFRESH} from './view';

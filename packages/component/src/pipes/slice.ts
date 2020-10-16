@@ -1,11 +1,11 @@
 import { lang, isString, isArray } from '@tsdi/ioc';
 import { Pipe } from '../decorators';
-import { IPipeTransform } from '../bindings/IPipeTransform';
+import { PipeTransform } from './pipe';
 
 
 
 @Pipe('slice')
-export class SlicePipe implements IPipeTransform {
+export class SlicePipe implements PipeTransform {
     transform(value: any, start: number, end?: number): any {
         if (value == null) return value;
 

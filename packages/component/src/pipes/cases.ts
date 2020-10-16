@@ -1,10 +1,10 @@
-import { Pipe } from '../decorators';
-import { IPipeTransform } from '../bindings/IPipeTransform';
-import { lang, isString } from '@tsdi/ioc';
 
+import { lang, isString } from '@tsdi/ioc';
+import { Pipe } from '../decorators';
+import { PipeTransform } from './pipe';
 
 @Pipe('lowercase')
-export class LowerCasePipe implements IPipeTransform {
+export class LowerCasePipe implements PipeTransform {
   /**
    * @param value The string to transform to lower case.
    */
@@ -19,7 +19,7 @@ export class LowerCasePipe implements IPipeTransform {
 
 
 @Pipe('uppercase')
-export class UpperCasePipe implements IPipeTransform {
+export class UpperCasePipe implements PipeTransform {
   /**
    * @param value The string to transform to lower case.
    */

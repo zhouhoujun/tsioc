@@ -3,9 +3,9 @@
  * pipe transform insterface.
  *
  * @export
- * @interface IPipeTransform
+ * @interface PipeTransform
  */
-export interface IPipeTransform {
+export interface PipeTransform {
     /**
      * transform
      *

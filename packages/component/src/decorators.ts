@@ -2,7 +2,7 @@ import { Token, isString, isToken, ClassType, Registration, createPropDecorator,
 import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, VaildateMetadata } from './metadata';
 import { AnnotationReflect } from '@tsdi/boot';
 import { BindingDirection, isBindingDriection } from './bindings/IBinding';
-import { IPipeTransform } from './bindings/IPipeTransform';
+import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect } from './reflect';
 
 
@@ -482,7 +482,7 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetada
 /**
  * pipe decorator.
  */
-export type PipeDecorator = <TFunction extends Type<IPipeTransform>>(target: TFunction) => TFunction | void;
+export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFunction) => TFunction | void;
 
 
 /**
@@ -518,6 +518,13 @@ export interface IPipeDecorator {
  */
 export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
     actionType: ['annoation', 'typeProviders'],
+    classHandle: (ctx, next) => {
+        const reflect = ctx.reflect as AnnotationReflect;
+        reflect.annoType = 'pipe';
+        reflect.annoDecor = ctx.decor;
+        reflect.annotation = ctx.matedata;
+        return next();
+    },
     actions: [
         (ctx, next) => {
             if (isString(ctx.currArg)) {
