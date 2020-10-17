@@ -5,7 +5,7 @@ import { clsUglifyExp, clsStartExp } from './exps';
 
 declare let process: any;
 
-
+const native = /native code/;
 const toString = Object.prototype.toString;
 /**
  * lang utils
@@ -644,7 +644,7 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: any): boolean {
-    return typeof target === 'function' && /native code/.test(target.toString());
+    return typeof target === 'function' && native.test(target.toString());
 }
 
 /**
