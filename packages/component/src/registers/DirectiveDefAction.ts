@@ -20,7 +20,7 @@ export const DirectiveDefAction = function (ctx: DesignContext, next: () => void
     const injector = ctx.injector as ICoreInjector;
 
     const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
-    ctx.type.ρCmp = decorRefl.directiveDef = compiler.compileDirective(decorRefl);
+    ctx.type.ρDir = decorRefl.directiveDef = compiler.compileDirective(decorRefl);
 
     next();
 };
