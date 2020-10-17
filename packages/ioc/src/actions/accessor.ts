@@ -96,7 +96,7 @@ export class MethodAccessor implements IMethodAccessor {
                 if (providers.has(param.type)) {
                     return providers.get(param.type);
                 }
-                if (isFunction(param.type) && isBaseType(param.type)) {
+                if (isBaseType(param.type)) {
                     return param.defaultValue;
                 }
                 return injector.get(param.type, providers);

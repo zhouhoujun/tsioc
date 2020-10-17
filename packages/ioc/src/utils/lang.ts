@@ -414,7 +414,7 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
         return true;
     }
 
-    if (isPrimitiveType(target)) {
+    if (isBaseType(target)) {
         return false;
     }
 
@@ -643,50 +643,14 @@ export function isRegExp(target: any): target is RegExp {
  * @param {*} target
  * @returns {boolean}
  */
-export function isBaseType(target: ClassType): boolean {
-    return isFunction(target) && (
-        isPrimitiveType(target)
-        || target === Date
-        || target === Array);
-}
-
-/**
- * check target is primitive or not.
- *
- * @export
- * @param {*} target
- * @returns
- */
-export function isPrimitive(target): boolean {
-    let ty = typeof target;
-    return ty === 'string'
-        || ty === 'number'
-        || ty === 'symbol'
-        || ty === 'boolean';
-}
-
-/**
- * check target is primitive type or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isPrimitiveType(target): boolean {
-    return target === Function
-        || target === Object
-        || target === String
-        || target === Number
-        || target === Boolean
-        || target === Symbol;
+export function isBaseType(target: any): boolean {
+    return typeof target === 'function' && /native code/.test(target.toString());
 }
 
 /**
  * check target is base value or not.
  *
- * @export
- * @param {*} target
- * @returns {boolean}
+ * @exportClassType
  */
 export function isBaseValue(target: any): boolean {
     return isBaseType(lang.getClass(target));

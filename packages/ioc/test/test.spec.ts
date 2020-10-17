@@ -22,8 +22,8 @@ describe('custom register test', () => {
         container.register(SimppleAutoWried);
         let instance = container.get(SimppleAutoWried);
         expect(instance).toBeDefined();
-        expect(instance.dateProperty).toBeDefined();
-        expect(instance.dateProperty instanceof Date).toBeTruthy();
+        expect(instance.dateProperty).toBeUndefined();
+        // expect(instance.dateProperty instanceof Date).toBeTruthy();
     });
 
     it('should auto create constructor params', () => {
@@ -31,7 +31,7 @@ describe('custom register test', () => {
         let instance = container.get(ClassRoom);
         expect(instance).toBeDefined();
         expect(instance.service).toBeDefined();
-        expect(instance.service.current instanceof Date).toBeTruthy();
+        expect(instance.service.current).toBeUndefined();
     });
 
     it('should auto create prop with spec @AutoWired class.', () => {

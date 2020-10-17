@@ -1,4 +1,4 @@
-import { isFunction, lang, isString } from '../utils/lang';
+import { isFunction, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
 import { Token, Provider, Factory, TokenId, tokenId } from '../tokens';
 import { IInjector, IProvider, InjectorProxy } from '../IInjector';

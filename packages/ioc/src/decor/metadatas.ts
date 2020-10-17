@@ -219,6 +219,9 @@ export interface ParameterMetadata extends PropertyMetadata {
      */
     index?: number;
 
+    /**
+     * parameter name.
+     */
     paramName?: string;
 
     /**

@@ -1,4 +1,4 @@
-import { Token, tokenId, TokenId } from '../tokens';
+import { tokenId, TokenId } from '../tokens';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { IInjector, InjectorProxy, IProvider, Registered } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';

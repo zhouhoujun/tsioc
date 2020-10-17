@@ -26,7 +26,7 @@ export class AsyncPipe implements OnDestroy, PipeTransform {
             if (obj) {
                 this._subscribe(obj);
             }
-            this._latestReturnedValue = this._latestValue;
+            this._latestReturnedValue = thiPipeTransforms._latestValue;
             return this._latestValue;
         }
 

@@ -1,5 +1,4 @@
 import { Type, Modules } from './types';
-import { lang } from './utils/lang';
 import { SymbolType, Token, InstanceFactory, Factory, InjectReference, Provider } from './tokens';
 import { ResolveOption } from './actions/res';
 import { IIocContainer } from './IIocContainer';
