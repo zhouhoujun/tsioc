@@ -1,6 +1,6 @@
 import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType, createClassDecorator, isArray, PropertyMetadata, Type, isBoolean, isUndefined, isFunction } from '@tsdi/ioc';
-import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, VaildateMetadata } from './metadata';
 import { AnnotationReflect } from '@tsdi/boot';
+import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, VaildateMetadata } from './metadata';
 import { BindingDirection, isBindingDriection } from './bindings/IBinding';
 import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect } from './reflect';

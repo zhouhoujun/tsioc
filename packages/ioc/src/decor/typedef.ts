@@ -1,4 +1,4 @@
-import { ClassType, ObjectMap, Type } from '../types';
+import { ClassType, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, clsUglifyExp, STRIP_COMMENTS } from '../utils/exps';
 import { isFunction, lang } from '../utils/lang';
 

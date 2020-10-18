@@ -12,9 +12,9 @@ export class EventEmitter<T extends any> extends Subject<T> {
     }
 
     /**
-   * Emits an event containing a given value.
-   * @param value The value to emit.
-   */
+     * Emits an event containing a given value.
+     * @param value The value to emit.
+     */
     emit(value?: T) { super.next(value); }
 
     /**

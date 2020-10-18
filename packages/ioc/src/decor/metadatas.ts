@@ -71,14 +71,14 @@ export interface ProviderMetadata {
      * this type provider to.
      *
      * @type {SymbolType}
-     * @memberof IProviderMetadata
+     * @memberof ProviderMetadata
      */
     provide?: Token;
     /**
      * provide alias.
      *
      * @type {string}
-     * @memberof IProviderMetadata
+     * @memberof ProviderMetadata
      */
     alias?: string;
 }
