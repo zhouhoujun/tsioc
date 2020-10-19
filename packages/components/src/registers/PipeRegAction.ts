@@ -1,5 +1,5 @@
 import { DesignContext } from '@tsdi/ioc';
-import { IPipeMetadata } from '../decorators/Pipe';
+import { PipeMetadata } from '../metadata';
 
 /**
  * component register action.
@@ -11,13 +11,13 @@ import { IPipeMetadata } from '../decorators/Pipe';
 export const PipeRegAction = function (ctx: DesignContext, next: () => void): void {
     let currDecor = ctx.currDecor;
     let injector = ctx.injector;
-    let metas = ctx.reflects.getMetadata<IPipeMetadata>(currDecor, ctx.type);
+    let metas = ctx.reflect;
 
-    metas.forEach(meta => {
-        if (meta.name) {
-            injector.bindProvider(meta.name, ctx.type);
-        }
-    });
+    // metas.forEach(meta => {
+    //     if (meta.name) {
+    //         injector.bindProvider(meta.name, ctx.type);
+    //     }
+    // });
 
     next();
 };

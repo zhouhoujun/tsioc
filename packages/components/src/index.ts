@@ -1,46 +1,42 @@
-// bindings
-export * from './bindings/IBinding';
-export * from './bindings/IPipeTransform';
-export * from './bindings/onChange';
-export * from './bindings/PropBinding';
-export * from './bindings/EventBinding';
-export * from './bindings/OneWayBinding';
-export * from './bindings/TwoWayBinding';
-export * from './bindings/ParseBinding';
-export * from './bindings/Events';
+export * from './EventEmitter';
 
 // decorators
-export * from './decorators/BindingPropMetadata';
-export * from './decorators/IComponentMetadata';
-export * from './decorators/Component';
-export * from './decorators/Input';
-export * from './decorators/Output';
-export * from './decorators/RefChild';
-export * from './decorators/NonSerialize';
-export * from './decorators/Vaildate';
-export * from './decorators/Pipe';
+export * from './metadata';
+export * from './decorators';
 
-export * from './elements';
-export * from './ComponentContext';
+
+// bindings
+export * from './bindings/IBinding';
+
+// change ref.
+export * from './chage/change';
+export * from './chage/view';
+
 // compile
-export * from './compile/ParseContext';
-export * from './compile/binding-comp';
-export * from './compile/TemplateContext';
-export * from './compile/parse-templ';
-export * from './compile/build-comp';
+export * from './compile/facade';
+export * from './compile/actions';
+export * from './compile/interface';
 
+// directivies
+export * from './directivies/each';
+export * from './directivies/if';
+export * from './directivies/elseif';
+export * from './directivies/switch';
+
+// pipes
+export * from './pipes/pipe';
+export * from './pipes/async';
+export * from './pipes/cases';
+export * from './pipes/slice';
+export * from './pipes/json';
 
 // registers
-export * from './registers/BindingsCache';
-export * from './registers/BindingPropTypeAction';
-export * from './registers/ComponentRegAction';
+export * from './registers/ComponentDefAction';
+export * from './registers/DirectiveDefAction';
 export * from './registers/PipeRegAction';
-export * from './registers/RegVaildateAction';
 
-export * from './ComponentLifecycle';
-export * from './ComponentRef';
-export * from './ComponentProvider';
-export * from './IComponentReflect';
-export * from './IComponentBuilder';
-export * from './ComponentBuilder';
+export * from './util/array';
+export * from './context';
+export * from './reflect';
+export * from './lifecycle';
 export * from './ComponentsModule';
