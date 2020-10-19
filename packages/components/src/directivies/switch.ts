@@ -97,8 +97,7 @@ export class SwitchView {
  */
 @Directive({ selector: '[switch]' })
 export class DirSwitch {
-  // TODO(issue/24571): remove '!'.
-  private _defaultViews!: SwitchView[];
+  private _defaultViews: SwitchView[];
   private _defaultUsed = false;
   private _caseCount = 0;
   private _lastCaseCheckIndex = 0;
