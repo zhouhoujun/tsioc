@@ -11,77 +11,71 @@ import { ChangeDetectorRef } from '../chage/change';
 @Pipe('async', false)
 export class AsyncPipe implements OnDestroy, PipeTransform {
     private _latestValue: any = null;
-    private _latestReturnedValue: any = null;
 
-    private _subscription: SubscriptionLike | Promise<any> | null = null;
-    private _obj: Observable<any> | Promise<any> | EventEmitter<any> | null = null;
-    private _strategy: SubscriptionStrategy = null!;
+  private _subscription: SubscriptionLike|Promise<any>|null = null;
+  private _obj: Observable<any>|Promise<any>|EventEmitter<any>|null = null;
+  private _strategy: SubscriptionStrategy = null!;
 
-    constructor(private _ref: ChangeDetectorRef) {
+  constructor(private _ref: ChangeDetectorRef) {}
 
+  ngOnDestroy(): void {
+    if (this._subscription) {
+      this._dispose();
+    }
+  }
+
+  transform<T>(obj: null): null;
+  transform<T>(obj: undefined): undefined;
+  transform<T>(obj: Observable<T>|null|undefined): T|null;
+  transform<T>(obj: Promise<T>|null|undefined): T|null;
+  transform(obj: Observable<any>|Promise<any>|null|undefined): any {
+    if (!this._obj) {
+      if (obj) {
+        this._subscribe(obj);
+      }
+      return this._latestValue;
     }
 
-    transform(obj: Observable<any> | Promise<any>): any {
-        if (!this._obj) {
-            if (obj) {
-                this._subscribe(obj);
-            }
-            this._latestReturnedValue = thiPipeTransforms._latestValue;
-            return this._latestValue;
-        }
-
-        if (obj !== this._obj) {
-            this._dispose();
-            return this.transform(obj as any);
-        }
-
-        if (looseIdentical(this._latestValue, this._latestReturnedValue)) {
-            return this._latestReturnedValue;
-        }
-
-        this._latestReturnedValue = this._latestValue;
-        return WrappedValue.wrap(this._latestValue);
+    if (obj !== this._obj) {
+      this._dispose();
+      return this.transform(obj as any);
     }
 
-    onDestroy(): void {
-        if (this._subscription) {
-            this._dispose();
-        }
+    return this._latestValue;
+  }
+
+  private _subscribe(obj: Observable<any>|Promise<any>|EventEmitter<any>): void {
+    this._obj = obj;
+    this._strategy = this._selectStrategy(obj);
+    this._subscription = this._strategy.createSubscription(
+        obj, (value: Object) => this._updateLatestValue(obj, value));
+  }
+
+  private _selectStrategy(obj: Observable<any>|Promise<any>|EventEmitter<any>): any {
+    if (isPromise(obj)) {
+      return _promiseStrategy;
     }
 
-    private _subscribe(obj: Observable<any> | Promise<any> | EventEmitter<any>): void {
-        this._obj = obj;
-        this._strategy = this._selectStrategy(obj);
-        this._subscription = this._strategy.createSubscription(
-            obj, (value: Object) => this._updateLatestValue(obj, value));
+    if (isObservable(obj)) {
+      return _observableStrategy;
     }
 
-    private _selectStrategy(obj: Observable<any> | Promise<any> | EventEmitter<any>): any {
-        if (isPromise(obj)) {
-            return _promiseStrategy;
-        }
+    throw invalidPipeArgumentError(AsyncPipe, obj);
+  }
 
-        if (isObservable(obj)) {
-            return _observableStrategy;
-        }
+  private _dispose(): void {
+    this._strategy.dispose(this._subscription!);
+    this._latestValue = null;
+    this._subscription = null;
+    this._obj = null;
+  }
 
-        throw Error(`InvalidPipeArgument: '${obj}' for pipe '${lang.getClassName(this)}'`);
+  private _updateLatestValue(async: any, value: Object): void {
+    if (async === this._obj) {
+      this._latestValue = value;
+      this._ref.markForCheck();
     }
-
-    private _dispose(): void {
-        this._strategy.dispose(this._subscription!);
-        this._latestValue = null;
-        this._latestReturnedValue = null;
-        this._subscription = null;
-        this._obj = null;
-    }
-
-    private _updateLatestValue(async: any, value: Object): void {
-        if (async === this._obj) {
-            this._latestValue = value;
-            this._ref.markForCheck();
-        }
-    }
+  }
 }
 
 export function looseIdentical(a: any, b: any): boolean {

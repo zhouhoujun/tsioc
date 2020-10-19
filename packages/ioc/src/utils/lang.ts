@@ -1,6 +1,7 @@
 // use core-js in browser.
+import { TypeReflect } from '../decor/metadatas';
 import { ObjectMap, Type, AbstractType, Modules, ClassType } from '../types';
-import { clsUglifyExp, clsStartExp } from './exps';
+import { clsUglifyExp } from './exps';
 
 
 declare let process: any;
@@ -128,7 +129,7 @@ export namespace lang {
      */
     export function getClassAnnations(target: ClassType) {
         let annf: Function = target.ρAnn || target['d0Ann'] || target['getClassAnnations'];
-        return isFunction(annf) ? annf.call(target) : null;
+        return typeof annf === 'function' ? annf.call(target) : null;
     }
 
     /**
@@ -139,7 +140,7 @@ export namespace lang {
      * @returns {boolean}
      */
     export function hasClassAnnations(target: ClassType): boolean {
-        return isFunction(target.ρAnn || target['d0Ann'] || target['getClassAnnations']);
+        return typeof (target.ρAnn || target['d0Ann'] || target['getClassAnnations']) === 'function';
     }
 
 
@@ -154,8 +155,8 @@ export namespace lang {
         if (isNullOrUndefined(target)) {
             return null;
         }
-        if (isFunction(target)) {
-            return isClassType(target) ? target as Type : null;
+        if (isClassType(target)) {
+            return target as Type;
         }
         return target.constructor || target.prototype.constructor;
     }
@@ -168,8 +169,8 @@ export namespace lang {
      * @returns {string}
      */
     export function getClassName(target: any): string {
-        let classType = isFunction(target) ? target : getClass(target);
-        if (!isFunction(classType)) {
+        let classType = typeof target === 'function' ? target : getClass(target);
+        if (!classType) {
             return '';
         }
         if (clsUglifyExp.test(classType.name)) {
@@ -366,7 +367,7 @@ const AbstractDecor = '@Abstract';
  * @returns {target is AbstractType}
  */
 export function isAbstractClass(target: any): target is AbstractType {
-    return classCheck(target) && Reflect.hasOwnMetadata(AbstractDecor, target);
+    return classCheck(target, true)
 }
 
 
@@ -378,7 +379,7 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return classCheck(target, tg => Reflect.hasOwnMetadata(AbstractDecor, tg))
+    return classCheck(target)
 }
 
 /**
@@ -392,9 +393,9 @@ export function isClassType(target: any): target is ClassType {
     return classCheck(target);
 }
 
-
-function classCheck(target: any, exclude?: (target: Function) => boolean): boolean {
-    if (!isFunction(target)) {
+const refFiled = '_ρreflect_';
+function classCheck(target: any, abstract?: boolean): boolean {
+    if (!(typeof target === 'function')) {
         return false;
     }
 
@@ -402,29 +403,17 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
         return false;
     }
 
-    if (exclude && exclude(target)) {
-        return false;
+    let rf: TypeReflect = target[refFiled]?.();
+    if (rf) {
+        return abstract ? rf.abstract : true;
     }
 
     if (lang.hasClassAnnations(target)) {
         return true;
     }
 
-    if (Reflect.getOwnMetadataKeys(target).length) {
-        return true;
-    }
-
     if (isBaseType(target)) {
         return false;
-    }
-
-
-    if (clsUglifyExp.test(target.name) || !clsStartExp.test(target.name)) {
-        return false;
-    }
-
-    if (Object.getOwnPropertyNames(target.prototype).length > 1) {
-        return true;
     }
 
     return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
@@ -449,7 +438,7 @@ export function isNodejsEnv(): boolean {
  */
 export function isPromise(target: any): target is Promise<any> {
     return toString.call(target) === '[object Promise]'
-        || (isDefined(target) && isFunction(target.then) && isFunction(target.catch));
+        || (!!target && typeof target.then === 'function');
 }
 
 /**
@@ -460,7 +449,7 @@ export function isPromise(target: any): target is Promise<any> {
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === '[object Observable]' || (isDefined(target) && isFunction(target.subscribe));
+    return toString.call(target) === '[object Observable]' || (!!target && typeof target.subscribe === 'function');
 }
 
 /**
