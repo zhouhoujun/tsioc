@@ -98,7 +98,7 @@ export namespace lang {
      * @param el element
      */
     export function del<T>(list: T[], el: T) {
-        const index = isArray(list) ? list.indexOf(el) : -1;
+        const index = Array.isArray(list) ? list.indexOf(el) : -1;
         if (index > -1) {
             return list.splice(index, 1);
         }
@@ -114,7 +114,7 @@ export namespace lang {
      * @returns {T}
      */
     export function last<T>(list: T[]): T {
-        if (isArray(list) && list.length) {
+        if (Array.isArray(list) && list.length) {
             return list[list.length - 1];
         }
         return null;
@@ -152,7 +152,7 @@ export namespace lang {
      * @returns {Type}
      */
     export function getClass(target: any): Type {
-        if (isNullOrUndefined(target)) {
+        if (!target) {
             return null;
         }
         if (isClassType(target)) {
@@ -356,8 +356,6 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
 export function isFunction(target: any): target is Function {
     return typeof target === 'function';
 }
-
-const AbstractDecor = '@Abstract';
 
 /**
  * check Abstract class with @Abstract or not
