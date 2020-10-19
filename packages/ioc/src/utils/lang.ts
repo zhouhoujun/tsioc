@@ -379,7 +379,7 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return classCheck(target)
+    return classCheck(target, false)
 }
 
 /**
@@ -404,8 +404,12 @@ function classCheck(target: any, abstract?: boolean): boolean {
     }
 
     let rf: TypeReflect = target[refFiled]?.();
+
     if (rf) {
-        return abstract ? rf.abstract : true;
+        if (typeof abstract === 'boolean' && rf.type === target) {
+            return abstract ? rf.abstract : !rf.abstract;
+        }
+        return true;
     }
 
     if (lang.hasClassAnnations(target)) {
@@ -527,17 +531,6 @@ export function isUndefined(target: any): target is undefined {
 }
 
 /**
- * check taget is defined.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isDefined(target: any): boolean {
-    return !isNullOrUndefined(target);
-}
-
-/**
  * check target is unll or not.
  *
  * @export
@@ -549,6 +542,17 @@ export function isNull(target: any): target is null {
 }
 
 /**
+ * check taget is defined.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isDefined(target: any): boolean {
+    return target !== null && typeof target !== 'undefined';
+}
+
+/**
  * is target null or undefined.
  *
  * @export
@@ -556,7 +560,7 @@ export function isNull(target: any): target is null {
  * @returns {boolean}
  */
 export function isNullOrUndefined(target): boolean {
-    return isNull(target) || isUndefined(target);
+    return target === null || typeof target === 'undefined';
 }
 
 /**
