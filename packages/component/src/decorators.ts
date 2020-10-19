@@ -1,4 +1,4 @@
-import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType, createClassDecorator, isArray, PropertyMetadata, Type, isBoolean, isUndefined, isFunction } from '@tsdi/ioc';
+import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType, createClassDecorator, isArray, PropertyMetadata, Type, isBoolean, isUndefined, isFunction, createParamDecorator } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
 import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, VaildateMetadata } from './metadata';
 import { BindingDirection, isBindingDriection } from './bindings/IBinding';
@@ -220,6 +220,70 @@ export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize'
         return next();
     }
 });
+
+/**
+ * HostBinding decorator.
+ *
+ * @export
+ * @interface HostBindingPropertyDecorator
+ */
+export interface HostBindingPropertyDecorator {
+    /**
+     * define HostBinding property decorator with binding property name.
+     *
+     * @param {string} bindingName binding property name
+     */
+    (eventName: string, args: []): PropertyDecorator;
+
+    /**
+     * define HostBinding property decorator with binding metadata.
+     *
+     * @param {string} bindingName binding property name
+     */
+    (metadata: HostBindingMetadata): PropertyDecorator;
+}
+
+
+
+/**
+ * Type of the `Host` decorator / constructor function.
+ *
+ * @publicApi
+ */
+export interface HostDecorator {
+    /**
+     * Parameter decorator on a view-provider parameter of a class constructor
+     * that tells the DI framework to resolve the view by checking injectors of child
+     * elements, and stop when reaching the host element of the current component.
+     *
+     * @usageNotes
+     *
+     * The following shows use with the `@Optional` decorator, and allows for a null result.
+     *
+     * <code-example path="core/di/ts/metadata_spec.ts" region="Host">
+     * </code-example>
+     *
+     * For an extended example, see ["Dependency Injection
+     * Guide"](guide/dependency-injection-in-action#optional).
+     */
+    (): any;
+    new(): Host;
+}
+
+/**
+ * Type of the Host metadata.
+ *
+ * @publicApi
+ */
+export interface Host { }
+
+/**
+ * Host decorator and metadata.
+ *
+ * @Annotation
+ * @publicApi
+ */
+export const Host: HostDecorator = createParamDecorator('Host');
 
 
 

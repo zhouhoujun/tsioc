@@ -59,11 +59,11 @@ export interface AbstractType<T = any> extends Function {
     /**
      * get component def.
      */
-    ρCmp?(): any;
+    ρCmp?(...args: any[]): any;
     /**
      * get directive def.
      */
-    ρDir?(): any;
+    ρDir?(...args: any[]): any;
     /**
      * class flag. none poincut for aop.
      */

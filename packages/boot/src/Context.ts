@@ -258,11 +258,6 @@ export interface IBuildContext<T extends BuildOption = BuildOption> extends IAnn
      * build instance.
      */
     value?: any;
-
-    /**
-     * current type attr data to binding.
-     */
-    readonly template: Template;
 }
 
 

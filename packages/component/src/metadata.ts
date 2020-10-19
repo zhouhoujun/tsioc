@@ -1,6 +1,7 @@
 import { InjectableMetadata, ParamPropMetadata, TypeMetadata, ProviderMetadata, PropertyMetadata } from '@tsdi/ioc';
 import { BindingTypes, BindingDirection } from './bindings/IBinding';
 
+
 /**
  * component metadata.
  *

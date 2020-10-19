@@ -84,7 +84,17 @@ export const RegModuleProvidersAction = function (ctx: ModuleDesignContext, next
 
     const map = ctx.exports = injector.getInstance(ModuleProviders);
     map.moduleInjector = injector;
-    let mdRef = new ModuleRef(ctx.type, ctx.exports);
+    let mdRef = new ModuleRef(ctx.type, map);
+    mdRef.onDestroy(() => {
+        const parent = injector.getInstance(ParentInjectorToken);
+        if (parent instanceof ModuleInjector) {
+            parent.unexport(mdRef);
+        } else {
+            map.iterator((f, k) => {
+                parent.unregister(k);
+            });
+        }
+    });
     ctx.injector.setValue(ModuleRef, mdRef);
     ctx.moduleRef = mdRef;
     ctx.injector.getContainer().getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
@@ -102,15 +112,6 @@ export const RegModuleProvidersAction = function (ctx: ModuleDesignContext, next
 
     if (components && components.length) {
         mdReft.components = components;
-        // let componentDectors = [];
-        // components.forEach(comp => {
-        //     map.export(comp);
-        //     let decorator = refl.get(comp).decorator;
-        //     if (decorator && componentDectors.indexOf(decorator) < 0) {
-        //         componentDectors.push(decorator);
-        //     }
-        // });
-        // mdReft.componentDectors = componentDectors;
     }
 
     let exptypes: Type[] = lang.getTypes(...annoation.exports || []);

@@ -1,6 +1,6 @@
 
 import { IBootContext } from '@tsdi/boot';
-import {ChangeDetectorRef} from './change';
+import {ChangeDetectorRef} from '../chage/change';
 
 /**
  * Represents an Angular [view](guide/glossary#view "Definition").
