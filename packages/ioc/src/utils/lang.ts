@@ -456,6 +456,8 @@ export function isObservable(target: any): boolean {
     return toString.call(target) === '[object Observable]' || (!!target && typeof target.subscribe === 'function');
 }
 
+
+const objectStr = '[object Object]';
 /**
  * is target base object or not.
  * eg. {}, have not self constructor;
@@ -464,7 +466,7 @@ export function isObservable(target: any): boolean {
  * @returns {target is Promise<any>}
  */
 export function isBaseObject(target: any): target is ObjectMap {
-    return toString.call(target) === '[object Object]' && target.constructor.name === 'Object';
+    return toString.call(target) === objectStr && target.constructor.name === 'Object';
 }
 
 /**
@@ -593,7 +595,7 @@ export function isObject(target: any): target is object {
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    return toString.call(target) === '[object Object]' && target.constructor.name !== 'Object';
+    return toString.call(target) === objectStr && target.constructor.name !== 'Object';
 }
 
 /**
