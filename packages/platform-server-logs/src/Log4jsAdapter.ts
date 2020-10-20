@@ -10,8 +10,8 @@ import { syncRequire } from '@tsdi/platform-server';
  * @class Log4jsAdapter
  * @implements {ILoggerManger}
  */
-@NonePointcut
-@Singleton
+@NonePointcut()
+@Singleton()
 @Injectable(LoggerManagerToken, 'log4js')
 export class Log4jsAdapter implements ILoggerManager {
     private _log4js: any;

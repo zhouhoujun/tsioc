@@ -5,7 +5,7 @@ import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
 
-@Injectable
+@Injectable()
 class Person {
     constructor() {
 
@@ -15,7 +15,7 @@ class Person {
     }
 }
 
-@Injectable
+@Injectable()
 class Child extends Person {
     constructor() {
         super();
@@ -30,7 +30,7 @@ class MethodTest {
 
     }
 
-    @AutoWired
+    @AutoWired()
     sayHello(person: Person) {
         return person.say();
     }
@@ -40,7 +40,7 @@ class MethodTest2 {
 
     tester: string;
 
-    @Inject
+    @Inject()
     testAt: Date;
     constructor() {
 
@@ -60,7 +60,7 @@ class MethodTest3 {
 
     }
 
-    @AutoWired
+    @AutoWired()
     sayHello(@Inject(Child) personA: Person, personB: Person) {
         return personA.say() + ', ' + personB.say();
     }

@@ -38,7 +38,7 @@ export class ModuleA {
 
 }
 
-@Injectable
+@Injectable()
 export class ClassSevice extends Startup {
     async configureService(ctx: IBootContext): Promise<void> {
 
@@ -57,7 +57,7 @@ export class ClassSevice extends Startup {
 
 }
 
-@Aspect
+@Aspect()
 export class Logger {
 
     @Around('execution(*.run)')

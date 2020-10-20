@@ -3,7 +3,7 @@ import expect = require('expect');
 import { ICoreInjector } from '@tsdi/core';
 import { Singleton, PromiseUtil } from '@tsdi/ioc';
 
-@Singleton
+@Singleton()
 export class MyStartupService extends StartupService {
     async configureService(ctx: IBootContext): Promise<void> {
         let defer = PromiseUtil.defer<void>();

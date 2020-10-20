@@ -6,7 +6,7 @@ import expect = require('expect');
 describe('method exec test', () => {
 
 
-    @Injectable
+    @Injectable()
     class Person {
         constructor() {
 
@@ -16,7 +16,7 @@ describe('method exec test', () => {
         }
     }
 
-    @Injectable
+    @Injectable()
     class Child extends Person {
         constructor() {
             super();
@@ -41,7 +41,7 @@ describe('method exec test', () => {
 
         tester: string;
 
-        @Inject
+        @Inject()
         testAt: Date;
         constructor() {
 

@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { ParallelExecutor } from '@tsdi/activities';
 import { syncRequire } from '@tsdi/platform-server';
 
-@Injectable
+@Injectable()
 export class ServerParallelExecutor extends ParallelExecutor {
     constructor(private workers = 4) {
         super();

@@ -15,7 +15,7 @@ import { ExpectToken } from './assert/expects';
  * @class UnitTestConfigureRegister
  * @extends {ConfigureRegister}
  */
-@Singleton
+@Singleton()
 export class UnitTestConfigureRegister extends ConfigureRegister {
 
     async register(config: UnitTestConfigure, ctx: UnitTestContext): Promise<void> {

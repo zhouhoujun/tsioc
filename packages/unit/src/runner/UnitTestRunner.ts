@@ -13,7 +13,7 @@ import { UnitTestContext } from '../UnitTestContext';
  * @class SuiteRunner
  * @implements {IRunner<any>}
  */
-@Injectable
+@Injectable()
 export class UnitTestRunner extends Runnable<any> {
 
     async configureService(ctx: UnitTestContext): Promise<void> {

@@ -4,7 +4,7 @@ export class SimppleAutoWried {
     constructor() {
     }
 
-    @AutoWired
+    @AutoWired()
     dateProperty: Date;
 }
 
@@ -14,12 +14,12 @@ export class Person {
 }
 
 @Singleton()
-// @Injectable
+// @Injectable()
 export class RoomService {
     constructor() {
 
     }
-    @AutoWired
+    @AutoWired()
     current: Date;
 }
 
@@ -98,7 +98,7 @@ export class InjMClassRoom {
     // @Inject(MiddleSchoolStudent)
     private stu: Student;
 
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     set leader(stu: Student) {
         console.log('set InjMClassRoom leader value')
@@ -118,10 +118,10 @@ export interface IClassRoom {
     leader: Student;
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @AutoWired(), @Param() is.
         // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -133,10 +133,10 @@ export class InjCollegeClassRoom {
     }
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeAliasClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @AutoWired(), @Param() is.
         @AutoWired(new Registration(Student, 'college')) // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -152,7 +152,7 @@ export class InjCollegeAliasClassRoom {
 @Injectable('StringClassRoom')
 export class StingMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
@@ -190,7 +190,7 @@ export class SymbolIdest {
     }
 }
 
-// @Aspect
+// @Aspect()
 // export class AspectTest {
 
 //     @Around('execution()')

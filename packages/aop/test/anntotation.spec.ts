@@ -11,7 +11,7 @@ import expect = require('expect');
 describe('aop test', () => {
 
 
-    @Injectable
+    @Injectable()
     class Person {
         constructor() {
 
@@ -21,7 +21,7 @@ describe('aop test', () => {
         }
     }
 
-    @Injectable
+    @Injectable()
     class Child extends Person {
         constructor() {
             super();
@@ -36,7 +36,7 @@ describe('aop test', () => {
 
         }
 
-        @AutoWired
+        @AutoWired()
         sayHello(person: Person) {
             return person.say();
         }
@@ -46,7 +46,7 @@ describe('aop test', () => {
 
         tester: string;
 
-        @Inject
+        @Inject()
         testAt: Date;
         constructor() {
 
@@ -65,7 +65,7 @@ describe('aop test', () => {
 
         }
 
-        @AutoWired
+        @AutoWired()
         sayHello(@Inject(Child) personA: Person, personB: Person) {
             return personA.say() + ', ' + personB.say();
         }

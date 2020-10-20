@@ -86,17 +86,6 @@ export interface ILoggerDecorator<T extends LoggerMetadata> {
      */
     (metadata?: T): ClassMethodDecorator;
 
-    /**
-     * define logger annotation pointcut to this class or method.
-     *
-     * @Logger
-     */
-    (target: Type): void;
-    /**
-     * define logger annotation pointcut to this class or method.
-     */
-    (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>): void;
-
 }
 
 /**
@@ -105,7 +94,6 @@ export interface ILoggerDecorator<T extends LoggerMetadata> {
  * @Logger
  */
 export const Logger: ILoggerDecorator<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
-    isClassDecor: true,
     metadata: (...args: any[]) => {
         if (args.length === 1) {
             return { message: args[0] };

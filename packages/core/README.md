@@ -96,7 +96,7 @@ container.use(LogModule);
 ## core
 
 ### extends ioc
-1. `@IocExt` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
+1. `@IocExt()` class decortator, use to define the class is Ioc extends module. it will auto run after registered to helper your to setup module.
 2. add service resolve.
 3. module inject.
 
@@ -112,11 +112,11 @@ container.use(LogModule);
 1. `@Abstract`  abstract class decorator.
 2. `@AutoRun`   class, method decorator, use to define the class auto run (via a method or not) after registered.
 3. `@AutoWried`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-4. `@Inject`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-5. `@Injectable` class decortator, use to define the class. it can setting provider to some token, singleton or not.
+4. `@Inject()`  property or param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+5. `@Injectable()` class decortator, use to define the class. it can setting provider to some token, singleton or not.
 6. `@AutoWried` method decorator.
-7. `@Param`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
-8. `@Singleton` class decortator, use to define the class is singleton.
+7. `@Param()`   param decorator, use to auto wried type instance or value to the instance of one class with the decorator.
+8. `@Singleton()` class decortator, use to define the class is singleton.
 9. `@Providers` Providers decorator, for class. use to add private ref service for the class.
 10. `@Refs` Refs decorator, for class. use to define the class as a service for target.
 
@@ -127,7 +127,7 @@ It's a dynamic aop base on ioc.
 
 define a Aspect class, must with decorator:
 
-* `@Aspect` Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
+* `@Aspect()` Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
 
 * `@Before(matchstring|RegExp)` method decorator,  aop Before advice decorator.
 
@@ -150,7 +150,7 @@ DI Module manager, application bootstrap. base on AOP.
 
 *  `@DIModule` DIModule decorator, use to define class as DI Module.
 *  `@Bootstrap` Bootstrap decorator, use to define class as bootstrp module.
-*  `@Boot` Boot decorator, use to define class as startup service for application.
+*  `@Boot()` Boot decorator, use to define class as startup service for application.
 *  `@Message`  Message decorator, for class. use to define the class as message handle register in global message queue.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
@@ -180,7 +180,7 @@ export class ModuleA {
 
 }
 
-@Injectable
+@Injectable()
 export class ClassSevice {
     @Inject('mark')
     mark: string;
@@ -190,7 +190,7 @@ export class ClassSevice {
     }
 }
 
-@Aspect
+@Aspect()
 export class Logger {
 
     @Around('execution(*.start)')
@@ -293,7 +293,7 @@ you can use yourself `MethodAccessor` by implement IMethodAccessor, register `Me
 
 ```ts
 
-@Injectable
+@Injectable()
 class Person {
     constructor() {
 
@@ -303,7 +303,7 @@ class Person {
     }
 }
 
-@Injectable
+@Injectable()
 class Child extends Person {
     constructor() {
         super();
@@ -346,7 +346,7 @@ class MethodTest3 {
     }
 }
 
-@Injectable
+@Injectable()
 class Geet {
     constructor(private name: string){
 
@@ -390,22 +390,22 @@ export class SimppleAutoWried {
     constructor() {
     }
 
-    @AutoWired
+    @AutoWired()
     dateProperty: Date;
 }
 
-@Singleton
+@Singleton()
 export class Person {
     name = 'testor';
 }
 // > v0.3.5 all class decorator can depdence.
-@Singleton
-// @Injectable
+@Singleton()
+// @Injectable()
 export class RoomService {
     constructor() {
 
     }
-    @AutoWired
+    @AutoWired()
     current: Date;
 }
 
@@ -452,7 +452,7 @@ export class CollegeStudent extends Student {
     }
 }
 
-@Injectable
+@Injectable()
 export class CollegeClassRoom {
     constructor(
         @Param(CollegeStudent)
@@ -463,10 +463,10 @@ export class CollegeClassRoom {
 }
 
 
-@Injectable
+@Injectable()
 export class InjMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     // @Inject({ provider: MiddleSchoolStudent })
     leader: Student;
@@ -480,10 +480,10 @@ export interface IClassRoom {
     leader: Student;
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @AutoWired(), @Param() is.
         // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -495,10 +495,10 @@ export class InjCollegeClassRoom {
     }
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeAliasClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @AutoWired(), @Param() is.
         @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -514,7 +514,7 @@ export class InjCollegeAliasClassRoom {
 @Injectable('StringClassRoom')
 export class StingMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
@@ -548,7 +548,7 @@ export class SymbolIdest {
     }
 }
 
-@Injectable
+@Injectable()
 class MethodTestPerson {
     say() {
         return 'hello word.'

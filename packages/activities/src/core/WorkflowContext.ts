@@ -56,7 +56,7 @@ export enum RunState {
 
 
 
-@Injectable
+@Injectable()
 @Refs(Activity, BootContext)
 export class WorkflowContext extends BootContext<ActivityOption> implements IWorkflowContext {
     /**
@@ -171,7 +171,7 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
     }
 }
 
-@Injectable
+@Injectable()
 export class ActivityElementRef<T extends Activity = Activity> extends ActivityRef implements IActivityElementRef<T> {
 
     get name(): string {
@@ -210,12 +210,12 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
     }
 }
 
-@Injectable
+@Injectable()
 export class ControlActivityElementRef<T extends ControlActivity = ControlActivity> extends ActivityElementRef<T> {
 
 }
 
-@Injectable
+@Injectable()
 export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> extends ActivityRef implements IActivityTemplateRef<T> {
     readonly isScope = true;
     get name(): string {
@@ -266,7 +266,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
 /**
  *  activity ref for runtime.
  */
-@Injectable
+@Injectable()
 export class ActivityComponentRef<T = any, TN = ActivityNodeType> extends ActivityRef implements IActivityComponentRef<T, TN> {
 
     get name(): string {
@@ -331,7 +331,7 @@ export function isAcitvityRef(target: any): target is IActivityRef {
  * @class TaskRunner
  * @implements {ITaskRunner}
  */
-@Injectable
+@Injectable()
 @Refs(ActivityRef, Startup)
 export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Service<T> {
 

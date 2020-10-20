@@ -17,7 +17,7 @@ import { LogConfigureToken, LoggerManagerToken } from './tk';
  * @implements {IConfigureLoggerManager}
  */
 @NonePointcut()
-@Injectable
+@Injectable()
 export class ConfigureLoggerManager implements IConfigureLoggerManager {
 
     private _config: LogConfigure;

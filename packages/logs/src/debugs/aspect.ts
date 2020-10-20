@@ -11,8 +11,8 @@ import { ConsoleLogManager } from '../manager';
  * @class DebugLogAspect
  * @extends {LoggerAspect}
  */
-@Singleton
-@Aspect
+@Singleton()
+@Aspect()
 export class DebugLogAspect extends LoggerAspect {
 
     protected getLoggerManager() {

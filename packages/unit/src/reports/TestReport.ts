@@ -15,7 +15,7 @@ export const ReportsToken: TokenId<Type<Reporter>[]> = tokenId<Type<Reporter>[]>
  * @class TestReport
  * @implements {ITestReport}
  */
-@Singleton
+@Singleton()
 export class TestReport implements ITestReport {
 
     @Inject(INJECTOR)

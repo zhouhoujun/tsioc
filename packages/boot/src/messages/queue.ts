@@ -20,7 +20,7 @@ import { CTX_CURR_INJECTOR, CTX_OPTIONS, RootMessageQueueToken } from '../tk';
  * @extends {Handles<T>}
  * @template T
  */
-@Injectable
+@Injectable()
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
 

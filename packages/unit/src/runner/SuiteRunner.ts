@@ -1,4 +1,4 @@
-import { isNumber, lang, PromiseUtil, Injectable, Refs, refl } from '@tsdi/ioc';
+import { lang, PromiseUtil, Injectable, Refs, refl } from '@tsdi/ioc';
 import { Runnable, Startup, IBootContext } from '@tsdi/boot';
 import { Before, BeforeEach, Test, After, AfterEach } from '../decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';

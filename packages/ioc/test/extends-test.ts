@@ -10,7 +10,7 @@ export class Home {
 @Abstract()
 export abstract class Animal {
 
-    @Inject
+    @Inject()
     home: Home;
 
     @Inject(IocContainerToken)

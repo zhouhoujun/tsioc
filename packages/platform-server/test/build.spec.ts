@@ -31,7 +31,7 @@ describe('auto register with build', () => {
         expect(instance.service.current instanceof Date).toBeTruthy();
     });
 
-    it('should auto create prop with spec @Param class.', () => {
+    it('should auto create prop with spec @Param() class.', () => {
         let instance = container.get(MClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
@@ -39,7 +39,7 @@ describe('auto register with build', () => {
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
     });
 
-    it('should auto create constructor params with spec @Param class.', () => {
+    it('should auto create constructor params with spec @Param() class.', () => {
         let instance = container.get(CollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
@@ -47,7 +47,7 @@ describe('auto register with build', () => {
         expect(instance.leader.sayHi()).toEqual('I am a college student');
     });
 
-    it('should auto create prop with spec @Inject class.', () => {
+    it('should auto create prop with spec @Inject() class.', () => {
         let instance = container.get(InjMClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
@@ -55,7 +55,7 @@ describe('auto register with build', () => {
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
     });
 
-    it('should auto create constructor params with spec @Inject class.', () => {
+    it('should auto create constructor params with spec @Inject() class.', () => {
         let instance = container.get(InjCollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();

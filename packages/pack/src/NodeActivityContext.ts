@@ -14,7 +14,7 @@ export type NodeExpression<T = any> = CtxExpression<T, NodeActivityContext>;
  * @extends {ActivityContext}
  * @implements {IActivityContext<ITransform>}
  */
-@Injectable
+@Injectable()
 @Refs(Activity, BuildContext)
 export class NodeActivityContext extends ActivityContext {
 

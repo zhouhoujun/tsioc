@@ -36,7 +36,7 @@ It's a dynamic aop base on ioc.
 
 define a Aspect class, must with decorator:
 
-* @Aspect
+* @Aspect()
 
 define advice decorator have
 
@@ -63,7 +63,7 @@ import { Joinpoint, Around, Aspect , Pointcut } from '@tsdi/aop';
 export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 
 // auth check simple.
-@Aspect
+@Aspect()
 export class AuthAspect {
     // pointcut for method has @Authorization decorator.
     @Pointcut('@annotation(Authorization)', 'authAnnotation')
@@ -72,7 +72,7 @@ export class AuthAspect {
     }
 }
 
-@Aspect
+@Aspect()
 export class SecrityAspect {
     // before AuthAspect.auth check some.
     @Before('execution(AuthAspect.auth)', 'authAnnotation')
@@ -82,8 +82,8 @@ export class SecrityAspect {
 }
 
 // Log simple
-@Singleton
-@Aspect
+@Singleton()
+@Aspect()
 export class DebugLog {
 
     @Before(/\w+Controller.\w+$/)

@@ -3,8 +3,8 @@ import { IContainer, ContainerToken } from '@tsdi/core';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
 import { LoggerAspect } from '../src';
 
-@Singleton
-@Aspect
+@Singleton()
+@Aspect()
 export class DebugLogAspect extends LoggerAspect {
 
     constructor( @Inject(ContainerToken) container: IContainer) {

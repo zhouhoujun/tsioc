@@ -1,7 +1,7 @@
 import { Singleton, MethodMetadata } from '@tsdi/ioc';
 import { Joinpoint, Pointcut, Around, Aspect, Before, After} from '../../src';
 
-@Aspect
+@Aspect()
 export class AnnotationAspect {
     // pointcut for method has @AutoWried decorator.
     @Pointcut('@annotation(AutoWired)', 'authMetas')

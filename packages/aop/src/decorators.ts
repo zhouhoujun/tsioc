@@ -1,4 +1,4 @@
-import { isString, createClassDecorator, ClassType, ClassMetadata, Type, DecoratorOption, createDecorator } from '@tsdi/ioc';
+import { isString, createClassDecorator, createMethodDecorator , ClassType, ClassMetadata, Type, DecoratorOption} from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation } from './metadatas';
 import { AdviceTypes, AopReflect } from './types';
 
@@ -13,7 +13,7 @@ export interface IAspectDecorator {
     /**
      * Aspect decorator, define for class.  use to define class as aspect. it can setting provider to some token, singleton or not.
      *
-     * @Aspect
+     * @Aspect()
      *
      * @param {string} annotation set pointcut in the class with the annotation decorator only.
      * @param {(ClassType | ClassType[])>} [within]  set pointcut in the class with the annotation decorator only.
@@ -24,25 +24,18 @@ export interface IAspectDecorator {
     /**
      * Aspect decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
      *
-     * @Aspect
+     * @Aspect()
      *
      * @param {AspectMetadata} [metadata] metadata map.
      */
     (metadata?: AspectMetadata): ClassDecorator;
-
-    /**
-     * Aspect decorator, define for class.  use to define class as aspect.
-     *
-     * @Aspect
-     */
-    (target: Type): void;
 }
 
 
 /**
  * Aspect decorator. define aspect service.
  *
- * @Aspect
+ * @Aspect()
  */
 export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect', {
     actionType: 'annoation',
@@ -67,29 +60,16 @@ export interface INonePointcutDecorator {
     /**
      * NonePointcut decorator, define class not work with aop.
      *
-     * @NonePointcut
+     * @NonePointcut()
      *
      */
     (): ClassDecorator;
-    /**
-     * NonePointcut decorator, define class not work with aop.
-     *
-     * @NonePointcut
-     */
-    (target: Type): void;
-
-    /**
-     * NonePointcut decorator, define class not work with aop.
-     *
-     * @NonePointcut
-     */
-    (target: Type): void;
 }
 
 /**
  * NonePointcut decorator, define class not work with aop.
  *
- * @NonePointcut
+ * @NonePointcut()
  */
 export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMetadata>('NonePointcut', {
     classHandle: (ctx, next) => {
@@ -184,7 +164,7 @@ export interface IAdviceDecorator {
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string, options?: DecoratorOption<T>) {
     options = options || {};
     const append = options.appendMetadata;
-    return createDecorator<T>(adviceName, {
+    return createMethodDecorator<T>(adviceName, {
         metadata: (pointcut?: string | RegExp, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
                 return { pointcut, annotationName: annotation } as T;

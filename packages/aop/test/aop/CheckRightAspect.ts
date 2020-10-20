@@ -3,7 +3,7 @@ import { Joinpoint, Around, Aspect, Before, After, AdviceMetadata } from '../../
 
 
 
-@Aspect
+@Aspect()
 export class CheckRightAspect {
     // pointcut for method has @AutoWried decorator.
     @Before('execution(AnnotationAspect.auth)', 'authMetas')

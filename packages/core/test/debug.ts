@@ -5,22 +5,22 @@ export class SimppleAutoWried {
     constructor() {
     }
 
-    @AutoWired
+    @AutoWired()
     dateProperty: Date;
 }
 
-@Singleton
+@Singleton()
 export class Person {
     name = 'testor';
 }
 
-@Singleton
-// @Injectable
+@Singleton()
+// @Injectable()
 export class RoomService {
     constructor() {
 
     }
-    @AutoWired
+    @AutoWired()
     current: Date;
 }
 
@@ -73,7 +73,7 @@ export class CollegeStudent extends Student {
     }
 }
 
-@Injectable
+@Injectable()
 export class CollegeClassRoom {
     constructor(
         @Param(CollegeStudent)
@@ -84,10 +84,10 @@ export class CollegeClassRoom {
 }
 
 
-@Injectable
+@Injectable()
 export class InjMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
@@ -99,10 +99,10 @@ export interface IClassRoom {
     leader: Student;
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @AutoWired(), @Param() is.
         // @Inject(new Registration(Student, 'college')) // need CollegeStudent also register.
         @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -114,10 +114,10 @@ export class InjCollegeClassRoom {
     }
 }
 
-@Injectable
+@Injectable()
 export class InjCollegeAliasClassRoom {
     constructor(
-        // all below decorator can work, also @AutoWired, @Param is.
+        // all below decorator can work, also @AutoWired(), @Param() is.
         @AutoWired(new Registration(Student, 'college')) // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
@@ -133,7 +133,7 @@ export class InjCollegeAliasClassRoom {
 @Injectable('StringClassRoom')
 export class StingMClassRoom {
     // @Inject(MiddleSchoolStudent)
-    @Inject
+    @Inject()
     // @Inject({ type: MiddleSchoolStudent })
     leader: Student;
     constructor() {
@@ -171,7 +171,7 @@ export class SymbolIdest {
     }
 }
 
-// @Aspect
+// @Aspect()
 // export class AspectTest {
 
 //     @Around('execution()')

@@ -1,6 +1,6 @@
 import {
-    createDecorator, DecoratorOption, isUndefined, ClassType,
-    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isString, isArray, createClassDecorator
+    DecoratorOption, isUndefined, ClassType, createClassDecorator,
+    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isArray
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -45,16 +45,11 @@ export interface IBootDecorator {
     /**
      * Boot decorator, use to define class as statup service when bootstrap application.
      *
-     * @Boot
+     * @Boot()
      *
      * @param {BootMetadata} [metadata] bootstrap metadate config.
      */
     (metadata?: BootMetadata): BootDecorator;
-
-    /**
-     * Boot decorator, use to define class as statup service when bootstrap application.
-     **/
-    (target: Type): void;
 }
 
 /**
@@ -100,7 +95,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
 /**
  * Boot decorator, use to define class as statup service when bootstrap application.
  *
- * @Boot
+ * @Boot()
  */
 export const Boot: IBootDecorator = createBootDecorator<BootMetadata>('Boot');
 

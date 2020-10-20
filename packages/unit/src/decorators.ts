@@ -27,11 +27,6 @@ export interface ISuiteDecorator {
      * suite decorator with metadata.
      */
     (metadata?: SuiteMetadata): ClassDecorator;
-
-    /**
-     * suite decorator.
-     */
-    (target: Type): void;
 }
 
 /**

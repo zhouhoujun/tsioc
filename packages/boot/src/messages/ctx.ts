@@ -56,7 +56,7 @@ export interface MessageOption extends ProdverOption {
  * @class MessageContext
  * @extends {HandleContext}
  */
-@Injectable
+@Injectable()
 export class MessageContext<T extends MessageOption = MessageOption> extends DestoryableContext<T>  {
 
     /**

@@ -34,7 +34,7 @@ describe('custom register test', () => {
         expect(instance.service.current).toBeUndefined();
     });
 
-    it('should auto create prop with spec @AutoWired class.', () => {
+    it('should auto create prop with spec @AutoWired() class.', () => {
         container.register(MClassRoom);
         let instance = container.get(MClassRoom);
         expect(instance).toBeDefined();
@@ -42,7 +42,7 @@ describe('custom register test', () => {
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
     });
 
-    it('should auto create constructor params with spec @Param class.', () => {
+    it('should auto create constructor params with spec @Param() class.', () => {
         container.register(CollegeClassRoom);
         let instance = container.get(CollegeClassRoom);
         expect(instance).toBeDefined();
@@ -50,7 +50,7 @@ describe('custom register test', () => {
         expect(instance.leader.sayHi()).toEqual('I am a college student');
     });
 
-    it('should auto create prop with spec @Inject class.', () => {
+    it('should auto create prop with spec @Inject() class.', () => {
         container.register(MiddleSchoolStudent);
         container.register(InjMClassRoom);
         let instance = container.get(InjMClassRoom);
@@ -59,7 +59,7 @@ describe('custom register test', () => {
         expect(instance.leader.sayHi()).toEqual('I am a middle school student');
     });
 
-    it('should auto create constructor params with spec @Inject class.', () => {
+    it('should auto create constructor params with spec @Inject() class.', () => {
         container.register(InjCollegeClassRoom);
         let instance = container.get(InjCollegeClassRoom);
         expect(instance).toBeDefined();
@@ -67,7 +67,7 @@ describe('custom register test', () => {
         expect(instance.leader.sayHi()).toEqual('I am a college student');
     });
 
-    it('should auto create constructor params with spec @Inject class with alias.', () => {
+    it('should auto create constructor params with spec @Inject() class with alias.', () => {
         container.register(CollegeStudent);
         container.register(InjCollegeAliasClassRoom);
         let instance = container.get(InjCollegeAliasClassRoom);

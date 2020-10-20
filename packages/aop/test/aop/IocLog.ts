@@ -1,8 +1,8 @@
 import { Joinpoint, Around, Aspect, Before } from '../../src';
 import { Singleton } from '@tsdi/ioc';
 
-@Singleton
-@Aspect
+@Singleton()
+@Aspect()
 export class IocLog {
     @Around('execution(*)')
     log(joinPoint: Joinpoint) {

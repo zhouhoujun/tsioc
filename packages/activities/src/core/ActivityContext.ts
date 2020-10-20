@@ -18,7 +18,7 @@ import { IWorkflowContext, WorkflowContextToken } from './IWorkflowContext';
  * @export
  * @class ActivityContext
  */
-@Injectable
+@Injectable()
 @Refs(Activity, BuildContext)
 export class ActivityContext extends ComponentContext<ActivityOption> implements IActivityContext {
 
