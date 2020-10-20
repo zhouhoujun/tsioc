@@ -92,7 +92,7 @@ export class SwitchView {
  * @publicApi
  * @see `DirSwitchCase`
  * @see `DirSwitchDefault`
- * @see [Structural Directives](guide/structural-directives)
+ * @see Structural Directives
  *
  */
 @Directive({ selector: '[switch]' })

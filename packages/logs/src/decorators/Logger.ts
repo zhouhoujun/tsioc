@@ -1,4 +1,4 @@
-import { Express, TypeMetadata, createClassMethodDecorator, ClassMethodDecorator, isString, isFunction, Type } from '@tsdi/ioc';
+import { Express, TypeMetadata, ClassMethodDecorator, isFunction, Type, createDecorator } from '@tsdi/ioc';
 import { Level } from '../Level';
 
 
@@ -104,52 +104,28 @@ export interface ILoggerDecorator<T extends LoggerMetadata> {
  *
  * @Logger
  */
-export const Logger: ILoggerDecorator<LoggerMetadata> = createClassMethodDecorator<LoggerMetadata>('Logger', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                if (ctx.args.length === 1) {
-                    ctx.metadata.message = arg;
-                } else {
-                    ctx.metadata.logname = arg;
-                    if (ctx.args.length === 2) {
-                        ctx.metadata.message = arg;
-                    }
-                    ctx.next(next);
-                }
+export const Logger: ILoggerDecorator<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
+    isClassDecor: true,
+    metadata: (...args: any[]) => {
+        if (args.length === 1) {
+            return { message: args[0] };
+        } else if (args.length === 2) {
+            const [arg1, arg2] = args;
+            const level = Level[arg2];
+            if (level) {
+                return { message: arg1, level }
+            } else {
+                return { logname: arg1, message: arg2 }
             }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isFunction(arg)) {
-                ctx.metadata.express = arg;
-                ctx.next(next);
-            } else if (isString(arg)) {
-                if (Level[arg]) {
-                    ctx.metadata.level = Level[arg];
-                } else {
-                    ctx.metadata.message = arg;
-                    ctx.next(next);
-                }
+        } else if (args.length > 2) {
+            const [arg1, arg2, arg3, arg4] = args;
+            if (isFunction(arg2)) {
+                return { logname: arg1, express: arg2, message: arg3, level: arg4 };
+            } else {
+                return { logname: arg1, message: arg2, level: arg3 }
             }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                if (Level[arg]) {
-                    ctx.metadata.level = Level[arg];
-                } else {
-                    ctx.metadata.message = arg;
-                    ctx.next(next);
-                }
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.level = Level[arg];
-            }
-        },
-    ]
+
+        }
+        return {};
+    }
 }) as ILoggerDecorator<LoggerMetadata>;

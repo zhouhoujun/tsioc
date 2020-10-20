@@ -19,7 +19,6 @@ export * from './services/decor-pdr';
 
 
 // decoractors
-export * from './decor/args';
 export * from './decor/typedef';
 export * from './decor/metadatas';
 export * from './decor/reflects';

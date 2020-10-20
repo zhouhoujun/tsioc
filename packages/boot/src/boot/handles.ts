@@ -325,6 +325,7 @@ export class ResolveRunnableScope extends BuildHandles<IBootContext> implements 
         } else if (boot) {
             ctx.setValue(MODULE_STARTUP, boot);
         }
+        console.log(ctx.getStartup());
         if (ctx.getStartup()) {
             await next();
         }

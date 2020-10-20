@@ -1,21 +1,11 @@
 import { MethodMetadata, ClassType, ClassMetadata, MethodPropMetadata } from '@tsdi/ioc';
 import { AdviceTypes } from './types';
 
+
 /**
- * advice metadata.
- *
- * @export
- * @interface AdviceMetadata
- * @extends {MethodMetadata}
+ * pointcut annotation
  */
-export interface AdviceMetadata extends MethodMetadata {
-    /**
-     * path or module name, match express
-     * execution(moduelName.*.*(..)")
-     * match method with a decorator annotation.
-     * @annotation(DecoratorName)
-     */
-    pointcut: string | RegExp;
+export interface PointcutAnnotation {
 
     /**
      * method with specail decortor.
@@ -24,6 +14,39 @@ export interface AdviceMetadata extends MethodMetadata {
      * @memberof AdviceMetadata
      */
     annotation?: Function | string;
+
+    /**
+     * annotation name, special annotation metadata for annotation advices.
+     *
+     * @type {string}
+     * @memberof AdviceMetadata
+     */
+    annotationName?: string;
+
+    /**
+     * set name provider of annotation metadata for annotation advices.
+     *
+     * @type {string}
+     * @memberof AdviceMetadata
+     */
+    annotationArgName?: string;
+}
+
+/**
+ * advice metadata.
+ *
+ * @export
+ * @interface AdviceMetadata
+ * @extends {MethodMetadata}
+ */
+export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
+    /**
+     * path or module name, match express
+     * execution(moduelName.*.*(..)")
+     * match method with a decorator annotation.
+     * @annotation(DecoratorName)
+     */
+    pointcut: string | RegExp;
 
     /**
      * math only the object.
@@ -41,21 +64,6 @@ export interface AdviceMetadata extends MethodMetadata {
      */
     within?: ClassType | ClassType[];
 
-    /**
-     * annotation name, special annotation metadata for annotation advices.
-     *
-     * @type {string}
-     * @memberof AdviceMetadata
-     */
-    annotationName?: string;
-
-    /**
-     * set name provider of annotation metadata for annotation advices.
-     *
-     * @type {string}
-     * @memberof AdviceMetadata
-     */
-    annotationArgName?: string;
 
     /**
      * advice type name.

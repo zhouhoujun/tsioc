@@ -1,14 +1,14 @@
 import { Type } from '../types';
-import { isString, isNumber, isArray } from '../utils/lang';
-import { isToken, Token, ProvideToken, Provider } from '../tokens';
+import { isString, isArray } from '../utils/lang';
+import { Token, ProvideToken, Provider, isProvideToken } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, TypeMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, TypeMetadata, PatternMetadata, RefProvider
 } from './metadatas';
 import {
-    createDecorator, createClassDecorator, ClassMethodDecorator, createClassMethodDecorator,
-    createMethodPropParamDecorator, createParamPropDecorator, createParamDecorator, PropParamDecorator
+    createDecorator, createClassDecorator, ClassMethodDecorator,
+    createParamDecorator, PropParamDecorator
 } from './factory';
 
 /**
@@ -33,9 +33,8 @@ export interface IAbstractDecorator {
  * @Abstract
  */
 export const Abstract: IAbstractDecorator = createClassDecorator<TypeMetadata>('Abstract', {
-    append: (metadata) => {
-        metadata.abstract = true;
-        return metadata;
+    appendMetadata: (meta) => {
+        meta.abstract = true;
     }
 });
 
@@ -66,12 +65,21 @@ export interface IAutoWiredDecorator {
     (target: object, propertyKey: string | symbol, parameterIndex?: number | TypedPropertyDescriptor<any>): void;
 }
 
+const injectmeta = (pdr: Provider[] | Token, alias?: string) => {
+    if (isArray(pdr)) {
+        return { providers: pdr };
+    } else {
+        return { provider: pdr, alias };
+    }
+};
 /**
  * AutoWired decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
  *
  * @AutoWired
  */
-export const AutoWired: IAutoWiredDecorator = createMethodPropParamDecorator<AutoWiredMetadata>('AutoWired');
+export const AutoWired: IAutoWiredDecorator = createDecorator<AutoWiredMetadata>('AutoWired', {
+    metadata: injectmeta
+});
 
 /**
  * inject decoator.
@@ -105,7 +113,9 @@ export interface IInjectDecorator {
  *
  * @Inject
  */
-export const Inject: IInjectDecorator = createParamPropDecorator<InjectMetadata>('Inject');
+export const Inject: IInjectDecorator = createDecorator<InjectMetadata>('Inject', {
+    metadata: injectmeta
+});
 
 
 /**
@@ -161,47 +171,19 @@ export interface IInjectableDecorator {
      * Injectable decorator setting with params.
      *
      * @param {ProvideToken} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {PatternMetadata} [pattern] define this class pattern.
      */
-    (provide: ProvideToken<any>): ClassDecorator;
+    (provide: ProvideToken<any>, pattern?: PatternMetadata): ClassDecorator;
 
     /**
      * Injectable decorator setting with params.
      *
      * @param {Token} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
+     * @param {string} alias define this class provider with alias for provide.
+     * @param {PatternMetadata} [pattern] define this class pattern.
      */
-    (provide: Token, alias: string): ClassDecorator;
+    (provide: Token, alias: string, pattern?: PatternMetadata): ClassDecorator;
 
-    /**
-     * Injectable decorator setting with params.
-     *
-     * @param {Token} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
-     * @param {Token} [refTarget]  define the class as service of target.
-     */
-    (provide: Token, alias: string, refTarget: Token): ClassDecorator;
-
-    /**
-     * Injectable decorator setting with params.
-     *
-     * @param {Token} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
-     * @param {boolean} [singlton] define this class as singlton.
-     * @param {Token} [refTarget]  define the class as service of target.
-     */
-    (provide: Token, alias: string, singlton: boolean, refTarget: Token): ClassDecorator;
-
-    /**
-     * Injectable decorator setting with params.
-     *
-     * @param {Token} provide define this class provider for provide.
-     * @param {string} [alias] define this class provider with alias for provide.
-     * @param {boolean} [singlton] define this class as singlton.
-     * @param {number} [cache]  define class cahce expris when is not singlton.
-     * @param {Token} [refTarget]  define the class as service of target.
-     */
-    (provide: Token, alias: string, cache: number, refTarget: Token): ClassDecorator;
 
     /**
      * Injectable decorator.
@@ -215,7 +197,18 @@ export interface IInjectableDecorator {
  *
  * @Injectable
  */
-export const Injectable: IInjectableDecorator = createClassDecorator<InjectableMetadata>('Injectable', { classAnno: true });
+export const Injectable: IInjectableDecorator = createClassDecorator<InjectableMetadata>('Injectable', {
+    metadata: (provide: Token, arg2: any, arg3?: any) => {
+        if (!arg2 && !isProvideToken(provide)) {
+            return null;
+        }
+        if (isString(arg2)) {
+            return { provide, alias: arg2, ...arg3 }
+        } else {
+            return { provide, ...arg2 }
+        }
+    }
+});
 
 
 /**
@@ -253,15 +246,9 @@ export interface IProvidersDecorator {
  * @Providers
  */
 export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isArray(arg)) {
-                ctx.metadata.providers = arg;
-                ctx.next(next);
-            }
-        }
-    ]
+    metadata: (providers: Provider[]) => {
+        return { providers };
+    }
 }) as IProvidersDecorator;
 
 
@@ -312,29 +299,10 @@ export interface IRefsDecorator {
  * @Refs
  */
 export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isToken(arg)) {
-                ctx.metadata.refs = { target: arg };
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isToken(arg)) {
-                ctx.metadata.refs.provide = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.refs.alias = arg;
-                ctx.next(next);
-            }
-        }
-    ]
+    metadata: (target: Token, provide?: Token, alias?: string) => {
+        const refs = { target, provide, alias } as RefProvider;
+        return { refs };
+    }
 }) as IRefsDecorator;
 
 
@@ -388,11 +356,9 @@ export interface ISingletonDecorator {
  * @Singleton
  */
 export const Singleton: ISingletonDecorator = createClassDecorator<ClassMetadata>('Singleton', {
-    append: (metadata) => {
-        metadata.singleton = true;
-        return metadata;
-    },
-    classAnno: true
+    appendMetadata: (meta) => {
+        meta.singleton = true;
+    }
 }) as ISingletonDecorator;
 
 
@@ -435,12 +401,11 @@ export interface IocExtDecorator {
  *
  * @IocExt
  */
-export const IocExt: IocExtDecorator = createDecorator<AutorunMetadata>('IocExt', {
-    append: (metadata) => {
+export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('IocExt', {
+    appendMetadata: (metadata) => {
         metadata.autorun = 'setup';
         metadata.singleton = true;
         metadata.regIn = 'root';
-        return metadata;
     }
 }) as IocExtDecorator;
 
@@ -461,6 +426,13 @@ export interface IAutorunDecorator {
      * @param {string} [autorun] the special method name when define to class.
      */
     (autorun: string): ClassDecorator;
+    /**
+     * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
+     * @Autorun
+     *
+     * @param {AutorunMetadata} [metadata] metadata map.
+     */
+    (metadata: AutorunMetadata): ClassMethodDecorator;
 
     /**
      * Autorun decorator, for method.  use to define the method auto run (via a method or not) after registered.
@@ -468,16 +440,7 @@ export interface IAutorunDecorator {
      *
      * @param {string} [autorun] the special method name when define to class.
      */
-    (order: number): MethodDecorator;
-
-    /**
-     * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
-     * @Autorun
-     *
-     * @param {AutorunMetadata} [metadata] metadata map.
-     */
-    (metadata?: AutorunMetadata): ClassMethodDecorator;
-
+    (order?: number): MethodDecorator;
 
     /**
      * Autorun decorator.
@@ -490,23 +453,14 @@ export interface IAutorunDecorator {
  *
  * @Autorun
  */
-export const Autorun: IAutorunDecorator = createClassMethodDecorator<AutorunMetadata>('Autorun', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg) || isNumber(arg)) {
-                if (isString(arg)) {
-                    ctx.metadata.autorun = arg;
-                    ctx.next(next);
-                } else {
-                    ctx.metadata.order = arg;
-                    ctx.next(next);
-                }
-            }
+export const Autorun: IAutorunDecorator = createDecorator<AutorunMetadata>('Autorun', {
+    metadata: (arg: string | number) => {
+        if (isString(arg)) {
+            return { autorun: arg };
         }
-    ],
-    append: (metadata) => {
-        metadata.singleton = true;
-        return metadata;
+        return { order: arg }
+    },
+    appendMetadata: (meta) => {
+        meta.singleton = true;
     }
 }) as IAutorunDecorator;

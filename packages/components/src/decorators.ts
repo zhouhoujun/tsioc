@@ -199,7 +199,7 @@ export const Bindings: BindingsPropertyDecorator = createPropDecorator<BindingMe
             ctx.metadata.defaultValue = ctx.currArg;
         }
     ],
-    append: meta => {
+    appendMetadata: meta => {
         if (!meta.direction) {
             meta.direction = 'twoway';
         }
@@ -263,8 +263,6 @@ export interface HostDecorator {
      * <code-example path="core/di/ts/metadata_spec.ts" region="Host">
      * </code-example>
      *
-     * For an extended example, see ["Dependency Injection
-     * Guide"](guide/dependency-injection-in-action#optional).
      */
     (): any;
     new(): Host;
@@ -449,7 +447,7 @@ export const Input: InputPropertyDecorator = createPropDecorator<BindingMetadata
             ctx.metadata.defaultValue = ctx.currArg;
         }
     ],
-    append: meta => {
+    appendMetadata: meta => {
         meta.direction = 'input';
     }
 });
@@ -536,7 +534,7 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetada
             ctx.metadata.defaultValue = ctx.currArg;
         }
     ],
-    append: meta => {
+    appendMetadata: meta => {
         meta.direction = 'output';
     }
 });
@@ -602,7 +600,7 @@ export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
             }
         }
     ],
-    append: meta => {
+    appendMetadata: meta => {
         if (isUndefined(meta.pure)) {
             meta.pure = true;
         }
@@ -610,57 +608,41 @@ export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
 });
 
 
-export type RefChildDectorator = (target: Object, propertyKey: string | symbol) => void;
-
-
 /**
- * RefChild decorator
+ * Type of the ViewChildren decorator / constructor function.
  *
- * @export
- * @interface IInjectableDecorator
- * @extends {IClassDecorator<IRefChildMetadata>}
+ * @see `ViewChildren`.
+ *
+ * @publicApi
  */
-export interface IRefChildDecorator {
+export interface ViewChildrenDecorator {
     /**
-     * define RefChild property decorator with binding property name.
+     * Parameter decorator that configures a view query.
      *
-     * @param {string} bindingName binding property name
-     */
-    (bindingName?: string): PropertyDecorator;
-
-    /**
-     * define RefChild property decorator with binding metadata.
+     * Use to get the `QueryList` of elements or directives from the view DOM.
+     * Any time a child element is added, removed, or moved, the query list will be updated,
+     * and the changes observable of the query list will emit a new value.
      *
-     * @param {string} bindingName binding property name
-     */
-    (metadata: BindingMetadata): PropertyDecorator;
-    /**
-     * define RefChild property decorator with binding property name and provider.
+     * View queries are set before the `afterViewInit` callback is called.
      *
-     * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
-     * @param {*} defaultVal default value.
-     */
-    (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
-    /**
-     * define RefChild property decorator with binding property name and provider.
+     * **Metadata Properties**:
      *
-     * @param {string} bindingName binding property name
-     * @param {*} defaultVal default value.
-     */
-    (bindingName: string, defaultVal: any): PropertyDecorator;
-    /**
-     * define RefChild property decorator with binding property name and provider.
+     * * **selector** - The directive type or the name used for querying.
+     * * **read** - Used to read a different token from the queried elements.
      *
-     * @param {string} bindingName binding property name
-     * @param {Token} provider define provider to resolve value to the property.
-     * @param {*} defaultVal default value.
+     *
+     * @Annotation
      */
-    (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
-    /**
-     * define property decorator.
-     */
-    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
+    (selector: Token | Function, opts?: { read?: any }): PropertyDecorator;
 }
+
+export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
+    actions: [
+        (ctx, next) => {
+            ctx.s
+        }
+    ]
+})
 
 /**
  * RefChild decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`RefChildLifecycle`]

@@ -29,13 +29,13 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
 }
 
 /**
- * A [structural directive](guide/structural-directives) that renders
+ * A [structural directive] that renders
  * a template for each item in a collection.
  * The directive is placed on an element, which becomes the parent
  * of the cloned templates.
  *
  * The `ngForOf` directive is generally used in the
- * [shorthand form](guide/structural-directives#the-asterisk--prefix) `*ngFor`.
+ * [shorthand form] `[each]`.
  * In this form, the template to be rendered for each iteration is the content
  * of an anchor element containing the directive.
  *
@@ -59,22 +59,11 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * </ng-template>
  * ```
  *
- * Angular automatically expands the shorthand syntax as it compiles the template.
- * The context for each embedded view is logically merged to the current component
- * context according to its lexical position.
- *
- * When using the shorthand syntax, Angular allows only [one structural directive
- * on an element](guide/structural-directives#one-structural-directive-per-host-element).
- * If you want to iterate conditionally, for example,
- * put the `*ngIf` on a container element that wraps the `*ngFor` element.
- * For futher discussion, see
- * [Structural Directives](guide/structural-directives#one-per-element).
- *
  * @usageNotes
  *
  * ### Local variables
  *
- * `NgForOf` provides exported values that can be aliased to local variables.
+ * `DirEach` provides exported values that can be aliased to local variables.
  * For example:
  *
  *  ```
@@ -98,7 +87,7 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  *
  * ### Change propagation
  *
- * When the contents of the iterator changes, `NgForOf` makes the corresponding changes to the DOM:
+ * When the contents of the iterator changes, `DirEach` makes the corresponding changes to the DOM:
  *
  * * When an item is added, a new instance of the template is added to the DOM.
  * * When an item is removed, its template instance is removed from the DOM.
@@ -109,7 +98,6 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * controls that are present, such as `<input>` elements that accept user input. Inserted rows can
  * be animated in, deleted rows can be animated out, and unchanged rows retain any unsaved state
  * such as user input.
- * For more on animations, see [Transitions and Triggers](guide/transition-and-triggers).
  *
  * The identities of elements in the iterator can change while the data does not.
  * This can happen, for example, if the iterator is produced from an RPC to the server, and that
@@ -118,24 +106,22 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * elements were deleted and all new elements inserted).
  *
  * To avoid this expensive operation, you can customize the default tracking algorithm.
- * by supplying the `trackBy` option to `NgForOf`.
+ * by supplying the `trackBy` option to `DirEach`.
  * `trackBy` takes a function that has two arguments: `index` and `item`.
  * If `trackBy` is given, Angular tracks changes by the return value of the function.
  *
- * @see [Structural Directives](guide/structural-directives)
- * @ngModule CommonModule
  * @publicApi
  */
 @Directive({ selector: '[each][forEach]' })
 export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements DoCheck {
     /**
      * The value of the iterable expression, which can be used as a
-     * [template input variable](guide/structural-directives#template-input-variable).
+     * template input variable.
      */
     @Input()
-    set ngForOf(ngForOf: U & IterableType<T> | undefined | null) {
-        this._ngForOf = ngForOf;
-        this._ngForOfDirty = true;
+    set each(forOf: U & IterableType<T> | undefined | null) {
+        this._iter = forOf;
+        this._iterDirty = true;
     }
     /**
      * A function that defines how to track changes for items in the iterable.
@@ -155,16 +141,16 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
      * the iteration index and the associated node data.
      */
     @Input()
-    set ngForTrackBy(fn: TrackByFunction<T>) {
+    set eachTrackBy(fn: TrackByFunction<T>) {
         this._trackByFn = fn;
     }
 
-    get ngForTrackBy(): TrackByFunction<T> {
+    get eachTrackBy(): TrackByFunction<T> {
         return this._trackByFn;
     }
 
-    private _ngForOf: U | undefined | null = null;
-    private _ngForOfDirty = true;
+    private _iter: U | undefined | null = null;
+    private _iterDirty = true;
     private _differ: IterableDiffer<T> | null = null;
     private _trackByFn?: TrackByFunction<T>;
 
@@ -174,10 +160,9 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
 
     /**
      * A reference to the template that is stamped out for each item in the iterable.
-     * @see [template reference variable](guide/template-reference-variables)
      */
     @Input()
-    set ngForTemplate(value: TemplateRef<DirEachContext<T, U>>) {
+    set eachTemplate(value: TemplateRef<DirEachContext<T, U>>) {
         // TODO(TS2.1): make TemplateRef<Partial<NgForRowOf<T>>> once we move to TS v2.1
         // The current type is too restrictive; a template that just uses index, for example,
         // should be acceptable.
@@ -190,20 +175,20 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
      * Applies the changes when needed.
      */
     onDoCheck(): void {
-        if (this._ngForOfDirty) {
-            this._ngForOfDirty = false;
+        if (this._iterDirty) {
+            this._iterDirty = false;
             // React on ngForOf changes only once all inputs have been initialized
-            const value = this._ngForOf;
+            const value = this._iter;
             if (!this._differ && value) {
                 try {
-                    this._differ = this._differs.find(value).create(this.ngForTrackBy);
+                    this._differ = this._differs.find(value).create(this.eachTrackBy);
                 } catch {
                     throw new Error(`Cannot find a differ supporting object '${value}' of type '${getTypeName(value)}'. NgFor only supports binding to Iterables such as Arrays.`);
                 }
             }
         }
         if (this._differ) {
-            const changes = this._differ.diff(this._ngForOf);
+            const changes = this._differ.diff(this._iter);
             if (changes) this._applyChanges(changes);
         }
     }
@@ -214,11 +199,11 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
             (item: IterableChangeRecord<any>, adjustedPreviousIndex: number | null,
                 currentIndex: number | null) => {
                 if (item.previousIndex == null) {
-                    // NgForOf is never "null" or "undefined" here because the differ detected
+                    // DirEach is never "null" or "undefined" here because the differ detected
                     // that a new item needs to be inserted from the iterable. This implies that
                     // there is an iterable value for "_ngForOf".
                     const view = this._viewContainer.createEmbeddedView(
-                        this._template, new DirEachContext<T, U>(null!, this._ngForOf!, -1, -1),
+                        this._template, new DirEachContext<T, U>(null!, this._iter!, -1, -1),
                         currentIndex === null ? undefined : currentIndex);
                     const tuple = new RecordViewTuple<T, U>(item, view);
                     insertTuples.push(tuple);
@@ -241,7 +226,7 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
             const viewRef = <EmbeddedViewRef<DirEachContext<T, U>>>this._viewContainer.get(i);
             viewRef.context.index = i;
             viewRef.context.count = ilen;
-            viewRef.context.ngForOf = this._ngForOf!;
+            viewRef.context.ngForOf = this._iter!;
         }
 
         changes.forEachIdentityChange((record: any) => {
@@ -254,17 +239,6 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
     private _perViewChange(
         view: EmbeddedViewRef<DirEachContext<T, U>>, record: IterableChangeRecord<any>) {
         view.context.$implicit = record.item;
-    }
-
-    /**
-     * Asserts the correct type of the context for the template that `NgForOf` will render.
-     *
-     * The presence of this method is a signal to the Ivy template type-check compiler that the
-     * `NgForOf` structural directive renders its template with a specific context type.
-     */
-    static ngTemplateContextGuard<T, U extends IterableType<T>>(dir: DirEach<T, U>, ctx: any):
-        ctx is DirEachContext<T, U> {
-        return true;
     }
 }
 

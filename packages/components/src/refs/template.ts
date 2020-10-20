@@ -16,7 +16,7 @@ import { EmbeddedViewRef } from './view';
  * a component or a directive.
  *
  * @see `ViewContainerRef`
- * @see [Navigate the Component Tree with DI](guide/dependency-injection-navtree)
+ * @see Navigate the Component Tree with DI
  *
  * @publicApi
  */

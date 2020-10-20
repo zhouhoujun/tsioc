@@ -73,7 +73,9 @@ export class DirIf<T> {
     }
 }
 
-
+/**
+ * if context
+ */
 export class DirIfContext<T> {
     public $implicit: T = null;
     public dirIf: T = null;

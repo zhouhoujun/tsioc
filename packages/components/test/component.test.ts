@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, RefChild, NonSerialize, Binding, CompilerFacade } from '../src';
+import { Component, Input, ComponentsModule, RefChild, NonSerialize, Binding, CompilerFacade, ElementRef } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, INJECTOR } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';

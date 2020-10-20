@@ -6,8 +6,6 @@
  * Use the methods to add and remove views from the tree, initiate change-detection,
  * and explicitly mark views as _dirty_, meaning that they have changed and need to be re-rendered.
  *
- * @see [Using change detection hooks](guide/lifecycle-hooks#using-change-detection-hooks)
- * @see [Defining custom change detection](guide/lifecycle-hooks#defining-custom-change-detection)
  *
  * @usageNotes
  *
@@ -18,7 +16,7 @@
  *
  * The following example sets the `OnPush` change-detection strategy for a component
  * (`CheckOnce`, rather than the default `CheckAlways`), then forces a second check
- * after an interval. See [live demo](http://plnkr.co/edit/GC512b?p=preview).
+ * after an interval.
  *
  * <code-example path="core/ts/change_detect/change-detection.ts"
  * region="mark-for-check"></code-example>
@@ -31,17 +29,12 @@
  * less often than the changes actually occur. To do that, we detach
  * the component's change detector and perform an explicit local check every five seconds.
  *
- * <code-example path="core/ts/change_detect/change-detection.ts" region="detach"></code-example>
- *
- *
  * ### Reattaching a detached component
  *
  * The following example creates a component displaying live data.
  * The component detaches its change detector from the main change detector tree
  * when the `live` property is set to false, and reattaches it when the property
  * becomes true.
- *
- * <code-example path="core/ts/change_detect/change-detection.ts" region="reattach"></code-example>
  *
  * @publicApi
  */

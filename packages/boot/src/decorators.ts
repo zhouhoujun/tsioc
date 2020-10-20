@@ -1,6 +1,6 @@
 import {
     createDecorator, DecoratorOption, isUndefined, ClassType,
-    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isString, isArray
+    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isString, isArray, createClassDecorator
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -68,14 +68,15 @@ export interface IBootDecorator {
  */
 export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
     options = options || {};
-    const append = options?.append;
     const hd = options.classHandle;
-    return createDecorator<T>(name, {
+    const append = options.appendMetadata;
+    return createClassDecorator<T>(name, {
         actionType: 'annoation',
         ...options,
         classHandle: [
             (ctx, next) => {
                 const reflect = ctx.reflect as ModuleReflect;
+                reflect.singleton = true;
                 reflect.annoType = 'boot';
                 reflect.annoDecor = ctx.decor;
                 reflect.annotation = ctx.matedata;
@@ -83,7 +84,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
-        append: (meta) => {
+        appendMetadata: (meta) => {
             if (append) {
                 append(meta);
             }
@@ -147,9 +148,9 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
     options = options || {};
-    const append = options.append;
     const hd = options.classHandle;
-    return createDecorator<DIModuleMetadata>(name, {
+    const append = options.appendMetadata;
+    return createClassDecorator<DIModuleMetadata>(name, {
         ...options,
         classHandle: [
             (ctx, next) => {
@@ -161,7 +162,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
-        append: (meta) => {
+        appendMetadata: (meta) => {
             if (append) {
                 append(meta as T);
             }
@@ -251,25 +252,12 @@ export interface IMessageDecorator {
  *
  * @Message
  */
-export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Message', {
+export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message', {
     actionType: 'annoation',
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isClass(arg) || isString(arg)) {
-                ctx.metadata.parent = arg as any;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isClass(arg)) {
-                ctx.metadata.before = arg;
-                // ctx.next(next);
-            }
-        }
-    ],
-    append: (meta) => {
+    metadata: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) => {
+        return { parent, before };
+    },
+    appendMetadata: (meta) => {
         meta.singleton = true;
         // default register in root.
         if (!meta.parent) {
@@ -328,7 +316,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> {
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(name: string, options?: DecoratorOption<T>): IBootstrapDecorator<T> {
 
-    return createDecorator<BootstrapMetadata>(name, {
+    return createClassDecorator<BootstrapMetadata>(name, {
         classHandle: (ctx, next) => {
             const reflect = ctx.reflect as ModuleReflect;
             reflect.annoType = 'module';

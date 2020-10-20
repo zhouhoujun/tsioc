@@ -1,4 +1,4 @@
-import { isString, isNumber, Type, createDecorator, DecoratorOption } from '@tsdi/ioc';
+import { Type, createDecorator, DecoratorOption, createClassDecorator } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './metadata';
 
@@ -37,7 +37,7 @@ export interface ISuiteDecorator {
 /**
  * @Suite decorator.
  */
-export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
+export const Suite: ISuiteDecorator = createClassDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
     classHandle: (ctx, next) => {
         const reflect = ctx.reflect as AnnotationReflect;
@@ -46,23 +46,10 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
         reflect.annotation = ctx.matedata;
         return next();
     },
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.describe = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isNumber(arg)) {
-                ctx.metadata.timeout = arg;
-                ctx.next(next);
-            }
-        }
-    ],
-    append: (metadata) => {
+    metadata: (describe: string, timeout?: number) => {
+        return { describe, timeout }
+    },
+    appendMetadata: (metadata) => {
         metadata.singleton = true;
         return metadata;
     }
@@ -103,30 +90,10 @@ export interface TestDecorOption<T> extends DecoratorOption<T> {
 export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): ITestDecorator<T> {
     options = options || {};
     return createDecorator<TestMetadata>(name, {
+        metadata: (timeout: number, setp?: number) => {
+            return { timeout, setp };
+        },
         ...options,
-        actions: [
-            ...options.hasTitle ? [(ctx, next) => {
-                let arg = ctx.currArg;
-                if (isString(arg)) {
-                    ctx.metadata.title = arg;
-                    ctx.next(next);
-                }
-            }] : [],
-            (ctx, next) => {
-                let arg = ctx.currArg;
-                if (isNumber(arg)) {
-                    ctx.metadata.timeout = arg;
-                    ctx.next(next);
-                }
-            },
-            ...options.hasSetp ? [(ctx, next) => {
-                let arg = ctx.currArg;
-                if (isNumber(arg)) {
-                    ctx.metadata.setp = arg;
-                    ctx.next(next);
-                }
-            }] : []
-        ]
     }) as ITestDecorator<T>;
 }
 
@@ -157,7 +124,11 @@ export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
  * @interface ITestDecorator
  * @template T
  */
-export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('TestCase', { hasSetp: true, hasTitle: true }) as ITestCaseDecorator;
+export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('TestCase', {
+    metadata: (title?: string, timeout?: number, setp?: number) => {
+        return { title, timeout, setp };
+    }
+}) as ITestCaseDecorator;
 
 
 

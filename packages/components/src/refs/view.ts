@@ -3,7 +3,7 @@ import { IBootContext } from '@tsdi/boot';
 import {ChangeDetectorRef} from '../chage/change';
 
 /**
- * Represents an Angular [view](guide/glossary#view "Definition").
+ * Represents an virtual view.
  *
  * @see {@link ChangeDetectorRef#usage-notes Change detection usage}
  *

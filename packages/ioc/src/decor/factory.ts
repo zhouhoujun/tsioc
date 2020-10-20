@@ -1,15 +1,12 @@
 import 'reflect-metadata';
 import {
-    isClass, isAbstractClass, isMetadataObject, isUndefined,
-    isNumber, isArray, chain, isBoolean, isString
+    isClass, isAbstractClass, isMetadataObject, isUndefined, isNumber
 } from '../utils/lang';
 import { Type } from '../types';
-import { isToken, isProvideToken } from '../tokens';
+import { isProvideToken, Token } from '../tokens';
 import {
-    Metadata, ClassMetadata, MethodMetadata, PropertyMetadata, ParameterMetadata,
-    TypeMetadata, MethodPropMetadata, MethodParamPropMetadata, ParamPropMetadata, ProvideMetadata
+    ClassMetadata, PropertyMetadata, ParameterMetadata, ProvideMetadata, PatternMetadata
 } from './metadatas';
-import { ArgsContext, ArgsIteratorAction } from './args';
 import { refl } from './reflects';
 
 
@@ -19,8 +16,13 @@ export interface MetadataTarget<T> {
 }
 
 export interface DecoratorOption<T> extends refl.DecorRegisterOption {
-    actions?: ArgsIteratorAction<T>[];
-    append?(metadata: T): void;
+    /**
+     * the decorator is class decorator or not.
+     */
+    isClassDecor?: boolean;
+    metadata?(...args: any[]): T;
+
+    appendMetadata?(metadata: T): void;
 }
 
 
@@ -36,29 +38,41 @@ export interface DecoratorOption<T> extends refl.DecorRegisterOption {
  */
 export function createDecorator<T>(name: string, options: DecoratorOption<T>): any {
     let decor = `@${name}`;
-
+    const appendMetadata = options.appendMetadata;
     let factory = (...args: any[]) => {
         let metadata: T = null;
         if (args.length < 1) {
             return (...args: any[]) => {
-                return storeMetadata(name, decor, args, metadata, options);
+                return storeMetadata(name, decor, args, metadata, appendMetadata);
             }
         }
-        metadata = argsToMetadata<T>(args, options.actions);
+
+        if (args.length) {
+            if (args.length === 1 && isMetadataObject(args[0])) {
+                metadata = args[0];
+            } else if (options.metadata) {
+                if (options.isClassDecor && args.length === 1 && isProvideToken(args[0])) {
+                    metadata = null;
+                } else {
+                    metadata = options.metadata(...args);
+                }
+            }
+        }
+
         if (metadata) {
             return (...args: any[]) => {
-                return storeMetadata(name, decor, args, metadata, options);
+                return storeMetadata(name, decor, args, metadata, appendMetadata);
             }
         } else {
             if (args.length === 1) {
                 if (!isClass(args[0])) {
                     return (...args: any[]) => {
-                        return storeMetadata(name, decor, args, metadata, options);
+                        return storeMetadata(name, decor, args, metadata, appendMetadata);
                     };
                 }
             }
         }
-        return storeMetadata(name, decor, args, metadata, options);
+        return storeMetadata(name, decor, args, metadata);
     }
 
     refl.registerDecror(decor, options);
@@ -67,28 +81,14 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
     return factory;
 }
 
-function argsToMetadata<T extends Metadata>(args: any[], actions?: ArgsIteratorAction<T>[]): T {
-    let metadata: T = null;
-    if (args.length) {
-        if (args.length === 1 && isMetadataObject(args[0])) {
-            metadata = args[0];
-        } else if (actions) {
-            let ctx = new ArgsContext<T>(args);
-            chain(actions, ctx);
-            metadata = ctx.getMetadate();
-        }
-    }
-    return metadata;
-}
 
-
-function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, options: DecoratorOption<T>): any {
+function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, appendMetadata?: (metadata: T) => void): any {
     let target;
     if (!metadata) {
         metadata = {};
     }
-    if (options.append) {
-        options.append(metadata);
+    if (appendMetadata) {
+        appendMetadata(metadata);
     }
     switch (args.length) {
         case 1:
@@ -135,8 +135,22 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
 }
 
 
-export interface ClassDecoratorOption<T> extends DecoratorOption<T> {
-    classAnno?: boolean;
+export interface IClassDecorator {
+    /**
+     * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
+     *
+     * @Injectable
+     *
+     * @param {InjectableMetadata} [metadata] metadata map.
+     */
+    (metadata?: ClassMetadata): ClassDecorator;
+
+    (provide: Token, alias: string, pattern?: PatternMetadata): ClassDecorator;
+
+    /**
+     * Injectable decorator.
+     */
+    (target: Type): void;
 }
 
 /**
@@ -148,47 +162,13 @@ export interface ClassDecoratorOption<T> extends DecoratorOption<T> {
  * @param {ClassDecoratorOption<T>} [options]  decorator options.
  * @returns {*}
  */
-export function createClassDecorator<T extends ClassMetadata>(name: string, options?: ClassDecoratorOption<T>) {
+export function createClassDecorator<T extends ClassMetadata>(name: string, options?: DecoratorOption<T>) {
     options = options || {};
-    if (options.classAnno) {
-        let actions = options.actions || [];
-        actions.push(
-            (ctx, next) => {
-                let arg = ctx.currArg;
-                if ((ctx.args.length > 1) ? isToken(arg) : isProvideToken(arg)) {
-                    ctx.metadata.provide = arg;
-                    ctx.next(next);
-                }
-            },
-            (ctx, next) => {
-                let arg = ctx.currArg;
-                if (isString(arg)) {
-                    ctx.metadata.alias = arg;
-                    ctx.next(next);
-                }
-            },
-            (ctx, next) => {
-                let arg = ctx.currArg;
-                if (isBoolean(arg)) {
-                    ctx.metadata.singleton = arg;
-                    ctx.next(next);
-                } else if (isNumber(arg)) {
-                    ctx.metadata.expires = arg;
-                    ctx.next(next);
-                } else if (isToken(arg)) {
-                    ctx.metadata.refs = { target: arg, provide: ctx.metadata.provide || ctx.metadata.type, alias: ctx.metadata.alias };
-                    ctx.next(next);
-                }
-            },
-            (ctx, next) => {
-                let arg = ctx.currArg;
-                if (isNumber(arg)) {
-                    ctx.metadata.expires = arg;
-                    ctx.next(next);
-                }
-            }
-        );
-        options.actions = actions;
+    options.isClassDecor = true;
+    if (!options.metadata) {
+        options.metadata = (provide: Token, alias?: string, pattern?: PatternMetadata) => {
+            return { provide, alias, ...pattern } as ClassMetadata as T;
+        }
     }
     let decorator = createDecorator<T>(name, options);
     return decorator;
@@ -197,90 +177,9 @@ export function createClassDecorator<T extends ClassMetadata>(name: string, opti
 
 export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
 
-
-/**
- * create decorator for class and method.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {DecoratorOption<T>} [options] decorator options.
- * @returns {IClassMethodDecorator<T>}
- */
-export function createClassMethodDecorator<T extends TypeMetadata>(name: string, options?: DecoratorOption<T>) {
-    return createDecorator<T>(name, options || {});
-}
-
-
-/**
- * create method decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {DecoratorOption<T>} [options] decorator options.
- * @returns
- */
-export function createMethodDecorator<T extends MethodMetadata>(name: string, options?: DecoratorOption<T>) {
-    return createDecorator<T>(name, options || {});
-}
-
 export type MethodPropDecorator = (target: Object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
-/**
- * method and Property decorator.
- *
- * @export
- * @interface IMethodPropDecorator
- */
-export interface IMethodPropDecorator<T extends MethodPropMetadata> {
-    /**
-     * create method decorator with metadata map.
-     * @param {T} [metadata]
-     */
-    (metadata?: T): MethodPropDecorator;
-    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
-}
-
-/**
- * create method or property decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {DecoratorOption<T>} [options] decorator options.
- * @returns {IMethodPropDecorator<T>}
- */
-export function createMethodPropDecorator<T extends MethodPropMetadata>(name: string, options?: DecoratorOption<T>): IMethodPropDecorator<T> {
-    return createDecorator<T>(name, options || {});
-}
 
 export type MethodPropParamDecorator = (target: Object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>) => void;
-
-/**
- * create method, property or parameter decorator.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {DecoratorOption<T>} [options] decorator options.
- * @returns {IMethodPropParamDecorator<T>}
- */
-export function createMethodPropParamDecorator<T extends MethodParamPropMetadata>(name: string, options?: DecoratorOption<T>) {
-    options = options || {};
-    let actions = options.actions || [];
-    actions.push((ctx, next) => {
-        let arg = ctx.currArg;
-        if (isArray(arg)) {
-            ctx.metadata.providers = arg;
-            ctx.next(next);
-        } else if (isToken(arg)) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
-        }
-    });
-    options.actions = actions;
-    return createDecorator<T>(name, options);
-}
 
 /**
  * create parameter decorator.
@@ -303,18 +202,6 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
 
 
 /**
- * create parameter or property decorator
- *
- * @export
- * @template T
- * @param {string} name
- * @param {DecoratorOption<T>} [options] decorator options.
- */
-export function createParamPropDecorator<T extends ParamPropMetadata>(name: string, options?: DecoratorOption<T>) {
-    return createDecorator<T>(name, appendDefaultProvider(options));
-}
-
-/**
  * create property decorator.
  *
  * @export
@@ -330,14 +217,10 @@ export function createPropDecorator<T extends PropertyMetadata>(name: string, op
 
 function appendDefaultProvider<T extends ProvideMetadata>(options?: DecoratorOption<T>): DecoratorOption<T> {
     options = options || {};
-    let actions = options.actions || [];
-    actions.push((ctx, next) => {
-        let arg = ctx.currArg;
-        if (isToken(arg)) {
-            ctx.metadata.provider = arg;
-            ctx.next(next);
+    if (!options.metadata) {
+        options.metadata = (provider: Token, alias?: string) => {
+            return { provider, alias } as T;
         }
-    });
-    options.actions = actions;
+    }
     return options;
 }

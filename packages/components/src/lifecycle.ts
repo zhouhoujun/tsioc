@@ -95,16 +95,10 @@ export interface OnChanges {
  * changes on the same input.
  *
  * @see `OnChanges`
- * @see [Lifecycle hooks guide](guide/lifecycle-hooks)
  *
  * @usageNotes
  * The following snippet shows how a component can implement this interface
  * to invoke it own change-detection cycle.
- *
- * {@example core/ts/metadata/lifecycle_hooks_spec.ts region='DoCheck'}
- *
- * For a more complete example and discussion, see
- * [Defining custom change detection](guide/lifecycle-hooks#defining-custom-change-detection).
  *
  * @publicApi
  */

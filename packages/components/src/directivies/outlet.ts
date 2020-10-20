@@ -14,8 +14,8 @@ import { EmbeddedViewRef } from '../refs/view';
  *
  * Inserts an embedded view from a prepared `TemplateRef`.
  *
- * You can attach a context object to the `EmbeddedViewRef` by setting `[ngTemplateOutletContext]`.
- * `[ngTemplateOutletContext]` should be an object, the object's keys will be available for binding
+ * You can attach a context object to the `EmbeddedViewRef` by setting `[templateOutletContext]`.
+ * `[templateOutletContext]` should be an object, the object's keys will be available for binding
  * by the local template `let` declarations.
  *
  * @usageNotes
