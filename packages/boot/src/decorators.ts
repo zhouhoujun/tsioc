@@ -249,9 +249,8 @@ export interface IMessageDecorator {
  */
 export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Message', {
     actionType: 'annoation',
-    props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) => {
-        return { parent, before };
-    },
+    props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) =>
+        ({ parent, before }),
     appendProps: (meta) => {
         meta.singleton = true;
         // default register in root.

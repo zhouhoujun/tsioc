@@ -1,4 +1,4 @@
-import { InjectableMetadata, ParamPropMetadata, TypeMetadata, ProviderMetadata, PropertyMetadata } from '@tsdi/ioc';
+import { InjectableMetadata, ParamPropMetadata, TypeMetadata, ProviderMetadata, PropertyMetadata, Metadata } from '@tsdi/ioc';
 import { BindingTypes, BindingDirection } from './bindings/IBinding';
 
 
@@ -52,14 +52,14 @@ export interface ComponentMetadata extends DirectiveMetadata {
  * @interface BindingMetadata
  * @extends {ParamPropMetadata}
  */
-export interface BindingMetadata extends ParamPropMetadata {
+export interface BindingMetadata extends Metadata {
     /**
      * binding name.
      *
      * @type {string}
      * @memberof BindingMetadata
      */
-    bindingName?: string;
+    bindingPropertyName?: string;
     /**
      * default value.
      *
@@ -67,30 +67,24 @@ export interface BindingMetadata extends ParamPropMetadata {
      * @memberof BindingMetadata
      */
     defaultValue?: any;
-    /**
-     * binding types.
-     *
-     * @type {BindingTypes}
-     * @memberof BindingMetadata
-     */
-    bindingType?: BindingTypes;
-
-    /**
-     * binding direction.
-     *
-     * @type {BindingDirections}
-     * @memberof BindingMetadata
-     */
-    direction?: BindingDirection;
 }
 
+
+export interface QueryMetadata extends Metadata {
+    descendants: boolean;
+    first: boolean;
+    read: any;
+    isViewQuery: boolean;
+    selector: any;
+    static?: boolean;
+}
 
 
 /**
  * HostBinding metadata.
  *
  */
-export interface HostBindingMetadata extends ParamPropMetadata {
+export interface HostBindingMetadata extends Metadata {
     /**
      * host property name.
      *
@@ -105,7 +99,7 @@ export interface HostBindingMetadata extends ParamPropMetadata {
  * HostListener metadata.
  *
  */
-export interface HostListenerMetadata extends ParamPropMetadata {
+export interface HostListenerMetadata extends Metadata {
     /**
      * event name.
      *
@@ -130,7 +124,7 @@ export interface HostListenerMetadata extends ParamPropMetadata {
  * @interface PipeMetadata
  * @extends {TypeMetadata}
  */
-export interface PipeMetadata extends TypeMetadata, ProviderMetadata {
+export interface PipeMetadata extends Metadata, ProviderMetadata {
     /**
      * name of pipe.
      */

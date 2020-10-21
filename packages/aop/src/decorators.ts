@@ -1,4 +1,4 @@
-import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator} from '@tsdi/ioc';
+import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation } from './metadatas';
 import { AdviceTypes, AopReflect } from './types';
 
@@ -44,9 +44,8 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
         rlt.aspect = ctx.matedata;
         return next();
     },
-    props: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) => {
-        return { annotation, within, ...append };
-    }
+    props: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) =>
+        ({ annotation, within, ...append })
 }) as IAspectDecorator;
 
 

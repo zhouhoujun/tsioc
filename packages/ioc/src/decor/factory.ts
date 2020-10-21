@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { isClass, isAbstractClass, isUndefined, isNumber, isMetadataObject } from '../utils/lang';
-import { ClassMetadata, PropertyMetadata, ParameterMetadata, PatternMetadata } from './metadatas';
+import { ClassMetadata, PropertyMetadata, ParameterMetadata, PatternMetadata, Metadata } from './metadatas';
 import { Type } from '../types';
 import { Token } from '../tokens';
 import { refl } from './reflects';
@@ -139,11 +139,10 @@ export type MethodPropParamDecorator = (target: Object, propertyKey: string | sy
  * @param {DecoratorOption<T>} [options] decorator options.
  * @returns
  */
-export function createParamDecorator<T extends ParameterMetadata>(name: string, options?: DecoratorOption<T>) {
+export function createParamDecorator<T = ParameterMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
-        props: (provider: Token, alias?: string) => {
-            return { provider, alias } as T;
-        },
+        actionType: ['paramInject'],
+        props: (provider: Token, alias?: string) => ({ provider, alias } as any),
         ...options
     });
 }
@@ -164,11 +163,10 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
  * @param {DecoratorOption<T>} [options] decorator options.
  * @returns
  */
-export function createPropDecorator<T extends PropertyMetadata>(name: string, options?: DecoratorOption<T>) {
+export function createPropDecorator<T = PropertyMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
-        props: (provider: Token, alias?: string) => {
-            return { provider, alias } as T;
-        },
+        actionType: ['propInject'],
+        props: (provider: Token, alias?: string) => ({ provider, alias } as any),
         ...options
     });
 }

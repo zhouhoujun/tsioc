@@ -1,7 +1,7 @@
-import { Token, isString, isToken, ClassType, Registration, createPropDecorator, isClassType, createClassDecorator, isArray, PropertyMetadata, Type, isBoolean, isUndefined, isFunction, createParamDecorator } from '@tsdi/ioc';
+import { Token, ClassType, Registration, createPropDecorator, PropertyMetadata, Type, isBoolean, isUndefined, createParamDecorator, createDecorator, InjectableMetadata } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
-import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, VaildateMetadata } from './metadata';
-import { BindingDirection, isBindingDriection } from './bindings/IBinding';
+import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata } from './metadata';
+import { BindingDirection } from './bindings/IBinding';
 import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect } from './reflect';
 
@@ -29,7 +29,7 @@ export interface IDirectiveDecorator {
      * @Task
      * @param {string} selector metadata selector.
      */
-    (selector: string): ClassDecorator;
+    (selector: string, option?: InjectableMetadata): ClassDecorator;
 }
 
 /**
@@ -37,23 +37,16 @@ export interface IDirectiveDecorator {
  *
  * @Component
  */
-export const Directive: IDirectiveDecorator = createClassDecorator<DirectiveMetadata>('Directive', {
+export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>('Directive', {
     actionType: ['annoation', 'typeProviders'],
+    props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
     classHandle: (ctx, next) => {
         const reflect = ctx.reflect as AnnotationReflect;
         reflect.annoType = 'directive';
         reflect.annoDecor = ctx.decor;
         reflect.annotation = ctx.matedata;
         return next();
-    },
-    actions: [
-        (ctx, next) => {
-            if (isString(ctx.currArg)) {
-                ctx.metadata.selector = ctx.currArg;
-                ctx.next(next);
-            }
-        }
-    ]
+    }
 });
 
 
@@ -72,7 +65,7 @@ export interface IComponentDecorator {
      *
      * @param {ComponentMetadata} [metadata] metadata map.
      */
-    (metadata?: ComponentMetadata): ClassDecorator;
+    (metadata: ComponentMetadata): ClassDecorator;
 
     /**
      * Component decorator, use to define class as Component element.
@@ -80,7 +73,7 @@ export interface IComponentDecorator {
      * @Task
      * @param {string} selector metadata selector.
      */
-    (selector: string): ClassDecorator;
+    (selector: string, template?: any, option?: InjectableMetadata): ClassDecorator;
 }
 
 /**
@@ -88,23 +81,16 @@ export interface IComponentDecorator {
  *
  * @Component
  */
-export const Component: IComponentDecorator = createClassDecorator<ComponentMetadata>('Component', {
+export const Component: IComponentDecorator = createDecorator<ComponentMetadata>('Component', {
     actionType: ['annoation', 'typeProviders'],
+    props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     classHandle: (ctx, next) => {
         const reflect = ctx.reflect as AnnotationReflect;
         reflect.annoType = 'component';
         reflect.annoDecor = ctx.decor;
         reflect.annotation = ctx.matedata;
         return next();
-    },
-    actions: [
-        (ctx, next) => {
-            if (isString(ctx.currArg)) {
-                ctx.metadata.selector = ctx.currArg;
-                ctx.next(next);
-            }
-        }
-    ]
+    }
 });
 
 /**
@@ -164,50 +150,6 @@ export interface BindingsPropertyDecorator {
 }
 
 /**
- * Bindings decorator.
- */
-export const Bindings: BindingsPropertyDecorator = createPropDecorator<BindingMetadata>('Bindings', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isBindingDriection(arg)) {
-                ctx.metadata.direction = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.bindingName = arg;
-                ctx.next(next);
-            } else if (isClassType(arg) || arg instanceof Registration) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if ((ctx.args.length > 2 && isToken(arg))) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            } else {
-                ctx.metadata.defaultValue = arg;
-            }
-
-        },
-        (ctx, next) => {
-            ctx.metadata.defaultValue = ctx.currArg;
-        }
-    ],
-    appendProps: meta => {
-        if (!meta.direction) {
-            meta.direction = 'twoway';
-        }
-    }
-});
-
-
-/**
  * @NonSerialize decorator define component property not need serialized.
  */
 export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize', {
@@ -256,13 +198,6 @@ export interface HostDecorator {
      * that tells the DI framework to resolve the view by checking injectors of child
      * elements, and stop when reaching the host element of the current component.
      *
-     * @usageNotes
-     *
-     * The following shows use with the `@Optional` decorator, and allows for a null result.
-     *
-     * <code-example path="core/di/ts/metadata_spec.ts" region="Host">
-     * </code-example>
-     *
      */
     (): any;
     new(): Host;
@@ -293,11 +228,14 @@ export const Host: HostDecorator = createParamDecorator('Host');
  */
 export interface HostBindingPropertyDecorator {
     /**
-     * define HostBinding property decorator with binding property name.
+     * Decorator that marks a DOM property as a host-binding property and supplies configuration
+     * metadata.
+     * Components automatically checks host property bindings during change detection, and
+     * if a binding changes it updates the host element of the directive.
      *
-     * @param {string} bindingName binding property name
+     * @param {string} [hostPropertyName] binding property name
      */
-    (eventName: string, args: []): PropertyDecorator;
+    (hostPropertyName?: string): PropertyDecorator;
 
     /**
      * define HostBinding property decorator with binding metadata.
@@ -311,15 +249,7 @@ export interface HostBindingPropertyDecorator {
  * output property decorator.
  */
 export const HostBinding: HostBindingPropertyDecorator = createPropDecorator<HostBindingMetadata>('HostBinding', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.hostPropertyName = arg;
-                ctx.next(next);
-            }
-        }
-    ]
+    props: (hostPropertyName?: string) => ({ hostPropertyName })
 });
 
 
@@ -332,11 +262,13 @@ export const HostBinding: HostBindingPropertyDecorator = createPropDecorator<Hos
  */
 export interface HostListenerPropertyDecorator {
     /**
-     * define HostListener property decorator with binding property name.
+     * Decorator that binds a DOM event to a host listener and supplies configuration metadata.
+     * Components invokes the supplied handler method when the host element emits the specified event,
+     * and updates the bound element with the result.
      *
-     * @param {string} bindingName binding property name
+     * @param {string} eventName binding property name
      */
-    (eventName: string, args: []): PropertyDecorator;
+    (eventName?: string, args?: string[]): PropertyDecorator;
 
     /**
      * define HostListener property decorator with binding metadata.
@@ -350,21 +282,7 @@ export interface HostListenerPropertyDecorator {
  * output property decorator.
  */
 export const HostListener: HostListenerPropertyDecorator = createPropDecorator<HostListenerMetadata>('HostListener', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.eventName = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isArray(arg)) {
-                ctx.metadata.args = arg;
-            }
-        }
-    ]
+    props: (eventName?: string, args?: string[]) => ({ eventName, args })
 });
 
 
@@ -378,9 +296,17 @@ export interface InputPropertyDecorator {
     /**
      * define Input property decorator with binding property name.
      *
-     * @param {string} bindingName binding property name
+     * @param {string} [bindingPropertyName] binding property name
      */
-    (bindingName?: string): PropertyDecorator;
+    (bindingPropertyName?: string): PropertyDecorator;
+
+    /**
+     * define Input property decorator with binding property name and provider.
+     *
+     * @param {string} bindingPropertyName binding property name
+     * @param {*} defaultVal default value.
+     */
+    (bindingPropertyName: string, defaultVal: any): PropertyDecorator;
 
     /**
      * define Input property decorator with binding metadata.
@@ -388,68 +314,14 @@ export interface InputPropertyDecorator {
      * @param {string} bindingName binding property name
      */
     (metadata: BindingMetadata): PropertyDecorator;
-    /**
-     * define Input property decorator with binding property name and provider.
-     *
-     * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
-     * @param {*} [defaultVal] default value.
-     */
-    (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
 
-    /**
-     * define Input property decorator with binding property name and provider.
-     *
-     * @param {string} bindingName binding property name
-     * @param {*} defaultVal default value.
-     */
-    (bindingName: string, defaultVal: any): PropertyDecorator;
-
-    /**
-     * define Input property decorator with binding property name and provider.
-     *
-     * @param {string} bindingName binding property name
-     * @param {Token} provider define provider to resolve value to the property.
-     * @param {*} defaultVal default value.
-     */
-    (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
-    /**
-     * define property decorator.
-     */
-    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
 }
 
 /**
  * Input decorator.
  */
 export const Input: InputPropertyDecorator = createPropDecorator<BindingMetadata>('Input', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.bindingName = arg;
-                ctx.next(next);
-            } else if (isClassType(arg) || arg instanceof Registration) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if ((ctx.args.length > 2 && isToken(arg))) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            } else {
-                ctx.metadata.defaultValue = arg;
-            }
-
-        },
-        (ctx, next) => {
-            ctx.metadata.defaultValue = ctx.currArg;
-        }
-    ],
-    appendProps: meta => {
-        meta.direction = 'input';
-    }
+    props: (bindingPropertyName: string, defaultValue?: any) => ({ bindingPropertyName, defaultValue })
 });
 
 
@@ -465,9 +337,9 @@ export interface OutputPropertyDecorator {
     /**
      * define Output property decorator with binding property name.
      *
-     * @param {string} bindingName binding property name
+     * @param {string} [bindingPropertyName] binding property name
      */
-    (bindingName?: string): PropertyDecorator;
+    (bindingPropertyName?: string): PropertyDecorator;
 
     /**
      * define Output property decorator with binding metadata.
@@ -475,68 +347,13 @@ export interface OutputPropertyDecorator {
      * @param {string} bindingName binding property name
      */
     (metadata: BindingMetadata): PropertyDecorator;
-    /**
-     * define Output property decorator with binding property name and provider.
-     *
-     * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
-     */
-    (provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
-
-    /**
-     * define Output property decorator with binding property name and provider.
-     *
-     * @param {string} bindingName binding property name
-     * @param {*} binding default value.
-     */
-    (bindingName: string, defaultVal: any): PropertyDecorator;
-
-    /**
-     * define Output property decorator with binding property name and provider.
-     *
-     * @param {string} bindingName binding property name
-     * @param {Token} provider define provider to resolve value to the property.
-     * @param {*} binding default value.
-     */
-    (bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
-
-    /**
-     * define property decorator.
-     */
-    (target: object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>): void;
 }
 
 /**
  * output property decorator.
  */
 export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetadata>('Output', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.bindingName = arg;
-                ctx.next(next);
-            } else if (isClassType(arg) || arg instanceof Registration) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (ctx.args.length > 2 && isToken(arg)) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            } else {
-                ctx.metadata.defaultValue = arg;
-            }
-
-        },
-        (ctx, next) => {
-            ctx.metadata.defaultValue = ctx.currArg;
-        }
-    ],
-    appendProps: meta => {
-        meta.direction = 'output';
-    }
+    props: (bindingPropertyName?: string) => ({ bindingPropertyName })
 });
 
 
@@ -554,14 +371,6 @@ export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFun
  * @interface IInjectableDecorator
  */
 export interface IPipeDecorator {
-    /**
-     * Pipe decorator, define the class as pipe.
-     *
-     * @Pipe
-     *
-     * @param {PipeMetadata} [metadata] metadata map.
-     */
-    (metadata?: PipeMetadata): PipeDecorator;
 
     /**
      * Pipe decorator, define the class as pipe.
@@ -571,6 +380,15 @@ export interface IPipeDecorator {
      * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
      */
     (name: string, pure?: boolean): PipeDecorator;
+
+    /**
+     * Pipe decorator, define the class as pipe.
+     *
+     * @Pipe
+     *
+     * @param {PipeMetadata} [metadata] metadata map.
+     */
+    (metadata: PipeMetadata): PipeDecorator;
 }
 
 /**
@@ -578,7 +396,7 @@ export interface IPipeDecorator {
  *
  * @Pipe
  */
-export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
+export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
     actionType: ['annoation', 'typeProviders'],
     classHandle: (ctx, next) => {
         const reflect = ctx.reflect as AnnotationReflect;
@@ -587,19 +405,7 @@ export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
         reflect.annotation = ctx.matedata;
         return next();
     },
-    actions: [
-        (ctx, next) => {
-            if (isString(ctx.currArg)) {
-                ctx.metadata.name = ctx.currArg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            if (isBoolean(ctx.currArg)) {
-                ctx.metadata.pure = ctx.currArg;
-            }
-        }
-    ],
+    props: (name: string, pure?: boolean) => ({ name, pure }),
     appendProps: meta => {
         if (isUndefined(meta.pure)) {
             meta.pure = true;
@@ -607,6 +413,66 @@ export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
     }
 });
 
+export abstract class Query { }
+
+/**
+ * Type of the ContentChildren decorator / constructor function.
+ *
+ * @see `ContentChildren`.
+ * @publicApi
+ */
+export interface ContentChildrenDecorator {
+    /**
+     * Parameter decorator that configures a content query.
+     *
+     * Use to get the `QueryList` of elements or directives from the content DOM.
+     * Any time a child element is added, removed, or moved, the query list will be
+     * updated, and the changes observable of the query list will emit a new value.
+     *
+     * Content queries are set before the `ngAfterContentInit` callback is called.
+     *
+     * Does not retrieve elements or directives that are in other components' templates,
+     * since a component's template is always a black box to its ancestors.
+     *
+     * **Metadata Properties**:
+     *
+     * * **selector** - The directive type or the name used for querying.
+     * * **descendants** - True to include all descendants, otherwise include only direct children.
+     * * **read** - Used to read a different token from the queried elements.
+     *
+     * @usageNotes
+     *
+     * Here is a simple demonstration of how the `ContentChildren` decorator can be used.
+     *
+     * {@example core/di/ts/contentChildren/content_children_howto.ts region='HowTo'}
+     *
+     * ### Tab-pane example
+     *
+     * Here is a slightly more realistic example that shows how `ContentChildren` decorators
+     * can be used to implement a tab pane component.
+     *
+     * {@example core/di/ts/contentChildren/content_children_example.ts region='Component'}
+     *
+     * @Annotation
+     */
+    (selector: Token | Function,
+        opts?: { descendants?: boolean, read?: any }): any;
+    new(selector: Token | Function,
+        opts?: { descendants?: boolean, read?: any }): Query;
+}
+
+/**
+ * ContentChildren decorator and metadata.
+ *
+ *
+ * @Annotation
+ * @publicApi
+ */
+export const ContentChildren: ContentChildrenDecorator = createPropDecorator<QueryMetadata>(
+    'ContentChildren', {
+    props: (selector?: any, data?: { descendants?: boolean, read?: any }) =>
+        ({ selector, first: false, isViewQuery: false, descendants: false, ...data } as QueryMetadata)
+});
 
 /**
  * Type of the ViewChildren decorator / constructor function.
@@ -634,14 +500,13 @@ export interface ViewChildrenDecorator {
      * @Annotation
      */
     (selector: Token | Function, opts?: { read?: any }): PropertyDecorator;
+
+    (metadata: QueryMetadata): PipeDecorator;
 }
 
-export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
-    actions: [
-        (ctx, next) => {
-            ctx.s
-        }
-    ]
+export const ViewChildren: ViewChildrenDecorator = createPropDecorator<QueryMetadata>('ViewChildren', {
+    props: (selector: Token | Function, opts?: { read?: any }) =>
+        ({ selector, first: false, isViewQuery: true, descendants: true, ...opts } as QueryMetadata)
 })
 
 /**
@@ -649,32 +514,7 @@ export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChil
  *
  * @RefChild
  */
-export const RefChild: IRefChildDecorator = createPropDecorator<BindingMetadata>('RefChild', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isString(arg)) {
-                ctx.metadata.bindingName = arg;
-                ctx.next(next);
-            } else if (isClassType(arg) || arg instanceof Registration) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (ctx.args.length > 2 && isToken(arg)) {
-                ctx.metadata.provider = arg;
-                ctx.next(next);
-            } else {
-                ctx.metadata.defaultValue = arg;
-            }
-        },
-        (ctx, next) => {
-            ctx.metadata.defaultValue = ctx.currArg;
-        }
-    ]
-});
+export const RefChild = ViewChild;
 
 
 /**
@@ -710,24 +550,11 @@ export interface VaildatePropertyDecorator {
  * Vaildate decorator.
  */
 export const Vaildate: VaildatePropertyDecorator = createPropDecorator<VaildateMetadata>('Vaildate', {
-    actions: [
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if (isBoolean(arg)) {
-                ctx.metadata.required = arg;
-                ctx.next(next);
-            } else if (isFunction(arg)) {
-                ctx.metadata.vaild = arg;
-                ctx.next(next);
-            }
-        },
-        (ctx, next) => {
-            let arg = ctx.currArg;
-            if ((ctx.args.length > 2 && isString(arg))) {
-                ctx.metadata.errorMsg = arg;
-                ctx.next(next);
-            }
-
+    props: (vaild: any, errorMsg?: string) => {
+        if (isBoolean(vaild)) {
+            return { required: vaild, errorMsg };
+        } else {
+            return { vaild, errorMsg };
         }
-    ]
+    }
 }) as VaildatePropertyDecorator;

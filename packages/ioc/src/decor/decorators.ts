@@ -3,8 +3,8 @@ import { isString, isArray } from '../utils/lang';
 import { Token, Provider } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import {
-    ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, TypeMetadata, PatternMetadata, RefProvider
+    ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, RefProvider
 } from './metadatas';
 import {
     ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator
@@ -229,9 +229,7 @@ export interface IProvidersDecorator {
  * @Providers
  */
 export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', {
-    props: (providers: Provider[]) => {
-        return { providers };
-    }
+    props: (providers: Provider[]) => ({ providers }),
 }) as IProvidersDecorator;
 
 
@@ -334,9 +332,7 @@ export interface ISingletonDecorator {
  * @Singleton()
  */
 export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Singleton', {
-    props: (provide: Token, alias?: string) => {
-        return { provide, alias };
-    },
+    props: (provide: Token, alias?: string) => ({ provide, alias }),
     appendProps: (meta) => {
         meta.singleton = true;
     }
