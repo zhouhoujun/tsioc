@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { isClass, isAbstractClass, isUndefined, isNumber, isMetadataObject } from '../utils/lang';
-import { ClassMetadata, PropertyMetadata, ParameterMetadata, PatternMetadata, Metadata } from './metadatas';
+import { ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './metadatas';
 import { Type } from '../types';
 import { Token } from '../tokens';
 import { refl } from './reflects';

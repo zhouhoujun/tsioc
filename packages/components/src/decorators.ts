@@ -468,10 +468,58 @@ export interface ContentChildrenDecorator {
  * @Annotation
  * @publicApi
  */
-export const ContentChildren: ContentChildrenDecorator = createPropDecorator<QueryMetadata>(
+export const ContentChildren: ContentChildrenDecorator = createPropDecorator(
     'ContentChildren', {
     props: (selector?: any, data?: { descendants?: boolean, read?: any }) =>
-        ({ selector, first: false, isViewQuery: false, descendants: false, ...data } as QueryMetadata)
+        ({ selector, first: false, isViewQuery: false, descendants: false, ...data })
+});
+
+
+/**
+ * Type of the ContentChild decorator / constructor function.
+ *
+ * @publicApi
+ */
+export interface ContentChildDecorator {
+    /**
+     * Parameter decorator that configures a content query.
+     *
+     * Use to get the first element or the directive matching the selector from the content DOM.
+     * If the content DOM changes, and a new child matches the selector,
+     * the property will be updated.
+     *
+     * Content queries are set before the `ngAfterContentInit` callback is called.
+     *
+     * Does not retrieve elements or directives that are in other components' templates,
+     * since a component's template is always a black box to its ancestors.
+     *
+     * **Metadata Properties**:
+     *
+     * * **selector** - The directive type or the name used for querying.
+     * * **read** - Used to read a different token from the queried element.
+     * * **static** - True to resolve query results before change detection runs,
+     * false to resolve after change detection. Defaults to false.
+     *
+     *
+     * @Annotation
+     */
+    (selector: Token | Function,
+        opts?: { read?: any, static?: boolean }): any;
+    new(selector: Token | Function,
+        opts?: { read?: any, static?: boolean }): Query;
+}
+
+/**
+ * ContentChild decorator and metadata.
+ *
+ *
+ * @Annotation
+ *
+ * @publicApi
+ */
+export const ContentChild: ContentChildDecorator = createPropDecorator('ContentChild', {
+    props: (selector?: any, opts?: { read?: any, static?: boolean }) =>
+        ({ selector, first: true, isViewQuery: false, descendants: true, ...opts })
 });
 
 /**
@@ -504,10 +552,66 @@ export interface ViewChildrenDecorator {
     (metadata: QueryMetadata): PipeDecorator;
 }
 
-export const ViewChildren: ViewChildrenDecorator = createPropDecorator<QueryMetadata>('ViewChildren', {
+export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
     props: (selector: Token | Function, opts?: { read?: any }) =>
-        ({ selector, first: false, isViewQuery: true, descendants: true, ...opts } as QueryMetadata)
-})
+        ({ selector, first: false, isViewQuery: true, descendants: true, ...opts })
+});
+
+
+/**
+ * Type of the ViewChild decorator / constructor function.
+ *
+ * @see `ViewChild`.
+ * @publicApi
+ */
+export interface ViewChildDecorator {
+    /**
+     * @description
+     * Property decorator that configures a view query.
+     * The change detector looks for the first element or the directive matching the selector
+     * in the view DOM. If the view DOM changes, and a new child matches the selector,
+     * the property is updated.
+     *
+     * View queries are set before the `ngAfterViewInit` callback is called.
+     *
+     * **Metadata Properties**:
+     *
+     * * **selector** - The directive type or the name used for querying.
+     * * **read** - Used to read a different token from the queried elements.
+     * * **static** - True to resolve query results before change detection runs,
+     * false to resolve after change detection. Defaults to false.
+     *
+     *
+     * The following selectors are supported.
+     *   * Any class with the `@Component` or `@Directive` decorator
+     *   * A template reference variable as a string (e.g. query `<my-component #cmp></my-component>`
+     * with `@ViewChild('cmp')`)
+     *   * Any provider defined in the child component tree of the current component (e.g.
+     * `@ViewChild(SomeService) someService: SomeService`)
+     *   * Any provider defined through a string token (e.g. `@ViewChild('someToken') someTokenVal:
+     * any`)
+     *   * A `TemplateRef` (e.g. query `<ng-template></ng-template>` with `@ViewChild(TemplateRef)
+     * template;`)
+     *
+     *
+     * @Annotation
+     */
+    (selector: Token | Function,
+        opts?: { read?: any, static?: boolean }): any;
+    new(selector: Token | Function,
+        opts?: { read?: any, static?: boolean }): Query;
+}
+
+/**
+ * ViewChild decorator and metadata.
+ *
+ * @Annotation
+ * @publicApi
+ */
+export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
+    props: (selector: any, data: any) =>
+        ({ selector, first: true, isViewQuery: true, descendants: true, ...data }),
+});
 
 /**
  * RefChild decorator, define for class. use to define the class. it can setting provider to some token, singleton or not. it will execute  [`RefChildLifecycle`]
