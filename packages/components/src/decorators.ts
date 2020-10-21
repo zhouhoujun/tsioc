@@ -199,7 +199,7 @@ export const Bindings: BindingsPropertyDecorator = createPropDecorator<BindingMe
             ctx.metadata.defaultValue = ctx.currArg;
         }
     ],
-    appendMetadata: meta => {
+    appendProps: meta => {
         if (!meta.direction) {
             meta.direction = 'twoway';
         }
@@ -447,7 +447,7 @@ export const Input: InputPropertyDecorator = createPropDecorator<BindingMetadata
             ctx.metadata.defaultValue = ctx.currArg;
         }
     ],
-    appendMetadata: meta => {
+    appendProps: meta => {
         meta.direction = 'input';
     }
 });
@@ -534,7 +534,7 @@ export const Output: OutputPropertyDecorator = createPropDecorator<BindingMetada
             ctx.metadata.defaultValue = ctx.currArg;
         }
     ],
-    appendMetadata: meta => {
+    appendProps: meta => {
         meta.direction = 'output';
     }
 });
@@ -600,7 +600,7 @@ export const Pipe: IPipeDecorator = createClassDecorator<PipeMetadata>('Pipe', {
             }
         }
     ],
-    appendMetadata: meta => {
+    appendProps: meta => {
         if (isUndefined(meta.pure)) {
             meta.pure = true;
         }

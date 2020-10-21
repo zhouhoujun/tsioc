@@ -94,7 +94,7 @@ export interface ILoggerDecorator<T extends LoggerMetadata> {
  * @Logger
  */
 export const Logger: ILoggerDecorator<LoggerMetadata> = createDecorator<LoggerMetadata>('Logger', {
-    metadata: (...args: any[]) => {
+    props: (...args: any[]) => {
         if (args.length === 1) {
             return { message: args[0] };
         } else if (args.length === 2) {

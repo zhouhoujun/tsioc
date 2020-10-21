@@ -44,7 +44,7 @@ export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('As
         rlt.aspect = ctx.matedata;
         return next();
     },
-    metadata: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) => {
+    props: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) => {
         return { annotation, within, ...append };
     }
 }) as IAspectDecorator;
@@ -163,9 +163,9 @@ export interface IAdviceDecorator {
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string, options?: DecoratorOption<T>) {
     options = options || {};
-    const append = options.appendMetadata;
+    const append = options.appendProps;
     return createMethodDecorator<T>(adviceName, {
-        metadata: (pointcut?: string | RegExp, annotation?: string | PointcutAnnotation) => {
+        props: (pointcut?: string | RegExp, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
                 return { pointcut, annotationName: annotation } as T;
             } else {
@@ -181,7 +181,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             ret.advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
             return next();
         },
-        appendMetadata: (metadata) => {
+        appendProps: (metadata) => {
             if (append) {
                 append(metadata);
             }
@@ -614,7 +614,7 @@ export interface IAfterReturningDecorator {
  */
 export const AfterReturning: IAfterReturningDecorator =
     createAdviceDecorator<AfterReturningMetadata>('AfterReturning', {
-        metadata: (pointcut: string | RegExp, returning: string, annotation?: string | PointcutAnnotation) => {
+        props: (pointcut: string | RegExp, returning: string, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
                 return { pointcut, returning, annotationName: annotation };
             } else {
@@ -700,7 +700,7 @@ export interface IAfterThrowingDecorator {
  */
 export const AfterThrowing: IAfterThrowingDecorator =
     createAdviceDecorator<AfterThrowingMetadata>('AfterThrowing', {
-        metadata: (pointcut: string | RegExp, throwing: string, annotation?: string | PointcutAnnotation) => {
+        props: (pointcut: string | RegExp, throwing: string, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
                 return { pointcut, throwing, annotationName: annotation };
             } else {

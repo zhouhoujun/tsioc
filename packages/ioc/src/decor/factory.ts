@@ -16,8 +16,8 @@ export interface MetadataTarget<T> {
 }
 
 export interface DecoratorOption<T> extends refl.DecorRegisterOption {
-    metadata?(...args: any[]): T;
-    appendMetadata?(metadata: T): void;
+    props?(...args: any[]): T;
+    appendProps?(metadata: T): void;
 }
 
 
@@ -33,25 +33,24 @@ export interface DecoratorOption<T> extends refl.DecorRegisterOption {
  */
 export function createDecorator<T>(name: string, options: DecoratorOption<T>): any {
     let decor = `@${name}`;
-    const appendMetadata = options.appendMetadata;
     let factory = (...args: any[]) => {
         let metadata: T = null;
         if (args.length < 1) {
             return (...args: any[]) => {
-                return storeMetadata(name, decor, args, metadata, appendMetadata);
+                return storeMetadata(name, decor, args, metadata, options);
             }
         }
 
         if (args.length) {
             if (args.length === 1 && isMetadataObject(args[0])) {
                 metadata = args[0];
-            } else if (options.metadata) {
-                metadata = options.metadata(...args);
+            } else if (options.props) {
+                metadata = options.props(...args);
             }
         }
 
         return (...args: any[]) => {
-            return storeMetadata(name, decor, args, metadata, appendMetadata);
+            return storeMetadata(name, decor, args, metadata, options);
         }
 
     }
@@ -63,13 +62,13 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
 }
 
 
-function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, appendMetadata?: (metadata: T) => void): any {
+function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, options: DecoratorOption<T>): any {
     let target;
     if (!metadata) {
         metadata = {};
     }
-    if (appendMetadata) {
-        appendMetadata(metadata);
+    if (options.appendProps) {
+        options.appendProps(metadata);
     }
     switch (args.length) {
         case 1:
@@ -140,7 +139,7 @@ export interface IClassDecorator {
  */
 export function createClassDecorator<T extends ClassMetadata>(name: string, options?: DecoratorOption<T>) {
     let decorator = createDecorator<T>(name, {
-        metadata: (provide: Token, alias?: string, pattern?: PatternMetadata) => {
+        props: (provide: Token, alias?: string, pattern?: PatternMetadata) => {
             return { provide, alias, ...pattern } as ClassMetadata as T;
         },
         ...options
@@ -166,7 +165,7 @@ export type MethodPropParamDecorator = (target: Object, propertyKey: string | sy
  */
 export function createMethodDecorator<T extends MethodMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
-        metadata: (providers: Provider[]) => {
+        props: (providers: Provider[]) => {
             return { providers } as T;
         },
         ...options
@@ -185,7 +184,7 @@ export function createMethodDecorator<T extends MethodMetadata>(name: string, op
  */
 export function createParamDecorator<T extends ParameterMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
-        metadata: (provider: Token, alias?: string) => {
+        props: (provider: Token, alias?: string) => {
             return { provider, alias } as T;
         },
         ...options
@@ -210,7 +209,7 @@ export type PropParamDecorator = (target: Object, propertyKey: string | symbol, 
  */
 export function createPropDecorator<T extends PropertyMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
-        metadata: (provider: Token, alias?: string) => {
+        props: (provider: Token, alias?: string) => {
             return { provider, alias } as T;
         },
         ...options

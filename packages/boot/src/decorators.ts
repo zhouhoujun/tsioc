@@ -64,7 +64,7 @@ export interface IBootDecorator {
 export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
     options = options || {};
     const hd = options.classHandle;
-    const append = options.appendMetadata;
+    const append = options.appendProps;
     return createClassDecorator<T>(name, {
         actionType: 'annoation',
         ...options,
@@ -79,7 +79,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
-        appendMetadata: (meta) => {
+        appendProps: (meta) => {
             if (append) {
                 append(meta);
             }
@@ -144,7 +144,7 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
 export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
     options = options || {};
     const hd = options.classHandle;
-    const append = options.appendMetadata;
+    const append = options.appendProps;
     return createClassDecorator<DIModuleMetadata>(name, {
         ...options,
         classHandle: [
@@ -157,7 +157,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
-        appendMetadata: (meta) => {
+        appendProps: (meta) => {
             if (append) {
                 append(meta as T);
             }
@@ -249,10 +249,10 @@ export interface IMessageDecorator {
  */
 export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message', {
     actionType: 'annoation',
-    metadata: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) => {
+    props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) => {
         return { parent, before };
     },
-    appendMetadata: (meta) => {
+    appendProps: (meta) => {
         meta.singleton = true;
         // default register in root.
         if (!meta.parent) {
