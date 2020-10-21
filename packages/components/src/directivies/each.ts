@@ -163,9 +163,6 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
      */
     @Input()
     set eachTemplate(value: TemplateRef<DirEachContext<T, U>>) {
-        // TODO(TS2.1): make TemplateRef<Partial<NgForRowOf<T>>> once we move to TS v2.1
-        // The current type is too restrictive; a template that just uses index, for example,
-        // should be acceptable.
         if (value) {
             this._template = value;
         }
@@ -177,7 +174,6 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
     onDoCheck(): void {
         if (this._iterDirty) {
             this._iterDirty = false;
-            // React on ngForOf changes only once all inputs have been initialized
             const value = this._iter;
             if (!this._differ && value) {
                 try {
@@ -199,9 +195,6 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
             (item: IterableChangeRecord<any>, adjustedPreviousIndex: number | null,
                 currentIndex: number | null) => {
                 if (item.previousIndex == null) {
-                    // DirEach is never "null" or "undefined" here because the differ detected
-                    // that a new item needs to be inserted from the iterable. This implies that
-                    // there is an iterable value for "_ngForOf".
                     const view = this._viewContainer.createEmbeddedView(
                         this._template, new DirEachContext<T, U>(null!, this._iter!, -1, -1),
                         currentIndex === null ? undefined : currentIndex);
