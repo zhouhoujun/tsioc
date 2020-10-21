@@ -1,7 +1,6 @@
 import { Token, ClassType, Registration, createPropDecorator, PropertyMetadata, Type, isBoolean, isUndefined, createParamDecorator, createDecorator, InjectableMetadata } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
 import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata } from './metadata';
-import { BindingDirection } from './bindings/IBinding';
 import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect } from './reflect';
 
@@ -93,61 +92,6 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
     }
 });
 
-/**
- * Bindings decorator.
- *
- * @export
- * @interface BindingsPropertyDecorator
- */
-export interface BindingsPropertyDecorator {
-    /**
-     * define Bindings property decorator with binding property name.
-     *
-     * @param {BindingDirection} direction binding direction. default twoway
-     */
-    (direction?: BindingDirection): PropertyDecorator;
-    /**
-     * define Bindings property decorator with binding property name.
-     *
-     * @param {BindingDirection} direction binding direction.
-     * @param {string} bindingName binding property name
-     */
-    (direction: BindingDirection, bindingName?: string): PropertyDecorator;
-
-    /**
-     * define Bindings property decorator with binding metadata.
-     *
-     * @param {string} bindingName binding property name
-     */
-    (metadata: BindingMetadata): PropertyDecorator;
-    /**
-     * define Bindings property decorator with binding property name and provider.
-     *
-     * @param {BindingDirection} direction binding direction.
-     * @param {(Registration | ClassType)} provider define provider to resolve value to the property.
-     * @param {*} [defaultVal] default value.
-     */
-    (direction: BindingDirection, provider: Registration | ClassType, defaultVal?: any): PropertyDecorator;
-
-    /**
-     * define Bindings property decorator with binding property name and provider.
-     *
-     * @param {BindingDirection} direction binding direction.
-     * @param {string} bindingName binding property name
-     * @param {*} defaultVal default value.
-     */
-    (direction: BindingDirection, bindingName: string, defaultVal: any): PropertyDecorator;
-
-    /**
-     * define Bindings property decorator with binding property name and provider.
-     *
-     * @param {BindingDirection} direction binding direction.
-     * @param {string} bindingName binding property name
-     * @param {Token} provider define provider to resolve value to the property.
-     * @param {*} defaultVal default value.
-     */
-    (direction: BindingDirection, bindingName: string, provider: Token, defaultVal: any): PropertyDecorator;
-}
 
 /**
  * @NonSerialize decorator define component property not need serialized.

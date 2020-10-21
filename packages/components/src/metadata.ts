@@ -1,5 +1,4 @@
-import { InjectableMetadata, ParamPropMetadata, TypeMetadata, ProviderMetadata, PropertyMetadata, Metadata } from '@tsdi/ioc';
-import { BindingTypes, BindingDirection } from './bindings/IBinding';
+import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Metadata } from '@tsdi/ioc';
 
 
 /**

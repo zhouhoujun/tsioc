@@ -4,10 +4,6 @@ export * from './EventEmitter';
 export * from './metadata';
 export * from './decorators';
 
-
-// bindings
-export * from './bindings/IBinding';
-
 // change ref.
 export * from './chage/change';
 export * from './chage/iterable';
