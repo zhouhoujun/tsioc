@@ -5,6 +5,9 @@ import { isFunction } from './utils/lang';
  * destoryable interface.
  */
 export interface IDestoryable {
+    /**
+     * has destoryed or not.
+     */
     readonly destroyed?: boolean;
     /**
      * destory this.
@@ -22,9 +25,7 @@ export interface IDestoryable {
  */
 export abstract class Destoryable implements IDestoryable {
 
-    constructor() {
-
-    }
+    constructor() { }
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];

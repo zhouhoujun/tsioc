@@ -1,4 +1,3 @@
-import { Type } from './types';
 import { Token, Provider } from './tokens';
 import { IInjector } from './IInjector';
 import { ParameterMetadata } from './decor/metadatas';
@@ -16,29 +15,6 @@ export type MethodType<T> = string | ((tag: T) => Function);
  * @interface IExecution
  */
 export interface IMethodAccessor {
-
-    // /**
-    //  * get type class constructor parameters.
-    //  *
-    //  * @template T
-    //  * @param { IInjector } injector
-    //  * @param {Type<T>} type
-    //  * @returns {IParameter[]}
-    //  * @memberof MethodAccessor
-    //  */
-    // getParameters<T>(injector: IInjector, type: Type<T>): ParameterMetadata[];
-    // /**
-    //  * get method parameters of type.
-    //  *
-    //  * @template T
-    //  * @param { IInjector } injector
-    //  * @param {Type<T>} type
-    //  * @param {T} instance
-    //  * @param {string} propertyKey
-    //  * @returns {IParameter[]}
-    //  * @memberof MethodAccessor
-    //  */
-    // getParameters<T>(injector: IInjector, type: Type<T>, instance: T, propertyKey: string): ParameterMetadata[];
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
