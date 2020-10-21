@@ -1,14 +1,13 @@
 import { Type } from '../types';
 import { isString, isArray } from '../utils/lang';
-import { Token, ProvideToken, Provider, isProvideToken } from '../tokens';
+import { Token, Provider } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, TypeMetadata, PatternMetadata, RefProvider
 } from './metadatas';
 import {
-    createDecorator, createClassDecorator, ClassMethodDecorator,
-    createParamDecorator, PropParamDecorator
+    ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator
 } from './factory';
 
 /**
@@ -28,7 +27,7 @@ export interface IAbstractDecorator {
  *
  * @Abstract
  */
-export const Abstract: IAbstractDecorator = createClassDecorator<TypeMetadata>('Abstract', {
+export const Abstract: IAbstractDecorator = createDecorator<TypeMetadata>('Abstract', {
     appendProps: (meta) => {
         meta.abstract = true;
     }
@@ -126,7 +125,7 @@ export interface IParamDecorator {
      *
      * @param {Token} provider define provider to resolve value to the parameter.
      */
-    (provider?: Token): ParameterDecorator;
+    (provider?: Token, alias?: string): ParameterDecorator;
     /**
      * define parameter decorator with metadata map.
      * @param {T} [metadata] define matadata map to resolve value to the parameter.
@@ -184,11 +183,8 @@ export interface IInjectableDecorator {
  *
  * @Injectable()
  */
-export const Injectable: IInjectableDecorator = createClassDecorator<InjectableMetadata>('Injectable', {
+export const Injectable: IInjectableDecorator = createDecorator<InjectableMetadata>('Injectable', {
     props: (provide: Token, arg2: any, arg3?: any) => {
-        if (!arg2 && !isProvideToken(provide)) {
-            return null;
-        }
         if (isString(arg2)) {
             return { provide, alias: arg2, ...arg3 }
         } else {
@@ -285,7 +281,7 @@ export interface IRefsDecorator {
  *
  * @Refs
  */
-export const Refs: IRefsDecorator = createClassDecorator<RefMetadata>('Refs', {
+export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', {
     props: (target: Token, provide?: Token, alias?: string) => {
         const refs = { target, provide, alias } as RefProvider;
         return { refs };
@@ -337,7 +333,10 @@ export interface ISingletonDecorator {
  *
  * @Singleton()
  */
-export const Singleton: ISingletonDecorator = createClassDecorator<ClassMetadata>('Singleton', {
+export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Singleton', {
+    props: (provide: Token, alias?: string) => {
+        return { provide, alias };
+    },
     appendProps: (meta) => {
         meta.singleton = true;
     }
@@ -378,7 +377,7 @@ export interface IocExtDecorator {
  *
  * @IocExt()
  */
-export const IocExt: IocExtDecorator = createClassDecorator<AutorunMetadata>('IocExt', {
+export const IocExt: IocExtDecorator = createDecorator<AutorunMetadata>('IocExt', {
     appendProps: (metadata) => {
         metadata.autorun = 'setup';
         metadata.singleton = true;

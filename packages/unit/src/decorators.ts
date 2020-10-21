@@ -1,4 +1,4 @@
-import { Type, createDecorator, DecoratorOption, createClassDecorator } from '@tsdi/ioc';
+import { createDecorator, DecoratorOption } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './metadata';
 
@@ -32,7 +32,7 @@ export interface ISuiteDecorator {
 /**
  * @Suite decorator.
  */
-export const Suite: ISuiteDecorator = createClassDecorator<SuiteMetadata>('Suite', {
+export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
     classHandle: (ctx, next) => {
         const reflect = ctx.reflect as AnnotationReflect;

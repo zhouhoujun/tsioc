@@ -1,4 +1,4 @@
-import { isString, createClassDecorator, createMethodDecorator , ClassType, ClassMetadata, Type, DecoratorOption} from '@tsdi/ioc';
+import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator} from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation } from './metadatas';
 import { AdviceTypes, AopReflect } from './types';
 
@@ -37,7 +37,7 @@ export interface IAspectDecorator {
  *
  * @Aspect()
  */
-export const Aspect: IAspectDecorator = createClassDecorator<AspectMetadata>('Aspect', {
+export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect', {
     actionType: 'annoation',
     classHandle: (ctx, next) => {
         let rlt = ctx.reflect as AopReflect;
@@ -71,7 +71,7 @@ export interface INonePointcutDecorator {
  *
  * @NonePointcut()
  */
-export const NonePointcut: INonePointcutDecorator = createClassDecorator<ClassMetadata>('NonePointcut', {
+export const NonePointcut: INonePointcutDecorator = createDecorator<ClassMetadata>('NonePointcut', {
     classHandle: (ctx, next) => {
         const rlt = ctx.reflect as AopReflect;
         rlt.nonePointcut = true;
@@ -164,7 +164,7 @@ export interface IAdviceDecorator {
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string, options?: DecoratorOption<T>) {
     options = options || {};
     const append = options.appendProps;
-    return createMethodDecorator<T>(adviceName, {
+    return createDecorator<T>(adviceName, {
         props: (pointcut?: string | RegExp, annotation?: string | PointcutAnnotation) => {
             if (isString(annotation)) {
                 return { pointcut, annotationName: annotation } as T;

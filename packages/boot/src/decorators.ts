@@ -1,6 +1,6 @@
 import {
-    DecoratorOption, isUndefined, ClassType, createClassDecorator,
-    TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token, isArray
+    DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata,
+    isClass, lang, Type, isFunction, Token, isArray, createDecorator
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -65,7 +65,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
     options = options || {};
     const hd = options.classHandle;
     const append = options.appendProps;
-    return createClassDecorator<T>(name, {
+    return createDecorator<T>(name, {
         actionType: 'annoation',
         ...options,
         classHandle: [
@@ -145,7 +145,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
     options = options || {};
     const hd = options.classHandle;
     const append = options.appendProps;
-    return createClassDecorator<DIModuleMetadata>(name, {
+    return createDecorator<DIModuleMetadata>(name, {
         ...options,
         classHandle: [
             (ctx, next) => {
@@ -247,7 +247,7 @@ export interface IMessageDecorator {
  *
  * @Message
  */
-export const Message: IMessageDecorator = createClassDecorator<MessageMetadata>('Message', {
+export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Message', {
     actionType: 'annoation',
     props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) => {
         return { parent, before };
@@ -311,7 +311,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> {
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(name: string, options?: DecoratorOption<T>): IBootstrapDecorator<T> {
 
-    return createClassDecorator<BootstrapMetadata>(name, {
+    return createDecorator<BootstrapMetadata>(name, {
         classHandle: (ctx, next) => {
             const reflect = ctx.reflect as ModuleReflect;
             reflect.annoType = 'module';

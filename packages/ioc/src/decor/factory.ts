@@ -1,12 +1,8 @@
 import 'reflect-metadata';
-import {
-    isClass, isAbstractClass, isUndefined, isNumber, isMetadataObject
-} from '../utils/lang';
+import { isClass, isAbstractClass, isUndefined, isNumber, isMetadataObject } from '../utils/lang';
+import { ClassMetadata, PropertyMetadata, ParameterMetadata, PatternMetadata } from './metadatas';
 import { Type } from '../types';
-import { Provider, Token } from '../tokens';
-import {
-    ClassMetadata, PropertyMetadata, ParameterMetadata, PatternMetadata, DecoratorType, MethodMetadata
-} from './metadatas';
+import { Token } from '../tokens';
 import { refl } from './reflects';
 
 
@@ -128,50 +124,11 @@ export interface IClassDecorator {
     (provide: Token, alias: string, pattern?: PatternMetadata): ClassDecorator;
 }
 
-/**
- * create class decorator
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {ClassDecoratorOption<T>} [options]  decorator options.
- * @returns {*}
- */
-export function createClassDecorator<T extends ClassMetadata>(name: string, options?: DecoratorOption<T>) {
-    let decorator = createDecorator<T>(name, {
-        props: (provide: Token, alias?: string, pattern?: PatternMetadata) => {
-            return { provide, alias, ...pattern } as ClassMetadata as T;
-        },
-        ...options
-    });
-    return decorator;
-}
-
-
 export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
 
 export type MethodPropDecorator = (target: Object, propertyKey: string | symbol, descriptor?: TypedPropertyDescriptor<any>) => void;
 
 export type MethodPropParamDecorator = (target: Object, propertyKey: string | symbol, descriptor?: number | TypedPropertyDescriptor<any>) => void;
-
-/**
- * create method decorator.
- *
- * @export
- * @template T metadata type.
- * @param {string} name decorator name.
- * @param {DecoratorOption<T>} [options] decorator options.
- * @returns
- */
-export function createMethodDecorator<T extends MethodMetadata>(name: string, options?: DecoratorOption<T>) {
-    return createDecorator<T>(name, {
-        props: (providers: Provider[]) => {
-            return { providers } as T;
-        },
-        ...options
-    });
-}
-
 
 /**
  * create parameter decorator.

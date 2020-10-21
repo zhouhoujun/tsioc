@@ -137,11 +137,12 @@ export class InjCollegeClassRoom {
 export class InjCollegeAliasClassRoom {
     constructor(
         // all below decorator can work, also @AutoWired(), @Param() is.
-        @AutoWired(new Registration(Student, 'college')) // need CollegeStudent also register.
+        // @AutoWired(new Registration(Student, 'college')) // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
         // @Inject({ provider: Student, alias: 'college' }) // need CollegeStudent also register.
         // @Inject({ type: CollegeStudent })
+        @AutoWired(Student, 'college')
         public leader: Student
     ) {
 

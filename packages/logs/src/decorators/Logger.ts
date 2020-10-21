@@ -1,4 +1,4 @@
-import { Express, TypeMetadata, ClassMethodDecorator, isFunction, Type, createDecorator } from '@tsdi/ioc';
+import { Express, TypeMetadata, ClassMethodDecorator, isFunction, createDecorator } from '@tsdi/ioc';
 import { Level } from '../Level';
 
 
