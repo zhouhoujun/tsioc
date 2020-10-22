@@ -24,21 +24,27 @@ class Component2 extends Component1 {
 }
 
 
+
 @Component({
     selector: 'comp',
     template: [
-        {
-            element: 'selector1',
-            selector: 'comp1',
-            name: 'binding=: cname'
-        },
-        {
-            element: 'selector2',
-            selector: 'cmp2',
-            name: 'binding: cname',
-            address: 'binding: address'
-        }
+        { $el: 'selector1', $id: 'comp1', '[(name)]': 'cname' },
+        { $el: 'selector1', $id: 'cmp2', '[(name)]': 'cname', '[address]': 'address' }
     ]
+
+    // template: [ 
+    //     {
+    //         element: 'selector1',
+    //         selector: 'comp1',
+    //         name: 'binding=: cname'
+    //     },
+    //     {
+    //         element: 'selector2',
+    //         selector: 'cmp2',
+    //         name: 'binding: cname',
+    //         address: 'binding: address'
+    //     }
+    // ]
 })
 class Components {
 
@@ -335,7 +341,7 @@ export class CTest {
         expect(ctx.boot instanceof Component3).toBeTruthy();
         expect(ctx.boot.phone).toEqual('17000000000');
         let comp = await injector.get(ComponentBuilder)
-            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as  ComponentRef<Components>;
+            .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef<Components>;
 
         // console.log('comp:', comp);
         expect(comp.instance instanceof Components).toBeTruthy();
