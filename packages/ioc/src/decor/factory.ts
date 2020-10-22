@@ -28,15 +28,9 @@ export interface DecoratorOption<T> extends refl.DecorRegisterOption {
  * @returns {*}
  */
 export function createDecorator<T>(name: string, options: DecoratorOption<T>): any {
-    let decor = `@${name}`;
-    let factory = (...args: any[]) => {
+    const decor = `@${name}`;
+    const factory = (...args: any[]) => {
         let metadata: T = null;
-        if (args.length < 1) {
-            return (...args: any[]) => {
-                return storeMetadata(name, decor, args, metadata, options);
-            }
-        }
-
         if (args.length) {
             if (args.length === 1 && isMetadataObject(args[0])) {
                 metadata = args[0];
