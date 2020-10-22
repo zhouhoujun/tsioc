@@ -1,4 +1,4 @@
-import { Token, ClassType, Registration, createPropDecorator, PropertyMetadata, Type, isBoolean, isUndefined, createParamDecorator, createDecorator, InjectableMetadata } from '@tsdi/ioc';
+import { Token, createPropDecorator, PropertyMetadata, Type, isBoolean, isUndefined, createParamDecorator, createDecorator, InjectableMetadata } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
 import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata } from './metadata';
 import { PipeTransform } from './pipes/pipe';
