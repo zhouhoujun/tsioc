@@ -1,4 +1,4 @@
-import { Type, Modules, ClassTypes } from './types';
+import { Type, Modules } from './types';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
     isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined
@@ -29,10 +29,6 @@ import { ParameterMetadata } from './decor/metadatas';
  * @implements {IInjector}
  */
 export abstract class BaseInjector extends Destoryable implements IInjector {
-    /**
-     * class type.
-     */
-    static ρCT: ClassTypes = 'injector';
     /**
      * none poincut for aop.
      */
@@ -608,5 +604,17 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
         this.factories = null;
         this.values = null;
     }
+}
+
+
+/**
+ * object is provider map or not.
+ *
+ * @export
+ * @param {object} target
+ * @returns {target is Injector}
+ */
+export function isInjector(target: any): target is IInjector {
+    return target instanceof BaseInjector;
 }
 

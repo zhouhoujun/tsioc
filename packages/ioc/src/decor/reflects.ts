@@ -42,6 +42,9 @@ export namespace refl {
          * parameter handlers
          */
         paramHandle?: Handler<DecorContext> | Handler<DecorContext>[];
+        /**
+         * decorator action type.
+         */
         actionType?: DecorActionType | DecorActionType[];
     }
 
@@ -266,9 +269,7 @@ export namespace refl {
 
 
     class DecorActions extends Actions<DecorContext> {
-        protected regAction(ac: any) {
-
-        }
+        protected regAction(ac: any) { }
         protected toHandle(ac: any): Handler {
             if (ac instanceof Action) {
                 return ac.toAction();

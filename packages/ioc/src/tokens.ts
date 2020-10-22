@@ -288,14 +288,3 @@ export function isProvideToken(target: any): target is ProvideToken<any> {
     return isTokenFunc(target);
 }
 
-const injectorKey = 'injector';
-/**
- * object is provider map or not.
- *
- * @export
- * @param {object} target
- * @returns {target is Injector}
- */
-export function isInjector(target: any): target is IInjector {
-    return lang.getClass(target)?.ρCT === injectorKey;
-}

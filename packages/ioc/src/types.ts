@@ -57,21 +57,9 @@ export interface AbstractType<T = any> extends Function {
      */
     ρAnn?(): ClassAnnations;
     /**
-     * get component def.
-     */
-    ρCmp?(...args: any[]): any;
-    /**
-     * get directive def.
-     */
-    ρDir?(...args: any[]): any;
-    /**
      * class flag. none poincut for aop.
      */
     ρNPT?: boolean;
-    /**
-     * class type flag.
-     */
-    ρCT?: ClassTypes;
 }
 
 
@@ -117,10 +105,6 @@ export interface Express2<T1, T2, TResult> {
 }
 
 
-export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
-// export type DefineClassTypes = 'class' | 'method' | 'property';
-// export type DecoratorTypes = DefineClassTypes | 'parameter';
-// export type MetadataTypes = DecoratorTypes | 'constructor';
 
 /**
  * decorator scopes.
@@ -129,5 +113,4 @@ export type ClassTypes = 'injector' | 'component' | 'directive' | 'activity';
  * AfterAnnoation: after annoation actions for design time.
  */
 export type DecoratorScope = 'BeforeAnnoation' | 'Class' | 'Parameter' | 'Property' | 'Method'
-    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation' | 'Inj'
-    | 'Build' | 'BindExpression' | 'TranslateTemplate' | 'Binding' | 'ValifyComponent';
+    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation' | 'Inj';

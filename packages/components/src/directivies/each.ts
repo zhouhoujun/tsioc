@@ -119,8 +119,8 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
      * template input variable.
      */
     @Input()
-    set each(forOf: U & IterableType<T> | undefined | null) {
-        this._iter = forOf;
+    set each(iterate: U & IterableType<T> | undefined | null) {
+        this._iter = iterate;
         this._iterDirty = true;
     }
     /**

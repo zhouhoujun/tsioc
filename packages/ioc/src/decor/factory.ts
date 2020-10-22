@@ -6,16 +6,21 @@ import { Token } from '../tokens';
 import { refl } from './reflects';
 
 
-
-export interface MetadataTarget<T> {
-    (target: Type | object): Type | object
-}
-
+/**
+ * decorator option.
+ */
 export interface DecoratorOption<T> extends refl.DecorRegisterOption {
+    /**
+     * parse args as metadata props.
+     * @param args
+     */
     props?(...args: any[]): T;
+    /**
+     * append metadata.
+     * @param metadata
+     */
     appendProps?(metadata: T): void;
 }
-
 
 /**
  * create dectorator for class params props methods.
@@ -42,7 +47,6 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
         return (...args: any[]) => {
             return storeMetadata(name, decor, args, metadata, options);
         }
-
     }
 
     refl.registerDecror(decor, options);
@@ -50,7 +54,6 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
     factory.toString = () => decor;
     return factory;
 }
-
 
 function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, options: DecoratorOption<T>): any {
     let target;
@@ -104,7 +107,6 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
     }
 }
 
-
 export interface IClassDecorator {
     /**
      * Injectable decorator, define for class.  use to define the class. it can setting provider to some token, singleton or not.
@@ -140,7 +142,6 @@ export function createParamDecorator<T = ParameterMetadata>(name: string, option
         ...options
     });
 }
-
 
 /**
  * property parameter decorator.

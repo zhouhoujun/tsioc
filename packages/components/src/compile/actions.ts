@@ -1,10 +1,11 @@
 import { isFunction } from '@tsdi/ioc';
 import { ComponentContext } from '../context';
-import { ComponentReflect } from '../reflect';
+import { ComponentReflect, DirectiveReflect } from '../reflect';
+import { ComponentType, DirectiveType } from '../type';
 import { CompilerFacade } from './facade';
 
 /**
- * parse template handle
+ * build component handle
  *
  * @export
  * @class ModuleBeforeInitHandle
@@ -12,10 +13,10 @@ import { CompilerFacade } from './facade';
  */
 export const BuildComponentHandle = async function (ctx: ComponentContext, next?: () => Promise<void>): Promise<void> {
     const reflect = ctx.reflect as ComponentReflect;
-    const type = ctx.type;
-    if (reflect.annoType === 'component' && isFunction(type.ρCmp)) {
+    const type = ctx.type as ComponentType;
+    if (reflect.annoType === 'component' && isFunction(type.ρcmp)) {
         // use compiler of component, register in module of current injector.
-        ctx.value = type.ρCmp(ctx);
+        ctx.value = type.ρcmp(ctx);
     }
 
     if (next) {
@@ -23,6 +24,26 @@ export const BuildComponentHandle = async function (ctx: ComponentContext, next?
     }
 };
 
+
+/**
+ * build directive handle
+ *
+ * @export
+ * @class ModuleBeforeInitHandle
+ * @extends {ResolveComponentHandle}
+ */
+export const BuildDirectiveHandle = async function (ctx: ComponentContext, next?: () => Promise<void>): Promise<void> {
+    const reflect = ctx.reflect as DirectiveReflect;
+    const type = ctx.type as DirectiveType;
+    if (reflect.annoType === 'directive' && isFunction(type.ρdir)) {
+        // use compiler of component, register in module of current injector.
+        ctx.value = type.ρdir(ctx);
+    }
+
+    if (next) {
+        await next();
+    }
+};
 
 /**
  * parse template handle
