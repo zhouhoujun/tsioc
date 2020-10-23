@@ -1,4 +1,4 @@
-import { IActionSetup, Type, isArray, isClass, lang, IocActions, refl, IocAction } from '@tsdi/ioc';
+import { IActionSetup, Type, isArray, lang, IocActions, refl, IocAction } from '@tsdi/ioc';
 import { InjContext } from './context';
 
 export abstract class InjScope extends IocActions<InjContext> {
