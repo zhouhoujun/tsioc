@@ -1,4 +1,5 @@
 export * from './EventEmitter';
+export * from './type';
 
 // decorators
 export * from './metadata';

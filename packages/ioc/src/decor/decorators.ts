@@ -374,6 +374,9 @@ export interface IocExtDecorator {
  * @IocExt()
  */
 export const IocExt: IocExtDecorator = createDecorator<AutorunMetadata>('IocExt', {
+    classHandle: (ctx, next) => {
+        ctx.reflect.iocExt = true;
+    },
     appendProps: (metadata) => {
         metadata.autorun = 'setup';
         metadata.singleton = true;

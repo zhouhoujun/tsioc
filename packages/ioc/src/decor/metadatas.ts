@@ -362,6 +362,8 @@ export interface DecorDefine<T = any> {
  */
 export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadata {
 
+    iocExt?: boolean;
+
     readonly type: ClassType;
 
     /**
