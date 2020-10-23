@@ -1,5 +1,5 @@
 import { Inject, IocExt, DesignRegisterer, DecoratorScope } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, ContainerToken, InjModuleScope } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
 import { MessageContext } from './messages/ctx';
 import { MessageQueue, RootMessageQueue } from './messages/queue';
@@ -44,11 +44,13 @@ export class BootModule {
 
         actInjector.setValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .regAction(AnnoationRegisterScope)
-            .regAction(InjDIModuleScope)
             .regAction(ResolveMoudleScope)
             .regAction(StartupServiceScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);
+
+        actInjector.getInstance(InjModuleScope)
+            .useBefore(InjDIModuleScope);
 
         let desgReger = actInjector.getInstance(DesignRegisterer);
         registerModule(DIModule, desgReger);
@@ -73,7 +75,6 @@ const aftAnn: DecoratorScope = 'AfterAnnoation';
  */
 export function registerModule(decorator: string | Function, registerer: DesignRegisterer): DesignRegisterer {
     return registerer.register(decorator,
-        { scope: 'Inj', action: InjDIModuleScope },
         { scope: 'BeforeAnnoation', action: AnnoationRegInAction },
         { scope: 'Annoation', action: AnnoationRegisterScope }
     );

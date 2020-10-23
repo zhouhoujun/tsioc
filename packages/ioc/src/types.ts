@@ -113,4 +113,4 @@ export interface Express2<T1, T2, TResult> {
  * AfterAnnoation: after annoation actions for design time.
  */
 export type DecoratorScope = 'BeforeAnnoation' | 'Class' | 'Parameter' | 'Property' | 'Method'
-    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation' | 'Inj';
+    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation';

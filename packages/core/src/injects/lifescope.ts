@@ -1,5 +1,5 @@
-import { LifeScope, Type, Modules, DesignRegisterer, IInjector, IocExt, lang } from '@tsdi/ioc';
-import { InjDecorRegisterer, InjIocExtScope, InjModuleToTypesAction, InjModuleScope } from './actions';
+import { LifeScope, Type, Modules, IInjector, lang } from '@tsdi/ioc';
+import { InjModuleToTypesAction, InjModuleScope } from './actions';
 import { InjContext } from './context';
 
 /**
@@ -11,13 +11,6 @@ export class InjLifeScope extends LifeScope<InjContext> {
     }
 
     setup() {
-        let ijdr = new InjDecorRegisterer();
-        this.actInjector.regAction(InjIocExtScope);
-        this.actInjector.getInstance(DesignRegisterer)
-            .setRegisterer('Inj', ijdr);
-        this.actInjector.setValue(InjDecorRegisterer, ijdr);
-
-        ijdr.register(IocExt, InjIocExtScope);
 
         this.use(InjModuleToTypesAction)
             .use(InjModuleScope);

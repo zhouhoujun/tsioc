@@ -1,5 +1,5 @@
-import { Type, IActionSetup, refl } from '@tsdi/ioc';
-import { InjContext, InjRegScope } from '@tsdi/core';
+import { Type, refl } from '@tsdi/ioc';
+import { InjContext, InjAction } from '@tsdi/core';
 import { ModuleReflect } from '../modules/reflect';
 
 
@@ -9,15 +9,9 @@ import { ModuleReflect } from '../modules/reflect';
  *
  * @export
  * @class DIModuleInjectorScope
- * @extends {InjRegScope}
+ * @extends {InjAction}
  */
-export class InjDIModuleScope extends InjRegScope implements IActionSetup {
-
-    execute(ctx: InjContext, next?: () => void): void {
-        let types = this.getTypes(ctx);
-        this.registerTypes(ctx, types);
-        next && next();
-    }
+export class InjDIModuleScope extends InjAction {
 
     protected getTypes(ctx: InjContext): Type[] {
         return ctx.types.filter(ty => refl.get<ModuleReflect>(ty)?.annoType === 'module');
