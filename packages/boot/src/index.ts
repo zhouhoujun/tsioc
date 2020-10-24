@@ -38,7 +38,6 @@ export * from './modules/configure';
 // handles
 export * from './handles/Handle';
 export * from './handles/Handles';
-export * from './handles/register';
 
 // messages
 export * from './messages/IMessageQueue';

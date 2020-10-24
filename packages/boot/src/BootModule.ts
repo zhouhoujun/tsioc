@@ -9,7 +9,6 @@ import { AnnoationRegInAction, AnnoationRegisterScope } from './registers/module
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
-import { StartupDecoratorRegisterer } from './handles/register';
 import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
@@ -42,8 +41,7 @@ export class BootModule {
         container.set(ModuleProviders, () => new ModuleProviders(proxy));
         let actInjector = container.getActionInjector();
 
-        actInjector.setValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
-            .regAction(AnnoationRegisterScope)
+        actInjector.regAction(AnnoationRegisterScope)
             .regAction(ResolveMoudleScope)
             .regAction(StartupServiceScope)
             .regAction(RunnableBuildLifeScope)
