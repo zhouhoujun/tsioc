@@ -1,4 +1,4 @@
-import { Modules, IocContext, Type, ClassType } from '@tsdi/ioc';
+import { Modules, IocContext, Type } from '@tsdi/ioc';
 
 
 /**
@@ -29,11 +29,6 @@ export interface InjContext extends IocContext {
      */
     types: Type[];
 
-    // /**
-    //  * current type.
-    //  */
-    // currType?: ClassType;
-
     /**
      * registered types.
      *
@@ -41,7 +36,5 @@ export interface InjContext extends IocContext {
      * @memberof InjectorActionContext
      */
     registered?: Type[];
-
-    state?: any;
 
 }
