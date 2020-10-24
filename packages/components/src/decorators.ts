@@ -72,7 +72,7 @@ export interface IComponentDecorator {
      * @Task
      * @param {string} selector metadata selector.
      */
-    (selector: string, template?: any, option?: InjectableMetadata): ClassDecorator;
+    (selector?: string, template?: any, option?: InjectableMetadata): ClassDecorator;
 }
 
 /**
