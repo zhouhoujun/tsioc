@@ -41,6 +41,9 @@ export interface ClassProvider extends ProvideProvider {
      */
     deps?: any[];
 
+    /**
+     * singleton or not.
+     */
     singleton?: boolean;
 }
 

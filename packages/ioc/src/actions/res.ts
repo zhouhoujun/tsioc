@@ -9,7 +9,6 @@ import { IocContext } from './act';
 export interface ResolveOption<T = any> {
     /**
      * token.
-     *
      */
     token?: Token<T>;
     /**
