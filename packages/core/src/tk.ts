@@ -1,4 +1,4 @@
-import { Token, ClassType, tokenId, Modules, TokenId } from '@tsdi/ioc';
+import { tokenId, TokenId } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { IContainerBuilder } from './IContainerBuilder';
 
