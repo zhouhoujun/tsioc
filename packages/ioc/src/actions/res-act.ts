@@ -41,8 +41,8 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
         this.use(ResolvePrivateAction)
             .use(ResolveRefAction)
             .use(ResolveInInjectorAction)
-            .use(ResolveInProvidersAction)
             .use(ResolveInRootAction)
+            .use(ResolveInProvidersAction)
             .use(ResolveDefaultAction);
     }
 }
