@@ -1,4 +1,7 @@
-import { Token, lang, SymbolType, Type, InstanceFactory, IInjector, tokenId, IProvider, ContextProvider, InjectorProxy, TokenId } from '@tsdi/ioc';
+import {
+    Token, lang, SymbolType, Type, InstanceFactory, IInjector, IProvider,
+    ContextProvider, InjectorProxy, TokenId, tokenId
+} from '@tsdi/ioc';
 import { CoreInjector, IContainer } from '@tsdi/core';
 import { ModuleRef } from './ModuleRef';
 

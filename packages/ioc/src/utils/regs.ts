@@ -5,7 +5,7 @@ import { Injector, ContextProvider, InvokedProvider } from '../Injector';
 import { DecoratorProvider } from '../services/decor-pdr';
 import { MethodAccessor } from '../actions/accessor';
 import { ActionInjectorToken } from '../actions/act';
-import { PROVIDERS, InjectorFactoryToken, MethodAccessorToken, IocContainerToken, INVOKED_PROVIDERS, REGISTERED } from './tk';
+import { InjectorFactoryToken, MethodAccessorToken, IocContainerToken, PROVIDERS, INVOKED_PROVIDERS, REGISTERED } from './tk';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ResolveLifeScope } from '../actions/resolve';

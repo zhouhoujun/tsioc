@@ -29,6 +29,9 @@ export interface IStartup<T = any> extends IDestoryable {
      */
     getBoot(): T;
 
+    /**
+     * get boot type.
+     */
     getBootType(): Type<T>;
 
     /**
