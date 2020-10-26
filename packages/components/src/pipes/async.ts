@@ -1,10 +1,10 @@
-import { OnDestroy, isPromise, isObservable, lang, Type } from '@tsdi/ioc';
+import { OnDestroy, isPromise, isObservable } from '@tsdi/ioc';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { PipeTransform } from './pipe';
 import { Pipe } from '../decorators';
 import { EventEmitter } from '../EventEmitter';
 import { ChangeDetectorRef } from '../chage/change';
-import { stringify } from '../util/stringify';
+import { invalidPipeArgumentError } from './err';
 
 /**
  * async pipe.
@@ -113,6 +113,3 @@ class PromiseStrategy implements SubscriptionStrategy {
 const _promiseStrategy = new PromiseStrategy();
 const _observableStrategy = new ObservableStrategy();
 
-export function invalidPipeArgumentError(type: Type<any>, value: Object) {
-  return Error(`InvalidPipeArgument: '${value}' for pipe '${stringify(type)}'`);
-}
