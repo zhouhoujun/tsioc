@@ -2,7 +2,7 @@ import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } fr
 import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
-import { BOOTCONTEXT, BuilderServiceToken, ROOT_INJECTOR } from './tk';
+import { BOOTCONTEXT, BUILDER, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
 
@@ -98,7 +98,7 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
     async run(...args: string[]): Promise<T> {
         const root = this.getRootInjector();
         await root.load(...this.getBootDeps());
-        let ctx = await root.getInstance(BuilderServiceToken).boot(this, ...args);
+        let ctx = await root.getInstance(BUILDER).boot(this, ...args);
         return ctx as T;
     }
 

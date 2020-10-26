@@ -1,4 +1,4 @@
-import { BootApplication, RootMessageQueueToken, DIModule, Message, MessageQueue, MessageContext, MessageHandle, IBootContext } from '../src';
+import { BootApplication, ROOT_MESSAGEQUEUE, DIModule, Message, MessageQueue, MessageContext, MessageHandle, IBootContext } from '../src';
 import expect = require('expect');
 import { ICoreInjector } from '@tsdi/core';
 import { Injectable, refl } from '@tsdi/ioc';

@@ -2,7 +2,7 @@ import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType,
 import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import {
-    ProcessRunRootToken, BuilderServiceToken, BOOTCONTEXT, CONFIGURATION, MODULE_STARTUP, MODULE_STARTUPS
+    PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_STARTUP, MODULE_STARTUPS
 } from '../tk';
 import { ConfigureManager } from '../configure/manager';
 import { ConfigureRegister } from '../configure/register';
@@ -88,8 +88,8 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     const options = ctx.getOptions();
     const injector = ctx.injector;
     if (isClass(ctx.type)) {
-        if (ctx.hasValue(ProcessRunRootToken)) {
-            injector.setValue(ProcessRunRootToken, ctx.baseURL)
+        if (ctx.hasValue(PROCESS_ROOT)) {
+            injector.setValue(PROCESS_ROOT, ctx.baseURL)
         }
     }
     let mgr = injector.getInstance(ConfigureManager);
@@ -114,8 +114,8 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     }
 
     if (config.baseURL) {
-        ctx.setValue(ProcessRunRootToken, config.baseURL);
-        injector.setValue(ProcessRunRootToken, config.baseURL);
+        ctx.setValue(PROCESS_ROOT, config.baseURL);
+        injector.setValue(PROCESS_ROOT, config.baseURL);
     }
 
     await next();
@@ -156,7 +156,7 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
     if (annoation) {
         if (annoation.baseURL) {
             ctx.baseURL = annoation.baseURL;
-            ctx.injector.setValue(ProcessRunRootToken, annoation.baseURL);
+            ctx.injector.setValue(PROCESS_ROOT, annoation.baseURL);
         }
         next();
     } else {
@@ -213,7 +213,7 @@ export class ModuleBuildScope extends BuildHandles<IBootContext> implements IAct
 export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.type && !ctx.target) {
         let injector = ctx.injector;
-        let target = await injector.getInstance(BuilderServiceToken).resolve({
+        let target = await injector.getInstance(BUILDER).resolve({
             type: ctx.type,
             // parent: ctx,
             providers: ctx.providers
@@ -232,7 +232,7 @@ export const ResolveBootHandle = async function (ctx: IBootContext, next: () => 
             { provide: lang.getClass(ctx), useValue: ctx }
         )
         let injector = ctx.injector;
-        let boot = await injector.getInstance(BuilderServiceToken).resolve({
+        let boot = await injector.getInstance(BUILDER).resolve({
             type: injector.getTokenProvider(bootModule),
             // parent: ctx,
             template: template,

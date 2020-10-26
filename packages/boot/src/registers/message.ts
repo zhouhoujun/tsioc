@@ -1,7 +1,7 @@
 import { DesignContext, isClass, lang } from '@tsdi/ioc';
 import { MessageMetadata } from '../decorators';
 import { IMessageQueue } from '../messages/IMessageQueue';
-import { RootMessageQueueToken } from '../tk';
+import { ROOT_MESSAGEQUEUE } from '../tk';
 
 
 export const MessageRegisterAction = function (ctx: DesignContext, next: () => void): void {
@@ -16,7 +16,7 @@ export const MessageRegisterAction = function (ctx: DesignContext, next: () => v
     if (isClass(parent)) {
         msgQueue = injector.getContainer().getInjector(parent)?.get(parent);
     } else {
-        msgQueue = injector.getInstance(RootMessageQueueToken);
+        msgQueue = injector.getInstance(ROOT_MESSAGEQUEUE);
     }
 
     if (!msgQueue) {

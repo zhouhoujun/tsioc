@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { IConfigureLoader, ConfigureLoaderToken, DIModule, ProcessRunRootToken, Configure } from '@tsdi/boot';
+import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configure } from '@tsdi/boot';
 import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 
@@ -11,7 +11,7 @@ import * as path from 'path';
  * @class ConfigureFileLoader
  * @implements {IConfigureLoader<Configure>}
  */
-@Injectable(ConfigureLoaderToken)
+@Injectable(CONFIG_LOADER)
 export class ConfigureFileLoader implements IConfigureLoader<Configure> {
     constructor(private baseURL: string, private container: IContainer) {
         this.baseURL = this.baseURL || runMainPath();
@@ -56,7 +56,7 @@ export class ConfigureFileLoader implements IConfigureLoader<Configure> {
     ],
     providers: [
         ConfigureFileLoader,
-        { provide: ProcessRunRootToken, useValue: runMainPath() }
+        { provide: PROCESS_ROOT, useValue: runMainPath() }
     ]
 })
 export class ServerBootstrapModule {

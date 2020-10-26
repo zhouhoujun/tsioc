@@ -24,6 +24,7 @@ export class Registration<T = any> {
     protected type = '';
     protected classType: SymbolType;
     protected desc: string;
+    private formated: string;
     /**
      * Creates an instance of Registration.
      * @param {(Token<T> | Token)} provideType
@@ -93,6 +94,9 @@ export class Registration<T = any> {
     }
 
     protected format(reg: Token<T>): string {
+        if (this.formated) {
+            return this.formated;
+        }
         if (reg instanceof Registration) {
             let name = '';
             if (isFunction(reg.classType)) {
@@ -100,13 +104,13 @@ export class Registration<T = any> {
             } else if (reg.classType) {
                 name = reg.classType.toString();
             }
-            return [reg.type, name, reg.desc].filter(n => n).join('_');
+            this.formated = [reg.type, name, reg.desc].filter(n => n).join('_');
         } else if (isFunction(reg)) {
-            return `{${lang.getClassName(reg)}}`;
+            this.formated = `{${lang.getClassName(reg)}}`;
         } else if (reg) {
-            return reg.toString();
+            this.formated = reg.toString();
         }
-        return '';
+        return this.formated || '';
     }
 }
 

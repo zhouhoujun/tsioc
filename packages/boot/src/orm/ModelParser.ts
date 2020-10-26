@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IModelParser } from './IModelParser';
-import { BaseTypeParserToken } from '../tk';
+import { TYPE_PARSER } from '../tk';
 
 
 /**
@@ -65,7 +65,7 @@ export abstract class ModelParser extends IocCoreService implements IModelParser
             return objMap.map(o => this.parseModel(type, o));
         }
 
-        let parser = this.injector.getInstance(BaseTypeParserToken);
+        let parser = this.injector.getInstance(TYPE_PARSER);
         if (isBaseType(type)) {
             return parser.parse(type, objMap);
         }

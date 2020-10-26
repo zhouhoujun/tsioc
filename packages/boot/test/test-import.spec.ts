@@ -1,5 +1,5 @@
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { BootApplication, RootMessageQueueToken } from '../src';
+import { BootApplication, ROOT_MESSAGEQUEUE } from '../src';
 import expect = require('expect');
 import * as net from 'net';
 
@@ -31,7 +31,7 @@ describe('di module', () => {
         let qb = ctx.injector.get(SubMessageQueue);
         expect(q === qb).toBeTruthy();
         expect(qb['handles'].length).toEqual(1);
-        ctx.getContainer().get(RootMessageQueueToken)
+        ctx.getContainer().get(ROOT_MESSAGEQUEUE)
             .send('test', 'hello');
     });
 

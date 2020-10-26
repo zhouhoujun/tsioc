@@ -10,6 +10,10 @@ import { MessageContext } from './messages/ctx';
 import { MessageHandle } from './messages/handle';
 import { ModuleReflect } from './modules/reflect';
 
+
+/**
+ * boot decorator.
+ */
 export type BootDecorator = <TFunction extends ClassType<IStartupService>>(target: TFunction) => TFunction | void;
 
 /**

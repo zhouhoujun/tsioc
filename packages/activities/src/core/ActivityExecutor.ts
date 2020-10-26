@@ -3,7 +3,7 @@ import {
     AsyncHandler, chain, isString
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BuilderServiceToken } from '@tsdi/boot';
+import { BUILDER } from '@tsdi/boot';
 import { ComponentBuilderToken, ELEMENT_REFS } from '@tsdi/components';
 import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_DATA } from './IActivityRef';
@@ -55,7 +55,7 @@ export class ActivityExecutor implements IActivityExecutor {
                     return nctx as T;
                 });
         } else if (isClass(activity)) {
-            return injector.getInstance(BuilderServiceToken).run<T, ActivityOption>({ type: activity, data: data });
+            return injector.getInstance(BUILDER).run<T, ActivityOption>({ type: activity, data: data });
         } else if (isFunction(activity)) {
             let nctx = ctx.clone() as T;
             return activity(nctx).then(() => nctx);
@@ -73,7 +73,7 @@ export class ActivityExecutor implements IActivityExecutor {
                 data: data
             };
 
-            return injector.getInstance(BuilderServiceToken).run<T>(option);
+            return injector.getInstance(BUILDER).run<T>(option);
         }
     }
 

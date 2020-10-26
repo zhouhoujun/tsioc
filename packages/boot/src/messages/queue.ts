@@ -7,7 +7,7 @@ import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
-import { CTX_CURR_INJECTOR, CTX_OPTIONS, RootMessageQueueToken } from '../tk';
+import { CTX_CURR_INJECTOR, CTX_OPTIONS, ROOT_MESSAGEQUEUE } from '../tk';
 
 
 
@@ -207,7 +207,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
  * @template T
  */
 
-@Singleton(RootMessageQueueToken)
+@Singleton(ROOT_MESSAGEQUEUE)
 export class RootMessageQueue<T extends MessageContext = MessageContext> extends MessageQueue<T> {
 
 }

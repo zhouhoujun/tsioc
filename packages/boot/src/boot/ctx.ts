@@ -2,7 +2,7 @@ import { Injectable, Token } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { IStartup } from '../runnable/Startup';
-import { CONFIGURATION, MODULE_STARTUP, MODULE_STARTUPS, ProcessRunRootToken } from '../tk';
+import { CONFIGURATION, MODULE_STARTUP, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/Configure';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
@@ -50,12 +50,12 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @memberof BootContext
      */
     get baseURL(): string {
-        let url = this.getValue(ProcessRunRootToken);
+        let url = this.getValue(PROCESS_ROOT);
         if (!url) {
             url = this.getAnnoation()?.baseURL;
             if (url) {
-                this.getContainer().setValue(ProcessRunRootToken, url);
-                this.setValue(ProcessRunRootToken, url);
+                this.getContainer().setValue(PROCESS_ROOT, url);
+                this.setValue(PROCESS_ROOT, url);
             }
         }
         return url;
@@ -133,7 +133,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
             options.startups = [];
         }
         if (options.baseURL) {
-            this.setValue(ProcessRunRootToken, options.baseURL);
+            this.setValue(PROCESS_ROOT, options.baseURL);
         }
         return super.setOptions(options);
     }

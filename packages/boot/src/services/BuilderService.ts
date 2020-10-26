@@ -6,7 +6,7 @@ import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
-import { BuilderServiceToken, CTX_OPTIONS, ROOT_INJECTOR } from '../tk';
+import { BUILDER, CTX_OPTIONS, ROOT_INJECTOR } from '../tk';
 import { ResolveMoudleScope } from '../builder/handles';
 import { IHandle } from '../handles/Handle';
 import { BuildContext } from '../builder/ctx';
@@ -22,7 +22,7 @@ import { IStartup } from '../runnable/Startup';
  * @class BuilderService
  * @extends {IocCoreService}
  */
-@Singleton(BuilderServiceToken)
+@Singleton(BUILDER)
 export class BuilderService extends IocCoreService implements IBuilderService {
 
     @Inject(ROOT_INJECTOR)

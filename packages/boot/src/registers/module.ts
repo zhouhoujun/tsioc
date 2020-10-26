@@ -1,11 +1,11 @@
 import {
-    DesignContext, lang, DecoratorProvider, IProvider,
-    IocRegScope, IActionSetup, tokenId, Type, TokenId, refl
+    DesignContext, lang, IProvider,
+    IocRegScope, IActionSetup, tokenId, Type, TokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ModuleReflect } from '../modules/reflect';
 import { ModuleConfigure } from '../modules/configure';
-import { ParentInjectorToken } from '../tk';
+import { PARENT_INJECTOR } from '../tk';
 import { ModuleInjector, ModuleProviders } from '../modules/injector';
 import { ModuleRef, ModuleRegistered } from '../modules/ModuleRef';
 
@@ -18,7 +18,7 @@ export interface ModuleDesignContext extends DesignContext {
 export const AnnoationRegInAction = function (ctx: ModuleDesignContext, next: () => void): void {
     if (!ctx.regIn && ctx.reflect.annoDecor) {
         let injector = ctx.injector.getInstance(ModuleInjector);
-        injector.setValue(ParentInjectorToken, ctx.injector);
+        injector.setValue(PARENT_INJECTOR, ctx.injector);
         ctx.injector = injector;
     }
     next();
@@ -71,10 +71,7 @@ export interface IModuleProvidersBuilder {
      */
     build(providers: ModuleProviders, annoation: ModuleConfigure): void;
 }
-/**
- * module providers builder token. for module decorator provider.
- */
-export const ModuleProvidersBuilderToken: TokenId<IModuleProvidersBuilder> = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
+
 
 export const RegModuleProvidersAction = function (ctx: ModuleDesignContext, next: () => void): void {
 
@@ -86,7 +83,7 @@ export const RegModuleProvidersAction = function (ctx: ModuleDesignContext, next
     map.moduleInjector = injector;
     let mdRef = new ModuleRef(ctx.type, map);
     mdRef.onDestroy(() => {
-        const parent = injector.getInstance(ParentInjectorToken);
+        const parent = injector.getInstance(PARENT_INJECTOR);
         if (parent instanceof ModuleInjector) {
             parent.unexport(mdRef);
         } else {
@@ -126,7 +123,7 @@ export const RegModuleProvidersAction = function (ctx: ModuleDesignContext, next
 
 export const RegModuleExportsAction = function (ctx: ModuleDesignContext, next: () => void): void {
     if (ctx.exports.size) {
-        let parent = ctx.injector.getInstance(ParentInjectorToken);
+        let parent = ctx.injector.getInstance(PARENT_INJECTOR);
         if (parent) {
             if (parent instanceof ModuleInjector) {
                 parent.export(ctx.moduleRef);

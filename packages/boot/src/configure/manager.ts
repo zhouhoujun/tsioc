@@ -2,7 +2,7 @@ import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObjec
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { IConfigureManager, IConfigureMerger } from './IConfigureManager';
 import { Configure } from './Configure';
-import { ConfigureMgrToken, ConfigureLoaderToken, DefaultConfigureToken, ConfigureMergerToken, ProcessRunRootToken } from '../tk';
+import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_ROOT } from '../tk';
 
 
 /**
@@ -11,7 +11,7 @@ import { ConfigureMgrToken, ConfigureLoaderToken, DefaultConfigureToken, Configu
  * @export
  * @class ConfigureManager
  */
-@Singleton(ConfigureMgrToken)
+@Singleton(CONFIG_MANAGER)
 export class ConfigureManager<T extends Configure = Configure> implements IConfigureManager<T> {
 
     @Inject(ContainerToken) container: IContainer;
@@ -23,7 +23,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
      * @param {string} [baseURL]
      * @memberof ConfigureManager
      */
-    constructor(@Inject(ProcessRunRootToken) protected baseURL?: string) {
+    constructor(@Inject(PROCESS_ROOT) protected baseURL?: string) {
         this.configs = [];
     }
     /**
@@ -80,11 +80,11 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
                 return cfg;
             }
         }));
-        const merger = this.container.get(ConfigureMergerToken);
+        const merger = this.container.get(CONFIG_MERGER);
         exts.forEach(exCfg => {
             if (exCfg) {
                 exCfg = isMetadataObject(exCfg['default']) ? exCfg['default'] : exCfg;
-                config = (merger ? merger.merge(config, exCfg) : Object.assign(config, exCfg)) as T;
+                config = (merger ? merger.merge(config, exCfg) : { ...config, ...exCfg }) as T;
             }
         });
         return config;
@@ -99,8 +99,8 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
      * @memberof ConfigureManager
      */
     protected async loadConfig(src: string): Promise<T> {
-        if (this.container.has(ConfigureLoaderToken)) {
-            let loader = this.container.resolve(ConfigureLoaderToken, { provide: 'baseURL', useValue: this.baseURL }, { provide: 'container', useValue: this.container });
+        if (this.container.has(CONFIG_LOADER)) {
+            let loader = this.container.resolve(CONFIG_LOADER, { provide: 'baseURL', useValue: this.baseURL }, { provide: 'container', useValue: this.container });
             return await loader.load(src) as T;
         } else if (src) {
             let cfg = await this.container.getLoader().load([src])
@@ -118,8 +118,8 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
      * @memberof ConfigureManager
      */
     protected async getDefaultConfig(): Promise<T> {
-        if (this.container.has(DefaultConfigureToken)) {
-            return this.container.resolve(DefaultConfigureToken) as T;
+        if (this.container.has(DEFAULT_CONFIG)) {
+            return this.container.resolve(DEFAULT_CONFIG) as T;
         } else {
             return {} as T;
         }
@@ -127,7 +127,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
 }
 
 
-@Singleton(ConfigureMergerToken)
+@Singleton(CONFIG_MERGER)
 export class ConfigureMerger implements IConfigureMerger {
     merge(config1: Configure, config2: Configure): Configure {
         let setting = { ...config1?.setting, ...config2?.setting };
