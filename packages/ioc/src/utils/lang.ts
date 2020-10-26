@@ -393,13 +393,9 @@ export function isClassType(target: any): target is ClassType {
 
 const refFiled = '_ρreflect_';
 function classCheck(target: any, abstract?: boolean): boolean {
-    if (!(typeof target === 'function')) {
-        return false;
-    }
+    if (!(typeof target === 'function'))  return false;
 
-    if (!target.name || !target.prototype) {
-        return false;
-    }
+    if (!target.name || !target.prototype)  return false;
 
     let rf: TypeReflect = target[refFiled]?.();
 
@@ -410,13 +406,9 @@ function classCheck(target: any, abstract?: boolean): boolean {
         return true;
     }
 
-    if (lang.hasClassAnnations(target)) {
-        return true;
-    }
+    if (lang.hasClassAnnations(target)) return true;
 
-    if (isBaseType(target)) {
-        return false;
-    }
+    if (isBaseType(target)) return false;
 
     return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
 }
@@ -476,9 +468,7 @@ export function isBaseObject(target: any): target is ObjectMap {
  * @returns {boolean}
  */
 export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
-    if (!isBaseObject(target)) {
-        return false;
-    }
+    if (!isBaseObject(target))  return false;
     if (props.length) {
         return Object.keys(target).some(n => props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0));
     }

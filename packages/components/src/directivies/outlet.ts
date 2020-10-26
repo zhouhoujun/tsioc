@@ -4,6 +4,7 @@ import { Directive, Input } from '../decorators';
 import { Change, Changes, OnChanges } from '../lifecycle';
 import { ComponentRef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';
+import { ModuleFactory } from '../refs/module';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 
@@ -20,7 +21,7 @@ import { EmbeddedViewRef } from '../refs/view';
  *
  * @usageNotes
  * ```
- * <ng-container *ngTemplateOutlet="templateRefExp; context: contextExp"></ng-container>
+ * <v-container *templateOutlet="templateRefExp; context: contextExp"></v-container>
  * ```
  *
  * Using the key `$implicit` in the context object will set its value as default.
@@ -130,34 +131,24 @@ export class DirTemplateOutlet implements OnChanges {
  *
  * Simple
  * ```
- * <ng-container *componentOutlet="componentTypeExpression"></ng-container>
+ * <v-container *componentOutlet="componentTypeExpression"></v-container>
  * ```
  *
  * Customized injector/content
  * ```
- * <ng-container *componentOutlet="componentTypeExpression;
+ * <v-container *componentOutlet="componentTypeExpression;
  *                                   injector: injectorExpression;
  *                                   content: contentNodesExpression;">
- * </ng-container>
+ * </v-container>
  * ```
  *
  * Customized moduleFactory
  * ```
- * <ng-container *componentOutlet="componentTypeExpression;
+ * <v-container *componentOutlet="componentTypeExpression;
  *                                   moduleFactory: moduleFactory;">
- * </ng-container>
+ * </v-container>
  * ```
  *
- * ### A simple example
- *
- * {@example common/componentOutlet/ts/module.ts region='SimpleExample'}
- *
- * A more complete example with additional options:
- *
- * {@example common/componentOutlet/ts/module.ts region='CompleteExample'}
- *
- * @publicApi
- * @ngModule CommonModule
  */
 @Directive({selector: '[componentOutlet]'})
 export class DirComponentOutlet implements OnChanges, OnDestroy {
@@ -171,7 +162,7 @@ export class DirComponentOutlet implements OnChanges, OnDestroy {
 
   constructor(private _viewContainerRef: ViewContainerRef) {}
 
-  ngOnChanges(changes: Changes) {
+  onChanges(changes: Changes) {
     this._viewContainerRef.clear();
     this._componentRef = null;
 
@@ -182,8 +173,7 @@ export class DirComponentOutlet implements OnChanges, OnDestroy {
         if (this._moduleRef) this._moduleRef.destroy();
 
         if (this.componentOutletModuleFactory) {
-          const parentModule = injector.get(ModuleRef);
-          this._moduleRef = this.componentOutletModuleFactory.create(parentModule);
+          this._moduleRef = this.componentOutletModuleFactory.create(injector);
         } else {
           this._moduleRef = null;
         }

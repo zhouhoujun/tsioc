@@ -9,7 +9,7 @@ import { EmbeddedViewRef } from '../refs/view';
  * @publicApi
  */
 export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
-    constructor(public $implicit: T, public ngForOf: U, public index: number, public count: number) { }
+    constructor(public $implicit: T, public eachOf: U, public index: number, public count: number) { }
 
     get first(): boolean {
         return this.index === 0;
@@ -34,7 +34,7 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * The directive is placed on an element, which becomes the parent
  * of the cloned templates.
  *
- * The `ngForOf` directive is generally used in the
+ * The `eachOf` directive is generally used in the
  * [shorthand form] `[each]`.
  * In this form, the template to be rendered for each iteration is the content
  * of an anchor element containing the directive.
@@ -43,20 +43,20 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * contained in an `<li>` element.
  *
  * ```
- * <li *ngFor="let item of items; index as i; trackBy: trackByFn">...</li>
+ * <li *each="let item of items; index as i; trackBy: trackByFn">...</li>
  * ```
  *
- * The shorthand form expands into a long form that uses the `ngForOf` selector
- * on an `<ng-template>` element.
- * The content of the `<ng-template>` element is the `<li>` element that held the
+ * The shorthand form expands into a long form that uses the `eachOf` selector
+ * on an `<v-template>` element.
+ * The content of the `<v-template>` element is the `<li>` element that held the
  * short-form directive.
  *
  * Here is the expanded version of the short-form example.
  *
  * ```
- * <ng-template ngFor let-item [ngForOf]="items" let-i="index" [ngForTrackBy]="trackByFn">
+ * <v-template each let-item [eachOf]="items" let-i="index" [eachTrackBy]="trackByFn">
  *   <li>...</li>
- * </ng-template>
+ * </v-template>
  * ```
  *
  * @usageNotes
@@ -67,15 +67,15 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * For example:
  *
  *  ```
- * <li *ngFor="let user of users; index as i; first as isFirst">
+ * <li *each="let user of users; index as i; first as isFirst">
  *    {{i}}/{{users.length}}. {{user}} <span *ngIf="isFirst">default</span>
  * </li>
  * ```
  *
  * The following exported values can be aliased to local variables:
  *
- * - `$implicit: T`: The value of the individual items in the iterable (`ngForOf`).
- * - `ngForOf: ItemIterable<T>`: The value of the iterable expression. Useful when the expression is
+ * - `$implicit: T`: The value of the individual items in the iterable (`eachOf`).
+ * - `eachOf: ItemIterable<T>`: The value of the iterable expression. Useful when the expression is
  * more complex then a property access, for example when using the async pipe (`userStreams |
  * async`).
  * - `index: number`: The index of the current item in the iterable.
@@ -93,7 +93,7 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * * When an item is removed, its template instance is removed from the DOM.
  * * When items are reordered, their respective templates are reordered in the DOM.
  *
- * Angular uses object identity to track insertions and deletions within the iterator and reproduce
+ * Components uses object identity to track insertions and deletions within the iterator and reproduce
  * those changes in the DOM. This has important implications for animations and any stateful
  * controls that are present, such as `<input>` elements that accept user input. Inserted rows can
  * be animated in, deleted rows can be animated out, and unchanged rows retain any unsaved state
@@ -102,13 +102,13 @@ export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {
  * The identities of elements in the iterator can change while the data does not.
  * This can happen, for example, if the iterator is produced from an RPC to the server, and that
  * RPC is re-run. Even if the data hasn't changed, the second response produces objects with
- * different identities, and Angular must tear down the entire DOM and rebuild it (as if all old
+ * different identities, and Components must tear down the entire DOM and rebuild it (as if all old
  * elements were deleted and all new elements inserted).
  *
  * To avoid this expensive operation, you can customize the default tracking algorithm.
- * by supplying the `trackBy` option to `DirEach`.
- * `trackBy` takes a function that has two arguments: `index` and `item`.
- * If `trackBy` is given, Angular tracks changes by the return value of the function.
+ * by supplying the `eachTrackBy` option to `DirEach`.
+ * `eachTrackBy` takes a function that has two arguments: `index` and `item`.
+ * If `eachTrackBy` is given, Components tracks changes by the return value of the function.
  *
  * @publicApi
  */
@@ -219,7 +219,7 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
             const viewRef = <EmbeddedViewRef<DirEachContext<T, U>>>this._viewContainer.get(i);
             viewRef.context.index = i;
             viewRef.context.count = ilen;
-            viewRef.context.ngForOf = this._iter!;
+            viewRef.context.eachOf = this._iter!;
         }
 
         changes.forEachIdentityChange((record: any) => {

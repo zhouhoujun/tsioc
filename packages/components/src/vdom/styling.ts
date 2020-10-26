@@ -1,12 +1,12 @@
 
-import {KeyValueArray} from '../util/array';
+import { KeyValueArray } from '../util/array';
 
 /**
  * Value stored in the `TData` which is needed to re-concatenate the styling.
  *
  * See: `TStylingKeyPrimitive` and `TStylingStatic`
  */
-export type TStylingKey = TStylingKeyPrimitive|TStylingStatic;
+export type TStylingKey = TStylingKeyPrimitive | TStylingStatic;
 
 
 /**
@@ -19,7 +19,7 @@ export type TStylingKey = TStylingKeyPrimitive|TStylingStatic;
  *   is combined with directive which shadows its input `@Input('class')`. That way the binding
  *   should not participate in the styling resolution.
  */
-export type TStylingKeyPrimitive = string|null|false;
+export type TStylingKeyPrimitive = string | null | false;
 
 /**
  * Store the static values for the styling binding.
@@ -81,7 +81,7 @@ export type TStylingKeyPrimitive = string|null|false;
  *
  * This means that it is safe to add class.
  */
-export interface TStylingStatic extends KeyValueArray<any> {}
+export interface TStylingStatic extends KeyValueArray<any> { }
 
 /**
  * This is a branded number which contains previous and next index.
@@ -159,14 +159,13 @@ export function getTStylingRangePrev(tStylingRange: TStylingRange): number {
 }
 
 export function getTStylingRangePrevDuplicate(tStylingRange: TStylingRange): boolean {
-  return ((tStylingRange as any as number) & StylingRange.PREV_DUPLICATE) ==
-      StylingRange.PREV_DUPLICATE;
+  return ((tStylingRange as any as number) & StylingRange.PREV_DUPLICATE) === StylingRange.PREV_DUPLICATE;
 }
 
 export function setTStylingRangePrev(
-    tStylingRange: TStylingRange, previous: number): TStylingRange {
+  tStylingRange: TStylingRange, previous: number): TStylingRange {
   return (((tStylingRange as any as number) & ~StylingRange.PREV_MASK) |
-          (previous << StylingRange.PREV_SHIFT)) as any;
+    (previous << StylingRange.PREV_SHIFT)) as any;
 }
 
 export function setTStylingRangePrevDuplicate(tStylingRange: TStylingRange): TStylingRange {
@@ -179,12 +178,12 @@ export function getTStylingRangeNext(tStylingRange: TStylingRange): number {
 
 export function setTStylingRangeNext(tStylingRange: TStylingRange, next: number): TStylingRange {
   return (((tStylingRange as any as number) & ~StylingRange.NEXT_MASK) |  //
-          next << StylingRange.NEXT_SHIFT) as any;
+    next << StylingRange.NEXT_SHIFT) as any;
 }
 
 export function getTStylingRangeNextDuplicate(tStylingRange: TStylingRange): boolean {
   return ((tStylingRange as any as number) & StylingRange.NEXT_DUPLICATE) ===
-      StylingRange.NEXT_DUPLICATE;
+    StylingRange.NEXT_DUPLICATE;
 }
 
 export function setTStylingRangeNextDuplicate(tStylingRange: TStylingRange): TStylingRange {

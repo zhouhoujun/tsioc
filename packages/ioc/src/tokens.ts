@@ -67,7 +67,7 @@ export class Registration<T = any> {
      * @memberof Registration
      */
     getClass(): Type<T> | AbstractType<T> {
-        if (isClass(this.classType)) {
+        if (isClassType(this.classType)) {
             return this.classType;
         }
         return null;
