@@ -10,12 +10,16 @@ import { ClassType } from '../types';
  */
 export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
 /**
- * the token of injector factory in current injector.
+ * the token use to get delegate of current injector.
  */
-export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
+export const INJECTOR_DL = tokenId<InjectorProxy>('INJECTOR_DELEG');
+/**
+ * the token use to get delegate of current injector.
+ * @deprecated use `INJECTOR_DL` instead.
+ */
+export const InjectorProxyToken = INJECTOR_DL;
 
-
-export const REGISTERED = tokenId<Map<ClassType, Registered>>('REG_TYPES');
+export const REGISTERED = tokenId<Map<ClassType, Registered>>('DI_REGISTERED');
 /**
  *  injector provider token. create new injector provider.
  */
@@ -24,18 +28,36 @@ export const PROVIDERS = tokenId<IProvider>('DI_PROVIDERS');
 /**
  *  injector token. create new injector.
  */
-export const InjectorFactoryToken = tokenId<IInjector>('DI_INJECTOR_FACTORY');
+export const INJECTOR_FACTORY = tokenId<IInjector>('INJECTOR_FACTORY');
+/**
+ *  injector token. create new injector.
+ * @deprecated use `INJECTOR_FACTORY` instead.
+ */
+export const InjectorFactoryToken = INJECTOR_FACTORY;
+
+/**
+ * method accessor token.
+ */
+export const METHOD_ACCESSOR: TokenId<IMethodAccessor> = tokenId<IMethodAccessor>('METHOD_ACCESSOR');
+/**
+ * method accessor token.
+ * @deprecated use `METHOD_ACCESSOR` instead.
+ */
+export const MethodAccessorToken = METHOD_ACCESSOR;
 
 
 /**
- * method accessor.
+ * invoked providers token.
  */
-export const MethodAccessorToken: TokenId<IMethodAccessor> = tokenId<IMethodAccessor>('DI_METHOD_ACCESSOR');
-
 export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');
 
 /**
  * root ioc container token.
  * it is a symbol id, you can use  `@Inject()`, `@AutoWired()` or `@Param()` to get container instance in yourself class.
  */
-export const IocContainerToken: TokenId<IIocContainer> = tokenId<IIocContainer>('DI_IOCCONTAINER');
+export const IOC_CONTAINER: TokenId<IIocContainer> = tokenId<IIocContainer>('IOC_CONTAINER');
+/**
+ * root ioc container token.
+ * @deprecated use `IOC_CONTAINER` instead.
+ */
+export const IocContainerToken = IOC_CONTAINER;

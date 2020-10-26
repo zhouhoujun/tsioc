@@ -8,7 +8,7 @@ import { ServiceProvider } from './services/providers';
 import { ICoreInjector } from './ICoreInjector';
 import { CoreInjector } from './CoreInjector';
 import { LoadType } from './types';
-import { ContainerBuilderToken } from './tk';
+import { CONTAINER_BUILDER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
 
 
@@ -44,7 +44,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.getValue(ContainerBuilderToken);
+        return this.getValue(CONTAINER_BUILDER);
     }
 
     /**

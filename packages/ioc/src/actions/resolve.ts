@@ -1,7 +1,7 @@
 import { isNullOrUndefined, lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
 import { isToken, Provider, Token } from '../tokens';
-import { INJECTOR, InjectorProxyToken, PROVIDERS } from '../utils/tk';
+import { INJECTOR, INJECTOR_DL, PROVIDERS } from '../utils/tk';
 import * as rla from './res-act';
 import { ResolveContext, ResolveOption } from './res';
 
@@ -43,7 +43,7 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
         if (!ctx.providers.hasTokenKey(INJECTOR)) {
             ctx.providers.inject(
                 { provide: INJECTOR, useValue: injector },
-                { provide: InjectorProxyToken, useValue: injector.getProxy() });
+                { provide: INJECTOR_DL, useValue: injector.getProxy() });
         }
         this.execute(ctx);
         const instance = ctx.instance;

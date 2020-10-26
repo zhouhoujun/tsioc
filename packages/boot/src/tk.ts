@@ -41,9 +41,14 @@ export const CONFIG_LOADER: TokenId<IConfigureLoader> = tokenId<IConfigureLoader
 export const CONFIG_MERGER = tokenId<IConfigureMerger>('CONFIG_MERGER');
 
 /**
- *  process run root.
+ *  appliaction boot process root path.
  */
 export const PROCESS_ROOT: TokenId<string> = tokenId<string>('PROCESS_ROOT');
+/**
+ * appliaction boot process root path.
+ *
+ * @deprecated use `PROCESS_ROOT` instead.
+ */
 export const ProcessRunRootToken = PROCESS_ROOT;
 
 
@@ -51,12 +56,22 @@ export const ProcessRunRootToken = PROCESS_ROOT;
  * build service token.
  */
 export const BUILDER: TokenId<IBuilderService> = tokenId<IBuilderService>('BUILDER');
+/**
+ * build service token.
+ *
+ * @deprecated use `BUILDER` instead.
+ */
 export const BuilderServiceToken = BUILDER;
 
 /**
  * root message queue token.
  */
 export const ROOT_MESSAGEQUEUE: TokenId<IMessageQueue> = tokenId<IMessageQueue>('ROOT_MESSAGEQUEUE');
+/**
+ * root message queue token.
+ *
+ * @deprecated use `ROOT_MESSAGEQUEUE` instead.
+ */
 export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
 
 /**
@@ -65,9 +80,14 @@ export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
 export const PARENT_INJECTOR: TokenId<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
 
 /**
- * base type parser token.
+ * type parser token.
  */
 export const TYPE_PARSER: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');
+/**
+ * type parser token.
+ *
+ * @deprecated use `TYPE_PARSER` instead.
+ */
 export const BaseTypeParserToken = TYPE_PARSER;
 
 

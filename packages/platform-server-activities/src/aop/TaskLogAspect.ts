@@ -1,5 +1,5 @@
 import { Inject, lang } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, CONTAINER } from '@tsdi/core';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
 import { IActivityRef, ActivityRef, ControlActivityElementRef } from '@tsdi/activities';
@@ -10,7 +10,7 @@ const prettyTime = require('pretty-hrtime');
 
 export class TaskLogProcess extends LogProcess {
 
-    constructor(@Inject(ContainerToken) container: IContainer) {
+    constructor(@Inject(CONTAINER) container: IContainer) {
         super(container);
     }
 

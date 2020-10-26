@@ -1,5 +1,5 @@
 import { Abstract, Inject, Injectable } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '../src';
+import { CONTAINER, IContainer } from '../src';
 
 @Injectable()
 export class Home {
@@ -14,7 +14,7 @@ export abstract class Animal {
     @Inject()
     home: Home;
 
-    @Inject(ContainerToken)
+    @Inject(CONTAINER)
     container: IContainer;
 
     back() {

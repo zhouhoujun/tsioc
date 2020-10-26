@@ -5,7 +5,7 @@ import { Injector, ContextProvider, InvokedProvider } from '../Injector';
 import { DecoratorProvider } from '../services/decor-pdr';
 import { MethodAccessor } from '../actions/accessor';
 import { ActionInjectorToken } from '../actions/act';
-import { InjectorFactoryToken, MethodAccessorToken, IocContainerToken, PROVIDERS, INVOKED_PROVIDERS, REGISTERED } from './tk';
+import { INJECTOR_FACTORY, METHOD_ACCESSOR, IOC_CONTAINER, PROVIDERS, INVOKED_PROVIDERS, REGISTERED } from './tk';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ResolveLifeScope } from '../actions/resolve';
@@ -18,13 +18,13 @@ import { ResolveLifeScope } from '../actions/resolve';
  */
 export function registerCores(container: IIocContainer) {
     let fac = container.getProxy();
-    container.set(IocContainerToken, fac);
+    container.set(IOC_CONTAINER, fac);
     container.setValue(REGISTERED, new Map());
 
-    container.set(InjectorFactoryToken, () => new Injector(fac), Injector);
+    container.set(INJECTOR_FACTORY, () => new Injector(fac), Injector);
     container.set(PROVIDERS, () => new ContextProvider(fac), ContextProvider);
     container.set(INVOKED_PROVIDERS, () => new InvokedProvider(fac), InvokedProvider);
-    container.setValue(MethodAccessorToken, new MethodAccessor(), MethodAccessor);
+    container.setValue(METHOD_ACCESSOR, new MethodAccessor(), MethodAccessor);
 
     let actInjector = new ActionInjector(fac);
     container.setValue(ActionInjectorToken, actInjector, ActionInjector);

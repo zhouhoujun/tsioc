@@ -8,7 +8,7 @@ import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/act';
 import { DesignContext } from './actions/reg';
 import { DesignLifeScope } from './actions/design';
-import { InjectorFactoryToken, PROVIDERS, REGISTERED } from './utils/tk';
+import { INJECTOR_FACTORY, PROVIDERS, REGISTERED } from './utils/tk';
 
 
 /**
@@ -49,7 +49,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
     }
 
     createInjector(): IInjector {
-        return this.getInstance(InjectorFactoryToken);
+        return this.getInstance(INJECTOR_FACTORY);
     }
 
     /**

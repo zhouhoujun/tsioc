@@ -96,7 +96,9 @@ export class Registration<T = any> {
         return this.formated;
     }
 
-
+    /**
+     * frmatting this.
+     */
     protected formatting() {
         return this.format(this);
     }
@@ -233,7 +235,7 @@ export class InjectReference<T = any> extends Registration<T> {
     }
 
     /**
-     * to string.
+     * formatting this.
      *
      * @returns {string}
      * @memberof Registration

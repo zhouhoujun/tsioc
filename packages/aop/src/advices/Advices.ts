@@ -17,4 +17,4 @@ export interface Advices {
 }
 
 
-export const AdvicesToken: TokenId<Advices> = tokenId<Advices>('AOP_ADVICES');
+export const ADVICES: TokenId<Advices> = tokenId<Advices>('AOP_ADVICES');

@@ -1,4 +1,4 @@
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, CONTAINER } from '@tsdi/core';
 import { Suite } from './decorators';
 import {
     Inject, IocExt, Provider, InjectReference,
@@ -25,7 +25,7 @@ export class UnitSetup {
      *
      * @memberof AopModule
      */
-    setup(@Inject(ContainerToken) container: IContainer) {
+    setup(@Inject(CONTAINER) container: IContainer) {
 
         let actInjector = container.getActionInjector();
 
@@ -33,7 +33,7 @@ export class UnitSetup {
             .bindProviders(Suite,
                 {
                     provide: BootContext,
-                    deps: [ContainerToken],
+                    deps: [CONTAINER],
                     useFactory: (container: IContainer, ...providers: Provider[]) => {
                         let ref = new InjectReference(BootContext, Suite.toString());
                         if (container.has(ref)) {

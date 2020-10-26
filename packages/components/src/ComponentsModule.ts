@@ -1,7 +1,7 @@
 import {
     Inject, DecoratorProvider, DesignRegisterer, IocExt, DecoratorScope
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, CONTAINER } from '@tsdi/core';
 import { ResolveMoudleScope, BuildContext } from '@tsdi/boot';
 import { Component, Directive, Pipe } from './decorators';
 import { DirectiveDefAction } from './registers/DirectiveDefAction';
@@ -21,7 +21,7 @@ import { Identifiers } from './compile/facade';
 @IocExt()
 export class ComponentsModule {
 
-    setup(@Inject(ContainerToken) container: IContainer) {
+    setup(@Inject(CONTAINER) container: IContainer) {
         let actInjector = container.getActionInjector();
         actInjector.getInstance(DecoratorProvider)
             .bindProviders(Component,

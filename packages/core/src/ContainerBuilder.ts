@@ -4,7 +4,7 @@ import { Container } from './Container';
 import { IContainerBuilder } from './IContainerBuilder';
 import { IModuleLoader, ModuleLoader } from './services/loader';
 import { LoadType } from './types';
-import { ContainerBuilderToken } from './tk';
+import { CONTAINER_BUILDER } from './tk';
 
 /**
  * default container builder.
@@ -22,7 +22,7 @@ export class ContainerBuilder implements IContainerBuilder {
 
     create(): IContainer {
         let container = new Container();
-        container.setValue(ContainerBuilderToken, this);
+        container.setValue(CONTAINER_BUILDER, this);
         if (this._loader) {
             container.setValue(ModuleLoader, this._loader);
         }

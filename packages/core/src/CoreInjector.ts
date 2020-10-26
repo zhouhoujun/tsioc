@@ -6,7 +6,7 @@ import { IModuleLoader, ModuleLoader } from './services/loader';
 import { ServiceOption, ServicesOption } from './resolves/context';
 import { IContainer } from './IContainer';
 import { LoadType } from './types';
-import { ContainerBuilderToken } from './tk';
+import { CONTAINER_BUILDER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends Injector implements ICoreInjector {
@@ -35,7 +35,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * @memberof Container
      */
     getBuilder(): IContainerBuilder {
-        return this.getValue(ContainerBuilderToken);
+        return this.getValue(CONTAINER_BUILDER);
     }
 
     /**

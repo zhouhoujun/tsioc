@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, IProvider, InvokedProvider, IocActions,
-    IActionSetup, isArray, isDefined, isPromise, PromiseUtil, ParameterMetadata, refl, IIocContainer
+    Type, isFunction, lang, IProvider, InvokedProvider, IocActions, PromiseUtil, ParameterMetadata,
+    IActionSetup, isArray, isDefined, isPromise, refl, IIocContainer
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -8,7 +8,7 @@ import { Joinpoint } from '../joinpoints/Joinpoint';
 import { JoinpointState } from '../joinpoints/state';
 import { aExp } from '../regexps';
 import { Advicer } from '../advices/Advicer';
-import { AdvisorToken } from '../tk';
+import { ADVISOR } from '../tk';
 
 const proxyFlag = '_proxy';
 const ctor = 'constructor';
@@ -31,7 +31,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
     beforeConstr(targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
         let propertykey = ctor;
-        let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
+        let advices = this.actInjector.getInstance(ADVISOR).getAdvices(targetType, propertykey);
         if (!advices) {
             return;
         }
@@ -52,7 +52,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
     afterConstr(target: any, targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
         let propertykey = ctor;
-        let advices = this.actInjector.getInstance(AdvisorToken).getAdvices(targetType, propertykey);
+        let advices = this.actInjector.getInstance(ADVISOR).getAdvices(targetType, propertykey);
         if (!advices) {
             return;
         }

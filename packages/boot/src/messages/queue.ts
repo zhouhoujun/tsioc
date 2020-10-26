@@ -1,6 +1,6 @@
 import {
     isClass, Injectable, isString, isFunction, Token, isUndefined, Inject, isToken,
-    Action, AsyncHandler, InjectorProxyToken, InjectorProxy, ClassType, isInjector, Singleton
+    Action, AsyncHandler, INJECTOR_DL, InjectorProxy, ClassType, isInjector, Singleton
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './ctx';
@@ -24,7 +24,7 @@ import { CTX_CURR_INJECTOR, CTX_OPTIONS, ROOT_MESSAGEQUEUE } from '../tk';
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
 
-    @Inject(InjectorProxyToken)
+    @Inject(INJECTOR_DL)
     private _injector: InjectorProxy<ICoreInjector>;
 
     /**

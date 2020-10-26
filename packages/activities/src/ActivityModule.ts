@@ -1,7 +1,7 @@
 import {
     Inject, DecoratorProvider, DesignRegisterer, IocExt, TypeProviderAction
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, CONTAINER } from '@tsdi/core';
 import { IBootContext, StartupDecoratorRegisterer, IBuildContext, AnnoationAction } from '@tsdi/boot';
 import {
     ComponentProvider, ComponentSelectorHandle, AstResolver,
@@ -29,7 +29,7 @@ export class ActivityModule {
     constructor() {
     }
 
-    setup(@Inject(ContainerToken) container: IContainer) {
+    setup(@Inject(CONTAINER) container: IContainer) {
 
         let actInjector = container.getActionInjector();
 

@@ -1,4 +1,4 @@
-import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, InjectorProxyToken, PROVIDERS, InjectorProxy, isArray, lang } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, INJECTOR_DL, PROVIDERS, InjectorProxy, isArray, lang } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceResolver } from './IServiceResolver';
@@ -38,7 +38,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         if (!pdr.hasTokenKey(INJECTOR)) {
             pdr.inject(
                 { provide: INJECTOR, useValue: injector },
-                { provide: InjectorProxyToken, useValue: injector.getProxy() }
+                { provide: INJECTOR_DL, useValue: injector.getProxy() }
             );
         }
 
@@ -71,7 +71,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         if (!pdr.hasTokenKey(INJECTOR)) {
             pdr.inject(
                 { provide: INJECTOR, useValue: injector },
-                { provide: InjectorProxyToken, useValue: injector.getProxy() });
+                { provide: INJECTOR_DL, useValue: injector.getProxy() });
         }
         maps.iterator((fac) => {
             services.push(fac(pdr));

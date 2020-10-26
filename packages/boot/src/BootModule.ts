@@ -1,5 +1,5 @@
 import { Inject, IocExt, DesignRegisterer, DecoratorScope } from '@tsdi/ioc';
-import { IContainer, ContainerToken, InjModuleScope } from '@tsdi/core';
+import { IContainer, CONTAINER, InjModuleScope } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
 import { MessageContext } from './messages/ctx';
 import { MessageQueue, RootMessageQueue } from './messages/queue';
@@ -35,7 +35,7 @@ export class BootModule {
      *
      * @memberof AopModule
      */
-    setup(@Inject(ContainerToken) container: IContainer) {
+    setup(@Inject(CONTAINER) container: IContainer) {
         const proxy = container.getProxy();
         container.set(ModuleInjector, () => new ModuleInjector(proxy));
         container.set(ModuleProviders, () => new ModuleProviders(proxy));

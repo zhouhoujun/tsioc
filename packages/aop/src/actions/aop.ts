@@ -2,7 +2,7 @@ import { isClass, Type, isBaseType, RuntimeContext, DesignContext, refl} from '@
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
-import { AdvisorToken, AdviceMatcherToken } from '../tk';
+import { ADVISOR, ADVICE_MATCHER } from '../tk';
 import { AopReflect } from '../types';
 
 
@@ -24,7 +24,7 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
 
     let className = reflect.class.className;
     let decorators = reflect.class.getPropertyDescriptors();
-    let advisor = actInjtor.getInstance(AdvisorToken);
+    let advisor = actInjtor.getInstance(ADVISOR);
     let advicesMap = advisor.getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
@@ -92,7 +92,7 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
  */
 export const RegistAspectAction = function (ctx: DesignContext, next: () => void): void {
     let type = ctx.type;
-    let advisor = ctx.injector.getContainer().getActionInjector().getInstance(AdvisorToken);
+    let advisor = ctx.injector.getContainer().getActionInjector().getInstance(ADVISOR);
     advisor.add(type);
     next();
 };
@@ -110,8 +110,8 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
     }
 
     const actInjtor = ctx.injector.getContainer().getActionInjector();
-    let advisor = actInjtor.getInstance(AdvisorToken);
-    let matcher = actInjtor.getInstance(AdviceMatcherToken);
+    let advisor = actInjtor.getInstance(ADVISOR);
+    let matcher = actInjtor.getInstance(ADVICE_MATCHER);
     let targetType = ctx.type;
 
     advisor.aspects.forEach(type => {

@@ -1,6 +1,6 @@
 import {
-    Inject, IocContainerToken, IIocContainer, runtimes,
-    RuntimeLifeScope, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt
+    Inject, IOC_CONTAINER, IIocContainer, runtimes,
+    RuntimeLifeScope, ActionInjector, DesignRegisterer, IocExt
 } from '@tsdi/ioc';
 import { Aspect } from './decorators';
 import { Advisor } from './Advisor';
@@ -10,7 +10,7 @@ import {
     BindMthPointcutAction, MatchPointcutAction
 } from './actions/aop';
 import { ProceedingScope } from './actions/proceed';
-import { AdvisorToken, AdviceMatcherToken } from './tk';
+import { ADVISOR, ADVICE_MATCHER } from './tk';
 
 
 
@@ -31,13 +31,13 @@ export class AopModule {
      *
      * @memberof AopModule
      */
-    setup(@Inject(IocContainerToken) container: IIocContainer) {
+    setup(@Inject(IOC_CONTAINER) container: IIocContainer) {
 
         const actInjector = container.getValue(ActionInjector);
 
         actInjector
-            .setValue(AdvisorToken, new Advisor(container.getProxy()), Advisor)
-            .setValue(AdviceMatcherToken, new AdviceMatcher(container.getProxy()), AdviceMatcher);
+            .setValue(ADVISOR, new Advisor(container.getProxy()), Advisor)
+            .setValue(ADVICE_MATCHER, new AdviceMatcher(container.getProxy()), AdviceMatcher);
 
         actInjector.regAction(ProceedingScope);
 

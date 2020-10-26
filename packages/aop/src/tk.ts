@@ -4,10 +4,16 @@ import { IAdvisor } from './IAdvisor';
 
 
 /**
- * Aop IAdvisor interface token.
+ * Aop advisor interface token.
  * it is a token id, you can register yourself IAdvisor for this.
  */
-export const AdvisorToken: TokenId<IAdvisor> = tokenId<IAdvisor>('DI_IAdvisor');
+export const ADVISOR: TokenId<IAdvisor> = tokenId<IAdvisor>('AOP_ADVISOR');
+/**
+ * Aop advisor interface token.
+ *
+ * @deprecated use `ADVISOR` instead.
+ */
+export const AdvisorToken = ADVISOR;
 
 export const AOP_EXTEND_TARGET_TOKEN = tokenId<(target: any) => void>('AOP_EXTEND_TARGET_TOKEN')
 
@@ -15,4 +21,11 @@ export const AOP_EXTEND_TARGET_TOKEN = tokenId<(target: any) => void>('AOP_EXTEN
  * Aop advice matcher interface token.
  * it is a token id, you can register yourself IActionBuilder for this.
  */
-export const AdviceMatcherToken: TokenId<IAdviceMatcher> = tokenId<IAdviceMatcher>('DI_IAdviceMatcher');
+export const ADVICE_MATCHER: TokenId<IAdviceMatcher> = tokenId<IAdviceMatcher>('AOP_ADVICE_MATCHER');
+/**
+ * Aop advice matcher interface token.
+ *
+ * @deprecated use `ADVICE_MATCHER` instead.
+ */
+export const AdviceMatcherToken = ADVICE_MATCHER;
+
