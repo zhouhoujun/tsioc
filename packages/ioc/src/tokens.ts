@@ -91,9 +91,14 @@ export class Registration<T = any> {
      */
     toString(): string {
         if (!this.formated) {
-            this.formated = this.format(this);
+            this.formated = this.formatting();
         }
         return this.formated;
+    }
+
+
+    protected formatting() {
+        return this.format(this);
     }
 
     protected format(reg: Token<T>): string {
@@ -233,8 +238,8 @@ export class InjectReference<T = any> extends Registration<T> {
      * @returns {string}
      * @memberof Registration
      */
-    toString(): string {
-        let key = super.toString();
+    formatting(): string {
+        let key = this.format(this);
         let target = this.format(this.target)
         return `Ref ${key} for ${target}`;
     }
