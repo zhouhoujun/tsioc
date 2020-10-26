@@ -90,13 +90,13 @@ export class Registration<T = any> {
      * @memberof Registration
      */
     toString(): string {
-        return this.format(this);
+        if (!this.formated) {
+            this.formated = this.format(this);
+        }
+        return this.formated;
     }
 
     protected format(reg: Token<T>): string {
-        if (this.formated) {
-            return this.formated;
-        }
         if (reg instanceof Registration) {
             let name = '';
             if (isFunction(reg.classType)) {
@@ -104,13 +104,13 @@ export class Registration<T = any> {
             } else if (reg.classType) {
                 name = reg.classType.toString();
             }
-            this.formated = [reg.type, name, reg.desc].filter(n => n).join('_');
+            return [reg.type, name, reg.desc].filter(n => n).join('_');
         } else if (isFunction(reg)) {
-            this.formated = `{${lang.getClassName(reg)}}`;
+            return `{${lang.getClassName(reg)}}`;
         } else if (reg) {
-            this.formated = reg.toString();
+            return reg.toString();
         }
-        return this.formated || '';
+        return '';
     }
 }
 
