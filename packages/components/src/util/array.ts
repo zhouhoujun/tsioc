@@ -123,7 +123,7 @@ export function arrayInsert(array: any[], index: number, value: any): void {
  */
 export function arrayInsert2(array: any[], index: number, value1: any, value2: any): void {
   let end = array.length;
-  if (end == index) {
+  if (end === index) {
     // inserting at the end.
     array.push(value1, value2);
   } else if (end === 1) {
