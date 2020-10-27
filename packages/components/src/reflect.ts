@@ -1,12 +1,6 @@
-import { Type } from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
 import { ComponentMetadata, DirectiveMetadata } from './metadata';
 
-
-export interface DirectiveDef {
-    expression: any;
-    type: Type;
-}
 
 /**
  * directive reflect data.
@@ -26,16 +20,6 @@ export interface DirectiveReflect extends AnnotationReflect {
      * annoation metadata.
      */
     annotation?: DirectiveMetadata;
-}
-
-
-
-/**
- * component def.
- */
-export interface ComponentDef {
-    expression: any;
-    type: Type;
 }
 
 

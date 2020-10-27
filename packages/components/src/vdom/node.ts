@@ -7,32 +7,68 @@ import {LView, TView} from './view';
 
 /**
  * TNodeType corresponds to the {@link TNode} `type` property.
+ *
+ * NOTE: type IDs are such that we use each bit to denote a type. This is done so that we can easily
+ * check if the `TNode` is of more than one type.
+ *
+ * `if (tNode.type === TNodeType.Text || tNode.type === TNode.Element)`
+ * can be written as:
+ * `if (tNode.type & (TNodeType.Text | TNodeType.Element))`
+ *
+ * However any given `TNode` can only be of one type.
  */
 export const enum TNodeType {
   /**
+   * The TNode contains information about a DOM element aka {@link RText}.
+   */
+  Text = 0b1,
+
+  /**
+   * The TNode contains information about a DOM element aka {@link RElement}.
+   */
+  Element = 0b10,
+
+  /**
    * The TNode contains information about an {@link LContainer} for embedded views.
    */
-  Container = 0,
+  Container = 0b100,
+
+  /**
+   * The TNode contains information about an `<ng-container>` element {@link RNode}.
+   */
+  ElementContainer = 0b1000,
+
   /**
    * The TNode contains information about an `<ng-content>` projection
    */
-  Projection = 1,
-  /**
-   * The TNode contains information about an {@link LView}
-   */
-  View = 2,
-  /**
-   * The TNode contains information about a DOM element aka {@link VNode}.
-   */
-  Element = 3,
-  /**
-   * The TNode contains information about an `<ng-container>` element {@link VNode}.
-   */
-  ElementContainer = 4,
+  Projection = 0b10000,
+
   /**
    * The TNode contains information about an ICU comment used in `i18n`.
    */
-  IcuContainer = 5,
+  Icu = 0b100000,
+
+  /**
+   * Special node type representing a placeholder for future `TNode` at this location.
+   *
+   * I18n translation blocks are created before the element nodes which they contain. (I18n blocks
+   * can span over many elements.) Because i18n `TNode`s (representing text) are created first they
+   * often may need to point to element `TNode`s which are not yet created. In such a case we create
+   * a `Placeholder` `TNode`. This allows the i18n to structurally link the `TNode`s together
+   * without knowing any information about the future nodes which will be at that location.
+   *
+   * On `firstCreatePass` When element instruction executes it will try to create a `TNode` at that
+   * location. Seeing a `Placeholder` `TNode` already there tells the system that it should reuse
+   * existing `TNode` (rather than create a new one) and just update the missing information.
+   */
+  Placeholder = 0b1000000,
+
+  // Combined Types These should never be used for `TNode.type` only as a useful way to check
+  // if `TNode.type` is one of several choices.
+
+  // See: https://github.com/microsoft/TypeScript/issues/35875 why we can't refer to existing enum.
+  AnyRNode = 0b11,        // Text | Element,
+  AnyContainer = 0b1100,  // Container | ElementContainer, // See:
 }
 
 /**
