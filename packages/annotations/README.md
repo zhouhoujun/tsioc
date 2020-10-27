@@ -18,7 +18,7 @@ npm install @tsdi/annotations --save-dev
 
 ```
 
-## Demo
+## Demo for gulp
 
 ```ts
 import { classAnnotations } '@tsdi/annotations';
@@ -26,6 +26,18 @@ const ts = require('gulp-typescript');
 gulp.src('src/**/*.ts')
     .pipe(classAnnotations())
     .pipe(ts)
+
+```
+
+## Demo for rollup
+
+```ts
+import { rollupClassAnnotations } '@tsdi/annotations';
+
+rollup({
+  input: "main.ts",
+  plugins: [rollupClassAnnotations()],
+});
 
 ```
 

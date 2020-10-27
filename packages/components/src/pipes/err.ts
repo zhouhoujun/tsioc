@@ -1,6 +1,5 @@
-import { Type } from '@tsdi/ioc';
-import { stringify } from '../util/stringify';
+import { lang } from '@tsdi/ioc';
 
-export function invalidPipeArgumentError(type: Type<any>, value: Object) {
-    return Error(`InvalidPipeArgument: '${value}' for pipe '${stringify(type)}'`);
+export function invalidPipeArgumentError(type: any, value: Object) {
+    return Error(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(type)}'`);
 }

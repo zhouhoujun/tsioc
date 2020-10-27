@@ -23,11 +23,6 @@ export interface DirectiveReflect extends AnnotationReflect {
     selector?: string;
 
     /**
-     * directive compiled def.
-     */
-    directiveDef?: DirectiveDef;
-
-    /**
      * annoation metadata.
      */
     annotation?: DirectiveMetadata;
@@ -53,17 +48,10 @@ export interface ComponentDef {
  * @extends {ITypeReflect}
  */
 export interface ComponentReflect extends AnnotationReflect {
-
     /**
      * component selector.
      */
     selector?: string;
-
-    /**
-     * component compiled def.
-     */
-    componentDef?: ComponentDef;
-
     /**
      * component annoation metadata.
      */

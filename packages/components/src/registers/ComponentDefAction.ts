@@ -16,7 +16,6 @@ export const ComponentDefAction = function (ctx: DesignContext, next: () => void
     }
     const type = ctx.type as ComponentType;
     if (type.ρcmp) {
-        compRefl.componentDef = type.ρcmp(ctx);
         return next();
     }
 
@@ -25,7 +24,6 @@ export const ComponentDefAction = function (ctx: DesignContext, next: () => void
 
     const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
     type.ρcmp = compiler.compileComponent(compRefl);
-    compRefl.componentDef  = type.ρcmp(ctx);
 
     next();
 

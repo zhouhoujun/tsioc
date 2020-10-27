@@ -13,8 +13,8 @@ export const DirectiveDefAction = function (ctx: DesignContext, next: () => void
     if (!(decorRefl.annoType === 'component')) {
         return next();
     }
+
     if (type.ρdir) {
-        decorRefl.directiveDef = type.ρdir(ctx);
         return next();
     }
 
@@ -23,7 +23,6 @@ export const DirectiveDefAction = function (ctx: DesignContext, next: () => void
 
     const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
     type.ρdir = compiler.compileDirective(decorRefl);
-    decorRefl.directiveDef = type.ρdir(ctx);
 
     next();
 };

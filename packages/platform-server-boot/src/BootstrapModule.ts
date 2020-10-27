@@ -4,6 +4,21 @@ import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configure } fr
 import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 
+
+// to fix nodejs Date toJson bug.
+Date.prototype.toJSON = function () {
+    const timezoneOffsetInHours = -(this.getTimezoneOffset() / 60); // UTC minus local time
+
+    // It's a bit unfortunate that we need to construct a new Date instance
+    // (we don't want _this_ Date instance to be modified)
+    const correctedDate = new Date(this.getFullYear(), this.getMonth(),
+        this.getDate(), this.getHours(), this.getMinutes(), this.getSeconds(),
+        this.getMilliseconds());
+    correctedDate.setHours(this.getHours() + timezoneOffsetInHours);
+    return correctedDate.toISOString();
+}
+
+
 /**
  * configure file loader.
  *

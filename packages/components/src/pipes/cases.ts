@@ -1,6 +1,7 @@
 
-import { lang, isString } from '@tsdi/ioc';
+import { isString } from '@tsdi/ioc';
 import { Pipe } from '../decorators';
+import { invalidPipeArgumentError } from './err';
 import { PipeTransform } from './pipe';
 
 @Pipe('lowercase')
@@ -11,7 +12,7 @@ export class LowerCasePipe implements PipeTransform {
   transform(value: string): string {
     if (!value) return value;
     if (!isString(value)) {
-        throw  Error(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(this)}'`)
+      throw invalidPipeArgumentError(this, value);
     }
     return value.toLowerCase();
   }
@@ -26,7 +27,7 @@ export class UpperCasePipe implements PipeTransform {
   transform(value: string): string {
     if (!value) return value;
     if (!isString(value)) {
-        throw  Error(`InvalidPipeArgument: '${value}' for pipe '${lang.getClassName(this)}'`)
+      throw invalidPipeArgumentError(this, value);
     }
     return value.toLowerCase();
   }
