@@ -96,32 +96,6 @@ export interface AnnotationType<T = any> extends Function {
  */
 export type ClassType<T = any> = Type<T> | AbstractType<T>;
 
-/**
- * express.
- *
- * @export
- * @interface Express
- * @template T
- * @template TResult
- */
-export interface Express<T, TResult> {
-    (item: T): TResult;
-}
-
-/**
- * express
- *
- * @export
- * @interface Express2
- * @template T1
- * @template T2
- * @template TResult
- */
-export interface Express2<T1, T2, TResult> {
-    (arg1: T1, arg2: T2): TResult
-}
-
-
 
 /**
  * decorator scopes.

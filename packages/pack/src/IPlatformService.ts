@@ -1,4 +1,4 @@
-import { ObjectMap, Express2, tokenId, TokenId } from '@tsdi/ioc';
+import { ObjectMap, tokenId, TokenId } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
 import { CompilerOptions } from 'typescript';
 import { Src } from '@tsdi/activities';
@@ -18,11 +18,11 @@ export interface IPlatformService {
     /**
      * get root folders.
      *
-     * @param {Express2<string, string, boolean>} [express]
+     * @param {(path: string, dir: string) => boolean} [express]
      * @returns {string[]}
      * @memberof NodeContext
      */
-    getRootFolders(express?: Express2<string, string, boolean>): string[];
+    getRootFolders(express?: (path: string, dir: string) => boolean): string[];
     getCompilerOptions(tsconfig: string): CompilerOptions;
     getFileName(pathName: string): string;
 
@@ -32,11 +32,11 @@ export interface IPlatformService {
      * get folders of path.
      *
      * @param {string} pathstr
-     * @param {Express2<string, string, boolean>} [express]
+     * @param {(path: string, dir: string) => boolean} [express]
      * @returns {string[]}
      * @memberof NodeContext
      */
-    getFolders(pathstr: string, express?: Express2<string, string, boolean>): string[];
+    getFolders(pathstr: string, express?: (path: string, dir: string) => boolean): string[];
     /**
      * find filter fileName in directory.
      *

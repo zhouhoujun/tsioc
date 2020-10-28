@@ -1,4 +1,4 @@
-import { Express, TypeMetadata, ClassMethodDecorator, isFunction, createDecorator } from '@tsdi/ioc';
+import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator } from '@tsdi/ioc';
 import { Level } from '../Level';
 
 
@@ -26,10 +26,9 @@ export interface LoggerMetadata extends TypeMetadata {
     /**
      * only match express condition can do loging.
      *
-     * @type {Express<any, boolean>}
      * @memberof LoggerMetadata
      */
-    express?: Express<any, boolean>;
+    express?(item: any): boolean;
     /**
      * set special message to logging
      *
@@ -71,11 +70,11 @@ export interface ILoggerDecorator<T extends LoggerMetadata> {
      * @Logger
      *
      * @param {string} logname set the special name to get logger from logger manager.
-     * @param {Express<any, boolean>} express only match express condition can do logging.
+     * @param {express: (item: any) => boolean} express only match express condition can do logging.
      * @param {string} message set special message to logging.
      * @param {Level} [level] set log level to this message.
      */
-    (logname: string, express: Express<any, boolean>, message: string, level?: Level): ClassMethodDecorator;
+    (logname: string, express: (item: any) => boolean, message: string, level?: Level): ClassMethodDecorator;
 
     /**
      * define logger annotation pointcut to this class or method.

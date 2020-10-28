@@ -1,4 +1,4 @@
-import { Injectable, ObjectMap, Express2, isArray, isString, lang, isFunction } from '@tsdi/ioc';
+import { Injectable, ObjectMap, isArray, isString, lang, isFunction } from '@tsdi/ioc';
 import { toAbsolutePath, syncRequire } from '@tsdi/platform-server';
 import { Src } from '@tsdi/activities';
 import { existsSync, readdirSync, lstatSync } from 'fs';
@@ -52,11 +52,11 @@ export class PlatformService {
     /**
      * get root folders.
      *
-     * @param {Express2<string, string, boolean>} [express]
+     * @param {(path: string, dir: string) => boolean} [express]
      * @returns {string[]}
      * @memberof NodeContext
      */
-    getRootFolders(express?: Express2<string, string, boolean>): string[] {
+    getRootFolders(express?: (path: string, dir: string) => boolean): string[] {
         return this.getFolders(this.getRootPath(), express);
     }
 
@@ -74,11 +74,11 @@ export class PlatformService {
      * get folders of path.
      *
      * @param {string} pathstr
-     * @param {Express2<string, string, boolean>} [express]
+     * @param {(path: string, dir: string) => boolean} [express]
      * @returns {string[]}
      * @memberof NodeContext
      */
-    getFolders(pathstr: string, express?: Express2<string, string, boolean>): string[] {
+    getFolders(pathstr: string, express?: (path: string, dir: string) => boolean): string[] {
         pathstr = normalize(pathstr);
         let dir = readdirSync(pathstr);
         let folders = [];
