@@ -1,4 +1,4 @@
-import { isClass, Type, isBaseType, RuntimeContext, DesignContext, refl} from '@tsdi/ioc';
+import { isClass, Type, isBaseType, RuntimeContext, DesignContext, refl, AnnotationType} from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
@@ -184,7 +184,7 @@ function isValAspectTag(targetType: Type, reflect: AopReflect): boolean {
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-    if (targetType.ρNPT) {
+    if ((targetType as AnnotationType).ρNPT) {
         return false;
     }
     return !reflect.nonePointcut

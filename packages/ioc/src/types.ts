@@ -18,24 +18,23 @@ export interface ObjectMap<T = any> {
 }
 
 /**
- * class Annations
+ * class design annotation
  *
  * @export
- * @interface ClassAnnations
  */
-export interface ClassAnnations {
+export interface DesignAnnotation {
     /**
      * class name
      *
      * @type {string}
-     * @memberof ClassAnnations
+     * @memberof DesignAnnotation
      */
     name: string;
     /**
      * class params declaration.
      *
      * @type {ObjectMap<string[]>}
-     * @memberof ClassAnnations
+     * @memberof DesignAnnotation
      */
     params: ObjectMap<string[]>;
 }
@@ -52,14 +51,6 @@ export interface ClassAnnations {
  */
 export interface AbstractType<T = any> extends Function {
     new?(...args: any[]): T;
-    /**
-     * class annations
-     */
-    ρAnn?(): ClassAnnations;
-    /**
-     * class flag. none poincut for aop.
-     */
-    ρNPT?: boolean;
 }
 
 
@@ -70,9 +61,35 @@ export interface AbstractType<T = any> extends Function {
  * @extends {Function}
  * @template T
  */
-export interface Type<T = any> extends AbstractType<T> {
+export interface Type<T = any> extends Function {
     new(...args: any[]): T;
 }
+
+/**
+ * annotation class type
+ */
+export interface AnnotationType<T = any> extends Function {
+    new?(...args: any[]): T;
+    /**
+     * class design annotation
+     */
+    ρAnn?(): DesignAnnotation;
+    /**
+     * class design annotation
+     * @deprecated use `ρAnn` instead.
+     */
+    d0Ann?(): DesignAnnotation;
+    /**
+     * class design annotation
+     * @deprecated use `ρAnn` instead.
+     */
+    getClassAnnations?(): DesignAnnotation;
+    /**
+     * class flag. none poincut for aop.
+     */
+    ρNPT?: boolean;
+}
+
 
 /**
  * class type.

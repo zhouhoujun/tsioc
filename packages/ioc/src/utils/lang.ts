@@ -1,6 +1,6 @@
 // use core-js in browser.
 import { TypeReflect } from '../decor/metadatas';
-import { ObjectMap, Type, AbstractType, Modules, ClassType } from '../types';
+import { ObjectMap, Type, AbstractType, Modules, ClassType, AnnotationType } from '../types';
 import { clsUglifyExp } from './exps';
 
 
@@ -121,26 +121,26 @@ export namespace lang {
     }
 
     /**
-     * get class annations.
+     * get class design annotation.
      *
      * @export
      * @param {ClassType} target
      * @returns
      */
-    export function getClassAnnations(target: ClassType) {
-        let annf: Function = target.ρAnn || target['d0Ann'] || target['getClassAnnations'];
+    export function getDesignAnno(target: AnnotationType) {
+        let annf: Function = target.ρAnn || target.d0Ann || target.getClassAnnations;
         return typeof annf === 'function' ? annf.call(target) : null;
     }
 
     /**
-     * target has class annations or not.
+     * target has class design annotation or not.
      *
      * @export
      * @param {ClassType} target
      * @returns {boolean}
      */
-    export function hasClassAnnations(target: ClassType): boolean {
-        return typeof (target.ρAnn || target['d0Ann'] || target['getClassAnnations']) === 'function';
+    export function hasDesignAnno(target: AnnotationType): boolean {
+        return typeof (target.ρAnn || target.d0Ann || target.getClassAnnations) === 'function';
     }
 
 
@@ -174,7 +174,7 @@ export namespace lang {
             return '';
         }
         if (clsUglifyExp.test(classType.name)) {
-            let classAnnations = getClassAnnations(classType);
+            let classAnnations = getDesignAnno(classType);
             return classAnnations ? classAnnations.name : classType.name;
         }
         return classType.name;
@@ -406,7 +406,7 @@ function classCheck(target: any, abstract?: boolean): boolean {
         return true;
     }
 
-    if (lang.hasClassAnnations(target)) return true;
+    if (lang.hasDesignAnno(target)) return true;
 
     if (isBaseType(target)) return false;
 

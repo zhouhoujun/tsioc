@@ -7,7 +7,7 @@ const name = '__name';
 export class TypeDefine {
     className: string;
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
-        this.className = lang.getClassAnnations(type)?.name || type.name;
+        this.className = lang.getDesignAnno(type)?.name || type.name;
     }
 
     private _extends: ClassType[];
@@ -62,7 +62,7 @@ export class TypeDefine {
 
         let isUglify = clsUglifyExp.test(ty.name);
         let anName = '';
-        let classAnnations = lang.getClassAnnations(ty);
+        let classAnnations = lang.getDesignAnno(ty);
         if (classAnnations && classAnnations.params) {
             anName = classAnnations.name;
             meta = {

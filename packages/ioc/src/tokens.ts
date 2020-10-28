@@ -1,6 +1,6 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
 import { IInjector, IProvider } from './IInjector';
-import { isClass, isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
+import { isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
 import { StaticProvider } from './providers';
 
