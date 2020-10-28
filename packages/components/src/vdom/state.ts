@@ -1,7 +1,10 @@
 import { DirectiveDef } from './definition';
 import { TNode, TNodeType } from './node';
 import { getTNode } from './util/view';
-import { CONTEXT, DECLARATION_VIEW, LView, TData, TVIEW, TView } from './view';
+import { CONTEXT, DECLARATION_VIEW, LView, OpaqueViewState, TData, TVIEW, TView } from './view';
+
+export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+export const MATH_ML_NAMESPACE = 'http://www.w3.org/1998/MathML/';
 
 /**
  *
@@ -104,22 +107,6 @@ interface LFrame {
      * `LView[currentDirectiveIndex]` is directive instance.
      */
     currentDirectiveIndex: number;
-
-    /**
-     * Are we currently in i18n block as denoted by `ɵɵelementStart` and `ɵɵelementEnd`.
-     *
-     * This information is needed because while we are in i18n block all elements must be pre-declared
-     * in the translation. (i.e. `Hello �#2�World�/#2�!` pre-declares element at `�#2�` location.)
-     * This allocates `TNodeType.Placeholder` element at location `2`. If translator removes `�#2�`
-     * from translation than the runtime must also ensure tha element at `2` does not get inserted
-     * into the DOM. The translation does not carry information about deleted elements. Therefor the
-     * only way to know that an element is deleted is that it was not pre-declared in the translation.
-     *
-     * This flag works by ensuring that elements which are created without pre-declaration
-     * (`TNodeType.Placeholder`) are not inserted into the DOM render tree. (It does mean that the
-     * element still gets instantiated along with all of its behavior [directives])
-     */
-    inI18n: boolean;
 }
 
 /**
@@ -170,13 +157,75 @@ interface InstructionState {
     isInCheckNoChangesMode: boolean;
 }
 
-const instructionState: InstructionState = {
+export const instructionState: InstructionState = {
     lFrame: createLFrame(null),
     bindingsEnabled: true,
     isInCheckNoChangesMode: false,
 };
 
 
+export function getElementDepthCount() {
+    return instructionState.lFrame.elementDepthCount;
+}
+
+export function increaseElementDepthCount() {
+    instructionState.lFrame.elementDepthCount++;
+}
+
+export function decreaseElementDepthCount() {
+    instructionState.lFrame.elementDepthCount--;
+}
+
+export function getBindingsEnabled(): boolean {
+    return instructionState.bindingsEnabled;
+}
+
+
+/**
+ * Enables directive matching on elements.
+ *
+ *  * Example:
+ * ```
+ * <my-comp my-directive>
+ *   Should match component / directive.
+ * </my-comp>
+ * <div ngNonBindable>
+ *   <!-- ɵɵdisableBindings() -->
+ *   <my-comp my-directive>
+ *     Should not match component / directive because we are in ngNonBindable.
+ *   </my-comp>
+ *   <!-- ɵɵenableBindings() -->
+ * </div>
+ * ```
+ *
+ * @codeGenApi
+ */
+export function ɵɵenableBindings(): void {
+    instructionState.bindingsEnabled = true;
+}
+
+/**
+ * Disables directive matching on element.
+ *
+ *  * Example:
+ * ```
+ * <my-comp my-directive>
+ *   Should match component / directive.
+ * </my-comp>
+ * <div ngNonBindable>
+ *   <!-- ɵɵdisableBindings() -->
+ *   <my-comp my-directive>
+ *     Should not match component / directive because we are in ngNonBindable.
+ *   </my-comp>
+ *   <!-- ɵɵenableBindings() -->
+ * </div>
+ * ```
+ *
+ * @codeGenApi
+ */
+export function ɵɵdisableBindings(): void {
+    instructionState.bindingsEnabled = false;
+}
 
 /**
  * Return the current `LView`.
@@ -192,29 +241,29 @@ export function getTView(): TView {
     return instructionState.lFrame.tView;
 }
 
-
-export function getCurrentTNode(): TNode | null {
-    let currentTNode = getCurrentTNodePlaceholderOk();
-    while (currentTNode !== null && currentTNode.type === TNodeType.Placeholder) {
-        currentTNode = currentTNode.parent;
-    }
-    return currentTNode;
+/**
+ * Restores `contextViewData` to the given OpaqueViewState instance.
+ *
+ * Used in conjunction with the getCurrentView() instruction to save a snapshot
+ * of the current view and restore it when listeners are invoked. This allows
+ * walking the declaration view tree in listeners to get vars from parent views.
+ *
+ * @param viewToRestore The OpaqueViewState instance to restore.
+ *
+ * @codeGenApi
+ */
+export function ɵɵrestoreView(viewToRestore: OpaqueViewState) {
+    instructionState.lFrame.contextLView = viewToRestore as any as LView;
 }
 
-export function getCurrentTNodePlaceholderOk(): TNode | null {
+export function getCurrentTNode(): TNode | null {
     return instructionState.lFrame.currentTNode;
 }
 
-export function getCurrentParentTNode(): TNode | null {
-    const lFrame = instructionState.lFrame;
-    const currentTNode = lFrame.currentTNode;
-    return lFrame.isParent ? currentTNode : currentTNode!.parent;
-}
-
-export function setCurrentTNode(tNode: TNode | null, isParent: boolean) {
-    const lFrame = instructionState.lFrame;
-    lFrame.currentTNode = tNode;
-    lFrame.isParent = isParent;
+export function setCurrentTNode(tNode: TNode, isParent: boolean) {
+    // ngDevMode && assertTNodeForTView(tNode, instructionState.lFrame.tView);
+    instructionState.lFrame.currentTNode = tNode;
+    instructionState.lFrame.isParent = isParent;
 }
 
 export function isCurrentTNodeParent(): boolean {
@@ -268,14 +317,6 @@ export function incrementBindingIndex(count: number): number {
     const index = lFrame.bindingIndex;
     lFrame.bindingIndex = lFrame.bindingIndex + count;
     return index;
-}
-
-export function isInI18nBlock() {
-    return instructionState.lFrame.inI18n;
-}
-
-export function setInI18nBlock(isInI18nBlock: boolean): void {
-    instructionState.lFrame.inI18n = isInI18nBlock;
 }
 
 /**
@@ -339,6 +380,7 @@ export function setCurrentQueryIndex(value: number): void {
  * @param tNode
  */
 export function enterDI(newView: LView, tNode: TNode) {
+    // ngDevMode && assertLViewOrUndefined(newView);
     const newLFrame = allocLFrame();
     instructionState.lFrame = newLFrame;
     newLFrame.currentTNode = tNode!;
@@ -357,15 +399,27 @@ export function enterDI(newView: LView, tNode: TNode) {
  * @returns the previously active lView;
  */
 export function enterView(newView: LView): void {
+    // ngDevMode && assertLViewOrUndefined(newView);
     const newLFrame = allocLFrame();
+    // if (ngDevMode) {
+    //     assertEqual(newLFrame.isParent, true, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.lView, null, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.tView, null, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.selectedIndex, 0, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.elementDepthCount, 0, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.currentDirectiveIndex, -1, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.currentNamespace, null, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.bindingRootIndex, -1, 'Expected clean LFrame');
+    //     assertEqual(newLFrame.currentQueryIndex, 0, 'Expected clean LFrame');
+    // }
     const tView = newView[TVIEW];
     instructionState.lFrame = newLFrame;
+    // ngDevMode && tView.firstChild && assertTNodeForTView(tView.firstChild, tView);
     newLFrame.currentTNode = tView.firstChild!;
     newLFrame.lView = newView;
     newLFrame.tView = tView;
     newLFrame.contextLView = newView!;
     newLFrame.bindingIndex = tView.bindingStartIndex;
-    newLFrame.inI18n = false;
 }
 
 /**
@@ -380,21 +434,20 @@ function allocLFrame() {
 
 function createLFrame(parent: LFrame | null): LFrame {
     const lFrame: LFrame = {
-        currentTNode: null,
-        isParent: true,
-        lView: null!,
-        tView: null!,
-        selectedIndex: -1,
-        contextLView: null!,
-        elementDepthCount: 0,
-        currentNamespace: null,
-        currentDirectiveIndex: -1,
-        bindingRootIndex: -1,
-        bindingIndex: -1,
-        currentQueryIndex: 0,
-        parent: parent!,
-        child: null,
-        inI18n: false,
+        currentTNode: null,         //
+        isParent: true,             //
+        lView: null!,               //
+        tView: null!,               //
+        selectedIndex: 0,           //
+        contextLView: null!,        //
+        elementDepthCount: 0,       //
+        currentNamespace: null,     //
+        currentDirectiveIndex: -1,  //
+        bindingRootIndex: -1,       //
+        bindingIndex: -1,           //
+        currentQueryIndex: 0,       //
+        parent: parent!,            //
+        child: null,                //
     };
     parent !== null && (parent.child = lFrame);  // link the new LFrame for reuse.
     return lFrame;
@@ -437,7 +490,7 @@ export function leaveView() {
     const oldLFrame = leaveViewLight();
     oldLFrame.isParent = true;
     oldLFrame.tView = null!;
-    oldLFrame.selectedIndex = -1;
+    oldLFrame.selectedIndex = 0;
     oldLFrame.contextLView = null!;
     oldLFrame.elementDepthCount = 0;
     oldLFrame.currentDirectiveIndex = -1;
@@ -485,11 +538,6 @@ export function getSelectedIndex() {
  * run if and when the provided `index` value is different from the current selected index value.)
  */
 export function setSelectedIndex(index: number) {
-    // ngDevMode && index !== -1 &&
-    //     assertGreaterThanOrEqual(index, HEADER_OFFSET, 'Index must be past HEADER_OFFSET (or -1).');
-    // ngDevMode &&
-    //     assertLessThan(
-    //         index, instructionState.lFrame.lView.length, 'Can\'t set index passed end of LView');
     instructionState.lFrame.selectedIndex = index;
 }
 
@@ -499,4 +547,44 @@ export function setSelectedIndex(index: number) {
 export function getSelectedTNode() {
     const lFrame = instructionState.lFrame;
     return getTNode(lFrame.tView, lFrame.selectedIndex);
+}
+
+/**
+ * Sets the namespace used to create elements to `'http://www.w3.org/2000/svg'` in global state.
+ *
+ * @codeGenApi
+ */
+export function ɵɵnamespaceSVG() {
+    instructionState.lFrame.currentNamespace = SVG_NAMESPACE;
+}
+
+/**
+ * Sets the namespace used to create elements to `'http://www.w3.org/1998/MathML/'` in global state.
+ *
+ * @codeGenApi
+ */
+export function ɵɵnamespaceMathML() {
+    instructionState.lFrame.currentNamespace = MATH_ML_NAMESPACE;
+}
+
+/**
+ * Sets the namespace used to create elements to `null`, which forces element creation to use
+ * `createElement` rather than `createElementNS`.
+ *
+ * @codeGenApi
+ */
+export function ɵɵnamespaceHTML() {
+    namespaceHTMLInternal();
+}
+
+/**
+ * Sets the namespace used to create elements to `null`, which forces element creation to use
+ * `createElement` rather than `createElementNS`.
+ */
+export function namespaceHTMLInternal() {
+    instructionState.lFrame.currentNamespace = null;
+}
+
+export function getNamespace(): string | null {
+    return instructionState.lFrame.currentNamespace;
 }
