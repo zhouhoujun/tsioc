@@ -1,10 +1,8 @@
 import { DirectiveDef } from './definition';
-import { TNode, TNodeType } from './node';
+import { TNode } from './node';
+import { MATH_ML_NAMESPACE, SVG_NAMESPACE } from './types';
 import { getTNode } from './util/view';
 import { CONTEXT, DECLARATION_VIEW, LView, OpaqueViewState, TData, TVIEW, TView } from './view';
-
-export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-export const MATH_ML_NAMESPACE = 'http://www.w3.org/1998/MathML/';
 
 /**
  *
@@ -200,7 +198,7 @@ export function getBindingsEnabled(): boolean {
  *
  * @codeGenApi
  */
-export function ɵɵenableBindings(): void {
+export function _ρenableBindings(): void {
     instructionState.bindingsEnabled = true;
 }
 
@@ -554,7 +552,7 @@ export function getSelectedTNode() {
  *
  * @codeGenApi
  */
-export function ɵɵnamespaceSVG() {
+export function _ρnamespaceSVG() {
     instructionState.lFrame.currentNamespace = SVG_NAMESPACE;
 }
 
@@ -563,7 +561,7 @@ export function ɵɵnamespaceSVG() {
  *
  * @codeGenApi
  */
-export function ɵɵnamespaceMathML() {
+export function _ρnamespaceMathML() {
     instructionState.lFrame.currentNamespace = MATH_ML_NAMESPACE;
 }
 
@@ -573,7 +571,7 @@ export function ɵɵnamespaceMathML() {
  *
  * @codeGenApi
  */
-export function ɵɵnamespaceHTML() {
+export function _ρnamespaceHTML() {
     namespaceHTMLInternal();
 }
 

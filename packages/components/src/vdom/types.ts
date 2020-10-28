@@ -3,6 +3,10 @@ export const containerTag =  'v-container';
 export const contentTag =  'v-content';
 export const templateTag =  'v-template';
 
+export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+export const MATH_ML_NAMESPACE = 'http://www.w3.org/1998/MathML/';
+
+
 /**
  * Subset of API needed for appending elements and text nodes.
  */

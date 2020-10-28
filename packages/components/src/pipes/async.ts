@@ -3,7 +3,7 @@ import { Observable, SubscriptionLike } from 'rxjs';
 import { PipeTransform } from './pipe';
 import { Pipe } from '../decorators';
 import { EventEmitter } from '../EventEmitter';
-import { ChangeDetectorRef } from '../chage/change';
+import { ChangeDetectorRef } from '../chage/detector';
 import { invalidPipeArgumentError } from './err';
 
 /**

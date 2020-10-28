@@ -7,7 +7,7 @@
  */
 
 
-import {RNode} from '../render';
+import {RNode} from './renderer';
 import {LView} from './view';
 
 /**

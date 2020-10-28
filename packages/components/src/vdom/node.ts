@@ -4,7 +4,6 @@ import { TStylingRange } from './styling';
 import { VNode} from './types';
 import {LView, TView} from './view';
 
-
 /**
  * TNodeType corresponds to the {@link TNode} `type` property.
  */
@@ -30,6 +29,7 @@ export const enum TNodeType {
    */
   IcuContainer = 4,
 }
+
 
 /**
  * Converts `TNodeType` into human readable text.

@@ -1,4 +1,4 @@
-import { RNode } from '../../render';
+import { RNode } from '../renderer';
 import { LContainer, TYPE } from '../container';
 import { ComponentDef, DirectiveDef } from '../definition';
 import { TNode, TNodeFlags } from '../node';

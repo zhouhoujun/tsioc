@@ -1,3 +1,4 @@
+import { ViewEncapsulation } from './definition';
 
 export enum RendererStyleFlags {
     /**
@@ -12,7 +13,8 @@ export enum RendererStyleFlags {
 
 export type GlobalTargetName = 'document' | 'window' | 'body';
 
-export interface Renderer {
+
+export interface DomRenderer {
     createComment(data: string): RComment;
     createElement(tagName: string): RElement;
     createElementNS(namespace: string, tagName: string): RElement;
@@ -61,6 +63,54 @@ export interface ProceduralRenderer {
         callback: (event: any) => boolean | void): () => void;
 }
 
+
+export type Renderer = DomRenderer | ProceduralRenderer;
+
+
+/**
+ * Used by `RendererFactory2` to associate custom rendering data and styles
+ * with a rendering implementation.
+ *  @publicApi
+ */
+export interface RendererType {
+    /**
+     * A unique identifying string for the new renderer, used when creating
+     * unique styles for encapsulation.
+     */
+    id: string;
+    /**
+     * The view encapsulation type, which determines how styles are applied to
+     * DOM elements. One of
+     * - `Emulated` (default): Emulate native scoping of styles.
+     * - `Native`: Use the native encapsulation mechanism of the renderer.
+     * - `ShadowDom`: Use modern [Shadow
+     * DOM](https://w3c.github.io/webcomponents/spec/shadow/) and
+     * create a ShadowRoot for component's host element.
+     * - `None`: Do not provide any template or style encapsulation.
+     */
+    encapsulation: ViewEncapsulation;
+    /**
+     * Defines CSS styles to be stored on a renderer instance.
+     */
+    styles: (string | any[])[];
+    /**
+     * Defines arbitrary developer-defined data to be stored on a renderer instance.
+     * This is useful for renderers that delegate to other renderers.
+     */
+    data: { [kind: string]: any };
+}
+
+
+/** Returns whether the `renderer` is a `ProceduralRenderer3` */
+export function isProceduralRenderer(renderer: Renderer): renderer is ProceduralRenderer {
+    return !!((renderer as any).listen);
+}
+
+export interface RendererFactory {
+    createRenderer(hostElement: RElement | null, rendererType: RendererType | null): Renderer;
+    begin?(): void;
+    end?(): void;
+}
 
 /** Subset of API needed for appending elements and text nodes. */
 export interface RNode {

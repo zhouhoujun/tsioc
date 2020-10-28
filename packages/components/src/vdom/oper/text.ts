@@ -1,6 +1,8 @@
 import { TElementNode, TNodeType } from '../node';
-import { getLView, getTView } from '../state';
+import { getLView, getTView, setCurrentTNode } from '../state';
 import { HEADER_OFFSET, RENDERER } from '../view';
+import { appendChild, createTextNode } from './mani';
+import { getOrCreateTNode } from './shared';
 
 /**
  * Create static text node

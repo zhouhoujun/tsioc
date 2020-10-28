@@ -16,11 +16,11 @@
  * NOTE: it is assumed that `Array.isArray` and `typeof` operations are very efficient.
  */
 
-import { RNode } from '../../render';
+import { RNode } from '../renderer';
 import { LContainer, TYPE } from '../container';
 import { LContext, MONKEY_PATCH_KEY_NAME } from '../context';
 import { TConstants, TNode } from '../node';
-import { FLAGS, HOST, LView, LViewFlags, PARENT, PREORDER_HOOK_FLAGS, TData, TRANSPLANTED_VIEWS_TO_REFRESH, TView } from '../view';
+import { CHILD_HEAD, CONTEXT, FLAGS, HOST, LView, LViewFlags, NEXT, PARENT, PREORDER_HOOK_FLAGS, RootContext, TData, TRANSPLANTED_VIEWS_TO_REFRESH, TView } from '../view';
 import { isLContainer, isLView } from './check';
 
 /**
@@ -205,4 +205,69 @@ export function updateTransplantedViewCount(lContainer: LContainer, amount: 1 | 
         viewOrContainer = parent;
         parent = parent[PARENT];
     }
+}
+
+
+
+/**
+ * Gets the parent LView of the passed LView, if the PARENT is an LContainer, will get the parent of
+ * that LContainer, which is an LView
+ * @param lView the lView whose parent to get
+ */
+export function getLViewParent(lView: LView): LView | null {
+    // ngDevMode && assertLView(lView);
+    const parent = lView[PARENT];
+    return isLContainer(parent) ? parent[PARENT]! : parent;
+}
+
+/**
+ * Retrieve the root view from any component or `LView` by walking the parent `LView` until
+ * reaching the root `LView`.
+ *
+ * @param componentOrLView any component or `LView`
+ */
+export function getRootView(componentOrLView: LView | {}): LView {
+    // ngDevMode && assertDefined(componentOrLView, 'component');
+    let lView = isLView(componentOrLView) ? componentOrLView : readPatchedLView(componentOrLView)!;
+    while (lView && !(lView[FLAGS] & LViewFlags.IsRoot)) {
+        lView = getLViewParent(lView)!;
+    }
+    // ngDevMode && assertLView(lView);
+    return lView;
+}
+
+/**
+ * Returns the `RootContext` instance that is associated with
+ * the application where the target is situated. It does this by walking the parent views until it
+ * gets to the root view, then getting the context off of that.
+ *
+ * @param viewOrComponent the `LView` or component to get the root context for.
+ */
+export function getRootContext(viewOrComponent: LView | {}): RootContext {
+    const rootView = getRootView(viewOrComponent);
+    // ngDevMode &&
+    //     assertDefined(rootView[CONTEXT], 'RootView has no context. Perhaps it is disconnected?');
+    return rootView[CONTEXT] as RootContext;
+}
+
+
+/**
+ * Gets the first `LContainer` in the LView or `null` if none exists.
+ */
+export function getFirstLContainer(lView: LView): LContainer | null {
+    return getNearestLContainer(lView[CHILD_HEAD]);
+}
+
+/**
+ * Gets the next `LContainer` that is a sibling of the given container.
+ */
+export function getNextLContainer(container: LContainer): LContainer | null {
+    return getNearestLContainer(container[NEXT]);
+}
+
+function getNearestLContainer(viewOrContainer: LContainer | LView | null): LContainer {
+    while (viewOrContainer !== null && !isLContainer(viewOrContainer)) {
+        viewOrContainer = viewOrContainer[NEXT];
+    }
+    return viewOrContainer as LContainer;
 }

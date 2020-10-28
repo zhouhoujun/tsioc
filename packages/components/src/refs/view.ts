@@ -1,6 +1,5 @@
-
 import { IBootContext } from '@tsdi/boot';
-import {ChangeDetectorRef} from '../chage/change';
+import { ChangeDetectorRef } from '../chage/detector';
 
 /**
  * Represents an virtual view.
