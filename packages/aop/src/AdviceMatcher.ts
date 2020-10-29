@@ -65,7 +65,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         if (targetType === aspectType) {
             let decorators = tagref.class.getPropertyDescriptors();
-            Object.keys(decorators).forEach(n => {
+            for (let n in decorators) {
                 adviceMetas.forEach(adv => {
                     if (this.matchAspectSelf(n, adv)) {
                         matched.push({
@@ -75,8 +75,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                         });
                     }
                 });
-            });
-
+            }
         } else {
             let points: IPointcut[] = [];
             let decorators = tagref.class.getPropertyDescriptors();

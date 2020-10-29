@@ -24,26 +24,15 @@ export namespace lang {
     export function omit(target: ObjectMap, ...fields: string[]): any {
         if (isObject(target)) {
             let result: any = {};
-            Object.keys(target).forEach(key => {
+            for (let key in target) {
                 if (fields.indexOf(key) < 0) {
                     result[key] = target[key];
                 }
-            });
+            }
             return result;
         } else {
             return target;
         }
-    }
-
-    /**
-     * object has field or not.
-     *
-     * @export
-     * @param {ObjectMap} target
-     * @returns
-     */
-    export function hasField(target: ObjectMap) {
-        return Object.keys(target).length > 0;
     }
 
     /**
@@ -58,9 +47,17 @@ export namespace lang {
     export function forIn<T = any>(target: T[], iterator: (item: T, idx?: number) => void | boolean);
     export function forIn(target: any, iterator: (item: any, idx?: any) => void | boolean) {
         if (isArray(target)) {
-            target.some((it, idx) => iterator(it, idx) === false);
-        } else if (isObject(target)) {
-            Object.keys(target).some((key, idx) => iterator(target[key], key) === false);
+            for (let i = 0, len = target.length; i < len; i++) {
+                if (iterator(it, i) === false) {
+                    break;
+                }
+            }
+        } else if (target) {
+            for (let key in target) {
+                if (iterator(target[key], key) === false) {
+                    break;
+                }
+            }
         }
     }
 
@@ -85,7 +82,7 @@ export namespace lang {
      * @param el remove item.
      */
     export function remove<T>(list: T[], el: T | ((el: T) => boolean)) {
-        if (!list.length) {
+        if (!isArray(list) || !list.length) {
             return null;
         }
         let elm = isFunction(el) ? list.find(el) : el;
@@ -98,7 +95,7 @@ export namespace lang {
      * @param el element
      */
     export function del<T>(list: T[], el: T) {
-        const index = Array.isArray(list) ? list.indexOf(el) : -1;
+        const index = isArray(list) ? list.indexOf(el) : -1;
         if (index > -1) {
             return list.splice(index, 1);
         }
@@ -114,7 +111,7 @@ export namespace lang {
      * @returns {T}
      */
     export function last<T>(list: T[]): T {
-        if (Array.isArray(list) && list.length) {
+        if (isArray(list) && list.length) {
             return list[list.length - 1];
         }
         return null;
@@ -289,10 +286,11 @@ export namespace lang {
      * @param obj.
      */
     export function cleanObj(obj: Object) {
+        if (!obj) return;
         setTimeout(() => {
-            obj && Object.keys(obj).forEach(k => {
+            for (let k in obj) {
                 obj[k] = null;
-            })
+            }
         });
     }
 }
@@ -393,9 +391,9 @@ export function isClassType(target: any): target is ClassType {
 
 const refFiled = '_ρreflect_';
 function classCheck(target: any, abstract?: boolean): boolean {
-    if (!(typeof target === 'function'))  return false;
+    if (!(typeof target === 'function')) return false;
 
-    if (!target.name || !target.prototype)  return false;
+    if (!target.name || !target.prototype) return false;
 
     let rf: TypeReflect = target[refFiled]?.();
 
@@ -468,9 +466,14 @@ export function isBaseObject(target: any): target is ObjectMap {
  * @returns {boolean}
  */
 export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
-    if (!isBaseObject(target))  return false;
+    if (!isBaseObject(target)) return false;
     if (props.length) {
-        return Object.keys(target).some(n => props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0));
+        for (let n in target) {
+            if (props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     return true;

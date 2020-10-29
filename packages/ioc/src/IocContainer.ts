@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { isClass, isFunction, isDefined } from './utils/lang';
+import { isClass, isFunction, isDefined, lang } from './utils/lang';
 import { InjectToken, Token, Factory, SymbolType, Provider, InstanceFactory } from './tokens';
 import { IInjector, Registered } from './IInjector';
 import { IIocContainer } from './IIocContainer';
@@ -122,18 +122,15 @@ export class IocContainer extends BaseInjector implements IIocContainer {
             return this;
         }
 
-        (async () => {
-            const ctx = {
-                injector,
-                token: provide,
-                type,
-                singleton
-            } as DesignContext;
-            this.getActionInjector().getInstance(DesignLifeScope).register(ctx);
-            Object.keys(ctx).forEach(k => {
-                ctx[k] = null;
-            });
-        })();
+        const ctx = {
+            injector,
+            token: provide,
+            type,
+            singleton
+        } as DesignContext;
+        this.getActionInjector().getInstance(DesignLifeScope).register(ctx);
+        lang.cleanObj(ctx);
+
         return this;
     }
 

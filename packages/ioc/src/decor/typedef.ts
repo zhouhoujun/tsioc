@@ -94,7 +94,17 @@ export class TypeDefine {
         if (!descriptor) {
             return '';
         }
-        return descriptor[name] ?? Object.keys(this.getPropertyDescriptors()).find(n => this.getPropertyDescriptors()[n] = descriptor);
+        let pty = descriptor[name];
+        if (!pty) {
+            let decs = this.getPropertyDescriptors();
+            lang.forIn(decs, (dec, n) => {
+                if (dec === descriptor) {
+                    pty = n;
+                    return false;
+                }
+            });
+        }
+        return pty;
     }
 
     private descriptos: ObjectMap<TypedPropertyDescriptor<any>>;
