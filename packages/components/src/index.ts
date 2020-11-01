@@ -6,8 +6,9 @@ export * from './metadata';
 export * from './decorators';
 
 // change ref.
-export * from './chage/change';
+export * from './chage/detector';
 export * from './chage/iterable';
+export * from './chage/strategy';
 
 // compile
 export * from './compile/facade';
