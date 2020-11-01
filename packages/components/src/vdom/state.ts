@@ -221,7 +221,7 @@ export function _ρenableBindings(): void {
  *
  * @codeGenApi
  */
-export function ɵɵdisableBindings(): void {
+export function _ρdisableBindings(): void {
     instructionState.bindingsEnabled = false;
 }
 
@@ -250,7 +250,7 @@ export function getTView(): TView {
  *
  * @codeGenApi
  */
-export function ɵɵrestoreView(viewToRestore: OpaqueViewState) {
+export function _ρrestoreView(viewToRestore: OpaqueViewState) {
     instructionState.lFrame.contextLView = viewToRestore as any as LView;
 }
 

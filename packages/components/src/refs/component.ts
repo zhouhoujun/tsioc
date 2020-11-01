@@ -1,5 +1,5 @@
 import { IInjector, Type } from '@tsdi/ioc';
-import { ChangeDetectorRef } from '../chage/change';
+import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
 
