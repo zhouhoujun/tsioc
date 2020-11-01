@@ -41,9 +41,7 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
         reflect.annotation = ctx.matedata;
         return next();
     },
-    props: (describe: string, timeout?: number) => {
-        return { describe, timeout }
-    },
+    props: (describe: string, timeout?: number) => ({ describe, timeout }),
     appendProps: (metadata) => {
         metadata.singleton = true;
         return metadata;
@@ -85,9 +83,7 @@ export interface TestDecorOption<T> extends DecoratorOption<T> {
 export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): ITestDecorator<T> {
     options = options || {};
     return createDecorator<TestMetadata>(name, {
-        props: (timeout: number, setp?: number) => {
-            return { timeout, setp };
-        },
+        props: (timeout: number, setp?: number) => ({ timeout, setp }),
         ...options,
     }) as ITestDecorator<T>;
 }
@@ -120,9 +116,7 @@ export interface ITestCaseDecorator extends ITestDecorator<TestCaseMetadata> {
  * @template T
  */
 export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('TestCase', {
-    props: (title?: string, timeout?: number, setp?: number) => {
-        return { title, timeout, setp };
-    }
+    props: (title?: string, timeout?: number, setp?: number) => ({ title, timeout, setp })
 }) as ITestCaseDecorator;
 
 
