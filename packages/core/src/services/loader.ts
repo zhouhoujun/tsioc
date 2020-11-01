@@ -1,8 +1,8 @@
 import {
     Modules, Type, Token, IocCoreService, isString, lang,
-    isObject, isArray, InjectReference
+    isObject, isArray, InjectReference, isMetadataObject, isBaseObject, isFunction
 } from '@tsdi/ioc';
-import { LoadType, PathModules } from '../types';
+import { ChildModule, LoadType, PathModules } from '../types';
 
 
 /**
@@ -45,6 +45,15 @@ export interface IModuleLoader {
 declare let require: any;
 
 const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
+
+export function isPathModules(target: any): target is PathModules {
+    return isMetadataObject(target, 'modules', 'files');
+}
+
+export function isChildModule(target: any): target is ChildModule {
+    return target && isFunction(target.loadChild);
+}
+
 /**
  * default module loader.
  *
@@ -74,8 +83,10 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
             return Promise.all(modules.map(mdty => {
                 if (isString(mdty)) {
                     return this.isFile(mdty) ? this.loadFile(mdty) : this.loadModule(mdty);
-                } else if (isObject(mdty) && (mdty['modules'] || mdty['files'])) {
-                    return this.loadPathModule(mdty as PathModules);
+                } else if (isPathModules(mdty)) {
+                    return this.loadPathModule(mdty);
+                } else if (isChildModule(mdty)) {
+                    return mdty.loadChild() as Modules;
                 } else {
                     return mdty ? [mdty] : [];
                 }

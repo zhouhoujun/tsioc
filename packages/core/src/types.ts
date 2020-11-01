@@ -1,4 +1,4 @@
-import { Modules } from '@tsdi/ioc';
+import { Modules, Type } from '@tsdi/ioc';
 
 /**
  * load modules in base on an path.
@@ -35,7 +35,11 @@ export interface PathModules {
     modules?: (Modules | string)[];
 }
 
+export interface ChildModule  {
+    loadChild(): Promise<Type>;
+}
+
 /**
  * load module type.
  */
-export type LoadType = Modules | string | PathModules;
+export type LoadType = Modules | string | PathModules | ChildModule
