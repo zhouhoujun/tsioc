@@ -1,7 +1,6 @@
 import { Injectable, isString, isClass, isArray, PromiseUtil, refl } from '@tsdi/ioc';
-import { Runnable, BuilderService } from '@tsdi/boot';
+import { Runnable, BuilderService, AnnotationReflect } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
-import { Suite } from '../decorators';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestContext } from '../UnitTestContext';
 
@@ -54,8 +53,7 @@ export class UnitTestRunner extends Runnable<any> {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
         const builder = injector.resolve(BuilderService);
-        const suiteDecor = Suite.toString();
-        await PromiseUtil.step(suites.filter(v => isClass(v) && refl.getIfy(v).hasMetadata(suiteDecor)).map(s => () => builder.statrup({ type: s, injector: injector })));
+        await PromiseUtil.step(suites.filter(v => isClass(v) && refl.getIfy<AnnotationReflect>(v).annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: injector })));
         await injector.resolve(TestReport).report();
     }
 }
