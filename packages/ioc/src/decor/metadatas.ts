@@ -342,6 +342,9 @@ export interface AutorunDefine {
 export type DecorMemberType = 'property' | 'method' | 'parameter';
 export type DecoratorType = 'class' | DecorMemberType;
 
+/**
+ * decorator define.
+ */
 export interface DecorDefine<T = any> {
     /**
      * decorator name.
@@ -351,9 +354,21 @@ export interface DecorDefine<T = any> {
      * decorator name with '@'
      */
     decor: string;
+    /**
+     * decorator type.
+     */
     decorType: DecoratorType;
+    /**
+     * property key.
+     */
     propertyKey?: string;
+    /**
+     * paramter index.
+     */
     parameterIndex?: number;
+    /**
+     * matedata.
+     */
     matedata?: T;
 }
 

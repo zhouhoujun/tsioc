@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, RefChild, NonSerialize, Binding, CompilerFacade, ElementRef } from '../src';
+import { Component, Input, ComponentsModule, RefChild, NonSerialize, CompilerFacade, ElementRef, ViewChild, ContentChild } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, INJECTOR } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
@@ -54,9 +54,9 @@ class Components {
     @Input()
     address: string;
 
-    @RefChild('comp1') cmp1: ElementRef<Component1>;
+    @ViewChild('comp1') cmp1: ElementRef<Component1>;
 
-    @RefChild() cmp2: Component2;
+    @ContentChild() cmp2: Component2;
 
 }
 

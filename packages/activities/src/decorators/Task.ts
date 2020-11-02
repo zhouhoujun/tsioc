@@ -1,4 +1,5 @@
-import { isString, createClassDecorator, isClass, lang, ClassType } from '@tsdi/ioc';
+import { AnnotationReflect } from '@tsdi/boot';
+import { lang, ClassType, createDecorator } from '@tsdi/ioc';
 import { ActivityMetadata } from '../core/ActivityMetadata';
 
 
@@ -40,19 +41,19 @@ export interface ITaskDecorator {
  *
  * @Task
  */
-export const Task: ITaskDecorator = createClassDecorator<ActivityMetadata>('Task',
-    [
-        (ctx, next) => {
-            if (isString(ctx.currArg)) {
-                ctx.metadata.selector = ctx.currArg;
-                ctx.next(next);
-            }
+export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
+    actionType: 'annoation',
+    props: (selector: string) => ({ selector }),
+    classHandle: (ctx, next) => {
+        const reflect = ctx.reflect as AnnotationReflect;
+        reflect.annoType = 'component';
+        reflect.annoDecor = ctx.decor;
+        const metadata = ctx.matedata  as ActivityMetadata;
+        if (!metadata.name) {
+            metadata.name = lang.getClassName(ctx.reflect.type);
         }
-    ],
-    metadata => {
-        if (!metadata.name && isClass(metadata.type)) {
-            metadata.name = lang.getClassName(metadata.type);
-        }
-        return metadata;
-    }) as ITaskDecorator;
+        reflect.annotation = ctx.matedata;
+        return next();
+    }
+}) as ITaskDecorator;
 

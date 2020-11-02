@@ -1,6 +1,12 @@
-import { Token, createPropDecorator, PropertyMetadata, Type, isBoolean, isUndefined, createParamDecorator, createDecorator, InjectableMetadata } from '@tsdi/ioc';
+import {
+    Token, createPropDecorator, PropertyMetadata, Type, isBoolean,
+    isUndefined, createParamDecorator, createDecorator, InjectableMetadata, isClass, refl, lang
+} from '@tsdi/ioc';
 import { AnnotationReflect } from '@tsdi/boot';
-import { BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata, HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata } from './metadata';
+import {
+    BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
+    HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
+} from './metadata';
 import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect } from './reflect';
 
@@ -359,6 +365,11 @@ export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
 
 export abstract class Query { }
 
+function isDirOrComponent(target: any) {
+    const anTy = refl.get<AnnotationReflect>(lang.getClass(target))?.annoType;
+    return anTy === 'component' || anTy === 'decorator';
+}
+
 /**
  * Type of the ContentChildren decorator / constructor function.
  *
@@ -399,7 +410,7 @@ export interface ContentChildrenDecorator {
      *
      * @Annotation
      */
-    (selector: Token | Function,
+    (selector?: Token | Function,
         opts?: { descendants?: boolean, read?: any }): any;
     new(selector: Token | Function,
         opts?: { descendants?: boolean, read?: any }): Query;
@@ -412,8 +423,14 @@ export interface ContentChildrenDecorator {
  * @Annotation
  * @publicApi
  */
-export const ContentChildren: ContentChildrenDecorator = createPropDecorator(
-    'ContentChildren', {
+export const ContentChildren: ContentChildrenDecorator = createPropDecorator('ContentChildren', {
+    propHandle: (ctx, next) => {
+        const meta = ctx.matedata as QueryMetadata;
+        if (!meta.selector) {
+            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+        }
+        return next();
+    },
     props: (selector?: any, data?: { descendants?: boolean, read?: any }) =>
         ({ selector, first: false, isViewQuery: false, descendants: false, ...data })
 });
@@ -447,7 +464,7 @@ export interface ContentChildDecorator {
      *
      * @Annotation
      */
-    (selector: Token | Function,
+    (selector?: Token | Function,
         opts?: { read?: any, static?: boolean }): any;
     new(selector: Token | Function,
         opts?: { read?: any, static?: boolean }): Query;
@@ -462,6 +479,13 @@ export interface ContentChildDecorator {
  * @publicApi
  */
 export const ContentChild: ContentChildDecorator = createPropDecorator('ContentChild', {
+    propHandle: (ctx, next) => {
+        const meta = ctx.matedata as QueryMetadata;
+        if (!meta.selector) {
+            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+        }
+        return next();
+    },
     props: (selector?: any, opts?: { read?: any, static?: boolean }) =>
         ({ selector, first: true, isViewQuery: false, descendants: true, ...opts })
 });
@@ -491,12 +515,19 @@ export interface ViewChildrenDecorator {
      *
      * @Annotation
      */
-    (selector: Token | Function, opts?: { read?: any }): PropertyDecorator;
+    (selector?: Token | Function, opts?: { read?: any }): PropertyDecorator;
 
     (metadata: QueryMetadata): PipeDecorator;
 }
 
 export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
+    propHandle: (ctx, next) => {
+        const meta = ctx.matedata as QueryMetadata;
+        if (!meta.selector) {
+            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+        }
+        return next();
+    },
     props: (selector: Token | Function, opts?: { read?: any }) =>
         ({ selector, first: false, isViewQuery: true, descendants: true, ...opts })
 });
@@ -540,7 +571,7 @@ export interface ViewChildDecorator {
      *
      * @Annotation
      */
-    (selector: Token | Function,
+    (selector?: Token | Function,
         opts?: { read?: any, static?: boolean }): any;
     new(selector: Token | Function,
         opts?: { read?: any, static?: boolean }): Query;
@@ -553,6 +584,13 @@ export interface ViewChildDecorator {
  * @publicApi
  */
 export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
+    propHandle: (ctx, next) => {
+        const meta = ctx.matedata as QueryMetadata;
+        if (!meta.selector) {
+            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+        }
+        return next();
+    },
     props: (selector: any, data: any) =>
         ({ selector, first: true, isViewQuery: true, descendants: true, ...data }),
 });

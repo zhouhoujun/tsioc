@@ -1,5 +1,4 @@
 import { Type, Token, Provider, ObjectMap, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
-import { Binding, ElementTemplate, IComponentMetadata } from '@tsdi/components';
 import { Activity } from './Activity';
 import { IActivityContext } from './IActivityContext';
 import { IWorkflowContext } from './IWorkflowContext';

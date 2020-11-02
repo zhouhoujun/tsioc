@@ -140,6 +140,20 @@ export namespace refl {
         return next();
     };
 
+
+    export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
+        const meta = ctx.matedata as PropertyMetadata;
+        if (!meta.type) {
+            const target = ctx.target;
+            let type = Reflect.getOwnMetadata('design:type', target, ctx.propertyKey);
+            if (!type) {
+                // Needed to support react native inheritance
+                type = Reflect.getOwnMetadata('design:type', target.constructor, ctx.propertyKey);
+            }
+            meta.type = type;
+        }
+        return next();
+    }
     export const propInjectDecors = ['@Inject', '@AutoWired'];
     export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
         if (propInjectDecors.indexOf(ctx.decor) >= 0) {
@@ -149,13 +163,6 @@ export namespace refl {
                 reflect.propProviders.set(ctx.propertyKey, []);
             }
             const pdrs = reflect.propProviders.get(ctx.propertyKey);
-            const target = ctx.target;
-            let type = Reflect.getOwnMetadata('design:type', target, ctx.propertyKey);
-            if (!type) {
-                // Needed to support react native inheritance
-                type = Reflect.getOwnMetadata('design:type', target.constructor, ctx.propertyKey);
-            }
-            meta.type = type;
             pdrs.push(meta);
         }
         return next();
@@ -301,6 +308,7 @@ export namespace refl {
         .use(AutorunAction)
         .use(ExecuteDecorHandle);
     propDecorActions
+        .use(InitPropDesignAction)
         .use(PropInjectAction)
         .use(ExecuteDecorHandle);
     paramDecorActions
