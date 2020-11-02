@@ -1,6 +1,4 @@
-import {
-    IocCoreService, Inject, Singleton, isFunction, isClassType, ClassType, Type
-} from '@tsdi/ioc';
+import { IocCoreService, Inject, Singleton, isFunction, isClassType, ClassType, Type } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';

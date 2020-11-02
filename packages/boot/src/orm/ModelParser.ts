@@ -1,6 +1,6 @@
 import {
-    Type, PropertyMetadata, isUndefined, Inject, isClass, ObjectMap, isBaseType, isArray,
-    Abstract, SymbolType, Singleton, isNullOrUndefined, isFunction, IocCoreService, INJECTOR, TokenId, tokenId
+    Type, PropertyMetadata, Inject, ObjectMap, INJECTOR, isClass, isUndefined, isBaseType, isArray,
+    Abstract, SymbolType, Singleton, isNullOrUndefined, isFunction, IocCoreService, TokenId, tokenId
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IModelParser } from './IModelParser';

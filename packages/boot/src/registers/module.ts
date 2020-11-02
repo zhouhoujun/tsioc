@@ -1,7 +1,4 @@
-import {
-    DesignContext, lang, IProvider,
-    IocRegScope, IActionSetup, tokenId, Type, TokenId
-} from '@tsdi/ioc';
+import { DesignContext, lang, IProvider, IocRegScope, IActionSetup, Type } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { ModuleReflect } from '../modules/reflect';
 import { ModuleConfigure } from '../modules/configure';

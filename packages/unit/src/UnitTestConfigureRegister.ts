@@ -1,4 +1,3 @@
-import { DebugLogAspect } from '@tsdi/logs';
 import { Singleton, isArray } from '@tsdi/ioc';
 import { ConfigureRegister } from '@tsdi/boot';
 import { UnitTestConfigure } from './UnitTestConfigure';

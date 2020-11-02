@@ -1,7 +1,4 @@
-import {
-    ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup,
-    isClass, isNullOrUndefined, Inject, INJECTOR, lang
-} from '@tsdi/ioc';
+import { ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup, isClass, Inject, INJECTOR } from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
@@ -81,7 +78,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
 
         // after all clean.
         // if (isNullOrUndefined(ctx.value)) {
-            setTimeout(() => ctx.destroy());
+        setTimeout(() => ctx.destroy());
         // }
     }
 

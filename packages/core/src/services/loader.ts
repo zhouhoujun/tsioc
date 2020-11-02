@@ -1,6 +1,6 @@
 import {
     Modules, Type, Token, IocCoreService, isString, lang,
-    isObject, isArray, InjectReference, isMetadataObject, isBaseObject, isFunction
+    isArray, InjectReference, isMetadataObject, isFunction
 } from '@tsdi/ioc';
 import { ChildModule, LoadType, PathModules } from '../types';
 

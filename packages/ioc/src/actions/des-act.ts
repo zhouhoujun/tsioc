@@ -4,8 +4,8 @@ import { Provider } from '../tokens';
 import { IActionSetup } from '../Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import {
-    IocRegAction, IocRegScope, ExecDecoratorAtion,
-    DecorsRegisterer, DesignRegisterer, IocDecorScope, DesignContext, RuntimeContext
+    IocRegAction, IocRegScope, ExecDecoratorAtion, IocDecorScope,
+    DecorsRegisterer, DesignRegisterer, DesignContext, RuntimeContext
 } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS, REGISTERED } from '../utils/tk';
