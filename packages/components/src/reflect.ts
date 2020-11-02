@@ -1,5 +1,6 @@
 import { AnnotationReflect } from '@tsdi/boot';
 import { ComponentMetadata, DirectiveMetadata } from './metadata';
+import { ComponentDef, DirectiveDef } from './vdom/definition';
 
 
 /**
@@ -10,6 +11,8 @@ import { ComponentMetadata, DirectiveMetadata } from './metadata';
  * @extends {ITypeReflect}
  */
 export interface DirectiveReflect extends AnnotationReflect {
+
+    def?: DirectiveDef<any>;
 
     /**
      * directive selector.
@@ -32,6 +35,8 @@ export interface DirectiveReflect extends AnnotationReflect {
  * @extends {ITypeReflect}
  */
 export interface ComponentReflect extends AnnotationReflect {
+
+    def?: ComponentDef<any>;
     /**
      * component selector.
      */

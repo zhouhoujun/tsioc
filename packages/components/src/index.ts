@@ -40,9 +40,9 @@ export * from './refs/view';
 
 
 // registers
-export * from './registers/ComponentDefAction';
-export * from './registers/DirectiveDefAction';
-export * from './registers/PipeRegAction';
+export * from './registers/component';
+export * from './registers/directive';
+export * from './registers/pipe';
 
 // util
 export * from './util/array';
@@ -51,4 +51,4 @@ export * from './util/stringify';
 export * from './context';
 export * from './reflect';
 export * from './lifecycle';
-export * from './ComponentsModule';
+export * from './components';

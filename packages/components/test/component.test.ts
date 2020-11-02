@@ -1,6 +1,6 @@
-import { DIModule, BootApplication, BootContext } from '@tsdi/boot';
+import { DIModule, BootApplication, BootContext, IBootContext } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, RefChild, NonSerialize, CompilerFacade, ElementRef, ViewChild, ContentChild } from '../src';
+import { Component, Input, ComponentsModule, RefChild, NonSerialize, CompilerFacade, ElementRef, ViewChild, ContentChild, ViewChildren } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, INJECTOR } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
@@ -160,7 +160,6 @@ class ComponentTestMd {
 @DIModule({
     imports: [
         ComponentsModule,
-        ElementModule,
         SubModule
     ],
     components: [
@@ -181,7 +180,6 @@ class ComponentTestMd2 {
 @DIModule({
     imports: [
         ComponentsModule,
-        ElementModule,
         Component1,
         Component3,
         CustomeService
@@ -209,11 +207,16 @@ class ComponentTestMd3 {
 
 }
 
+@Component('el')
+class ElementNode {
+    @Input() name: string;
+}
+
 
 
 @Component('list')
 class ListBox {
-    @Input(ElementNode) items: ElementNode[];
+    @ViewChildren(ElementNode) items: ElementNode[];
 }
 
 @Component('columnDef')
@@ -225,14 +228,13 @@ class ColumnDef {
 
 @Component('columns')
 class Columns {
-    @Input(ColumnDef) defs: ColumnDef[];
+    @ViewChildren(ColumnDef) defs: ColumnDef[];
 }
 
 @DIModule({
     regIn: 'root',
     imports: [
         ComponentsModule,
-        ElementModule,
         ListBox,
         Columns,
         ColumnDef
@@ -246,7 +248,7 @@ class ListModule {
 @Suite('component test')
 export class CTest {
 
-    ctx: BootContext;
+    ctx: IBootContext;
 
     @Before()
     async init() {
@@ -277,7 +279,7 @@ export class CTest {
     async testRun() {
 
         let ctx = await BootApplication.run({
-            deps: [ComponentsModule, ElementModule, Component1],
+            deps: [ComponentsModule, Component1],
             template: { element: 'selector1', name: 'test1' }
         });
 

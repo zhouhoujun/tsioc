@@ -7,7 +7,7 @@ export interface ComponentType<T = any> extends Type<T> {
     /**
      * get component def.
      */
-    ρcmp?(...args: any[]): any;
+    ρcmp: never;
 }
 
 /**
@@ -17,6 +17,6 @@ export interface DirectiveType<T = any> extends Type<T> {
     /**
      * get directive def.
      */
-    ρdir?(...args: any[]): any;
+    ρdir: never;
 }
 

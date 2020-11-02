@@ -10,11 +10,12 @@ import { DirectiveType } from '../type';
 export const DirectiveDefAction = function (ctx: DesignContext, next: () => void): void {
     const decorRefl = ctx.reflect as DirectiveReflect;
     const type = ctx.type as DirectiveType;
-    if (!(decorRefl.annoType === 'component')) {
+    if (!(decorRefl.annoType === 'directive')) {
         return next();
     }
 
-    if (type.ρdir) {
+    if (type.ρdir && (type.ρdir as any).type === ctx.type) {
+        decorRefl.def = type.ρdir;
         return next();
     }
 
@@ -22,7 +23,7 @@ export const DirectiveDefAction = function (ctx: DesignContext, next: () => void
     const injector = ctx.injector as ICoreInjector;
 
     const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
-    type.ρdir = compiler.compileDirective(decorRefl);
+    decorRefl.def = compiler.compileDirective(decorRefl);
 
     next();
 };

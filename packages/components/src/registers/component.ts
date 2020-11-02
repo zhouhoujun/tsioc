@@ -15,7 +15,8 @@ export const ComponentDefAction = function (ctx: DesignContext, next: () => void
         return next();
     }
     const type = ctx.type as ComponentType;
-    if (type.ρcmp) {
+    if (type.ρcmp && (type.ρcmp as any).type === ctx.type) {
+        compRefl.def = type.ρcmp;
         return next();
     }
 
@@ -23,7 +24,7 @@ export const ComponentDefAction = function (ctx: DesignContext, next: () => void
     const injector = ctx.injector as ICoreInjector;
 
     const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
-    type.ρcmp = compiler.compileComponent(compRefl);
+    compRefl.def = compiler.compileComponent(compRefl);
 
     next();
 

@@ -4,9 +4,9 @@ import {
 import { IContainer, CONTAINER } from '@tsdi/core';
 import { ResolveMoudleScope, BuildContext } from '@tsdi/boot';
 import { Component, Directive, Pipe } from './decorators';
-import { DirectiveDefAction } from './registers/DirectiveDefAction';
-import { ComponentDefAction } from './registers/ComponentDefAction';
-import { PipeRegAction } from './registers/PipeRegAction';
+import { DirectiveDefAction } from './registers/directive';
+import { ComponentDefAction } from './registers/component';
+import { PipeRegAction } from './registers/pipe';
 import { ComponentContext } from './context';
 import { ParseTemplateHandle } from './compile/actions';
 import { Identifiers } from './compile/facade';
