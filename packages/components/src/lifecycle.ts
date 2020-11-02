@@ -59,6 +59,30 @@ export interface AfterContentInit {
 }
 
 /**
+ * @description
+ * A lifecycle hook that is called after the default change detector has
+ * completed checking all content of a directive.
+ *
+ * @see `AfterViewChecked`
+ * @see [Lifecycle hooks guide](guide/lifecycle-hooks)
+ *
+ * @usageNotes
+ * The following snippet shows how a component can implement this interface to
+ * define its own after-check functionality.
+ *
+ * @publicApi
+ */
+export interface AfterContentChecked {
+    /**
+     * A callback method that is invoked immediately after the
+     * default change detector has completed checking all of the directive's
+     * content.
+     */
+    onAfterContentChecked(): void;
+}
+
+
+/**
  * change.
  */
 export interface Change {
@@ -125,16 +149,40 @@ export interface AfterViewInit {
 }
 
 /**
- * component destory hooks.
+ * @description
+ * A lifecycle hook that is called after the default change detector has
+ * completed checking a component's view for changes.
+ *
+ * @see `AfterContentChecked`
+ * @see [Lifecycle hooks guide](guide/lifecycle-hooks)
+ *
+ * @usageNotes
+ * The following snippet shows how a component can implement this interface to
+ * define its own after-check functionality.
+ *
+ * @publicApi
+ */
+export interface AfterViewChecked {
+    /**
+     * A callback method that is invoked immediately after the
+     * default change detector has completed one change-check cycle
+     * for a component's view.
+     */
+    onAfterViewChecked(): void;
+}
+
+
+/**
+ * component destroy hooks.
  *
  * @export
  * @interface AfterContentInit
  */
-export interface OnDestory {
+export interface OnDestroy {
     /**
-     * component destory hooks. invoke on component destory.
+     * component destroy hooks. invoke on component destory.
      *
      * @memberof AfterInit
      */
-    onDestory(): void;
+    onDestroy(): void;
 }

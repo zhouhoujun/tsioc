@@ -99,30 +99,6 @@ export const enum RenderFlags {
   Update = 0b10
 }
 
-/**
- * A subclass of `Type` which has a static `ɵcmp`:`ComponentDef` field making it
- * consumable for rendering.
- */
-export interface ComponentType<T> extends Type<T> {
-  ɵcmp: never;
-}
-
-/**
- * A subclass of `Type` which has a static `ɵdir`:`DirectiveDef` field making it
- * consumable for rendering.
- */
-export interface DirectiveType<T> extends Type<T> {
-  ɵdir: never;
-  ɵfac: () => T;
-}
-
-/**
- * A subclass of `Type` which has a static `ɵpipe`:`PipeDef` field making it
- * consumable for rendering.
- */
-export interface PipeType<T> extends Type<T> {
-  ɵpipe: never;
-}
 
 /**
  * An object literal of this type is used to represent the metadata of a constructor dependency.
@@ -445,11 +421,6 @@ export interface PipeDef<T> {
   onDestroy: (() => void) | null;
 }
 
-/**
- * @codeGenApi
- */
-export type ɵɵPipeDefWithMeta<T, Name extends string> = PipeDef<T>;
-
 export interface DirectiveDefFeature {
   <T>(directiveDef: DirectiveDef<T>): void;
   /**
@@ -488,9 +459,7 @@ export type DirectiveDefList = (DirectiveDef<any> | ComponentDef<any>)[];
 
 export type DirectiveTypesOrFactory = (() => DirectiveTypeList) | DirectiveTypeList;
 
-export type DirectiveTypeList =
-  (DirectiveType<any> | ComponentType<any> |
-    Type<any>/* Type as workaround for: Microsoft/TypeScript/issues/4881 */)[];
+export type DirectiveTypeList = Type[];
 
 export type HostBindingsFunction<T> = <U extends T>(rf: RenderFlags, ctx: U) => void;
 
@@ -505,10 +474,4 @@ export type PipeDefList = PipeDef<any>[];
 
 export type PipeTypesOrFactory = (() => PipeTypeList) | PipeTypeList;
 
-export type PipeTypeList =
-  (PipeType<any> | Type<any>/* Type as workaround for: Microsoft/TypeScript/issues/4881 */)[];
-
-
-// Note: This hack is necessary so we don't erroneously get a circular dependency
-// failure based on types.
-export const unusedValueExportToPlacateAjd = 1;
+export type PipeTypeList = Type[];

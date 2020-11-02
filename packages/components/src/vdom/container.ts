@@ -1,8 +1,8 @@
 
 import { ViewRef } from '../refs/view';
-import {TNode} from './node';
-import {VComment, VElement} from './types';
-import {HOST, LView, NEXT, PARENT, T_HOST, TRANSPLANTED_VIEWS_TO_REFRESH} from './view';
+import { TNode } from './node';
+import { VComment, VElement } from './types';
+import { HOST, LView, NEXT, PARENT, T_HOST, TRANSPLANTED_VIEWS_TO_REFRESH } from './view';
 
 
 
@@ -63,7 +63,7 @@ export interface LContainer extends Array<any> {
    * The host could be an LView if this container is on a component node.
    * In that case, the component LView is its HOST.
    */
-  readonly[HOST]: VElement|VComment|LView;
+  readonly [HOST]: VElement | VComment | LView;
 
   /**
    * This is a type field which allows us to differentiate `LContainer` from `StylingContext` in an
@@ -89,7 +89,7 @@ export interface LContainer extends Array<any> {
    * This allows us to jump from a container to a sibling container or component
    * view with the same parent, so we can remove listeners efficiently.
    */
-  [NEXT]: LView|LContainer|null;
+  [NEXT]: LView | LContainer | null;
 
   /**
    * The number of direct transplanted views which need a refresh or have descendants themselves
@@ -104,7 +104,7 @@ export interface LContainer extends Array<any> {
    * a different `LContainer`. We need to track views created from a given declaration point since
    * queries collect matches from the embedded view declaration point and _not_ the insertion point.
    */
-  [MOVED_VIEWS]: LView[]|null;
+  [MOVED_VIEWS]: LView[] | null;
 
   /**
    * Pointer to the `TNode` which represents the host of the container.
@@ -112,15 +112,15 @@ export interface LContainer extends Array<any> {
   [T_HOST]: TNode;
 
   /** The comment element that serves as an anchor for this LContainer. */
-  readonly[NATIVE]:
-      VComment;  // TODO(misko): remove as this value can be gotten by unwrapping `[HOST]`
+  readonly [NATIVE]:
+  VComment;  // TODO(misko): remove as this value can be gotten by unwrapping `[HOST]`
 
   /**
    * Array of `ViewRef`s used by any `ViewContainerRef`s that point to this container.
    *
    * This is lazily initialized by `ViewContainerRef` when the first view is inserted.
    */
-  [VIEW_REFS]: ViewRef[]|null;
+  [VIEW_REFS]: ViewRef[] | null;
 }
 
 // Note: This hack is necessary so we don't erroneously get a circular dependency
