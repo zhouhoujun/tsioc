@@ -1,13 +1,17 @@
+import { Injector } from '@tsdi/ioc';
 import { DoCheck, OnChanges, OnInit } from '../../lifecycle';
+import { Sanitizer } from '../../saniti/sanitizer';
+import { LContainer } from '../container';
 import { attachPatchData } from '../ctx_discovery';
-import { ComponentDef, ComponentTemplate, DirectiveDef, RenderFlags } from '../definition';
-import { LocalRefExtractor, PropertyAliasValue, TAttributes, TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode, TIcuContainerNode, TNode, TNodeFlags, TNodeType, TProjectionNode, TViewNode } from '../node';
+import { ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefListOrFactory, PipeDefListOrFactory, RenderFlags, SchemaMetadata, ViewEncapsulation, ViewQueriesFunction } from '../definition';
+import { executeCheckHooks, executeInitAndCheckHooks, incrementInitPhaseFlags } from '../hooks';
+import { InitialInputData, LocalRefExtractor, PropertyAliases, PropertyAliasValue, TAttributes, TConstantsOrFactory, TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode, TIcuContainerNode, TNode, TNodeFlags, TNodeType, TProjectionNode, TViewNode } from '../node';
 import { isProceduralRenderer, RComment, RElement, Renderer, RendererFactory, RNode } from '../renderer';
-import { enterView, getBindingsEnabled, getCurrentTNode, isCurrentTNodeParent, isInCheckNoChangesMode, leaveView, setBindingIndex, setBindingRootForHostBindings, setCurrentQueryIndex, setCurrentTNode, setSelectedIndex } from '../state';
+import { enterView, getBindingsEnabled, getCurrentTNode, getSelectedIndex, isCurrentTNodeParent, isInCheckNoChangesMode, leaveView, setBindingIndex, setBindingRootForHostBindings, setCurrentQueryIndex, setCurrentTNode, setSelectedIndex } from '../state';
 import { isAnimationProp, mergeHostAttrs } from '../util/attrs';
-import { isComponentDef } from '../util/check';
-import { getNativeByTNode, resetPreOrderHookFlags } from '../util/view';
-import { CONTEXT, DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, FLAGS, HEADER_OFFSET, HOST, InitPhaseState, INJECTOR, LView, LViewFlags, PARENT, RENDERER, RENDERER_FACTORY, SANITIZER, TView, TViewType, T_HOST } from '../view';
+import { isComponentDef, isComponentHost, isContentQueryHost } from '../util/check';
+import { getComponentLViewByIndex, getNativeByTNode, isCreationMode, resetPreOrderHookFlags, updateTransplantedViewCount } from '../util/view';
+import { CONTEXT, DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, FLAGS, HEADER_OFFSET, HOST, InitPhaseState, INJECTOR, LView, LViewFlags, PARENT, RENDERER, RENDERER_FACTORY, SANITIZER, TVIEW, TView, TViewType, T_HOST } from '../view';
 
 
 /**
@@ -597,7 +601,7 @@ export function createTView(
     vars: number, directives: DirectiveDefListOrFactory|null, pipes: PipeDefListOrFactory|null,
     viewQuery: ViewQueriesFunction<any>|null, schemas: SchemaMetadata[]|null,
     constsOrFactory: TConstantsOrFactory|null): TView {
-  ngDevMode && ngDevMode.tView++;
+  // ngDevMode && ngDevMode.tView++;
   const bindingStartIndex = HEADER_OFFSET + decls;
   // This length does not yet contain host bindings from child directives because at this point,
   // we don't know which directives are active on this template. As soon as a directive is matched
@@ -726,7 +730,7 @@ export function locateHostElement(
   let rElement = typeof elementOrSelector === 'string' ?
       renderer.querySelector(elementOrSelector)! :
       elementOrSelector;
-  ngDevMode && assertHostNodeExists(rElement, elementOrSelector);
+  // ngDevMode && assertHostNodeExists(rElement, elementOrSelector);
 
   // Always clear host element's content when Renderer is in use. For procedural renderer case we
   // make it depend on whether ShadowDom encapsulation is used (in which case the content should be
@@ -787,7 +791,7 @@ export function createTNode(
 export function createTNode(
     tView: TView, tParent: TElementNode|TContainerNode|null, type: TNodeType, adjustedIndex: number,
     tagName: string|null, attrs: TAttributes|null): TNode {
-  ngDevMode && ngDevMode.tNode++;
+  // ngDevMode && ngDevMode.tNode++;
   let injectorIndex = tParent ? tParent.injectorIndex : -1;
   const tNode = ngDevMode ?
       new TNodeDebug(
@@ -888,7 +892,7 @@ function generatePropertyAliases(
  * Initialization is done for all directives matched on a given TNode.
  */
 function initializeInputAndOutputAliases(tView: TView, tNode: TNode): void {
-  ngDevMode && assertFirstCreatePass(tView);
+  // ngDevMode && assertFirstCreatePass(tView);
 
   const start = tNode.directiveStart;
   const end = tNode.directiveEnd;
@@ -950,7 +954,7 @@ function mapPropName(name: string): string {
 export function elementPropertyInternal<T>(
     tView: TView, tNode: TNode, lView: LView, propName: string, value: T, renderer: Renderer,
     sanitizer: SanitizerFn|null|undefined, nativeOnly: boolean): void {
-  ngDevMode && assertNotSame(value, NO_CHANGE as any, 'Incoming value should never be NO_CHANGE.');
+  // ngDevMode && assertNotSame(value, NO_CHANGE as any, 'Incoming value should never be NO_CHANGE.');
   const element = getNativeByTNode(tNode, lView) as RElement | RComment;
   let inputData = tNode.inputs;
   let dataValue: PropertyAliasValue|undefined;
@@ -993,7 +997,7 @@ export function elementPropertyInternal<T>(
 
 /** If node is an OnPush component, marks its LView dirty. */
 function markDirtyIfOnPush(lView: LView, viewIndex: number): void {
-  ngDevMode && assertLView(lView);
+  // ngDevMode && assertLView(lView);
   const childComponentLView = getComponentLViewByIndex(viewIndex, lView);
   if (!(childComponentLView[FLAGS] & LViewFlags.CheckAlways)) {
     childComponentLView[FLAGS] |= LViewFlags.Dirty;
