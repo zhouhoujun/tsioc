@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ILogger } from '@tsdi/logs';
 import { Singleton, Type, isString, isArray, IInjector } from '@tsdi/ioc';
-import { IBootContext, IConnectionOptions, RunnableConfigure, ConnectionStatupService } from '@tsdi/boot';
+import { IBootContext, IConnectionOptions, Configure, ConnectionStatupService } from '@tsdi/boot';
 import { getConnection, createConnection, ConnectionOptions, Connection, getMetadataArgsStorage, getCustomRepository, getConnectionManager } from 'typeorm';
 
 
@@ -39,7 +39,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         }
     }
 
-    async statupConnection(injector: IInjector, options: IConnectionOptions, config: RunnableConfigure) {
+    async statupConnection(injector: IInjector, options: IConnectionOptions, config: Configure) {
         const connection = await this.createConnection(options, config);
         if (options.initDb) {
             await options.initDb(connection);
@@ -56,7 +56,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      * @param options connenction options.
      * @param config config
      */
-    async createConnection(options: IConnectionOptions, config: RunnableConfigure) {
+    async createConnection(options: IConnectionOptions, config: Configure) {
         if (options.asDefault && !options.entities) {
             let entities: Type[] = [];
             if (config?.models.some(m => isString(m))) {

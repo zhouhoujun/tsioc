@@ -1,5 +1,5 @@
 import { isDefined } from '@tsdi/ioc';
-import { DIModule, ProcessRunRootToken } from '@tsdi/boot';
+import { DIModule, PROCESS_ROOT } from '@tsdi/boot';
 import { BrowserModule } from '@tsdi/platform-browser';
 declare let System: any;
 
@@ -12,7 +12,7 @@ let processRoot = isDefined(System) ? System.baseURL : '.';
         BrowserModule
     ],
     providers: [
-        { provide: ProcessRunRootToken, useValue: processRoot }
+        { provide: PROCESS_ROOT, useValue: processRoot }
     ]
 })
 export class BrowserBootstrapModule {

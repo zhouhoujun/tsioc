@@ -1,5 +1,5 @@
 import {
-    Type, MethodMetadata, ClassMetadata, IProvider, TypeMetadata, tokenId, Token,
+    Type, MethodMetadata, ClassMetadata, IProvider, tokenId, Token,
     isNullOrUndefined, IocContext, IInjector, PROVIDERS, ParameterMetadata
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';

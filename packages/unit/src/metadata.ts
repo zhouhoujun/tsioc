@@ -1,4 +1,3 @@
-import { MethodMetadata } from '@tsdi/ioc';
 import { AnnotationMetadata } from '@tsdi/boot';
 
 /**

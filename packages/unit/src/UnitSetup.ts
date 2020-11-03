@@ -1,10 +1,7 @@
 import { IContainer, CONTAINER } from '@tsdi/core';
-import { Suite } from './decorators';
-import {
-    Inject, IocExt, Provider, InjectReference,
-    DecoratorProvider
-} from '@tsdi/ioc';
+import { Inject, IocExt, Provider, InjectReference, DecoratorProvider } from '@tsdi/ioc';
 import { BootContext } from '@tsdi/boot';
+import { Suite } from './decorators';
 
 
 /**
