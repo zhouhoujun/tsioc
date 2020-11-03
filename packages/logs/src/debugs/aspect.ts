@@ -24,15 +24,15 @@ export class DebugLogAspect extends LoggerAspect {
         let level: Level;
         switch (joinPoint.state) {
             case JoinpointState.AfterThrowing:
-                level = Level.error;
+                level = 'error';
                 break;
             case JoinpointState.AfterReturning:
-                level = Level.debug;
+                level = 'debug';
                 break;
 
             case JoinpointState.After:
             case JoinpointState.Before:
-                level = Level.trace;
+                level = 'trace';
                 break;
         }
         this.processLog(joinPoint, level);

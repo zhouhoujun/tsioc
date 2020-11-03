@@ -6,7 +6,7 @@
  * element.
  *
  * @security Permitting direct access to the DOM can make your application more vulnerable to
- * XSS attacks. Carefully review any use of `ElementRef` in your code. 
+ * XSS attacks. Carefully review any use of `ElementRef` in your code.
  *
  * @publicApi
  */

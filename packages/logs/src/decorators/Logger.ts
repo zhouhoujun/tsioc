@@ -1,5 +1,5 @@
 import { TypeMetadata, ClassMethodDecorator, isFunction, createDecorator } from '@tsdi/ioc';
-import { Level } from '../Level';
+import { isLevel, Level } from '../Level';
 
 
 /**
@@ -98,9 +98,8 @@ export const Logger: ILoggerDecorator<LoggerMetadata> = createDecorator<LoggerMe
             return { message: args[0] };
         } else if (args.length === 2) {
             const [arg1, arg2] = args;
-            const level = Level[arg2];
-            if (level) {
-                return { message: arg1, level }
+            if (isLevel(arg2)) {
+                return { message: arg1, level: arg2 }
             } else {
                 return { logname: arg1, message: arg2 }
             }
