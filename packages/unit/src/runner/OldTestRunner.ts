@@ -36,7 +36,7 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
 
 
     async configureService(ctx: IBootContext): Promise<void> {
-
+        await this.run();
     }
 
     @Inject(INJECTOR)
@@ -184,10 +184,6 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
         testkeys.forEach(k => {
             globals[k] = gls[k];
         });
-    }
-
-    async startup() {
-        return this.run();
     }
 
     async run(): Promise<any> {

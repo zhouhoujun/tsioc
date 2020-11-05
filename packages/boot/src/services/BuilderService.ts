@@ -9,7 +9,6 @@ import { ResolveMoudleScope } from '../builder/handles';
 import { IHandle } from '../handles/Handle';
 import { BuildContext } from '../builder/ctx';
 import { BootContext } from '../boot/ctx';
-import { IStartup } from '../runnable/Startup';
 
 
 
@@ -64,7 +63,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         return rctx;
     }
 
-    async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<IStartup<T>> {
+    async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<any> {
         const container = this.root.getContainer();
         let md: ClassType;
         let injector: ICoreInjector;

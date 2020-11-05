@@ -1,7 +1,7 @@
 import { IocCoreService, ClassType } from '@tsdi/ioc';
 import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
-import { IStartup } from '../runnable/Startup';
+import { IRunnable } from '../runnable/Runnable';
 
 
 /**
@@ -36,10 +36,10 @@ export interface IBuilderService extends IocCoreService {
     resolve<T>(target: ClassType<T> | BuildOption<T>): Promise<T>;
 
     /**
-     * startup service.
+     * startup runnable service.
      * @param target service.
      */
-    statrup<T>(target: ClassType<T> | BootOption<T>): Promise<IStartup<T>>;
+    statrup<T>(target: ClassType<T> | BootOption<T>): Promise<IRunnable<T>>;
 
     /**
      * run module.

@@ -13,10 +13,9 @@ import { CompilerFacade } from './facade';
  */
 export const BuildComponentHandle = async function (ctx: ComponentContext, next?: () => Promise<void>): Promise<void> {
     const reflect = ctx.reflect as ComponentReflect;
-    const type = ctx.type as ComponentType;
-    if (reflect.annoType === 'component' && isFunction(type.ρcmp)) {
+    if (reflect.annoType === 'component') {
         // use compiler of component, register in module of current injector.
-        ctx.value = type.ρcmp(ctx);
+        // reflect.def.template(ctx.value);
     }
 
     if (next) {
@@ -35,15 +34,14 @@ export const BuildComponentHandle = async function (ctx: ComponentContext, next?
 export const BuildDirectiveHandle = async function (ctx: ComponentContext, next?: () => Promise<void>): Promise<void> {
     const reflect = ctx.reflect as DirectiveReflect;
     const type = ctx.type as DirectiveType;
-    if (reflect.annoType === 'directive' && isFunction(type.ρdir)) {
+    if (reflect.annoType === 'directive') {
         // use compiler of component, register in module of current injector.
-        ctx.value = type.ρdir(ctx);
     }
 
     if (next) {
         await next();
     }
-};
+}
 
 /**
  * parse template handle

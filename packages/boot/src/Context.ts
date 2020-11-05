@@ -7,7 +7,6 @@ import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
 import { Configure } from './configure/Configure';
 import { ModuleReflect } from './modules/reflect';
-import { IStartup } from './runnable/Startup';
 import { BootstrapMetadata } from './decorators';
 
 export interface ProdverOption {
@@ -332,9 +331,9 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
     getAnnoation<T extends BootstrapMetadata>(): T;
 
     /**
-     * get boot statup.
+     * get statup runnable.
      */
-    getStartup(): IStartup;
+    getStartup(): any;
 
     /**
      * configuration merge metadata config and all application config.

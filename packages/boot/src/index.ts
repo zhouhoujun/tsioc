@@ -13,9 +13,7 @@ export * from './configure/manager';
 export * from './configure/register';
 
 // runnables
-export * from './runnable/Startup';
 export * from './runnable/Runnable';
-export * from './runnable/Service';
 
 // decorators
 export * from './decorators';

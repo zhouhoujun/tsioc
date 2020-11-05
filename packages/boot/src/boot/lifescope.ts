@@ -2,8 +2,8 @@ import { IActionSetup } from '@tsdi/ioc';
 import { BuildHandles } from '../builder/handles';
 import { IAnnoationContext } from '../Context';
 import {
-    RegisterModuleScope, ModuleBuildScope, ResolveRunnableScope, StartupBootHandle,
-    RegBootEnvScope, BootConfigureRegisterHandle, StatupServiceScope, ResolveBootHandle
+    RegisterModuleScope, ModuleBuildScope, ResolveBootHandle, StartupBootstrap,
+    RegBootEnvScope, BootConfigureRegisterHandle, StartupGlobalService
 } from './handles';
 
 
@@ -12,8 +12,7 @@ export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> impl
     setup() {
         this.use(RegisterModuleScope)
             .use(ModuleBuildScope)
-            .use(ResolveRunnableScope)
-            .use(StartupBootHandle);
+            .use(StartupBootstrap);
     }
 }
 
@@ -21,8 +20,7 @@ export class StartupServiceScope extends BuildHandles<IAnnoationContext> impleme
 
     setup() {
         this.use(ResolveBootHandle)
-            .use(ResolveRunnableScope)
-            .use(StartupBootHandle);
+            .use(StartupBootstrap);
     }
 }
 
@@ -33,8 +31,7 @@ export class BootLifeScope extends BuildHandles<IAnnoationContext> implements IA
             .use(RegisterModuleScope)
             .use(BootConfigureRegisterHandle)
             .use(ModuleBuildScope)
-            .use(StatupServiceScope)
-            .use(ResolveRunnableScope)
-            .use(StartupBootHandle);
+            .use(StartupGlobalService)
+            .use(StartupBootstrap);
     }
 }

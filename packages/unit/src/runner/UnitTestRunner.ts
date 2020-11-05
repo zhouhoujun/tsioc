@@ -17,6 +17,7 @@ export class UnitTestRunner extends Runnable<any> {
 
     async configureService(ctx: UnitTestContext): Promise<void> {
         this.context = ctx;
+        await this.run(ctx.data);
     }
 
     getContext(): UnitTestContext {

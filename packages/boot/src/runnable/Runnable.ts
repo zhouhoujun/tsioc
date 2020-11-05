@@ -1,27 +1,50 @@
-import { Abstract } from '@tsdi/ioc';
-import { IStartup, Startup } from './Startup';
+import { lang, Type, Abstract, Inject, IDestoryable, Destoryable } from '@tsdi/ioc';
+import { IBootContext } from '../Context';
+import { BOOTCONTEXT } from '../tk';
 
 
 /**
- * runnable interface. define the type as runnable.
+ * IRunnable interface. define the type as a runnable.
  *
  * @export
  * @interface IRunnable
  * @template T
- * @template TCtx default BootContext
+ * @template TCtx default IBootContext
  */
-export interface IRunnable<T = any> extends IStartup<T> {
+export interface IRunnable<T = any> extends IDestoryable {
 
     /**
-     * run application via boot instance.
+     * runable context.
      *
-     * @param {*} [data]
-     * @returns {Promise<any>}
-     * @memberof IRunner
+     * @type {TCtx}
+     * @memberof IRunnable
      */
-    run(data?: any): Promise<any>;
+    getContext(): IBootContext;
+
+    /**
+     * get boot instance.
+     *
+     * @type {T}
+     * @memberof IRunnable
+     */
+    getBoot(): T;
+
+    /**
+     * get boot type.
+     */
+    getBootType(): Type<T>;
+
+    /**
+     * configure and startup this service.
+     *
+     * @param {IBootContext} [ctx]
+     * @returns {(Promise<void>)}
+     * @memberof IRunnable
+     */
+    configureService(ctx: IBootContext): Promise<void>;
 
 }
+
 
 /**
  * boot.
@@ -32,22 +55,48 @@ export interface IRunnable<T = any> extends IStartup<T> {
  * @template T
  */
 @Abstract()
-export abstract class Runnable<T = any> extends Startup<T> implements IRunnable<T> {
+export abstract class Runnable<T = any> extends Destoryable implements IRunnable<T> {
 
-    async startup() {
-        await this.run(this.context.data);
+    @Inject(BOOTCONTEXT) protected context: IBootContext;
+
+    /**
+     * runable context.
+     *
+     * @type {TCtx}
+     * @memberof IRunnable
+     */
+    getContext(): IBootContext {
+        return this.context;
+    }
+
+    getBoot(): T {
+        return this.context.boot;
+    }
+
+    getBootType(): Type<T> {
+        return lang.getClass(this.context.boot);
     }
 
     /**
-     * run application via boot instance.
+     * configure startup service.
      *
-     * @param {*} [data]
-     * @returns {Promise<any>}
-     * @memberof IRunner
+     * @param {IBootContext} [ctx]
+     * @returns {(Promise<void>)}
+     * @memberof IStartup
      */
-    abstract run(data?: any): Promise<any>;
+    abstract configureService(ctx: IBootContext): Promise<void>;
+
+    /**
+     * destorying. default do nothing.
+     */
+    protected destroying() {
+
+    }
 
 }
+
+@Abstract()
+export abstract class Startup extends Runnable {}
 
 /**
  * target is Runnable or not.

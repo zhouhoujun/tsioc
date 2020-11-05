@@ -27,9 +27,6 @@ export abstract class Reporter {
  */
 @Abstract()
 export abstract class RealtimeReporter extends Reporter {
-    constructor() {
-        super();
-    }
     /**
      * render suite.
      *

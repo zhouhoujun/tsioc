@@ -2,15 +2,13 @@ import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType,
 import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import {
-    PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_STARTUP, MODULE_STARTUPS
+    PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS
 } from '../tk';
 import { ConfigureManager } from '../configure/manager';
 import { ConfigureRegister } from '../configure/register';
 import { BuildHandles, BuildHandle } from '../builder/handles';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
-import { Startup } from '../runnable/Startup';
 import { Runnable } from '../runnable/Runnable';
-import { Service } from '../runnable/Service';
 
 /**
  * annoation handle.
@@ -248,7 +246,7 @@ export const ResolveBootHandle = async function (ctx: IBootContext, next: () => 
 /**
  * configure startup service scope.
  */
-export class StatupServiceScope extends BuildHandles<IBootContext> implements IActionSetup {
+export class StartupGlobalService extends BuildHandles<IBootContext> implements IActionSetup {
 
     async execute(ctx: IBootContext, next: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
@@ -317,21 +315,18 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
 /**
  * resolve main boot instance.
  */
-export class ResolveRunnableScope extends BuildHandles<IBootContext> implements IActionSetup {
+export class StartupBootstrap extends BuildHandles<IBootContext> implements IActionSetup {
     async execute(ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-        let boot = ctx.boot;
-        if (!(boot instanceof Startup)) {
-            super.execute(ctx);
-        } else if (boot) {
-            ctx.setValue(MODULE_STARTUP, boot);
+        if (ctx.boot) {
+            await super.execute(ctx);
         }
         if (ctx.getStartup()) {
-            await next();
+            return await next();
         }
     }
 
     setup() {
-        this.use(RefRunnableHandle);
+        this.use(RunnableHandle);
     }
 }
 
@@ -340,30 +335,23 @@ export class ResolveRunnableScope extends BuildHandles<IBootContext> implements 
  * @param ctx boot context
  * @param next next step.
  */
-export const RefRunnableHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let startup = ctx.injector.getService(
-        { tokens: [Startup, Runnable, Service], target: ctx.boot },
-        { provide: BOOTCONTEXT, useValue: ctx },
-        { provide: lang.getClass(ctx), useValue: ctx });
+export const RunnableHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+    let startup: Runnable;
+    if (ctx.boot instanceof Runnable) {
+        startup = ctx.boot;
+    } else {
+        startup = ctx.injector.getService(
+            { tokens: [Runnable], target: ctx.boot },
+            { provide: BOOTCONTEXT, useValue: ctx },
+            { provide: lang.getClass(ctx), useValue: ctx });
+    }
 
-    startup && ctx.setValue(MODULE_STARTUP, startup);
-
-    if (!ctx.hasValue(MODULE_STARTUP)) {
-        await next();
+    if (startup) {
+        ctx.setValue(MODULE_RUNNABLE, startup);
+        ctx.onDestroy(() => startup.destroy());
+        await startup.configureService(ctx);
+    } else {
+        return await next();
     }
 };
 
-/**
- * statup main boot.
- * @param ctx boot context.
- * @param next next step.
- */
-export const StartupBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let startup = ctx.getStartup();
-    ctx.onDestroy(() => startup?.destroy());
-    await startup.configureService(ctx);
-    if (ctx.getOptions().autorun !== false) {
-        await startup.startup();
-    }
-    await next();
-};

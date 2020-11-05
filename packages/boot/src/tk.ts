@@ -1,7 +1,6 @@
 import { tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { Configure } from './configure/Configure';
-import { IStartup } from './runnable/Startup';
 import { IBootContext } from './Context';
 import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
 import { IBuilderService } from './services/IBuilderService';
@@ -97,9 +96,9 @@ export const BaseTypeParserToken = TYPE_PARSER;
 export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_INJECTOR');
 
 /**
- * module boot startup instance.
+ * module boot startup runnable instance.
  */
-export const MODULE_STARTUP = tokenId<IStartup>('MODULE_STARTUP');
+export const MODULE_RUNNABLE = tokenId<any>('MODULE_RUNNABLE');
 
 /**
  * application statup service
