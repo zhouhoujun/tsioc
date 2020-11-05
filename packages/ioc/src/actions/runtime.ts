@@ -1,6 +1,8 @@
+import { RuntimeContext } from './ctx';
+import { InitReflectAction } from './reg';
 import { RegisterLifeScope } from './lifescope';
-import { InitReflectAction, RuntimeContext } from './reg';
 import * as ra from './run-act';
+
 /**
  * runtime life scope.
  *

@@ -3,6 +3,7 @@ import { Handler, isClass } from '../utils/lang';
 import { Token, tokenId, TokenId } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { Action, Actions } from '../Action';
+import { IocContext } from './ctx';
 
 /**
  * action injector.
@@ -21,22 +22,6 @@ export interface IActionInjector extends IInjector {
 }
 
 export const ActionInjectorToken: TokenId<IActionInjector> = tokenId<IActionInjector>('ACTION_INJECTOR');
-
-
-/**
- * context interface.
- */
-export interface IocContext {
-    /**
-     * current injector.
-     */
-    injector: IInjector;
-
-    /**
-     *  providers.
-     */
-    providers?: IProvider;
-}
 
 
 

@@ -1,4 +1,5 @@
 import { Action, Actions } from '../Action';
+import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ClassType, DecoratorScope, Type } from '../types';
 import { chain, Handler, isArray, isClass, isFunction, isString, lang } from '../utils/lang';
 import {
@@ -15,8 +16,8 @@ export namespace refl {
 
     export interface HandleMap {
         getHandle(type: DecoratorType): Handler<DecorContext>[];
-        getRuntimeHandle(type: DecoratorScope): Handler[];
-        getDesignHandle(type: DecoratorScope): Handler[];
+        getRuntimeHandle(type: DecoratorScope): Handler<RuntimeContext>[];
+        getDesignHandle(type: DecoratorScope): Handler<DesignContext>[];
     }
 
     export interface DecorContext extends DecorDefine {
@@ -30,9 +31,9 @@ export namespace refl {
         handle?: Handler<DecorContext> | Handler<DecorContext>[];
     }
 
-    export interface DecorScopeHandles {
+    export interface DecorScopeHandles<T> {
         type: DecoratorScope;
-        handle?: Handler | Handler[];
+        handle?: Handler<T> | Handler<T>[];
     }
 
     /**
@@ -63,11 +64,11 @@ export namespace refl {
         /**
          * design handles.
          */
-        designHandles?: DecorScopeHandles | DecorScopeHandles[];
+        designHandles?: DecorScopeHandles<DesignContext> | DecorScopeHandles<DesignContext>[];
         /**
          * runtime handles.
          */
-        runtimeHandles?: DecorScopeHandles | DecorScopeHandles[];
+        runtimeHandles?: DecorScopeHandles<RuntimeContext> | DecorScopeHandles<RuntimeContext>[];
     }
 
     export interface DecorRegisteredOption extends DecorRegisterOption, HandleMap {
@@ -88,11 +89,6 @@ export namespace refl {
          */
         appendProps?(metadata: T): void;
     }
-
-    // const decorDesignHandles = new Map<string, Map<DecoratorScope, Handler[]>>();
-    // const decorRuntimeHandles = new Map<string, Map<DecoratorScope, Handler[]>>();
-
-    // const decorsHandles = new Map<string, Map<DecoratorType, Handler<DecorContext>[]>>();
 
     /**
      * register decorator.

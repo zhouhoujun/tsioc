@@ -1,11 +1,12 @@
 import { DecoratorScope } from '../types';
 import { isFunction, isClass, lang } from '../utils/lang';
 import { Provider } from '../tokens';
+import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import {
     IocRegAction, IocRegScope, ExecDecoratorAtion, IocDecorScope,
-    DecorsRegisterer, DesignRegisterer, DesignContext, RuntimeContext
+    DecorsRegisterer, DesignRegisterer
 } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS, REGISTERED } from '../utils/tk';

@@ -2,94 +2,11 @@ import { Type, DecoratorScope } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { isClass, Handler, isArray, isString, SyncHandler } from '../utils/lang';
 import { Token, Registration } from '../tokens';
-import { IActionInjector, IocActions, IocContext } from './act';
+import { IActionInjector, IocActions } from './act';
 import { Action, IocAction } from '../Action';
-import { ParameterMetadata, TypeReflect } from '../decor/metadatas';
 import { refl } from '../decor/reflects';
+import { RegContext } from './ctx';
 
-
-/**
- * Ioc Register action context.
- *
- * @export
- * @class RegContext
- * @extends {IocActionContext}
- */
-export interface RegContext extends IocContext {
-    /**
-     * resolve token.
-     *
-     */
-    token?: Token;
-
-    /**
-     * target type.
-     *
-     */
-    type: Type;
-
-    /**
-     * current decoractor.
-     */
-    currDecor?: string;
-
-    /**
-     * current decorator scope.
-     */
-    currDecorScope?: any;
-
-    /**
-     * custom set singleton or not.
-     *
-     */
-    singleton?: boolean;
-
-    /**
-     * target reflect.
-     */
-    reflect: TypeReflect;
-
-}
-
-/**
- * design action context.
- */
-export interface DesignContext extends RegContext {
-    /**
-     * type register in.
-     */
-    regIn?: string;
-}
-
-/**
- * Ioc Register action context.
- *
- * @extends {RegContext}
- */
-export interface RuntimeContext extends RegContext {
-    /**
-     * target instance.
-     *
-     * @type {*}
-     * @memberof RuntimeActionContext
-     */
-    instance?: any;
-
-    /**
-     * property key
-     */
-    propertyKey?: string;
-
-    /**
-     * args of the propertyKey method.
-     */
-    args?: any[];
-
-    /**
-     * params of the propertyKey method.
-     */
-    params?: ParameterMetadata[];
-}
 
 /**
  * ioc register action.

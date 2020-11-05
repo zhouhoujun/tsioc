@@ -1,6 +1,6 @@
 import { Provider, Token } from '../tokens';
 import { IocAction } from '../Action';
-import { IocContext } from './act';
+import { IocContext } from './ctx';
 
 /**
  * resovle action option.

@@ -30,6 +30,7 @@ export * from './decor/decorators';
 export * from './providers';
 
 // actions
+export * from './actions/ctx';
 export * from './actions/act';
 export * from './actions/injector';
 export * from './actions/cache';

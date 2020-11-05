@@ -3,9 +3,10 @@ import { isDefined } from '../utils/lang';
 import { isToken } from '../tokens';
 import { cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
 import { IActionSetup } from '../Action';
+import { RuntimeContext } from './ctx';
 import {
     IocRegAction, IocRegScope, ExecDecoratorAtion,
-    DecorsRegisterer, RuntimeRegisterer, IocDecorScope, RuntimeContext
+    DecorsRegisterer, RuntimeRegisterer, IocDecorScope
 } from './reg';
 import { CacheManager } from './cache';
 

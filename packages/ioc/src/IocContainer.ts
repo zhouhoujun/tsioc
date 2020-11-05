@@ -5,8 +5,8 @@ import { IInjector, Registered } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { registerCores } from './utils/regs';
 import { BaseInjector } from './BaseInjector';
+import { DesignContext } from './actions/ctx';
 import { ActionInjectorToken, IActionInjector } from './actions/act';
-import { DesignContext } from './actions/reg';
 import { DesignLifeScope } from './actions/design';
 import { INJECTOR_FACTORY, PROVIDERS, REGISTERED } from './utils/tk';
 

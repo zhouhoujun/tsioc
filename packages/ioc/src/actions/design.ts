@@ -1,6 +1,7 @@
 import { isClass } from '../utils/lang';
+import { DesignContext } from './ctx';
 import { IActionSetup } from '../Action';
-import { DesignContext, InitReflectAction } from './reg';
+import { InitReflectAction } from './reg';
 import { RegisterLifeScope } from './lifescope';
 import * as da from './des-act';
 

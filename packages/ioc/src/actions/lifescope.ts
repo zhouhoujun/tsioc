@@ -1,5 +1,5 @@
-import { IocContext, IocActions } from './act';
-import { RegContext } from './reg';
+import { IocActions } from './act';
+import { IocContext, RegContext } from './ctx';
 
 /**
  * register Type init life scope action.
