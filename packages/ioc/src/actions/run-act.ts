@@ -1,13 +1,9 @@
 import { DecoratorScope } from '../types';
-import { isDefined } from '../utils/lang';
+import { chain, isDefined } from '../utils/lang';
 import { isToken } from '../tokens';
-import { cls, mth, prop, befCtor, aftCtor } from '../utils/exps';
 import { IActionSetup } from '../Action';
 import { RuntimeContext } from './ctx';
-import {
-    IocRegAction, IocRegScope, ExecDecoratorAtion,
-    DecorsRegisterer, RuntimeRegisterer, IocDecorScope
-} from './reg';
+import { IocRegAction, IocRegScope } from './reg';
 import { CacheManager } from './cache';
 
 
@@ -23,19 +19,6 @@ import { CacheManager } from './cache';
 export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> {
 
 }
-
-/**
- * runtime decorator action.
- *  the register type class can only, register to ioc.
- * ` container.registerSingleton(RouteRuntimRegisterAction, () => new RouteRuntimRegisterAction(container));`
- *
- */
-export class RuntimeDecorAction extends ExecDecoratorAtion {
-    protected getScopeRegisterer(): DecorsRegisterer {
-        return this.actInjector.getInstance(RuntimeRegisterer);
-    }
-}
-
 
 /**
  * resolve constructor args action.
@@ -96,23 +79,6 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
 };
 
 
-
-export abstract class RuntimeDecorScope extends IocDecorScope<RuntimeContext> {
-
-    protected getScopeDecorators(ctx: RuntimeContext, scope: DecoratorScope): string[] {
-        const runtime = this.actInjector.getInstance(RuntimeRegisterer);
-        const registerer = runtime.getRegisterer(scope);
-        const decors = ctx.reflect.decors;
-        return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
-    }
-
-    setup() {
-        this.use(RuntimeDecorAction);
-    }
-
-}
-
-
 /**
  * ioc register actions scope run before constructor.
  *
@@ -127,11 +93,16 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements IAct
  * before constructor decorator.
  *
  */
-export class BeforeCtorDecorScope extends RuntimeDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return befCtor;
-    }
+export const BeforeCtorDecorScope = function (ctx: RuntimeContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'class')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getRuntimeHandle('BeforeConstructor'), ctx);
+        });
+
+    return next();
 }
+
 
 
 
@@ -154,11 +125,16 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements IActi
  * @export
  * @extends {RuntimeDecorScope}
  */
-export class AfterCtorDecorScope extends RuntimeDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return aftCtor;
-    }
+export const AfterCtorDecorScope = function (ctx: RuntimeContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'class')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getRuntimeHandle('AfterConstructor'), ctx);
+        });
+
+    return next();
 }
+
 
 /**
  * ioc extend register action.
@@ -262,10 +238,14 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IAc
  * runtime annoation decorator action scope.
  *
  */
-export class RuntimeAnnoDecorScope extends RuntimeDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return cls;
-    }
+export const RuntimeAnnoDecorScope = function (ctx: RuntimeContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'class')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getRuntimeHandle('Class'), ctx);
+        });
+
+    return next();
 }
 
 
@@ -274,11 +254,14 @@ export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements IAct
         this.use(RuntimeMthDecorScope);
     }
 }
+export const RuntimeMthDecorScope = function (ctx: RuntimeContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'method')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getRuntimeHandle('Method'), ctx);
+        });
 
-export class RuntimeMthDecorScope extends RuntimeDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return mth;
-    }
+    return next();
 }
 
 
@@ -289,8 +272,13 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IAc
     }
 }
 
-export class RuntimePropDecorScope extends RuntimeDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return prop;
-    }
+export const RuntimePropDecorScope = function (ctx: RuntimeContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'property')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getRuntimeHandle('Property'), ctx);
+        });
+
+    return next();
 }
+

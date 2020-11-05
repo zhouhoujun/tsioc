@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { Handler, isClass } from '../utils/lang';
 import { Token, tokenId, TokenId } from '../tokens';
-import { IInjector, IProvider } from '../IInjector';
+import { IInjector } from '../IInjector';
 import { Action, Actions } from '../Action';
 import { IocContext } from './ctx';
 

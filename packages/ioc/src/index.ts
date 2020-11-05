@@ -14,13 +14,11 @@ export * from './Injector';
 export * from './utils/lang';
 export * from './utils/tk';
 
-// services
-export * from './services/decor-pdr';
-
 
 // decoractors
 export * from './decor/typedef';
 export * from './decor/metadatas';
+export * from './decor/type';
 export * from './decor/reflects';
 export * from './decor/factory';
 export * from './decor/decorators';

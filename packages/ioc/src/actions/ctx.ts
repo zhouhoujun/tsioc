@@ -1,4 +1,5 @@
-import { ParameterMetadata, TypeReflect } from '../decor/metadatas';
+import { ParameterMetadata } from '../decor/metadatas';
+import { TypeReflect } from '../decor/type';
 import { IInjector, IProvider } from '../IInjector';
 import { Token } from '../tokens';
 import { Type } from '../types';
@@ -44,11 +45,6 @@ export interface RegContext extends IocContext {
      * current decoractor.
      */
     currDecor?: string;
-
-    /**
-     * current decorator scope.
-     */
-    currDecorScope?: any;
 
     /**
      * custom set singleton or not.

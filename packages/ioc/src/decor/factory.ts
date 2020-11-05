@@ -8,7 +8,7 @@ import { refl } from './reflects';
 /**
  * decorator register options.
  */
-export type DecoratorOption<T> =  refl.DecoratorOption<T>;
+export type DecoratorOption<T> = refl.DecoratorOption<T>;
 
 /**
  * create dectorator for class params props methods.
@@ -22,58 +22,57 @@ export type DecoratorOption<T> =  refl.DecoratorOption<T>;
  */
 export function createDecorator<T>(name: string, options: DecoratorOption<T>): any {
     const decor = `@${name}`;
+    const option = refl.registerDecror(decor, options);
     const factory = (...args: any[]) => {
         let metadata: T = null;
         if (args.length) {
             if (args.length === 1 && isMetadataObject(args[0])) {
                 metadata = args[0];
-            } else if (options.props) {
-                metadata = options.props(...args);
+            } else if (option.props) {
+                metadata = option.props(...args);
             }
         }
 
         return (...args: any[]) => {
-            return storeMetadata(name, decor, args, metadata, options);
+            return storeMetadata(name, decor, args, metadata, option);
         }
     }
-
-    refl.registerDecror(decor, options);
 
     factory.toString = () => decor;
     return factory;
 }
 
-function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, options: DecoratorOption<T>): any {
+function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, option: refl.DecorRegisteredOption): any {
     let target;
     if (!metadata) {
         metadata = {};
     }
-    if (options.appendProps) {
-        options.appendProps(metadata);
+    if (option.appendProps) {
+        option.appendProps(metadata);
     }
     switch (args.length) {
         case 1:
             target = args[0];
             if (isClass(target) || isAbstractClass(target)) {
-                refl.dispatchTypeDecor(target, { name, decor, matedata: metadata, decorType: 'class' }, options)
+                refl.dispatchTypeDecor(target, { name, decor, matedata: metadata, decorType: 'class', decorMap: option })
                 return target;
             }
             break;
         case 2:
             target = args[0];
             let propertyKey = args[1];
-            refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' }, options)
+            refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property', decorMap: option })
             break;
         case 3:
             if (isNumber(args[2])) {
                 target = args[0];
                 let propertyKey = args[1];
                 let parameterIndex = args[2];
-                refl.dispatchParamDecor(target, { name, decor, matedata: metadata, propertyKey, parameterIndex, decorType: 'parameter' }, options);
+                refl.dispatchParamDecor(target, { name, decor, matedata: metadata, propertyKey, parameterIndex, decorType: 'parameter', decorMap: option });
             } else if (isUndefined(args[2])) {
                 target = args[0];
                 let propertyKey = args[1];
-                refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' }, options);
+                refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property', decorMap: option });
             } else {
                 target = args[0];
                 let propertyKey = args[1];
@@ -83,9 +82,9 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
                 }
                 // is set get or not.
                 if (descriptor.set || descriptor.get) {
-                    refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' }, options);
+                    refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property', decorMap: option });
                 } else {
-                    refl.dispatchMethodDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'method' }, options);
+                    refl.dispatchMethodDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'method', decorMap: option });
                 }
                 return descriptor;
             }

@@ -2,10 +2,8 @@ import { Action, Actions } from '../Action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ClassType, DecoratorScope, Type } from '../types';
 import { chain, Handler, isArray, isClass, isFunction, isString, lang } from '../utils/lang';
-import {
-    DecorDefine, ParameterMetadata, PropertyMetadata, TypeReflect, ProvidersMetadata,
-    ClassMetadata, AutorunMetadata, DecorMemberType, DecoratorType
-} from './metadatas';
+import {  ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
+import { DecoratorType, DecorContext, DecorDefine, DecorMemberType, HandleMap, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 
 
@@ -13,18 +11,6 @@ import { TypeDefine } from './typedef';
 export namespace refl {
 
     export type DecorActionType = 'propInject' | 'paramInject' | 'annoation' | 'autorun' | 'typeProviders' | 'methodProviders';
-
-    export interface HandleMap {
-        getHandle(type: DecoratorType): Handler<DecorContext>[];
-        getRuntimeHandle(type: DecoratorScope): Handler<RuntimeContext>[];
-        getDesignHandle(type: DecoratorScope): Handler<DesignContext>[];
-    }
-
-    export interface DecorContext extends DecorDefine {
-        target: any;
-        reflect: TypeReflect;
-        handler: HandleMap;
-    }
 
     interface DecorHanleOption {
         type: DecoratorType;
@@ -71,13 +57,7 @@ export namespace refl {
         runtimeHandles?: DecorScopeHandles<RuntimeContext> | DecorScopeHandles<RuntimeContext>[];
     }
 
-    export interface DecorRegisteredOption extends DecorRegisterOption, HandleMap {
-    }
-
-    /**
-     * decorator option.
-     */
-    export interface DecoratorOption<T> extends DecorRegisterOption {
+    export interface MetadataFactory<T> {
         /**
          * parse args as metadata props.
          * @param args
@@ -90,18 +70,29 @@ export namespace refl {
         appendProps?(metadata: T): void;
     }
 
+    export interface DecorRegisteredOption extends MetadataFactory<any>, HandleMap {
+    }
+
+    /**
+     * decorator option.
+     */
+    export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption {
+
+    }
+
     /**
      * register decorator.
      * @param decor decorator.
      * @param options options.
      */
-    export function registerDecror(decor: string, option: DecorRegisterOption) {
-        const options = option as DecorRegisteredOption;
+    export function registerDecror(decor: string, options: DecoratorOption<any>): DecorRegisteredOption {
         if (options.actionType) {
             isArray(options.actionType) ?
                 options.actionType.forEach(a => regActionType(decor, a))
                 : regActionType(decor, options.actionType);
         }
+
+        const option: DecorRegisteredOption = { props: options.props, appendProps: options.appendProps };
 
         const hanldes: DecorHanleOption[] = [];
         if (options.classHandle) {
@@ -124,9 +115,9 @@ export namespace refl {
                 isArray(d.handle) ? rged.push(...d.handle) : rged.push(d.handle);
                 dechd.set(d.type, rged);
             });
-            options.getHandle = (type) => dechd.get(type);
+            option.getHandle = (type) => dechd.get(type);
         } else {
-            options.getHandle = (type) => [];
+            option.getHandle = (type) => [];
         }
 
         if (options.designHandles) {
@@ -135,9 +126,9 @@ export namespace refl {
                 const rged = dsgHd.get(ds.type) || [];
                 isArray(ds.handle) ? rged.push(...ds.handle) : rged.push(ds.handle);
             });
-            options.getDesignHandle = (type) => dsgHd.get(type);
+            option.getDesignHandle = (type) => dsgHd.get(type);
         } else {
-            options.getDesignHandle = (type) => [];
+            option.getDesignHandle = (type) => [];
         }
 
         if (options.runtimeHandles) {
@@ -146,10 +137,11 @@ export namespace refl {
                 const rged = rtmHd.get(ds.type) || [];
                 isArray(ds.handle) ? rged.push(...ds.handle) : rged.push(ds.handle);
             });
-            options.getRuntimeHandle = (type) => rtmHd.get(type);
+            option.getRuntimeHandle = (type) => rtmHd.get(type);
         } else {
-            options.getRuntimeHandle = (type) => [];
+            option.getRuntimeHandle = (type) => [];
         }
+        return option;
     }
 
     function regActionType(decor: string, type: DecorActionType) {
@@ -330,9 +322,8 @@ export namespace refl {
     }
 
     export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
-        ctx.handler.getHandle
-        if (ctx.handler) {
-            const handles = ctx.handler.getHandle(ctx.decorType);
+        if (ctx.decorMap) {
+            const handles = ctx.decorMap.getHandle(ctx.decorType);
             chain(handles, ctx);
         }
         return next()
@@ -379,11 +370,10 @@ export namespace refl {
         .use(ParamInjectAction)
         .use(ExecuteDecorHandle);
 
-    function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
+    function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine) {
         const ctx = {
             ...define,
             target,
-            handler: options as HandleMap,
             reflect: getIfy(type)
         };
         actions.execute(ctx, () => {
@@ -392,26 +382,26 @@ export namespace refl {
         lang.cleanObj(ctx);
     }
 
-    export function dispatchTypeDecor(type: ClassType, define: DecorDefine, options: DecoratorOption<any>) {
-        dispatch(typeDecorActions, type, type, define, options);
+    export function dispatchTypeDecor(type: ClassType, define: DecorDefine) {
+        dispatch(typeDecorActions, type, type, define);
     }
 
-    export function dispatchPorpDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
-        dispatch(propDecorActions, type, type.constructor, define, options);
+    export function dispatchPorpDecor(type: any, define: DecorDefine) {
+        dispatch(propDecorActions, type, type.constructor, define);
     }
 
-    export function dispatchMethodDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
-        dispatch(methodDecorActions, type, type.constructor, define, options);
+    export function dispatchMethodDecor(type: any, define: DecorDefine) {
+        dispatch(methodDecorActions, type, type.constructor, define);
     }
 
-    export function dispatchParamDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
+    export function dispatchParamDecor(type: any, define: DecorDefine) {
         let target = type;
         if (!define.propertyKey) {
             define.propertyKey = 'constructor';
         } else {
             type = type.constructor;
         }
-        dispatch(paramDecorActions, target, type, define, options);
+        dispatch(paramDecorActions, target, type, define);
     }
 
     const refFiled = '_ρreflect_';

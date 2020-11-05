@@ -1,13 +1,9 @@
 import { DecoratorScope } from '../types';
-import { isFunction, isClass, lang } from '../utils/lang';
+import { isFunction, isClass, lang, chain } from '../utils/lang';
 import { Provider } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../Action';
-import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
-import {
-    IocRegAction, IocRegScope, ExecDecoratorAtion, IocDecorScope,
-    DecorsRegisterer, DesignRegisterer
-} from './reg';
+import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS, REGISTERED } from '../utils/tk';
 
@@ -22,26 +18,6 @@ export abstract class IocDesignAction extends IocRegAction<DesignContext> {
 
 }
 
-export class DesignDecorAction extends ExecDecoratorAtion {
-    protected getScopeRegisterer(): DecorsRegisterer {
-        return this.actInjector.getInstance(DesignRegisterer);
-    }
-}
-
-export abstract class DesignDecorScope extends IocDecorScope<DesignContext> implements IActionSetup {
-
-    protected getScopeDecorators(ctx: DesignContext, scope: DecoratorScope): string[] {
-        const design = this.actInjector.getInstance(DesignRegisterer);
-        const registerer = design.getRegisterer(scope);
-        const decors = ctx.reflect.decors;
-        return registerer.getDecorators().filter(d => decors.some(de => de.decor === d));
-    }
-
-    setup() {
-        this.use(DesignDecorAction);
-    }
-
-}
 
 export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {
 
@@ -105,17 +81,27 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 };
 
 
-export class BeforeAnnoDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return befAnn;
-    }
+export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'class')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getDesignHandle('BeforeAnnoation'), ctx);
+        });
+
+    return next();
 }
 
-export class DesignClassDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return cls;
-    }
+
+export const DesignClassDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'class')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getDesignHandle('Class'), ctx);
+        });
+
+    return next();
 }
+
 
 
 
@@ -127,12 +113,16 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
     }
 }
 
+export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'property')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getDesignHandle('Property'), ctx);
+        });
 
-export class DesignPropDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return prop;
-    }
+    return next();
 }
+
 
 
 /**
@@ -219,10 +209,14 @@ export const RegMethodParamsType = function (ctx: DesignContext, next: () => voi
 }
 
 
-export class DesignMthDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return mth;
-    }
+export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'method')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getDesignHandle('Method'), ctx);
+        });
+
+    return next();
 }
 
 
@@ -261,15 +255,24 @@ export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetu
 }
 
 
-export class AnnoDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return ann;
-    }
+export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'class')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getDesignHandle('Annoation'), ctx);
+        });
+
+    return next();
 }
 
-export class AfterAnnoDecorScope extends DesignDecorScope {
-    protected getDecorScope(): DecoratorScope {
-        return aftAnn;
-    }
+export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
+    ctx.reflect.decors.filter(d => d.decorType === 'class')
+        .forEach(d => {
+            ctx.currDecor = d.decor;
+            chain(d.decorMap.getDesignHandle('AfterAnnoation'), ctx);
+        });
+
+    return next();
 }
+
 
