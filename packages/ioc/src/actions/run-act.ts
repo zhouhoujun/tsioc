@@ -7,7 +7,7 @@ import {
     IocRegAction, IocRegScope, ExecDecoratorAtion,
     DecorsRegisterer, RuntimeRegisterer, IocDecorScope, RuntimeContext
 } from './reg';
-import { IocCacheManager } from './cache';
+import { CacheManager } from './cache';
 
 
 /**
@@ -175,7 +175,7 @@ export abstract class IocExtendRegAction extends IocRuntimeAction {
 export const IocGetCacheAction = function (ctx: RuntimeContext, next: () => void): void {
     let targetReflect = ctx.reflect;
     if (!ctx.instance && !targetReflect.singleton && targetReflect.expires > 0) {
-        let cache = ctx.injector.getInstance(IocCacheManager).get(ctx.instance, targetReflect.expires);
+        let cache = ctx.injector.getInstance(CacheManager).get(ctx.instance, targetReflect.expires);
         if (cache) {
             ctx.instance = cache;
             if (ctx.instance) {
@@ -196,7 +196,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
     if (targetReflect.singleton || !targetReflect.expires || targetReflect.expires <= 0) {
         return next();
     }
-    let cacheManager = ctx.injector.getInstance(IocCacheManager);
+    let cacheManager = ctx.injector.getInstance(CacheManager);
     if (!cacheManager.hasCache(ctx.type)) {
         cacheManager.cache(ctx.type, ctx.instance, targetReflect.expires);
     }

@@ -1,4 +1,5 @@
-import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersMetadata } from '@tsdi/ioc';
+import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersMetadata, Type } from '@tsdi/ioc';
+import { IBootContext, IBuildContext } from '../Context';
 
 
 /**
@@ -46,5 +47,6 @@ export interface AnnotationReflect extends TypeReflect {
      * annotation metadata.
      */
     annotation?: AnnotationMetadata;
+
 }
 

@@ -8,7 +8,7 @@ import { IInjector } from '../IInjector';
  * @export
  * @interface ICacheManager
  */
-export interface IIocCacheManager {
+export interface ICacheManager {
     /**
      * has cache
      *
@@ -79,21 +79,21 @@ export interface CacheTarget {
  * @class CacheManager
  * @implements {ICacheManager}
  */
-export class IocCacheManager implements IIocCacheManager {
+export class CacheManager implements ICacheManager {
 
-    cacheTokens: WeakMap<Type, CacheTarget>;
+    private caches: WeakMap<Type, CacheTarget>;
     constructor(protected injector: IInjector) {
-        this.cacheTokens = new WeakMap();
+        this.caches = new WeakMap();
     }
 
     hasCache(targetType: Type) {
-        return this.cacheTokens.has(targetType);
+        return this.caches.has(targetType);
     }
 
     cache(targetType: Type, target: any, expires: number) {
         let cache: CacheTarget;
         if (this.hasCache(targetType)) {
-            cache = this.cacheTokens.get(targetType)
+            cache = this.caches.get(targetType)
             cache.expires = Date.now() + expires;
         } else {
             cache = {
@@ -101,12 +101,12 @@ export class IocCacheManager implements IIocCacheManager {
                 expires: Date.now() + expires
             }
         }
-        this.cacheTokens.set(targetType, cache);
+        this.caches.set(targetType, cache);
     }
 
     get(targetType: Type, expires?: number) {
         let result = null;
-        let cache = this.cacheTokens.get(targetType);
+        let cache = this.caches.get(targetType);
         if (!cache) {
             return result;
         }
@@ -114,7 +114,7 @@ export class IocCacheManager implements IIocCacheManager {
             result = cache.target;
             if (isNumber(expires) && expires > 0) {
                 cache.expires = Date.now() + expires;
-                this.cacheTokens.set(targetType, cache);
+                this.caches.set(targetType, cache);
             }
         } else {
             this.destroy(targetType, cache.target);
@@ -129,7 +129,7 @@ export class IocCacheManager implements IIocCacheManager {
             return;
         }
         if (!target) {
-            target = this.cacheTokens.get(targetType).target;
+            target = this.caches.get(targetType).target;
         }
 
         try {
@@ -137,7 +137,7 @@ export class IocCacheManager implements IIocCacheManager {
             if (isFunction(component.onDestroy)) {
                 this.injector.invoke(target || targetType, 'onDestroy', target);
             }
-            this.cacheTokens.delete(targetType);
+            this.caches.delete(targetType);
         } catch (err) {
             console.error && console.error(err);
         }

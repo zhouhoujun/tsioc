@@ -5,22 +5,10 @@ import { Type } from '../types';
 import { Token } from '../tokens';
 import { refl } from './reflects';
 
-
 /**
- * decorator option.
+ * decorator register options.
  */
-export interface DecoratorOption<T> extends refl.DecorRegisterOption {
-    /**
-     * parse args as metadata props.
-     * @param args
-     */
-    props?(...args: any[]): T;
-    /**
-     * append metadata.
-     * @param metadata
-     */
-    appendProps?(metadata: T): void;
-}
+export type DecoratorOption<T> =  refl.DecoratorOption<T>;
 
 /**
  * create dectorator for class params props methods.
@@ -67,25 +55,25 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
         case 1:
             target = args[0];
             if (isClass(target) || isAbstractClass(target)) {
-                refl.dispatchTypeDecor(target, { name, decor, matedata: metadata, decorType: 'class' })
+                refl.dispatchTypeDecor(target, { name, decor, matedata: metadata, decorType: 'class' }, options)
                 return target;
             }
             break;
         case 2:
             target = args[0];
             let propertyKey = args[1];
-            refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' })
+            refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' }, options)
             break;
         case 3:
             if (isNumber(args[2])) {
                 target = args[0];
                 let propertyKey = args[1];
                 let parameterIndex = args[2];
-                refl.dispatchParamDecor(target, { name, decor, matedata: metadata, propertyKey, parameterIndex, decorType: 'parameter' });
+                refl.dispatchParamDecor(target, { name, decor, matedata: metadata, propertyKey, parameterIndex, decorType: 'parameter' }, options);
             } else if (isUndefined(args[2])) {
                 target = args[0];
                 let propertyKey = args[1];
-                refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' });
+                refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' }, options);
             } else {
                 target = args[0];
                 let propertyKey = args[1];
@@ -95,9 +83,9 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
                 }
                 // is set get or not.
                 if (descriptor.set || descriptor.get) {
-                    refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' });
+                    refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property' }, options);
                 } else {
-                    refl.dispatchMethodDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'method' });
+                    refl.dispatchMethodDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'method' }, options);
                 }
                 return descriptor;
             }

@@ -16,7 +16,7 @@ import { Destoryable } from './Destoryable';
 import { ActionInjectorToken } from './actions/act';
 import { ResolveOption } from './actions/res';
 import { ResolveLifeScope } from './actions/resolve';
-import { IocCacheManager } from './actions/cache';
+import { CacheManager } from './actions/cache';
 import { INJECTOR, PROVIDERS, INJECTOR_DL, METHOD_ACCESSOR, REGISTERED } from './utils/tk';
 import { ParameterMetadata } from './decor/metadatas';
 
@@ -491,7 +491,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
      * @memberof BaseInjector
      */
     clearCache(targetType: Type) {
-        this.getInstance(IocCacheManager).destroy(targetType);
+        this.getInstance(CacheManager).destroy(targetType);
         return this;
     }
 
@@ -560,7 +560,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
     protected initReg() {
         this.setValue(INJECTOR, this, lang.getClass(this));
         this.setValue(INJECTOR_DL, () => this);
-        this.setValue(IocCacheManager, new IocCacheManager(this));
+        this.setValue(CacheManager, new CacheManager(this));
     }
 
     /**
