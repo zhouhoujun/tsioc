@@ -1,6 +1,5 @@
-import { lang, Type, Abstract, Inject, IDestoryable, Destoryable } from '@tsdi/ioc';
+import { lang, Type, Abstract, IDestoryable, Destoryable } from '@tsdi/ioc';
 import { IBootContext } from '../Context';
-import { BOOTCONTEXT } from '../tk';
 
 
 /**
@@ -11,28 +10,7 @@ import { BOOTCONTEXT } from '../tk';
  * @template T
  * @template TCtx default IBootContext
  */
-export interface IRunnable<T = any> extends IDestoryable {
-
-    /**
-     * runable context.
-     *
-     * @type {TCtx}
-     * @memberof IRunnable
-     */
-    getContext(): IBootContext;
-
-    /**
-     * get boot instance.
-     *
-     * @type {T}
-     * @memberof IRunnable
-     */
-    getBoot(): T;
-
-    /**
-     * get boot type.
-     */
-    getBootType(): Type<T>;
+export interface IRunnable extends IDestoryable {
 
     /**
      * configure and startup this service.
@@ -55,27 +33,7 @@ export interface IRunnable<T = any> extends IDestoryable {
  * @template T
  */
 @Abstract()
-export abstract class Runnable<T = any> extends Destoryable implements IRunnable<T> {
-
-    @Inject(BOOTCONTEXT) protected context: IBootContext;
-
-    /**
-     * runable context.
-     *
-     * @type {TCtx}
-     * @memberof IRunnable
-     */
-    getContext(): IBootContext {
-        return this.context;
-    }
-
-    getBoot(): T {
-        return this.context.boot;
-    }
-
-    getBootType(): Type<T> {
-        return lang.getClass(this.context.boot);
-    }
+export abstract class Runnable extends Destoryable implements IRunnable {
 
     /**
      * configure startup service.
@@ -96,7 +54,36 @@ export abstract class Runnable<T = any> extends Destoryable implements IRunnable
 }
 
 @Abstract()
-export abstract class Startup extends Runnable {}
+export abstract class Startup<T = any> extends Runnable {
+
+    protected context: IBootContext;
+
+    async configureService(ctx: IBootContext): Promise<void> {
+        this.context = ctx;
+        await this.startup();
+    }
+
+    abstract startup(): Promise<void>;
+
+    /**
+    * runable context.
+    *
+    * @type {TCtx}
+    * @memberof IRunnable
+    */
+    getContext(): IBootContext {
+        return this.context;
+    }
+
+    getBoot(): T {
+        return this.context.boot;
+    }
+
+    getBootType(): Type<T> {
+        return lang.getClass(this.context.boot);
+    }
+
+}
 
 /**
  * target is Runnable or not.

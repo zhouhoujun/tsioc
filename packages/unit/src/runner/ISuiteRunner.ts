@@ -1,3 +1,4 @@
+import { Type } from '@tsdi/ioc';
 import { IRunnable } from '@tsdi/boot';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
 
@@ -10,6 +11,7 @@ import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
  */
 export interface ISuiteRunner extends IRunnable {
 
+    getBootType(): Type;
     /**
      * run suite.
      *

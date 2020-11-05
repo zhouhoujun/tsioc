@@ -1,6 +1,6 @@
 import { Inject, PromiseUtil, Singleton, Type, INJECTOR, isFunction, Destoryable } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { IBootContext } from '@tsdi/boot';
+import { BootOption, IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -34,37 +34,30 @@ const globals = typeof window !== 'undefined' ? window : global;
 @Singleton()
 export class OldTestRunner extends Destoryable implements ISuiteRunner {
 
-
-    async configureService(ctx: IBootContext): Promise<void> {
-        await this.run();
-    }
-
-    @Inject(INJECTOR)
     private injector: ICoreInjector;
-
-
-    getContext() {
-        return null;
-    }
 
     timeout: number;
     describe: string;
 
     suites: ISuiteDescribe[];
 
-    getBootType(): Type {
-        return null;
-    }
-
-
-    getBoot() {
-        return this.suites;
-    }
-
     constructor(timeout?: number) {
         super()
         this.suites = [];
         this.timeout = timeout || (3 * 60 * 60 * 1000);
+    }
+
+    getBootType() {
+        return null;
+    }
+
+    async configureService(ctx: IBootContext): Promise<void> {
+        this.injector = ctx.injector;
+        try {
+            await PromiseUtil.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
+        } catch (err) {
+            // console.error(err);
+        }
     }
 
 
@@ -184,14 +177,6 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
         testkeys.forEach(k => {
             globals[k] = gls[k];
         });
-    }
-
-    async run(): Promise<any> {
-        try {
-            await PromiseUtil.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
-        } catch (err) {
-            // console.error(err);
-        }
     }
 
     async runSuite(desc: ISuiteDescribe): Promise<void> {

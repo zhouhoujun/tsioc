@@ -10,32 +10,21 @@ import { UnitTestContext } from '../UnitTestContext';
  *
  * @export
  * @class SuiteRunner
- * @implements {IRunner<any>}
  */
 @Injectable()
-export class UnitTestRunner extends Runnable<any> {
+export class UnitTestRunner extends Runnable {
 
-    async configureService(ctx: UnitTestContext): Promise<void> {
-        this.context = ctx;
-        await this.run(ctx.data);
-    }
-
-    getContext(): UnitTestContext {
-        return this.context as UnitTestContext;
-    }
-
-    async run(data?: any): Promise<any> {
-        let context = this.getContext();
-        let config = await context.getConfiguration();
+    async configureService(context: UnitTestContext): Promise<void> {
+        const ctx = context;
+        let config = await ctx.getConfiguration();
         let src = config.src;
-        let injector = context.injector;
+        let injector = ctx.injector;
         let suites: any[] = [];
         let oldRunner = injector.resolve(OldTestRunner);
-        await oldRunner.configureService(context);
         let loader = injector.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
-            let alltypes = await loader.loadTypes({ files: [src], basePath: this.context.baseURL });
+            let alltypes = await loader.loadTypes({ files: [src], basePath: ctx.baseURL });
             alltypes.forEach(tys => {
                 suites = suites.concat(tys);
             })
@@ -45,14 +34,14 @@ export class UnitTestRunner extends Runnable<any> {
             if (src.some(t => isClass(t))) {
                 suites = src;
             } else {
-                let alltypes = await loader.loadTypes({ files: src as string | string[], basePath: this.context.baseURL });
+                let alltypes = await loader.loadTypes({ files: src as string | string[], basePath: ctx.baseURL });
                 alltypes.forEach(tys => {
                     suites = suites.concat(tys);
                 })
             }
         }
         oldRunner.unregisterGlobalScope();
-        await oldRunner.run();
+        await oldRunner.configureService(ctx);
         const builder = injector.resolve(BuilderService);
         await PromiseUtil.step(suites.filter(v => isClass(v) && refl.getIfy<AnnotationReflect>(v).annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: injector })));
         await injector.resolve(TestReport).report();
