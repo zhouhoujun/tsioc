@@ -1,4 +1,4 @@
-import { isClass, Type, isBaseType, RuntimeContext, DesignContext, refl, AnnotationType} from '@tsdi/ioc';
+import { isClass, Type, isBaseType, RuntimeContext, refl, AnnotationType} from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
@@ -85,17 +85,6 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
     next();
 };
 
-/**
- * regist aspect action.
- *
- * @export
- */
-export const RegistAspectAction = function (ctx: DesignContext, next: () => void): void {
-    let type = ctx.type;
-    let advisor = ctx.injector.getContainer().getActionInjector().getInstance(ADVISOR);
-    advisor.add(type);
-    next();
-};
 
 /**
  *  match pointcut action.

@@ -1,5 +1,6 @@
 import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation } from './metadatas';
+import { ADVISOR } from './tk';
 import { AdviceTypes, AopReflect } from './types';
 
 
@@ -43,6 +44,15 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
         let rlt = ctx.reflect as AopReflect;
         rlt.aspect = ctx.matedata;
         return next();
+    },
+    designHandles: {
+        type: 'Class',
+        handle: (ctx, next) => {
+            let type = ctx.type;
+            let advisor = ctx.injector.getContainer().getActionInjector().getInstance(ADVISOR);
+            advisor.add(type);
+            next();
+        }
     },
     props: (annotation: string, within?: ClassType | ClassType[], append?: ClassMetadata) =>
         ({ annotation, within, ...append })

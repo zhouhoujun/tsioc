@@ -1,6 +1,5 @@
-import { Inject, IOC_CONTAINER, IIocContainer, runtimes, RuntimeLifeScope, ActionInjector, DesignRegisterer, IocExt } from '@tsdi/ioc';
-import { RegistAspectAction, BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, MatchPointcutAction } from './actions/aop';
-import { Aspect } from './decorators';
+import { Inject, IOC_CONTAINER, IIocContainer, runtimes, RuntimeLifeScope, ActionInjector, IocExt } from '@tsdi/ioc';
+import { BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, MatchPointcutAction } from './actions/aop';
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
 import { ProceedingScope } from './actions/proceed';
@@ -47,9 +46,6 @@ export class AopModule {
 
         actInjector.getInstance(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
-
-        actInjector.getInstance(DesignRegisterer)
-            .register(Aspect, 'Class', RegistAspectAction);
 
 
     }

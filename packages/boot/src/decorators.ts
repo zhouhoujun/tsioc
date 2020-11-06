@@ -1,14 +1,18 @@
 import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata,
-    isClass, lang, Type, isFunction, Token, isArray, createDecorator
+    isClass, lang, Type, isFunction, Token, isArray, createDecorator, isString, DesignContext, IProvider
 } from '@tsdi/ioc';
-import { IStartupService } from './services/StartupService';
+import { ICoreInjector } from '@tsdi/core';
+import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
-import { IMessage } from './messages/IMessageQueue';
+import { IMessage, IMessageQueue } from './messages/IMessageQueue';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';
 import { MessageHandle } from './messages/handle';
 import { ModuleReflect } from './modules/reflect';
+import { ModuleInjector, ModuleProviders } from './modules/injector';
+import { PARENT_INJECTOR, ROOT_MESSAGEQUEUE } from './tk';
+import { ModuleRef, ModuleRegistered } from './modules/ModuleRef';
 
 
 /**
@@ -83,6 +87,39 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
         ],
+        designHandles: {
+            type: 'AfterAnnoation',
+            handle: (ctx, next) => {
+                const injector = ctx.injector;
+                const classType = ctx.type;
+                let startups = injector.get(STARTUPS) || [];
+                const meta = ctx.reflect.getMetadata<BootMetadata>(ctx.currDecor) || {};
+                let idx = -1;
+                if (meta.before) {
+                    idx = isString(meta.before) ? 0 : startups.indexOf(meta.before);
+                } else if (meta.after) {
+                    idx = isString(meta.after) ? -1 : startups.indexOf(meta.after) + 1;
+                }
+                if (idx >= 0) {
+                    if (meta.deps) {
+                        startups = [...startups.slice(0, idx), ...meta.deps, classType].concat(startups.slice(idx).filter(s => meta.deps.indexOf(s) < 0));
+                    } else {
+                        startups.splice(idx, 0, classType);
+                    }
+                } else {
+                    if (meta.deps) {
+                        meta.deps.forEach(d => {
+                            if (startups.indexOf(d) < 0) {
+                                startups.push(d);
+                            }
+                        });
+                    }
+                    startups.push(classType);
+                }
+                injector.setValue(STARTUPS, startups);
+                return next();
+            }
+        },
         appendProps: (meta) => {
             if (append) {
                 append(meta);
@@ -136,6 +173,13 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
     (metadata: T): ClassDecorator;
 }
 
+
+interface ModuleDesignContext extends DesignContext {
+    reflect: ModuleReflect;
+    exports?: IProvider;
+    moduleRef?: ModuleRef;
+}
+
 /**
  * create bootstrap decorator.
  *
@@ -160,6 +204,94 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 return next();
             },
             ...hd ? (isArray(hd) ? hd : [hd]) : []
+        ],
+        designHandles: [
+            {
+                type: 'BeforeAnnoation',
+                handle: (ctx: ModuleDesignContext, next) => {
+                    if (!ctx.regIn && ctx.reflect.annoDecor) {
+                        let injector = ctx.injector.getInstance(ModuleInjector);
+                        injector.setValue(PARENT_INJECTOR, ctx.injector);
+                        ctx.injector = injector;
+                    }
+                    next();
+                }
+            },
+            {
+                type: 'Annoation',
+                handle: [
+                    (ctx: ModuleDesignContext, next) => {
+                        if (ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
+                            next()
+                        }
+                    },
+                    (ctx: ModuleDesignContext, next) => {
+                        const annoation = ctx.reflect.annotation;
+                        if (annoation.imports) {
+                            (<ICoreInjector>ctx.injector).use(...ctx.reflect.annotation.imports);
+                        }
+                        next();
+                    },
+                    (ctx: ModuleDesignContext, next: () => void) => {
+
+                        let injector = ctx.injector as ModuleInjector;
+                        let mdReft = ctx.reflect;
+                        const annoation = mdReft.annotation;
+
+                        const map = ctx.exports = injector.getInstance(ModuleProviders);
+                        map.moduleInjector = injector;
+                        let mdRef = new ModuleRef(ctx.type, map);
+                        mdRef.onDestroy(() => {
+                            const parent = injector.getInstance(PARENT_INJECTOR);
+                            if (parent instanceof ModuleInjector) {
+                                parent.unexport(mdRef);
+                            } else {
+                                map.iterator((f, k) => {
+                                    parent.unregister(k);
+                                });
+                            }
+                        });
+                        ctx.injector.setValue(ModuleRef, mdRef);
+                        ctx.moduleRef = mdRef;
+                        ctx.injector.getContainer().getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
+
+                        let components = annoation.components ? injector.injectModule(...annoation.components) : null;
+
+                        // inject module providers
+                        if (annoation.providers?.length) {
+                            map.inject(...annoation.providers);
+                        }
+
+                        if (map.size) {
+                            injector.copy(map, k => !injector.hasTokenKey(k));
+                        }
+
+                        if (components && components.length) {
+                            mdReft.components = components;
+                        }
+
+                        let exptypes: Type[] = lang.getTypes(...annoation.exports || []);
+
+                        exptypes.forEach(ty => {
+                            map.export(ty);
+                        });
+                        next();
+                    },
+                    (ctx: ModuleDesignContext, next: () => void) => {
+                        if (ctx.exports.size) {
+                            let parent = ctx.injector.getInstance(PARENT_INJECTOR);
+                            if (parent) {
+                                if (parent instanceof ModuleInjector) {
+                                    parent.export(ctx.moduleRef);
+                                } else {
+                                    parent.copy(ctx.exports);
+                                }
+                            }
+                        }
+                        next();
+                    }
+                ]
+            }
         ],
         appendProps: (meta) => {
             if (append) {
@@ -255,6 +387,37 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
     actionType: 'annoation',
     props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) =>
         ({ parent, before }),
+    designHandles: {
+        type: 'AfterAnnoation',
+        handle: (ctx, next) => {
+            const classType = ctx.type;
+            let reflect = ctx.reflect;
+            const { parent, before, after } = reflect.getMetadata<MessageMetadata>(ctx.currDecor);
+            if (!parent || parent === 'none') {
+                return next();
+            }
+            const injector = ctx.injector;
+            let msgQueue: IMessageQueue;
+            if (isClass(parent)) {
+                msgQueue = injector.getContainer().getInjector(parent)?.get(parent);
+            } else {
+                msgQueue = injector.getInstance(ROOT_MESSAGEQUEUE);
+            }
+
+            if (!msgQueue) {
+                throw new Error(lang.getClassName(parent) + 'has not registered!')
+            }
+
+            if (before) {
+                msgQueue.useBefore(classType, before);
+            } else if (after) {
+                msgQueue.useAfter(classType, after);
+            } else {
+                msgQueue.use(classType);
+            }
+            next();
+        }
+    },
     appendProps: (meta) => {
         meta.singleton = true;
         // default register in root.
