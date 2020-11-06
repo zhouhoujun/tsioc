@@ -26,7 +26,7 @@ export class AopModule {
      */
     setup(@Inject(IOC_CONTAINER) container: IIocContainer) {
 
-        const actInjector = container.getValue(ActionInjector);
+        const actInjector = container.getActionInjector();
 
         actInjector
             .setValue(ADVISOR, new Advisor(container), Advisor)

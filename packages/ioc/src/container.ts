@@ -12,7 +12,7 @@ import { Factory, InjectToken, InstanceFactory, Provider, SymbolType, Token } fr
 import { ClassType, Type } from './types';
 import { isClass, isDefined, isFunction, lang } from './utils/lang';
 import { registerCores } from './utils/regs';
-import { INJECTOR, INJECTOR_FACTORY, IOC_CONTAINER, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
+import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
 
 
 
@@ -123,7 +123,7 @@ class RegisteredStateImpl implements RegisteredState {
         this.types.set(type, { ... this.types.get(type), ...data });
     }
 
-    removeType(type: ClassType) {
+    deleteType(type: ClassType) {
         this.types.delete(type);
     }
 

@@ -327,7 +327,8 @@ export class DIProvider extends Destoryable implements IProvider {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let tokenKey = this.getTokenKey(token);
-        return this.factories.get(tokenKey)?.provider ?? (isClass(tokenKey) ? tokenKey : this.parent?.getTokenProvider(tokenKey));
+        if (isClass(tokenKey)) return tokenKey;
+        return this.factories.get(tokenKey)?.provider ?? this.parent?.getTokenProvider(tokenKey);
     }
 
     /**
@@ -350,7 +351,7 @@ export class DIProvider extends Destoryable implements IProvider {
                     this.factories.delete(key);
                 });
                 this.clearCache(key);
-                this.getContainer().regedState.removeType(key);
+                this.getContainer().regedState.deleteType(key);
             }
         }
         return this;

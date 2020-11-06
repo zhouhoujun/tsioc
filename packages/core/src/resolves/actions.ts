@@ -128,7 +128,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             return;
         }
         ctx.types = [
-            ...ctx.tokens.map(t => ctx.injector.getTokenProvider(t)).filter(t => t),
+            ...ctx.tokens.map(t => isClassType(t) ? t : ctx.injector.getTokenProvider(t)).filter(t => t),
             ...ctx.types || []
         ];
 

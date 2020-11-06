@@ -29,7 +29,11 @@ export interface RegisteredState {
 
     regType<T extends Registered>(type: ClassType, data: T);
 
-    removeType(type: ClassType);
+    /**
+     * delete registered.
+     * @param type
+     */
+    deleteType(type: ClassType);
 
     /**
      * has decorator provider or not.

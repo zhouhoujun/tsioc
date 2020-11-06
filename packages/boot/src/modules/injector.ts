@@ -111,8 +111,11 @@ export class ModuleInjector extends CoreInjector {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let tokenKey = this.getTokenKey(token);
+        if (isClass(tokenKey)) return tokenKey;
+
         return this.factories.get(tokenKey)?.provider
-            ?? (isClass(tokenKey) ? tokenKey : (this.getTknPdr(tokenKey) ?? this.parent?.getTokenProvider(tokenKey)));
+            ?? this.getTknPdr(tokenKey)
+            ?? this.parent?.getTokenProvider(tokenKey);
     }
 
     protected getTknPdr<T>(tokenKey: SymbolType<T>): Type<T> {

@@ -1,5 +1,5 @@
 import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, PromiseUtil } from '@tsdi/ioc';
-import { LogConfigureToken, DebugLogAspect } from '@tsdi/logs';
+import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import {
     PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS
@@ -174,7 +174,9 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
         container.setValue(LogConfigureToken, config.logConfig);
     }
     if (config.debug) {
-        ctx.injector.register(DebugLogAspect);
+        // make sure log module registered.
+        ctx.injector.registerType(LogModule)
+            .registerType(DebugLogAspect);
     }
     let regs = ctx.injector.getServices(ConfigureRegister);
     if (regs && regs.length) {

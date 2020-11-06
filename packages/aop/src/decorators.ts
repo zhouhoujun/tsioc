@@ -48,9 +48,14 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
     designHandles: {
         type: 'Class',
         handle: (ctx, next) => {
-            let type = ctx.type;
-            let advisor = ctx.injector.getContainer().getActionInjector().getInstance(ADVISOR);
-            advisor.add(type);
+            const type = ctx.type;
+            const acinj = ctx.injector.getContainer().getActionInjector();
+            const advisor = acinj.getInstance(ADVISOR);
+            if (advisor) {
+                advisor.add(type);
+            } else {
+                console.error('aop module not registered. make sure register before', type);
+            }
             next();
         }
     },
