@@ -1,6 +1,6 @@
 import {
     isClass, Injectable, isString, isFunction, Token, isUndefined, Inject, isToken,
-    Action, AsyncHandler, INJECTOR_DL, InjectorProxy, ClassType, isInjector, Singleton
+    Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './ctx';
@@ -24,14 +24,14 @@ import { CTX_CURR_INJECTOR, CTX_OPTIONS, ROOT_MESSAGEQUEUE } from '../tk';
 export class MessageQueue<T extends MessageContext = MessageContext> extends Handles<T> implements IMessageQueue<T> {
 
 
-    @Inject(INJECTOR_DL)
-    private _injector: InjectorProxy<ICoreInjector>;
+    @Inject(INJECTOR)
+    private _injector: ICoreInjector;
 
     /**
      * get injector of current message queue.
      */
     getInjector(): ICoreInjector {
-        return this._injector();
+        return this._injector;
     }
 
     private completed: ((ctx: T) => void)[];
@@ -189,7 +189,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         if (handleType instanceof Action) {
             return handleType.toAction() as AsyncHandler<T>;
         } else if (isToken(handleType)) {
-            const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().getInjector(handleType as ClassType)?.get(handleType);
+            const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().regedState.getInjector(handleType as ClassType)?.get(handleType);
             return handle?.toAction?.() as AsyncHandler<T>;
         } else if (isFunction(handleType)) {
             return handleType as AsyncHandler<T>;

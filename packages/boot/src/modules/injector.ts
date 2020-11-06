@@ -52,7 +52,7 @@ export class ModuleInjector extends CoreInjector {
 
     getValue<T>(token: Token<T>): T {
         const key = this.getTokenKey(token);
-        return this.factories.get(key).value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
+        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
     }
 
     clearCache(targetType: Type) {

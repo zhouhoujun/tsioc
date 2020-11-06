@@ -209,7 +209,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             {
                 type: 'BeforeAnnoation',
                 handle: (ctx: ModuleDesignContext, next) => {
-                    if (!ctx.regIn && ctx.reflect.annoDecor) {
+                    if (!ctx.regIn && ctx.reflect.annoType === 'module') {
                         let injector = ctx.injector.getInstance(ModuleInjector);
                         injector.setValue(PARENT_INJECTOR, ctx.injector);
                         ctx.injector = injector;
@@ -253,9 +253,9 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                         });
                         ctx.injector.setValue(ModuleRef, mdRef);
                         ctx.moduleRef = mdRef;
-                        ctx.injector.getContainer().getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
+                        ctx.injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
 
-                        let components = annoation.components ? injector.injectModule(...annoation.components) : null;
+                        let components = annoation.components ? injector.use(...annoation.components) : null;
 
                         // inject module providers
                         if (annoation.providers?.length) {
@@ -399,7 +399,7 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
             const injector = ctx.injector;
             let msgQueue: IMessageQueue;
             if (isClass(parent)) {
-                msgQueue = injector.getContainer().getInjector(parent)?.get(parent);
+                msgQueue = injector.getContainer().regedState.getInjector(parent)?.get(parent);
             } else {
                 msgQueue = injector.getInstance(ROOT_MESSAGEQUEUE);
             }
@@ -477,7 +477,7 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> {
  */
 export function createBootstrapDecorator<T extends BootstrapMetadata>(name: string, options?: DecoratorOption<T>): IBootstrapDecorator<T> {
 
-    return createDecorator<BootstrapMetadata>(name, {
+    return createDIModuleDecorator<BootstrapMetadata>(name, {
         classHandle: (ctx, next) => {
             const reflect = ctx.reflect as ModuleReflect;
             reflect.annoType = 'module';

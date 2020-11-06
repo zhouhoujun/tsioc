@@ -12,7 +12,7 @@ import {
 import { Modules, Type } from './types';
 import {
     isArray, isBaseObject, isClass, isDefined, isFunction,
-    isMetadataObject, isNull, isNullOrUndefined, isObject, isString, isUndefined, lang
+    isNull, isNullOrUndefined, isString, isUndefined, lang
 } from './utils/lang';
 import { PROVIDERS } from './utils/tk';
 
@@ -91,14 +91,13 @@ export class DIProvider extends Destoryable implements IProvider {
      * @memberof BaseInjector
      */
     set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
-        let key = this.getTokenKey(provide)
+        let key = this.getTokenKey(provide);
+        if (!key) return;
         if (isClass(provider)) {
-            this.factories.set(provider, { fac });
-            if (key) {
-                this.factories.set(key, { fac: (...providers) => this.getInstance(provider, ...providers), provider });
-            }
-        } else if (key) {
-            this.factories.set(key, { fac });
+            this.factories.set(provider, { fac, provider });
+            this.factories.set(key, { fac, provider });
+        } else {
+            this.factories.set(key, { fac, provider: isClass(key) ? key : undefined });
         }
         return this;
     }
@@ -254,7 +253,7 @@ export class DIProvider extends Destoryable implements IProvider {
 
     getValue<T>(token: Token<T>): T {
         const key = this.getTokenKey(token);
-        return this.factories.get(key).value ?? this.parent?.getValue(key);
+        return this.factories.get(key)?.value ?? this.parent?.getValue(key);
     }
 
     getFirstValue<T>(...tokens: Token<T>[]): T {
@@ -460,26 +459,20 @@ export abstract class Injector extends DIProvider implements IInjector {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {Token<T>} provider
+     * @param {Type<T>} provider
      * @returns {this}
      * @memberof BaseInjector
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T>): this {
+    bindProvider<T>(provide: Token<T>, provider: Type<T>): this {
         const provideKey = this.getTokenKey(provide);
         if (!provideKey) {
             return this;
         }
-        if (isToken(provider)) {
+        if (isClass(provider)) {
             const pdr = this.factories.get(provideKey);
-            const ptk = this.getTokenKey(provider);
-            const type = this.getTokenProvider(ptk);
-            if (isClass(type)) {
-                this.registerType(type);
-                this.factories.set(provideKey, { ...pdr, fac: (...providers) => this.getInstance(ptk, ...providers), provider: type });
-            } else {
-                this.factories.set(provideKey, { ...pdr, fac: (...providers) => this.getInstance(ptk, ...providers) });
-            }
-
+            const type = provider;
+            this.registerType(type);
+            this.factories.set(provideKey, { ...pdr, fac: (...providers) => this.getInstance(type, ...providers), provider: type });
         }
         return this;
     }
@@ -491,7 +484,7 @@ export abstract class Injector extends DIProvider implements IInjector {
      * @param provider provider factory or token.
      * @param alias alias.
      */
-    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T>, alias?: string): InjectReference<T> {
+    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Type<T>, alias?: string): InjectReference<T> {
         let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
         this.bindProvider(refToken, provider);
         return refToken;
@@ -558,6 +551,18 @@ export abstract class Injector extends DIProvider implements IInjector {
 }
 
 /**
+ * object is provider map or not.
+ *
+ * @export
+ * @param {object} target
+ * @returns {target is Injector}
+ */
+export function isInjector(target: any): target is IProvider {
+    return target instanceof DIProvider;
+}
+
+
+/**
  * context provider.
  *
  * @export
@@ -568,18 +573,18 @@ export class ContextProvider extends DIProvider implements IProvider {
 
 }
 
-/**
- * is provider or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Provider}
- */
-export function isProvider(target: any): target is Provider {
-    return target instanceof ContextProvider
-        || (isMetadataObject(target, 'provide') && isToken(target.provide))
-        || (isArray(target) && target.some(it => isClass(it) || (isObject(it) && Object.values(it).some(s => isClass(it)))));
-}
+// /**
+//  * is provider or not.
+//  *
+//  * @export
+//  * @param {*} target
+//  * @returns {target is Provider}
+//  */
+// export function isProvider(target: any): target is Provider {
+//     return (target instanceof DIProvider && target instanceof Injector)
+//         || (isMetadataObject(target, 'provide') && isToken(target.provide))
+//         || (isArray(target) && target.some(it => isClass(it) || (isObject(it) && Object.values(it).some(s => isClass(it)))));
+// }
 
 
 /**

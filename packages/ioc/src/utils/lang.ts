@@ -321,6 +321,7 @@ export type AsyncHandler<T = any> = Handler<T, Promise<void>>;
  * @param {() => TR} [next]
  */
 export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: () => TR) {
+    if (!handlers.length) return;
     let index = -1;
     function dispatch(idx: number): TR {
         if (idx <= index) {

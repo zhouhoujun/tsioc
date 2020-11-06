@@ -1,6 +1,7 @@
 import { createDecorator, DecoratorOption } from '@tsdi/ioc';
-import { AnnotationReflect } from '@tsdi/boot';
+import { AnnotationReflect, BootContext } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './metadata';
+import { UnitTestContext } from './UnitTestContext';
 
 
 /**
@@ -41,6 +42,9 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
         reflect.annotation = ctx.matedata;
         return next();
     },
+    // providers: [
+    //     { provide: BootContext, useClass: UnitTestContext }
+    // ],
     props: (describe: string, timeout?: number) => ({ describe, timeout }),
     appendProps: (metadata) => {
         metadata.singleton = true;

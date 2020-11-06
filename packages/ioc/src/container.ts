@@ -12,7 +12,7 @@ import { Factory, InjectToken, InstanceFactory, Provider, SymbolType, Token } fr
 import { ClassType, Type } from './types';
 import { isClass, isDefined, isFunction, lang } from './utils/lang';
 import { registerCores } from './utils/regs';
-import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
+import { INJECTOR, INJECTOR_FACTORY, IOC_CONTAINER, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
 
 
 
@@ -276,7 +276,7 @@ export class IocContainer extends Injector implements IIocContainer {
         // make sure class register once.
         if (this.regedState.isRegistered(type) || this.hasRegister(type)) {
             if (provide) {
-                this.set(provide, (...providers) => injector.resolve(type, ...providers));
+                this.set(provide, (...providers) => injector.get(type, ...providers));
             }
             return this;
         }

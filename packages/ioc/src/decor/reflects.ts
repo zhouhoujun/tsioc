@@ -121,7 +121,7 @@ export namespace refl {
                 isArray(d.handle) ? rged.push(...d.handle) : rged.push(d.handle);
                 dechd.set(d.type, rged);
             });
-            option.getHandle = (type) => dechd.get(type);
+            option.getHandle = (type) => dechd.get(type) ?? [];
         } else {
             option.getHandle = (type) => [];
         }
@@ -131,8 +131,9 @@ export namespace refl {
             (Array.isArray(options.designHandles) ? options.designHandles : [options.designHandles]).forEach(ds => {
                 const rged = dsgHd.get(ds.type) || [];
                 isArray(ds.handle) ? rged.push(...ds.handle) : rged.push(ds.handle);
+                dsgHd.set(ds.type, rged);
             });
-            option.getDesignHandle = (type) => dsgHd.get(type);
+            option.getDesignHandle = (type) => dsgHd.get(type) ?? [];
         } else {
             option.getDesignHandle = (type) => [];
         }
@@ -142,8 +143,9 @@ export namespace refl {
             (Array.isArray(options.runtimeHandles) ? options.runtimeHandles : [options.runtimeHandles]).forEach(ds => {
                 const rged = rtmHd.get(ds.type) || [];
                 isArray(ds.handle) ? rged.push(...ds.handle) : rged.push(ds.handle);
+                rtmHd.set(ds.type, rged);
             });
-            option.getRuntimeHandle = (type) => rtmHd.get(type);
+            option.getRuntimeHandle = (type) => rtmHd.get(type) ?? [];
         } else {
             option.getRuntimeHandle = (type) => [];
         }

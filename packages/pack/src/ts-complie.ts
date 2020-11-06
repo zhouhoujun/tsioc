@@ -16,7 +16,6 @@ export class TsComplie {
     compile(options: CompilerOptions, fileName: string, sourceText: string,  annotation?: boolean): { code: string; map: string, dts?: string, emitSkipped?: boolean } {
         const host = createCompilerHost(options);
         const outputs = new Map<string, string>();
-        console.log(fileName);
         const tempSourceFile = createSourceFile(
             fileName,
             annotation ? iocAnnotations(sourceText) : sourceText,

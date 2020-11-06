@@ -11,6 +11,7 @@ import { MethodType } from './IMethodAccessor';
  * provider interface.
  */
 export interface IProvider extends IDestoryable {
+    readonly parent?: IProvider;
     /**
      * resolver size.
      *
@@ -230,6 +231,7 @@ export interface IProvider extends IDestoryable {
  */
 export interface IInjector extends IProvider {
 
+    readonly parent?: IInjector;
     /**
      * use modules.
      *
@@ -264,11 +266,11 @@ export interface IInjector extends IProvider {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {Token<T>} provider
+     * @param {Type<T>} provider
      * @returns {this}
      * @memberof IInjector
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T>): this;
+    bindProvider<T>(provide: Token<T>, provider: Type<T>): this;
     /**
      * bind provider ref to target.
      * @param target the target, provide ref to.
@@ -276,7 +278,7 @@ export interface IInjector extends IProvider {
      * @param provider provider factory or token.
      * @param alias alias.
      */
-    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T>, alias?: string): InjectReference<T>;
+    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Type<T>, alias?: string): InjectReference<T>;
     /**
      * bind target providers.
      * @param target
