@@ -1,10 +1,10 @@
-import { DecoratorScope } from '../types';
 import { chain, isDefined } from '../utils/lang';
 import { isToken } from '../tokens';
 import { IActionSetup } from '../Action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { CacheManager } from './cache';
+import { METHOD_ACCESSOR } from '../utils/tk';
 
 
 /**
@@ -27,7 +27,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> {
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? [];
-        ctx.args = ctx.injector.createParams(ctx.params || [], ctx.providers);
+        ctx.args = ctx.injector.getInstance(METHOD_ACCESSOR).createParams(ctx.injector, ctx.params || [], ctx.providers);
     }
     next();
 };
@@ -97,7 +97,7 @@ export const BeforeCtorDecorScope = function (ctx: RuntimeContext, next: () => v
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getRuntimeHandle('BeforeConstructor'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('BeforeConstructor'), ctx);
         });
 
     return next();
@@ -129,7 +129,7 @@ export const AfterCtorDecorScope = function (ctx: RuntimeContext, next: () => vo
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getRuntimeHandle('AfterConstructor'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('AfterConstructor'), ctx);
         });
 
     return next();
@@ -242,7 +242,7 @@ export const RuntimeAnnoDecorScope = function (ctx: RuntimeContext, next: () => 
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getRuntimeHandle('Class'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('Class'), ctx);
         });
 
     return next();
@@ -258,7 +258,7 @@ export const RuntimeMthDecorScope = function (ctx: RuntimeContext, next: () => v
     ctx.reflect.decors.filter(d => d.decorType === 'method')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getRuntimeHandle('Method'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('Method'), ctx);
         });
 
     return next();
@@ -276,7 +276,7 @@ export const RuntimePropDecorScope = function (ctx: RuntimeContext, next: () => 
     ctx.reflect.decors.filter(d => d.decorType === 'property')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getRuntimeHandle('Property'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('Property'), ctx);
         });
 
     return next();

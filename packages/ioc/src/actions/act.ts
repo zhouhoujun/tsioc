@@ -1,14 +1,14 @@
 import { Type } from '../types';
 import { Handler, isClass } from '../utils/lang';
 import { Token, tokenId, TokenId } from '../tokens';
-import { IInjector } from '../IInjector';
+import { IProvider } from '../IInjector';
 import { Action, Actions } from '../Action';
 import { IocContext } from './ctx';
 
 /**
  * action injector.
  */
-export interface IActionInjector extends IInjector {
+export interface IActionProvider extends IProvider {
     /**
      * register action, simple create instance via `new type(this)`.
      * @param type
@@ -21,7 +21,7 @@ export interface IActionInjector extends IInjector {
     getAction<T extends Handler>(target: Token<Action> | Action | Function): T;
 }
 
-export const ActionInjectorToken: TokenId<IActionInjector> = tokenId<IActionInjector>('ACTION_INJECTOR');
+export const ACTION_PROVIDER: TokenId<IActionProvider> = tokenId<IActionProvider>('ACTION_PROVIDER');
 
 
 
@@ -36,7 +36,7 @@ export const ActionInjectorToken: TokenId<IActionInjector> = tokenId<IActionInje
 export class IocActions<T extends IocContext = IocContext> extends Actions<T> {
 
 
-    constructor(protected actInjector: IActionInjector) {
+    constructor(protected actInjector: IActionProvider) {
         super();
     }
 

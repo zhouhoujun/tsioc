@@ -1,11 +1,10 @@
-import { DecoratorScope } from '../types';
 import { isFunction, isClass, lang, chain } from '../utils/lang';
 import { Provider } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../Action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { PROVIDERS, REGISTERED } from '../utils/tk';
+import { PROVIDERS } from '../utils/tk';
 
 
 
@@ -38,7 +37,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.injector = container;
     }
     const injector = ctx.injector;
-    container.get(REGISTERED).set(ctx.type, { provides: [], getInjector: () => injector });
+    container.regedState.regType(ctx.type, { provides: [], getInjector: () => injector });
     next();
 };
 
@@ -85,7 +84,7 @@ export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => vo
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getDesignHandle('BeforeAnnoation'), ctx);
+            chain(d.decorPdr.getDesignHandle('BeforeAnnoation'), ctx);
         });
 
     return next();
@@ -96,7 +95,7 @@ export const DesignClassDecorScope = function (ctx: DesignContext, next: () => v
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getDesignHandle('Class'), ctx);
+            chain(d.decorPdr.getDesignHandle('Class'), ctx);
         });
 
     return next();
@@ -117,7 +116,7 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
     ctx.reflect.decors.filter(d => d.decorType === 'property')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getDesignHandle('Property'), ctx);
+            chain(d.decorPdr.getDesignHandle('Property'), ctx);
         });
 
     return next();
@@ -137,7 +136,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     const injector = ctx.injector;
     const type = ctx.type;
 
-    const registed = injector.getContainer().getRegistered(type);
+    const registed = injector.getContainer().regedState.getRegistered(type);
     tgReflect.providers.forEach(anno => {
         let provide = injector.getToken(anno.provide, anno.alias);
         registed.provides.push(provide);
@@ -213,7 +212,7 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
     ctx.reflect.decors.filter(d => d.decorType === 'method')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getDesignHandle('Method'), ctx);
+            chain(d.decorPdr.getDesignHandle('Method'), ctx);
         });
 
     return next();
@@ -259,7 +258,7 @@ export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getDesignHandle('Annoation'), ctx);
+            chain(d.decorPdr.getDesignHandle('Annoation'), ctx);
         });
 
     return next();
@@ -269,7 +268,7 @@ export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => voi
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorMap.getDesignHandle('AfterAnnoation'), ctx);
+            chain(d.decorPdr.getDesignHandle('AfterAnnoation'), ctx);
         });
 
     return next();

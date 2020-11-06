@@ -1,5 +1,5 @@
 import {
-    DecoratorProvider, isNullOrUndefined, isClassType, InjectReference,
+    isNullOrUndefined, isClassType, InjectReference,
     IActionSetup, isToken, lang, Provider, PROVIDERS, refl, resovles
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
@@ -62,13 +62,16 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
     let clasType = ctx.targetToken;
     let injector = ctx.injector;
     if (isClassType(clasType)) {
-        let dprvoider = injector.getContainer().getActionInjector().getInstance(DecoratorProvider);
         let tk = ctx.currTK;
         refl.getIfy(clasType)
             .decors
             .some(dec => {
-                if (dprvoider.has(dec.decor, tk)) {
-                    ctx.instance = dprvoider.resolve(dec.decor, tk, ctx.providers);
+                if (dec.decorType !== 'class') {
+                    return false;
+                }
+                const dprvoider = dec.decorPdr.getProvider(injector)
+                if (dprvoider.has(tk)) {
+                    ctx.instance = dprvoider.get(tk, ctx.providers);
                 }
                 if (ctx.instance) {
                     return true;
@@ -137,9 +140,10 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
         if (ctx.services.size < 1) {
             let defaultTk = ctx.defaultToken;
             if (defaultTk) {
-                let key = ctx.injector.getTokenKey(defaultTk);
-                if (ctx.injector.hasRegister(key, ctx.alias)) {
-                    ctx.services.set(key, ctx.injector.getTokenFactory(key));
+                const injector = ctx.injector;
+                let key = injector.getTokenKey(defaultTk);
+                if (injector.hasRegister(key, ctx.alias)) {
+                    ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
                 }
             }
         }
@@ -160,26 +164,38 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
         let injector = ctx.injector;
         let types = ctx.types;
         let services = ctx.services;
-        let dprvoider = injector.getContainer().getActionInjector().getInstance(DecoratorProvider);
         let alias = ctx.alias;
         targetRefs.forEach(t => {
             let tk = isToken(t) ? t : lang.getClass(t);
             let maps = injector.get(new InjectReference(PROVIDERS, tk));
             if (maps && maps.size) {
-                maps.iterator((fac, tk) => {
-                    if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty))) {
-                        services.set(tk, fac);
+                maps.iterator((pdr, tk) => {
+                    if (!services.has(tk, alias)
+                        && (
+                            (isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty)))
+                            || (pdr.provider && types.some(ty => refl.getIfy(pdr.provider).class.isExtends(ty)))
+                        )
+                    ) {
+                        services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
                     }
                 });
             }
             if (isClassType(tk)) {
                 const rlt = refl.getIfy(tk);
-                rlt.decors.some(dec => {
-                    dprvoider.getProviders(dec.decor)?.iterator((fac, tk) => {
-                        if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => rlt.class.isExtends(ty))) {
-                            services.set(tk, fac);
-                        }
-                    });
+                rlt.decors.forEach(dec => {
+                    if (dec.decorType === 'class') {
+                        const dprvoider = dec.decorPdr.getProvider(injector)
+                        dprvoider.iterator((pdr, tk) => {
+                            if (!services.has(tk, alias)
+                                && (
+                                    (isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty)))
+                                    || (pdr.provider && types.some(ty => refl.getIfy(pdr.provider).class.isExtends(ty)))
+                                )
+                            ) {
+                                services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
+                            }
+                        });
+                    }
                 });
             }
             types.forEach(ty => {
@@ -200,9 +216,14 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     let types = ctx.types;
     let services = ctx.services;
     let alias = ctx.alias;
-    ctx.injector.iterator((fac, tk) => {
-        if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty))) {
-            services.set(tk, fac);
+    ctx.injector.iterator((pdr, tk) => {
+        if (!services.has(tk, alias)
+            && (
+                (isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty)))
+                || (pdr.provider && types.some(ty => refl.getIfy(pdr.provider).class.isExtends(ty)))
+            )
+        ) {
+            services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
         }
     }, true)
     next();

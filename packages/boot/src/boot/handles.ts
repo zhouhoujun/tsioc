@@ -132,7 +132,7 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
             return;
         }
         // has module register or not.
-        if (!ctx.getContainer().isRegistered(ctx.type)) {
+        if (!ctx.getContainer().regedState.isRegistered(ctx.type)) {
             await super.execute(ctx);
         }
         if (next) {
@@ -146,11 +146,11 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 
 export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const container = ctx.getContainer();
-    if (!container.isRegistered(ctx.type)) {
+    if (!container.regedState.isRegistered(ctx.type)) {
         ctx.injector.registerType(ctx.type);
     }
     let annoation = ctx.getAnnoation();
-    ctx.setValue(INJECTOR, container.getInjector(ctx.type));
+    ctx.setValue(INJECTOR, container.regedState.getInjector(ctx.type));
     if (annoation) {
         if (annoation.baseURL) {
             ctx.baseURL = annoation.baseURL;
@@ -272,11 +272,11 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     if (startups.length) {
         await PromiseUtil.step(startups.map(tyser => () => {
             let ser: IStartupService;
-            if (isClass(tyser) && !container.isRegistered(tyser)) {
+            if (isClass(tyser) && !container.regedState.isRegistered(tyser)) {
                 injector.register(tyser);
 
             }
-            ser = injector.get(tyser) ?? container.getInjector(tyser as ClassType)?.get(tyser);
+            ser = injector.get(tyser) ?? container.regedState.getInjector(tyser as ClassType)?.get(tyser);
             ctx.onDestroy(() => ser?.destroy());
             return ser?.configureService(ctx);
         }));
@@ -285,7 +285,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     const starts = injector.get(STARTUPS) || [];
     if (starts.length) {
         await PromiseUtil.step(starts.map(tyser => () => {
-            const ser = injector.get(tyser) ?? container.getInjector(tyser as ClassType)?.get(tyser);
+            const ser = injector.get(tyser) ?? container.regedState.getInjector(tyser as ClassType)?.get(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
             return ser.configureService(ctx);
@@ -294,9 +294,9 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
 
     let sers: StartupService[] = [];
     const prds = injector.getServiceProviders(StartupService);
-    prds.iterator((fac, tk) => {
+    prds.iterator((pdr, tk) => {
         if (startups.indexOf(tk) < 0) {
-            sers.push(fac(ctx.providers));
+            sers.push(pdr.value ? pdr.value : pdr.fac(ctx.providers));
         }
     });
     if (sers && sers.length) {

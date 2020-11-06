@@ -29,8 +29,8 @@ export class AopModule {
         const actInjector = container.getValue(ActionInjector);
 
         actInjector
-            .setValue(ADVISOR, new Advisor(container.getProxy()), Advisor)
-            .setValue(ADVICE_MATCHER, new AdviceMatcher(container.getProxy()), AdviceMatcher);
+            .setValue(ADVISOR, new Advisor(container), Advisor)
+            .setValue(ADVICE_MATCHER, new AdviceMatcher(container), AdviceMatcher);
 
         actInjector.regAction(ProceedingScope);
 

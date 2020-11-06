@@ -32,9 +32,8 @@ export class BootModule {
      * @memberof AopModule
      */
     setup(@Inject(CONTAINER) container: IContainer) {
-        const proxy = container.getProxy();
-        container.set(ModuleInjector, () => new ModuleInjector(proxy));
-        container.set(ModuleProviders, () => new ModuleProviders(proxy));
+        container.set(ModuleInjector, () => new ModuleInjector(container));
+        container.set(ModuleProviders, () => new ModuleProviders(container));
         let actInjector = container.getActionInjector();
 
         actInjector.regAction(ResolveMoudleScope)

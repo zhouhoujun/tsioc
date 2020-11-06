@@ -15,9 +15,8 @@ export function registerCores(container: IContainer) {
         container.setValue(ModuleLoader, new ModuleLoader());
     }
 
-    let fac = container.getProxy();
-    container.set(INJECTOR_FACTORY, () => new CoreInjector(fac), CoreInjector);
-    container.setValue(ServiceProvider, new ServiceProvider(fac));
+    container.set(INJECTOR_FACTORY, () => new CoreInjector(container), CoreInjector);
+    container.setValue(ServiceProvider, new ServiceProvider(container));
 
     let actInjector = container.getActionInjector();
     // register action

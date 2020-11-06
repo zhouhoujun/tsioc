@@ -2,13 +2,13 @@ import { Type } from '../types';
 import { Handler, isFunction, lang } from '../utils/lang';
 import { Token, isToken } from '../tokens';
 import { IActionSetup, Action } from '../Action';
-import { Injector } from '../Injector';
-import { IActionInjector } from './act';
+import { DIProvider } from '../injector';
+import { IActionProvider } from './act';
 
 /**
  * action injector.
  */
-export class ActionInjector extends Injector implements IActionInjector {
+export class ActionInjector extends DIProvider implements IActionProvider {
 
     regAction<T extends Action>(type: Type<T>): this {
         if (this.hasTokenKey(type)) {

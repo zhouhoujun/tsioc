@@ -22,9 +22,6 @@ export * from './Context';
 export * from './annotations/ctx';
 
 // registers
-export * from './registers/message';
-export * from './registers/startup';
-export * from './registers/module';
 export * from './registers/Inj-module';
 
 // modules

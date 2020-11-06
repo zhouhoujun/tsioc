@@ -1,5 +1,5 @@
 // use core-js in browser.
-import { TypeReflect } from '../decor/metadatas';
+import { TypeReflect } from '../decor/type';
 import { ObjectMap, Type, AbstractType, Modules, ClassType, AnnotationType } from '../types';
 import { clsUglifyExp } from './exps';
 

@@ -1,5 +1,5 @@
 import {
-    isString, isRegExp, isDefined, Type, lang, isArray, isFunction, refl, ClassType, InjectorProxy, IIocContainer
+    isString, isRegExp, isDefined, Type, lang, isArray, isFunction, refl, ClassType, IIocContainer
 } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas';
@@ -27,7 +27,7 @@ export type MatchExpress = (method: string, fullName: string, targetType?: Class
  */
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(private proxy: InjectorProxy<IIocContainer>) {
+    constructor(private container: IIocContainer) {
 
     }
 
@@ -221,7 +221,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             return (name: string, fullName: string, targetType?: Type) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
         } else if (targetChkExp.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            return (name: string, fullName: string, targetType?: Type) => this.proxy().getInjector(reflect.type).getTokenProvider(torken) === targetType;
+            return (name: string, fullName: string, targetType?: Type) => this.container.regedState.getInjector(reflect.type).getTokenProvider(torken) === targetType;
         } else {
             return () => false;
         }

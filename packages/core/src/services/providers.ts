@@ -1,4 +1,4 @@
-import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, INJECTOR_DL, PROVIDERS, InjectorProxy, isArray, lang } from '@tsdi/ioc';
+import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceResolver } from './IServiceResolver';
@@ -9,7 +9,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
 
     private serviceScope: ResolveServiceScope;
     private servicesScope: ResolveServicesScope;
-    constructor(private proxy: InjectorProxy<IContainer>) {
+    constructor(private readonly container: IContainer) {
         super();
     }
 
@@ -36,16 +36,11 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         providers.length && pdr.inject(...providers);
         this.initTargetRef(context);
         if (!pdr.hasTokenKey(INJECTOR)) {
-            pdr.inject(
-                { provide: INJECTOR, useValue: injector },
-                { provide: INJECTOR_DL, useValue: injector.getProxy() }
-            );
+            pdr.inject({ provide: INJECTOR, useValue: injector });
         }
 
         if (!this.serviceScope) {
-            this.serviceScope = this.proxy()
-                .getActionInjector()
-                .getInstance(ResolveServiceScope);
+            this.serviceScope = this.container.getActionInjector().getInstance(ResolveServiceScope);
         }
 
         this.serviceScope.execute(context);
@@ -69,12 +64,10 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         let services = [];
         let pdr = injector.get(PROVIDERS).inject(...providers);
         if (!pdr.hasTokenKey(INJECTOR)) {
-            pdr.inject(
-                { provide: INJECTOR, useValue: injector },
-                { provide: INJECTOR_DL, useValue: injector.getProxy() });
+            pdr.inject({ provide: INJECTOR, useValue: injector });
         }
-        maps.iterator((fac) => {
-            services.push(fac(pdr));
+        maps.iterator(p => {
+            services.push(p.value ? p.value : p.fac(pdr));
         });
         return services;
     }
@@ -99,9 +92,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         }
         this.initTargetRef(context);
         if (!this.servicesScope) {
-            this.servicesScope = this.proxy()
-                .getActionInjector()
-                .getInstance(ResolveServicesScope);
+            this.servicesScope = this.container.getActionInjector().getInstance(ResolveServicesScope);
         }
         this.servicesScope.execute(context);
         const services = context.services;

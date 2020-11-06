@@ -185,6 +185,12 @@ export type InjectTypes = Provider;
  */
 export type InstanceFactory<T = any> = (...providers: Provider[]) => T;
 
+export interface InstancePdr<T = any> {
+    fac?: InstanceFactory<T>;
+    value?: T;
+    provider?: Type<T>;
+}
+
 
 /**
  * Factory of Token

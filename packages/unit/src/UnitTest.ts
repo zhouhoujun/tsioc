@@ -3,7 +3,6 @@ import { LoadType } from '@tsdi/core';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, DIModule } from '@tsdi/boot';
-import { UnitSetup } from './UnitSetup';
 import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestContext } from './UnitTestContext';
@@ -17,8 +16,7 @@ import { TestReport } from './reports/TestReport';
 @DIModule({
    imports: [
       AopModule,
-      LogModule,
-      UnitSetup
+      LogModule
    ],
    providers: [
       UnitTestContext,

@@ -4,11 +4,10 @@ export * from './Action';
 export * from './Destoryable';
 export * from './IInjector';
 export * from './IIocContainer';
-export * from './IocContainer';
 export * from './IMethodAccessor';
 export * from './IocCoreService';
-export * from './BaseInjector';
-export * from './Injector';
+export * from './injector';
+export * from './container';
 
 // utils
 export * from './utils/lang';

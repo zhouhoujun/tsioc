@@ -1,4 +1,4 @@
-import { Injector, Type, Token, Provider, IProvider } from '@tsdi/ioc';
+import { Injector, Type, Token, Provider, IProvider, InjectorImpl } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
 import { ServiceProvider } from './services/providers';
 import { IContainerBuilder } from './IContainerBuilder';
@@ -9,10 +9,15 @@ import { LoadType } from './types';
 import { CONTAINER_BUILDER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
 
-export class CoreInjector extends Injector implements ICoreInjector {
+export class CoreInjector extends InjectorImpl implements ICoreInjector {
 
     private servPdr: ServiceProvider;
     private injScope: InjLifeScope;
+
+
+    constructor(readonly parent: IContainer) {
+        super(parent);
+    }
 
     getServiceProvider(): ServiceProvider {
         if (!this.servPdr) {
@@ -25,7 +30,7 @@ export class CoreInjector extends Injector implements ICoreInjector {
      * get root container.
      */
     getContainer(): IContainer {
-        return this.proxy() as IContainer;
+        return this.parent?.getContainer() as IContainer;
     }
 
     /**

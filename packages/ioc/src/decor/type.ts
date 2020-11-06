@@ -1,5 +1,6 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { Provider } from '../tokens';
+import { IInjector, IProvider } from '../IInjector';
+import { Provider, Token } from '../tokens';
 import { ClassType, DecoratorScope } from '../types';
 import { Handler } from '../utils/lang';
 import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProviderMetadata, RefProvider, RegInMetadata, TypeMetadata } from './metadatas';
@@ -15,16 +16,11 @@ export type DecorMemberType = 'property' | 'method' | 'parameter';
 export type DecoratorType = 'class' | DecorMemberType;
 
 
-export interface HandleMap {
-    getHandle?(type: DecoratorType): Handler<DecorContext>[];
-    getRuntimeHandle?(type: DecoratorScope): Handler<RuntimeContext>[];
-    getDesignHandle?(type: DecoratorScope): Handler<DesignContext>[];
-}
-
-
-export interface DecorContext extends DecorDefine {
-    target: any;
-    reflect: TypeReflect;
+export interface DecorPdr {
+    getProvider(injector: IInjector): IProvider;
+    getHandle(type: DecoratorType): Handler<DecorContext>[];
+    getRuntimeHandle(type: DecoratorScope): Handler<RuntimeContext>[];
+    getDesignHandle(type: DecoratorScope): Handler<DesignContext>[];
 }
 
 /**
@@ -40,9 +36,9 @@ export interface DecorDefine<T = any> {
      */
     decor: string;
     /**
-     * decoractor handle map.
+     * decoractor providers.
      */
-    decorMap: HandleMap;
+    decorPdr: DecorPdr;
     /**
      * decorator type.
      */
@@ -59,6 +55,11 @@ export interface DecorDefine<T = any> {
      * matedata.
      */
     matedata?: T;
+}
+
+export interface DecorContext extends DecorDefine {
+    target: any;
+    reflect: TypeReflect;
 }
 
 /**

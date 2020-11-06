@@ -1,4 +1,4 @@
-import { Token, ResolveContext, ResolveOption, IInjector, ClassType } from '@tsdi/ioc';
+import { Token, ResolveContext, ResolveOption, ClassType, IProvider } from '@tsdi/ioc';
 
 /**
  * service context option.
@@ -100,6 +100,6 @@ export interface ServicesContext extends ServiceContext {
      * @type {Injector}
      * @memberof ResolveServicesContext
      */
-    services?: IInjector;
+    services?: IProvider;
 
 }

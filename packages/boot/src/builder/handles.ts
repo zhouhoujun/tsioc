@@ -1,4 +1,4 @@
-import { ActionInjectorToken, AsyncHandler, IActionInjector, IActionSetup, isClass, Inject, INJECTOR } from '@tsdi/ioc';
+import { ACTION_PROVIDER, AsyncHandler, IActionProvider, IActionSetup, isClass, Inject, INJECTOR } from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
@@ -15,7 +15,7 @@ import { Handles } from '../handles/Handles';
  * @template T
  */
 export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> extends Handle<T> {
-    constructor(@Inject(ActionInjectorToken) protected actInjector: IActionInjector) {
+    constructor(@Inject(ACTION_PROVIDER) protected actInjector: IActionProvider) {
         super();
     }
 }
@@ -29,7 +29,7 @@ export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> e
  * @template T
  */
 export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends Handles<T> {
-    constructor(@Inject(ActionInjectorToken) protected actInjector: IActionInjector) {
+    constructor(@Inject(ACTION_PROVIDER) protected actInjector: IActionProvider) {
         super();
     }
 
@@ -65,9 +65,9 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
             return;
         }
         const container = ctx.getContainer();
-        if (ctx.type && !container.isRegistered(ctx.type)) {
+        if (ctx.type && !container.regedState.isRegistered(ctx.type)) {
             ctx.injector.registerType(ctx.type);
-            ctx.setValue(INJECTOR, container.getInjector(ctx.type))
+            ctx.setValue(INJECTOR, container.regedState.getInjector(ctx.type))
         }
         // has build module instance.
         await super.execute(ctx);

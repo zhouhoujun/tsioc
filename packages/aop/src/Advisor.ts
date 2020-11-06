@@ -1,4 +1,4 @@
-import { Type, Provider, InjectorProxy, IIocContainer } from '@tsdi/ioc';
+import { Type, Provider, IIocContainer } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { IAdvisor } from './IAdvisor';
 
@@ -19,7 +19,7 @@ export class Advisor implements IAdvisor {
 
     aspects: Type[];
 
-    constructor(private proxy: InjectorProxy<IIocContainer>) {
+    constructor(private readonly container: IIocContainer) {
         this.advices = new Map();
         this.aspects = [];
     }
@@ -85,6 +85,6 @@ export class Advisor implements IAdvisor {
      * @memberof Advisor
      */
     resolve<T>(aspect: Type<T>, ...providers: Provider[]): T {
-        return this.proxy().getInjector(aspect).resolve(aspect, ...providers);
+        return this.container.regedState.getInjector(aspect).resolve(aspect, ...providers);
     }
 }

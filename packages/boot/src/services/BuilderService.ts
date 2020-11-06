@@ -55,7 +55,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             options = target;
         }
         if (!injector) {
-            injector = container.isRegistered(md) ? container.getInjector(md) || this.root : this.root;
+            injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
         }
         let rctx = injector.getService({ token: BuildContext, target: md, defaultToken: BuildContext }, { provide: CTX_OPTIONS, useValue: options });
         await container.getActionInjector().getInstance(ResolveMoudleScope)
@@ -77,7 +77,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             options = { bootstrap: md, ...target };
         }
         if (!injector) {
-            injector = container.isRegistered(md) ? container.getInjector(md) || this.root : this.root;
+            injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
         }
         const ctx = injector.getService({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
         await container.getActionInjector().getInstance(StartupServiceScope).execute(ctx);
@@ -145,7 +145,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
                 options = { ...target, args };
             }
             if (!injector) {
-                injector = container.isRegistered(md) ? container.getInjector(md) || this.root : this.root;
+                injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
             }
             ctx = injector.getService<T>({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
         }

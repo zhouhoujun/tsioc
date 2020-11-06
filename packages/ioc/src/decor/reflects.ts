@@ -1,9 +1,10 @@
 import { Action, Actions } from '../Action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
+import { StaticProvider } from '../providers';
 import { ClassType, DecoratorScope, Type } from '../types';
 import { chain, Handler, isArray, isClass, isFunction, isString, lang } from '../utils/lang';
-import {  ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
-import { DecoratorType, DecorContext, DecorDefine, DecorMemberType, HandleMap, TypeReflect } from './type';
+import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
+import { DecoratorType, DecorContext, DecorDefine, DecorMemberType, DecorPdr, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 
 
@@ -48,6 +49,11 @@ export namespace refl {
         actionType?: DecorActionType | DecorActionType[];
 
         /**
+         * decorator providers.
+         */
+        providers?: StaticProvider[];
+
+        /**
          * design handles.
          */
         designHandles?: DecorScopeHandles<DesignContext> | DecorScopeHandles<DesignContext>[];
@@ -70,7 +76,7 @@ export namespace refl {
         appendProps?(metadata: T): void;
     }
 
-    export interface DecorRegisteredOption extends MetadataFactory<any>, HandleMap {
+    export interface DecorRegisteredOption extends MetadataFactory<any>, DecorPdr {
     }
 
     /**
@@ -92,7 +98,7 @@ export namespace refl {
                 : regActionType(decor, options.actionType);
         }
 
-        const option: DecorRegisteredOption = { props: options.props, appendProps: options.appendProps };
+        const option = { props: options.props, appendProps: options.appendProps } as DecorRegisteredOption;
 
         const hanldes: DecorHanleOption[] = [];
         if (options.classHandle) {
@@ -141,6 +147,22 @@ export namespace refl {
         } else {
             option.getRuntimeHandle = (type) => [];
         }
+
+        if (options.providers) {
+            const providers = options.providers;
+            option.getProvider = (inj) => {
+                const state = inj.getContainer().regedState;
+                if (!state.hasProvider(decor)) {
+                    state.regDecoator(decor, ...providers);
+                }
+                return state.getProvider(decor);
+            }
+        } else {
+            option.getProvider = (inj) => {
+                return inj.getContainer().regedState.getProvider(decor);
+            }
+        }
+
         return option;
     }
 
@@ -322,8 +344,8 @@ export namespace refl {
     }
 
     export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
-        if (ctx.decorMap) {
-            const handles = ctx.decorMap.getHandle(ctx.decorType);
+        if (ctx.decorPdr) {
+            const handles = ctx.decorPdr.getHandle(ctx.decorType);
             chain(handles, ctx);
         }
         return next()
