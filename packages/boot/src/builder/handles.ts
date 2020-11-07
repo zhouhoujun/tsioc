@@ -1,4 +1,5 @@
-import { ACTION_PROVIDER, AsyncHandler, IActionProvider, IActionSetup, isClass, Inject, INJECTOR } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
+import { AsyncHandler, IActionSetup, isClass, Inject, INJECTOR } from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
@@ -15,7 +16,7 @@ import { Handles } from '../handles/Handles';
  * @template T
  */
 export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> extends Handle<T> {
-    constructor(@Inject(ACTION_PROVIDER) protected actInjector: IActionProvider) {
+    constructor(@Inject(INJECTOR) protected readonly injector: ICoreInjector) {
         super();
     }
 }
@@ -29,17 +30,18 @@ export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> e
  * @template T
  */
 export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends Handles<T> {
-    constructor(@Inject(ACTION_PROVIDER) protected actInjector: IActionProvider) {
+
+    constructor(@Inject(INJECTOR) protected readonly injector: ICoreInjector) {
         super();
     }
 
     protected toHandle(handleType: HandleType<T>): AsyncHandler<T> {
-        return this.actInjector.getAction<AsyncHandler<T>>(handleType);
+        return this.injector.getContainer().actionPdr.getAction<AsyncHandler<T>>(handleType);
     }
 
     protected registerHandle(handleType: HandleType<T>): this {
         if (isClass(handleType)) {
-            this.actInjector.regAction(handleType);
+            this.injector.getContainer().actionPdr.regAction(handleType);
         }
         return this;
     }

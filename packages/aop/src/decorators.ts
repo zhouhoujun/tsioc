@@ -49,7 +49,7 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
         type: 'Class',
         handle: (ctx, next) => {
             const type = ctx.type;
-            const acinj = ctx.injector.getContainer().getActionInjector();
+            const acinj = ctx.injector.getContainer().actionPdr;
             const advisor = acinj.getInstance(ADVISOR);
             if (advisor) {
                 advisor.add(type);

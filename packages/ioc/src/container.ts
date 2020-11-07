@@ -1,4 +1,5 @@
-import { ACTION_PROVIDER, IActionProvider } from './actions/act';
+import { Action, IActionSetup } from './Action';
+import { IActionProvider } from './actions/act';
 import { CacheManager } from './actions/cache';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
@@ -8,9 +9,9 @@ import { IInjector, IProvider } from './IInjector';
 import { IIocContainer, Registered, RegisteredState } from './IIocContainer';
 import { MethodType } from './IMethodAccessor';
 import { DIProvider, Injector } from './injector';
-import { Factory, InjectToken, InstanceFactory, Provider, SymbolType, Token } from './tokens';
+import { Factory, InjectToken, InstanceFactory, isToken, Provider, SymbolType, Token } from './tokens';
 import { ClassType, Type } from './types';
-import { isClass, isDefined, isFunction, lang } from './utils/lang';
+import { Handler, isClass, isDefined, isFunction, lang } from './utils/lang';
 import { registerCores } from './utils/regs';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
 
@@ -70,7 +71,7 @@ export class InjectorImpl extends Injector {
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         if (!this.rslScope) {
-            this.rslScope = this.getValue(ACTION_PROVIDER).getInstance(ResolveLifeScope);
+            this.rslScope = this.getContainer().actionPdr.getInstance(ResolveLifeScope);
         }
         return this.rslScope.resolve(this, token, ...providers);
     }
@@ -97,53 +98,6 @@ export class InjectorImpl extends Injector {
 
 }
 
-const NULL_PDR = new DIProvider();
-
-class RegisteredStateImpl implements RegisteredState {
-    private types: Map<ClassType, Registered>;
-    private decors: Map<string, IProvider>;
-    constructor(private readonly container: IIocContainer) {
-        this.types = new Map();
-        this.decors = new Map();
-    }
-
-    /**
-      * get injector
-      * @param type
-      */
-    getInjector<T extends IInjector = IInjector>(type: ClassType): T {
-        return this.types.get(type)?.getInjector() as T;
-    }
-
-    getRegistered<T extends Registered>(type: ClassType): T {
-        return this.types.get(type) as T;
-    }
-
-    regType<T extends Registered>(type: ClassType, data: T) {
-        this.types.set(type, { ... this.types.get(type), ...data });
-    }
-
-    deleteType(type: ClassType) {
-        this.types.delete(type);
-    }
-
-    isRegistered(type: ClassType): boolean {
-        return this.types.has(type);
-    }
-
-    hasProvider(decor: string) {
-        return this.decors.has(decor);
-    }
-
-    getProvider(decor: string) {
-        return this.decors.get(decor) ?? NULL_PDR;
-    }
-    regDecoator(decor: string, ...providers: Provider[]) {
-        this.decors.set(decor, this.container.getInstance(PROVIDERS).inject(...providers));
-    }
-
-}
-
 /**
  * Container
  *
@@ -156,19 +110,13 @@ export class IocContainer extends Injector implements IIocContainer {
     private rslScope: ResolveLifeScope;
 
     readonly regedState: RegisteredState;
+    readonly actionPdr: IActionProvider;
 
     constructor() {
         super();
-        this.initReg();
         this.regedState = new RegisteredStateImpl(this);
-    }
-
-    private actionInj: IActionProvider;
-    getActionInjector(): IActionProvider {
-        if (!this.actionInj) {
-            this.actionInj = this.getValue(ACTION_PROVIDER);
-        }
-        return this.actionInj;
+        this.actionPdr = new ActionProvider(this);
+        this.initReg();
     }
 
     getContainer(): this {
@@ -187,7 +135,7 @@ export class IocContainer extends Injector implements IIocContainer {
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         if (!this.rslScope) {
-            this.rslScope = this.getValue(ACTION_PROVIDER).getInstance(ResolveLifeScope);
+            this.rslScope = this.actionPdr.getInstance(ResolveLifeScope);
         }
         return this.rslScope.resolve(this, token, ...providers);
     }
@@ -287,7 +235,7 @@ export class IocContainer extends Injector implements IIocContainer {
             type,
             singleton
         } as DesignContext;
-        this.getActionInjector().getInstance(DesignLifeScope).register(ctx);
+        this.actionPdr.getInstance(DesignLifeScope).register(ctx);
         lang.cleanObj(ctx);
 
         return this;
@@ -317,6 +265,109 @@ export class IocContainer extends Injector implements IIocContainer {
 
     protected destroying() {
         super.destroying();
-        this.actionInj = null;
+    }
+}
+
+
+
+const NULL_PDR = new DIProvider();
+
+class RegisteredStateImpl implements RegisteredState {
+    private types: Map<ClassType, Registered>;
+    private decors: Map<string, IProvider>;
+    constructor(private readonly container: IIocContainer) {
+        this.types = new Map();
+        this.decors = new Map();
+    }
+
+    /**
+      * get injector
+      * @param type
+      */
+    getInjector<T extends IInjector = IInjector>(type: ClassType): T {
+        return this.types.get(type)?.getInjector() as T;
+    }
+
+    getRegistered<T extends Registered>(type: ClassType): T {
+        return this.types.get(type) as T;
+    }
+
+    regType<T extends Registered>(type: ClassType, data: T) {
+        this.types.set(type, { ... this.types.get(type), ...data });
+    }
+
+    deleteType(type: ClassType) {
+        this.types.delete(type);
+    }
+
+    isRegistered(type: ClassType): boolean {
+        return this.types.has(type);
+    }
+
+    hasProvider(decor: string) {
+        return this.decors.has(decor);
+    }
+
+    getProvider(decor: string) {
+        return this.decors.get(decor) ?? NULL_PDR;
+    }
+    regDecoator(decor: string, ...providers: Provider[]) {
+        this.decors.set(decor, this.container.getInstance(PROVIDERS).inject(...providers));
+    }
+
+}
+
+
+/**
+ * action injector.
+ */
+class ActionProvider extends DIProvider implements IActionProvider {
+
+    regAction<T extends Action>(type: Type<T>): this {
+        if (this.hasTokenKey(type)) {
+            return this;
+        }
+        this.registerAction(type);
+        return this;
+    }
+
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
+        if (!provide && this.registerAction(type)) {
+            return this;
+        }
+        this.getContainer().registerIn(this, type, provide, singleton);
+        return this;
+    }
+
+    protected registerAction(type: Type) {
+        if (lang.isExtendsClass(type, Action)) {
+            if (this.hasTokenKey(type)) {
+                return true;
+            }
+            let instance = this.setupAction(type) as Action & IActionSetup;
+            if (instance instanceof Action && isFunction(instance.setup)) {
+                instance.setup();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    protected setupAction(type: Type<Action>): Action {
+        let instance = new type(this);
+        this.setValue(type, instance);
+        return instance;
+    }
+
+    getAction<T extends Handler>(target: Token<Action> | Action | Function): T {
+        if (target instanceof Action) {
+            return target.toAction() as T;
+        } else if (isToken(target)) {
+            let act = this.get(target);
+            return act ? act.toAction() as T : null;
+        } else if (isFunction(target)) {
+            return target as T
+        }
+        return null;
     }
 }

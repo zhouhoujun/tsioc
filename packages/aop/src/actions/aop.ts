@@ -16,15 +16,15 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
         return next();
     }
 
-    const actInjtor = ctx.injector.getContainer().getActionInjector();
-    let scope = actInjtor.getInstance(ProceedingScope);
+    const actpdr = ctx.injector.getContainer().actionPdr;
+    let scope = actpdr.getInstance(ProceedingScope);
 
     let target = ctx.instance;
     let targetType = ctx.type;
 
     let className = reflect.class.className;
     let decorators = reflect.class.getPropertyDescriptors();
-    let advisor = actInjtor.getInstance(ADVISOR);
+    let advisor = actpdr.getInstance(ADVISOR);
     let advicesMap = advisor.getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
@@ -57,7 +57,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
         return next();
     }
 
-    ctx.injector.getContainer().getActionInjector()
+    ctx.injector.getContainer().actionPdr
         .getInstance(ProceedingScope)
         .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.providers);
 
@@ -78,7 +78,7 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
         return next();
     }
 
-    ctx.injector.getContainer().getActionInjector()
+    ctx.injector.getContainer().actionPdr
         .getInstance(ProceedingScope)
         .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.providers);
 
@@ -98,9 +98,9 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
         return next();
     }
 
-    const actInjtor = ctx.injector.getContainer().getActionInjector();
-    let advisor = actInjtor.getInstance(ADVISOR);
-    let matcher = actInjtor.getInstance(ADVICE_MATCHER);
+    const acpdr = ctx.injector.getContainer().actionPdr;
+    let advisor = acpdr.getInstance(ADVISOR);
+    let matcher = acpdr.getInstance(ADVICE_MATCHER);
     let targetType = ctx.type;
 
     advisor.aspects.forEach(type => {

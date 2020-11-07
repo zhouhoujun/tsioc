@@ -13,7 +13,7 @@ export class ORMCoreModule {
 
     setup(@Inject(IOC_CONTAINER) container: IContainer) {
         container.registerType(ExtendBaseTypeMap);
-        const actInjector = container.getActionInjector();
+        const actInjector = container.actionPdr;
         actInjector.getInstance(StartupGlobalService)
             .useBefore(ConnectionsHandle, ConfigureServiceHandle);
     }

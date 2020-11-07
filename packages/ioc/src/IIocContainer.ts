@@ -67,6 +67,10 @@ export interface IIocContainer extends IInjector {
      */
     readonly regedState: RegisteredState;
     /**
+     * action provider.
+     */
+    readonly actionPdr: IActionProvider;
+    /**
      * get root contianer.
      */
     getContainer(): this;
@@ -74,10 +78,6 @@ export interface IIocContainer extends IInjector {
      * create injector.
      */
     createInjector(): IInjector;
-    /**
-     * get action injector
-     */
-    getActionInjector(): IActionProvider;
     /**
      * register type class.
      * @param Type the class.

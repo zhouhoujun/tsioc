@@ -34,7 +34,7 @@ export class BootModule {
     setup(@Inject(CONTAINER) container: IContainer) {
         container.set(ModuleInjector, () => new ModuleInjector(container));
         container.set(ModuleProviders, () => new ModuleProviders(container));
-        let actInjector = container.getActionInjector();
+        let actInjector = container.actionPdr;
 
         actInjector.regAction(ResolveMoudleScope)
             .regAction(StartupServiceScope)

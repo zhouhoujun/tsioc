@@ -1,4 +1,4 @@
-import { Inject, IOC_CONTAINER, IIocContainer, runtimes, RuntimeLifeScope, ActionInjector, IocExt } from '@tsdi/ioc';
+import { Inject, IOC_CONTAINER, IIocContainer, runtimes, RuntimeLifeScope, IocExt } from '@tsdi/ioc';
 import { BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, MatchPointcutAction } from './actions/aop';
 import { Advisor } from './Advisor';
 import { AdviceMatcher } from './AdviceMatcher';
@@ -26,25 +26,25 @@ export class AopModule {
      */
     setup(@Inject(IOC_CONTAINER) container: IIocContainer) {
 
-        const actInjector = container.getActionInjector();
+        const actionPdr = container.actionPdr;
 
-        actInjector
+        actionPdr
             .setValue(ADVISOR, new Advisor(container), Advisor)
             .setValue(ADVICE_MATCHER, new AdviceMatcher(container), AdviceMatcher);
 
-        actInjector.regAction(ProceedingScope);
+        actionPdr.regAction(ProceedingScope);
 
-        actInjector.getInstance(runtimes.BeforeCtorScope)
+        actionPdr.getInstance(runtimes.BeforeCtorScope)
             .useBefore(BeforeCtorAdviceAction);
 
-        actInjector.getInstance(runtimes.AfterCtorScope)
+        actionPdr.getInstance(runtimes.AfterCtorScope)
             // .use(ExetndsInstanceAction)
             .use(AfterCtorAdviceAction);
 
-        actInjector.getInstance(runtimes.RuntimeMthScope)
+        actionPdr.getInstance(runtimes.RuntimeMthScope)
             .useBefore(BindMthPointcutAction);
 
-        actInjector.getInstance(RuntimeLifeScope)
+        actionPdr.getInstance(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
 
 

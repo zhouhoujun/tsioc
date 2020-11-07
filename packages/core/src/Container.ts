@@ -22,6 +22,10 @@ import { InjLifeScope } from './injects/lifescope';
  */
 export class Container extends IocContainer implements IContainer {
 
+    constructor() {
+        super();
+    }
+
     private servPdr: ServiceProvider;
     private injScope: InjLifeScope;
     protected initReg() {
@@ -67,7 +71,7 @@ export class Container extends IocContainer implements IContainer {
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
         if (!this.injScope) {
-            this.injScope = this.getActionInjector().getInstance(InjLifeScope)
+            this.injScope = this.actionPdr.getInstance(InjLifeScope)
         }
         return this.injScope.register(this, ...mdls);
     }

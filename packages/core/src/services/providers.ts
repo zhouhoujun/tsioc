@@ -40,7 +40,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         }
 
         if (!this.serviceScope) {
-            this.serviceScope = this.container.getActionInjector().getInstance(ResolveServiceScope);
+            this.serviceScope = this.container.actionPdr.getInstance(ResolveServiceScope);
         }
 
         this.serviceScope.execute(context);
@@ -92,7 +92,7 @@ export class ServiceProvider extends IocCoreService implements IServiceResolver,
         }
         this.initTargetRef(context);
         if (!this.servicesScope) {
-            this.servicesScope = this.container.getActionInjector().getInstance(ResolveServicesScope);
+            this.servicesScope = this.container.actionPdr.getInstance(ResolveServicesScope);
         }
         this.servicesScope.execute(context);
         const services = context.services;

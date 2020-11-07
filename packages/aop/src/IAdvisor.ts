@@ -8,6 +8,9 @@ import { Advices } from './advices/Advices';
  * @interface IAdvisor
  */
 export interface IAdvisor {
+    /**
+     * aspect types.
+     */
     aspects: Type[];
     /**
      * advices

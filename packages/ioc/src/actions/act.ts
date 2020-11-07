@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { Handler, isClass } from '../utils/lang';
-import { Token, tokenId, TokenId } from '../tokens';
+import { Token } from '../tokens';
 import { IProvider } from '../IInjector';
 import { Action, Actions } from '../Action';
 import { IocContext } from './ctx';
@@ -20,8 +20,6 @@ export interface IActionProvider extends IProvider {
      */
     getAction<T extends Handler>(target: Token<Action> | Action | Function): T;
 }
-
-export const ACTION_PROVIDER: TokenId<IActionProvider> = tokenId<IActionProvider>('ACTION_PROVIDER');
 
 
 
