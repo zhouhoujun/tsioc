@@ -1,7 +1,6 @@
 import { createDecorator, DecoratorOption } from '@tsdi/ioc';
-import { AnnotationReflect, BootContext } from '@tsdi/boot';
+import { AnnotationReflect } from '@tsdi/boot';
 import { SuiteMetadata, TestCaseMetadata, TestMetadata } from './metadata';
-import { UnitTestContext } from './UnitTestContext';
 
 
 /**

@@ -1,10 +1,9 @@
 import { Singleton, isArray } from '@tsdi/ioc';
-import { ConfigureRegister } from '@tsdi/boot';
+import { ConfigureRegister, IBootContext } from '@tsdi/boot';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import * as assert from 'assert';
 import * as expect from 'expect';
-import { UnitTestContext } from './UnitTestContext';
 import { ExpectToken } from './assert/expects';
 
 /**
@@ -17,7 +16,7 @@ import { ExpectToken } from './assert/expects';
 @Singleton()
 export class UnitTestConfigureRegister extends ConfigureRegister {
 
-    async register(config: UnitTestConfigure, ctx: UnitTestContext): Promise<void> {
+    async register(config: UnitTestConfigure, ctx: IBootContext): Promise<void> {
 
         if (!ctx.injector.has(Assert)) {
             ctx.injector.setValue(Assert, assert);

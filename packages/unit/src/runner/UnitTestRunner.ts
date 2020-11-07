@@ -1,8 +1,8 @@
 import { Injectable, isString, isClass, isArray, PromiseUtil, refl } from '@tsdi/ioc';
-import { Runnable, BuilderService, AnnotationReflect } from '@tsdi/boot';
+import { Runnable, BuilderService, AnnotationReflect, IBootContext } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
-import { UnitTestContext } from '../UnitTestContext';
+import { UnitTestConfigure } from '../UnitTestConfigure';
 
 
 /**
@@ -14,9 +14,9 @@ import { UnitTestContext } from '../UnitTestContext';
 @Injectable()
 export class UnitTestRunner extends Runnable {
 
-    async configureService(context: UnitTestContext): Promise<void> {
+    async configureService(context: IBootContext): Promise<void> {
         const ctx = context;
-        let config = await ctx.getConfiguration();
+        let config = await ctx.getConfiguration() as UnitTestConfigure;
         let src = config.src;
         let injector = ctx.injector;
         let suites: any[] = [];

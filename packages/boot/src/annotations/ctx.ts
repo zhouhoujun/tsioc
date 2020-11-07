@@ -13,6 +13,7 @@ import { CTX_OPTIONS, CTX_PROVIDERS } from '../tk';
 @Abstract()
 export class DestoryableContext<T extends ProdverOption> extends Destoryable implements IDesctoryableContext<T> {
 
+    static ρNPT = true;
     private context: IProvider;
     protected options: T;
 

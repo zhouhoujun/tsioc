@@ -5,7 +5,6 @@ import { LogModule } from '@tsdi/logs';
 import { BootApplication, DIModule } from '@tsdi/boot';
 import { UnitTestConfigureRegister } from './UnitTestConfigureRegister';
 import { UnitTestConfigure } from './UnitTestConfigure';
-import { UnitTestContext } from './UnitTestContext';
 import { UnitTestRunner } from './runner/UnitTestRunner';
 import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
@@ -19,7 +18,6 @@ import { TestReport } from './reports/TestReport';
       LogModule
    ],
    providers: [
-      UnitTestContext,
       UnitTestConfigureRegister,
       RunAspect,
       OldTestRunner,
