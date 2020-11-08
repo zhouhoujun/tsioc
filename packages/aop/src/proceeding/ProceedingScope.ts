@@ -94,17 +94,28 @@ export class ProceedingScope extends IocCompositeAction<Joinpoint> implements IA
         let methodName = pointcut.name;
         if (advices && pointcut) {
             if (pointcut.descriptor && (pointcut.descriptor.get || pointcut.descriptor.set)) {
-                if (pointcut.descriptor.get && !pointcut.descriptor.get[proxyFlag]) {
-                    let getMethod = pointcut.descriptor.get.bind(target);
-                    pointcut.descriptor.get = this.proxy(getMethod, advices, target, targetType, pointcut, provJoinpoint);
-                    pointcut.descriptor.get[proxyFlag] = true;
+                if (pointcut.descriptor.get && pointcut.descriptor.set) {
+                    Object.defineProperty(target, methodName, {
+                        get: () => {
+                            return this.proxy(pointcut.descriptor.get.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                        },
+                        set: () => {
+                            this.proxy(pointcut.descriptor.set.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                        }
+                    });
+                } else if (pointcut.descriptor.get) {
+                    Object.defineProperty(target, methodName, {
+                        get: () => {
+                            return this.proxy(pointcut.descriptor.get.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                        }
+                    });
+                } else if (pointcut.descriptor.set) {
+                    Object.defineProperty(target, methodName, {
+                        set: () => {
+                            this.proxy(pointcut.descriptor.set.bind(target), advices, target, targetType, pointcut, provJoinpoint)();
+                        }
+                    });
                 }
-                if (pointcut.descriptor.set && !pointcut.descriptor.set[proxyFlag]) {
-                    let setMethod = pointcut.descriptor.set.bind(target);
-                    pointcut.descriptor.set = this.proxy(setMethod, advices, target, targetType, pointcut, provJoinpoint);
-                    pointcut.descriptor.set[proxyFlag] = true;
-                }
-                Reflect.defineProperty(target, methodName, pointcut.descriptor);
             } else if (isFunction(target[methodName]) && !target[methodName][proxyFlag]) {
                 let propertyMethod = target[methodName].bind(target);
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint);
