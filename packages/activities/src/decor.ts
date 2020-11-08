@@ -1,8 +1,8 @@
 import { AnnotationReflect, BootContext, BuildContext } from '@tsdi/boot';
 import { lang, ClassType, createDecorator } from '@tsdi/ioc';
-import { ActivityContext } from '../core/ActivityContext';
-import { ActivityMetadata } from '../core/ActivityMetadata';
-import { WorkflowContext } from '../core/WorkflowContext';
+import { ActivityContext } from './core/ActivityContext';
+import { ActivityMetadata } from './core/ActivityMetadata';
+import { WorkflowContext } from './core/WorkflowContext';
 
 
 /**

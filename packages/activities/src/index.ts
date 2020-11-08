@@ -1,7 +1,6 @@
 export * from './Workflow';
-export * from './ActivityProvider';
 export * from './ActivityModule';
-export * from './decorators/Task';
+export * from './decor';
 
 export * from './utils/types';
 // core
@@ -18,8 +17,6 @@ export * from './core/ActivityMetadata';
 export * from './core/WorkflowContext';
 export * from './core/ActivityContext';
 export * from './core/uuid';
-
-export * from './registers/ActivityDepsRegister';
 
 // aop
 export * from './aop/RunAspect';
