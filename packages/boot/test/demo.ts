@@ -101,12 +101,15 @@ export class SocketService extends StartupService<IBootContext> {
 
     public tcpServer: net.Server;
     private context: IBootContext;
+    private init_times = 0;
 
     async configureService(ctx: IBootContext): Promise<void> {
         console.log('SocketService init...')
         this.context = ctx;
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
+        this.init_times ++;
+        console.log('destroyed state', this.destroyed, 'init', this.init_times);
     }
 
     protected destroying() {

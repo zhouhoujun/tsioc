@@ -47,7 +47,7 @@ export abstract class LoggerAspect extends LogProcess {
             this.writeLog(this.logger, joinPoint, level, true, ...messages);
         } else {
             isDefined(level) && messages.unshift(level);
-            if (isLevel(level)) {
+            if (isLevel(annotation)) {
                 level = annotation;
             } else {
                 level = '';

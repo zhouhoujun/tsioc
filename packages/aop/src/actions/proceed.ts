@@ -95,7 +95,6 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                     pointcut.descriptor.set = this.proxy(setMethod, advices, target, targetType, pointcut, provJoinpoint);
                     pointcut.descriptor.set[proxyFlag] = true;
                 }
-                Reflect.defineProperty(target, methodName, pointcut.descriptor);
             } else if (isFunction(target[methodName]) && !target[methodName][proxyFlag]) {
                 let propertyMethod = target[methodName].bind(target);
                 target[methodName] = this.proxy(propertyMethod, advices, target, targetType, pointcut, provJoinpoint);
