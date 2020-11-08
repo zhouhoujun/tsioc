@@ -1,6 +1,8 @@
-import { AnnotationReflect } from '@tsdi/boot';
+import { AnnotationReflect, BootContext, BuildContext } from '@tsdi/boot';
 import { lang, ClassType, createDecorator } from '@tsdi/ioc';
+import { ActivityContext } from '../core/ActivityContext';
 import { ActivityMetadata } from '../core/ActivityMetadata';
+import { WorkflowContext } from '../core/WorkflowContext';
 
 
 /**
@@ -48,12 +50,27 @@ export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
         const reflect = ctx.reflect as AnnotationReflect;
         reflect.annoType = 'component';
         reflect.annoDecor = ctx.decor;
-        const metadata = ctx.matedata  as ActivityMetadata;
+        const metadata = ctx.matedata as ActivityMetadata;
         if (!metadata.name) {
             metadata.name = lang.getClassName(ctx.reflect.type);
         }
         reflect.annotation = ctx.matedata;
         return next();
-    }
+    },
+    designHandles: {
+        type: 'Class',
+        handle: (ctx, next) => {
+            const relt = ctx.reflect as AnnotationReflect;
+            const annoation = relt.annotation as ActivityMetadata;
+            if (annoation.deps && annoation.deps.length) {
+                ctx.injector.inject(...annoation.deps);
+            }
+            next();
+        }
+    },
+    providers: [
+        { provide: BootContext, useClass: WorkflowContext },
+        { provide: BuildContext, useClass: ActivityContext },
+    ]
 }) as ITaskDecorator;
 
