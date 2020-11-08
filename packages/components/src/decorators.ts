@@ -2,13 +2,17 @@ import {
     Token, createPropDecorator, PropertyMetadata, Type, refl, lang, isBoolean,
     isUndefined, createParamDecorator, createDecorator, InjectableMetadata
 } from '@tsdi/ioc';
-import { AnnotationReflect } from '@tsdi/boot';
+import { AnnotationReflect, BuildContext } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
 } from './metadata';
 import { PipeTransform } from './pipes/pipe';
-import { ComponentReflect } from './reflect';
+import { ComponentReflect, DirectiveReflect } from './reflect';
+import { ComponentContext } from './context';
+import { CompilerFacade, Identifiers } from './compile/facade';
+import { CONTAINER, ICoreInjector } from '@tsdi/core';
+import { ComponentType, DirectiveType } from './type';
 
 
 
@@ -51,6 +55,29 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
         reflect.annoDecor = ctx.decor;
         reflect.annotation = ctx.matedata;
         return next();
+    },
+    designHandles: {
+        type: 'Class',
+        handle: (ctx, next) => {
+            const decorRefl = ctx.reflect as DirectiveReflect;
+            const type = ctx.type as DirectiveType;
+            if (!(decorRefl.annoType === 'directive')) {
+                return next();
+            }
+
+            if (type.ρdir && (type.ρdir as any).type === ctx.type) {
+                decorRefl.def = type.ρdir;
+                return next();
+            }
+
+            const currDecor = ctx.currDecor;
+            const injector = ctx.injector as ICoreInjector;
+
+            const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
+            decorRefl.def = compiler.compileDirective(decorRefl);
+
+            next();
+        }
     }
 });
 
@@ -95,7 +122,34 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         reflect.annoDecor = ctx.decor;
         reflect.annotation = ctx.matedata;
         return next();
-    }
+    },
+    designHandles: {
+        type: 'Class',
+        handle: (ctx, next) => {
+            const compRefl = ctx.reflect as ComponentReflect;
+            if (!(compRefl.annoType === 'component')) {
+                return next();
+            }
+            const type = ctx.type as ComponentType;
+            if (type.ρcmp && (type.ρcmp as any).type === ctx.type) {
+                compRefl.def = type.ρcmp;
+                return next();
+            }
+
+            const currDecor = ctx.currDecor;
+            const injector = ctx.injector as ICoreInjector;
+
+            const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
+            compRefl.def = compiler.compileComponent(compRefl);
+
+            next();
+
+        }
+    },
+    providers: [
+        { provide: BuildContext, useClass: ComponentContext },
+        { provide: Identifiers, useFactory: (container) => new Identifiers(container), deps: [CONTAINER], singleton: true }
+    ]
 });
 
 

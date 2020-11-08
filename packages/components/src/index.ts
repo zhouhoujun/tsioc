@@ -38,12 +38,6 @@ export * from './refs/element';
 export * from './refs/template';
 export * from './refs/view';
 
-
-// registers
-export * from './registers/component';
-export * from './registers/directive';
-export * from './registers/pipe';
-
 // util
 export * from './util/array';
 export * from './util/stringify';
