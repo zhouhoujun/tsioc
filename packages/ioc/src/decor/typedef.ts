@@ -148,7 +148,7 @@ export class TypeDefine {
     }
 }
 
-function getParamNames(func) {
+function getParamNames(func: Function) {
     if (!isFunction(func)) {
         return [];
     }

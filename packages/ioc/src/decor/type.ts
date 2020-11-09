@@ -3,9 +3,15 @@ import { IInjector, IProvider } from '../IInjector';
 import { Provider, Token } from '../tokens';
 import { ClassType, DecoratorScope } from '../types';
 import { Handler } from '../utils/lang';
-import { ParameterMetadata, PatternMetadata, PropertyMetadata, ProviderMetadata, RefProvider, RegInMetadata, TypeMetadata } from './metadatas';
+import {
+    ParameterMetadata, PatternMetadata, PropertyMetadata,
+    ProviderMetadata, RefProvider, RegInMetadata, TypeMetadata
+} from './metadatas';
 import { TypeDefine } from './typedef';
 
+/**
+ * auto run define.
+ */
 export interface AutorunDefine {
     autorun: string;
     order?: number;
@@ -15,11 +21,29 @@ export interface AutorunDefine {
 export type DecorMemberType = 'property' | 'method' | 'parameter';
 export type DecoratorType = 'class' | DecorMemberType;
 
-
+/**
+ * decorator provdider.
+ */
 export interface DecorPdr {
+    /**
+     * get provider decorator.
+     * @param injector
+     */
     getProvider(injector: IInjector): IProvider;
+    /**
+     * get decorator handle.
+     * @param type decorator type.
+     */
     getHandle(type: DecoratorType): Handler<DecorContext>[];
+    /**
+     * get decorator runtime handle.
+     * @param type decorator type.
+     */
     getRuntimeHandle(type: DecoratorScope): Handler<RuntimeContext>[];
+    /**
+     * get decorator design handle.
+     * @param type decorator type.
+     */
     getDesignHandle(type: DecoratorScope): Handler<DesignContext>[];
 }
 
@@ -57,6 +81,9 @@ export interface DecorDefine<T = any> {
     matedata?: T;
 }
 
+/**
+ * decorator context.
+ */
 export interface DecorContext extends DecorDefine {
     target: any;
     reflect: TypeReflect;
@@ -69,6 +96,9 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
 
     iocExt?: boolean;
 
+    /**
+     * class type.
+     */
     readonly type: ClassType;
 
     /**
