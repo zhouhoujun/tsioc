@@ -14,6 +14,4 @@ import { TypeormConnectionStatupService } from './TypeormConnectionStatupService
         TypeOrmModelParser
     ]
 })
-export class TypeOrmModule {
-
-}
+export class TypeOrmModule { }

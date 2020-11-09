@@ -1,6 +1,6 @@
-import { Inject, PromiseUtil, Singleton, Type, INJECTOR, isFunction, Destoryable } from '@tsdi/ioc';
+import { PromiseUtil, Singleton, isFunction, Destoryable } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BootOption, IBootContext } from '@tsdi/boot';
+import { IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -59,7 +59,6 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
             // console.error(err);
         }
     }
-
 
     registerGlobalScope() {
         // isUndefined(window) ? global : window;
@@ -260,6 +259,6 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
         return caseDesc;
     }
 
-    protected destroying() {
-    }
+    protected destroying() { }
+
 }

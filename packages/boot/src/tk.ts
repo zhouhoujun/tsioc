@@ -91,7 +91,6 @@ export const TYPE_PARSER: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('T
  */
 export const BaseTypeParserToken = TYPE_PARSER;
 
-
 /**
  * appliction root module injector token.
  */
@@ -107,8 +106,14 @@ export const MODULE_RUNNABLE = tokenId<any>('MODULE_RUNNABLE');
  */
 export const MODULE_STARTUPS = tokenId<Token[]>('MODULE_STARTUPS');
 
+/**
+ * context providers.
+ */
 export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
 
+/**
+ * context options.
+ */
 export const CTX_OPTIONS = tokenId<any>('CTX_OPTIONS');
 
 export const CTX_CURR_INJECTOR = tokenId<ICoreInjector>('CTX_CURR_INJECTOR');

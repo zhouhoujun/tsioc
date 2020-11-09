@@ -15,9 +15,7 @@ import { ADVISOR, ADVICE_MATCHER } from './tk';
 @IocExt()
 export class AopModule {
 
-    constructor() {
-
-    }
+    constructor() { }
 
     /**
      * register aop for container.
@@ -46,7 +44,6 @@ export class AopModule {
 
         actionPdr.getInstance(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
-
 
     }
 }

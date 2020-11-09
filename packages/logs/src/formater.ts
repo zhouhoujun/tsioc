@@ -38,9 +38,7 @@ export type LOGFormater = ILogFormater | Token<ILogFormater> | ((joinPoint?: Joi
 @Singleton(LogFormaterToken)
 export class LogFormater implements ILogFormater {
 
-    constructor() {
-
-    }
+    constructor() { }
 
     timestamp(time: Date): any {
         return `[${time.getHours()}:${time.getMinutes()}:${time.getSeconds()} ${time.getMilliseconds()}]`;

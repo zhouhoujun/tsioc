@@ -19,11 +19,10 @@ export abstract class LogProcess {
     private _logger: ILogger;
     private _logManger: ILoggerManager;
 
-    constructor(@Inject(INJECTOR) protected injector: ICoreInjector, private config?: LogConfigure | Type<LogConfigure>) {
-
+    constructor(
+        @Inject(INJECTOR) protected injector: ICoreInjector,
+        private config?: LogConfigure | Type<LogConfigure>) {
     }
-
-
 
     get logger(): ILogger {
         if (!this._logger) {

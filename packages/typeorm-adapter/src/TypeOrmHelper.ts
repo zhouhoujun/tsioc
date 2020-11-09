@@ -13,8 +13,7 @@ export class TypeOrmHelper {
     @Inject(INJECTOR)
     private injector: ICoreInjector;
 
-    constructor() {
-    }
+    constructor() { }
 
     getConnection(connectName?: string): Connection {
         if (!this.service) {

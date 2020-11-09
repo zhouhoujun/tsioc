@@ -197,9 +197,7 @@ export interface MethodMetadata extends Metadata {
  * @extends {PropertyMetadata}
  * @extends {MethodMetadata}
  */
-export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata {
-
-}
+export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata { }
 
 
 /**
@@ -240,14 +238,12 @@ export interface ParameterMetadata extends PropertyMetadata {
  * @interface ParamPropMetadata
  * @extends {ParameterMetadata}
  */
-export interface ParamPropMetadata extends ParameterMetadata {
+export interface ParamPropMetadata extends ParameterMetadata { }
 
-}
-
-export interface MethodParamPropMetadata extends ParamPropMetadata, MethodMetadata {
-
-}
-
+/**
+ * method param property metadata.
+ */
+export interface MethodParamPropMetadata extends ParamPropMetadata, MethodMetadata { }
 
 /**
  * Inject metadata.
@@ -256,8 +252,7 @@ export interface MethodParamPropMetadata extends ParamPropMetadata, MethodMetada
  * @interface InjectMetadata
  * @extends {ParamPropMetadata}
  */
-export interface InjectMetadata extends ParamPropMetadata {
-}
+export interface InjectMetadata extends ParamPropMetadata { }
 
 
 export interface RegInMetadata {
@@ -292,9 +287,7 @@ export interface PatternMetadata {
  * @export
  * @interface ClassMetadata
  */
-export interface ClassMetadata extends PatternMetadata, ProviderMetadata, RefMetadata, TypeMetadata {
-
-}
+export interface ClassMetadata extends PatternMetadata, ProviderMetadata, RefMetadata, TypeMetadata { }
 
 /**
  * Injectable decorator metadata.
@@ -302,9 +295,7 @@ export interface ClassMetadata extends PatternMetadata, ProviderMetadata, RefMet
  * @export
  * @interface InjectableMetadata
  */
-export interface InjectableMetadata extends ClassMetadata, RegInMetadata, ProvidersMetadata {
-
-}
+export interface InjectableMetadata extends ClassMetadata, RegInMetadata, ProvidersMetadata { }
 
 
 /**
@@ -314,9 +305,7 @@ export interface InjectableMetadata extends ClassMetadata, RegInMetadata, Provid
  * @interface AutoWiredMetadata
  * @extends {PropertyMetadata}
  */
-export interface AutoWiredMetadata extends MethodParamPropMetadata {
-
-}
+export interface AutoWiredMetadata extends MethodParamPropMetadata { }
 
 
 /**

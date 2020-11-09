@@ -132,15 +132,12 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
     }) as IBootDecorator;
 }
 
-
 /**
  * Boot decorator, use to define class as statup service when bootstrap application.
  *
  * @Boot()
  */
 export const Boot: IBootDecorator = createBootDecorator<BootMetadata>('Boot');
-
-
 
 /**
  * DI module metadata.
@@ -150,10 +147,7 @@ export const Boot: IBootDecorator = createBootDecorator<BootMetadata>('Boot');
  * @extends {ModuleConfigure}
  * @extends {ClassMetadata}
  */
-export interface DIModuleMetadata extends ModuleConfigure {
-
-}
-
+export interface DIModuleMetadata extends ModuleConfigure { }
 
 /**
  * DIModule decorator, use to define class as DI Module.
@@ -313,9 +307,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
 export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule');
 
 
-
 export type MessageDecorator = <TFunction extends Type<IMessage>>(target: TFunction) => TFunction | void;
-
 
 /**
  * message metadata. use to define the class as message handle register in global message queue.

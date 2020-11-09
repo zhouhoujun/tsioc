@@ -9,6 +9,4 @@ import { Log4jsAdapter } from './Log4jsAdapter';
         Log4jsAdapter
     ]
 })
-export class ServerLogsModule {
-
-}
+export class ServerLogsModule { }

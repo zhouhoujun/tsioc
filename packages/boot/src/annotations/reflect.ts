@@ -1,6 +1,4 @@
 import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersMetadata, Type } from '@tsdi/ioc';
-import { IBootContext, IBuildContext } from '../Context';
-
 
 /**
  * annotation metadata.

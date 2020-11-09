@@ -238,10 +238,6 @@ export interface BuildOption<T = any> extends AnnoationOption<T> {
     injector?: ICoreInjector;
 }
 
-
-
-
-
 /**
  * build context.
  *
@@ -303,6 +299,9 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      */
     readonly data: any;
 
+    /**
+     * template.
+     */
     readonly template: Template;
     /**
     * auto statupe or not. default true.

@@ -13,10 +13,6 @@ import * as globby from 'globby';
  */
 export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
 
-    constructor() {
-        super();
-    }
-
     protected normalize(pth: string) {
         return pth ? pth.split('\\').join('/') : pth;
     }

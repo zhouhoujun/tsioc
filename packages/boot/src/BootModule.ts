@@ -22,9 +22,7 @@ import { BootContext } from './boot/ctx';
 @IocExt()
 export class BootModule {
 
-    constructor() {
-
-    }
+    constructor() { }
 
     /**
      * register aop for container.
@@ -45,7 +43,6 @@ export class BootModule {
             .useBefore(InjDIModuleScope);
 
         container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
-
 
     }
 }

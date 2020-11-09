@@ -206,8 +206,5 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
  * @extends {BuildHandles<T>}
  * @template T
  */
-
 @Singleton(ROOT_MESSAGEQUEUE)
-export class RootMessageQueue<T extends MessageContext = MessageContext> extends MessageQueue<T> {
-
-}
+export class RootMessageQueue<T extends MessageContext = MessageContext> extends MessageQueue<T> { }

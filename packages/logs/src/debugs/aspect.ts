@@ -37,5 +37,4 @@ export class DebugLogAspect extends LoggerAspect {
         }
         this.processLog(joinPoint, level);
     }
-
 }

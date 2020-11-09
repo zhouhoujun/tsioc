@@ -12,9 +12,7 @@ import { LogFormater } from './formater';
 @IocExt()
 export class LogModule {
 
-    constructor() {
-
-    }
+    constructor() { }
 
     /**
      * register aop for container.

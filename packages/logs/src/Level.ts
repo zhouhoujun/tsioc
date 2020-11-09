@@ -1,20 +1,3 @@
-
-// /**
-//  * log level items.
-//  *
-//  * @export
-//  * @enum {number}
-//  */
-// export enum Level {
-//     log = 'log',
-//     trace = 'trace',
-//     debug = 'debug',
-//     info = 'info',
-//     warn = 'warn',
-//     error = 'error',
-//     fatal = 'fatal'
-// }
-
 import { isString } from '@tsdi/ioc';
 
 /**
@@ -22,7 +5,12 @@ import { isString } from '@tsdi/ioc';
  */
 export type Level = 'log' | 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
+
 const levels = ['log', 'trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+/**
+ * is level.
+ * @param target
+ */
 export function isLevel(target: any): target is Level {
     return isString(target) && levels.indexOf(target) >= 0;
 }

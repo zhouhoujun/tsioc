@@ -15,7 +15,5 @@ let processRoot = isDefined(System) ? System.baseURL : '.';
         { provide: PROCESS_ROOT, useValue: processRoot }
     ]
 })
-export class BrowserBootstrapModule {
-
-}
+export class BrowserBootstrapModule { }
 

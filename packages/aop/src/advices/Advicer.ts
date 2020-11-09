@@ -1,5 +1,6 @@
 import { Type } from '@tsdi/ioc';
 import { MatchPointcut } from '../joinpoints/MatchPointcut';
+
 /**
  * AdviceInvokerData
  *
@@ -14,6 +15,5 @@ export interface Advicer extends MatchPointcut {
      * @memberof Advicer
      */
     aspectType: Type;
-
 }
 

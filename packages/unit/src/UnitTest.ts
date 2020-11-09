@@ -27,9 +27,7 @@ import { TestReport } from './reports/TestReport';
    ],
    bootstrap: UnitTestRunner
 })
-export class UnitTest {
-
-}
+export class UnitTest { }
 
 /**
  * unit test.

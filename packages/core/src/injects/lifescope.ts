@@ -11,7 +11,6 @@ export class InjLifeScope extends LifeScope<InjContext> {
     }
 
     setup() {
-
         this.use(InjModuleToTypesAction)
             .use(InjModuleScope);
     }

@@ -1,9 +1,7 @@
 import { IActionSetup, Type, isArray, lang, IocActions, refl, IocAction } from '@tsdi/ioc';
 import { InjContext } from './context';
 
-export abstract class InjScope extends IocActions<InjContext> {
-
-}
+export abstract class InjScope extends IocActions<InjContext> { }
 
 /**
  * module inject scope.

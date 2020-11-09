@@ -4,10 +4,6 @@ declare let System: any;
 declare let window: any;
 export class BrowserModuleLoader extends ModuleLoader implements IModuleLoader {
 
-    constructor() {
-        super()
-    }
-
     protected createLoader() {
         if (typeof System !== 'undefined') {
             return (modulepath: string) => {

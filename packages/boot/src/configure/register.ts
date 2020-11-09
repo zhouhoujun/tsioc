@@ -33,8 +33,7 @@ export interface IConfigureRegister<T extends IBootContext = IBootContext> {
 @Abstract()
 export abstract class ConfigureRegister<T extends IBootContext = IBootContext> implements IConfigureRegister<T> {
 
-    constructor() {
-    }
+    constructor() { }
 
     /**
      * register config setting.

@@ -32,9 +32,7 @@ export interface TestMetadata {
  * @interface BeforeTestMetadata
  * @extends {TestMetadata}
  */
-export interface BeforeTestMetadata extends TestMetadata {
-
-}
+export interface BeforeTestMetadata extends TestMetadata { }
 
 /**
  * before each test metadta.
@@ -43,9 +41,7 @@ export interface BeforeTestMetadata extends TestMetadata {
  * @interface BeforeEachTestMetadata
  * @extends {TestMetadata}
  */
-export interface BeforeEachTestMetadata extends TestMetadata {
-
-}
+export interface BeforeEachTestMetadata extends TestMetadata { }
 
 /**
  * test case metadata.

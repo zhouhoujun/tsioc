@@ -47,9 +47,7 @@ export abstract class Runnable extends Destoryable implements IRunnable {
     /**
      * destorying. default do nothing.
      */
-    protected destroying() {
-
-    }
+    protected destroying() { }
 
 }
 

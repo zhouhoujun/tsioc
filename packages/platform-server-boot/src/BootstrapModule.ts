@@ -54,7 +54,6 @@ export class ConfigureFileLoader implements IConfigureLoader<Configure> {
             return cfgmodeles;
         }
     }
-
 }
 
 
@@ -74,7 +73,4 @@ export class ConfigureFileLoader implements IConfigureLoader<Configure> {
         { provide: PROCESS_ROOT, useValue: runMainPath() }
     ]
 })
-export class ServerBootstrapModule {
-
-}
-
+export class ServerBootstrapModule { }

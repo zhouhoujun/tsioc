@@ -1,9 +1,7 @@
 import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, PromiseUtil } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
-import {
-    PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS
-} from '../tk';
+import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
 import { ConfigureManager } from '../configure/manager';
 import { ConfigureRegister } from '../configure/register';
 import { BuildHandles, BuildHandle } from '../builder/handles';

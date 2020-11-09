@@ -64,7 +64,6 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
      */
     within?: ClassType | ClassType[];
 
-
     /**
      * advice type name.
      * eg. `Before`, `Pointcut`, `Around`, `After`, `AfterThrowing`, `AfterReturning`
@@ -152,6 +151,4 @@ export interface AspectMetadata extends ClassMetadata {
 /**
  * pointcut metadata.
  */
-export interface PointcutMetadata extends MethodPropMetadata {
-
-}
+export interface PointcutMetadata extends MethodPropMetadata { }

@@ -10,7 +10,9 @@ import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
  * @extends {IRunner<any>}
  */
 export interface ISuiteRunner extends IRunnable {
-
+    /**
+     * get boot type.
+     */
     getBootType(): Type;
     /**
      * run suite.
@@ -20,7 +22,6 @@ export interface ISuiteRunner extends IRunnable {
      * @memberof ISuiteRunner
      */
     runSuite(desc: ISuiteDescribe): Promise<void>;
-
     /**
      * run case.
      *

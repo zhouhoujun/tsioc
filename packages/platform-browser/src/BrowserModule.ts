@@ -13,9 +13,7 @@ import { BrowserModuleLoader } from './BrowserModuleLoader';
 @IocExt()
 export class BrowserModule {
 
-    constructor() {
-
-    }
+    constructor() { }
 
     /**
      * register aop for container.
@@ -23,6 +21,6 @@ export class BrowserModule {
      * @memberof AopModule
      */
     setup(@Inject(CONTAINER) container: IContainer) {
-        container.setValue(ModuleLoader,  new BrowserModuleLoader(), BrowserModuleLoader);
+        container.setValue(ModuleLoader, new BrowserModuleLoader(), BrowserModuleLoader);
     }
 }

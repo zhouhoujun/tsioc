@@ -51,11 +51,6 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
     }
 });
 
-
-
-
-
-
 /**
  * define the method of class as unit test case.
  *
@@ -131,9 +126,7 @@ export const Test: ITestCaseDecorator = createTestDecorator<TestCaseMetadata>('T
  * @interface IBeforeTestDecorator
  * @extends {ITestDecorator<TestMetadata>}
  */
-export interface IBeforeTestDecorator extends ITestDecorator<TestMetadata> {
-
-}
+export interface IBeforeTestDecorator extends ITestDecorator<TestMetadata> { }
 
 /**
  * @BeforeAll decorator. define the method of class as unit test action run before all test case.
@@ -152,8 +145,6 @@ export const BeforeAll: IBeforeTestDecorator = createTestDecorator<TestMetadata>
  */
 export const Before = BeforeAll;
 
-
-
 /**
  * @BeforeEach decorator. define the method of class as unit test action run before each test case.
  *
@@ -161,9 +152,7 @@ export const Before = BeforeAll;
  * @interface IBeforeEachTestDecorator
  * @extends {ITestDecorator<TestMetadata>}
  */
-export interface IBeforeEachTestDecorator extends ITestDecorator<TestMetadata> {
-
-}
+export interface IBeforeEachTestDecorator extends ITestDecorator<TestMetadata> { }
 
 /**
  * @BeforeEach decorator. define the method of class as unit test action run before each test case.
@@ -174,7 +163,6 @@ export interface IBeforeEachTestDecorator extends ITestDecorator<TestMetadata> {
  */
 export const BeforeEach: IBeforeEachTestDecorator = createTestDecorator<TestMetadata>('BeforeEach') as IBeforeEachTestDecorator;
 
-
 /**
  * @AfterAll decorator. define the method of class as unit test action run after all test case.
  *
@@ -182,9 +170,7 @@ export const BeforeEach: IBeforeEachTestDecorator = createTestDecorator<TestMeta
  * @interface IAfterTestDecorator
  * @extends {ITestDecorator<TestMetadata>}
  */
-export interface IAfterTestDecorator extends ITestDecorator<TestMetadata> {
-
-}
+export interface IAfterTestDecorator extends ITestDecorator<TestMetadata> { }
 
 /**
  * @AfterAll decorator. define the method of class as unit test action run after all test case.

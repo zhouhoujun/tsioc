@@ -11,9 +11,7 @@ import { NodeModuleLoader } from './NodeModuleLoader';
 @IocExt()
 export class ServerModule {
 
-    constructor() {
-
-    }
+    constructor() { }
 
     /**
      * register aop for container.

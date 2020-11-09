@@ -19,7 +19,6 @@ export abstract class ConnectionStatupService<T extends IBootContext = IBootCont
     /**
      * default do nothing.
      */
-    protected destroying() {
+    protected destroying() { }
 
-    }
 }

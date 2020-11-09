@@ -11,9 +11,8 @@ import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
  */
 @Abstract()
 export abstract class Reporter {
-    constructor() {
 
-    }
+    constructor() { }
 
     abstract render(suites: Map<Token, ISuiteDescribe>): Promise<void>;
 }

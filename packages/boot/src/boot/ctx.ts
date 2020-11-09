@@ -116,7 +116,9 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return this.getValue(MODULE_RUNNABLE);
     }
 
-
+    /**
+     * target.
+     */
     target: any;
     /**
      * boot instance.

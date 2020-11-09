@@ -27,9 +27,7 @@ export type MatchExpress = (method: string, fullName: string, targetType?: Class
  */
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(private container: IIocContainer) {
-
-    }
+    constructor(private container: IIocContainer) { }
 
     match(aspectType: Type, targetType: Type, adviceMetas?: AdviceMetadata[], target?: any): MatchPointcut[] {
         const aspref = refl.getIfy<AopReflect>(aspectType);

@@ -9,9 +9,7 @@ import { LogConfigure } from './LogConfigure';
  * @interface LoggerConfig
  * @extends {ObjectMap}
  */
-export interface LoggerConfig extends ObjectMap {
-}
-
+export interface LoggerConfig extends ObjectMap { }
 
 /**
  * logger manager.
