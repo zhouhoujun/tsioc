@@ -19,7 +19,6 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
     }
 
     setup() {
-
         this.use(InitReflectAction)
             .use(ra.IocGetCacheAction)
             .use(ra.CtorArgsAction)
@@ -29,7 +28,6 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
             .use(ra.RuntimePropScope)
             .use(ra.RuntimeMthScope)
             .use(ra.RuntimeAnnoScope);
-
     }
 
 }

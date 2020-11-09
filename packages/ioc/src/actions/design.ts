@@ -20,7 +20,6 @@ export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements
         }
     }
     setup() {
-
         this.use(InitReflectAction)
             .use(da.DesignClassScope)
             .use(da.DesignPropScope)

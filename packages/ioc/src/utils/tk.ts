@@ -8,6 +8,7 @@ import { IIocContainer } from '../IIocContainer';
  * injector instance token of self.
  */
 export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
+
 /**
  *  injector provider token. create new injector provider.
  */
@@ -22,6 +23,7 @@ export const INJECTOR_FACTORY = tokenId<IInjector>('INJECTOR_FACTORY');
  * method accessor token.
  */
 export const METHOD_ACCESSOR: TokenId<IMethodAccessor> = tokenId<IMethodAccessor>('METHOD_ACCESSOR');
+
 /**
  * method accessor token.
  * @deprecated use `METHOD_ACCESSOR` instead.
@@ -38,6 +40,7 @@ export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');
  * it is a symbol id, you can use  `@Inject()`, `@AutoWired()` or `@Param()` to get container instance in yourself class.
  */
 export const IOC_CONTAINER: TokenId<IIocContainer> = tokenId<IIocContainer>('IOC_CONTAINER');
+
 /**
  * root ioc container token.
  * @deprecated use `IOC_CONTAINER` instead.

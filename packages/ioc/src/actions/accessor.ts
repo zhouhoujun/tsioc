@@ -17,8 +17,7 @@ import { ParameterMetadata } from '../decor/metadatas';
  */
 export class MethodAccessor implements IMethodAccessor {
 
-    constructor() {
-    }
+    constructor() { }
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.

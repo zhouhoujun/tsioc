@@ -13,9 +13,7 @@ import { PROVIDERS } from '../utils/tk';
  * the register type class can only register in ioc as:
  * ` container.registerSingleton(SubDesignRegisterAction, () => new SubDesignRegisterAction(container));`
  */
-export abstract class IocDesignAction extends IocRegAction<DesignContext> {
-
-}
+export abstract class IocDesignAction extends IocRegAction<DesignContext> { }
 
 
 export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {

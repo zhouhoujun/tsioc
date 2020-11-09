@@ -12,10 +12,7 @@ import { RegContext } from './ctx';
  * the register type class can only register in ioc as:
  * ` container.registerSingleton(SubRegisterAction, () => new SubRegisterAction(container));`
  */
-export abstract class IocRegAction<T extends RegContext> extends IocAction<T> {
-
-}
-
+export abstract class IocRegAction<T extends RegContext> extends IocAction<T> { }
 
 /**
  * register action scope.
@@ -23,10 +20,7 @@ export abstract class IocRegAction<T extends RegContext> extends IocAction<T> {
  * ` container.registerSingleton(SubRegisterAction, () => new SubRegisterAction(container));`
  *
  */
-export abstract class IocRegScope<T extends RegContext = RegContext> extends IocActions<T> {
-
-}
-
+export abstract class IocRegScope<T extends RegContext = RegContext> extends IocActions<T> { }
 
 export interface IScopeAction<TAction extends Function = Handler> {
     scope: DecoratorScope;

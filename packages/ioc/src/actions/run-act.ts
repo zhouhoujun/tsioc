@@ -16,9 +16,7 @@ import { METHOD_ACCESSOR } from '../utils/tk';
  * @class IocRegisterAction
  * @extends {IocRegAction<RuntimeContext>}
  */
-export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> {
-
-}
+export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 
 /**
  * resolve constructor args action.
@@ -135,14 +133,10 @@ export const AfterCtorDecorScope = function (ctx: RuntimeContext, next: () => vo
     return next();
 }
 
-
 /**
  * ioc extend register action.
- *
  */
-export abstract class IocExtendRegAction extends IocRuntimeAction {
-
-}
+export abstract class IocExtendRegAction extends IocRuntimeAction { }
 
 /**
  * get class cache action.
@@ -227,7 +221,6 @@ export const RegSingletionAction = function (ctx: RuntimeContext, next: () => vo
  */
 export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
-
         this.use(IocSetCacheAction)
             .use(RegSingletionAction)
             .use(RuntimeAnnoDecorScope);
@@ -236,7 +229,6 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IAc
 
 /**
  * runtime annoation decorator action scope.
- *
  */
 export const RuntimeAnnoDecorScope = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.decors.filter(d => d.decorType === 'class')

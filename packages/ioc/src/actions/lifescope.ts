@@ -8,10 +8,7 @@ import { IocContext, RegContext } from './ctx';
  * @class LifeScope
  * @extends {IocActions<T>}
  */
-export class LifeScope<T extends IocContext> extends IocActions<T> {
-
-}
-
+export class LifeScope<T extends IocContext> extends IocActions<T> { }
 
 /**
  * register life scope.

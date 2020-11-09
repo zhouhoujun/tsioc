@@ -83,6 +83,4 @@ export interface ResolveContext extends IocContext {
  * @extends {IocAction<T>}
  * @template T
  */
-export abstract class IocResolveAction<T extends ResolveContext = ResolveContext> extends IocAction<T> {
-
-}
+export abstract class IocResolveAction<T extends ResolveContext = ResolveContext> extends IocAction<T> { }
