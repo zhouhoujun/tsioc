@@ -233,7 +233,6 @@ export interface BuildOption<T = any> extends AnnoationOption<T> {
      * template to binding.
      */
     template?: Template;
-
     /**
      * module reslove in the injector.
      */
@@ -259,7 +258,9 @@ export interface IBuildContext<T extends BuildOption = BuildOption> extends IAnn
     value?: any;
 }
 
-
+/**
+ * boot context.
+ */
 export interface IBootContext<T extends BootOption = BootOption> extends IAnnoationContext<T> {
 
     /**

@@ -4,9 +4,7 @@ import { ComponentReflect, DirectiveReflect } from '../reflect';
 /**
  * compiler identifiers providers.
  */
-export class Identifiers extends ContextProvider {
-
-}
+export class Identifiers extends ContextProvider { }
 
 /**
  * compiler facade.

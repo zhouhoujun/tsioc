@@ -2,8 +2,8 @@ import {
     Token, lang, SymbolType, Type, IInjector, DIProvider, IProvider,
     TokenId, tokenId, InstancePdr, Provider, isDefined, isClass
 } from '@tsdi/ioc';
-import { CoreInjector, IContainer } from '@tsdi/core';
-import { ModuleRef } from './ModuleRef';
+import { CoreInjector, ICoreInjector } from '@tsdi/core';
+import { ModuleRef } from './ref';
 
 
 
@@ -20,7 +20,7 @@ export class ModuleInjector extends CoreInjector {
 
     protected exports: ModuleRef[];
 
-    constructor(parent: IContainer) {
+    constructor(parent: ICoreInjector) {
         super(parent);
         this.exports = [];
     }

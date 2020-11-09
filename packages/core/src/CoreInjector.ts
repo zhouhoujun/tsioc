@@ -1,4 +1,4 @@
-import { Injector, Type, Token, Provider, IProvider, InjectorImpl } from '@tsdi/ioc';
+import { Type, Token, Provider, IProvider, InjectorImpl } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
 import { ServiceProvider } from './services/providers';
 import { IContainerBuilder } from './IContainerBuilder';
@@ -15,7 +15,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
     private injScope: InjLifeScope;
 
 
-    constructor(readonly parent: IContainer) {
+    constructor(readonly parent: ICoreInjector) {
         super(parent);
     }
 

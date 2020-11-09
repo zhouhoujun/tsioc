@@ -5,14 +5,14 @@ import {
 import { ICoreInjector } from '@tsdi/core';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
-import { IMessage, IMessageQueue } from './messages/IMessageQueue';
+import { IMessage, IMessageQueue } from './messages/type';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';
 import { MessageHandle } from './messages/handle';
 import { ModuleReflect } from './modules/reflect';
 import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { PARENT_INJECTOR, ROOT_MESSAGEQUEUE } from './tk';
-import { ModuleRef, ModuleRegistered } from './modules/ModuleRef';
+import { ModuleRef, ModuleRegistered } from './modules/ref';
 
 
 /**

@@ -26,7 +26,7 @@ export * from './registers/Inj-module';
 
 // modules
 export * from './modules/reflect';
-export * from './modules/ModuleRef';
+export * from './modules/ref';
 export * from './modules/injector';
 export * from './modules/configure';
 
@@ -35,7 +35,7 @@ export * from './handles/Handle';
 export * from './handles/Handles';
 
 // messages
-export * from './messages/IMessageQueue';
+export * from './messages/type';
 export * from './messages/ctx';
 export * from './messages/handle';
 export * from './messages/queue';

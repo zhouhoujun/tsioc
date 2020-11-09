@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './ctx';
-import { IMessageQueue } from './IMessageQueue';
+import { IMessageQueue } from './type';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
 import { CTX_CURR_INJECTOR, CTX_OPTIONS, ROOT_MESSAGEQUEUE } from '../tk';

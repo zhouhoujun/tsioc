@@ -11,7 +11,6 @@ export interface ModuleReflect extends AnnotationReflect {
      * dectors of components.
      */
     componentDectors?: string[];
-
     /**
      * module decorator.
      */

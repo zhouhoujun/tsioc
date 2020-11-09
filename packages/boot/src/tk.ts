@@ -4,7 +4,7 @@ import { Configure } from './configure/Configure';
 import { IBootContext } from './Context';
 import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
 import { IBuilderService } from './services/IBuilderService';
-import { IMessageQueue } from './messages/IMessageQueue';
+import { IMessageQueue } from './messages/type';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { ModuleInjector } from './modules/injector';
 

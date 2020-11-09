@@ -107,7 +107,6 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      */
     unsubscribe(handle: Token<IHandle>);
 
-
     /**
      * use message handle
      *
