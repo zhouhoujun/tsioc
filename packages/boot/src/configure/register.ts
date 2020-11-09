@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Configure } from './Configure';
+import { Configure } from './config';
 import { IBootContext } from '../Context';
 
 /**

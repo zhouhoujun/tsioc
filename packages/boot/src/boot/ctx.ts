@@ -2,7 +2,7 @@ import { Injectable, Token } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
-import { Configure } from '../configure/Configure';
+import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';

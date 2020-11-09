@@ -1,10 +1,9 @@
 import { tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { Configure } from './configure/Configure';
 import { IBootContext } from './Context';
-import { IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/IConfigureManager';
-import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/type';
+import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
+import { IBuilderService } from './services/IBuilderService';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { ModuleInjector } from './modules/injector';
 

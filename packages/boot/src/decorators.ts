@@ -1,16 +1,16 @@
 import {
-    DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata,
-    isClass, lang, Type, isFunction, Token, isArray, createDecorator, isString, DesignContext, IProvider
+    DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator,
+    isClass, lang, Type, isFunction, Token, isArray, isString, DesignContext, IProvider
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
+import { ModuleReflect } from './modules/reflect';
+import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { IMessage, IMessageQueue } from './messages/type';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';
 import { MessageHandle } from './messages/handle';
-import { ModuleReflect } from './modules/reflect';
-import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { PARENT_INJECTOR, ROOT_MESSAGEQUEUE } from './tk';
 import { ModuleRef, ModuleRegistered } from './modules/ref';
 

@@ -7,8 +7,7 @@ export * from './services/BuilderService';
 
 // annotations
 export * from './annotations/reflect';
-export * from './configure/Configure';
-export * from './configure/IConfigureManager';
+export * from './configure/config';
 export * from './configure/manager';
 export * from './configure/register';
 

@@ -1,7 +1,6 @@
 import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
 import { CONTAINER, IContainer } from '@tsdi/core';
-import { IConfigureManager, IConfigureMerger } from './IConfigureManager';
-import { Configure } from './Configure';
+import { Configure, IConfigureManager, IConfigureMerger } from './config';
 import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_ROOT } from '../tk';
 
 

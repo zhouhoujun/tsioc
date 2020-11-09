@@ -4,8 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
-import { IConfigureManager } from './configure/IConfigureManager';
-import { Configure } from './configure/Configure';
+import { Configure, IConfigureManager } from './configure/config';
 import { ModuleReflect } from './modules/reflect';
 import { BootstrapMetadata } from './decorators';
 

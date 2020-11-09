@@ -47,11 +47,10 @@ export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends H
     }
 }
 
-
-
-export abstract class ResolveHandle extends BuildHandle<IBuildContext> {
-
-}
+/**
+ * resolve handle.
+ */
+export abstract class ResolveHandle extends BuildHandle<IBuildContext> { }
 
 /**
  * resolve module scope.
@@ -79,9 +78,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
         }
 
         // after all clean.
-        // if (isNullOrUndefined(ctx.value)) {
         setTimeout(() => ctx.destroy());
-        // }
     }
 
     setup() {
