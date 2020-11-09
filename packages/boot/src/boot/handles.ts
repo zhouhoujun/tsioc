@@ -238,9 +238,7 @@ export const ResolveBootHandle = async function (ctx: IBootContext, next: () => 
             template: template,
             providers: ctx.providers
         });
-
         ctx.boot = boot;
-
     }
     await next();
 };
@@ -276,7 +274,6 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
             let ser: IStartupService;
             if (isClass(tyser) && !container.regedState.isRegistered(tyser)) {
                 injector.register(tyser);
-
             }
             ser = injector.get(tyser) ?? container.regedState.getInjector(tyser as ClassType)?.get(tyser);
             ctx.onDestroy(() => ser?.destroy());

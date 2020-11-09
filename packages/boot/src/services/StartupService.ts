@@ -44,7 +44,6 @@ export abstract class StartupService<T extends IBootContext = IBootContext> exte
     /**
      * default do nothing.
      */
-    protected destroying() {
+    protected destroying() { }
 
-    }
 }
