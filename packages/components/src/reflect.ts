@@ -68,8 +68,8 @@ export interface ComponentReflect extends AnnotationReflect {
      */
     annotation?: ComponentMetadata;
 
-    directives?: any[];
-    pipes?: any[];
+    // directives?: any[];
+    // pipes?: any[];
 
     inputs?: any[];
     outputs?: any[];

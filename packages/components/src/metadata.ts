@@ -68,7 +68,9 @@ export interface BindingMetadata extends Metadata {
     defaultValue?: any;
 }
 
-
+/**
+ * query metadata.
+ */
 export interface QueryMetadata extends Metadata {
     descendants: boolean;
     first: boolean;

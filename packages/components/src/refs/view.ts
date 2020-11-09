@@ -94,7 +94,17 @@ export abstract class EmbeddedViewRef<C> extends ViewRef {
   abstract get rootNodes(): any[];
 }
 
+/**
+ * internal view ref.
+ */
 export interface InternalViewRef extends ViewRef {
+  /**
+   * detach form app ref.
+   */
   detachFromAppRef(): void;
+  /**
+   * attach to app ref.
+   * @param ctx
+   */
   attachToAppRef(ctx: IBootContext): void;
 }

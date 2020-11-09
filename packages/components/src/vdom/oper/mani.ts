@@ -6,7 +6,10 @@ import { TElementNode, TNode, TNodeFlags, TNodeType, TProjectionNode, TViewNode 
 import { isProceduralRenderer, ProceduralRenderer, RElement, Renderer, RNode, RText } from '../renderer';
 import { isLContainer, isLView } from '../util/check';
 import { getLViewParent, getNativeByTNode, unwrapRNode, updateTransplantedViewCount } from '../util/view';
-import { CHILD_HEAD, CLEANUP, DECLARATION_COMPONENT_VIEW, DECLARATION_LCONTAINER, DestroyHookData, FLAGS, HookData, HookFn, HOST, LView, LViewFlags, NEXT, PARENT, QUERIES, RENDERER, TVIEW, TView, TViewType, T_HOST } from '../view';
+import {
+    CHILD_HEAD, CLEANUP, DECLARATION_COMPONENT_VIEW, DECLARATION_LCONTAINER, DestroyHookData, FLAGS, HookData, HookFn,
+    HOST, LView, LViewFlags, NEXT, PARENT, QUERIES, RENDERER, TVIEW, TView, TViewType, T_HOST
+} from '../view';
 
 
 const enum WalkTNodeTreeAction {

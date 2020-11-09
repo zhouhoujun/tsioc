@@ -20,8 +20,8 @@ export class DirIf<T> {
     }
 
     /**
-   * The Boolean expression to evaluate as the condition for showing a template.
-   */
+     * The Boolean expression to evaluate as the condition for showing a template.
+     */
     @Input()
     set ngIf(condition: T) {
         this._context.$implicit = this._context.dirIf = condition;

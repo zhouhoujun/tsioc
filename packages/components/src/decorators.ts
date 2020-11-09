@@ -142,7 +142,6 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
             compRefl.def = compiler.compileComponent(compRefl);
 
             next();
-
         }
     },
     providers: [

@@ -1,7 +1,6 @@
-import { isFunction } from '@tsdi/ioc';
 import { ComponentContext } from '../context';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
-import { ComponentType, DirectiveType } from '../type';
+import { DirectiveType } from '../type';
 import { CompilerFacade } from './facade';
 
 /**

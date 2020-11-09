@@ -1,6 +1,4 @@
-import {
-    Inject, IocExt
-} from '@tsdi/ioc';
+import { Inject, IocExt } from '@tsdi/ioc';
 import { IContainer, CONTAINER } from '@tsdi/core';
 import { ResolveMoudleScope } from '@tsdi/boot';
 import { ParseTemplateHandle } from './compile/actions';

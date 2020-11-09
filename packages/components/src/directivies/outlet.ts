@@ -1,5 +1,5 @@
-import { ModuleRef } from '@tsdi/boot';
 import { IInjector, OnDestroy, Type } from '@tsdi/ioc';
+import { ModuleRef } from '@tsdi/boot';
 import { Directive, Input } from '../decorators';
 import { Change, Changes, OnChanges } from '../lifecycle';
 import { ComponentRef } from '../refs/component';

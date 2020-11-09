@@ -42,6 +42,7 @@ export const CONFIG_MERGER = tokenId<IConfigureMerger>('CONFIG_MERGER');
  *  appliaction boot process root path.
  */
 export const PROCESS_ROOT: TokenId<string> = tokenId<string>('PROCESS_ROOT');
+
 /**
  * appliaction boot process root path.
  *
@@ -49,11 +50,11 @@ export const PROCESS_ROOT: TokenId<string> = tokenId<string>('PROCESS_ROOT');
  */
 export const ProcessRunRootToken = PROCESS_ROOT;
 
-
 /**
  * build service token.
  */
 export const BUILDER: TokenId<IBuilderService> = tokenId<IBuilderService>('BUILDER');
+
 /**
  * build service token.
  *
@@ -65,6 +66,7 @@ export const BuilderServiceToken = BUILDER;
  * root message queue token.
  */
 export const ROOT_MESSAGEQUEUE: TokenId<IMessageQueue> = tokenId<IMessageQueue>('ROOT_MESSAGEQUEUE');
+
 /**
  * root message queue token.
  *
@@ -81,6 +83,7 @@ export const PARENT_INJECTOR: TokenId<IInjector> = tokenId<IInjector>('PARENT_IN
  * type parser token.
  */
 export const TYPE_PARSER: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');
+
 /**
  * type parser token.
  *
