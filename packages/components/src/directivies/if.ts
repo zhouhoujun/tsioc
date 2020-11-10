@@ -1,8 +1,8 @@
 import { Directive, Input } from '../decorators';
+import { stringify } from '../util/stringify';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
-import { stringify } from '../util/stringify';
 
 /**
  * directive if.
