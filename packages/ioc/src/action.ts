@@ -5,6 +5,7 @@ import { chain, Handler, isBoolean } from './utils/lang';
  * action interface.
  */
 export abstract class Action {
+
     constructor() { }
 
     abstract toAction(): Handler;

@@ -33,7 +33,6 @@ export interface IActionProvider extends IProvider {
  */
 export class IocActions<T extends IocContext = IocContext> extends Actions<T> {
 
-
     constructor(protected actInjector: IActionProvider) {
         super();
     }

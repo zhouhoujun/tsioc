@@ -15,7 +15,9 @@ import { PROVIDERS } from '../utils/tk';
  */
 export abstract class IocDesignAction extends IocRegAction<DesignContext> { }
 
-
+/**
+ * design class handle scope.
+ */
 export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {

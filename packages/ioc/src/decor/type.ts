@@ -1,6 +1,6 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { IInjector, IProvider } from '../IInjector';
-import { Provider, Token } from '../tokens';
+import { Provider } from '../tokens';
 import { ClassType, DecoratorScope } from '../types';
 import { Handler } from '../utils/lang';
 import {
