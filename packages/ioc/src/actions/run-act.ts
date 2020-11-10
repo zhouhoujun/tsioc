@@ -1,6 +1,6 @@
 import { chain, isDefined } from '../utils/lang';
 import { isToken } from '../tokens';
-import { IActionSetup } from '../Action';
+import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { CacheManager } from './cache';

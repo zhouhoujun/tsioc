@@ -2,7 +2,7 @@ import { Type } from '../types';
 import { Handler, isClass } from '../utils/lang';
 import { Token } from '../tokens';
 import { IProvider } from '../IInjector';
-import { Action, Actions } from '../Action';
+import { Action, Actions } from '../action';
 import { IocContext } from './ctx';
 
 /**

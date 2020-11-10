@@ -1,7 +1,7 @@
 import { Type, DecoratorScope } from '../types';
 import { isClass, Handler } from '../utils/lang';
 import { IocActions } from './act';
-import { Action, IocAction } from '../Action';
+import { Action, IocAction } from '../action';
 import { refl } from '../decor/reflects';
 import { RegContext } from './ctx';
 

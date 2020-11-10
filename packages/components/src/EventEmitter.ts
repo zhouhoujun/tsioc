@@ -1,4 +1,4 @@
-import { Subject, Subscription } from 'rxjs';
+import { PartialObserver, Subject, Subscription } from 'rxjs';
 
 /**
  * Use in components with the `@Output` directive to emit custom events
@@ -19,17 +19,18 @@ export class EventEmitter<T extends any> extends Subject<T> {
 
     /**
      * Registers handlers for events emitted by this instance.
-     * @param genOrNext When supplied, a custom handler for emitted events.
+     * @param next When supplied, a custom handler for emitted events.
      * @param error When supplied, a custom handler for an error notification
      * from this emitter.
      * @param complete When supplied, a custom handler for a completion
      * notification from this emitter.
      */
-    subscribe(genOrNext?: any, error?: any, complete?: any): Subscription {
+    subscribe(next?: any, error?: any, complete?: any): Subscription {
         let schedulerFn: (t: any) => any;
         let errorFn = (err: any): any => null;
         let completeFn = (): any => null;
-        if (genOrNext && typeof genOrNext === 'object') {
+        if (next && typeof next === 'object') {
+            const genOrNext = next as PartialObserver<T>;
             schedulerFn = this.async ? (value: any) => {
                 setTimeout(() => genOrNext.next(value));
             } : (value: any) => { genOrNext.next(value); };
@@ -44,8 +45,8 @@ export class EventEmitter<T extends any> extends Subject<T> {
                     () => { genOrNext.complete(); };
             }
         } else {
-            schedulerFn = this.async ? (value: any) => { setTimeout(() => genOrNext(value)); } :
-                (value: any) => { genOrNext(value); };
+            schedulerFn = this.async ? (value: any) => { setTimeout(() => next(value)); } :
+                (value: any) => { next(value); };
 
             if (error) {
                 errorFn = this.async ? (err) => { setTimeout(() => error(err)); } : (err) => { error(err); };
@@ -58,8 +59,8 @@ export class EventEmitter<T extends any> extends Subject<T> {
 
         const sink = super.subscribe(schedulerFn, errorFn, completeFn);
 
-        if (genOrNext instanceof Subscription) {
-            genOrNext.add(sink);
+        if (next instanceof Subscription) {
+            next.add(sink);
         }
 
         return sink;

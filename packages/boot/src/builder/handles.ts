@@ -1,5 +1,5 @@
-import { ICoreInjector } from '@tsdi/core';
 import { AsyncHandler, IActionSetup, isClass, Inject, INJECTOR } from '@tsdi/ioc';
+import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext, IBuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
@@ -76,7 +76,6 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
         if (next) {
             await next();
         }
-
         // after all clean.
         setTimeout(() => ctx.destroy());
     }

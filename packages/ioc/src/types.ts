@@ -4,8 +4,6 @@
  */
 export type Modules = Type | Object;
 
-
-
 /**
  * object map.
  *
@@ -90,12 +88,10 @@ export interface AnnotationType<T = any> extends Function {
     ρNPT?: boolean;
 }
 
-
 /**
  * class type.
  */
 export type ClassType<T = any> = Type<T> | AbstractType<T>;
-
 
 /**
  * decorator scopes.

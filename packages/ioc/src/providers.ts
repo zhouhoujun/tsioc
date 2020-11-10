@@ -134,9 +134,7 @@ export interface ExistingProvider extends ProvideProvider {
 /**
  * type provider.
  */
-export interface TypeProvider extends Type {
-
-}
+export interface TypeProvider extends Type { }
 
 export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvider & ExistingProvider & FactoryProvider;
 

@@ -11,6 +11,9 @@ import { MethodType } from './IMethodAccessor';
  * provider interface.
  */
 export interface IProvider extends IDestoryable {
+    /**
+     * parent provider.
+     */
     readonly parent?: IProvider;
     /**
      * resolver size.

@@ -4,6 +4,9 @@ import { IInjector, IProvider } from './IInjector';
 import { IActionProvider } from './actions/act';
 
 
+/**
+ * registered.
+ */
 export interface Registered {
     provides: Token[];
     getInjector(): IInjector;

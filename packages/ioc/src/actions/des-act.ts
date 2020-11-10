@@ -1,7 +1,7 @@
 import { isFunction, isClass, lang, chain } from '../utils/lang';
 import { Provider } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
-import { IActionSetup } from '../Action';
+import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS } from '../utils/tk';

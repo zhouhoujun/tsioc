@@ -32,6 +32,7 @@ export abstract class Destoryable implements IDestoryable {
     get destroyed() {
         return this._destroyed;
     }
+
     /**
     * destory this.
     */

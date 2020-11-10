@@ -198,7 +198,6 @@ export interface InstancePdr<T = any> {
 export type Factory<T> = T | Type<T> | ((injector?: IInjector) => T);
 
 
-
 /**
  * inject token.
  *
@@ -220,7 +219,6 @@ export class InjectToken<T = any> extends Registration<T> {
 export function tokenId<T = any>(key: string): TokenId<T> {
     return Symbol(key);
 }
-
 
 
 /**

@@ -1,6 +1,6 @@
 export * from './types';
 export * from './tokens';
-export * from './Action';
+export * from './action';
 export * from './Destoryable';
 export * from './IInjector';
 export * from './IIocContainer';

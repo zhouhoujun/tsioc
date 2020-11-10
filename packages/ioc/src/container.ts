@@ -1,4 +1,4 @@
-import { Action, IActionSetup } from './Action';
+import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
 import { CacheManager } from './actions/cache';
 import { DesignContext } from './actions/ctx';
@@ -41,6 +41,12 @@ export class InjectorImpl extends Injector {
         return this;
     }
 
+    /**
+     * register type.
+     * @param type type.
+     * @param provide provide.
+     * @param singleton singleton or not.
+     */
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
         this.getContainer()?.registerIn(this, type, provide, singleton);
         return this;

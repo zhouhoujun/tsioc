@@ -1,4 +1,4 @@
-import { Action, Actions } from '../Action';
+import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
 import { ClassType, DecoratorScope, Type } from '../types';

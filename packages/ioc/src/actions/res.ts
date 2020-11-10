@@ -1,5 +1,5 @@
 import { Provider, Token } from '../tokens';
-import { IocAction } from '../Action';
+import { IocAction } from '../action';
 import { IocContext } from './ctx';
 
 /**
