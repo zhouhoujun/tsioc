@@ -1,6 +1,9 @@
+import { Abstract } from '@tsdi/ioc';
 
 
-export class ComponentRenderer {
+@Abstract()
+export abstract class ComponentRenderer {
 
+    abstract render()
 
 }

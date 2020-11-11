@@ -1,3 +1,4 @@
+import { Abstract } from '@tsdi/ioc';
 
 
 /**
@@ -38,6 +39,7 @@
  *
  * @publicApi
  */
+@Abstract()
 export abstract class ChangeDetectorRef {
     /**
      * When a view uses the {@link ChangeDetectionStrategy#OnPush OnPush} (checkOnce)

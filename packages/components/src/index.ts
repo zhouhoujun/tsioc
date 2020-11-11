@@ -13,7 +13,6 @@ export * from './chage/strategy';
 // compile
 export * from './compile/facade';
 export * from './compile/actions';
-export * from './compile/interface';
 
 // directivies
 export * from './directivies/each';

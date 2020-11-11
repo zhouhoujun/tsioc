@@ -1,15 +1,15 @@
 import { Provider, IocContainer, Type, Token, IProvider } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { IContainerBuilder } from './IContainerBuilder';
-import { ModuleLoader, IModuleLoader } from './services/loader';
-import { ServiceProvider } from './services/providers';
-import { registerCores } from './regs';
-import { ServiceOption, ServicesOption } from './resolves/context';
 import { ICoreInjector } from './ICoreInjector';
 import { CoreInjector } from './CoreInjector';
 import { LoadType } from './types';
 import { CONTAINER_BUILDER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
+import { ServiceOption, ServicesOption } from './resolves/context';
+import { ModuleLoader, IModuleLoader } from './services/loader';
+import { ServiceProvider } from './services/providers';
+import { registerCores } from './regs';
 
 
 

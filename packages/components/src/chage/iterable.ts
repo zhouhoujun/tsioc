@@ -133,8 +133,9 @@ export interface IterableDifferFactory {
  * @publicApi
  */
 export class IterableDiffers {
-    constructor(private factories: IterableDifferFactory[]) {
-    }
+
+    constructor(private factories: IterableDifferFactory[]) { }
+
     static create(factories: IterableDifferFactory[], parent?: IterableDiffers): IterableDiffers {
         if (parent != null) {
             const copied = parent.factories.slice();

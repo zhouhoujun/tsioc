@@ -13,7 +13,13 @@ export enum RendererStyleFlags {
 
 export type GlobalTargetName = 'document' | 'window' | 'body';
 
-
+/**
+ * Object Oriented style of API needed to create elements and text nodes.
+ *
+ * This is the native browser API style, e.g. operations are methods on individual objects
+ * like HTMLElement. With this style, no additional code is needed as a facade
+ * (reducing payload size).
+ * */
 export interface DomRenderer {
     createComment(data: string): RComment;
     createElement(tagName: string): RElement;
