@@ -1,6 +1,6 @@
 import { AnnotationReflect } from '@tsdi/boot';
 import { ComponentMetadata, DirectiveMetadata } from './metadata';
-import { ComponentDef, DirectiveDef } from './vdom/definition';
+import { ComponentDef, DirectiveDef } from './vnode/definition';
 
 
 /**
