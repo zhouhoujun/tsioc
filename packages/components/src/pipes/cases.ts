@@ -1,9 +1,11 @@
-
 import { isString } from '@tsdi/ioc';
 import { Pipe } from '../decorators';
 import { invalidPipeArgumentError } from './err';
 import { PipeTransform } from './pipe';
 
+/**
+ * lowercase pipe
+ */
 @Pipe('lowercase')
 export class LowerCasePipe implements PipeTransform {
   /**
@@ -18,7 +20,9 @@ export class LowerCasePipe implements PipeTransform {
   }
 }
 
-
+/**
+ * uppercase pipe.
+ */
 @Pipe('uppercase')
 export class UpperCasePipe implements PipeTransform {
   /**

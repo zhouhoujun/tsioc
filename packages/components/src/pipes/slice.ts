@@ -4,7 +4,9 @@ import { invalidPipeArgumentError } from './err';
 import { PipeTransform } from './pipe';
 
 
-
+/**
+ * slice pipe, for string or array.
+ */
 @Pipe('slice')
 export class SlicePipe implements PipeTransform {
     transform(value: any, start: number, end?: number): any {
