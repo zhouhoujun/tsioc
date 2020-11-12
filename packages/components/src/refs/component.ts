@@ -1,4 +1,4 @@
-import { IInjector, Type } from '@tsdi/ioc';
+import { Abstract, IInjector, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -10,6 +10,7 @@ import { ViewRef } from './view';
  *
  * @publicApi
  */
+@Abstract()
 export abstract class ComponentRef<C> {
     /**
      * The host or anchor element for this component instance.

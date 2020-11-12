@@ -1,4 +1,4 @@
-import { IInjector, Type } from '@tsdi/ioc';
+import { Abstract, IInjector, Type } from '@tsdi/ioc';
 import { ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
@@ -20,6 +20,7 @@ import { EmbeddedViewRef, ViewRef } from './view';
  *
  * @publicApi
  */
+@Abstract()
 export abstract class ViewContainerRef {
     /**
      * Anchor element that specifies the location of this container in the containing view.

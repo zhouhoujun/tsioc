@@ -1,3 +1,4 @@
+import { Abstract } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
 
@@ -20,6 +21,7 @@ import { EmbeddedViewRef } from './view';
  *
  * @publicApi
  */
+@Abstract()
 export abstract class TemplateRef<C> {
     /**
      * The anchor element in the parent view for this embedded view.

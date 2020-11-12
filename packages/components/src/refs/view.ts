@@ -1,3 +1,4 @@
+import { Abstract } from '@tsdi/ioc';
 import { IBootContext } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 
@@ -8,6 +9,7 @@ import { ChangeDetectorRef } from '../chage/detector';
  *
  * @publicApi
  */
+@Abstract()
 export abstract class ViewRef extends ChangeDetectorRef {
   /**
    * Destroys this view and all of the data structures associated with it.
