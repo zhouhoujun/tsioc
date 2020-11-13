@@ -8,19 +8,13 @@ import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends InjectorImpl implements ICoreInjector {
 
-    private servPdr: ServiceProvider;
+    private servPdr: IServiceProvider;
     private injScope: InjLifeScope;
 
 
     constructor(readonly parent: ICoreInjector) {
         super(parent);
-    }
-
-    getServiceProvider(): IServiceProvider {
-        if (!this.servPdr) {
-            this.servPdr = this.getValue(ServiceProvider);
-        }
-        return this.servPdr;
+        this.servPdr = new ServiceProvider(parent.getContainer());
     }
 
     /**
@@ -75,7 +69,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
-        return this.getServiceProvider().getService(this, target, ...providers);
+        return this.servPdr.getService(this, target, ...providers);
     }
 
     /**
@@ -88,7 +82,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
-        return this.getServiceProvider().getServices(this, target, ...providers);
+        return this.servPdr.getServices(this, target, ...providers);
     }
 
     /**
@@ -101,7 +95,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getServiceProvider().getServiceProviders(this, target);
+        return this.servPdr.getServiceProviders(this, target);
     }
 
     protected destroying() {

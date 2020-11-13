@@ -3,7 +3,6 @@ import { IContainer } from './link';
 import { ModuleLoader } from './services/loader';
 import { InjLifeScope } from './injects/lifescope';
 import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
-import { ServiceProvider } from './services/providers';
 import { CoreInjector } from './injector';
 import { CONTAINER, MODULE_LOADER } from './tk';
 
@@ -16,7 +15,7 @@ export function registerCores(container: IContainer) {
     }
 
     container.set(INJECTOR_FACTORY, () => new CoreInjector(container), CoreInjector);
-    container.setValue(ServiceProvider, new ServiceProvider(container));
+    // container.setValue(ServiceProvider, new ServiceProvider(container));
 
     // register action
     container.provider

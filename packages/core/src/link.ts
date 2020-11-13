@@ -12,7 +12,6 @@ export interface ICoreInjector extends IInjector {
      */
     getContainer(): IContainer;
 
-    getServiceProvider(): IServiceProvider;
     /**
      * get container builder of this container.
      */

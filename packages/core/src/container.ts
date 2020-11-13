@@ -1,5 +1,5 @@
 import { Provider, IocContainer, Type, Token, IProvider } from '@tsdi/ioc';
-import { ICoreInjector, IContainer, IContainerBuilder, IModuleLoader } from './link';
+import { ICoreInjector, IContainer, IContainerBuilder, IModuleLoader, IServiceProvider } from './link';
 import { CoreInjector } from './injector';
 import { LoadType } from './types';
 import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
@@ -19,19 +19,13 @@ import { registerCores } from './regs';
  */
 export class Container extends IocContainer implements IContainer {
 
-    private servPdr: ServiceProvider;
-    private injScope: InjLifeScope;
+    protected servPdr: IServiceProvider;
+    protected injScope: InjLifeScope;
+
     protected initReg() {
         super.initReg();
+        this.servPdr = new ServiceProvider(this);
         registerCores(this);
-    }
-
-
-    getServiceProvider(): ServiceProvider {
-        if (!this.servPdr) {
-            this.servPdr = this.getValue(ServiceProvider);
-        }
-        return this.servPdr;
     }
 
     /**
@@ -79,7 +73,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
-        return this.getServiceProvider().getService(this, target, ...providers);
+        return this.servPdr.getService(this, target, ...providers);
     }
 
     /**
@@ -92,7 +86,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
-        return this.getServiceProvider().getServices(this, target, ...providers);
+        return this.servPdr.getServices(this, target, ...providers);
     }
 
     /**
@@ -105,7 +99,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getServiceProvider().getServiceProviders(this, target);
+        return this.servPdr.getServiceProviders(this, target);
     }
 
     protected destroying() {
