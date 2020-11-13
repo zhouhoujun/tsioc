@@ -34,21 +34,6 @@ export interface PlayerFactoryBuildFn {
    currentPlayer: Player|null): Player|null;
 }
 
-/**
- * Used as a reference to build a player from a styling template binding
- * (`[style]` and `[class]`).
- *
- * The `fn` function will be called once any styling-related changes are
- * evaluated on an element and is expected to return a player that will
- * be then run on the element.
- *
- * `[style]`, `[style.prop]`, `[class]` and `[class.name]` template bindings
- * all accept a `PlayerFactory` as input and this player factories.
- */
-export interface PlayerFactory {
-  '__brand__': 'Brand for PlayerFactory that nothing will match';
-}
-
 export interface PlayerBuilder extends BindingStore {
   buildPlayer(currentPlayer: Player|null, isFirstRender: boolean): Player|undefined|null;
 }

@@ -1,4 +1,3 @@
-
 import { KeyValueArray } from '../util/array';
 
 /**
@@ -7,7 +6,6 @@ import { KeyValueArray } from '../util/array';
  * See: `TStylingKeyPrimitive` and `TStylingStatic`
  */
 export type TStylingKey = TStylingKeyPrimitive | TStylingStatic;
-
 
 /**
  * The primitive portion (`TStylingStatic` removed) of the value stored in the `TData` which is

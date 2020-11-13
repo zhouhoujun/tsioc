@@ -158,7 +158,7 @@ export namespace refl {
             const reflect = options.reflect;
             for (let t in reflect) {
                 const handle = reflect[t];
-                const rged = dechd.get(t) || [];
+                const rged: Handler[] = dechd.get(t) || [];
                 isArray(handle) ? rged.push(...handle) : rged.push(handle);
                 dechd.set(t, rged);
             }
@@ -171,7 +171,7 @@ export namespace refl {
             const dsgHd = new Map();
             const design = options.design;
             for (let type in design) {
-                const rged = dsgHd.get(type) || [];
+                const rged: Handler[] = dsgHd.get(type) || [];
                 const handle = design[type];
                 isArray(handle) ? rged.push(...handle) : rged.push(handle);
                 dsgHd.set(type, rged);
@@ -185,7 +185,7 @@ export namespace refl {
             const rtmHd = new Map();
             const runtime = options.runtime;
             for (let type in runtime) {
-                const rged = rtmHd.get(type) || [];
+                const rged: Handler[] = rtmHd.get(type) || [];
                 const handle = runtime[type];
                 isArray(handle) ? rged.push(...handle) : rged.push(handle);
                 rtmHd.set(type, rged);

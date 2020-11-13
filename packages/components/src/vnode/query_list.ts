@@ -2,6 +2,10 @@ import { Observable } from 'rxjs';
 import { EventEmitter } from '../EventEmitter';
 import { flatten } from '../util/array';
 
+/**
+ * symbol iterator.
+ * @param this query list.
+ */
 function symbolIterator<T>(this: QueryList<T>): Iterator<T> {
   return ((this as any as { _results: Array<T> })._results as any)[Symbol.iterator]();
 }

@@ -123,6 +123,3 @@ export interface LContainer extends Array<any> {
   [VIEW_REFS]: ViewRef[] | null;
 }
 
-// Note: This hack is necessary so we don't erroneously get a circular dependency
-// failure based on types.
-export const unusedValueExportToPlacateAjd = 1;

@@ -1,6 +1,6 @@
 import {
-    ClassType, IDestoryable, IocContext, IProvider, ObjectMap,
-    Provider, RegInMetadata, SymbolType, Token, Type, TypeReflect
+    ClassType, IDestoryable, IocContext, IProvider, Provider, ObjectMap,
+    RegInMetadata, SymbolType, Token, Type, TypeReflect
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
@@ -37,7 +37,6 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
      * @memberof AnnoationActionOption
      */
     type?: ClassType<T>;
-
 }
 
 /**
