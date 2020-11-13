@@ -1,10 +1,7 @@
 export * from './types';
 export * from './tk'
-export * from './Container';
-export * from './CoreInjector';
 
 export * from './link';
-export * from './ContainerBuilder';
 
 export * from './services/loader';
 export * from './services/providers';
@@ -19,5 +16,7 @@ export * from './injects/actions';
 export * from './resolves/context';
 export * from './resolves/actions';
 
-
+export * from './container';
+export * from './injector';
+export * from './builder';
 

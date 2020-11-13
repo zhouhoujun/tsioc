@@ -4,7 +4,7 @@ import { ModuleLoader } from './services/loader';
 import { InjLifeScope } from './injects/lifescope';
 import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
 import { ServiceProvider } from './services/providers';
-import { CoreInjector } from './CoreInjector';
+import { CoreInjector } from './injector';
 import { CONTAINER, MODULE_LOADER } from './tk';
 
 

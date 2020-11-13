@@ -2,7 +2,7 @@ import { Modules } from '@tsdi/ioc';
 import { IContainer, IModuleLoader, IContainerBuilder } from './link';
 import { LoadType } from './types';
 import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
-import { Container } from './Container';
+import { Container } from './container';
 
 /**
  * default container builder.
