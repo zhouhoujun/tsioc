@@ -1,14 +1,12 @@
 import { IInjector, Token, Provider, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
-import { IServiceResolver } from './IServiceResolver';
-import { IServicesResolver } from './IServicesResolver';
-import { IContainer } from '../IContainer';
+import { IServiceProvider, IContainer } from '../link';
 
 /**
  * service provider.
  */
-export class ServiceProvider implements IServiceResolver, IServicesResolver {
+export class ServiceProvider implements IServiceProvider {
 
     static ρNPT = true;
     private serviceScope: ResolveServiceScope;

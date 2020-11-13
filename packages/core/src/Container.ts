@@ -1,7 +1,5 @@
 import { Provider, IocContainer, Type, Token, IProvider } from '@tsdi/ioc';
-import { IContainer } from './IContainer';
-import { IContainerBuilder, IModuleLoader } from './link';
-import { ICoreInjector } from './ICoreInjector';
+import { ICoreInjector, IContainer, IContainerBuilder, IModuleLoader } from './link';
 import { CoreInjector } from './CoreInjector';
 import { LoadType } from './types';
 import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';

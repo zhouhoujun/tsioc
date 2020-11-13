@@ -1,5 +1,5 @@
 import { INJECTOR_FACTORY } from '@tsdi/ioc';
-import { IContainer } from './IContainer';
+import { IContainer } from './link';
 import { ModuleLoader } from './services/loader';
 import { InjLifeScope } from './injects/lifescope';
 import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
