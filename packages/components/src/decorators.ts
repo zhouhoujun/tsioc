@@ -49,16 +49,17 @@ export interface IDirectiveDecorator {
 export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>('Directive', {
     actionType: ['annoation', 'typeProviders'],
     props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
-    classHandle: (ctx, next) => {
-        const reflect = ctx.reflect as AnnotationReflect;
-        reflect.annoType = 'directive';
-        reflect.annoDecor = ctx.decor;
-        reflect.annotation = ctx.matedata;
-        return next();
+    reflect: {
+        class: (ctx, next) => {
+            const reflect = ctx.reflect as AnnotationReflect;
+            reflect.annoType = 'directive';
+            reflect.annoDecor = ctx.decor;
+            reflect.annotation = ctx.matedata;
+            return next();
+        }
     },
-    designHandles: {
-        type: 'Class',
-        handle: (ctx, next) => {
+    design: {
+        Class: (ctx, next) => {
             const decorRefl = ctx.reflect as DirectiveReflect;
             const type = ctx.type as DirectiveType;
             if (!(decorRefl.annoType === 'directive')) {
@@ -115,16 +116,17 @@ export interface IComponentDecorator {
 export const Component: IComponentDecorator = createDecorator<ComponentMetadata>('Component', {
     actionType: ['annoation', 'typeProviders'],
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
-    classHandle: (ctx, next) => {
-        const reflect = ctx.reflect as AnnotationReflect;
-        reflect.annoType = 'component';
-        reflect.annoDecor = ctx.decor;
-        reflect.annotation = ctx.matedata;
-        return next();
+    reflect: {
+        class: (ctx, next) => {
+            const reflect = ctx.reflect as AnnotationReflect;
+            reflect.annoType = 'component';
+            reflect.annoDecor = ctx.decor;
+            reflect.annotation = ctx.matedata;
+            return next();
+        }
     },
-    designHandles: {
-        type: 'Class',
-        handle: (ctx, next) => {
+    design: {
+        Class: (ctx, next) => {
             const compRefl = ctx.reflect as ComponentReflect;
             if (!(compRefl.annoType === 'component')) {
                 return next();
@@ -155,13 +157,15 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
  * @NonSerialize decorator define component property not need serialized.
  */
 export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize', {
-    propHandle: (ctx, next) => {
-        const reflect = ctx.reflect as ComponentReflect;
-        if (!reflect.nonSerialize) {
-            reflect.nonSerialize = [];
+    reflect: {
+        property: (ctx, next) => {
+            const reflect = ctx.reflect as ComponentReflect;
+            if (!reflect.nonSerialize) {
+                reflect.nonSerialize = [];
+            }
+            reflect.nonSerialize.push(ctx.propertyKey);
+            return next();
         }
-        reflect.nonSerialize.push(ctx.propertyKey);
-        return next();
     }
 });
 
@@ -400,12 +404,14 @@ export interface IPipeDecorator {
  */
 export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
     actionType: ['annoation', 'typeProviders'],
-    classHandle: (ctx, next) => {
-        const reflect = ctx.reflect as AnnotationReflect;
-        reflect.annoType = 'pipe';
-        reflect.annoDecor = ctx.decor;
-        reflect.annotation = ctx.matedata;
-        return next();
+    reflect: {
+        class: (ctx, next) => {
+            const reflect = ctx.reflect as AnnotationReflect;
+            reflect.annoType = 'pipe';
+            reflect.annoDecor = ctx.decor;
+            reflect.annotation = ctx.matedata;
+            return next();
+        }
     },
     props: (name: string, pure?: boolean) => ({ name, pure }),
     appendProps: meta => {
@@ -476,12 +482,14 @@ export interface ContentChildrenDecorator {
  * @publicApi
  */
 export const ContentChildren: ContentChildrenDecorator = createPropDecorator('ContentChildren', {
-    propHandle: (ctx, next) => {
-        const meta = ctx.matedata as QueryMetadata;
-        if (!meta.selector) {
-            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+    reflect: {
+        property: (ctx, next) => {
+            const meta = ctx.matedata as QueryMetadata;
+            if (!meta.selector) {
+                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+            }
+            return next();
         }
-        return next();
     },
     props: (selector?: any, data?: { descendants?: boolean, read?: any }) =>
         ({ selector, first: false, isViewQuery: false, descendants: false, ...data })
@@ -531,12 +539,14 @@ export interface ContentChildDecorator {
  * @publicApi
  */
 export const ContentChild: ContentChildDecorator = createPropDecorator('ContentChild', {
-    propHandle: (ctx, next) => {
-        const meta = ctx.matedata as QueryMetadata;
-        if (!meta.selector) {
-            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+    reflect: {
+        property: (ctx, next) => {
+            const meta = ctx.matedata as QueryMetadata;
+            if (!meta.selector) {
+                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+            }
+            return next();
         }
-        return next();
     },
     props: (selector?: any, opts?: { read?: any, static?: boolean }) =>
         ({ selector, first: true, isViewQuery: false, descendants: true, ...opts })
@@ -573,12 +583,14 @@ export interface ViewChildrenDecorator {
 }
 
 export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
-    propHandle: (ctx, next) => {
-        const meta = ctx.matedata as QueryMetadata;
-        if (!meta.selector) {
-            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+    reflect: {
+        property: (ctx, next) => {
+            const meta = ctx.matedata as QueryMetadata;
+            if (!meta.selector) {
+                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+            }
+            return next();
         }
-        return next();
     },
     props: (selector: Token | Function, opts?: { read?: any }) =>
         ({ selector, first: false, isViewQuery: true, descendants: true, ...opts })
@@ -636,12 +648,14 @@ export interface ViewChildDecorator {
  * @publicApi
  */
 export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
-    propHandle: (ctx, next) => {
-        const meta = ctx.matedata as QueryMetadata;
-        if (!meta.selector) {
-            meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+    reflect: {
+        property: (ctx, next) => {
+            const meta = ctx.matedata as QueryMetadata;
+            if (!meta.selector) {
+                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+            }
+            return next();
         }
-        return next();
     },
     props: (selector: any, data: any) =>
         ({ selector, first: true, isViewQuery: true, descendants: true, ...data }),

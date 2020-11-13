@@ -40,14 +40,15 @@ export interface IAspectDecorator {
  */
 export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect', {
     actionType: 'annoation',
-    classHandle: (ctx, next) => {
-        let rlt = ctx.reflect as AopReflect;
-        rlt.aspect = ctx.matedata;
-        return next();
+    reflect: {
+        class: (ctx, next) => {
+            let rlt = ctx.reflect as AopReflect;
+            rlt.aspect = ctx.matedata;
+            return next();
+        }
     },
-    designHandles: {
-        type: 'Class',
-        handle: (ctx, next) => {
+    design: {
+        Class: (ctx, next) => {
             const type = ctx.type;
             const acinj = ctx.injector.getContainer().actionPdr;
             const advisor = acinj.getInstance(ADVISOR);
@@ -86,10 +87,12 @@ export interface INonePointcutDecorator {
  * @NonePointcut()
  */
 export const NonePointcut: INonePointcutDecorator = createDecorator<ClassMetadata>('NonePointcut', {
-    classHandle: (ctx, next) => {
-        const rlt = ctx.reflect as AopReflect;
-        rlt.nonePointcut = true;
-        return next();
+    reflect: {
+        class: (ctx, next) => {
+            const rlt = ctx.reflect as AopReflect;
+            rlt.nonePointcut = true;
+            return next();
+        }
     }
 });
 
@@ -187,13 +190,15 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
             }
         },
         ...options,
-        methodHandle: (ctx, next) => {
-            let ret = ctx.reflect as AopReflect;
-            if (!ret.advices) {
-                ret.advices = [];
+        reflect: {
+            method: (ctx, next) => {
+                let ret = ctx.reflect as AopReflect;
+                if (!ret.advices) {
+                    ret.advices = [];
+                }
+                ret.advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
+                return next();
             }
-            ret.advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
-            return next();
         },
         appendProps: (metadata) => {
             if (append) {

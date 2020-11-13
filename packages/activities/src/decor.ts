@@ -46,20 +46,21 @@ export interface ITaskDecorator {
 export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
     actionType: 'annoation',
     props: (selector: string) => ({ selector }),
-    classHandle: (ctx, next) => {
-        const reflect = ctx.reflect as AnnotationReflect;
-        reflect.annoType = 'component';
-        reflect.annoDecor = ctx.decor;
-        const metadata = ctx.matedata as ActivityMetadata;
-        if (!metadata.name) {
-            metadata.name = lang.getClassName(ctx.reflect.type);
+    reflect: {
+        class: (ctx, next) => {
+            const reflect = ctx.reflect as AnnotationReflect;
+            reflect.annoType = 'component';
+            reflect.annoDecor = ctx.decor;
+            const metadata = ctx.matedata as ActivityMetadata;
+            if (!metadata.name) {
+                metadata.name = lang.getClassName(ctx.reflect.type);
+            }
+            reflect.annotation = ctx.matedata;
+            return next();
         }
-        reflect.annotation = ctx.matedata;
-        return next();
     },
-    designHandles: {
-        type: 'Class',
-        handle: (ctx, next) => {
+    design: {
+        Class: (ctx, next) => {
             const relt = ctx.reflect as AnnotationReflect;
             const annoation = relt.annotation as ActivityMetadata;
             if (annoation.deps && annoation.deps.length) {

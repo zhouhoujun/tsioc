@@ -13,14 +13,76 @@ export namespace refl {
 
     export type DecorActionType = 'propInject' | 'paramInject' | 'annoation' | 'autorun' | 'typeProviders' | 'methodProviders';
 
-    interface DecorHanleOption {
-        type: DecoratorType;
-        handle?: Handler<DecorContext> | Handler<DecorContext>[];
+    /**
+     * decorator reflect hanldes.
+     */
+    export interface DecorReflectHandles {
+        /**
+         * class decorator reflect handle.
+         */
+        class?: Handler<DecorContext> | Handler<DecorContext>[];
+        /**
+         * method decorator reflect handle.
+         */
+        method?: Handler<DecorContext> | Handler<DecorContext>[];
+        /**
+         * property decorator reflect handle.
+         */
+        property?: Handler<DecorContext> | Handler<DecorContext>[];
+        /**
+         * parameter decorator reflect handle.
+         */
+        parameter?: Handler<DecorContext> | Handler<DecorContext>[];
     }
 
+    /**
+     * decorator action scope hanldes.
+     */
     export interface DecorScopeHandles<T> {
-        type: DecoratorScope;
-        handle?: Handler<T> | Handler<T>[];
+        /**
+         * decorator BeforeAnnoation action handles.
+         */
+        BeforeAnnoation?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator Class action handles.
+         */
+        Class?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator Parameter action handles.
+         */
+        Parameter?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator Property action handles.
+         */
+        Property?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator Method action handles.
+         */
+        Method?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator BeforeConstructor action handles.
+         */
+        BeforeConstructor?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator AfterConstructor action handles.
+         */
+        AfterConstructor?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator Annoation action handles.
+         */
+        Annoation?: Handler<T> | Handler<T>[];
+
+        /**
+         * decorator AfterAnnoation action handles.
+         */
+        AfterAnnoation?: Handler<T> | Handler<T>[];
     }
 
     /**
@@ -28,23 +90,7 @@ export namespace refl {
      */
     export interface DecorRegisterOption {
         /**
-         * class handlers
-         */
-        classHandle?: Handler<DecorContext> | Handler<DecorContext>[];
-        /**
-         * property handlers
-         */
-        propHandle?: Handler<DecorContext> | Handler<DecorContext>[];
-        /**
-         * method handlers
-         */
-        methodHandle?: Handler<DecorContext> | Handler<DecorContext>[];
-        /**
-         * parameter handlers
-         */
-        paramHandle?: Handler<DecorContext> | Handler<DecorContext>[];
-        /**
-         * decorator action type.
+         * decorator basic action type.
          */
         actionType?: DecorActionType | DecorActionType[];
 
@@ -54,15 +100,22 @@ export namespace refl {
         providers?: StaticProvider[];
 
         /**
-         * design handles.
+         * set reflect handles.
          */
-        designHandles?: DecorScopeHandles<DesignContext> | DecorScopeHandles<DesignContext>[];
+        reflect?: DecorReflectHandles;
         /**
-         * runtime handles.
+         * set design handles.
          */
-        runtimeHandles?: DecorScopeHandles<RuntimeContext> | DecorScopeHandles<RuntimeContext>[];
+        design?: DecorScopeHandles<DesignContext>
+        /**
+         * set runtime handles.
+         */
+        runtime?: DecorScopeHandles<RuntimeContext>;
     }
 
+    /**
+     * metadata factory. parse args to metadata.
+     */
     export interface MetadataFactory<T> {
         /**
          * parse args as metadata props.
@@ -100,51 +153,40 @@ export namespace refl {
 
         const option = { props: options.props, appendProps: options.appendProps } as DecorRegisteredOption;
 
-        const hanldes: DecorHanleOption[] = [];
-        if (options.classHandle) {
-            hanldes.push({ type: 'class', handle: options.classHandle })
-        }
-        if (options.propHandle) {
-            hanldes.push({ type: 'property', handle: options.propHandle })
-        }
-        if (options.methodHandle) {
-            hanldes.push({ type: 'method', handle: options.methodHandle })
-        }
-        if (options.paramHandle) {
-            hanldes.push({ type: 'parameter', handle: options.paramHandle })
-        }
-
-        if (hanldes.length) {
+        if (options.reflect) {
             const dechd = new Map();
-            hanldes.forEach(d => {
-                const rged = dechd.get(d.type) || [];
-                isArray(d.handle) ? rged.push(...d.handle) : rged.push(d.handle);
-                dechd.set(d.type, rged);
-            });
+            for (let t in options.reflect) {
+                const handle = options.reflect[t];
+                const rged = dechd.get(t) || [];
+                isArray(handle) ? rged.push(...handle) : rged.push(handle);
+                dechd.set(t, rged);
+            }
             option.getHandle = (type) => dechd.get(type) ?? [];
         } else {
             option.getHandle = (type) => [];
         }
 
-        if (options.designHandles) {
+        if (options.design) {
             const dsgHd = new Map();
-            (Array.isArray(options.designHandles) ? options.designHandles : [options.designHandles]).forEach(ds => {
-                const rged = dsgHd.get(ds.type) || [];
-                isArray(ds.handle) ? rged.push(...ds.handle) : rged.push(ds.handle);
-                dsgHd.set(ds.type, rged);
-            });
+            for (let type in options.design) {
+                const rged = dsgHd.get(type) || [];
+                const handle = options.design[type];
+                isArray(handle) ? rged.push(...handle) : rged.push(handle);
+                dsgHd.set(type, rged);
+            }
             option.getDesignHandle = (type) => dsgHd.get(type) ?? [];
         } else {
             option.getDesignHandle = (type) => [];
         }
 
-        if (options.runtimeHandles) {
+        if (options.runtime) {
             const rtmHd = new Map();
-            (Array.isArray(options.runtimeHandles) ? options.runtimeHandles : [options.runtimeHandles]).forEach(ds => {
-                const rged = rtmHd.get(ds.type) || [];
-                isArray(ds.handle) ? rged.push(...ds.handle) : rged.push(ds.handle);
-                rtmHd.set(ds.type, rged);
-            });
+            for (let type in options.runtime) {
+                const rged = rtmHd.get(type) || [];
+                const handle = options.runtime[type];
+                isArray(handle) ? rged.push(...handle) : rged.push(handle);
+                rtmHd.set(type, rged);
+            }
             option.getRuntimeHandle = (type) => rtmHd.get(type) ?? [];
         } else {
             option.getRuntimeHandle = (type) => [];

@@ -71,25 +71,27 @@ export interface IBootDecorator {
  */
 export function createBootDecorator<T extends BootMetadata>(name: string, options?: DecoratorOption<T>): IBootDecorator {
     options = options || {};
-    const hd = options.classHandle;
+    const hd = options.reflect?.class;
     const append = options.appendProps;
     return createDecorator<T>(name, {
         actionType: 'annoation',
         ...options,
-        classHandle: [
-            (ctx, next) => {
-                const reflect = ctx.reflect as ModuleReflect;
-                reflect.singleton = true;
-                reflect.annoType = 'boot';
-                reflect.annoDecor = ctx.decor;
-                reflect.annotation = ctx.matedata;
-                return next();
-            },
-            ...hd ? (isArray(hd) ? hd : [hd]) : []
-        ],
-        designHandles: {
-            type: 'AfterAnnoation',
-            handle: (ctx, next) => {
+        reflect: {
+            ...options.reflect,
+            class: [
+                (ctx, next) => {
+                    const reflect = ctx.reflect as ModuleReflect;
+                    reflect.singleton = true;
+                    reflect.annoType = 'boot';
+                    reflect.annoDecor = ctx.decor;
+                    reflect.annotation = ctx.matedata;
+                    return next();
+                },
+                ...hd ? (isArray(hd) ? hd : [hd]) : []
+            ]
+        },
+        design: {
+            AfterAnnoation: (ctx, next) => {
                 const injector = ctx.injector;
                 const classType = ctx.type;
                 let startups = injector.get(STARTUPS) || [];
@@ -185,108 +187,105 @@ interface ModuleDesignContext extends DesignContext {
  */
 export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string, options?: DecoratorOption<T>): IDIModuleDecorator<T> {
     options = options || {};
-    const hd = options.classHandle;
+    const hd = options.reflect?.class;
     const append = options.appendProps;
     return createDecorator<DIModuleMetadata>(name, {
         ...options,
-        classHandle: [
-            (ctx, next) => {
-                const reflect = ctx.reflect as ModuleReflect;
-                reflect.annoType = 'module';
-                reflect.annoDecor = ctx.decor;
-                reflect.annotation = ctx.matedata;
-                return next();
+        reflect: {
+            ...options.reflect,
+            class: [
+                (ctx, next) => {
+                    const reflect = ctx.reflect as ModuleReflect;
+                    reflect.annoType = 'module';
+                    reflect.annoDecor = ctx.decor;
+                    reflect.annotation = ctx.matedata;
+                    return next();
+                },
+                ...hd ? (isArray(hd) ? hd : [hd]) : []
+            ]
+        },
+        design: {
+            BeforeAnnoation: (ctx: ModuleDesignContext, next) => {
+                if (!ctx.regIn && ctx.reflect.annoType === 'module') {
+                    let injector = ctx.injector.getInstance(ModuleInjector);
+                    injector.setValue(PARENT_INJECTOR, ctx.injector);
+                    ctx.injector = injector;
+                }
+                next();
             },
-            ...hd ? (isArray(hd) ? hd : [hd]) : []
-        ],
-        designHandles: [
-            {
-                type: 'BeforeAnnoation',
-                handle: (ctx: ModuleDesignContext, next) => {
-                    if (!ctx.regIn && ctx.reflect.annoType === 'module') {
-                        let injector = ctx.injector.getInstance(ModuleInjector);
-                        injector.setValue(PARENT_INJECTOR, ctx.injector);
-                        ctx.injector = injector;
+            Annoation: [
+                (ctx: ModuleDesignContext, next) => {
+                    if (ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
+                        next()
+                    }
+                },
+                (ctx: ModuleDesignContext, next) => {
+                    const annoation = ctx.reflect.annotation;
+                    if (annoation.imports) {
+                        (<ICoreInjector>ctx.injector).use(...ctx.reflect.annotation.imports);
+                    }
+                    next();
+                },
+                (ctx: ModuleDesignContext, next: () => void) => {
+
+                    let injector = ctx.injector as ModuleInjector;
+                    let mdReft = ctx.reflect;
+                    const annoation = mdReft.annotation;
+
+                    const map = ctx.exports = injector.getInstance(ModuleProviders);
+                    map.moduleInjector = injector;
+                    let mdRef = new ModuleRef(ctx.type, map);
+                    mdRef.onDestroy(() => {
+                        const parent = injector.getInstance(PARENT_INJECTOR);
+                        if (parent instanceof ModuleInjector) {
+                            parent.unexport(mdRef);
+                        } else {
+                            map.iterator((f, k) => {
+                                parent.unregister(k);
+                            });
+                        }
+                    });
+                    ctx.injector.setValue(ModuleRef, mdRef);
+                    ctx.moduleRef = mdRef;
+                    ctx.injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
+
+                    let components = annoation.components ? injector.use(...annoation.components) : null;
+
+                    // inject module providers
+                    if (annoation.providers?.length) {
+                        map.inject(...annoation.providers);
+                    }
+
+                    if (map.size) {
+                        injector.copy(map, k => !injector.hasTokenKey(k));
+                    }
+
+                    if (components && components.length) {
+                        mdReft.components = components;
+                    }
+
+                    let exptypes: Type[] = lang.getTypes(...annoation.exports || []);
+
+                    exptypes.forEach(ty => {
+                        map.export(ty);
+                    });
+                    next();
+                },
+                (ctx: ModuleDesignContext, next: () => void) => {
+                    if (ctx.exports.size) {
+                        let parent = ctx.injector.getInstance(PARENT_INJECTOR);
+                        if (parent) {
+                            if (parent instanceof ModuleInjector) {
+                                parent.export(ctx.moduleRef);
+                            } else {
+                                parent.copy(ctx.exports);
+                            }
+                        }
                     }
                     next();
                 }
-            },
-            {
-                type: 'Annoation',
-                handle: [
-                    (ctx: ModuleDesignContext, next) => {
-                        if (ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
-                            next()
-                        }
-                    },
-                    (ctx: ModuleDesignContext, next) => {
-                        const annoation = ctx.reflect.annotation;
-                        if (annoation.imports) {
-                            (<ICoreInjector>ctx.injector).use(...ctx.reflect.annotation.imports);
-                        }
-                        next();
-                    },
-                    (ctx: ModuleDesignContext, next: () => void) => {
-
-                        let injector = ctx.injector as ModuleInjector;
-                        let mdReft = ctx.reflect;
-                        const annoation = mdReft.annotation;
-
-                        const map = ctx.exports = injector.getInstance(ModuleProviders);
-                        map.moduleInjector = injector;
-                        let mdRef = new ModuleRef(ctx.type, map);
-                        mdRef.onDestroy(() => {
-                            const parent = injector.getInstance(PARENT_INJECTOR);
-                            if (parent instanceof ModuleInjector) {
-                                parent.unexport(mdRef);
-                            } else {
-                                map.iterator((f, k) => {
-                                    parent.unregister(k);
-                                });
-                            }
-                        });
-                        ctx.injector.setValue(ModuleRef, mdRef);
-                        ctx.moduleRef = mdRef;
-                        ctx.injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
-
-                        let components = annoation.components ? injector.use(...annoation.components) : null;
-
-                        // inject module providers
-                        if (annoation.providers?.length) {
-                            map.inject(...annoation.providers);
-                        }
-
-                        if (map.size) {
-                            injector.copy(map, k => !injector.hasTokenKey(k));
-                        }
-
-                        if (components && components.length) {
-                            mdReft.components = components;
-                        }
-
-                        let exptypes: Type[] = lang.getTypes(...annoation.exports || []);
-
-                        exptypes.forEach(ty => {
-                            map.export(ty);
-                        });
-                        next();
-                    },
-                    (ctx: ModuleDesignContext, next: () => void) => {
-                        if (ctx.exports.size) {
-                            let parent = ctx.injector.getInstance(PARENT_INJECTOR);
-                            if (parent) {
-                                if (parent instanceof ModuleInjector) {
-                                    parent.export(ctx.moduleRef);
-                                } else {
-                                    parent.copy(ctx.exports);
-                                }
-                            }
-                        }
-                        next();
-                    }
-                ]
-            }
-        ],
+            ]
+        },
         appendProps: (meta) => {
             if (append) {
                 append(meta as T);
@@ -379,9 +378,8 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
     actionType: 'annoation',
     props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) =>
         ({ parent, before }),
-    designHandles: {
-        type: 'AfterAnnoation',
-        handle: (ctx, next) => {
+    design: {
+        AfterAnnoation: (ctx, next) => {
             const classType = ctx.type;
             let reflect = ctx.reflect;
             const { parent, before, after } = reflect.getMetadata<MessageMetadata>(ctx.currDecor);
@@ -470,18 +468,20 @@ export interface IBootstrapDecorator<T extends BootstrapMetadata> {
 export function createBootstrapDecorator<T extends BootstrapMetadata>(name: string, options?: DecoratorOption<T>): IBootstrapDecorator<T> {
 
     return createDIModuleDecorator<BootstrapMetadata>(name, {
-        classHandle: (ctx, next) => {
-            const reflect = ctx.reflect as ModuleReflect;
-            reflect.annoType = 'module';
-            reflect.annoDecor = ctx.decor;
-            reflect.annotation = ctx.matedata;
-            // static main.
-            if (isClass(ctx.decorType) && isFunction(ctx.decorType['main'])) {
-                setTimeout(() => {
-                    ctx.decorType['main'](ctx.matedata);
-                }, 500);
+        reflect: {
+            class: (ctx, next) => {
+                const reflect = ctx.reflect as ModuleReflect;
+                reflect.annoType = 'module';
+                reflect.annoDecor = ctx.decor;
+                reflect.annotation = ctx.matedata;
+                // static main.
+                if (isClass(ctx.decorType) && isFunction(ctx.decorType['main'])) {
+                    setTimeout(() => {
+                        ctx.decorType['main'](ctx.matedata);
+                    }, 500);
+                }
+                return next();
             }
-            return next();
         },
         ...options
     }) as IBootstrapDecorator<T>;

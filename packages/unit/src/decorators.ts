@@ -34,16 +34,15 @@ export interface ISuiteDecorator {
  */
 export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
-    classHandle: (ctx, next) => {
-        const reflect = ctx.reflect as AnnotationReflect;
-        reflect.annoType = 'suite';
-        reflect.annoDecor = ctx.decor;
-        reflect.annotation = ctx.matedata;
-        return next();
+    reflect: {
+        class: (ctx, next) => {
+            const reflect = ctx.reflect as AnnotationReflect;
+            reflect.annoType = 'suite';
+            reflect.annoDecor = ctx.decor;
+            reflect.annotation = ctx.matedata;
+            return next();
+        }
     },
-    // providers: [
-    //     { provide: BootContext, useClass: UnitTestContext }
-    // ],
     props: (describe: string, timeout?: number) => ({ describe, timeout }),
     appendProps: (metadata) => {
         metadata.singleton = true;
