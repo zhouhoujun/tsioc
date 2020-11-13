@@ -8,8 +8,8 @@ import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends InjectorImpl implements ICoreInjector {
 
-    private servPdr: IServiceProvider;
-    private injScope: InjLifeScope;
+    protected servPdr: IServiceProvider;
+    protected injScope: InjLifeScope;
 
 
     constructor(readonly parent: ICoreInjector) {
