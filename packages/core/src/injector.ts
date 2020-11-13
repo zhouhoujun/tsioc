@@ -8,13 +8,19 @@ import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends InjectorImpl implements ICoreInjector {
 
-    protected servPdr: IServiceProvider;
+    private _servPdr: IServiceProvider;
     protected injScope: InjLifeScope;
 
 
     constructor(readonly parent: ICoreInjector) {
         super(parent);
-        this.servPdr = new ServiceProvider(parent.getContainer());
+    }
+
+    protected get servPdr(): IServiceProvider {
+        if (!this._servPdr) {
+            this._servPdr = new ServiceProvider(this.getContainer());
+        }
+        return this._servPdr;
     }
 
     /**
@@ -100,7 +106,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
 
     protected destroying() {
         super.destroying();
-        this.servPdr = null;
+        this._servPdr = null;
         this.injScope = null;
     }
 }

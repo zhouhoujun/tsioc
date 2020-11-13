@@ -19,12 +19,18 @@ import { registerCores } from './regs';
  */
 export class Container extends IocContainer implements IContainer {
 
-    protected servPdr: IServiceProvider;
+    private _servPdr: IServiceProvider;
     protected injScope: InjLifeScope;
+
+    protected get servPdr(): IServiceProvider {
+        if (!this._servPdr) {
+            this._servPdr = new ServiceProvider(this.getContainer());
+        }
+        return this._servPdr;
+    }
 
     protected initReg() {
         super.initReg();
-        this.servPdr = new ServiceProvider(this);
         registerCores(this);
     }
 
@@ -104,7 +110,7 @@ export class Container extends IocContainer implements IContainer {
 
     protected destroying() {
         super.destroying();
-        this.servPdr = null;
+        this._servPdr = null;
         this.injScope = null;
     }
 }
