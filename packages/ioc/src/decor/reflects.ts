@@ -1,7 +1,7 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
-import { ClassType, DecoratorScope, Type } from '../types';
+import { ClassType, Type } from '../types';
 import { chain, Handler, isArray, isClass, isFunction, isString, lang } from '../utils/lang';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
 import { DecoratorType, DecorContext, DecorDefine, DecorMemberType, DecorPdr, TypeReflect } from './type';
@@ -104,11 +104,11 @@ export namespace refl {
          */
         reflect?: DecorReflectHandles;
         /**
-         * set design handles.
+         * set design action scope handles.
          */
         design?: DecorScopeHandles<DesignContext>
         /**
-         * set runtime handles.
+         * set runtime action scope handles.
          */
         runtime?: DecorScopeHandles<RuntimeContext>;
     }
@@ -155,8 +155,9 @@ export namespace refl {
 
         if (options.reflect) {
             const dechd = new Map();
-            for (let t in options.reflect) {
-                const handle = options.reflect[t];
+            const reflect = options.reflect;
+            for (let t in reflect) {
+                const handle = reflect[t];
                 const rged = dechd.get(t) || [];
                 isArray(handle) ? rged.push(...handle) : rged.push(handle);
                 dechd.set(t, rged);
@@ -168,9 +169,10 @@ export namespace refl {
 
         if (options.design) {
             const dsgHd = new Map();
-            for (let type in options.design) {
+            const design = options.design;
+            for (let type in design) {
                 const rged = dsgHd.get(type) || [];
-                const handle = options.design[type];
+                const handle = design[type];
                 isArray(handle) ? rged.push(...handle) : rged.push(handle);
                 dsgHd.set(type, rged);
             }
@@ -181,9 +183,10 @@ export namespace refl {
 
         if (options.runtime) {
             const rtmHd = new Map();
-            for (let type in options.runtime) {
+            const runtime = options.runtime;
+            for (let type in runtime) {
                 const rged = rtmHd.get(type) || [];
-                const handle = options.runtime[type];
+                const handle = runtime[type];
                 isArray(handle) ? rged.push(...handle) : rged.push(handle);
                 rtmHd.set(type, rged);
             }
