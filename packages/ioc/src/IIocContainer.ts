@@ -32,6 +32,11 @@ export interface RegisteredState {
      */
     isRegistered(type: ClassType): boolean;
 
+    /**
+     * register type.
+     * @param type class type
+     * @param data registered data.
+     */
     regType<T extends Registered>(type: ClassType, data: T);
 
     /**
@@ -74,7 +79,7 @@ export interface IIocContainer extends IInjector {
     /**
      * action provider.
      */
-    readonly actionPdr: IActionProvider;
+    readonly provider: IActionProvider;
     /**
      * get root contianer.
      */

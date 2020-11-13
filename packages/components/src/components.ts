@@ -15,7 +15,8 @@ export class ComponentsModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
 
-        container.actionPdr.getInstance(ResolveMoudleScope)
+        container.provider
+            .getInstance(ResolveMoudleScope)
             .use(ParseTemplateHandle);
 
     }

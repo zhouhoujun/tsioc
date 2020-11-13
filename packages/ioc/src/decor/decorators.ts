@@ -6,9 +6,7 @@ import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, RefProvider
 } from './metadatas';
-import {
-    ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator
-} from './factory';
+import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './factory';
 
 /**
  * Abstract decorator. define the class as abstract class.

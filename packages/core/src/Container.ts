@@ -71,7 +71,7 @@ export class Container extends IocContainer implements IContainer {
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
         if (!this.injScope) {
-            this.injScope = this.actionPdr.getInstance(InjLifeScope)
+            this.injScope = this.provider.getInstance(InjLifeScope)
         }
         return this.injScope.register(this, ...mdls);
     }

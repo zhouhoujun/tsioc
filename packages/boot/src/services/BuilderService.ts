@@ -58,7 +58,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
         }
         let rctx = injector.getService({ token: BuildContext, target: md, defaultToken: BuildContext }, { provide: CTX_OPTIONS, useValue: options });
-        await container.actionPdr.getInstance(ResolveMoudleScope)
+        await container.provider.getInstance(ResolveMoudleScope)
             .execute(rctx);
         return rctx;
     }
@@ -80,7 +80,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
         }
         const ctx = injector.getService({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
-        await container.actionPdr.getInstance(StartupServiceScope).execute(ctx);
+        await container.provider.getInstance(StartupServiceScope).execute(ctx);
         return ctx.getStartup();
     }
 
@@ -153,7 +153,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         if (contextInit) {
             contextInit(ctx);
         }
-        await container.actionPdr.getInstance(handle).execute(ctx);
+        await container.provider.getInstance(handle).execute(ctx);
         return ctx;
     }
 }

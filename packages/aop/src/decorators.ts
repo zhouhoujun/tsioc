@@ -1,7 +1,7 @@
 import { isString, ClassType, ClassMetadata, DecoratorOption, createDecorator } from '@tsdi/ioc';
+import { AdviceTypes, AopReflect } from './types';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation } from './metadatas';
 import { ADVISOR } from './tk';
-import { AdviceTypes, AopReflect } from './types';
 
 
 /**
@@ -50,7 +50,7 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
     design: {
         Class: (ctx, next) => {
             const type = ctx.type;
-            const acinj = ctx.injector.getContainer().actionPdr;
+            const acinj = ctx.injector.getContainer().provider;
             const advisor = acinj.getInstance(ADVISOR);
             if (advisor) {
                 advisor.add(type);

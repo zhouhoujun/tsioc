@@ -63,7 +63,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
         if (!this.injScope) {
-            this.injScope = this.getContainer().actionPdr.getInstance(InjLifeScope);
+            this.injScope = this.getContainer().provider.getInstance(InjLifeScope);
         }
         return this.injScope.register(this, ...mdls);
     }

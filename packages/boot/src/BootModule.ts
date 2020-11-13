@@ -32,14 +32,14 @@ export class BootModule {
     setup(@Inject(CONTAINER) container: IContainer) {
         container.set(ModuleInjector, () => new ModuleInjector(container));
         container.set(ModuleProviders, () => new ModuleProviders(container));
-        let actInjector = container.actionPdr;
 
-        actInjector.regAction(ResolveMoudleScope)
+        const prdr = container.provider;
+        prdr.regAction(ResolveMoudleScope)
             .regAction(StartupServiceScope)
             .regAction(RunnableBuildLifeScope)
             .regAction(BootLifeScope);
 
-        actInjector.getInstance(InjModuleScope)
+        prdr.getInstance(InjModuleScope)
             .useBefore(InjDIModuleScope);
 
         container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);

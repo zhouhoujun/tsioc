@@ -21,7 +21,7 @@ export class ActivityModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
 
-        let actInjector = container.actionPdr;
+        let actInjector = container.provider;
 
         // actInjector.regAction(ComponentSelectorHandle);
         // actInjector.getInstance(StartupDecoratorRegisterer)

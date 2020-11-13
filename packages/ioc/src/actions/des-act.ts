@@ -48,7 +48,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let type = ctx.type;
     let singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
-    const actionPdr = container.actionPdr;
+    const actionPdr = container.provider;
     let factory = (...providers: Provider[]) => {
         if (singleton && container.hasValue(type)) {
             return container.getValue(type);

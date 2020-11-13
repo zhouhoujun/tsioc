@@ -24,25 +24,23 @@ export class AopModule {
      */
     setup(@Inject(IOC_CONTAINER) container: IIocContainer) {
 
-        const actionPdr = container.actionPdr;
+        const prdr = container.provider;
 
-        actionPdr
-            .setValue(ADVISOR, new Advisor(container), Advisor)
+        prdr.setValue(ADVISOR, new Advisor(container), Advisor)
             .setValue(ADVICE_MATCHER, new AdviceMatcher(container), AdviceMatcher);
 
-        actionPdr.regAction(ProceedingScope);
+        prdr.regAction(ProceedingScope);
 
-        actionPdr.getInstance(runtimes.BeforeCtorScope)
+        prdr.getInstance(runtimes.BeforeCtorScope)
             .useBefore(BeforeCtorAdviceAction);
 
-        actionPdr.getInstance(runtimes.AfterCtorScope)
-            // .use(ExetndsInstanceAction)
+        prdr.getInstance(runtimes.AfterCtorScope)
             .use(AfterCtorAdviceAction);
 
-        actionPdr.getInstance(runtimes.RuntimeMthScope)
+        prdr.getInstance(runtimes.RuntimeMthScope)
             .useBefore(BindMthPointcutAction);
 
-        actionPdr.getInstance(RuntimeLifeScope)
+        prdr.getInstance(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
 
     }

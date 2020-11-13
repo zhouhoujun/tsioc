@@ -77,7 +77,7 @@ export class InjectorImpl extends Injector {
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         if (!this.rslScope) {
-            this.rslScope = this.getContainer().actionPdr.getInstance(ResolveLifeScope);
+            this.rslScope = this.getContainer().provider.getInstance(ResolveLifeScope);
         }
         return this.rslScope.resolve(this, token, ...providers);
     }
@@ -116,12 +116,12 @@ export class IocContainer extends Injector implements IIocContainer {
     private rslScope: ResolveLifeScope;
 
     readonly regedState: RegisteredState;
-    readonly actionPdr: IActionProvider;
+    readonly provider: IActionProvider;
 
     constructor() {
         super();
         this.regedState = new RegisteredStateImpl(this);
-        this.actionPdr = new ActionProvider(this);
+        this.provider = new ActionProvider(this);
         this.initReg();
     }
 
@@ -141,7 +141,7 @@ export class IocContainer extends Injector implements IIocContainer {
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         if (!this.rslScope) {
-            this.rslScope = this.actionPdr.getInstance(ResolveLifeScope);
+            this.rslScope = this.provider.getInstance(ResolveLifeScope);
         }
         return this.rslScope.resolve(this, token, ...providers);
     }
@@ -241,7 +241,7 @@ export class IocContainer extends Injector implements IIocContainer {
             type,
             singleton
         } as DesignContext;
-        this.actionPdr.getInstance(DesignLifeScope).register(ctx);
+        this.provider.getInstance(DesignLifeScope).register(ctx);
         lang.cleanObj(ctx);
 
         return this;
