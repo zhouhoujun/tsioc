@@ -82,7 +82,6 @@ interface LFrame {
      */
     currentNamespace: string | null;
 
-
     /**
      * The root index from which pure function instructions should calculate their binding
      * indices. In component views, this is TView.bindingStartIndex. In a host binding

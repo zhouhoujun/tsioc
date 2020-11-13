@@ -42,7 +42,7 @@ export const TNodeTypeAsString = [
   'Element',           // 3
   'ElementContainer',  // 4
   'IcuContainer'       // 5
-] as const;
+];
 
 
 /**

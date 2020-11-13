@@ -12,7 +12,9 @@ export interface Registered {
     getInjector(): IInjector;
 }
 
-
+/**
+ * registered state.
+ */
 export interface RegisteredState {
     /**
      * get type registered info.

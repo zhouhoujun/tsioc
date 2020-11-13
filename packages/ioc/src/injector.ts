@@ -1,3 +1,4 @@
+import { Modules, Type } from './types';
 import { CacheManager } from './actions/cache';
 import { ResolveOption } from './actions/res';
 import { Abstract } from './decor/decorators';
@@ -5,15 +6,8 @@ import { Destoryable } from './Destoryable';
 import { IInjector, IProvider } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { StaticProviders } from './providers';
-import {
-    Factory, getTokenKey, InjectReference, InstanceFactory, InstancePdr,
-    isToken, Provider, Registration, SymbolType, Token
-} from './tokens';
-import { Modules, Type } from './types';
-import {
-    isArray, isBaseObject, isClass, isDefined, isFunction,
-    isNull, isNullOrUndefined, isString, isUndefined, lang
-} from './utils/lang';
+import { Factory, getTokenKey, InjectReference, InstanceFactory, InstancePdr, isToken, Provider, Registration, SymbolType, Token } from './tokens';
+import { isArray, isBaseObject, isClass, isDefined, isFunction, isNull, isNullOrUndefined, isString, isUndefined, lang } from './utils/lang';
 import { PROVIDERS } from './utils/tk';
 
 /**
