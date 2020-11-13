@@ -1,45 +1,8 @@
-import {
-    Modules, Type, Token, IocCoreService, isString, lang,
-    isArray, InjectReference, isMetadataObject, isFunction
-} from '@tsdi/ioc';
+import { Modules, Type, isString, lang, isArray, isMetadataObject, isFunction } from '@tsdi/ioc';
+import { IModuleLoader } from '../link';
 import { ChildModule, LoadType, PathModules } from '../types';
 
 
-/**
- * module loader interface for ioc.
- *
- * @export
- * @interface IModuleLoader
- */
-export interface IModuleLoader {
-    /**
-     * load modules by files patterns, module name or modules.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Modules[]>}
-     * @memberof IModuleLoader
-     */
-    load(...modules: LoadType[]): Promise<Modules[]>;
-
-    /**
-     * dynamic require file.
-     *
-     * @param {string} fileName
-     * @returns {Promise<any>}
-     * @memberof IModuleLoader
-     */
-    require(fileName: string): Promise<any>;
-
-    /**
-     * load all class types in modules
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type[]>}
-     * @memberof IModuleLoader
-     */
-    loadTypes(...modules: LoadType[]): Promise<Type[][]>;
-
-}
 
 
 declare let require: any;
@@ -61,7 +24,9 @@ export function isChildModule(target: any): target is ChildModule {
  * @class DefaultModuleLoader
  * @implements {IModuleLoader}
  */
-export class ModuleLoader extends IocCoreService implements IModuleLoader {
+export class ModuleLoader implements IModuleLoader {
+
+    static ρNPT = true;
 
     private _loader: (modulepath: string) => Promise<Modules[]>;
     getLoader() {
@@ -187,19 +152,4 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
         }
     }
 
-}
-
-
-/**
- * inject module load token.
- *
- * @export
- * @class InjectModuleLoadToken
- * @extends {Registration<T>}
- * @template T
- */
-export class InjectModuleLoadToken<T> extends InjectReference<ModuleLoader> {
-    constructor(token: Token<T>) {
-        super(ModuleLoader, token)
-    }
 }

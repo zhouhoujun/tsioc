@@ -1,12 +1,11 @@
 import { Type, Token, Provider, IProvider, InjectorImpl } from '@tsdi/ioc';
 import { ICoreInjector } from './ICoreInjector';
 import { ServiceProvider } from './services/providers';
-import { IContainerBuilder } from './IContainerBuilder';
-import { IModuleLoader, ModuleLoader } from './services/loader';
+import { IModuleLoader, IContainerBuilder } from './link';
 import { ServiceOption, ServicesOption } from './resolves/context';
 import { IContainer } from './IContainer';
 import { LoadType } from './types';
-import { CONTAINER_BUILDER } from './tk';
+import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends InjectorImpl implements ICoreInjector {
@@ -50,7 +49,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.getValue(ModuleLoader);
+        return this.getValue(MODULE_LOADER);
     }
 
     /**

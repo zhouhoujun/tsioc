@@ -1,13 +1,12 @@
 import { Provider, IocContainer, Type, Token, IProvider } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
-import { IContainerBuilder } from './IContainerBuilder';
+import { IContainerBuilder, IModuleLoader } from './link';
 import { ICoreInjector } from './ICoreInjector';
 import { CoreInjector } from './CoreInjector';
 import { LoadType } from './types';
-import { CONTAINER_BUILDER } from './tk';
+import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
 import { ServiceOption, ServicesOption } from './resolves/context';
-import { ModuleLoader, IModuleLoader } from './services/loader';
 import { ServiceProvider } from './services/providers';
 import { registerCores } from './regs';
 
@@ -21,10 +20,6 @@ import { registerCores } from './regs';
  * @implements {IContainer}
  */
 export class Container extends IocContainer implements IContainer {
-
-    constructor() {
-        super();
-    }
 
     private servPdr: ServiceProvider;
     private injScope: InjLifeScope;
@@ -58,7 +53,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof IContainer
      */
     getLoader(): IModuleLoader {
-        return this.getValue(ModuleLoader);
+        return this.getValue(MODULE_LOADER);
     }
 
     /**

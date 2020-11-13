@@ -1,10 +1,9 @@
 import { Modules } from '@tsdi/ioc';
 import { IContainer } from './IContainer';
 import { Container } from './Container';
-import { IContainerBuilder } from './IContainerBuilder';
-import { IModuleLoader, ModuleLoader } from './services/loader';
+import { IModuleLoader, IContainerBuilder } from './link';
 import { LoadType } from './types';
-import { CONTAINER_BUILDER } from './tk';
+import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
 
 /**
  * default container builder.
@@ -24,7 +23,7 @@ export class ContainerBuilder implements IContainerBuilder {
         let container = new Container();
         container.setValue(CONTAINER_BUILDER, this);
         if (this._loader) {
-            container.setValue(ModuleLoader, this._loader);
+            container.setValue(MODULE_LOADER, this._loader);
         }
         return container;
     }
@@ -53,7 +52,7 @@ export class ContainerBuilder implements IContainerBuilder {
     }
 
     protected getLoader(container: IContainer): IModuleLoader {
-        return container.getInstance(ModuleLoader) || this._loader;
+        return container.getInstance(MODULE_LOADER) || this._loader;
     }
 
 }

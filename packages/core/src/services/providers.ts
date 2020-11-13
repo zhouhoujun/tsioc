@@ -1,18 +1,20 @@
-import { IocCoreService, IInjector, Token, Provider, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang } from '@tsdi/ioc';
+import { IInjector, Token, Provider, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceResolver } from './IServiceResolver';
 import { IServicesResolver } from './IServicesResolver';
 import { IContainer } from '../IContainer';
 
-export class ServiceProvider extends IocCoreService implements IServiceResolver, IServicesResolver {
+/**
+ * service provider.
+ */
+export class ServiceProvider implements IServiceResolver, IServicesResolver {
 
+    static ρNPT = true;
     private serviceScope: ResolveServiceScope;
     private servicesScope: ResolveServicesScope;
 
-    constructor(private readonly container: IContainer) {
-        super();
-    }
+    constructor(private readonly container: IContainer) { }
 
     /**
      *  get service or target reference service.

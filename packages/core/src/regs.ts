@@ -5,14 +5,14 @@ import { InjLifeScope } from './injects/lifescope';
 import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
 import { ServiceProvider } from './services/providers';
 import { CoreInjector } from './CoreInjector';
-import { CONTAINER } from './tk';
+import { CONTAINER, MODULE_LOADER } from './tk';
 
 
 export function registerCores(container: IContainer) {
 
     container.setValue(CONTAINER, container);
-    if (!container.has(ModuleLoader)) {
-        container.setValue(ModuleLoader, new ModuleLoader());
+    if (!container.has(MODULE_LOADER)) {
+        container.setValue(MODULE_LOADER, new ModuleLoader(), ModuleLoader);
     }
 
     container.set(INJECTOR_FACTORY, () => new CoreInjector(container), CoreInjector);

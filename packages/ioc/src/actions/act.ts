@@ -33,18 +33,22 @@ export interface IActionProvider extends IProvider {
  */
 export class IocActions<T extends IocContext = IocContext> extends Actions<T> {
 
-    constructor(protected actInjector: IActionProvider) {
+    /**
+     * actions constructor.
+     * @param provider action provider.
+     */
+    constructor(protected provider: IActionProvider) {
         super();
     }
 
     protected regAction(ac: any) {
         if (isClass(ac)) {
-            this.actInjector.regAction(ac);
+            this.provider.regAction(ac);
         }
     }
 
     protected toHandle(ac: any) {
-        return this.actInjector.getAction(ac);
+        return this.provider.getAction(ac);
     }
 
 }

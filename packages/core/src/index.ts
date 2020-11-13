@@ -5,7 +5,7 @@ export * from './Container';
 export * from './ICoreInjector';
 export * from './CoreInjector';
 
-export * from './IContainerBuilder';
+export * from './link';
 export * from './ContainerBuilder';
 
 export * from './services/IServiceResolver';
