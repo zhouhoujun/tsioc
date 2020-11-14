@@ -3,12 +3,11 @@ import { LoadType } from './types';
 import { ICoreInjector, IContainer, IModuleLoader, IContainerBuilder, IServiceProvider } from './link';
 import { ServiceOption, ServicesOption } from './resolves/context';
 import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
-import { ServiceProvider } from './services/providers';
 import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends InjectorImpl implements ICoreInjector {
 
-    private _servPdr: IServiceProvider;
+    private _serv: IServiceProvider;
     protected injScope: InjLifeScope;
 
 
@@ -16,11 +15,11 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
         super(parent);
     }
 
-    protected get servPdr(): IServiceProvider {
-        if (!this._servPdr) {
-            this._servPdr = new ServiceProvider(this.getContainer());
+    protected get serv(): IServiceProvider {
+        if (!this._serv) {
+            this._serv = this.getContainer().serv;
         }
-        return this._servPdr;
+        return this._serv;
     }
 
     /**
@@ -75,7 +74,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
-        return this.servPdr.getService(this, target, ...providers);
+        return this.serv.getService(this, target, ...providers);
     }
 
     /**
@@ -88,7 +87,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
-        return this.servPdr.getServices(this, target, ...providers);
+        return this.serv.getServices(this, target, ...providers);
     }
 
     /**
@@ -101,12 +100,12 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.servPdr.getServiceProviders(this, target);
+        return this.serv.getServiceProviders(this, target);
     }
 
     protected destroying() {
         super.destroying();
-        this._servPdr = null;
+        this._serv = null;
         this.injScope = null;
     }
 }

@@ -5,8 +5,8 @@ import { LoadType } from './types';
 import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
 import { ServiceOption, ServicesOption } from './resolves/context';
-import { ServiceProvider } from './services/providers';
 import { registerCores } from './regs';
+import { ServiceProvider } from './services/providers';
 
 
 
@@ -19,11 +19,11 @@ import { registerCores } from './regs';
  */
 export class Container extends IocContainer implements IContainer {
 
-    protected servPdr: IServiceProvider;
     protected injScope: InjLifeScope;
+    public serv: IServiceProvider;
 
     protected initReg() {
-        this.servPdr = new ServiceProvider(this);
+        this.serv = new ServiceProvider(this);
         super.initReg();
         registerCores(this);
     }
@@ -73,7 +73,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
-        return this.servPdr.getService(this, target, ...providers);
+        return this.serv.getService(this, target, ...providers);
     }
 
     /**
@@ -86,7 +86,7 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
-        return this.servPdr.getServices(this, target, ...providers);
+        return this.serv.getServices(this, target, ...providers);
     }
 
     /**
@@ -99,12 +99,12 @@ export class Container extends IocContainer implements IContainer {
      * @memberof Container
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.servPdr.getServiceProviders(this, target);
+        return this.serv.getServiceProviders(this, target);
     }
 
     protected destroying() {
         super.destroying();
-        this.servPdr = null;
+        this.serv = null;
         this.injScope = null;
     }
 }

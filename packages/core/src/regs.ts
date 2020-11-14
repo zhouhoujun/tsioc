@@ -5,6 +5,7 @@ import { InjLifeScope } from './injects/lifescope';
 import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
 import { CoreInjector } from './injector';
 import { CONTAINER, MODULE_LOADER } from './tk';
+import { ServiceProvider } from './services/providers';
 
 
 export function registerCores(container: IContainer) {
@@ -15,7 +16,7 @@ export function registerCores(container: IContainer) {
     }
 
     container.set(INJECTOR_FACTORY, () => new CoreInjector(container), CoreInjector);
-    // container.setValue(ServiceProvider, new ServiceProvider(container));
+    container.setValue(ServiceProvider, new ServiceProvider(container));
 
     // register action
     container.provider

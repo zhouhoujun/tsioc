@@ -172,24 +172,24 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                 maps.iterator((pdr, tk) => {
                     if (!services.has(tk, alias)
                         && (
-                            (isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty)))
-                            || (pdr.provider && types.some(ty => refl.getIfy(pdr.provider).class.isExtends(ty)))
+                            (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
+                            || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
                         )
                     ) {
                         services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
                     }
                 });
             }
-            if (isClassType(tk)) {
-                const rlt = refl.getIfy(tk);
+            const rlt = isClassType(tk) ? refl.get(tk) : null
+            if (rlt) {
                 rlt.decors.forEach(dec => {
                     if (dec.decorType === 'class') {
                         const dprvoider = dec.decorPdr.getProvider(injector)
                         dprvoider.iterator((pdr, tk) => {
                             if (!services.has(tk, alias)
                                 && (
-                                    (isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty)))
-                                    || (pdr.provider && types.some(ty => refl.getIfy(pdr.provider).class.isExtends(ty)))
+                                    (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
+                                    || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
                                 )
                             ) {
                                 services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
@@ -198,6 +198,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     }
                 });
             }
+
             types.forEach(ty => {
                 let reftk = new InjectReference(ty, tk);
                 if (!services.has(reftk, alias) && injector.hasRegister(reftk)) {

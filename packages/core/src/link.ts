@@ -75,6 +75,11 @@ export interface ICoreInjector extends IInjector {
  * @interface IContainer
  */
 export interface IContainer extends IIocContainer, ICoreInjector {
+
+    /**
+     * service provider.
+     */
+    readonly serv: IServiceProvider;
     /**
      * get root container.
      */
