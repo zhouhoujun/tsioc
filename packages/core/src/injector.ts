@@ -27,7 +27,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * get root container.
      */
     getContainer(): IContainer {
-        return this.parent?.getContainer() as IContainer;
+        return this.parent?.getContainer();
     }
 
     /**
