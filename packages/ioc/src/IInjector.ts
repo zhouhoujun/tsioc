@@ -1,5 +1,5 @@
 import { Type, Modules } from './types';
-import { SymbolType, Token, Factory, InjectReference, Provider, InstanceFactory, InstancePdr } from './tokens';
+import { SymbolType, Token, Factory, InjectReference, Provider, InstanceFactory, InstFac } from './tokens';
 import { ResolveOption } from './actions/res';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
@@ -157,6 +157,17 @@ export interface IProvider extends IDestoryable {
      *
      * @template T
      * @param {Token<T>} provide
+     * @param {InstFac<T>} fac
+     * @param {Type<T>} [providerType]
+     * @returns {this}
+     * @memberof IInjector
+     */
+    set<T>(provide: Token<T>, fac: InstFac<T>): this;
+    /**
+     * set provide.
+     *
+     * @template T
+     * @param {Token<T>} provide
      * @param {InstanceFactory<T>} fac
      * @param {Type<T>} [providerType]
      * @returns {this}
@@ -188,21 +199,14 @@ export interface IProvider extends IDestoryable {
      */
     unregister<T>(token: Token<T>): this;
     /**
-     * clear cache.
-     *
-     * @param {Type} targetType
-     * @memberof IContainer
-     */
-    clearCache(targetType: Type): this;
-    /**
      * iterator current resolver.
      *
-     * @param {((pdr: InstancePdr, key: SymbolType, resolvor?: IProvider) => void|boolean)} callbackfn
+     * @param {((pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register.
      * @returns {(void|boolean)}
      * @memberof IInjector
      */
-    iterator(callbackfn: (pdr: InstancePdr, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
+    iterator(callbackfn: (pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
     /**
      * copy injector to current injector.
      *

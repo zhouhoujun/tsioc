@@ -29,7 +29,6 @@ export * from './providers';
 // actions
 export * from './actions/ctx';
 export * from './actions/act';
-export * from './actions/cache';
 export * from './actions/reg'
 export * from './actions/lifescope';
 export * from './actions/accessor';

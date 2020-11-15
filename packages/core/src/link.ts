@@ -17,7 +17,7 @@ export interface ICoreInjector extends IInjector {
      */
     getBuilder(): IContainerBuilder;
 
-        /**
+    /**
      * get module loader.
      *
      * @returns {IModuleLoader}
@@ -164,14 +164,10 @@ export interface IModuleLoader {
 }
 
 
-
 /**
- * service resolver.
- *
- * @export
- * @interface IServiceResolver
+ * service provider.
  */
-export interface IServiceResolver {
+export interface IServiceProvider {
     /**
      * get service or target reference service in the injector.
      *
@@ -183,18 +179,6 @@ export interface IServiceResolver {
      * @memberof IContainer
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T;
-
-}
-
-
-
-/**
- * services resolver.
- *
- * @export
- * @interface IServicesResolver
- */
-export interface IServicesResolver {
     /**
      * get all service extends type.
      *
@@ -215,12 +199,4 @@ export interface IServicesResolver {
      * @memberof IServicesResolver
      */
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider;
-
-}
-
-/**
- * service provider.
- */
-export interface IServiceProvider extends IServiceResolver, IServicesResolver {
-
 }

@@ -185,10 +185,21 @@ export type InjectTypes = Provider;
  */
 export type InstanceFactory<T = any> = (...providers: Provider[]) => T;
 
-export interface InstancePdr<T = any> {
+/**
+ * instance fac.
+ */
+export interface InstFac<T = any> {
     fac?: InstanceFactory<T>;
     value?: T;
     provider?: Type<T>;
+    /**
+     * cache value
+     */
+    cache?: T;
+    /**
+     * cache expires.
+     */
+    expires?: number;
 }
 
 

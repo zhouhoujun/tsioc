@@ -1,6 +1,5 @@
 import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
-import { CacheManager } from './actions/cache';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
 import { ResolveOption } from './actions/res';
@@ -99,7 +98,6 @@ export class InjectorImpl extends Injector {
 
     protected initReg() {
         this.setValue(INJECTOR, this, lang.getClass(this));
-        this.setValue(CacheManager, new CacheManager(this));
     }
 
 }

@@ -1,12 +1,11 @@
 import { Modules, Type } from './types';
-import { CacheManager } from './actions/cache';
 import { ResolveOption } from './actions/res';
 import { Abstract } from './decor/decorators';
 import { Destoryable } from './Destoryable';
 import { IInjector, IProvider } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { StaticProviders } from './providers';
-import { Factory, getTokenKey, InjectReference, InstanceFactory, InstancePdr, isToken, Provider, Registration, SymbolType, Token } from './tokens';
+import { Factory, getTokenKey, InjectReference, InstanceFactory, InstFac, isToken, Provider, Registration, SymbolType, Token } from './tokens';
 import { isArray, isBaseObject, isClass, isDefined, isFunction, isNull, isNullOrUndefined, isString, isUndefined, lang } from './utils/lang';
 import { PROVIDERS } from './utils/tk';
 
@@ -29,7 +28,7 @@ export class DIProvider extends Destoryable implements IProvider {
      * @type {Map<Token, Function>}
      * @memberof BaseInjector
      */
-    protected factories: Map<SymbolType, InstancePdr>;
+    protected factories: Map<SymbolType, InstFac>;
 
     constructor(readonly parent?: IProvider) {
         super();
@@ -41,7 +40,7 @@ export class DIProvider extends Destoryable implements IProvider {
     }
 
     getContainer() {
-        return this.parent?.getContainer()
+        return this.parent?.getContainer();
     }
 
     /**
@@ -79,19 +78,23 @@ export class DIProvider extends Destoryable implements IProvider {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {InstanceFactory<T>} fac
+     * @param {(InstanceFactory<T> | InstFac<T>)} fac
      * @param {Type<T>} [provider]
      * @returns {this}
      * @memberof BaseInjector
      */
-    set<T>(provide: Token<T>, fac: InstanceFactory<T>, provider?: Type<T>): this {
+    set<T>(provide: Token<T>, fac: InstanceFactory<T> | InstFac<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
         if (!key) return;
-        if (isClass(provider)) {
-            this.factories.set(provider, { fac, provider });
-            this.factories.set(key, { fac, provider });
+        if (isFunction(fac)) {
+            if (isClass(provider)) {
+                this.factories.set(provider, { fac, provider });
+                this.factories.set(key, { fac, provider });
+            } else {
+                this.factories.set(key, { fac, provider: isClass(key) ? key : undefined });
+            }
         } else {
-            this.factories.set(key, { fac, provider: isClass(key) ? key : undefined });
+            this.factories.set(key, { ...this.factories.get(key), ...fac });
         }
         return this;
     }
@@ -308,6 +311,14 @@ export class DIProvider extends Destoryable implements IProvider {
         const pdr = this.factories.get(key);
         if (!pdr) return this.parent?.getInstance(key);
         if (isDefined(pdr.value)) return pdr.value;
+        if (pdr.expires) {
+            if (pdr.expires > Date.now()) {
+                return pdr.cache;
+            } else {
+                pdr.expires = null;
+                pdr.cache = null;
+            }
+        }
         return pdr.fac ? pdr.fac(...providers) ?? null : null;
     }
 
@@ -344,25 +355,13 @@ export class DIProvider extends Destoryable implements IProvider {
                 keys.forEach(k => {
                     this.factories.delete(key);
                 });
-                this.clearCache(key);
                 this.getContainer().regedState.deleteType(key);
             }
         }
         return this;
     }
 
-    /**
-     * clear cache.
-     *
-     * @param {Type} targetType
-     * @memberof BaseInjector
-     */
-    clearCache(targetType: Type) {
-        this.getInstance(CacheManager).destroy(targetType);
-        return this;
-    }
-
-    iterator(callbackfn: (fac: InstancePdr, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
+    iterator(callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
         let flag = !Array.from(this.factories.keys()).some(tk => {
             return callbackfn(this.factories.get(tk), tk, this) === false;
         });
@@ -424,7 +423,7 @@ export class DIProvider extends Destoryable implements IProvider {
 export abstract class Injector extends DIProvider implements IInjector {
 
     constructor(readonly parent?: IInjector) {
-        super();
+        super(parent);
     }
 
     /**
@@ -567,20 +566,6 @@ export function isInjector(target: any): target is IProvider {
 export class ContextProvider extends DIProvider implements IProvider {
 
 }
-
-// /**
-//  * is provider or not.
-//  *
-//  * @export
-//  * @param {*} target
-//  * @returns {target is Provider}
-//  */
-// export function isProvider(target: any): target is Provider {
-//     return (target instanceof DIProvider && target instanceof Injector)
-//         || (isMetadataObject(target, 'provide') && isToken(target.provide))
-//         || (isArray(target) && target.some(it => isClass(it) || (isObject(it) && Object.values(it).some(s => isClass(it)))));
-// }
-
 
 /**
  * invoked provider

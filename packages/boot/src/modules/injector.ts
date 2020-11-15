@@ -1,6 +1,6 @@
 import {
     Token, lang, SymbolType, Type, IInjector, DIProvider, IProvider,
-    TokenId, tokenId, InstancePdr, Provider, isDefined, isClass
+    TokenId, tokenId, InstFac, Provider, isDefined, isClass
 } from '@tsdi/ioc';
 import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { ModuleRef } from './ref';
@@ -42,6 +42,14 @@ export class ModuleInjector extends CoreInjector {
             return this.parent?.getInstance(key);
         }
         if (isDefined(pdr.value)) return pdr.value;
+        if (pdr.expires) {
+            if (pdr.expires > Date.now()) {
+                return pdr.cache;
+            } else {
+                pdr.expires = null;
+                pdr.cache = null;
+            }
+        }
         return pdr.fac ? pdr.fac(...providers) ?? null : null;
     }
 
@@ -53,14 +61,6 @@ export class ModuleInjector extends CoreInjector {
     getValue<T>(token: Token<T>): T {
         const key = this.getTokenKey(token);
         return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
-    }
-
-    clearCache(targetType: Type) {
-        super.clearCache(targetType);
-        this.exports.forEach(r => {
-            r.exports.clearCache(targetType);
-        })
-        return this;
     }
 
     unregister<T>(token: Token<T>): this {
@@ -92,7 +92,7 @@ export class ModuleInjector extends CoreInjector {
         return lang.del(this.exports, ref);
     }
 
-    iterator(callbackfn: (pdr: InstancePdr, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
+    iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
         if (super.iterator(callbackfn, deep) === false) {
             return false;
         }

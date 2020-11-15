@@ -254,7 +254,9 @@ export interface MethodParamPropMetadata extends ParamPropMetadata, MethodMetada
  */
 export interface InjectMetadata extends ParamPropMetadata { }
 
-
+/**
+ * register in metadata.
+ */
 export interface RegInMetadata {
     /**
      * reg the class type in root or not.

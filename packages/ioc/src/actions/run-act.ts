@@ -3,7 +3,6 @@ import { isToken } from '../tokens';
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
-import { CacheManager } from './cache';
 import { METHOD_ACCESSOR } from '../utils/tk';
 
 
@@ -139,38 +138,16 @@ export const AfterCtorDecorScope = function (ctx: RuntimeContext, next: () => vo
 export abstract class IocExtendRegAction extends IocRuntimeAction { }
 
 /**
- * get class cache action.
- *
- * @export
- */
-export const IocGetCacheAction = function (ctx: RuntimeContext, next: () => void): void {
-    let targetReflect = ctx.reflect;
-    if (!ctx.instance && !targetReflect.singleton && targetReflect.expires > 0) {
-        let cache = ctx.injector.getInstance(CacheManager).get(ctx.instance, targetReflect.expires);
-        if (cache) {
-            ctx.instance = cache;
-            if (ctx.instance) {
-                return;
-            }
-        }
-    }
-    next();
-};
-
-/**
  * cache action. To cache instance of Token. define cache expires in decorator.
  *
  * @export
  */
 export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
-    let targetReflect = ctx.reflect;
-    if (targetReflect.singleton || !targetReflect.expires || targetReflect.expires <= 0) {
+    let tgref = ctx.reflect;
+    if (tgref.singleton || !tgref.expires || tgref.expires <= 0) {
         return next();
     }
-    let cacheManager = ctx.injector.getInstance(CacheManager);
-    if (!cacheManager.hasCache(ctx.type)) {
-        cacheManager.cache(ctx.type, ctx.instance, targetReflect.expires);
-    }
+    ctx.injector.set(ctx.type, { cache: ctx.instance, expires: tgref.expires + Date.now() });
     next();
 };
 
