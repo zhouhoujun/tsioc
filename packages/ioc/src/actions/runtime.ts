@@ -24,7 +24,6 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
             .use(ra.BeforeCtorScope)
             .use(ra.CreateInstanceAction)
             .use(ra.AfterCtorScope)
-            .use(ra.IocSetCacheAction)
             .use(ra.RuntimePropScope)
             .use(ra.RuntimeMthScope)
             .use(ra.RuntimeAnnoScope);
