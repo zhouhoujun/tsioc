@@ -85,7 +85,7 @@ export class DIProvider extends Destoryable implements IProvider {
      */
     set<T>(provide: Token<T>, fac: InstanceFactory<T> | InstFac<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
-        if (!key) return;
+        if (!key) return this;
         if (isFunction(fac)) {
             if (isClass(provider)) {
                 this.factories.set(provider, { fac, provider });
