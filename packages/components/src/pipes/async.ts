@@ -1,5 +1,6 @@
-import { OnDestroy, isPromise, isObservable } from '@tsdi/ioc';
+import { isPromise, isObservable } from '@tsdi/ioc';
 import { Observable, SubscriptionLike } from 'rxjs';
+import { OnDestroy } from '../lifecycle';
 import { PipeTransform } from './pipe';
 import { Pipe } from '../decorators';
 import { EventEmitter } from '../EventEmitter';
