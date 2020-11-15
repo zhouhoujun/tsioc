@@ -50,8 +50,8 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     const container = injector.getContainer();
     const actionPdr = container.provider;
     let factory = (...providers: Provider[]) => {
-        if (singleton && container.hasValue(type)) {
-            return container.getValue(type);
+        if (singleton && injector.hasValue(type)) {
+            return injector.getValue(type);
         }
         const ctx = {
             injector,
@@ -61,9 +61,6 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
             providers: injector.get(PROVIDERS).inject(...providers)
         } as RuntimeContext;
         actionPdr.getInstance(RuntimeLifeScope).register(ctx);
-        if (singleton) {
-            container.setValue(type, ctx.instance);
-        }
         const instance = ctx.instance;
         // clean context
         lang.cleanObj(ctx);
