@@ -1,3 +1,4 @@
+import { lang } from '@tsdi/ioc';
 import { IterableType, IterableDiffers, TrackByFunction, IterableDiffer, IterableChanges, IterableChangeRecord } from '../chage/iterable';
 import { Directive, Input } from '../decorators';
 import { DoCheck } from '../lifecycle';
@@ -240,5 +241,5 @@ class RecordViewTuple<T, U extends IterableType<T>> {
 }
 
 function getTypeName(type: any): string {
-    return type['name'] || typeof type;
+    return lang.getClassName(type) || typeof type;
 }
