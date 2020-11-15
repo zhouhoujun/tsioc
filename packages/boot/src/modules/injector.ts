@@ -43,12 +43,9 @@ export class ModuleInjector extends CoreInjector {
         }
         if (isDefined(pdr.value)) return pdr.value;
         if (pdr.expires) {
-            if (pdr.expires > Date.now()) {
-                return pdr.cache;
-            } else {
-                pdr.expires = null;
-                pdr.cache = null;
-            }
+            if (pdr.expires > Date.now()) return pdr.cache;
+            pdr.expires = null;
+            pdr.cache = null;
         }
         return pdr.fac ? pdr.fac(...providers) ?? null : null;
     }
