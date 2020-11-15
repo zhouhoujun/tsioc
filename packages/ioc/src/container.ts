@@ -8,7 +8,7 @@ import { IInjector, IProvider } from './IInjector';
 import { IIocContainer, Registered, RegisteredState } from './IIocContainer';
 import { MethodType } from './IMethodAccessor';
 import { DIProvider, Injector } from './injector';
-import { Factory, InjectToken, InstanceFactory, isToken, Provider, SymbolType, Token } from './tokens';
+import { FactoryLike, InjectToken, Factory, isToken, Provider, SymbolType, Token } from './tokens';
 import { ClassType, Type } from './types';
 import { Handler, isClass, isDefined, isFunction, lang } from './utils/lang';
 import { registerCores } from './utils/regs';
@@ -31,11 +31,11 @@ export class InjectorImpl extends Injector {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param { Factory<T>} fac
+     * @param { FactoryLike<T>} fac
      * @returns {this}
      * @memberof ProviderMap
      */
-    register<T>(provide: Token<T>, fac?: Factory<T>): this {
+    register<T>(provide: Token<T>, fac?: FactoryLike<T>): this {
         this.getContainer()?.registerFactory(this, provide, fac);
         return this;
     }
@@ -56,11 +56,11 @@ export class InjectorImpl extends Injector {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param { Factory<T>} fac
+     * @param { FactoryLike<T>} fac
      * @returns {this}
      * @memberof ProviderMap
      */
-    registerSingleton<T>(provide: Token<T>, fac?: Factory<T>): this {
+    registerSingleton<T>(provide: Token<T>, fac?: FactoryLike<T>): this {
         this.getContainer()?.registerFactory(this, provide, fac, true);
         return this;
     }
@@ -172,39 +172,34 @@ export class IocContainer extends Injector implements IIocContainer {
      * @returns {this}
      * @memberOf Container
      */
-    register<T>(token: Token<T>, fac?: Factory<T>): this {
+    register<T>(token: Token<T>, fac?: FactoryLike<T>): this {
         this.registerFactory(this, token, fac);
         return this;
     }
 
-    registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this {
+    registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this {
         this.registerFactory(this, token, fac, true);
         return this;
     }
 
-    registerFactory<T>(injector: IInjector, token: Token<T>, value?: Factory<T>, singleton?: boolean): this {
-        (async () => {
-            let key = injector.getTokenKey(token);
-            let classFactory;
-            if (isDefined(value)) {
-                if (isFunction(value)) {
-                    if (isClass(value)) {
-                        this.registerIn(injector, value, key, singleton);
-                    } else {
-                        classFactory = this.createCustomFactory(injector, key, value, singleton);
-                    }
-                } else if (singleton && value !== undefined) {
-                    classFactory = this.createCustomFactory(injector, key, () => value, singleton);
+    registerFactory<T>(injector: IInjector, token: Token<T>, value?: FactoryLike<T>, singleton?: boolean): this {
+        let key = injector.getTokenKey(token);
+        if (isDefined(value)) {
+            if (isFunction(value)) {
+                if (isClass(value)) {
+                    this.registerIn(injector, value, key, singleton);
+                } else {
+                    const classFactory = this.createCustomFactory(injector, key, value, singleton);
+                    injector.set(key, classFactory);
                 }
-
-            } else if (isClass(key)) {
-                this.registerIn(injector, key, null, singleton);
+            } else if (isDefined(value)) {
+                injector.set(key, { value });
             }
 
-            if (classFactory) {
-                injector.set(key, classFactory);
-            }
-        })();
+        } else if (isClass(key)) {
+            this.registerIn(injector, key, null, singleton);
+        }
+
         return this;
     }
 
@@ -254,7 +249,7 @@ export class IocContainer extends Injector implements IIocContainer {
         return this.getInstance(PROVIDERS).inject(...providers);
     }
 
-    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
+    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: Factory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: Provider[]) => {
                 if (injector.hasValue(key)) {

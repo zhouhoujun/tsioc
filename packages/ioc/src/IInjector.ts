@@ -1,5 +1,5 @@
 import { Type, Modules } from './types';
-import { SymbolType, Token, Factory, InjectReference, Provider, InstanceFactory, InstFac } from './tokens';
+import { SymbolType, Token, FactoryLike, InjectReference, Provider, Factory, InstFac } from './tokens';
 import { ResolveOption } from './actions/res';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
@@ -168,12 +168,12 @@ export interface IProvider extends IDestoryable {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {InstanceFactory<T>} fac
+     * @param {Factory<T>} fac
      * @param {Type<T>} [providerType]
      * @returns {this}
      * @memberof IInjector
      */
-    set<T>(provide: Token<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this;
+    set<T>(provide: Token<T>, fac: Factory<T>, providerType?: Type<T>): this;
     /**
      * inject providers.
      *
@@ -253,21 +253,21 @@ export interface IInjector extends IProvider {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {Factory<T>} [fac]
+     * @param {FactoryLike<T>} [fac]
      * @returns {this}
      * @memberof IInjector
      */
-    register<T>(token: Token<T>, fac?: Factory<T>): this;
+    register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
      * register stingleton type.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {Factory<T>} fac
+     * @param {FactoryLike<T>} fac
      * @returns {this}
      * @memberOf IInjector
      */
-    registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
+    registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
      * bind provider
      *

@@ -183,17 +183,26 @@ export type InjectTypes = Provider;
 /**
  * instance factory.
  */
-export type InstanceFactory<T = any> = (...providers: Provider[]) => T;
+export type Factory<T = any> = (...providers: Provider[]) => T;
 
 /**
  * instance fac.
  */
 export interface InstFac<T = any> {
-    fac?: InstanceFactory<T>;
+    /**
+     * factory.
+     */
+    fac?: Factory<T>;
+    /**
+     * value or singleton instance.
+     */
     value?: T;
+    /**
+     * instance provider.
+     */
     provider?: Type<T>;
     /**
-     * cache value
+     * cache value.
      */
     cache?: T;
     /**
@@ -206,7 +215,7 @@ export interface InstFac<T = any> {
 /**
  * Factory of Token
  */
-export type Factory<T> = T | Type<T> | ((injector?: IInjector) => T);
+export type FactoryLike<T> = T | Type<T> | Factory<T>;
 
 
 /**

@@ -1,4 +1,4 @@
-import { InstanceFactory, Type } from '@tsdi/ioc';
+import { Factory, Type } from '@tsdi/ioc';
 import { TAttributes, TConstantsOrFactory } from './node';
 import { CssSelectorList } from './projection';
 import { TView } from './view';
@@ -240,7 +240,7 @@ export interface DirectiveDef<T> {
 
   /** Function that resolves providers and publishes them into the DI system. */
   providersResolver:
-  (<U extends T>(def: DirectiveDef<U>, processProvidersFn?: InstanceFactory) =>
+  (<U extends T>(def: DirectiveDef<U>, processProvidersFn?: Factory) =>
     void) | null;
 
   /** The selectors that will be used to match nodes to this directive. */

@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { Token, Factory, Provider } from './tokens';
+import { Token, FactoryLike, Provider } from './tokens';
 import { IInjector, IProvider } from './IInjector';
 import { IActionProvider } from './actions/act';
 
@@ -110,5 +110,5 @@ export interface IIocContainer extends IInjector {
      * @param fac factory of token.
      * @param singleton singlteon or not.
      */
-    registerFactory<T>(injector: IProvider, token: Token<T>, fac?: Factory<T>, singleton?: boolean): this;
+    registerFactory<T>(injector: IProvider, token: Token<T>, fac?: FactoryLike<T>, singleton?: boolean): this;
 }

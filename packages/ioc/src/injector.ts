@@ -5,7 +5,7 @@ import { Destoryable } from './Destoryable';
 import { IInjector, IProvider } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { StaticProviders } from './providers';
-import { Factory, getTokenKey, InjectReference, InstanceFactory, InstFac, isToken, Provider, Registration, SymbolType, Token } from './tokens';
+import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, Provider, Registration, SymbolType, Token } from './tokens';
 import { isArray, isBaseObject, isClass, isDefined, isFunction, isNull, isNullOrUndefined, isString, isUndefined, lang } from './utils/lang';
 import { PROVIDERS } from './utils/tk';
 
@@ -78,12 +78,12 @@ export class DIProvider extends Destoryable implements IProvider {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {(InstanceFactory<T> | InstFac<T>)} fac
+     * @param {(Factory<T> | InstFac<T>)} fac
      * @param {Type<T>} [provider]
      * @returns {this}
      * @memberof BaseInjector
      */
-    set<T>(provide: Token<T>, fac: InstanceFactory<T> | InstFac<T>, provider?: Type<T>): this {
+    set<T>(provide: Token<T>, fac: Factory<T> | InstFac<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
         if (!key) return this;
         if (isFunction(fac)) {
@@ -432,18 +432,18 @@ export abstract class Injector extends DIProvider implements IInjector {
      * @returns {this}
      * @memberOf BaseInjector
      */
-    abstract register<T>(token: Token<T>, fac?: Factory<T>): this;
+    abstract register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
 
     /**
      * register stingleton type.
      * @abstract
      * @template T
      * @param {Token<T>} token
-     * @param {Factory<T>} [fac]
+     * @param {FactoryLike<T>} [fac]
      * @returns {this}
      * @memberOf Container
      */
-    abstract registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
+    abstract registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
 
     /**
      * bind provider.
