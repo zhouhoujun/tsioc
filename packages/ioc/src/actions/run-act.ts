@@ -144,11 +144,11 @@ export abstract class IocExtendRegAction extends IocRuntimeAction { }
  */
 export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
     let tgref = ctx.reflect;
-    if (tgref.singleton || !tgref.expires || tgref.expires <= 0) {
+    if (!ctx.instance || tgref.singleton || !tgref.expires || tgref.expires <= 0) {
         return next();
     }
     ctx.injector.set(ctx.type, { cache: ctx.instance, expires: tgref.expires + Date.now() });
-    next();
+    return next();
 };
 
 
@@ -183,9 +183,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
  */
 export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
     if (ctx.type && ctx.instance && ctx.reflect.singleton) {
-        if (!ctx.injector.hasValue(ctx.type)) {
-            ctx.injector.setValue(ctx.type, ctx.instance);
-        }
+        ctx.injector.set(ctx.type, { value: ctx.instance });
     }
     next();
 }
