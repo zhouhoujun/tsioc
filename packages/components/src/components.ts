@@ -2,6 +2,7 @@ import { Inject, IocExt } from '@tsdi/ioc';
 import { IContainer, CONTAINER } from '@tsdi/core';
 import { ResolveMoudleScope } from '@tsdi/boot';
 import { ParseTemplateHandle } from './compile/actions';
+import { RefreshView, RenderComponent, RenderView } from './vnode/actions/render';
 
 
 /**
@@ -15,8 +16,13 @@ export class ComponentsModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
 
-        container.provider
-            .getInstance(ResolveMoudleScope)
+        const prdr = container.provider;
+
+        prdr.regAction(RenderView)
+            .regAction(RefreshView)
+            .regAction(RenderComponent);
+
+        prdr.getInstance(ResolveMoudleScope)
             .use(ParseTemplateHandle);
 
     }

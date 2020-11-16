@@ -4,7 +4,7 @@ import { LView, TView } from './view';
 /**
  * frame.
  */
-interface LFrame {
+export interface LFrame {
     /**
      * Parent LFrame.
      *

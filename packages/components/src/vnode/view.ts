@@ -442,7 +442,7 @@ export const TViewTypeAsString = [
  * Stored on the `ComponentDef.tView`.
  */
 export interface TView {
-  /**
+   /**
    * Type of `TView` (`Root`|`Component`|`Embedded`).
    */
   type: TViewType;
@@ -457,17 +457,17 @@ export interface TView {
    * The template function used to refresh the view of dynamically created views
    * and components. Will be null for inline views.
    */
-  template: ComponentTemplate<{}> | null;
+  template: ComponentTemplate<{}>|null;
 
   /**
    * A function containing query-related instructions.
    */
-  viewQuery: ViewQueriesFunction<{}> | null;
+  viewQuery: ViewQueriesFunction<{}>|null;
 
   /**
    * A `TNode` representing the declaration location of this `TView` (not part of this TView).
    */
-  declTNode: TNode | null;
+  declTNode: TNode|null;
 
   // FIXME(misko): Why does `TView` not have `declarationTView` property?
 
@@ -531,16 +531,14 @@ export interface TView {
   /**
    * A reference to the first child node located in the view.
    */
-  firstChild: TNode | null;
+  firstChild: TNode|null;
 
   /**
-   * Set of instructions used to process host bindings efficiently.
+   * Stores the OpCodes to be replayed during change-detection to process the `HostBindings`
    *
-   * See VIEW_DATA.md for more information.
+   * See `HostBindingOpCodes` for encoding details.
    */
-  // TODO(misko): `expandoInstructions` should be renamed to `hostBindingsInstructions` since they
-  // keep track of `hostBindings` which need to be executed.
-  expandoInstructions: ExpandoInstructions | null;
+  hostBindingOpCodes: HostBindingOpCodes|null;
 
   /**
    * Full registry of directives and components that may be found in this view.
@@ -548,7 +546,7 @@ export interface TView {
    * It's necessary to keep a copy of the full def list on the TView so it's possible
    * to render template functions without a host component.
    */
-  directiveRegistry: DirectiveDefList | null;
+  directiveRegistry: DirectiveDefList|null;
 
   /**
    * Full registry of pipes that may be found in this view.
@@ -559,24 +557,27 @@ export interface TView {
    * It's necessary to keep a copy of the full def list on the TView so it's possible
    * to render template functions without a host component.
    */
-  pipeRegistry: PipeDefList | null;
+  pipeRegistry: PipeDefList|null;
 
   /**
    * Array of ngOnInit, ngOnChanges and ngDoCheck hooks that should be executed for this view in
    * creation mode.
    *
-   * Even indices: Directive index
-   * Odd indices: Hook function
+   * This array has a flat structure and contains TNode indices, directive indices (where an
+   * instance can be found in `LView`) and hook functions. TNode index is followed by the directive
+   * index and a hook function. If there are multiple hooks for a given TNode, the TNode index is
+   * not repeated and the next lifecycle hook information is stored right after the previous hook
+   * function. This is done so that at runtime the system can efficiently iterate over all of the
+   * functions to invoke without having to make any decisions/lookups.
    */
-  preOrderHooks: HookData | null;
+  preOrderHooks: HookData|null;
 
   /**
    * Array of ngOnChanges and ngDoCheck hooks that should be executed for this view in update mode.
    *
-   * Even indices: Directive index
-   * Odd indices: Hook function
+   * This array has the same structure as the `preOrderHooks` one.
    */
-  preOrderCheckHooks: HookData | null;
+  preOrderCheckHooks: HookData|null;
 
   /**
    * Array of ngAfterContentInit and ngAfterContentChecked hooks that should be executed
@@ -585,7 +586,7 @@ export interface TView {
    * Even indices: Directive index
    * Odd indices: Hook function
    */
-  contentHooks: HookData | null;
+  contentHooks: HookData|null;
 
   /**
    * Array of ngAfterContentChecked hooks that should be executed for this view in update
@@ -594,7 +595,7 @@ export interface TView {
    * Even indices: Directive index
    * Odd indices: Hook function
    */
-  contentCheckHooks: HookData | null;
+  contentCheckHooks: HookData|null;
 
   /**
    * Array of ngAfterViewInit and ngAfterViewChecked hooks that should be executed for
@@ -603,7 +604,7 @@ export interface TView {
    * Even indices: Directive index
    * Odd indices: Hook function
    */
-  viewHooks: HookData | null;
+  viewHooks: HookData|null;
 
   /**
    * Array of ngAfterViewChecked hooks that should be executed for this view in
@@ -612,7 +613,7 @@ export interface TView {
    * Even indices: Directive index
    * Odd indices: Hook function
    */
-  viewCheckHooks: HookData | null;
+  viewCheckHooks: HookData|null;
 
   /**
    * Array of ngOnDestroy hooks that should be executed when this view is destroyed.
@@ -620,7 +621,7 @@ export interface TView {
    * Even indices: Directive index
    * Odd indices: Hook function
    */
-  destroyHooks: DestroyHookData | null;
+  destroyHooks: DestroyHookData|null;
 
   /**
    * When a view is destroyed, listeners need to be released and outputs need to be
@@ -648,7 +649,7 @@ export interface TView {
    * 2nd index is: index of function context in LView.cleanupInstances[]
    *               `tView.cleanup[i+0].call(lView[CLEANUP][tView.cleanup[i+1]])`
    */
-  cleanup: any[] | null;
+  cleanup: any[]|null;
 
   /**
    * A list of element indices for child components that will need to be
@@ -656,41 +657,45 @@ export interface TView {
    * already been adjusted for the HEADER_OFFSET.
    *
    */
-  components: number[] | null;
+  components: number[]|null;
 
   /**
    * A collection of queries tracked in a given view.
    */
-  queries: TQueries | null;
+  queries: TQueries|null;
 
   /**
    * An array of indices pointing to directives with content queries alongside with the
-   * corresponding
-   * query index. Each entry in this array is a tuple of:
+   * corresponding query index. Each entry in this array is a tuple of:
    * - index of the first content query index declared by a given directive;
    * - index of a directive.
    *
    * We are storing those indexes so we can refresh content queries as part of a view refresh
    * process.
    */
-  contentQueries: number[] | null;
+  contentQueries: number[]|null;
 
   /**
    * Set of schemas that declare elements to be allowed inside the view.
    */
-  schemas: SchemaMetadata[] | null;
+  schemas: SchemaMetadata[]|null;
 
   /**
    * Array of constants for the view. Includes attribute arrays, local definition arrays etc.
    * Used for directive matching, attribute bindings, local definitions and more.
    */
-  consts: TConstants | null;
+  consts: TConstants|null;
 
   /**
    * Indicates that there was an error before we managed to complete the first create pass of the
    * view. This means that the view is likely corrupted and we should try to recover it.
    */
   incompleteFirstPass: boolean;
+}
+
+export interface HostBindingOpCodes extends Array<number|HostBindingsFunction<any>> {
+  __brand__: 'HostBindingOpCodes';
+  debug?: string[];
 }
 
 export const enum RootContextFlags {
