@@ -3,11 +3,6 @@ import { TypeReflect } from '../decor/type';
 import { ObjectMap, Type, AbstractType, Modules, ClassType, AnnotationType } from '../types';
 import { clsUglifyExp } from './exps';
 
-
-declare let process: any;
-
-const native = /native code/;
-const toString = Object.prototype.toString;
 /**
  * lang utils
  */
@@ -345,6 +340,11 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
 }
 
 
+
+declare let process: any;
+const native = /native code/;
+const toString = Object.prototype.toString;
+
 /**
  * check target is function or not.
  *
@@ -432,7 +432,7 @@ const promiseTag = '[object Promise]';
  */
 export function isPromise(target: any): target is Promise<any> {
     return toString.call(target) === promiseTag
-        || (!!target && typeof target.then === 'function');
+        || (target && typeof target.then === 'function');
 }
 
 const obserTag = '[object Observable]';
@@ -444,7 +444,7 @@ const obserTag = '[object Observable]';
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === obserTag || (!!target && typeof target.subscribe === 'function');
+    return toString.call(target) === obserTag || (target && typeof target.subscribe === 'function');
 }
 
 
