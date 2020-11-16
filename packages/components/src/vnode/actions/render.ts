@@ -149,17 +149,19 @@ export function initComponentDef(ctx: ComponentContext, next: () => void) {
     if (!ctx.componentDef) {
         ctx.componentDef = refl.get<ComponentReflect>(ctx.type).def;
     }
-    const componentDef = ctx.componentDef;
-    const rendererFactory = ctx.rendererFactory || domRendererFactory;
-    // ctx.rendererFactory =
-    ctx.tviewType = TViewType.Root;
+    if (!ctx.rendererFactory) {
+        ctx.rendererFactory = domRendererFactory;
+    }
     if (!ctx.scheduler) {
         ctx.scheduler = defaultScheduler;
     }
+    ctx.tViewType = TViewType.Root;
+
+    const componentDef = ctx.componentDef;
+    const rendererFactory = ctx.rendererFactory;
     const componentTag = componentDef.selectors![0]![0] as string;
     const hostRenderer = rendererFactory.createRenderer(null, null);
-    const hostRNode =
-        locateHostElement(hostRenderer, ctx.host || componentTag, componentDef.encapsulation);
+    const hostRNode = locateHostElement(hostRenderer, ctx.host || componentTag, componentDef.encapsulation);
     const rootFlags = componentDef.onPush ? LViewFlags.Dirty | LViewFlags.IsRoot :
         LViewFlags.CheckAlways | LViewFlags.IsRoot;
     const rootContext = createRootContext(ctx.scheduler, ctx.playerHandler);

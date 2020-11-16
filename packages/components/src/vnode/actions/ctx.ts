@@ -21,11 +21,13 @@ export interface ViewContext extends IocContext {
      * renderer factory.
      */
     rendererFactory?: RendererFactory;
-    // /**
-    //  * renderer.
-    //  */
-    // renderer?: Renderer;
-    tviewType?: TViewType;
+    /**
+     * tview type.
+     */
+    tViewType?: TViewType;
+    /**
+     * tview.
+     */
     tView?: TView;
 
     context?: any;
