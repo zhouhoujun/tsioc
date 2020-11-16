@@ -1,26 +1,16 @@
 import { Type, Token, Provider, IProvider, InjectorImpl } from '@tsdi/ioc';
 import { LoadType } from './types';
-import { ICoreInjector, IContainer, IModuleLoader, IContainerBuilder, IServiceProvider } from './link';
+import { ICoreInjector, IContainer, IModuleLoader, IContainerBuilder } from './link';
 import { ServiceOption, ServicesOption } from './resolves/context';
 import { CONTAINER_BUILDER, MODULE_LOADER } from './tk';
 import { InjLifeScope } from './injects/lifescope';
 
 export class CoreInjector extends InjectorImpl implements ICoreInjector {
 
-    private _serv: IServiceProvider;
-    protected injScope: InjLifeScope;
-
-
     constructor(readonly parent: ICoreInjector) {
         super(parent);
     }
 
-    protected get serv(): IServiceProvider {
-        if (!this._serv) {
-            this._serv = this.getContainer().serv;
-        }
-        return this._serv;
-    }
 
     /**
      * get root container.
@@ -58,10 +48,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      */
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
-        if (!this.injScope) {
-            this.injScope = this.getContainer().provider.getInstance(InjLifeScope);
-        }
-        return this.injScope.register(this, ...mdls);
+        return this.getContainer().provider.getInstance(InjLifeScope).register(this, ...mdls);
     }
 
     /**
@@ -74,7 +61,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
-        return this.serv.getService(this, target, ...providers);
+        return this.getContainer().serv.getService(this, target, ...providers);
     }
 
     /**
@@ -87,7 +74,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
-        return this.serv.getServices(this, target, ...providers);
+        return this.getContainer().serv.getServices(this, target, ...providers);
     }
 
     /**
@@ -100,12 +87,7 @@ export class CoreInjector extends InjectorImpl implements ICoreInjector {
      * @memberof Container
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.serv.getServiceProviders(this, target);
+        return this.getContainer().serv.getServiceProviders(this, target);
     }
 
-    protected destroying() {
-        super.destroying();
-        this._serv = null;
-        this.injScope = null;
-    }
 }

@@ -19,11 +19,15 @@ import { ServiceProvider } from './services/providers';
  */
 export class Container extends IocContainer implements IContainer {
 
-    protected injScope: InjLifeScope;
-    public serv: IServiceProvider;
+    private _serv: IServiceProvider;
+    get serv(): IServiceProvider {
+        if (!this._serv) {
+            this._serv = new ServiceProvider(this);
+        }
+        return this._serv;
+    }
 
     protected initReg() {
-        this.serv = new ServiceProvider(this);
         super.initReg();
         registerCores(this);
     }
@@ -57,10 +61,7 @@ export class Container extends IocContainer implements IContainer {
      */
     async load(...modules: LoadType[]): Promise<Type[]> {
         let mdls = await this.getLoader().load(...modules);
-        if (!this.injScope) {
-            this.injScope = this.provider.getInstance(InjLifeScope)
-        }
-        return this.injScope.register(this, ...mdls);
+        return this.provider.getInstance(InjLifeScope).register(this, ...mdls);
     }
 
     /**
@@ -104,8 +105,7 @@ export class Container extends IocContainer implements IContainer {
 
     protected destroying() {
         super.destroying();
-        this.serv = null;
-        this.injScope = null;
+        this._serv = null;
     }
 }
 
