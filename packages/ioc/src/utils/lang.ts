@@ -392,14 +392,14 @@ export function isClassType(target: any): target is ClassType {
 
 const refFiled = '_ρreflect_';
 function classCheck(target: any, abstract?: boolean): boolean {
-    if (!(typeof target === 'function')) return false;
+    if (!isFunction(target)) return false;
 
     if (!target.name || !target.prototype) return false;
 
     let rf: TypeReflect = target[refFiled]?.();
 
     if (rf) {
-        if (typeof abstract === 'boolean' && rf.type === target) {
+        if (isBoolean(abstract) && rf.type === target) {
             return abstract ? rf.abstract : !rf.abstract;
         }
         return true;
@@ -447,7 +447,7 @@ export function isObservable(target: any): boolean {
     return toString.call(target) === obserTag || (target && typeof target.subscribe === 'function');
 }
 
-
+const strTag = '[object String]';
 /**
  * check target is string or not.
  *
@@ -456,9 +456,10 @@ export function isObservable(target: any): boolean {
  * @returns {target is string}
  */
 export function isString(target: any): target is string {
-    return typeof target === 'string';
+    return typeof target === 'string' || toString.call(target) === strTag;
 }
 
+const boolTag = '[object Boolean]';
 /**
  * check target is boolean or not.
  *
@@ -467,9 +468,11 @@ export function isString(target: any): target is string {
  * @returns {target is boolean}
  */
 export function isBoolean(target: any): target is boolean {
-    return typeof target === 'boolean';
+    return typeof target === 'boolean' || toString.call(target) === boolTag;
 }
 
+
+const numbTag = '[object Number]';
 /**
  * check target is number or not.
  *
@@ -478,7 +481,7 @@ export function isBoolean(target: any): target is boolean {
  * @returns {target is number}
  */
 export function isNumber(target: any): target is number {
-    return typeof target === 'number';
+    return typeof target === 'number' || toString.call(target) === numbTag;
 }
 
 /**
@@ -489,7 +492,7 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return typeof target === 'undefined';
+    return target === undefined;
 }
 
 /**
@@ -511,7 +514,7 @@ export function isNull(target: any): target is null {
  * @returns {boolean}
  */
 export function isNullOrUndefined(target): boolean {
-    return target === null || typeof target === 'undefined';
+    return target === null || target === undefined;
 }
 
 /**
@@ -566,13 +569,24 @@ export function isTypeObject(target: any): boolean {
 /**
  * is target base object or not.
  * eg. {}, have not self constructor;
+ *
+ * Checks if `value` is a plain object, that is, an object created by the
+ * `Object` constructor or one with a `[[Prototype]]` of `null`.
  * @export
  * @param {*} target
  * @returns {target is Promise<any>}
  */
-export function isBaseObject(target: any): target is ObjectMap {
+export function isPlainObject(target: any): target is ObjectMap {
     return toString.call(target) === objectTag && target.constructor.name === 'Object';
 }
+
+/**
+ * is target base object or not.
+ * eg. {}, have not self constructor;
+ *
+ * @deprecated use `isPlainObject` instead.
+ */
+export const isBaseObject = isPlainObject;
 
 /**
  * is metadata object or not.
@@ -583,7 +597,7 @@ export function isBaseObject(target: any): target is ObjectMap {
  * @returns {boolean}
  */
 export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
-    if (!isBaseObject(target)) return false;
+    if (!isPlainObject(target)) return false;
     if (props.length) {
         for (let n in target) {
             if (props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0)) {

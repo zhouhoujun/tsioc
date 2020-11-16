@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang } from '@tsdi/ioc';
 import { CONTAINER, IContainer } from '@tsdi/core';
 import { Configure, IConfigureManager, IConfigureMerger } from './config';
 import { CONFIG_MANAGER, CONFIG_LOADER, DEFAULT_CONFIG, CONFIG_MERGER, PROCESS_ROOT } from '../tk';
@@ -39,7 +39,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
         // clean cached config.
         this.config = null;
         lang.del(this.configs, config);
-        if (!this.baseURL && isBaseObject(config)) {
+        if (!this.baseURL && isPlainObject(config)) {
             this.baseURL = config.baseURL;
         }
         this.configs.push(config);
