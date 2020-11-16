@@ -409,8 +409,8 @@ export class DIProvider extends Destoryable implements IProvider {
         this.factories = null;
     }
 
-    static create(providers: StaticProviders, parent: IProvider) {
-        return new DIProvider(parent).inject()
+    static create(providers: StaticProviders[], parent: IProvider) {
+        return new DIProvider(parent).inject(...providers)
     }
 }
 

@@ -15,10 +15,10 @@ import { registerCores } from './utils/regs';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
 
 
-
+/**
+ * injector implantment.
+ */
 export class InjectorImpl extends Injector {
-
-    private rslScope: ResolveLifeScope;
 
     constructor(parent: IInjector) {
         super(parent);
@@ -75,10 +75,7 @@ export class InjectorImpl extends Injector {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
-        if (!this.rslScope) {
-            this.rslScope = this.getContainer().provider.getInstance(ResolveLifeScope);
-        }
-        return this.rslScope.resolve(this, token, ...providers);
+        return this.getContainer().provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**
@@ -99,7 +96,6 @@ export class InjectorImpl extends Injector {
     protected initReg() {
         this.setValue(INJECTOR, this, lang.getClass(this));
     }
-
 }
 
 /**
@@ -110,8 +106,6 @@ export class InjectorImpl extends Injector {
  * @implements {IIocContainer}
  */
 export class IocContainer extends Injector implements IIocContainer {
-
-    private rslScope: ResolveLifeScope;
 
     readonly regedState: RegisteredState;
     readonly provider: IActionProvider;
@@ -138,10 +132,7 @@ export class IocContainer extends Injector implements IIocContainer {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
-        if (!this.rslScope) {
-            this.rslScope = this.provider.getInstance(ResolveLifeScope);
-        }
-        return this.rslScope.resolve(this, token, ...providers);
+        return this.provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**
@@ -262,9 +253,6 @@ export class IocContainer extends Injector implements IIocContainer {
             : (...providers: Provider[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
     }
 
-    protected destroying() {
-        super.destroying();
-    }
 }
 
 
