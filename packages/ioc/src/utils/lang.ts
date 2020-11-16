@@ -422,6 +422,7 @@ export function isNodejsEnv(): boolean {
     return (typeof process !== 'undefined') && (typeof process.versions.node !== 'undefined')
 }
 
+const promiseTag = '[object Promise]';
 /**
  * is target promise or not. now check is es6 Promise only.
  *
@@ -430,10 +431,11 @@ export function isNodejsEnv(): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === '[object Promise]'
+    return toString.call(target) === promiseTag
         || (!!target && typeof target.then === 'function');
 }
 
+const obserTag = '[object Observable]';
 /**
  * is target rxjs observable or not.
  *
@@ -442,43 +444,9 @@ export function isPromise(target: any): target is Promise<any> {
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === '[object Observable]' || (!!target && typeof target.subscribe === 'function');
+    return toString.call(target) === obserTag || (!!target && typeof target.subscribe === 'function');
 }
 
-
-const objectStr = '[object Object]';
-/**
- * is target base object or not.
- * eg. {}, have not self constructor;
- * @export
- * @param {*} target
- * @returns {target is Promise<any>}
- */
-export function isBaseObject(target: any): target is ObjectMap {
-    return toString.call(target) === objectStr && target.constructor.name === 'Object';
-}
-
-/**
- * is metadata object or not.
- *
- * @export
- * @param {*} target
- * @param {...(string|string[])[]} props
- * @returns {boolean}
- */
-export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
-    if (!isBaseObject(target)) return false;
-    if (props.length) {
-        for (let n in target) {
-            if (props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    return true;
-}
 
 /**
  * check target is string or not.
@@ -536,17 +504,6 @@ export function isNull(target: any): target is null {
 }
 
 /**
- * check taget is defined.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isDefined(target: any): boolean {
-    return target !== null && typeof target !== 'undefined';
-}
-
-/**
  * is target null or undefined.
  *
  * @export
@@ -555,6 +512,17 @@ export function isDefined(target: any): boolean {
  */
 export function isNullOrUndefined(target): boolean {
     return target === null || typeof target === 'undefined';
+}
+
+/**
+ * check taget is defined.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isDefined(target: any): boolean {
+    return !isNullOrUndefined(target);
 }
 
 /**
@@ -576,8 +544,12 @@ export function isArray(target: any): target is Array<any> {
  * @returns {target is object}
  */
 export function isObject(target: any): target is object {
-    return target !== null && typeof target === 'object';
+    const type = typeof target;
+    return target !== null && (type === 'object' || type === 'function');
 }
+
+
+const objectTag = '[object Object]';
 
 /**
  * is custom class type instance or not.
@@ -587,9 +559,44 @@ export function isObject(target: any): target is object {
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    return toString.call(target) === objectStr && target.constructor.name !== 'Object';
+    return toString.call(target) === objectTag && target.constructor.name !== 'Object';
 }
 
+
+/**
+ * is target base object or not.
+ * eg. {}, have not self constructor;
+ * @export
+ * @param {*} target
+ * @returns {target is Promise<any>}
+ */
+export function isBaseObject(target: any): target is ObjectMap {
+    return toString.call(target) === objectTag && target.constructor.name === 'Object';
+}
+
+/**
+ * is metadata object or not.
+ *
+ * @export
+ * @param {*} target
+ * @param {...(string|string[])[]} props
+ * @returns {boolean}
+ */
+export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
+    if (!isBaseObject(target)) return false;
+    if (props.length) {
+        for (let n in target) {
+            if (props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    return true;
+}
+
+const dateTag = '[object Date]';
 /**
  * check target is date or not.
  *
@@ -598,9 +605,10 @@ export function isTypeObject(target: any): boolean {
  * @returns {target is Date}
  */
 export function isDate(target: any): target is Date {
-    return toString.call(target) === '[object Date]';
+    return toString.call(target) === dateTag;
 }
 
+const symbolTag = '[object Symbol]';
 /**
  * check target is symbol or not.
  *
@@ -609,9 +617,10 @@ export function isDate(target: any): target is Date {
  * @returns {target is Symbol}
  */
 export function isSymbol(target: any): target is Symbol {
-    return toString.call(target) === '[object Symbol]';
+    return typeof target === 'symbol' || toString.call(target) === symbolTag;
 }
 
+const regTag = '[object RegExp]';
 /**
  * check target is regexp or not.
  *
@@ -620,7 +629,7 @@ export function isSymbol(target: any): target is Symbol {
  * @returns {target is RegExp}
  */
 export function isRegExp(target: any): target is RegExp {
-    return toString.call(target) === '[object RegExp]';
+    return toString.call(target) === regTag;
 }
 
 /**

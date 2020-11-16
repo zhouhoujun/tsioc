@@ -6,7 +6,7 @@ import { IInjector, IProvider } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { StaticProviders } from './providers';
 import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, Provider, Registration, SymbolType, Token } from './tokens';
-import { isArray, isBaseObject, isClass, isDefined, isFunction, isNull, isNullOrUndefined, isString, isUndefined, lang } from './utils/lang';
+import { isArray, isBaseObject, isClass, isDefined, isFunction, isNull, isString, isUndefined, lang } from './utils/lang';
 import { PROVIDERS } from './utils/tk';
 
 /**
@@ -257,7 +257,7 @@ export class DIProvider extends Destoryable implements IProvider {
         let value: T;
         tokens.some(k => {
             value = this.getValue(k);
-            return !isNullOrUndefined(value);
+            return isDefined(value);
         })
         return value;
     }
