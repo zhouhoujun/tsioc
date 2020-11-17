@@ -1,13 +1,14 @@
 import { IActionSetup, IInjector, IocActions, refl } from '@tsdi/ioc';
 import { ComponentReflect } from '../../reflect';
 import {
-    ComponentTemplate, DirectiveDefListOrFactory, PipeDefListOrFactory, RenderFlags, SchemaMetadata,
+    ComponentTemplate, DirectiveDef, DirectiveDefListOrFactory, PipeDefListOrFactory, RenderFlags, SchemaMetadata,
     ViewEncapsulation, ViewQueriesFunction
 } from '../definition';
-import { TConstantsOrFactory, TNode } from '../node';
+import { TConstantsOrFactory, TElementNode, TNode } from '../node';
 import { PlayerHandler } from '../player';
 import { isProceduralRenderer, RElement, Renderer, RendererFactory, RendererType } from '../renderer';
 import { LFrame } from '../state';
+import { isLView } from '../util/check';
 import {
     CONTEXT, DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, FLAGS, HEADER_OFFSET, HOST, INJECTOR, LView, LViewFlags,
     PARENT, PREORDER_HOOK_FLAGS, RENDERER, RENDERER_FACTORY, RootContext, RootContextFlags, TView, TVIEW, TViewType, T_HOST
@@ -21,33 +22,64 @@ import { ComponentContext, ViewContext } from './ctx';
  */
 export class RenderView<T extends ViewContext> extends IocActions<T> implements IActionSetup {
 
+
     setup() {
-        this.use(enterView)
-            .use(renderViewQuery)
-            .use(renderViewTemplate);
+        this.use(dispatchView)
+            .use(renderCreate)
+            .use(executeViewQuery)
+            .use(executeTemplate)
+            .use(renderViewCleanup)
+            .use(refreshContentQueries)
+            .use(executeStaticViewQuiery)
+            .use(renderChildComponents);
     }
 }
 
-export function renderViewQuery(ctx: ViewContext, next: () => void) {
-    const viewQuery = ctx.tView.viewQuery;
-    if (viewQuery) {
-        ctx.lFrame.currentQueryIndex = 0;
-        viewQuery(RenderFlags.Create, ctx.context);
+export function renderCreate(ctx: ViewContext, next: () => void) {
+    const old = ctx.flags;
+    ctx.flags = RenderFlags.Create;
+    next();
+    ctx.flags = old;
+}
+
+export function renderViewCleanup(ctx: ViewContext, next: () => void) {
+    ctx.throwError = true;
+    if (ctx.tView.firstCreatePass) {
+        ctx.tView.firstCreatePass = false;
+    }
+    ctx.catchs.push(() => {
+        if (ctx.tView.firstCreatePass) {
+            ctx.tView.incompleteFirstPass = true;
+        }
+    });
+    ctx.finallies.push(() => {
+        ctx.lView[FLAGS] &= ~LViewFlags.CreationMode;
+    });
+    return next();
+}
+
+
+export function executeViewQuery(ctx: ViewContext, next: () => void) {
+    const { lFrame, context, tView } = ctx;
+    if (tView.viewQuery) {
+        executeViewQueryFn(lFrame, ctx.flags, tView.viewQuery, context);
     }
     return next();
 }
 
-export function renderViewTemplate(ctx: ViewContext, next: () => void) {
-    const templateFn = ctx.tView.template;
-    const lFrame = ctx.lFrame;
+export function executeTemplate(ctx: ViewContext, next: () => void) {
+    const { tView, lView, flags, lFrame } = ctx;
+    const templateFn = tView.template;
     if (templateFn) {
         const prevSelectedIndex = lFrame.selectedIndex;
         try {
             lFrame.selectedIndex = -1;
-            templateFn(RenderFlags.Create, ctx.context);
-            if (ctx.tView.firstCreatePass) {
-                ctx.tView.firstCreatePass = false;
+            if (flags & RenderFlags.Update && lView.length > HEADER_OFFSET) {
+                // When we're updating, inherently select 0 so we don't
+                // have to generate that instruction for most update blocks.
+                selectIndexInternal(tView, lView, HEADER_OFFSET, isInCheckNoChangesMode());
             }
+            templateFn(ctx.flags, ctx.context);
         } finally {
             lFrame.selectedIndex = prevSelectedIndex;
         }
@@ -55,50 +87,42 @@ export function renderViewTemplate(ctx: ViewContext, next: () => void) {
     return next();
 }
 
+export function refreshContentQueries(ctx: ViewContext, next: () => void) {
+    const tView = ctx.tView;
+    const { contentQueries, staticContentQueries } = ctx.tView;
+    if (staticContentQueries && contentQueries) {
+        for (let i = 0; i < contentQueries.length; i += 2) {
+            const queryStartIdx = contentQueries[i];
+            const directiveDefIdx = contentQueries[i + 1];
+            if (directiveDefIdx !== -1) {
+                const directiveDef = tView.data[directiveDefIdx] as DirectiveDef<any>;
+                ctx.lFrame.currentQueryIndex = queryStartIdx;
+                directiveDef.contentQueries!(RenderFlags.Update, ctx.lView[directiveDefIdx], directiveDefIdx);
+            }
+        }
+    }
+    return next();
+}
 
-// export function renderViewDefault(ctx: ViewContext, next: () => void) {
-//     const { tView, lView } = ctx;
-//     const viewQuery = tView.viewQuery;
-//     if (viewQuery !== null) {
-//         executeViewQueryFn(RenderFlags.Create, viewQuery, context);
-//     }
 
-//     // Execute a template associated with this view, if it exists. A template function might not be
-//     // defined for the root component views.
-//     const templateFn = tView.template;
-//     if (templateFn !== null) {
-//         executeTemplate(tView, lView, templateFn, RenderFlags.Create, context);
-//     }
+export function executeStaticViewQuiery(ctx: ViewContext, next: () => void) {
+    const { lFrame, tView, context } = ctx;
+    if (tView.staticViewQueries) {
+        executeViewQueryFn(lFrame, RenderFlags.Update, tView.viewQuery, context)
+    }
+}
 
-//     // This needs to be set before children are processed to support recursive components.
-//     // This must be set to false immediately after the first creation run because in an
-//     // ngFor loop, all the views will be created together before update mode runs and turns
-//     // off firstCreatePass. If we don't set it here, instances will perform directive
-//     // matching, etc again and again.
-//     if (tView.firstCreatePass) {
-//         tView.firstCreatePass = false;
-//     }
+export function renderChildComponents(ctx: ViewContext, next: () => void) {
+    const components = ctx.tView.components;
+    if (components) {
+        const { lView, lFrame, injector } = ctx;
+        const renderView = injector.getContainer().provider.get(RenderView);
+        for (let i = 0; i < components.length; i++) {
+            renderComponent(injector, renderView, lFrame, lView, components[i]);
+        }
+    }
+}
 
-//     // We resolve content queries specifically marked as `static` in creation mode. Dynamic
-//     // content queries are resolved during change detection (i.e. update mode), after embedded
-//     // views are refreshed (see block above).
-//     if (tView.staticContentQueries) {
-//         refreshContentQueries(tView, lView);
-//     }
-
-//     // We must materialize query results before child components are processed
-//     // in case a child component has projected a container. The LContainer needs
-//     // to exist so the embedded views are properly attached by the container.
-//     if (tView.staticViewQueries) {
-//         executeViewQueryFn(RenderFlags.Update, tView.viewQuery!, context);
-//     }
-
-//     // Render child component views.
-//     const components = tView.components;
-//     if (components !== null) {
-//         renderChildComponents(lView, components);
-//     }
-// }
 
 
 /**
@@ -107,20 +131,42 @@ export function renderViewTemplate(ctx: ViewContext, next: () => void) {
 export class RefreshView<T extends ViewContext> extends IocActions<T> implements IActionSetup {
 
     setup() {
-        this.use(enterView);
+        this.use(dispatchView)
+            .use(renderUpdate)
+            .use(refreshViewCleanup);
     }
 }
 
+export function renderUpdate(ctx: ViewContext, next: () => void) {
+    const old = ctx.flags;
+    ctx.flags = RenderFlags.Update;
+    next();
+    ctx.flags = old;
+}
+
+export function refreshViewCleanup(ctx: ViewContext, next: () => void) {
+    const tView = ctx.tView;
+    ctx.throwError = false;
+    if (tView.firstUpdatePass === true) {
+        // We need to make sure that we only flip the flag on successful `refreshView` only
+        // Don't do this in `finally` block.
+        // If we did this in `finally` block then an exception could block the execution of styling
+        // instructions which in turn would be unable to insert themselves into the styling linked
+        // list. The result of this would be that if the exception would not be throw on subsequent CD
+        // the styling would be unable to process it data and reflect to the DOM.
+        tView.firstUpdatePass = false;
+    }
+    return next();
+}
 
 /**
  * render component actions.
  */
 export class RenderComponent<T extends ComponentContext> extends IocActions<T> implements IActionSetup {
 
-
     setup() {
         this.use(initComponentDef)
-            .use(enterView)
+            .use(dispatchRootView)
             .use(CreateComponent)
             .use(RenderView)
             .use(RefreshView);
@@ -155,7 +201,6 @@ export function initComponentDef(ctx: ComponentContext, next: () => void) {
     if (!ctx.scheduler) {
         ctx.scheduler = defaultScheduler;
     }
-    ctx.tViewType = TViewType.Root;
 
     const componentDef = ctx.componentDef;
     const rendererFactory = ctx.rendererFactory;
@@ -170,9 +215,11 @@ export function initComponentDef(ctx: ComponentContext, next: () => void) {
     const rootTView = createTView(TViewType.Root, null, null, 1, 0, null, null, null, null, null);
     const rootView: LView = createLView(
         null, rootTView, rootContext, rootFlags, null, null, rendererFactory, renderer, ctx.injector || null);
+
     ctx.tView = rootTView;
     ctx.lView = rootView;
     ctx.context = rootContext;
+    ctx.hostRNode = hostRNode;
 
     return next();
 }
@@ -191,7 +238,11 @@ export class CreateComponent<T extends ComponentContext> extends IocActions<T> i
 }
 
 export function createRootComponentView(ctx: ComponentContext, next: () => void) {
-
+    const { lView, hostRNode } = ctx;
+    const tView = lView[TVIEW];
+    const index = HEADER_OFFSET;
+    lView[index] = hostRNode;
+    const tNode: TElementNode = 
 }
 
 export function createRootComponent(ctx: ComponentContext, next: () => void) {
@@ -206,7 +257,46 @@ export function createRootComponent(ctx: ComponentContext, next: () => void) {
  * @param ctx view context.
  * @param next next dispatch.
  */
-export function enterView(ctx: ViewContext, next: () => void) {
+export function dispatchRootView(ctx: ViewContext, next: () => void) {
+    enterView(ctx);
+    const rendererFactory = ctx.rendererFactory;
+    try {
+        // try do dispatch work.
+        if (rendererFactory.begin) rendererFactory.begin();
+        next();
+
+    } finally {
+        leaveView(ctx);
+        if (rendererFactory.end) rendererFactory.end();
+    }
+}
+
+/**
+ * enter view scope action.
+ * enter view do dispatch work, finally leave view.
+ *
+ * @param ctx view context.
+ * @param next next dispatch.
+ */
+export function dispatchView(ctx: ViewContext, next: () => void) {
+    enterView(ctx);
+    const { throwError, catchs, finallies } = ctx;
+    ctx.catchs = [];
+    ctx.finallies = [];
+    try {
+        next();
+    } catch (err) {
+        ctx.catchs.forEach(c => c(err));
+        if (throwError) throw err;
+    } finally {
+        ctx.finallies.forEach(f => f());
+        ctx.catchs = catchs;
+        ctx.finallies = finallies;
+        leaveView(ctx);
+    }
+}
+
+function enterView(ctx: ViewContext) {
     // enter view.
     const currentLFrame = ctx.lFrame;
     const childLFrame = currentLFrame === null ? null : currentLFrame.child;
@@ -219,32 +309,24 @@ export function enterView(ctx: ViewContext, next: () => void) {
     newLFrame.tView = tView;
     newLFrame.contextLView = newView!;
     newLFrame.bindingIndex = tView.bindingStartIndex;
+}
 
-    const rendererFactory = ctx.rendererFactory;
-    try {
-        // try do dispatch work.
-        if (rendererFactory.begin) rendererFactory.begin();
-        next();
-
-    } finally {
-        // leave view.
-        const oldLFrame = ctx.lFrame;
-        ctx.lFrame = oldLFrame.parent;
-        oldLFrame.currentTNode = null;
-        oldLFrame.lView = null;
-        oldLFrame.isParent = true;
-        oldLFrame.tView = null!;
-        oldLFrame.selectedIndex = -1;
-        oldLFrame.contextLView = null!;
-        oldLFrame.elementDepthCount = 0;
-        oldLFrame.currentDirectiveIndex = -1;
-        oldLFrame.currentNamespace = null;
-        oldLFrame.bindingRootIndex = -1;
-        oldLFrame.bindingIndex = -1;
-        oldLFrame.currentQueryIndex = 0;
-
-        if (rendererFactory.end) rendererFactory.end();
-    }
+function leaveView(ctx: ViewContext) {
+    // leave view.
+    const oldLFrame = ctx.lFrame;
+    ctx.lFrame = oldLFrame.parent;
+    oldLFrame.currentTNode = null;
+    oldLFrame.lView = null;
+    oldLFrame.isParent = true;
+    oldLFrame.tView = null!;
+    oldLFrame.selectedIndex = -1;
+    oldLFrame.contextLView = null!;
+    oldLFrame.elementDepthCount = 0;
+    oldLFrame.currentDirectiveIndex = -1;
+    oldLFrame.currentNamespace = null;
+    oldLFrame.bindingRootIndex = -1;
+    oldLFrame.bindingIndex = -1;
+    oldLFrame.currentQueryIndex = 0;
 }
 
 /**
@@ -413,4 +495,33 @@ function createViewBlueprint(bindingStartIndex: number, initialViewLength: numbe
     }
 
     return blueprint as LView;
+}
+
+
+function executeViewQueryFn<T>(lFrame: LFrame,
+    flags: RenderFlags, viewQueryFn: ViewQueriesFunction<{}>, component: T): void {
+    lFrame.currentQueryIndex = 0;
+    viewQueryFn(flags, component);
+}
+
+
+function renderComponent(injector: IInjector, renderView: RenderView<ViewContext>, lFrame: LFrame, hostLView: LView, componentHostIdx: number) {
+    const slotValue = hostLView[componentHostIdx];
+    const lView = isLView(slotValue) ? slotValue : slotValue[HOST];
+    const tView = lView[TVIEW];
+    syncViewWithBlueprint(tView, lView);
+    const context = lView[CONTEXT];
+    renderView.execute({
+        injector,
+        lFrame,
+        lView,
+        tView,
+        context
+    });
+}
+
+function syncViewWithBlueprint(tView: TView, lView: LView) {
+    for (let i = lView.length; i < tView.blueprint.length; i++) {
+        lView.push(tView.blueprint[i]);
+    }
 }

@@ -1,10 +1,9 @@
 import { IocContext } from '@tsdi/ioc';
 import { ComponentType } from '../../type';
-import { ComponentDef } from '../definition';
-import { TNode } from '../node';
+import { ComponentDef, RenderFlags } from '../definition';
 import { PlayerHandler } from '../player';
 import { RElement, RendererFactory } from '../renderer';
-import { LView, RootContextFlags, TView, TViewType } from '../view';
+import { LView, RootContextFlags, TView } from '../view';
 import { LFrame } from '../state';
 
 
@@ -21,29 +20,47 @@ export interface ViewContext extends IocContext {
      * renderer factory.
      */
     rendererFactory?: RendererFactory;
-    /**
-     * tview type.
-     */
-    tViewType?: TViewType;
+
+    context?: any;
+
     /**
      * tview.
      */
     tView?: TView;
 
-    context?: any;
-
-    parentLView?: LView;
+    /**
+     * lview.
+     */
     lView?: LView;
     /**
      * Host element on which the component will be bootstrapped. If not specified,
      * the component definition's `tag` is used to query the existing DOM for the
      * element to bootstrap.
      */
-    host?: RElement;
+    host?: RElement | string;
     /**
-     * thost node.
+     * Host element on which the component will be bootstrapped. If not specified,
+     * the component definition's `tag` is used to query the existing DOM for the
+     * element to bootstrap.
      */
-    tHostNode?: TNode;
+    hostRNode?: RElement;
+
+    /**
+     * re
+     */
+    flags?: RenderFlags;
+
+    /**
+     * catch callbacks.
+     */
+    catchs: ((err: Error) => void)[];
+
+    throwError?: boolean;
+
+    /**
+     * finallies callbacks.
+     */
+    finallies: (() => void)[];
 
 }
 
@@ -77,7 +94,7 @@ export interface RootViewContext extends ViewContext {
     /**
      * What render-related operations to run once a scheduler has been set
      */
-    flags?: RootContextFlags;
+    rootflags?: RootContextFlags;
 }
 
 
