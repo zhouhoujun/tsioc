@@ -229,6 +229,7 @@ export class IocContainer extends Injector implements IIocContainer {
     }
 
     protected initReg() {
+        this.setValue(Injector, this, lang.getClass(this));
         this.setValue(INJECTOR, this, lang.getClass(this));
         registerCores(this);
     }
