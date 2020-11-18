@@ -27,7 +27,6 @@ export class InjectorImpl extends Injector {
         this.initReg();
     }
 
-
     /**
      * register provider.
      *

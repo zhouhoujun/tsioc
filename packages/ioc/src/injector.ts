@@ -8,6 +8,7 @@ import { KeyValueProvider, StaticProviders } from './providers';
 import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, Registration, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isDefined, isFunction, isNull, isString, isUndefined, lang } from './utils/lang';
 import { PROVIDERS } from './utils/tk';
+import { IIocContainer } from './IIocContainer';
 
 /**
  * provider container.
@@ -39,7 +40,7 @@ export class Provider extends Destoryable implements IProvider {
         return this.factories.size;
     }
 
-    getContainer() {
+    getContainer(): IIocContainer {
         return this.parent?.getContainer();
     }
 
@@ -408,10 +409,6 @@ export class Provider extends Destoryable implements IProvider {
         this.factories.clear();
         this.factories = null;
     }
-
-    static create(providers: StaticProviders[], parent: IProvider) {
-        return new Provider(parent).inject(...providers)
-    }
 }
 
 
@@ -420,7 +417,7 @@ export class Provider extends Destoryable implements IProvider {
 export abstract class Injector extends Provider implements IInjector {
 
     constructor(readonly parent?: IInjector) {
-        super(parent);
+        super(parent, 'injector');
     }
 
     /**
@@ -549,8 +546,16 @@ export abstract class Injector extends Provider implements IInjector {
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is IProvider {
-    return target instanceof Provider && !target.type;
+    return target instanceof Injector && target.type === 'injector';
 }
 
 
+/**
+ * invoked param provider.
+ */
+export class InvokedProvider extends Provider {
+    constructor(readonly parent: IProvider) {
+        super(parent, 'invoked');
+    }
+}
 
