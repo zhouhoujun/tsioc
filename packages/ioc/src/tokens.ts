@@ -2,7 +2,7 @@ import { AbstractType, Type, ClassType, Modules } from './types';
 import { IProvider } from './IInjector';
 import { isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
-import { StaticProvider } from './providers';
+import { ProviderType } from './providers';
 
 
 /**
@@ -158,7 +158,7 @@ export type ProvideToken<T> = Registration<T> | TokenId<T>;
  * providers.
  * note: ObjectMap provider can not resolve token.
  */
-export type Provider = IProvider | StaticProvider | Modules[];
+export type Provider = IProvider | ProviderType | Modules[];
 
 /**
  * providers types

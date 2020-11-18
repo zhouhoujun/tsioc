@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { ObjectMap, Type } from './types';
 import { Token } from './tokens';
 
 /**
@@ -130,6 +130,60 @@ export interface ExistingProvider extends ProvideProvider {
     useExisting: Token;
 }
 
+
+/**
+ * keyvalues map provider.
+ * use provider value for param by param name.
+ *
+ * @export
+ * @class ObjectMapProvider
+ */
+export class KeyValueProvider {
+    protected maps: ObjectMap;
+    constructor() {
+        this.maps = {};
+    }
+
+    get(): ObjectMap {
+        return this.maps;
+    }
+
+    set(options: ObjectMap): this {
+        if (options) {
+            this.maps = { ... this.maps, ...options };
+        }
+        return this;
+    }
+
+    each(callback: (key, value) => boolean | void) {
+        for (let n in this.maps) {
+            if (callback(n, this.maps[n]) === false) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * parse  provider.
+     *
+     * @static
+     * @param {ObjectMap} options
+     * @returns
+     * @memberof ObjectMapProvider
+     */
+    static parse(options: ObjectMap) {
+        let pdr = new KeyValueProvider();
+        pdr.set(options);
+        return pdr;
+    }
+}
+
+/**
+ * @deprecated use `KeyValueProvider` instead.
+ */
+export const ObjectMapProvider = KeyValueProvider;
+
+
 /**
  * type provider.
  */
@@ -140,4 +194,4 @@ export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvide
 /**
  * provider type.
  */
-export type StaticProvider = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider;
+export type ProviderType = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;
