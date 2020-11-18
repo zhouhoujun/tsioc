@@ -144,10 +144,6 @@ export class KeyValueProvider {
         this.maps = {};
     }
 
-    get(): ObjectMap {
-        return this.maps;
-    }
-
     set(options: ObjectMap): this {
         if (options) {
             this.maps = { ... this.maps, ...options };
