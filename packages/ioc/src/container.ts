@@ -4,8 +4,10 @@ import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
 import { ResolveOption } from './actions/res';
 import { ResolveLifeScope } from './actions/resolve';
+import { refl } from './decor/reflects';
+import { Registered } from './decor/type';
 import { IInjector, IProvider } from './IInjector';
-import { IIocContainer, Registered, RegisteredState } from './IIocContainer';
+import { IIocContainer, RegisteredState } from './IIocContainer';
 import { MethodType } from './IMethodAccessor';
 import { Provider, Injector } from './injector';
 import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token } from './tokens';
@@ -94,6 +96,7 @@ export class InjectorImpl extends Injector {
     }
 }
 
+let id = 0;
 /**
  * Container
  *
@@ -105,9 +108,11 @@ export class IocContainer extends Injector implements IIocContainer {
 
     readonly regedState: RegisteredState;
     readonly provider: IActionProvider;
+    readonly id: string;
 
     constructor() {
         super();
+        this.id = `ioc${id++}`;
         this.regedState = new RegisteredStateImpl(this);
         this.provider = new ActionProvider(this);
         this.initReg();
@@ -253,10 +258,9 @@ export class IocContainer extends Injector implements IIocContainer {
 const NULL_PDR = new Provider();
 
 class RegisteredStateImpl implements RegisteredState {
-    private types: Map<ClassType, Registered>;
+
     private decors: Map<string, IProvider>;
     constructor(private readonly container: IIocContainer) {
-        this.types = new Map();
         this.decors = new Map();
     }
 
@@ -265,23 +269,23 @@ class RegisteredStateImpl implements RegisteredState {
       * @param type
       */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T {
-        return this.types.get(type)?.getInjector() as T;
+        return refl.getReged(type, this.container.id)?.getInjector() as T;
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {
-        return this.types.get(type) as T;
+        return refl.getReged(type, this.container.id) as T;
     }
 
     regType<T extends Registered>(type: ClassType, data: T) {
-        this.types.set(type, { ... this.types.get(type), ...data });
+        refl.setReged(type, this.container.id, data);
     }
 
     deleteType(type: ClassType) {
-        this.types.delete(type);
+        refl.deleteReged(type, this.container.id);
     }
 
     isRegistered(type: ClassType): boolean {
-        return this.types.has(type);
+        return !!refl.getReged(type, this.container.id);
     }
 
     hasProvider(decor: string) {

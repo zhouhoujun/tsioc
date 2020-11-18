@@ -1,6 +1,6 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { IInjector, IProvider } from '../IInjector';
-import { ProviderType } from '../tokens';
+import { ProviderType, Token } from '../tokens';
 import { ClassType, DecoratorScope } from '../types';
 import { Handler } from '../utils/lang';
 import {
@@ -20,6 +20,17 @@ export interface AutorunDefine {
 
 export type DecorMemberType = 'property' | 'method' | 'parameter';
 export type DecoratorType = 'class' | DecorMemberType;
+
+
+/**
+ * registered.
+ */
+export interface Registered {
+    type?: ClassType;
+    provides: Token[];
+    getInjector(): IInjector;
+}
+
 
 /**
  * decorator provdider.

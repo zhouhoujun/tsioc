@@ -2,15 +2,9 @@ import { ClassType, Type } from './types';
 import { Token, FactoryLike, ProviderType } from './tokens';
 import { IInjector, IProvider } from './IInjector';
 import { IActionProvider } from './actions/act';
+import { Registered } from './decor/type';
 
 
-/**
- * registered.
- */
-export interface Registered {
-    provides: Token[];
-    getInjector(): IInjector;
-}
 
 /**
  * registered state.
@@ -71,6 +65,8 @@ export interface RegisteredState {
  * @interface IIocContainer
  */
 export interface IIocContainer extends IInjector {
+
+    readonly id: string;
 
     /**
      * registered state.

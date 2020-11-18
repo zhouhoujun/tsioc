@@ -13,8 +13,8 @@ import { PROVIDERS } from './utils/tk';
  * provider container.
  *
  * @export
- * @class DIProvider
- * @extends {Injector}
+ * @class Provider
+ * @extends {Destoryable}
  */
 export class Provider extends Destoryable implements IProvider {
     /**
@@ -84,11 +84,10 @@ export class Provider extends Destoryable implements IProvider {
         let key = this.getTokenKey(provide);
         if (!key) return this;
         if (isFunction(fac)) {
-            if (isClass(provider)) {
-                this.factories.set(key, { fac, provider });
-            } else {
-                this.factories.set(key, { fac, provider: isClass(key) ? key : undefined });
+            if (!provider) {
+                provider = isClass(key) ? key : undefined;
             }
+            this.factories.set(key, { fac, provider });
         } else {
             this.factories.set(key, { ...this.factories.get(key), ...fac });
         }
@@ -262,9 +261,9 @@ export class Provider extends Destoryable implements IProvider {
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
         const key = this.getTokenKey(token);
         const pds = this.factories.get(key);
-        if (provider && isClass(provider)) {
+        if (provider) {
             this.factories.set(key, { ...pds, value, provider });
-            this.factories.set(provider, { ...this.factories.get(provider), value, provider });
+            if (!this.getContainer().regedState.isRegistered(provider)) this.factories.set(provider, { value, provider });
         } else {
             this.factories.set(key, { ...pds, value });
         }

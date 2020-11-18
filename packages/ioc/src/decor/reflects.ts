@@ -2,9 +2,10 @@ import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
 import { ClassType, Type } from '../types';
+import { reflFiled } from '../utils/exps';
 import { chain, Handler, isArray, isClass, isFunction, isString, lang } from '../utils/lang';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
-import { DecoratorType, DecorContext, DecorDefine, DecorMemberType, DecorPdr, TypeReflect } from './type';
+import { DecoratorType, DecorContext, DecorDefine, DecorMemberType, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 
 
@@ -473,22 +474,21 @@ export namespace refl {
         dispatch(paramDecorActions, target, type, define);
     }
 
-    const refFiled = '_ρreflect_';
 
     export function has(type: ClassType): boolean {
-        return type[refFiled];
+        return type[reflFiled];
     }
 
     export function hasOwn(type: ClassType): boolean {
-        return type[refFiled]?.()?.type === type;
+        return type[reflFiled]?.()?.type === type;
     }
 
     export function get<T extends TypeReflect>(type: ClassType): T {
-        return type[refFiled]?.() as T || null;
+        return type[reflFiled]?.() as T || null;
     }
 
     export function getObjRelfect<T extends TypeReflect>(target: object): T {
-        return lang.getClass(target)[refFiled]?.() as T || null;
+        return lang.getClass(target)[reflFiled]?.() as T || null;
     }
 
     function hasMetadata(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
@@ -564,7 +564,7 @@ export namespace refl {
                     enumerable: false
                 }
             });
-            type[refFiled] = () => targetReflect;
+            type[reflFiled] = () => targetReflect;
         } else {
             targetReflect = get(type);
         }
@@ -572,6 +572,47 @@ export namespace refl {
             Object.assign(targetReflect, info);
         }
         return targetReflect as T;
+    }
+
+    const regedKey = '_ρ_';
+    /**
+     * get type registered state.
+     * @param type class type.
+     * @param containerId container id.
+     */
+    export function getReged<T extends Registered>(type: ClassType, containerId: string): T {
+        return getRegState(type, regedKey + containerId) as T;
+    }
+
+    function getRegState(type: ClassType, key: string): Registered {
+        const inf = type[key]?.();
+        return inf?.type === type ? inf : null;
+    }
+
+    /**
+     * set type registered state.
+     * @param type class type.
+     * @param containerId container id.
+     * @param state state.
+     */
+    export function setReged<T extends Registered>(type: ClassType, containerId: string, state: T) {
+        const key = regedKey + containerId;
+        let inf = getRegState(type, key) as T;
+        if (inf) {
+            Object.assign(inf, state);
+        } else {
+            inf = { ...inf, ...state, type };
+            type[key] = () => inf;
+        }
+    }
+
+    /**
+     * delete registered state.
+     * @param type class type.
+     * @param containerId container id.
+     */
+    export function deleteReged(type: ClassType, containerId: string) {
+        type[regedKey + containerId] = null;
     }
 
     /**

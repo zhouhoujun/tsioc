@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { TypeReflect } from '../decor/type';
 import { ObjectMap, Type, AbstractType, Modules, ClassType, AnnotationType } from '../types';
-import { clsUglifyExp } from './exps';
+import { clsUglifyExp, reflFiled } from './exps';
 
 /**
  * lang utils
@@ -389,13 +389,12 @@ export function isClassType(target: any): target is ClassType {
     return classCheck(target);
 }
 
-const refFiled = '_ρreflect_';
 function classCheck(target: any, abstract?: boolean): boolean {
     if (!isFunction(target)) return false;
 
     if (!target.name || !target.prototype) return false;
 
-    let rf: TypeReflect = target[refFiled]?.();
+    let rf: TypeReflect = target[reflFiled]?.();
 
     if (rf) {
         if (isBoolean(abstract) && rf.type === target) {
