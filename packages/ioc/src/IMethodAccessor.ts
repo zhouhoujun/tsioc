@@ -1,4 +1,4 @@
-import { Token, Provider } from './tokens';
+import { Token, ProviderType } from './tokens';
 import { IInjector } from './IInjector';
 import { ParameterMetadata } from './decor/metadatas';
 
@@ -23,10 +23,10 @@ export interface IMethodAccessor {
      * @param { IInjector } injector
      * @param {(Token<T> | T)} target
      * @param {MethodType} propertyKey
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {TR}
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
 
     /**
      * create params instances with IParameter and provider
@@ -36,5 +36,5 @@ export interface IMethodAccessor {
      * @param {...AsyncParamProvider[]} providers
      * @returns {any[]}
      */
-    createParams(injector: IInjector, params: ParameterMetadata[], ...providers: Provider[]): any[];
+    createParams(injector: IInjector, params: ParameterMetadata[], ...providers: ProviderType[]): any[];
 }

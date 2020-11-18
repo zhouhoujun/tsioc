@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { isString, isArray } from '../utils/lang';
-import { Token, Provider } from '../tokens';
+import { Token, ProviderType } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
@@ -45,9 +45,9 @@ export interface IAutoWiredDecorator {
     /**
      * AutoWired decorator with providers for method.
      *
-     * @param {Provider[]} [providers] the providers for the method.
+     * @param {ProviderType[]} [providers] the providers for the method.
      */
-    (providers?: Provider[]): MethodDecorator;
+    (providers?: ProviderType[]): MethodDecorator;
     /**
      * AutoWired decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
@@ -62,7 +62,7 @@ export interface IAutoWiredDecorator {
  * @AutoWired()
  */
 export const AutoWired: IAutoWiredDecorator = createDecorator<AutoWiredMetadata>('AutoWired', {
-    props: (pdr: Provider[] | Token, alias?: string) => {
+    props: (pdr: ProviderType[] | Token, alias?: string) => {
         if (isArray(pdr)) {
             return { providers: pdr };
         } else {
@@ -85,9 +85,9 @@ export interface IInjectDecorator {
     /**
      * Inject decorator with providers for method.
      *
-     * @param {Provider[]} [providers] the providers for the method.
+     * @param {ProviderType[]} [providers] the providers for the method.
      */
-    (providers?: Provider[]): MethodDecorator;
+    (providers?: ProviderType[]): MethodDecorator;
     /**
      * Inject decorator, for property or param, use to auto wried type instance or value to the instance of one class with the decorator.
      * @param {T} [metadata] define matadata map to resolve value to the parameter or property.
@@ -101,7 +101,7 @@ export interface IInjectDecorator {
  * @Inject()
  */
 export const Inject: IInjectDecorator = createDecorator<InjectMetadata>('Inject', {
-    props: (pdr: Provider[] | Token, alias?: string) => {
+    props: (pdr: ProviderType[] | Token, alias?: string) => {
         if (isArray(pdr)) {
             return { providers: pdr };
         } else {
@@ -209,7 +209,7 @@ export interface IProvidersDecorator {
      *
      * @param {(Registration | symbol | string)} providers provider reference service to target.
      */
-    (providers: Provider[]): ClassMethodDecorator;
+    (providers: ProviderType[]): ClassMethodDecorator;
 
     /**
      * Providers decorator, for class. use to add ref service to the class.
@@ -227,7 +227,7 @@ export interface IProvidersDecorator {
  * @Providers
  */
 export const Providers: IProvidersDecorator = createDecorator<ProvidersMetadata>('Providers', {
-    props: (providers: Provider[]) => ({ providers }),
+    props: (providers: ProviderType[]) => ({ providers }),
 }) as IProvidersDecorator;
 
 

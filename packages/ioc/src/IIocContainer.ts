@@ -1,5 +1,5 @@
 import { ClassType, Type } from './types';
-import { Token, FactoryLike, Provider } from './tokens';
+import { Token, FactoryLike, ProviderType } from './tokens';
 import { IInjector, IProvider } from './IInjector';
 import { IActionProvider } from './actions/act';
 
@@ -61,7 +61,7 @@ export interface RegisteredState {
      * @param decor
      * @param providers
      */
-    regDecoator(decor: string, ...providers: Provider[]);
+    regDecoator(decor: string, ...providers: ProviderType[]);
 }
 
 /**

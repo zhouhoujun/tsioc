@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { lang, isFunction, isBaseType } from '../utils/lang';
-import { Token, isToken, Provider } from '../tokens';
+import { Token, isToken, ProviderType } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';
 import { INVOKED_PROVIDERS } from '../utils/tk';
@@ -26,10 +26,10 @@ export class MethodAccessor implements IMethodAccessor {
      * @param {IInjector} injector
      * @param {*} target
      * @param {(string | ((tag: T) => Function))} propertyKey
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
+    invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
         let targetClass: Type;
         let instance: T;
         if (isToken(target)) {
@@ -74,10 +74,10 @@ export class MethodAccessor implements IMethodAccessor {
      *
      * @param {IInjector} injector
      * @param {IParameter[]} params
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {any[]}
      */
-    createParams(injector: IInjector, params: ParameterMetadata[], ...providers: Provider[]): any[] {
+    createParams(injector: IInjector, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
         return this.resolveParams(injector, params, injector.getInstance(INVOKED_PROVIDERS).inject(...providers));
     }
 

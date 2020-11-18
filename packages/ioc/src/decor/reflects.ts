@@ -1,6 +1,6 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { ProviderType } from '../providers';
+import { StaticProvider } from '../providers';
 import { ClassType, Type } from '../types';
 import { chain, Handler, isArray, isClass, isFunction, isString, lang } from '../utils/lang';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
@@ -97,7 +97,7 @@ export namespace refl {
         /**
          * decorator providers.
          */
-        providers?: ProviderType[];
+        providers?: StaticProvider[];
 
         /**
          * set reflect handles.

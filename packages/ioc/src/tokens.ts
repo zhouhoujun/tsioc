@@ -2,7 +2,7 @@ import { AbstractType, Type, ClassType, Modules } from './types';
 import { IProvider } from './IInjector';
 import { isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
-import { ProviderType } from './providers';
+import { StaticProvider } from './providers';
 
 
 /**
@@ -156,30 +156,29 @@ export type ProvideToken<T> = Registration<T> | TokenId<T>;
 
 /**
  * providers.
- * note: ObjectMap provider can not resolve token.
  */
-export type Provider = IProvider | ProviderType | Modules[];
+export type ProviderType = IProvider | StaticProvider | Modules[];
 
 /**
  * providers types
- * @deprecated use Provider instead.
+ * @deprecated use `ProviderType` instead.
  */
-export type ProviderTypes = Provider;
+export type ProviderTypes = ProviderType;
 /**
  * providers types
- * @deprecated use Provider instead.
+ * @deprecated use `ProviderType` instead.
  */
-export type ParamProviders = Provider;
+export type ParamProviders = ProviderType;
 /**
  * inject types
- * @deprecated use Provider instead.
+ * @deprecated use `ProviderType` instead.
  */
-export type InjectTypes = Provider;
+export type InjectTypes = ProviderType;
 
 /**
  * instance factory.
  */
-export type Factory<T = any> = (...providers: Provider[]) => T;
+export type Factory<T = any> = (...providers: ProviderType[]) => T;
 
 /**
  * instance fac.

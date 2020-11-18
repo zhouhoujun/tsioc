@@ -5,7 +5,7 @@ import { Destoryable } from './Destoryable';
 import { IInjector, IProvider } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
-import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, Provider, Registration, SymbolType, Token } from './tokens';
+import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, Registration, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isDefined, isFunction, isNull, isString, isUndefined, lang } from './utils/lang';
 import { PROVIDERS } from './utils/tk';
 
@@ -16,7 +16,7 @@ import { PROVIDERS } from './utils/tk';
  * @class DIProvider
  * @extends {Injector}
  */
-export class DIProvider extends Destoryable implements IProvider {
+export class Provider extends Destoryable implements IProvider {
     /**
      * none poincut for aop.
      */
@@ -30,7 +30,7 @@ export class DIProvider extends Destoryable implements IProvider {
      */
     protected factories: Map<SymbolType, InstFac>;
 
-    constructor(readonly parent?: IProvider) {
+    constructor(readonly parent?: IProvider, readonly type?: string) {
         super();
         this.factories = new Map();
     }
@@ -85,7 +85,6 @@ export class DIProvider extends Destoryable implements IProvider {
         if (!key) return this;
         if (isFunction(fac)) {
             if (isClass(provider)) {
-                this.factories.set(provider, { fac, provider });
                 this.factories.set(key, { fac, provider });
             } else {
                 this.factories.set(key, { fac, provider: isClass(key) ? key : undefined });
@@ -111,17 +110,17 @@ export class DIProvider extends Destoryable implements IProvider {
     /**
      * inject providers.
      *
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {this}
      */
-    inject(...providers: Provider[]): this {
+    inject(...providers: ProviderType[]): this {
         providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
             }
             if (isArray(p)) {
                 this.use(...p);
-            } else if (p instanceof DIProvider) {
+            } else if (p instanceof Provider) {
                 this.copy(p);
             } else if (isClass(p)) {
                 this.registerType(p);
@@ -147,7 +146,7 @@ export class DIProvider extends Destoryable implements IProvider {
                         this.registerType(pr.useClass, pr.provide, pr.singleton);
                     } else if (isFunction(pr.useFactory)) {
                         let deps = pr.deps;
-                        this.set(provide, (...providers: Provider[]) => {
+                        this.set(provide, (...providers: ProviderType[]) => {
                             let args = [];
                             if (isArray(deps) && deps.length) {
                                 args = deps.map(d => {
@@ -287,11 +286,11 @@ export class DIProvider extends Destoryable implements IProvider {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {(string | Provider)} [alias]
-     * @param {...Provider[]} providers
+     * @param {(string | ProviderType)} [alias]
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    get<T>(token: Token<T>, alias?: string | Provider, ...providers: Provider[]): T {
+    get<T>(token: Token<T>, alias?: string | ProviderType, ...providers: ProviderType[]): T {
         let key;
         if (isString(alias)) {
             key = this.getTokenKey(token, alias);
@@ -309,7 +308,7 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param key token key.
      * @param providers providers.
      */
-    getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T {
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
         const pdr = this.factories.get(key);
         if (!pdr) return this.parent?.getInstance(key);
         if (isDefined(pdr.value)) return pdr.value;
@@ -380,7 +379,7 @@ export class DIProvider extends Destoryable implements IProvider {
         if (!from) {
             return this;
         }
-        this.merge(from as DIProvider, this, filter);
+        this.merge(from as Provider, this, filter);
         return this;
     }
 
@@ -392,12 +391,12 @@ export class DIProvider extends Destoryable implements IProvider {
             filter = undefined;
         }
         to = to || new (lang.getClass(this))(this.parent);
-        this.merge(this, to as DIProvider, filter);
+        this.merge(this, to as Provider, filter);
         return to;
     }
 
 
-    protected merge(from: DIProvider, to: DIProvider, filter?: (key: SymbolType) => boolean) {
+    protected merge(from: Provider, to: Provider, filter?: (key: SymbolType) => boolean) {
         from.factories.forEach((pdr, key) => {
             if (filter && !filter(key)) {
                 return;
@@ -412,14 +411,14 @@ export class DIProvider extends Destoryable implements IProvider {
     }
 
     static create(providers: StaticProviders[], parent: IProvider) {
-        return new DIProvider(parent).inject(...providers)
+        return new Provider(parent).inject(...providers)
     }
 }
 
 
 
 @Abstract()
-export abstract class Injector extends DIProvider implements IInjector {
+export abstract class Injector extends Provider implements IInjector {
 
     constructor(readonly parent?: IInjector) {
         super(parent);
@@ -483,7 +482,7 @@ export abstract class Injector extends DIProvider implements IInjector {
         return refToken;
     }
 
-    bindTagProvider(target: Token, ...providers: Provider[]): InjectReference<IProvider> {
+    bindTagProvider(target: Token, ...providers: ProviderType[]): InjectReference<IProvider> {
         let refToken = new InjectReference(PROVIDERS, target);
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
@@ -511,11 +510,11 @@ export abstract class Injector extends DIProvider implements IInjector {
      *
      * @template T
      * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      * @memberof IocContainer
      */
-    abstract resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T;
+    abstract resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;
 
     /**
      * invoke method.
@@ -524,11 +523,11 @@ export abstract class Injector extends DIProvider implements IInjector {
      * @param {(T | Type<T>)} target type of class or instance.
      * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {TR}
      * @memberof Injector
      */
-    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
 
     clone(to?: Injector): IInjector;
     clone(filter: (key: SymbolType) => boolean, to?: IInjector): IInjector;
@@ -551,26 +550,8 @@ export abstract class Injector extends DIProvider implements IInjector {
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is IProvider {
-    return target instanceof DIProvider;
+    return target instanceof Provider && !target.type;
 }
 
-
-/**
- * context provider.
- *
- * @export
- * @class ContextProvider.
- * @extends {Injector}
- */
-export class ContextProvider extends DIProvider implements IProvider {
-
-}
-
-/**
- * invoked provider.
- */
-export class InvokedProvider extends DIProvider implements IProvider {
-
-}
 
 

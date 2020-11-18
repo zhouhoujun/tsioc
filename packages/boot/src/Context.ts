@@ -1,5 +1,5 @@
 import {
-    ClassType, IDestoryable, IocContext, IProvider, Provider, ObjectMap,
+    ClassType, IDestoryable, IocContext, IProvider, ProviderType, ObjectMap,
     RegInMetadata, SymbolType, Token, Type, TypeReflect
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
@@ -12,14 +12,14 @@ export interface ProdverOption {
     /**
      * providers for contexts.
      *
-     * @type {(Provider[] | IProvider)}
+     * @type {(ProviderType[] | IProvider)}
      */
-    contexts?: Provider[] | IProvider;
+    contexts?: ProviderType[] | IProvider;
 
     /**
      *  providers.
      */
-    providers?: Provider[] | IProvider;
+    providers?: ProviderType[] | IProvider;
 }
 
 /**
@@ -97,9 +97,9 @@ export interface IDesctoryableContext<T> extends IocContext, IDestoryable {
     /**
      * set context provider of boot application.
      *
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      */
-    set(...providers: Provider[]);
+    set(...providers: ProviderType[]);
     /**
      * get root container.
      */

@@ -1,4 +1,4 @@
-import { Type, Provider, IIocContainer } from '@tsdi/ioc';
+import { Type, ProviderType, IIocContainer } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { IAdvisor } from './IAdvisor';
 
@@ -75,10 +75,10 @@ export class Advisor implements IAdvisor {
      *
      * @template T
      * @param {Type<T>} aspect
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(aspect: Type<T>, ...providers: Provider[]): T {
+    resolve<T>(aspect: Type<T>, ...providers: ProviderType[]): T {
         return this.container.regedState.getInjector(aspect).resolve(aspect, ...providers);
     }
 }

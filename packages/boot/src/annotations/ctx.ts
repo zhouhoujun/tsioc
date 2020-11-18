@@ -1,6 +1,6 @@
 import {
     isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract,
-    IProvider, Destoryable, SymbolType, Provider, isInjector, isArray, isBoolean, isClass
+    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { AnnoationOption, IAnnoationContext, IDesctoryableContext, ProdverOption } from '../Context';
@@ -105,9 +105,9 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
     /**
      * set context provider of boot application.
      *
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      */
-    set(...providers: Provider[]);
+    set(...providers: ProviderType[]);
     set(...providers: any[]) {
         if (providers.length === 2 && isToken(providers[0])) {
             let provde = providers[0];

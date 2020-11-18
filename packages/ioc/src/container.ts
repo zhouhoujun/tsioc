@@ -7,8 +7,8 @@ import { ResolveLifeScope } from './actions/resolve';
 import { IInjector, IProvider } from './IInjector';
 import { IIocContainer, Registered, RegisteredState } from './IIocContainer';
 import { MethodType } from './IMethodAccessor';
-import { DIProvider, Injector } from './injector';
-import { FactoryLike, InjectToken, Factory, isToken, Provider, SymbolType, Token } from './tokens';
+import { Provider, Injector } from './injector';
+import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { ClassType, Type } from './types';
 import { Handler, isClass, isDefined, isFunction, lang } from './utils/lang';
 import { registerCores } from './utils/regs';
@@ -68,10 +68,10 @@ export class InjectorImpl extends Injector {
      *
      * @template T
      * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
         return this.getContainer().provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
@@ -82,10 +82,10 @@ export class InjectorImpl extends Injector {
      * @param {(T | Type<T>)} target type of class or instance
      * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
         return this.getValue(METHOD_ACCESSOR).invoke(this, target, propertyKey, ...providers);
     }
 
@@ -123,10 +123,10 @@ export class IocContainer extends Injector implements IIocContainer {
      *
      * @template T
      * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
         return this.provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
@@ -137,10 +137,10 @@ export class IocContainer extends Injector implements IIocContainer {
      * @param {(T | Type<T>)} target type of class or instance
      * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
+    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
         return this.getValue(METHOD_ACCESSOR).invoke(this, target, propertyKey, ...providers);
     }
 
@@ -229,13 +229,13 @@ export class IocContainer extends Injector implements IIocContainer {
         registerCores(this);
     }
 
-    protected parse(...providers: Provider[]): IProvider {
+    protected parse(...providers: ProviderType[]): IProvider {
         return this.getInstance(PROVIDERS).inject(...providers);
     }
 
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: Factory<T>, singleton?: boolean) {
         return singleton ?
-            (...providers: Provider[]) => {
+            (...providers: ProviderType[]) => {
                 if (injector.hasValue(key)) {
                     return injector.getValue(key);
                 }
@@ -243,14 +243,14 @@ export class IocContainer extends Injector implements IIocContainer {
                 injector.setValue(key, instance);
                 return instance;
             }
-            : (...providers: Provider[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
+            : (...providers: ProviderType[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
     }
 
 }
 
 
 
-const NULL_PDR = new DIProvider();
+const NULL_PDR = new Provider();
 
 class RegisteredStateImpl implements RegisteredState {
     private types: Map<ClassType, Registered>;
@@ -291,7 +291,7 @@ class RegisteredStateImpl implements RegisteredState {
     getProvider(decor: string) {
         return this.decors.get(decor) ?? NULL_PDR;
     }
-    regDecoator(decor: string, ...providers: Provider[]) {
+    regDecoator(decor: string, ...providers: ProviderType[]) {
         this.decors.set(decor, this.container.getInstance(PROVIDERS).inject(...providers));
     }
 
@@ -301,7 +301,7 @@ class RegisteredStateImpl implements RegisteredState {
 /**
  * action injector.
  */
-class ActionProvider extends DIProvider implements IActionProvider {
+class ActionProvider extends Provider implements IActionProvider {
 
     regAction<T extends Action>(type: Type<T>): this {
         if (this.hasTokenKey(type)) {

@@ -1,6 +1,6 @@
 import {
-    Token, lang, SymbolType, Type, IInjector, DIProvider, IProvider,
-    TokenId, tokenId, InstFac, Provider, isDefined, isClass
+    Token, lang, SymbolType, Type, IInjector, Provider, IProvider,
+    TokenId, tokenId, InstFac, ProviderType, isDefined, isClass
 } from '@tsdi/ioc';
 import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { ModuleRef } from './ref';
@@ -29,7 +29,7 @@ export class ModuleInjector extends CoreInjector {
         return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
     }
 
-    getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T {
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
         const pdr = this.factories.get(key);
         if (!pdr) {
             let instance: T;
@@ -135,7 +135,7 @@ export class ModuleInjector extends CoreInjector {
 
 export const MODULE_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('MODULE_INJECTOR');
 
-export class ModuleProviders extends DIProvider implements IProvider {
+export class ModuleProviders extends Provider implements IProvider {
 
     moduleInjector: ModuleInjector;
 

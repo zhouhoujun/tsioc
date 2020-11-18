@@ -1,4 +1,4 @@
-import { IInjector, Token, Provider, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang } from '@tsdi/ioc';
+import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceProvider, IContainer } from '../link';
@@ -19,10 +19,10 @@ export class ServiceProvider implements IServiceProvider {
      *
      * @template T
      * @param {(Token<T> | ServiceOption<T>)} target
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
+    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
         let context = {
             injector,
             ...isToken(target) ? { token: target } : target
@@ -55,10 +55,10 @@ export class ServiceProvider implements IServiceProvider {
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
+    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
         let maps = this.getServiceProviders(injector, target);
         let services = [];
         let pdr = injector.get(PROVIDERS).inject(...providers);

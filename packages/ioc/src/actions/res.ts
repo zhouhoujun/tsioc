@@ -1,4 +1,4 @@
-import { Provider, Token } from '../tokens';
+import { ProviderType, Token } from '../tokens';
 import { IocAction } from '../action';
 import { IocContext } from './ctx';
 
@@ -32,7 +32,7 @@ export interface ResolveOption<T = any> {
     /**
      * resolve providers.
      */
-    providers?: Provider;
+    providers?: ProviderType;
 
 }
 

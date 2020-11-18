@@ -194,4 +194,4 @@ export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvide
 /**
  * provider type.
  */
-export type ProviderType = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;
+export type StaticProvider = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;

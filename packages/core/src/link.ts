@@ -1,4 +1,4 @@
-import { IInjector, IIocContainer, IProvider, Modules, Provider, Token, Type } from '@tsdi/ioc';
+import { IInjector, IIocContainer, IProvider, Modules, ProviderType, Token, Type } from '@tsdi/ioc';
 import { ServiceOption, ServicesOption } from './resolves/context';
 import { LoadType } from './types';
 
@@ -37,20 +37,20 @@ export interface ICoreInjector extends IInjector {
      *
      * @template T
      * @param {(Token<T> | ServiceOption<T>)} target servive token.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T;
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
 
     /**
      * get all service extends type.
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[];
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
 
     /**
      * get all provider service in the injector.
@@ -163,19 +163,19 @@ export interface IServiceProvider {
      * @template T
      * @param { IInjector } injector
      * @param {(Token<T> | ServiceOption<T>)} target servive token.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T;
+    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
     /**
      * get all service extends type.
      *
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T[]} all service instance type of token type.
      */
-    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[];
+    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
 
     /**
      * get all provider service in the injector.

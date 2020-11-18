@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProvider, InvokedProvider, PromiseUtil, ParameterMetadata,
+    Type, isFunction, lang, IProvider, Provider, PromiseUtil, ParameterMetadata,
     IocActions, IActionSetup, isArray, isDefined, isPromise, refl, IIocContainer, IActionProvider
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
@@ -128,7 +128,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         return (...args: any[]) => {
             let larg = lang.last(args);
             let cuurPrd: IProvider = null;
-            if (larg instanceof InvokedProvider) {
+            if (larg instanceof Provider && larg.type === 'invoked') {
                 args = args.slice(0, args.length - 1);
                 cuurPrd = larg;
             }

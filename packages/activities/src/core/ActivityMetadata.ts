@@ -1,4 +1,4 @@
-import { Type, Token, Provider, ObjectMap, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
+import { Type, Token, ProviderType, ObjectMap, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
 import { Activity } from './Activity';
 import { IActivityContext } from './IActivityContext';
 import { IWorkflowContext } from './IWorkflowContext';
@@ -121,7 +121,7 @@ export interface TemplateOption extends ElementTemplate, ObjectMap {
 export interface InvokeTemplate extends TemplateOption {
     target: Binding<Token>,
     method: Binding<string>,
-    args: Binding<Provider[]>
+    args: Binding<ProviderType[]>
 }
 
 export interface ExecuteOption extends TemplateOption {

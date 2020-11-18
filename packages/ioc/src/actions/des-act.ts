@@ -1,5 +1,5 @@
 import { isFunction, isClass, lang, chain } from '../utils/lang';
-import { Provider } from '../tokens';
+import { ProviderType } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
@@ -49,7 +49,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
     const actionPdr = container.provider;
-    let factory = (...providers: Provider[]) => {
+    let factory = (...providers: ProviderType[]) => {
         if (singleton && injector.hasValue(type)) {
             return injector.getValue(type);
         }

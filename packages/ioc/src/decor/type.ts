@@ -1,6 +1,6 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { IInjector, IProvider } from '../IInjector';
-import { Provider } from '../tokens';
+import { ProviderType } from '../tokens';
 import { ClassType, DecoratorScope } from '../types';
 import { Handler } from '../utils/lang';
 import {
@@ -159,7 +159,7 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
     /**
      * class extends providers.
      */
-    extProviders: Provider[];
+    extProviders: ProviderType[];
     /**
      * props.
      *
@@ -177,9 +177,9 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
     /**
      * method providers.
      *
-     * @type {ObjectMap<Provider[]>}
+     * @type {ObjectMap<ProviderType[]>}
      */
-    methodExtProviders: Map<string, Provider[]>;
+    methodExtProviders: Map<string, ProviderType[]>;
 
     /**
      * auto run defines.

@@ -1,6 +1,6 @@
 import { isNullOrUndefined, lang } from '../utils/lang';
 import { IInjector } from '../IInjector';
-import { isToken, Provider, Token } from '../tokens';
+import { isToken, ProviderType, Token } from '../tokens';
 import { INJECTOR, PROVIDERS } from '../utils/tk';
 import * as rla from './res-act';
 import { ResolveContext, ResolveOption } from './res';
@@ -30,10 +30,10 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
      *
      * @template T
      * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
+    resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
         let ctx = {
             injector,
             ... (isToken(token) ? { token: token } : token),

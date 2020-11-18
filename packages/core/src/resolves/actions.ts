@@ -1,6 +1,6 @@
 import {
     isNullOrUndefined, isClassType, InjectReference,
-    IActionSetup, isToken, lang, Provider, PROVIDERS, refl, resovles
+    IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
@@ -202,7 +202,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             types.forEach(ty => {
                 let reftk = new InjectReference(ty, tk);
                 if (!services.has(reftk, alias) && injector.hasRegister(reftk)) {
-                    services.set(reftk, (...providers: Provider[]) => injector.resolve(reftk, ...providers))
+                    services.set(reftk, (...providers: ProviderType[]) => injector.resolve(reftk, ...providers))
                 }
             });
         });

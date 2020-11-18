@@ -1,5 +1,5 @@
 import { Type, Modules } from './types';
-import { SymbolType, Token, FactoryLike, InjectReference, Provider, Factory, InstFac } from './tokens';
+import { SymbolType, Token, FactoryLike, InjectReference, ProviderType, Factory, InstFac } from './tokens';
 import { ResolveOption } from './actions/res';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
@@ -89,29 +89,29 @@ export interface IProvider extends IDestoryable {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    get<T>(token: Token<T>, ...providers: Provider[]): T;
+    get<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
      * get token instace in current injector or root container.
      *
      * @template T
      * @param {Token<T>} token
      * @param {string} alias
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    get<T>(token: Token<T>, alias: string, ...providers: Provider[]): T;
+    get<T>(token: Token<T>, alias: string, ...providers: ProviderType[]): T;
     /**
      * get token instance in current injector or root container.
      *
      * @template T
      * @param {SymbolType<T>} key
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T;
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T;
     /**
      * get value.
      * @param token token key.
@@ -165,10 +165,10 @@ export interface IProvider extends IDestoryable {
     /**
      * inject providers.
      *
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {this}
      */
-    inject(...providers: Provider[]): this;
+    inject(...providers: ProviderType[]): this;
     /**
      * register type class.
      * @param type the class type.
@@ -272,34 +272,34 @@ export interface IInjector extends IProvider {
      * @param target
      * @param providers
      */
-    bindTagProvider(target: Token, ...providers: Provider[]): InjectReference<IProvider>;
+    bindTagProvider(target: Token, ...providers: ProviderType[]): InjectReference<IProvider>;
 
     /**
      * resolve token instance with token and param provider.
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
+    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
      *
      * @template T
      * @param {ResolveOption<T>} option  resolve option
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    resolve<T>(option: ResolveOption<T>, ...providers: Provider[]): T;
+    resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
      * @template T
      * @param {(Token<T> | T)} target type class
      * @param {MethodType<T>} propertyKey
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {TR}
      */
-    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
 }
