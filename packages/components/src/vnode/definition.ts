@@ -133,15 +133,6 @@ export type CtorDependency = {
   skipSelf?: true;
 } | null;
 
-/**
- * @codeGenApi
- */
-export type _ρDirectiveDefWithMeta<
-  T, Selector extends string, ExportAs extends
-  string[], InputMap extends { [key: string]: string },
-  OutputMap extends { [key: string]: string },
-  QueryFields extends string[]> =
-  DirectiveDef<T>;
 
 /**
  * Runtime link information for Directives.

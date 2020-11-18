@@ -7,6 +7,7 @@ import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 
 /**
+ * each context.
  * @publicApi
  */
 export class DirEachContext<T, U extends IterableType<T> = IterableType<T>> {

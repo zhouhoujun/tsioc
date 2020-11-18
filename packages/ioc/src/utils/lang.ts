@@ -431,10 +431,10 @@ const promiseTag = '[object Promise]';
  */
 export function isPromise(target: any): target is Promise<any> {
     return toString.call(target) === promiseTag
-        || (target && typeof target.then === 'function');
+        || (target && typeof target.then === 'function' && typeof target.catch === 'function');
 }
 
-const obserTag = '[object Observable]';
+const obsTag = '[object Observable]';
 /**
  * is target rxjs observable or not.
  *
@@ -443,7 +443,7 @@ const obserTag = '[object Observable]';
  * @returns {boolean}
  */
 export function isObservable(target: any): boolean {
-    return toString.call(target) === obserTag || (target && typeof target.subscribe === 'function');
+    return toString.call(target) === obsTag || (target && typeof target.subscribe === 'function');
 }
 
 const strTag = '[object String]';
@@ -551,7 +551,7 @@ export function isObject(target: any): target is object {
 }
 
 
-const objectTag = '[object Object]';
+const objTag = '[object Object]';
 
 /**
  * is custom class type instance or not.
@@ -561,7 +561,7 @@ const objectTag = '[object Object]';
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    return toString.call(target) === objectTag && target.constructor.name !== 'Object';
+    return toString.call(target) === objTag && target.constructor.name !== 'Object';
 }
 
 
@@ -576,7 +576,7 @@ export function isTypeObject(target: any): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPlainObject(target: any): target is ObjectMap {
-    return toString.call(target) === objectTag && target.constructor.name === 'Object';
+    return toString.call(target) === objTag && target.constructor.name === 'Object';
 }
 
 /**
@@ -654,6 +654,18 @@ export function isRegExp(target: any): target is RegExp {
  */
 export function isBaseType(target: any): boolean {
     return typeof target === 'function' && native.test(target.toString());
+}
+
+/**
+ * target is primitive type or not.
+ * @param target
+ */
+export function isPrimitive(target: any): boolean {
+    const type = typeof target;
+    return type === 'string'
+        || type === 'number'
+        || type === 'symbol'
+        || type === 'boolean';
 }
 
 /**
