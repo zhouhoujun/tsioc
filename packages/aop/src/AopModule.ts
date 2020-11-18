@@ -19,8 +19,6 @@ export class AopModule {
 
     /**
      * register aop for container.
-     *
-     * @memberof AopModule
      */
     setup(@Inject(IOC_CONTAINER) container: IIocContainer) {
 

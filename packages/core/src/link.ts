@@ -21,7 +21,6 @@ export interface ICoreInjector extends IInjector {
      * get module loader.
      *
      * @returns {IModuleLoader}
-     * @memberof IContainer
      */
     getLoader(): IModuleLoader;
 
@@ -30,7 +29,6 @@ export interface ICoreInjector extends IInjector {
      *
      * @param {...LoadType[]} modules load modules.
      * @returns {Promise<Type[]>}  types loaded.
-     * @memberof IContainer
      */
     load(...modules: LoadType[]): Promise<Type[]>;
 
@@ -41,7 +39,6 @@ export interface ICoreInjector extends IInjector {
      * @param {(Token<T> | ServiceOption<T>)} target servive token.
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IContainer
      */
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T;
 
@@ -52,7 +49,6 @@ export interface ICoreInjector extends IInjector {
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
      * @param {...Provider[]} providers
      * @returns {T[]} all service instance type of token type.
-     * @memberof IContainer
      */
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[];
 
@@ -62,7 +58,6 @@ export interface ICoreInjector extends IInjector {
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target
      * @returns {IProvider}
-     * @memberof IServicesResolver
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
@@ -100,7 +95,6 @@ export interface IContainerBuilder {
      * create a new container.
      *
      * @returns {IContainer}
-     * @memberof IContainerBuilder
      */
     create(): IContainer;
 
@@ -110,7 +104,6 @@ export interface IContainerBuilder {
      * @param {...LoadType[]} modules
      * @param {string} [basePath]
      * @returns {Promise<IContainer>}
-     * @memberof IContainerBuilder
      */
     build(...modules: LoadType[]): Promise<IContainer>;
 
@@ -119,7 +112,6 @@ export interface IContainerBuilder {
      *
      * @param {LoadOptions} options
      * @returns {IContainer}
-     * @memberof IContainerBuilder
      */
     syncBuild(...modules: Modules[]): IContainer;
 
@@ -139,7 +131,6 @@ export interface IModuleLoader {
      *
      * @param {...LoadType[]} modules
      * @returns {Promise<Modules[]>}
-     * @memberof IModuleLoader
      */
     load(...modules: LoadType[]): Promise<Modules[]>;
 
@@ -148,7 +139,6 @@ export interface IModuleLoader {
      *
      * @param {string} fileName
      * @returns {Promise<any>}
-     * @memberof IModuleLoader
      */
     require(fileName: string): Promise<any>;
 
@@ -157,7 +147,6 @@ export interface IModuleLoader {
      *
      * @param {...LoadType[]} modules
      * @returns {Promise<Type[]>}
-     * @memberof IModuleLoader
      */
     loadTypes(...modules: LoadType[]): Promise<Type[][]>;
 
@@ -176,7 +165,6 @@ export interface IServiceProvider {
      * @param {(Token<T> | ServiceOption<T>)} target servive token.
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IContainer
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T;
     /**
@@ -186,7 +174,6 @@ export interface IServiceProvider {
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
      * @param {...Provider[]} providers
      * @returns {T[]} all service instance type of token type.
-     * @memberof IContainer
      */
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[];
 
@@ -196,7 +183,6 @@ export interface IServiceProvider {
      * @template T
      * @param {(Token<T> | ServicesOption<T>)} target
      * @returns {IProvider}
-     * @memberof IServicesResolver
      */
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider;
 }

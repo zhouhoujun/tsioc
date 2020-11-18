@@ -20,7 +20,6 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
     /**
      * Creates an instance of ConfigureManager.
      * @param {string} [baseURL]
-     * @memberof ConfigureManager
      */
     constructor(@Inject(PROCESS_ROOT) protected baseURL?: string) {
         this.configs = [];
@@ -30,7 +29,6 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
      *
      * @param {(string | AppConfigure)} [config]
      * @returns {this} this configure manager.
-     * @memberof Bootstrap
      */
     useConfiguration(config?: string | T): this {
         if (isUndefined(config)) {
@@ -51,7 +49,6 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
      * get config.
      *
      * @returns {Promise<T>}
-     * @memberof ConfigureManager
      */
     async getConfig(): Promise<T> {
         if (!this.config) {
@@ -62,10 +59,6 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
 
     /**
      * init config.
-     *
-     * @protected
-     * @returns
-     * @memberof ConfigureManager
      */
     protected async initConfig() {
         let config = await this.getDefaultConfig();
@@ -95,7 +88,6 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
      * @protected
      * @param {string} src
      * @returns {Promise<T>}
-     * @memberof ConfigureManager
      */
     protected async loadConfig(src: string): Promise<T> {
         if (this.container.has(CONFIG_LOADER)) {
@@ -114,7 +106,6 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
      *
      * @protected
      * @returns {Promise<T>}
-     * @memberof ConfigureManager
      */
     protected async getDefaultConfig(): Promise<T> {
         if (this.container.has(DEFAULT_CONFIG)) {

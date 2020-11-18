@@ -104,7 +104,6 @@ export class ModuleInjector extends CoreInjector {
      * @template T
      * @param {Token<T>} token
      * @returns {Type<T>}
-     * @memberof BaseInjector
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let tokenKey = this.getTokenKey(token);

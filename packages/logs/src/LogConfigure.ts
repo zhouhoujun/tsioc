@@ -13,7 +13,6 @@ export interface LogConfigure {
      * log adapter
      *
      * @type {Token<ILoggerManager>)}
-     * @memberof LogConfigure
      */
     adapter: Token<ILoggerManager>,
 
@@ -21,7 +20,6 @@ export interface LogConfigure {
      * logger config options.
      *
      * @type {ObjectMap}
-     * @memberof LogConfigure
      */
     config?: ObjectMap;
 

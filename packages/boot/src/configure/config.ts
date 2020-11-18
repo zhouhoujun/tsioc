@@ -32,28 +32,24 @@ export interface Configure extends ProvidersMetadata {
      * module base url.
      *
      * @type {string}
-     * @memberof ModuleConfig
      */
     baseURL?: string;
     /**
      * deps.
      *
      * @type {LoadType[]}
-     * @memberof Configure
      */
     deps?: LoadType[];
     /**
      * application name.
      *
      * @type {string}
-     * @memberof AppConfigure
      */
     name?: string;
     /**
      * set enable debug log or not.
      *
      * @type {boolean}
-     * @memberof AppConfigure
      */
     debug?: boolean;
 
@@ -61,7 +57,6 @@ export interface Configure extends ProvidersMetadata {
      * log config.
      *
      * @type {*}
-     * @memberof AppConfigure
      */
     logConfig?: any;
 
@@ -69,7 +64,6 @@ export interface Configure extends ProvidersMetadata {
      * custom config key value setting.
      *
      * @type {ObjectMap}
-     * @memberOf AppConfigure
      */
     setting?: ObjectMap;
 
@@ -77,7 +71,6 @@ export interface Configure extends ProvidersMetadata {
      * custom config connections.
      *
      * @type {any}
-     * @memberof AppConfigure
      */
     connections?: IConnectionOptions | IConnectionOptions[];
 
@@ -111,7 +104,6 @@ export interface IConfigureLoader<T extends Configure = Configure> {
      *
      * @param {string} [uri]
      * @returns {Promise<T>}
-     * @memberof AppConfigureLoader
      */
     load(uri?: string): Promise<T>;
 }
@@ -143,7 +135,6 @@ export interface IConfigureManager<T extends Configure = Configure> {
      *
      * @param {(string | AppConfigure)} [config]
      * @returns {this} this configure manager.
-     * @memberof IConfigureManager
      */
     useConfiguration(config?: string | T): this;
 
@@ -151,7 +142,6 @@ export interface IConfigureManager<T extends Configure = Configure> {
      * get config.
      *
      * @returns {Promise<T>}
-     * @memberof IConfigureManager
      */
     getConfig(): Promise<T>;
 }

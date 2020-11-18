@@ -15,7 +15,6 @@ export interface IHandle<T = any> {
      * @param {T} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
-     * @memberof IHandle
      */
     execute(ctx: T, next?: () => Promise<void>): Promise<void>;
 
@@ -23,7 +22,6 @@ export interface IHandle<T = any> {
      * to action.
      *
      * @returns {AsyncHandler<T>}
-     * @memberof IHandle
      */
     toAction(): AsyncHandler<T>;
 }

@@ -6,9 +6,6 @@ import { WorkflowInstance } from '@tsdi/activities';
 
 /**
  * Task Log
- *
- * @export
- * @class TaskLogAspect
  */
 @Aspect({
     within: WorkflowInstance,

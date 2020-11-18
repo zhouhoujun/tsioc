@@ -16,8 +16,6 @@ export class LogModule {
 
     /**
      * register aop for container.
-     *
-     * @memberof AopModule
      */
     setup(@Inject(IOC_CONTAINER) container: IIocContainer) {
         if (!container.has(AopModule)) {

@@ -14,7 +14,6 @@ export interface ContextInit<T extends IBootContext = IBootContext> {
      * on context init.
      *
      * @param {T} ctx
-     * @memberof ContextInit
      */
     onContextInit(ctx: T);
 }
@@ -33,7 +32,6 @@ export interface IBootApplication<T extends IBootContext = IBootContext> extends
      * boot target.
      *
      * @type {(ClassType | BootOption | T)}
-     * @memberof IBootApplication
      */
     target?: ClassType | BootOption | T;
 
@@ -41,7 +39,6 @@ export interface IBootApplication<T extends IBootContext = IBootContext> extends
      * get boot application context.
      *
      * @returns {T}
-     * @memberof IBootApplication
      */
     getContext(): T;
 
@@ -51,7 +48,6 @@ export interface IBootApplication<T extends IBootContext = IBootContext> extends
      * @param {(LoadType[] | LoadType | string)} [deps]
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof IBootApplication
      */
     run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T>;
 
@@ -59,7 +55,6 @@ export interface IBootApplication<T extends IBootContext = IBootContext> extends
      * get container of application.
      *
      * @returns {IContainerPool}
-     * @memberof IBootApplication
      */
     getContainer(): IContainer;
 

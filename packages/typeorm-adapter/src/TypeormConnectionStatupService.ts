@@ -85,7 +85,6 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
      *
      * @param {string} [connectName]
      * @returns {Connection}
-     * @memberof TyepOrmStartupService
      */
     getConnection(connectName?: string): Connection {
         return getConnection(connectName ?? this.options?.name);

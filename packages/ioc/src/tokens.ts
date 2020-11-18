@@ -1,5 +1,5 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
-import { IInjector, IProvider } from './IInjector';
+import { IProvider } from './IInjector';
 import { isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
 import { StaticProvider } from './providers';
@@ -54,7 +54,6 @@ export class Registration<T = any> {
      * get provide.
      *
      * @returns {SymbolType}
-     * @memberof Registration
      */
     getProvide(): SymbolType {
         return this.classType;
@@ -64,7 +63,6 @@ export class Registration<T = any> {
      * get class.
      *
      * @returns
-     * @memberof Registration
      */
     getClass(): Type<T> | AbstractType<T> {
         if (isClassType(this.classType)) {
@@ -77,7 +75,6 @@ export class Registration<T = any> {
      * get desc.
      *
      * @returns
-     * @memberof Registration
      */
     getDesc() {
         return this.desc;
@@ -87,7 +84,6 @@ export class Registration<T = any> {
      * to string.
      *
      * @returns {string}
-     * @memberof Registration
      */
     toString(): string {
         if (!this.formated) {
@@ -262,7 +258,6 @@ export class InjectReference<T = any> extends Registration<T> {
      * formatting this.
      *
      * @returns {string}
-     * @memberof Registration
      */
     formatting(): string {
         let key = this.format(this);

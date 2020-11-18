@@ -85,7 +85,6 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
      * @param {Type} targetType
      * @param {IPointcut} pointcut
      * @param {Joinpoint} [provJoinpoint]
-     * @memberof ProxyMethod
      */
     proceed(target: any, targetType: Type, advices: Advices, pointcut: IPointcut, provJoinpoint?: Joinpoint) {
         let methodName = pointcut.name;

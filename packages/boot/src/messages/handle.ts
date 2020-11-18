@@ -21,7 +21,6 @@ export abstract class MessageHandle<T extends MessageContext = MessageContext> e
      * @param {T} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
-     * @memberof AnnoationMiddleware
      */
     abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
 }

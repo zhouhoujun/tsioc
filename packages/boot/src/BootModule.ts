@@ -26,8 +26,6 @@ export class BootModule {
 
     /**
      * register aop for container.
-     *
-     * @memberof AopModule
      */
     setup(@Inject(CONTAINER) container: IContainer) {
         container.set(ModuleInjector, () => new ModuleInjector(container));

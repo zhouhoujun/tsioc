@@ -11,7 +11,6 @@ export interface PointcutAnnotation {
      * method with specail decortor.
      *
      * @type {(Function | string)}
-     * @memberof AdviceMetadata
      */
     annotation?: Function | string;
 
@@ -19,7 +18,6 @@ export interface PointcutAnnotation {
      * annotation name, special annotation metadata for annotation advices.
      *
      * @type {string}
-     * @memberof AdviceMetadata
      */
     annotationName?: string;
 
@@ -27,7 +25,6 @@ export interface PointcutAnnotation {
      * set name provider of annotation metadata for annotation advices.
      *
      * @type {string}
-     * @memberof AdviceMetadata
      */
     annotationArgName?: string;
 }
@@ -52,7 +49,6 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
      * math only the object.
      *
      * @type {*}
-     * @memberof AdviceMetadata
      */
     target?: any;
 
@@ -60,7 +56,6 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
      * advice within.
      *
      * @type {(ClassType | ClassType[])}
-     * @memberof AdviceMetadata
      */
     within?: ClassType | ClassType[];
 
@@ -69,7 +64,6 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
      * eg. `Before`, `Pointcut`, `Around`, `After`, `AfterThrowing`, `AfterReturning`
      *
      * @type {string}
-     * @memberof AdviceMetadata
      */
     adviceName?: AdviceTypes;
 }
@@ -86,7 +80,6 @@ export interface AfterReturningMetadata extends AdviceMetadata {
      * set name provider of pointcut returing data for advices.
      *
      * @type {string}
-     * @memberof AfterReturningMetadata
      */
     returning?: string;
 }
@@ -99,7 +92,6 @@ export interface AfterThrowingMetadata extends AdviceMetadata {
      * set name provider of pointcut throwing error for advices.
      *
      * @type {string}
-     * @memberof AfterThrowingMetadata
      */
     throwing?: string;
 }
@@ -112,14 +104,12 @@ export interface AroundMetadata extends AfterReturningMetadata, AfterThrowingMet
      * set name provider of annotation metadata for advices.
      *
      * @type {string}
-     * @memberof AroundMetadata
      */
     args?: string;
     /**
      * set name provider of pointcut returing data for advices.
      *
      * @type {string}
-     * @memberof AroundMetadata
      */
     returning?: string;
 }
@@ -132,7 +122,6 @@ export interface AspectMetadata extends ClassMetadata {
      * set pointcut in the type only.
      *
      * @type {(ClassType | ClassType[])}
-     * @memberof AspectMetadata
      */
     within?: ClassType | ClassType[];
 
@@ -142,7 +131,6 @@ export interface AspectMetadata extends ClassMetadata {
      * set pointcut in the class with the annotation decorator only.
      *
      * @type {string}
-     * @memberof AspectMetadata
      */
     annotation?: string | Function;
 

@@ -19,7 +19,6 @@ export interface IProvider extends IDestoryable {
      * resolver size.
      *
      * @type {number}
-     * @memberof IInjector
      */
     readonly size: number;
     /**
@@ -29,7 +28,6 @@ export interface IProvider extends IDestoryable {
      * @param {Token<T>} target
      * @param {string} [alias]
      * @returns {Token<T>}
-     * @memberof IInjector
      */
     getToken<T>(target: Token<T>, alias?: string): Token<T>;
     /**
@@ -39,7 +37,6 @@ export interface IProvider extends IDestoryable {
      * @param {Token<T>} token the token.
      * @param {string} [alias] addtion alias
      * @returns {SymbolType<T>}
-     * @memberof IInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
     /**
@@ -52,7 +49,6 @@ export interface IProvider extends IDestoryable {
      * @template T
      * @param {SymbolType<T>} key the token key.
      * @returns {boolean}
-     * @memberof IInjector
      */
     hasTokenKey<T>(key: SymbolType<T>): boolean;
     /**
@@ -61,7 +57,6 @@ export interface IProvider extends IDestoryable {
      * @template T
      * @param {Token<T>} token the token.
      * @returns {boolean}
-     * @memberof IInjector
      */
     has<T>(token: Token<T>): boolean;
     /**
@@ -71,7 +66,6 @@ export interface IProvider extends IDestoryable {
      * @param {Token<T>} token the token.
      * @param {string} alias addtion alias
      * @returns {boolean}
-     * @memberof IInjector
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
@@ -97,7 +91,6 @@ export interface IProvider extends IDestoryable {
      * @param {Token<T>} token
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IIocContainer
      */
     get<T>(token: Token<T>, ...providers: Provider[]): T;
     /**
@@ -108,7 +101,6 @@ export interface IProvider extends IDestoryable {
      * @param {string} alias
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IInjector
      */
     get<T>(token: Token<T>, alias: string, ...providers: Provider[]): T;
     /**
@@ -118,7 +110,6 @@ export interface IProvider extends IDestoryable {
      * @param {SymbolType<T>} key
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IInjector
      */
     getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T;
     /**
@@ -149,7 +140,6 @@ export interface IProvider extends IDestoryable {
     * @param {Token<T>} token
     * @param {ResoveWay} [resway]
     * @returns {Type<T>}
-    * @memberof IInjector
     */
     getTokenProvider<T>(token: Token<T>): Type<T>
     /**
@@ -160,7 +150,6 @@ export interface IProvider extends IDestoryable {
      * @param {InstFac<T>} fac
      * @param {Type<T>} [providerType]
      * @returns {this}
-     * @memberof IInjector
      */
     set<T>(provide: Token<T>, fac: InstFac<T>): this;
     /**
@@ -171,7 +160,6 @@ export interface IProvider extends IDestoryable {
      * @param {Factory<T>} fac
      * @param {Type<T>} [providerType]
      * @returns {this}
-     * @memberof IInjector
      */
     set<T>(provide: Token<T>, fac: Factory<T>, providerType?: Type<T>): this;
     /**
@@ -179,7 +167,6 @@ export interface IProvider extends IDestoryable {
      *
      * @param {...Provider[]} providers
      * @returns {this}
-     * @memberof IInjector
      */
     inject(...providers: Provider[]): this;
     /**
@@ -187,6 +174,7 @@ export interface IProvider extends IDestoryable {
      * @param type the class type.
      * @param [provide] the class prodvider to.
      * @param [singleton]
+     * @returns {this}
      */
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
     /**
@@ -195,7 +183,6 @@ export interface IProvider extends IDestoryable {
      * @template T
      * @param {Token<T>} token
      * @returns {this}
-     * @memberof IInjector
      */
     unregister<T>(token: Token<T>): this;
     /**
@@ -204,7 +191,6 @@ export interface IProvider extends IDestoryable {
      * @param {((pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register.
      * @returns {(void|boolean)}
-     * @memberof IInjector
      */
     iterator(callbackfn: (pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
     /**
@@ -213,7 +199,6 @@ export interface IProvider extends IDestoryable {
      * @param {IProvider} target copy from
      * @param {(key: SymbolType) => boolean} filter token key filter
      * @returns {this} current injector.
-     * @memberof IProvider
      */
     copy(from: IProvider, filter?: (key: SymbolType) => boolean): this;
     /**
@@ -244,7 +229,6 @@ export interface IInjector extends IProvider {
      *
      * @param {...Modules[]} modules
      * @returns {Type[]}
-     * @memberof IInjector
      */
     use(...modules: Modules[]): Type[];
 
@@ -255,7 +239,6 @@ export interface IInjector extends IProvider {
      * @param {Token<T>} token
      * @param {FactoryLike<T>} [fac]
      * @returns {this}
-     * @memberof IInjector
      */
     register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
@@ -265,7 +248,6 @@ export interface IInjector extends IProvider {
      * @param {Token<T>} token
      * @param {FactoryLike<T>} fac
      * @returns {this}
-     * @memberOf IInjector
      */
     registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
@@ -275,7 +257,6 @@ export interface IInjector extends IProvider {
      * @param {Token<T>} provide
      * @param {Type<T>} provider
      * @returns {this}
-     * @memberof IInjector
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>): this;
     /**
@@ -300,7 +281,6 @@ export interface IInjector extends IProvider {
      * @param {Token<T>} token the token to resolve.
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IIocContainer
      */
     resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     /**
@@ -310,7 +290,6 @@ export interface IInjector extends IProvider {
      * @param {ResolveOption<T>} option  resolve option
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IIocContainer
      */
     resolve<T>(option: ResolveOption<T>, ...providers: Provider[]): T;
     /**
@@ -321,7 +300,6 @@ export interface IInjector extends IProvider {
      * @param {MethodType<T>} propertyKey
      * @param {...Provider[]} providers
      * @returns {TR}
-     * @memberof IMethodAccessor
      */
     invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
 }

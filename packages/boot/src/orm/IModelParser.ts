@@ -14,7 +14,6 @@ export interface IModelParser<T = any> {
      * @param {Type<T>} type
      * @param {T} objMap
      * @returns {*}
-     * @memberof IModelParser
      */
     parseModel(type: Type<T>, objMap: any): T;
 

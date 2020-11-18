@@ -13,7 +13,6 @@ export class Advisor implements IAdvisor {
      * method advices.
      *
      * @type {Map<Type, Map<string, Advices>>}
-     * @memberof AspectManager
      */
     advices: Map<Type, Map<string, Advices>>;
 
@@ -29,7 +28,6 @@ export class Advisor implements IAdvisor {
      *
      * @param {string} key
      * @param {Advices} advices
-     * @memberof Advisor
      */
     setAdvices(type: Type, key: string, advices: Advices) {
         if (!this.advices.has(type)) {
@@ -47,7 +45,6 @@ export class Advisor implements IAdvisor {
      *
      * @param {string} key
      * @returns
-     * @memberof Advisor
      */
     getAdvices(type: Type, key: string) {
         return this.advices.get(type)?.get(key) || null;
@@ -58,7 +55,6 @@ export class Advisor implements IAdvisor {
      *
      * @param {string} key
      * @returns {Advices}
-     * @memberof IAdvisor
      */
     getAdviceMap(type: Type): Map<string, Advices> {
         return this.advices.get(type);
@@ -69,7 +65,6 @@ export class Advisor implements IAdvisor {
      *
      * @param {Type} aspect
      * @param {IIocContainer} raiseContainer
-     * @memberof IAdvisor
      */
     add(aspect: Type) {
         this.aspects.push(aspect);
@@ -82,7 +77,6 @@ export class Advisor implements IAdvisor {
      * @param {Type<T>} aspect
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof Advisor
      */
     resolve<T>(aspect: Type<T>, ...providers: Provider[]): T {
         return this.container.regedState.getInjector(aspect).resolve(aspect, ...providers);

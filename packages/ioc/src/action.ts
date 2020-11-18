@@ -86,7 +86,6 @@ export abstract class Actions<T> extends IocAction<T> {
      * @param {ActionType} action
      * @param {boolean} [setup]  register action type or not.
      * @returns {this}
-     * @memberof LifeScope
      */
     use(action: ActionType): this {
         if (this.has(action)) {
@@ -104,7 +103,6 @@ export abstract class Actions<T> extends IocAction<T> {
      * @param {ActionType} action
      * @param {ActionType} [before]
      * @returns {this}
-     * @memberof IocActions
      */
     useBefore(action: ActionType, before?: ActionType): this {
         if (this.has(action)) {
@@ -126,7 +124,6 @@ export abstract class Actions<T> extends IocAction<T> {
      * @param {ActionType} action
      * @param {ActionType} [after]
      * @returns {this}
-     * @memberof IocActions
      */
     useAfter(action: ActionType, after?: ActionType): this {
         if (this.has(action)) {
@@ -146,7 +143,6 @@ export abstract class Actions<T> extends IocAction<T> {
      * register actions before run this scope.
      *
      * @param {ActionType} action
-     * @memberof IocActions
      */
     before(action: ActionType): this {
         if (this.befores.indexOf(action) < 0) {
@@ -161,7 +157,6 @@ export abstract class Actions<T> extends IocAction<T> {
      * register actions after run this scope.
      *
      * @param {ActionType} action
-     * @memberof IocActions
      */
     after(action: ActionType): this {
         if (this.afters.indexOf(action) < 0) {

@@ -5,8 +5,6 @@ import { NodeModuleLoader } from './NodeModuleLoader';
 /**
  * server module for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.
- * @export
- * @class ServerModule
  */
 @IocExt()
 export class ServerModule {
@@ -15,8 +13,6 @@ export class ServerModule {
 
     /**
      * register aop for container.
-     *
-     * @memberof AopModule
      */
     setup(@Inject(CONTAINER) container: IContainer) {
         container.setValue(MODULE_LOADER, new NodeModuleLoader(), NodeModuleLoader);

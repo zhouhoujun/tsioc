@@ -61,7 +61,6 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param {T} ctx message context
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
-     * @memberof IMessageQueue
      */
     send(ctx: T): Promise<void>;
     /**
@@ -70,7 +69,6 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @template TOpt
      * @param {MessageOption} options
      * @returns {Promise<void>}
-     * @memberof IMessageQueue
      */
     send(options: MessageOption): Promise<void>;
     /**
@@ -79,7 +77,6 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param {string} event
      * @param {*} data
      * @returns {Promise<void>}
-     * @memberof IMessageQueue
      */
     send(event: string, data: any, injector?: ICoreInjector): Promise<void>;
     /**
@@ -90,7 +87,6 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param {*} data
      * @param {ICoreInjector} [injector]
      * @returns {Promise<void>}
-     * @memberof IMessageQueue
      */
     send(event: string, type: string, data: any, injector?: ICoreInjector): Promise<void>;
     send(event: any, type?: any, data?: any, injector?: ICoreInjector): Promise<void> {
@@ -132,21 +128,18 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * subescribe message.
      *
      * @param {(ctx: T, next: () => Promise<void>) => Promise<void>} subscriber
-     * @memberof IMessageQueue
      */
     subscribe(subscriber: (ctx: T, next: () => Promise<void>) => Promise<void>);
     /**
      * subscribe message by handle instance;
      *
      * @param {IHandle} handle
-     * @memberof IMessageQueue
      */
     subscribe(handle: IHandle);
     /**
      * subscribe message by handle type or token.
      *
      * @param {IHandle} handle
-     * @memberof IMessageQueue
      */
     subscribe(handle: Token<IHandle>);
     subscribe(haddle: HandleType<T>) {
@@ -164,14 +157,12 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * subscribe message by handle instance;
      *
      * @param {IHandle} handle
-     * @memberof IMessageQueue
      */
     unsubscribe(handle: IHandle);
     /**
      * subscribe message by handle type or token.
      *
      * @param {IHandle} handle
-     * @memberof IMessageQueue
      */
     unsubscribe(handle: Token<IHandle>);
     unsubscribe(haddle: HandleType<T>) {

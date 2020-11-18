@@ -25,14 +25,12 @@ export interface UnitTestConfigure extends Configure {
      * test source
      *
      * @type {(string | Type | (string | Type)[])}
-     * @memberof UnitTestConfigure
      */
     src?: string | Type | (string | Type)[];
     /**
      * resports.
      *
      * @type {Token<ITestReport>[]}
-     * @memberof UnitTestConfigure
      */
     reporters?: Type<ITestReport>[];
 }

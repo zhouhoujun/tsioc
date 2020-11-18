@@ -58,10 +58,7 @@ export class ConfigureFileLoader implements IConfigureLoader<Configure> {
 
 
 /**
- * server boot module
- *
- * @export
- * @class ServerBootstrapModule
+ * server boot module.
  */
 @DIModule({
     regIn: 'root',

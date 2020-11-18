@@ -580,7 +580,6 @@ export namespace refl {
      * @template T
      * @param {Type<T>} type
      * @returns {IParameter[]}
-     * @memberof TypeReflects
      */
     export function getParameters<T>(type: Type<T>): ParameterMetadata[];
     /**
@@ -590,7 +589,6 @@ export namespace refl {
      * @param {Type<T>} type
      * @param {string} propertyKey
      * @returns {IParameter[]}
-     * @memberof TypeReflects
      */
     export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
     export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {

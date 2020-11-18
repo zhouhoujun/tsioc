@@ -12,7 +12,6 @@ export interface Metadata {
      * property type
      *
      * @type {SymbolType}
-     * @memberof TypeMetadata
      */
     type?: ClassType;
 }
@@ -52,7 +51,6 @@ export interface ProvideMetadata {
      * alias name. use to create Registration with provider.
      *
      * @type {string}
-     * @memberof ProvideMetadata
      */
     alias?: string;
 }
@@ -70,14 +68,12 @@ export interface ProviderMetadata {
      * this type provider to.
      *
      * @type {SymbolType}
-     * @memberof ProviderMetadata
      */
     provide?: Token;
     /**
      * provide alias.
      *
      * @type {string}
-     * @memberof ProviderMetadata
      */
     alias?: string;
 }
@@ -93,7 +89,6 @@ export interface RefProvider {
      * ref to tagert.
      *
      * @type {Token}
-     * @memberof RefProvider
      */
     target: Token;
 
@@ -101,7 +96,6 @@ export interface RefProvider {
      * ref provide
      *
      * @type {Token}
-     * @memberof RefProvider
      */
     provide?: Token;
 
@@ -109,7 +103,6 @@ export interface RefProvider {
      * provide alias.
      *
      * @type {string}
-     * @memberof RefProvider
      */
     alias?: string;
 }
@@ -126,7 +119,6 @@ export interface RefMetadata {
      * define the class as service reference to target.
      *
      * @type {RefProvider}
-     * @memberof RefMetadata
      */
     refs?: RefProvider
 }
@@ -143,7 +135,6 @@ export interface ProvidersMetadata {
      * provider services of the class.
      *
      * @type {KeyValue<Token, Token>}
-     * @memberof ProvidersMetadata
      */
     providers?: Provider[];
 }
@@ -160,7 +151,6 @@ export interface PropertyMetadata extends ProvideMetadata, Metadata {
      * property name
      *
      * @type {string}
-     * @memberof PropertyMetadata
      */
     propertyKey?: string;
 }
@@ -176,14 +166,12 @@ export interface MethodMetadata extends Metadata {
      * param providers
      *
      * @type {Provider[]}
-     * @memberof MethodMetadata
      */
     providers?: Provider[];
     /**
      * method property key
      *
      * @type {string}
-     * @memberof MethodMetadata
      */
     propertyKey?: string;
 }
@@ -212,7 +200,6 @@ export interface ParameterMetadata extends PropertyMetadata {
      * parameter index.
      *
      * @type {number}
-     * @memberof ParameterMetadata
      */
     index?: number;
 
@@ -225,7 +212,6 @@ export interface ParameterMetadata extends PropertyMetadata {
      * default value
      *
      * @type {object}
-     * @memberof ParameterMetadata
      */
     defaultValue?: object
 }

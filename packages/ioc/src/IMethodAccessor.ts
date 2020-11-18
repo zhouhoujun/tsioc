@@ -25,7 +25,6 @@ export interface IMethodAccessor {
      * @param {MethodType} propertyKey
      * @param {...Provider[]} providers
      * @returns {TR}
-     * @memberof IMethodAccessor
      */
     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
 
@@ -36,7 +35,6 @@ export interface IMethodAccessor {
      * @param {ParameterMetadata[]} params
      * @param {...AsyncParamProvider[]} providers
      * @returns {any[]}
-     * @memberof IMethodAccessor
      */
     createParams(injector: IInjector, params: ParameterMetadata[], ...providers: Provider[]): any[];
 }

@@ -21,7 +21,6 @@ export class ServiceProvider implements IServiceProvider {
      * @param {(Token<T> | ServiceOption<T>)} target
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof Container
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: Provider[]): T {
         let context = {
@@ -58,7 +57,6 @@ export class ServiceProvider implements IServiceProvider {
      * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
      * @param {...Provider[]} providers
      * @returns {T[]} all service instance type of token type.
-     * @memberof IContainer
      */
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: Provider[]): T[] {
         let maps = this.getServiceProviders(injector, target);

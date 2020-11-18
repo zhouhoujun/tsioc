@@ -38,7 +38,6 @@ export class Joinpoint implements IocContext {
      * method name
      *
      * @type {string}
-     * @memberof Joinpoint
      */
     name: string;
 
@@ -46,7 +45,6 @@ export class Joinpoint implements IocContext {
      * prov joinpoint.
      *
      * @type {IJoinpoint}
-     * @memberof Joinpoint
      */
     provJoinpoint: Joinpoint;
 
@@ -54,7 +52,6 @@ export class Joinpoint implements IocContext {
      * full name.
      *
      * @type {string}
-     * @memberof Joinpoint
      */
     fullName: string;
 
@@ -64,7 +61,6 @@ export class Joinpoint implements IocContext {
      * join point state.
      *
      * @type {JoinpointState}
-     * @memberof Joinpoint
      */
     state: JoinpointState;
 
@@ -72,7 +68,6 @@ export class Joinpoint implements IocContext {
      * params of pointcut.
      *
      * @type {ParameterMetadata[]}
-     * @memberof Joinpoint
      */
     params: ParameterMetadata[];
 
@@ -80,14 +75,12 @@ export class Joinpoint implements IocContext {
      * args of pointcut.
      *
      * @type {any[]}
-     * @memberof Joinpoint
      */
     args: any[];
     /**
      * pointcut origin returing
      *
      * @type {*}
-     * @memberof Joinpoint
      */
     returning: any;
 
@@ -100,7 +93,6 @@ export class Joinpoint implements IocContext {
      * pointcut throwing error.
      *
      * @type {*}
-     * @memberof Joinpoint
      */
     throwing: Error;
 
@@ -108,7 +100,6 @@ export class Joinpoint implements IocContext {
      * advicer of joinpoint
      *
      * @type {Advicer}
-     * @memberof Joinpoint
      */
     advices: Advices;
 
@@ -116,7 +107,6 @@ export class Joinpoint implements IocContext {
      * orgin pointcut method metadatas.
      *
      * @type {any[]}
-     * @memberof Joinpoint
      */
     get annotations(): any[] {
         return this.routeValue(AOP_METHOD_ANNOTATIONS);
@@ -134,7 +124,6 @@ export class Joinpoint implements IocContext {
      * pointcut target instance
      *
      * @type {*}
-     * @memberof Joinpoint
      */
     target: any;
 
@@ -142,7 +131,6 @@ export class Joinpoint implements IocContext {
      * pointcut target type.
      *
      * @type {Type}
-     * @memberof Joinpoint
      */
     targetType: Type;
 
@@ -193,7 +181,6 @@ export class Joinpoint implements IocContext {
      * @param {IInjector} injector
      * @param {ResolveActionOption} options
      * @returns {ResolveActionContext}
-     * @memberof ResolveActionContext
      */
     static parse<T>(injector: IInjector, options: JoinpointOption): Joinpoint {
         let jpt = new Joinpoint(injector);

@@ -21,7 +21,6 @@ export interface ILogFormater {
      * @param {Joinpoint} [joinPoint]
      * @param {...any[]} messages
      * @returns {string}
-     * @memberof ILogFormater
      */
     format(joinPoint: Joinpoint, ...messages: any[]): any[];
 

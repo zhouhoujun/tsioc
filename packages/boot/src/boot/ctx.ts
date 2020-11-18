@@ -46,7 +46,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * boot base url.
      *
      * @type {string}
-     * @memberof BootContext
      */
     get baseURL(): string {
         let url = this.getValue(PROCESS_ROOT);
@@ -66,8 +65,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
 
     /**
      * configuration merge metadata config and all application config.
-     *
-     * @memberof BootContext
      */
     getConfiguration(): Configure {
         return this.getValue(CONFIGURATION);
@@ -77,7 +74,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * get configure manager.
      *
      * @returns {ConfigureManager<Configure>}
-     * @memberof BootContext
      */
     getConfigureManager(): ConfigureManager<Configure> {
         return this.injector.resolve(ConfigureManager);
@@ -110,7 +106,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * get boot startup instance.
      *
      * @type {IStartup}
-     * @memberof BootContext
      */
     getStartup(): any {
         return this.getValue(MODULE_RUNNABLE);

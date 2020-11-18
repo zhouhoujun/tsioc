@@ -81,7 +81,6 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
      * @param {(LoadType[] | LoadType | string)} [deps]  application run depdences.
      * @param {...string[]} args
      * @returns {Promise<IBootContext>}
-     * @memberof BootApplication
      */
     static run<T>(target: ClassType<T> | BootOption, deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<IBootContext> {
         let { deps: dep, args: arg } = checkBootArgs(deps, ...args);
@@ -93,7 +92,6 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
      *
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof BootApplication
      */
     async run(...args: string[]): Promise<T> {
         const root = this.getRootInjector();

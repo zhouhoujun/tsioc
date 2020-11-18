@@ -17,7 +17,6 @@ export interface IRunnable extends IDestoryable {
      *
      * @param {IBootContext} [ctx]
      * @returns {(Promise<void>)}
-     * @memberof IRunnable
      */
     configureService(ctx: IBootContext): Promise<void>;
 
@@ -40,7 +39,6 @@ export abstract class Runnable extends Destoryable implements IRunnable {
      *
      * @param {IBootContext} [ctx]
      * @returns {(Promise<void>)}
-     * @memberof IStartup
      */
     abstract configureService(ctx: IBootContext): Promise<void>;
 
@@ -67,7 +65,6 @@ export abstract class Startup<T = any> extends Runnable {
     * runable context.
     *
     * @type {TCtx}
-    * @memberof IRunnable
     */
     getContext(): IBootContext {
         return this.context;

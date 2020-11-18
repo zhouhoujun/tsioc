@@ -19,7 +19,6 @@ export interface ISuiteRunner extends IRunnable {
      *
      * @param {ISuiteDescribe} desc
      * @returns {Promise<void>}
-     * @memberof ISuiteRunner
      */
     runSuite(desc: ISuiteDescribe): Promise<void>;
     /**
@@ -27,7 +26,6 @@ export interface ISuiteRunner extends IRunnable {
      *
      * @param {ICaseDescribe} caseDesc
      * @returns {Promise<ICaseDescribe>}
-     * @memberof ISuiteRunner
      */
     runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe>;
 }

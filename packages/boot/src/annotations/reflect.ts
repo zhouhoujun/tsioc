@@ -13,14 +13,12 @@ export interface AnnotationMetadata<T = any> extends ClassMetadata, ProvidersMet
      * annotation for the type.
      *
      * @type {Token<T>}
-     * @memberof AnnotationConfigure
      */
     token?: Token<T>;
     /**
      * Annotation class Type.
      *
      * @type {Type<T>}
-     * @memberof IAnnotationMetadata
      */
     type?: ClassType<T>;
 

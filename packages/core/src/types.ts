@@ -11,7 +11,6 @@ export interface PathModules {
      * fire express base on the root path.
      *
      * @type {string}
-     * @memberof LoadOptions
      */
     basePath?: string;
     /**
@@ -22,7 +21,6 @@ export interface PathModules {
      * in browser:
      * script file url.
      * @type {(string | string[])}
-     * @memberof BuilderOptions
      */
     files?: string | string[];
 
@@ -30,11 +28,13 @@ export interface PathModules {
      * modules
      *
      * @type {((Modules | string)[])}
-     * @memberof AsyncLoadOptions
      */
     modules?: (Modules | string)[];
 }
 
+/**
+ * child module.
+ */
 export interface ChildModule  {
     loadChild(): Promise<Type>;
 }

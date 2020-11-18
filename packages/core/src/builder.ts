@@ -32,7 +32,6 @@ export class ContainerBuilder implements IContainerBuilder {
      *
      * @param {...LoadType[]} [modules]
      * @returns
-     * @memberof DefaultContainerBuilder
      */
     async build(...modules: LoadType[]) {
         let container: IContainer = this.create();

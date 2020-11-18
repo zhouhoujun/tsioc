@@ -19,10 +19,6 @@ export abstract class Reporter {
 
 /**
  * realtime reporter.
- *
- * @export
- * @abstract
- * @class RealtimeReporter
  */
 @Abstract()
 export abstract class RealtimeReporter extends Reporter {
@@ -31,7 +27,6 @@ export abstract class RealtimeReporter extends Reporter {
      *
      * @abstract
      * @param {ISuiteDescribe} desc
-     * @memberof RealtimeReporter
      */
     abstract renderSuite(desc: ISuiteDescribe): void;
     /**
@@ -39,7 +34,6 @@ export abstract class RealtimeReporter extends Reporter {
      *
      * @abstract
      * @param {ICaseDescribe} desc
-     * @memberof RealtimeReporter
      */
     abstract renderCase(desc: ICaseDescribe): void;
 }

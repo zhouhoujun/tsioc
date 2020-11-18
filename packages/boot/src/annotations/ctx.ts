@@ -72,7 +72,6 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
      * @template T
      * @param {Token<T>} token
      * @returns {T}
-     * @memberof BootContext
      */
     get<T>(token: Token<T>): T {
         return this.context.get(token);
@@ -158,7 +157,6 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
      * get options of context.
      *
      * @returns {T}
-     * @memberof IocRaiseContext
      */
     getOptions(): T {
         return this.options;

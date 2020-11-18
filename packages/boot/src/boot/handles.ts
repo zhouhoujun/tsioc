@@ -25,7 +25,6 @@ export abstract class BootHandle extends BuildHandle<IBootContext> {
      * @param {IAnnoationContext} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
-     * @memberof BootHandle
      */
     abstract execute(ctx: IBootContext, next: () => Promise<void>): Promise<void>;
 }

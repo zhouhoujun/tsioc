@@ -5,10 +5,6 @@ import { syncRequire } from '@tsdi/platform-server';
 
 /**
  * log4js logger manager adapter.
- *
- * @export
- * @class Log4jsAdapter
- * @implements {ILoggerManger}
  */
 @NonePointcut()
 @Singleton()

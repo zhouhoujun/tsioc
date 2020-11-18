@@ -18,7 +18,6 @@ export interface IBuilderService extends IocCoreService {
      * @template T
      * @param {(ClassType<T> | BuildOption<T>)} target
      * @returns {Promise<IBuildContext>}
-     * @memberof IBuilderService
      */
     build<T>(target: ClassType<T> | BuildOption<T>): Promise<IBuildContext>;
 
@@ -30,7 +29,6 @@ export interface IBuilderService extends IocCoreService {
      * @param {BuildOption<T>} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
-     * @memberof BuilderService
      */
     resolve<T>(target: ClassType<T> | BuildOption<T>): Promise<T>;
 
@@ -61,7 +59,6 @@ export interface IBuilderService extends IocCoreService {
      * @param {(ClassType | Topt | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof IBuilderService
      */
     run<T extends IBootContext, Topt extends BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T>;
     /**
@@ -70,7 +67,6 @@ export interface IBuilderService extends IocCoreService {
      * @param {IBootApplication} application
      * @param {...string[]} args
      * @returns {Promise<IBootContext>}
-     * @memberof IBuilderService
      */
     boot(application: IBootApplication, ...args: string[]): Promise<IBootContext>;
 }

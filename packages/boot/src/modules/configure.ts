@@ -14,35 +14,30 @@ export interface IModuleMetadata<T = any> extends AnnotationMetadata<T> {
      * module base url.
      *
      * @type {string}
-     * @memberof ModuleConfig
      */
     baseURL?: string;
     /**
      * module name.
      *
      * @type {string}
-     * @memberof AppConfiguration
      */
     name?: string;
     /**
      * bootstrap.
      *
      * @type {Token<T>}
-     * @memberof IAnnotationMetadata
      */
     bootstrap?: Token<T>;
     /**
      * imports dependens modules
      *
      * @type {Modules[]}
-     * @memberof ModuleConfiguration
      */
     imports?: Modules[];
     /**
      * exports modules
      *
      * @type {Modules[]}
-     * @memberof ModuleConfiguration
      */
     exports?: Modules[];
     /**

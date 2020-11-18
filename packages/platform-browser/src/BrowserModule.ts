@@ -7,8 +7,6 @@ import { BrowserModuleLoader } from './BrowserModuleLoader';
 /**
  * browser module for ioc. auto run setup after registered.
  * with @IocExt('setup') decorator.
- * @export
- * @class BrowserModule
  */
 @IocExt()
 export class BrowserModule {
@@ -17,8 +15,6 @@ export class BrowserModule {
 
     /**
      * register aop for container.
-     *
-     * @memberof AopModule
      */
     setup(@Inject(CONTAINER) container: IContainer) {
         container.setValue(MODULE_LOADER, new BrowserModuleLoader(), BrowserModuleLoader);

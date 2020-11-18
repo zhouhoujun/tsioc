@@ -12,7 +12,6 @@ export interface IBaseTypeParser {
      * @param {Token<T>} type
      * @param {*} paramVal
      * @returns {T}
-     * @memberof IBaseTypeParser
      */
     parse<T>(type: Token<T>, paramVal): T;
 }

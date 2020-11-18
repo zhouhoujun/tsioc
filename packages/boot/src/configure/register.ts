@@ -16,7 +16,6 @@ export interface IConfigureRegister<T extends IBootContext = IBootContext> {
      * @param {Configure} config
      * @param {T} [ctx]
      * @returns {Promise<void>}
-     * @memberof IConfigureRegister
      */
     register(config: Configure, ctx?: T): Promise<void>;
 }
@@ -42,7 +41,6 @@ export abstract class ConfigureRegister<T extends IBootContext = IBootContext> i
      * @param {Configure} config
      * @param {T} [ctx]
      * @returns {Promise<void>}
-     * @memberof ConfigureRegister
      */
     abstract register(config: Configure, ctx?: T): Promise<void>;
 }

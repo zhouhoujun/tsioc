@@ -7,9 +7,6 @@ import { UnitTestConfigure } from '../UnitTestConfigure';
 
 /**
  * Suite runner.
- *
- * @export
- * @class SuiteRunner
  */
 @Injectable()
 export class UnitTestRunner extends Runnable {

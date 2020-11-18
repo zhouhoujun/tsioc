@@ -12,7 +12,6 @@ export abstract class ConnectionStatupService<T extends IBootContext = IBootCont
      *
      * @abstract
      * @param {T} [ctx]
-     * @memberof ConfigureRegister
      */
     abstract configureService(ctx: T): Promise<void>;
 

@@ -50,7 +50,6 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param {Token<T>} token
      * @param {string} [alias]
      * @returns {Token<T>}
-     * @memberof BaseInjector
      */
     getToken<T>(token: Token<T>, alias?: string): Token<T> {
         if (alias) {
@@ -67,7 +66,6 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param {Token<T>} token
      * @param {string} [alias]
      * @returns {SymbolType<T>}
-     * @memberof BaseInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
         return getTokenKey(token, alias);
@@ -81,7 +79,6 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param {(Factory<T> | InstFac<T>)} fac
      * @param {Type<T>} [provider]
      * @returns {this}
-     * @memberof BaseInjector
      */
     set<T>(provide: Token<T>, fac: Factory<T> | InstFac<T>, provider?: Type<T>): this {
         let key = this.getTokenKey(provide);
@@ -104,6 +101,7 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param Type the class.
      * @param [provide] the class prodvider to.
      * @param [singleton]
+     * @returns {this}
      */
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
         this.getContainer()?.registerIn(this, type, provide, singleton);
@@ -115,7 +113,6 @@ export class DIProvider extends Destoryable implements IProvider {
      *
      * @param {...Provider[]} providers
      * @returns {this}
-     * @memberof Injector
      */
     inject(...providers: Provider[]): this {
         providers.forEach((p, index) => {
@@ -190,7 +187,6 @@ export class DIProvider extends Destoryable implements IProvider {
      *
      * @param {...Modules[]} modules
      * @returns {this}
-     * @memberof IInjector
      */
     use(...modules: Modules[]): Type[] {
         let types = lang.getTypes(...modules);
@@ -204,7 +200,6 @@ export class DIProvider extends Destoryable implements IProvider {
      * @template T
      * @param {Token<T>} token the token.
      * @returns {boolean}
-     * @memberof IInjector
      */
     has<T>(token: Token<T>): boolean;
     /**
@@ -214,7 +209,6 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param {Token<T>} token the token.
      * @param {string} alias addtion alias.
      * @returns {boolean}
-     * @memberof IInjector
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
@@ -224,7 +218,6 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param {Token<T>} token the token.
      * @param {string} alias addtion alias.
      * @returns {boolean}
-     * @memberof IInjector
      */
     has<T>(token: Token<T>, alias?: string): boolean {
         return this.hasTokenKey(this.getTokenKey(token, alias));
@@ -233,6 +226,7 @@ export class DIProvider extends Destoryable implements IProvider {
      * has register.
      * @param token the token
      * @param alias addtion alias
+     * @returns {boolean}
      */
     hasRegister<T>(token: Token<T>, alias?: string): boolean {
         let key = this.getTokenKey(token, alias);
@@ -292,7 +286,6 @@ export class DIProvider extends Destoryable implements IProvider {
      * @param {(string | Provider)} [alias]
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof BaseInjector
      */
     get<T>(token: Token<T>, alias?: string | Provider, ...providers: Provider[]): T {
         let key;
@@ -307,6 +300,11 @@ export class DIProvider extends Destoryable implements IProvider {
         return this.getInstance(key, ...providers);
     }
 
+    /**
+     * get token instance in current injector or root container.
+     * @param key token key.
+     * @param providers providers.
+     */
     getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T {
         const pdr = this.factories.get(key);
         if (!pdr) return this.parent?.getInstance(key);
@@ -430,7 +428,7 @@ export abstract class Injector extends DIProvider implements IInjector {
      * @param {Token<T>} token
      * @param {T} [value]
      * @returns {this}
-     * @memberOf BaseInjector
+     * @memberOf Injector
      */
     abstract register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
 
@@ -441,7 +439,7 @@ export abstract class Injector extends DIProvider implements IInjector {
      * @param {Token<T>} token
      * @param {FactoryLike<T>} [fac]
      * @returns {this}
-     * @memberOf Container
+     * @memberOf Injector
      */
     abstract registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
 
@@ -452,7 +450,7 @@ export abstract class Injector extends DIProvider implements IInjector {
      * @param {Token<T>} provide
      * @param {Type<T>} provider
      * @returns {this}
-     * @memberof BaseInjector
+     * @memberof Injector
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>): this {
         const provideKey = this.getTokenKey(provide);
@@ -496,7 +494,7 @@ export abstract class Injector extends DIProvider implements IInjector {
      *
      * @param {...Modules[]} modules
      * @returns {this}
-     * @memberof IInjector
+     * @memberof Injector
      */
     use(...modules: Modules[]): Type[] {
         let types = lang.getTypes(...modules);
@@ -519,12 +517,12 @@ export abstract class Injector extends DIProvider implements IInjector {
      * invoke method.
      *
      * @template T
-     * @param {(T | Type<T>)} target type of class or instance
+     * @param {(T | Type<T>)} target type of class or instance.
      * @param {MethodType} propertyKey
      * @param {T} [instance] instance of target type.
      * @param {...Provider[]} providers
      * @returns {TR}
-     * @memberof BaseInjector
+     * @memberof Injector
      */
     abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
 
@@ -557,7 +555,7 @@ export function isInjector(target: any): target is IProvider {
  * context provider.
  *
  * @export
- * @class ContextProvider
+ * @class ContextProvider.
  * @extends {Injector}
  */
 export class ContextProvider extends DIProvider implements IProvider {
@@ -565,7 +563,7 @@ export class ContextProvider extends DIProvider implements IProvider {
 }
 
 /**
- * invoked provider
+ * invoked provider.
  */
 export class InvokedProvider extends DIProvider implements IProvider {
 

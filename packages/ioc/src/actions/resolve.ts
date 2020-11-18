@@ -32,7 +32,6 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
      * @param {(Token<T> | ResolveOption<T>)} token
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof ResolveLifeScope
      */
     resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         let ctx = {

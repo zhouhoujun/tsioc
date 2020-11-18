@@ -14,7 +14,6 @@ export class BaseTypeParser extends IocCoreService implements IBaseTypeParser {
      * @param {Token<T>} type
      * @param {*} paramVal
      * @returns {T}
-     * @memberof BaseTypeParser
      */
     parse<T>(type: Token<T>, paramVal: any): T {
         if (isNullOrUndefined(paramVal)) {

@@ -34,7 +34,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @param {IBuildOption} options
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
-     * @memberof BuilderService
      */
     async resolve<T>(target: ClassType<T> | BuildOption<T>): Promise<T> {
         let ctx = await this.build(target);
@@ -92,7 +91,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @param {(ClassType | Topt | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof BuilderService
      */
     run<T extends IBootContext = IBootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T> {
         const container = this.root.getContainer();
@@ -106,7 +104,6 @@ export class BuilderService extends IocCoreService implements IBuilderService {
      * @param {(Type | BootOption | T)} target
      * @param {...string[]} args
      * @returns {Promise<T>}
-     * @memberof BuilderService
      */
     async boot(application: IBootApplication, ...args: string[]): Promise<IBootContext> {
         const container = application.getContainer();

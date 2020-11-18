@@ -17,7 +17,6 @@ export interface InjContext extends IocContext {
      * the module to injector to container.
      *
      * @type {Modules}
-     * @memberof InjectorActionContext
      */
     module: Modules;
 
@@ -25,7 +24,6 @@ export interface InjContext extends IocContext {
      * types in  module.
      *
      * @type {Type[]}
-     * @memberof InjectorActionContext
      */
     types: Type[];
 
@@ -33,7 +31,6 @@ export interface InjContext extends IocContext {
      * registered types.
      *
      * @type {Type[]}
-     * @memberof InjectorActionContext
      */
     registered?: Type[];
 

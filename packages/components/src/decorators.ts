@@ -293,6 +293,46 @@ export const HostListener: HostListenerPropertyDecorator = createPropDecorator<H
 
 
 /**
+ * Binding decorator.
+ *
+ * @export
+ * @interface BindingPropertyDecorator
+ */
+export interface BindingPropertyDecorator {
+    /**
+     * define binding property decorator with binding property name.
+     *
+     * @param {string} [bindingPropertyName] binding property name
+     */
+    (bindingPropertyName?: string): PropertyDecorator;
+
+    /**
+     * define binding property decorator with binding property name and provider.
+     *
+     * @param {string} bindingPropertyName binding property name
+     * @param {*} defaultVal default value.
+     */
+    (bindingPropertyName: string, defaultVal: any): PropertyDecorator;
+
+    /**
+     * define binding property decorator with binding metadata.
+     *
+     * @param {string} bindingName binding property name
+     */
+    (metadata: BindingMetadata): PropertyDecorator;
+
+}
+
+/**
+ * Binding decorator.
+ */
+export const Binding: InputPropertyDecorator = createPropDecorator<BindingMetadata>('Binding', {
+    props: (bindingPropertyName: string, defaultValue?: any) => ({ bindingPropertyName, defaultValue })
+});
+
+
+
+/**
  * Input decorator.
  *
  * @export

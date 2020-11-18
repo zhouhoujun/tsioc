@@ -10,7 +10,6 @@ export interface ILogger {
      * logger level
      *
      * @type {string}
-     * @memberof ILogger
      */
     level: string;
 
@@ -18,7 +17,6 @@ export interface ILogger {
      * log, base log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     log(...messages: any[]): void;
 
@@ -26,7 +24,6 @@ export interface ILogger {
      * trace log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     trace(...messages: any[]): void;
 
@@ -34,14 +31,12 @@ export interface ILogger {
      * debg log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     debug(...messages: any[]): void;
     /**
      * debg log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     debug(...messages: any[]): void;
 
@@ -49,7 +44,6 @@ export interface ILogger {
      * info log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     info(...messages: any[]): void;
 
@@ -57,7 +51,6 @@ export interface ILogger {
      * warn log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     warn(...messages: any[]): void;
 
@@ -65,7 +58,6 @@ export interface ILogger {
      * error log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     error(...messages: any[]): void;
 
@@ -73,7 +65,6 @@ export interface ILogger {
      * fatal error log.
      *
      * @param {...any[]} messages
-     * @memberof ILogger
      */
     fatal(...messages: any[]): void;
 

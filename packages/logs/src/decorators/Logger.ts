@@ -14,7 +14,6 @@ export interface LoggerMetadata extends TypeMetadata {
      * set the special name to get logger from logger manager.
      *
      * @type {string}
-     * @memberof LoggerMetadata
      */
     logname?: string;
 
@@ -25,15 +24,12 @@ export interface LoggerMetadata extends TypeMetadata {
 
     /**
      * only match express condition can do loging.
-     *
-     * @memberof LoggerMetadata
      */
     express?(item: any): boolean;
     /**
      * set special message to logging
      *
      * @type {string}
-     * @memberof LoggerMetadata
      */
     message?: string;
 }

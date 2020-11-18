@@ -19,7 +19,6 @@ export interface IAdviceMatcher {
      * @param {AdviceMetadata[]} [adviceMetas]
      * @param {*} [instance]
      * @returns {MatchPointcut[]}
-     * @memberof IAdviceMatcher
      */
     match(aspectType: Type, type: Type, adviceMetas?: AdviceMetadata[], instance?: any): MatchPointcut[]
 }

@@ -164,7 +164,6 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
      * props.
      *
      * @type {Map<string, PropertyMetadata[]>}
-     * @memberof ITypeReflect
      */
     propProviders: Map<string, PropertyMetadata[]>;
 
@@ -172,7 +171,6 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
      * method params.
      *
      * @type {ObjectMap<IParameter[]>}
-     * @memberof ITypeReflect
      */
     methodParams: Map<string, ParameterMetadata[]>;
 
@@ -180,7 +178,6 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
      * method providers.
      *
      * @type {ObjectMap<Provider[]>}
-     * @memberof ITypeReflect
      */
     methodExtProviders: Map<string, Provider[]>;
 

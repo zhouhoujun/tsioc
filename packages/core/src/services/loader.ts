@@ -41,7 +41,6 @@ export class ModuleLoader implements IModuleLoader {
      *
      * @param {...LoadType[]} modules
      * @returns {Promise<Modules[]>}
-     * @memberof DefaultModuleLoader
      */
     load(...modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
@@ -73,7 +72,6 @@ export class ModuleLoader implements IModuleLoader {
      *
      * @param {...LoadType[]} modules
      * @returns {Promise<Type[]>}
-     * @memberof IContainerBuilder
      */
     async loadTypes(...modules: LoadType[]): Promise<Type[][]> {
         let mdls = await this.load(...modules);

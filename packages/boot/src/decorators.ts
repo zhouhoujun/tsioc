@@ -320,7 +320,6 @@ export interface MessageMetadata extends TypeMetadata, PatternMetadata {
      * message parent.
      * default register in root message queue.
      * @type {boolean}
-     * @memberof ModuleConfig
      */
     parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none';
 
@@ -328,7 +327,6 @@ export interface MessageMetadata extends TypeMetadata, PatternMetadata {
      * register this message handle before this handle.
      *
      * @type {Type<MessageHandle>}
-     * @memberof MessageMetadata
      */
     before?: Type<MessageHandle<MessageContext>>;
 
@@ -336,7 +334,6 @@ export interface MessageMetadata extends TypeMetadata, PatternMetadata {
      * register this message handle after this handle.
      *
      * @type {Type<MessageHandle>}
-     * @memberof MessageMetadata
      */
     after?: Type<MessageHandle<MessageContext>>;
 }
@@ -430,7 +427,6 @@ export interface BootstrapMetadata extends ModuleConfigure {
      * module bootstrap token.
      *
      * @type {Token<T>}
-     * @memberof AnnotationConfigure
      */
     bootstrap?: Token;
 

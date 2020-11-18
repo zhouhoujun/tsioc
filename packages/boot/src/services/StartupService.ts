@@ -36,8 +36,7 @@ export abstract class StartupService<T extends IBootContext = IBootContext> exte
      *
      * @abstract
      * @param {T} [ctx]
-     * @returns {Promise<void>} startup service token
-     * @memberof ConfigureRegister
+     * @returns {Promise<void>} startup service token.
      */
     abstract configureService(ctx: T): Promise<void>;
 

@@ -20,7 +20,6 @@ export abstract class Handles<T> extends Handle<T> {
      *
      * @param {HandleType} handle
      * @returns {this}
-     * @memberof LifeScope
      */
     use(handle: HandleType<T>): this {
         if (!this.has(handle)) {
@@ -48,7 +47,6 @@ export abstract class Handles<T> extends Handle<T> {
      * @param {HandleType} handle
      * @param {HandleType} before
      * @returns {this}
-     * @memberof LifeScope
      */
     useBefore(handle: HandleType<T>, before: HandleType<T>): this {
         if (this.has(handle)) {
@@ -69,7 +67,6 @@ export abstract class Handles<T> extends Handle<T> {
      * @param {HandleType} handle
      * @param {HandleType} after
      * @returns {this}
-     * @memberof LifeScope
      */
     useAfter(handle: HandleType<T>, after?: HandleType<T>): this {
         if (this.has(handle)) {

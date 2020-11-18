@@ -22,7 +22,6 @@ export interface ILoggerManager {
      * config logger context.
      *
      * @param {LoggerConfig} config
-     * @memberof ILoggerManger
      */
     configure(config: LoggerConfig): void;
     /**
@@ -30,7 +29,6 @@ export interface ILoggerManager {
      *
      * @param {string} [name]
      * @returns {ILogger}
-     * @memberof ILoggerManger
      */
     getLogger(name?: string): ILogger
 }
@@ -50,7 +48,6 @@ export interface IConfigureLoggerManager extends ILoggerManager {
      * readonly config.
      *
      * @type {LogConfigure}
-     * @memberof IConfigureLoggerManager
      */
     readonly config: LogConfigure;
 
@@ -58,7 +55,6 @@ export interface IConfigureLoggerManager extends ILoggerManager {
      * set log configure.
      *
      * @param {(LogConfigure | Type<LogConfigure>)} config
-     * @memberof IConfigureLoggerManager
      */
     setLogConfigure(config: LogConfigure | Type<LogConfigure>);
 

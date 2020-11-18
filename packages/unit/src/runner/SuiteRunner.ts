@@ -41,7 +41,6 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
      * get suite describe.
      *
      * @returns {ISuiteDescribe}
-     * @memberof SuiteRunner
      */
     getSuiteDescribe(): ISuiteDescribe {
         let meta = this.ctx.getAnnoation<SuiteMetadata>();
@@ -170,5 +169,4 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
         }
         return caseDesc;
     }
-
 }

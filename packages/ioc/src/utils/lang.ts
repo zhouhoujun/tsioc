@@ -245,7 +245,6 @@ export namespace lang {
      * @param {Modules[]} modules
      * @param {...Express<Type, boolean>[]} filters
      * @returns {Type[]}
-     * @memberof DefaultModuleLoader
      */
     export function getTypes(...modules: Modules[]): Type[] {
         if (!modules.length) {
@@ -682,7 +681,6 @@ export class Defer<T> {
      * @template T
      * @param {((val: T) => T | PromiseLike<T>)} [then]
      * @returns {Defer<T>}
-     * @memberof Defer
      */
     static create<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
         let defer = new Defer<T>();
@@ -697,19 +695,14 @@ export class Defer<T> {
      * promise.
      *
      * @type {Promise<T>}
-     * @memberof Defer
      */
     promise: Promise<T>;
     /**
      * resolve.
-     *
-     * @memberof Defer
      */
     resolve: (value?: T | PromiseLike<T>) => void;
     /**
      * reject.
-     *
-     * @memberof Defer
      */
     reject: (reason?: any) => void;
 

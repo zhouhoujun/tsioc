@@ -10,7 +10,6 @@ export interface MatchPointcut extends IPointcut {
      * advice for pointcut.
      *
      * @type {AdviceMetadata}
-     * @memberof MatchPointcut
      */
     advice: AdviceMetadata;
 }

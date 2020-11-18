@@ -33,7 +33,6 @@ export class InjectorImpl extends Injector {
      * @param {Token<T>} provide
      * @param { FactoryLike<T>} fac
      * @returns {this}
-     * @memberof ProviderMap
      */
     register<T>(provide: Token<T>, fac?: FactoryLike<T>): this {
         this.getContainer()?.registerFactory(this, provide, fac);
@@ -58,7 +57,6 @@ export class InjectorImpl extends Injector {
      * @param {Token<T>} provide
      * @param { FactoryLike<T>} fac
      * @returns {this}
-     * @memberof ProviderMap
      */
     registerSingleton<T>(provide: Token<T>, fac?: FactoryLike<T>): this {
         this.getContainer()?.registerFactory(this, provide, fac, true);
@@ -72,7 +70,6 @@ export class InjectorImpl extends Injector {
      * @param {(Token<T> | ResolveOption<T>)} token
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         return this.getContainer().provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
@@ -87,7 +84,6 @@ export class InjectorImpl extends Injector {
      * @param {T} [instance] instance of target type.
      * @param {...Provider[]} providers
      * @returns {TR}
-     * @memberof BaseInjector
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
         return this.getValue(METHOD_ACCESSOR).invoke(this, target, propertyKey, ...providers);
@@ -129,7 +125,6 @@ export class IocContainer extends Injector implements IIocContainer {
      * @param {(Token<T> | ResolveOption<T>)} token
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: Provider[]): T {
         return this.provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
@@ -144,7 +139,6 @@ export class IocContainer extends Injector implements IIocContainer {
      * @param {T} [instance] instance of target type.
      * @param {...Provider[]} providers
      * @returns {TR}
-     * @memberof BaseInjector
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
         return this.getValue(METHOD_ACCESSOR).invoke(this, target, propertyKey, ...providers);
@@ -161,7 +155,6 @@ export class IocContainer extends Injector implements IIocContainer {
      * @param {Token<T>} token
      * @param {T} [fac]
      * @returns {this}
-     * @memberOf Container
      */
     register<T>(token: Token<T>, fac?: FactoryLike<T>): this {
         this.registerFactory(this, token, fac);

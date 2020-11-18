@@ -12,7 +12,6 @@ export interface TestMetadata {
      * test action type.
      *
      * @type {string}
-     * @memberof TestMetadata
      */
     action?: string;
 
@@ -20,7 +19,6 @@ export interface TestMetadata {
      * test timeout.
      *
      * @type {number}
-     * @memberof TestMetadata
      */
     timeout?: number;
 }
@@ -56,7 +54,6 @@ export interface TestCaseMetadata extends TestMetadata {
     * as a thunk.
     *
     * @type {string}
-    * @memberof TestCaseMetadata
     */
     title?: string;
 
@@ -64,7 +61,6 @@ export interface TestCaseMetadata extends TestMetadata {
      * test setp
      *
      * @type {number}
-     * @memberof TestCaseMetadata
      */
     setp?: number;
 }
@@ -83,7 +79,6 @@ export interface SuiteMetadata extends AnnotationMetadata {
      * test suite describe message.
      *
      * @type {string}
-     * @memberof SuiteMetadata
      */
     describe?: string;
 
@@ -91,7 +86,6 @@ export interface SuiteMetadata extends AnnotationMetadata {
      * all action default timeout.
      *
      * @type {number}
-     * @memberof SuiteMetadata
      */
     timeout?: number;
 

@@ -12,7 +12,6 @@ export interface ServiceOption<T> extends ResolveOption<T> {
      * token provider service type.
      *
      * @type {Type}
-     * @memberof ServiceActionOption
      */
     tokens?: Token<T>[];
 
@@ -20,14 +19,12 @@ export interface ServiceOption<T> extends ResolveOption<T> {
      * token alias.
      *
      * @type {string}
-     * @memberof ServiceOption
      */
     alias?: string;
     /**
      * get extend servie or not.
      *
      * @type {boolean}
-     * @memberof ServiceOption
      */
     extend?: boolean;
 }
@@ -54,7 +51,6 @@ export interface ServiceContext extends ResolveContext {
      * get extend servie or not.
      *
      * @type {boolean}
-     * @memberof ServiceOption
      */
     extend?: boolean;
 
@@ -79,7 +75,6 @@ export interface ServicesOption<T> extends ServiceOption<T> {
      * get services both in container and target private refrence service.
      *
      * @type {boolean}
-     * @memberof ServicesActionOption
      */
     both?: boolean;
 }
@@ -98,7 +93,6 @@ export interface ServicesContext extends ServiceContext {
      * all matched services map.
      *
      * @type {Injector}
-     * @memberof ResolveServicesContext
      */
     services?: IProvider;
 

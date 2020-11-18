@@ -9,7 +9,6 @@ export class BuildContext<T extends BuildOption = BuildOption> extends Annoation
      * current target module
      *
      * @type {*}
-     * @memberof BuildContext
      */
     value: any;
 

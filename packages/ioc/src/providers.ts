@@ -66,7 +66,6 @@ export interface ValueProvider extends ProvideProvider {
      * use value for provide.
      *
      * @type {*}
-     * @memberof ValueProvider
      */
     useValue: any;
 }

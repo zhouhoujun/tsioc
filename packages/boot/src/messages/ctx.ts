@@ -17,14 +17,12 @@ export interface MessageOption extends ProdverOption {
      * message type
      *
      * @type {string}
-     * @memberof MessageContext
      */
     type?: string;
     /**
      * message event
      *
      * @type {string}
-     * @memberof MessageContext
      */
     event: string;
 
@@ -32,7 +30,6 @@ export interface MessageOption extends ProdverOption {
      * message data.
      *
      * @type {*}
-     * @memberof MessageContext
      */
     data?: any;
 
@@ -40,7 +37,6 @@ export interface MessageOption extends ProdverOption {
      * message of target.
      *
      * @type {*}
-     * @memberof MessageOption
      */
     target?: any;
     /**
@@ -70,7 +66,6 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Des
      * message of target.
      *
      * @type {*}
-     * @memberof MessageContext
      */
     get target(): any {
         return this.options.target;
@@ -80,7 +75,6 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Des
      * message type
      *
      * @type {string}
-     * @memberof MessageContext
      */
     get type(): string {
         return this.options.type;
@@ -89,7 +83,6 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Des
      * message event
      *
      * @type {string}
-     * @memberof MessageContext
      */
     get event(): string {
         return this.options.event;
@@ -99,7 +92,6 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Des
      * message data.
      *
      * @type {*}
-     * @memberof MessageContext
      */
     get data(): any {
         return this.options.data;

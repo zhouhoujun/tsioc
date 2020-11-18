@@ -28,7 +28,6 @@ export class MethodAccessor implements IMethodAccessor {
      * @param {(string | ((tag: T) => Function))} propertyKey
      * @param {...Provider[]} providers
      * @returns {T}
-     * @memberof IMethodAccessor
      */
     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR {
         let targetClass: Type;
@@ -77,7 +76,6 @@ export class MethodAccessor implements IMethodAccessor {
      * @param {IParameter[]} params
      * @param {...Provider[]} providers
      * @returns {any[]}
-     * @memberof MethodAccessor
      */
     createParams(injector: IInjector, params: ParameterMetadata[], ...providers: Provider[]): any[] {
         return this.resolveParams(injector, params, injector.getInstance(INVOKED_PROVIDERS).inject(...providers));

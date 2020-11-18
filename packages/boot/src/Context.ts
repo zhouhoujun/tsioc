@@ -34,7 +34,6 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
      * target module type.
      *
      * @type {ClassType}
-     * @memberof AnnoationActionOption
      */
     type?: ClassType<T>;
 }
@@ -138,21 +137,18 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
      * boot base url.
      *
      * @type {string}
-     * @memberof BootOptions
      */
     baseURL?: string;
     /**
      * module loader
      *
      * @type {IModuleLoader}
-     * @memberof BootOptions
      */
     loader?: IModuleLoader;
     /**
      * custom configures
      *
      * @type {((string | Configure)[])}
-     * @memberof BootOptions
      */
     configures?: (string | Configure)[];
     /**
@@ -161,50 +157,42 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
     startups?: Token[]
     /**
      * bootstrap instance.
-     *
-     * @memberof BootOptions
      */
     bootstrap?: Token;
     /**
      * render host container.
      *
      * @type {*}
-     * @memberof BootOption
      */
     renderHost?: any;
     /**
      * bind template
      *
      * @type {*}
-     * @memberof BootOption
      */
     template?: any;
     /**
      * boot run env args.
      *
      * @type {string[]}
-     * @memberof BootOptions
      */
     args?: string[];
     /**
      *  custom boot data of `BuildOptions`
      *
      * @type {*}
-     * @memberof BootOptions
      */
     data?: any;
     /**
     * auto statupe or not. default true.
     *
     * @type {boolean}
-    * @memberof BootOptions
     */
     autorun?: boolean;
     /**
      * boot dependencies.
      *
      * @type {LoadType[]}
-     * @memberof BootOptions
      */
     deps?: LoadType[];
     /**
@@ -306,14 +294,12 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
     * auto statupe or not. default true.
     *
     * @type {boolean}
-    * @memberof BootOptions
     */
     readonly autorun?: boolean;
     /**
      * boot dependencies.
      *
      * @type {LoadType[]}
-     * @memberof BootOptions
      */
     readonly deps: LoadType[];
 
@@ -337,7 +323,6 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * configuration merge metadata config and all application config.
      *
      * @type {T}
-     * @memberof BootContext
      */
     getConfiguration(): Configure;
 

@@ -1,3 +1,6 @@
+/**
+ * joinpoint state.
+ */
 export enum JoinpointState {
     Before = 'Before',
     Pointcut = 'Pointcut',
