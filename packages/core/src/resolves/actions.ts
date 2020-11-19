@@ -23,8 +23,7 @@ export class ResolveServiceScope extends resovles.IocResolveScope<ServiceContext
     }
 
     setup() {
-        this.use(RsvTagSericeScope)
-            .use(RsvTokenServiceAction);
+        this.use(RsvTagSericeScope, RsvTokenServiceAction);
     }
 }
 
@@ -52,8 +51,7 @@ export class RsvTagSericeScope extends resovles.IocResolveScope<ServiceContext> 
     }
 
     setup() {
-        this.use(RsvSuperServiceAction)
-            .use(RsvDecorServiceAction);
+        this.use(RsvSuperServiceAction, RsvDecorServiceAction);
     }
 }
 
@@ -150,8 +148,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
     }
 
     setup() {
-        this.use(RsvSuperServicesAction)
-            .use(RsvServicesAction);
+        this.use(RsvSuperServicesAction, RsvServicesAction);
     }
 }
 

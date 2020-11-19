@@ -30,7 +30,7 @@ export interface IHandle<T = any> {
 /**
  *  handle type.
  */
-export type HandleType<T> = ActionType<IHandle<T>, AsyncHandler<T>>;
+export type HandleType<T = any> = ActionType<IHandle<T>, AsyncHandler<T>>;
 
 /**
  * middleware

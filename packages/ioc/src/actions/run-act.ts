@@ -196,9 +196,7 @@ export const RegSingletionAction = function (ctx: RuntimeContext, next: () => vo
  */
 export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
-        this.use(IocSetCacheAction)
-            .use(RegSingletionAction)
-            .use(RuntimeAnnoDecorScope);
+        this.use(IocSetCacheAction, RegSingletionAction, RuntimeAnnoDecorScope);
     }
 }
 
@@ -234,8 +232,7 @@ export const RuntimeMthDecorScope = function (ctx: RuntimeContext, next: () => v
 
 export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IActionSetup {
     setup() {
-        this.use(InjectPropAction)
-            .use(RuntimePropDecorScope);
+        this.use(InjectPropAction, RuntimePropDecorScope);
     }
 }
 

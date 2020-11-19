@@ -169,10 +169,12 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
         this.unuse(haddle);
     }
 
-    protected registerHandle(HandleType: HandleType<T>): this {
-        if (isClass(HandleType)) {
-            this.getInjector().registerType(HandleType);
-        }
+    protected registerHandle(...handles: HandleType<T>[]): this {
+        handles.forEach(type => {
+            if (isClass(type)) {
+                this.getInjector().registerType(type);
+            }
+        });
         return this;
     }
 

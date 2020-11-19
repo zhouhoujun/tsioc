@@ -20,11 +20,13 @@ export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements
         }
     }
     setup() {
-        this.use(InitReflectAction)
-            .use(da.DesignClassScope)
-            .use(da.DesignPropScope)
-            .use(da.DesignMthScope)
-            .use(da.AnnoScope);
+        this.use(
+            InitReflectAction,
+            da.DesignClassScope,
+            da.DesignPropScope,
+            da.DesignMthScope,
+            da.AnnoScope
+        );
     }
 }
 

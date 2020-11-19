@@ -32,10 +32,11 @@ export class BootModule {
         container.set(ModuleProviders, () => new ModuleProviders(container));
 
         const prdr = container.provider;
-        prdr.regAction(ResolveMoudleScope)
-            .regAction(StartupServiceScope)
-            .regAction(RunnableBuildLifeScope)
-            .regAction(BootLifeScope);
+        prdr.regAction(
+            ResolveMoudleScope,
+            StartupServiceScope,
+            RunnableBuildLifeScope,
+            BootLifeScope);
 
         prdr.getInstance(InjModuleScope)
             .useBefore(InjDIModuleScope);

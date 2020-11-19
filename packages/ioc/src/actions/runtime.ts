@@ -19,14 +19,16 @@ export class RuntimeLifeScope extends RegisterLifeScope<RuntimeContext> {
     }
 
     setup() {
-        this.use(InitReflectAction)
-            .use(ra.CtorArgsAction)
-            .use(ra.BeforeCtorScope)
-            .use(ra.CreateInstanceAction)
-            .use(ra.AfterCtorScope)
-            .use(ra.RuntimePropScope)
-            .use(ra.RuntimeMthScope)
-            .use(ra.RuntimeAnnoScope);
+        this.use(
+            InitReflectAction,
+            ra.CtorArgsAction,
+            ra.BeforeCtorScope,
+            ra.CreateInstanceAction,
+            ra.AfterCtorScope,
+            ra.RuntimePropScope,
+            ra.RuntimeMthScope,
+            ra.RuntimeAnnoScope
+        );
     }
 
 }

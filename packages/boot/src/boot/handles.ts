@@ -39,9 +39,11 @@ export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActi
     }
 
     setup() {
-        this.use(BootDepsHandle)
-            .use(BootProvidersHandle)
-            .use(BootConfigureLoadHandle);
+        this.use(
+            BootDepsHandle,
+            BootProvidersHandle,
+            BootConfigureLoadHandle
+        );
     }
 }
 
@@ -202,8 +204,7 @@ export class ModuleBuildScope extends BuildHandles<IBootContext> implements IAct
     }
 
     setup() {
-        this.use(ResolveTypeHandle)
-            .use(ResolveBootHandle);
+        this.use(ResolveTypeHandle, ResolveBootHandle);
     }
 }
 

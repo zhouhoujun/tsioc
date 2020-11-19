@@ -104,7 +104,9 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      * @param {boolean} [setup]
      * @returns {this}
      */
-    use(handle: HandleType<T>, setup?: boolean): this;
+    use(...handles: HandleType[]): this;
+
+    unuse(...handles: HandleType[]): this;
 
     /**
      * has message handle

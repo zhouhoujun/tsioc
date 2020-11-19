@@ -308,11 +308,13 @@ class RegisteredStateImpl implements RegisteredState {
  */
 class ActionProvider extends Provider implements IActionProvider {
 
-    regAction<T extends Action>(type: Type<T>): this {
-        if (this.hasTokenKey(type)) {
-            return this;
-        }
-        this.registerAction(type);
+    regAction<T extends Action>(...types: Type<T>[]): this {
+        types.forEach(type => {
+            if (this.hasTokenKey(type)) {
+                return this;
+            }
+            this.registerAction(type);
+        });
         return this;
     }
 

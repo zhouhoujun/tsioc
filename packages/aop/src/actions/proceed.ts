@@ -153,8 +153,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     setup() {
-        this.use(CtorAdvicesScope)
-            .use(MethodAdvicesScope);
+        this.use(CtorAdvicesScope, MethodAdvicesScope);
     }
 
     protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
@@ -208,8 +207,7 @@ export class CtorAdvicesScope extends IocActions<Joinpoint> implements IActionSe
         }
     }
     setup() {
-        this.use(CtorBeforeAdviceAction)
-            .use(CtorAfterAdviceAction);
+        this.use(CtorBeforeAdviceAction, CtorAfterAdviceAction);
     }
 }
 
@@ -256,13 +254,15 @@ export class MethodAdvicesScope extends IocActions<Joinpoint> implements IAction
         super.execute(ctx, next);
     }
     setup() {
-        this.use(BeforeAdvicesAction)
-            .use(PointcutAdvicesAction)
-            .use(ExecuteOriginMethodAction)
-            .use(AfterAdvicesAction)
-            .use(AfterAsyncReturningAdvicesAction)
-            .use(AfterReturningAdvicesAction)
-            .use(AfterThrowingAdvicesAction);
+        this.use(
+            BeforeAdvicesAction,
+            PointcutAdvicesAction,
+            ExecuteOriginMethodAction,
+            AfterAdvicesAction,
+            AfterAsyncReturningAdvicesAction,
+            AfterReturningAdvicesAction,
+            AfterThrowingAdvicesAction
+        );
     }
 
 }

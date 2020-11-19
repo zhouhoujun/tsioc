@@ -39,10 +39,12 @@ export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends H
         return this.injector.getContainer().provider.getAction<AsyncHandler<T>>(handleType);
     }
 
-    protected registerHandle(handleType: HandleType<T>): this {
-        if (isClass(handleType)) {
-            this.injector.getContainer().provider.regAction(handleType);
-        }
+    protected registerHandle(...handles: HandleType<T>[]): this {
+        handles.forEach(type => {
+            if (isClass(type)) {
+                this.injector.getContainer().provider.regAction(type);
+            }
+        });
         return this;
     }
 }

@@ -11,9 +11,9 @@ import { IocContext } from './ctx';
 export interface IActionProvider extends IProvider {
     /**
      * register action, simple create instance via `new type(this)`.
-     * @param type
+     * @param types
      */
-    regAction<T extends Action>(type: Type<T>): this;
+    regAction(...types: Type<Action>[]): this;
     /**
      * get action via target.
      * @param target target.
@@ -41,10 +41,12 @@ export class IocActions<T extends IocContext = IocContext> extends Actions<T> {
         super();
     }
 
-    protected regAction(ac: any) {
-        if (isClass(ac)) {
-            this.provider.regAction(ac);
-        }
+    protected regAction(...acs: any[]) {
+        acs.forEach(ac => {
+            if (isClass(ac)) {
+                this.provider.regAction(ac);
+            }
+        });
     }
 
     protected toHandle(ac: any) {

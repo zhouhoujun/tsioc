@@ -19,9 +19,8 @@ export function registerCores(container: IContainer) {
     container.setValue(ServiceProvider, new ServiceProvider(container));
 
     // register action
-    container.provider
-        .regAction(InjLifeScope)
-        .regAction(ResolveServiceScope)
-        .regAction(ResolveServicesScope);
+    container.provider.regAction(InjLifeScope,
+            ResolveServiceScope,
+            ResolveServicesScope);
 
 }

@@ -24,14 +24,16 @@ export class RenderView<T extends ViewContext> extends IocActions<T> implements 
 
 
     setup() {
-        this.use(dispatchView)
-            .use(renderCreate)
-            .use(executeViewQuery)
-            .use(executeTemplate)
-            .use(renderViewCleanup)
-            .use(refreshContentQueries)
-            .use(executeStaticViewQuiery)
-            .use(renderChildComponents);
+        this.use(
+            dispatchView,
+            renderCreate,
+            executeViewQuery,
+            executeTemplate,
+            renderViewCleanup,
+            refreshContentQueries,
+            executeStaticViewQuiery,
+            renderChildComponents
+        );
     }
 }
 
@@ -131,9 +133,11 @@ export function renderChildComponents(ctx: ViewContext, next: () => void) {
 export class RefreshView<T extends ViewContext> extends IocActions<T> implements IActionSetup {
 
     setup() {
-        this.use(dispatchView)
-            .use(renderUpdate)
-            .use(refreshViewCleanup);
+        this.use(
+            dispatchView,
+            renderUpdate,
+            refreshViewCleanup
+        );
     }
 }
 
@@ -165,11 +169,13 @@ export function refreshViewCleanup(ctx: ViewContext, next: () => void) {
 export class RenderComponent<T extends ComponentContext> extends IocActions<T> implements IActionSetup {
 
     setup() {
-        this.use(initComponentDef)
-            .use(dispatchRootView)
-            .use(CreateComponent)
-            .use(RenderView)
-            .use(RefreshView);
+        this.use(
+            initComponentDef,
+            dispatchRootView,
+            CreateComponent,
+            RenderView,
+            RefreshView
+        );
     }
 }
 
@@ -231,8 +237,7 @@ export function initComponentDef(ctx: ComponentContext, next: () => void) {
 export class CreateComponent<T extends ComponentContext> extends IocActions<T> implements IActionSetup {
 
     setup() {
-        this.use(createRootComponentView)
-            .use(createRootComponent);
+        this.use(createRootComponentView, createRootComponent);
     }
 
 }

@@ -21,11 +21,13 @@ export abstract class IocDesignAction extends IocRegAction<DesignContext> { }
 export class DesignClassScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
-        this.use(AnnoRegInAction)
-            .use(BeforeAnnoDecorScope)
-            .use(TypeProviderAction)
-            .use(RegClassAction)
-            .use(DesignClassDecorScope);
+        this.use(
+            AnnoRegInAction,
+            BeforeAnnoDecorScope,
+            TypeProviderAction,
+            RegClassAction,
+            DesignClassDecorScope
+        );
     }
 }
 
@@ -104,8 +106,7 @@ export const DesignClassDecorScope = function (ctx: DesignContext, next: () => v
 export class DesignPropScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
-        this.use(PropProviderAction)
-            .use(DesignPropDecorScope);
+        this.use(PropProviderAction, DesignPropDecorScope);
     }
 }
 
@@ -184,8 +185,7 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
 
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
-        this.use(RegMethodParamsType)
-            .use(DesignMthDecorScope);
+        this.use(RegMethodParamsType, DesignMthDecorScope);
     }
 }
 
@@ -244,9 +244,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
 export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
-        this.use(AnnoDecorScope)
-            .use(AfterAnnoDecorScope)
-            .use(IocAutorunAction);
+        this.use(AnnoDecorScope, AfterAnnoDecorScope, IocAutorunAction);
     }
 }
 

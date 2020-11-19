@@ -421,24 +421,30 @@ export namespace refl {
     export const paramDecorActions: Actions<DecorContext> = new DecorActions();
 
 
-    typeDecorActions
-        .use(InitCtorDesignParams)
-        .use(TypeAnnoAction)
-        .use(TypeProvidersAction)
-        .use(AutorunAction)
-        .use(ExecuteDecorHandle);
-    methodDecorActions
-        .use(InitMethodDesignParams)
-        .use(MethodProvidersAction)
-        .use(AutorunAction)
-        .use(ExecuteDecorHandle);
-    propDecorActions
-        .use(InitPropDesignAction)
-        .use(PropInjectAction)
-        .use(ExecuteDecorHandle);
-    paramDecorActions
-        .use(ParamInjectAction)
-        .use(ExecuteDecorHandle);
+    typeDecorActions.use(
+        InitCtorDesignParams,
+        TypeAnnoAction,
+        TypeProvidersAction,
+        AutorunAction,
+        ExecuteDecorHandle
+    );
+
+    methodDecorActions.use(
+        InitMethodDesignParams,
+        MethodProvidersAction,
+        AutorunAction,
+        ExecuteDecorHandle
+    );
+
+    propDecorActions.use(
+        InitPropDesignAction,
+        PropInjectAction,
+        ExecuteDecorHandle
+    );
+    paramDecorActions.use(
+        ParamInjectAction,
+        ExecuteDecorHandle
+    );
 
     function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, define: DecorDefine) {
         const ctx = {

@@ -9,8 +9,10 @@ export abstract class InjScope extends IocActions<InjContext> { }
 export class InjModuleScope extends InjScope implements IActionSetup {
 
     setup() {
-        this.use(InjIocExtScope)
-            .use(InjRegDefaultAction);
+        this.use(
+            InjIocExtScope,
+            InjRegDefaultAction
+        );
     }
 }
 

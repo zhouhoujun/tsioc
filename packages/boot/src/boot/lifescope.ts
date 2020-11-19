@@ -10,28 +10,31 @@ import {
 export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
-        this.use(RegisterModuleScope)
-            .use(ModuleBuildScope)
-            .use(StartupBootstrap);
+        this.use(
+            RegisterModuleScope,
+            ModuleBuildScope,
+            StartupBootstrap
+        );
     }
 }
 
 export class StartupServiceScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
-        this.use(ResolveBootHandle)
-            .use(StartupBootstrap);
+        this.use(ResolveBootHandle, StartupBootstrap);
     }
 }
 
 export class BootLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
-        this.use(RegBootEnvScope)
-            .use(RegisterModuleScope)
-            .use(BootConfigureRegisterHandle)
-            .use(ModuleBuildScope)
-            .use(StartupGlobalService)
-            .use(StartupBootstrap);
+        this.use(
+            RegBootEnvScope,
+            RegisterModuleScope,
+            BootConfigureRegisterHandle,
+            ModuleBuildScope,
+            StartupGlobalService,
+            StartupBootstrap
+        );
     }
 }

@@ -87,12 +87,14 @@ export abstract class Actions<T> extends IocAction<T> {
      * @param {boolean} [setup]  register action type or not.
      * @returns {this}
      */
-    use(action: ActionType): this {
-        if (this.has(action)) {
-            return this;
-        }
-        this.actions.push(action);
-        this.regAction(action);
+    use(...actions: ActionType[]): this {
+        actions.forEach(action => {
+            if (this.has(action)) {
+                return this;
+            }
+            this.actions.push(action);
+        });
+        this.regAction(...actions);
         this.resetFuncs();
         return this;
     }
@@ -174,7 +176,7 @@ export abstract class Actions<T> extends IocAction<T> {
         this.execFuncs(ctx, this.handlers, next);
     }
 
-    protected abstract regAction(ac: any);
+    protected abstract regAction(...ac: any[]);
 
     protected abstract toHandle(ac: any): Handler;
 
