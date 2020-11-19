@@ -618,7 +618,7 @@ export namespace refl {
      */
     export function deleteReged(type: ClassType, id: string) {
         const inf = type[key]?.();
-        if (inf) {
+        if (inf && inf.type === type) {
             inf[id] = null;
         }
     }
