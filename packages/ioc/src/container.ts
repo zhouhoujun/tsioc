@@ -111,7 +111,7 @@ export class IocContainer extends Injector implements IIocContainer {
 
     constructor() {
         super();
-        this.id = `ioc${id++}`;
+        this.id = `_ρc${id++}`;
         this.regedState = new RegisteredStateImpl(this);
         this.provider = new ActionProvider(this);
         this.initReg();

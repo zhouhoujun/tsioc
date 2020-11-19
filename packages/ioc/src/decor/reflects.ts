@@ -574,19 +574,14 @@ export namespace refl {
         return targetReflect as T;
     }
 
-    const regedKey = '_ρ_';
     /**
      * get type registered state.
      * @param type class type.
      * @param containerId container id.
      */
-    export function getReged<T extends Registered>(type: ClassType, containerId: string): T {
-        return getRegState(type, regedKey + containerId) as T;
-    }
-
-    function getRegState(type: ClassType, key: string): Registered {
-        const inf = type[key]?.();
-        return inf?.type === type ? inf : null;
+    export function getReged<T extends Registered>(type: ClassType, id: string): T {
+        const inf = type[id]?.();
+        return inf && inf.type === type ? inf : null;
     }
 
     /**
@@ -595,14 +590,13 @@ export namespace refl {
      * @param containerId container id.
      * @param state state.
      */
-    export function setReged<T extends Registered>(type: ClassType, containerId: string, state: T) {
-        const key = regedKey + containerId;
-        let inf = getRegState(type, key) as T;
+    export function setReged<T extends Registered>(type: ClassType, id: string, state: T) {
+        let inf = getReged(type, id) as T;
         if (inf) {
             Object.assign(inf, state);
         } else {
             inf = { ...inf, ...state, type };
-            type[key] = () => inf;
+            type[id] = () => inf;
         }
     }
 
@@ -611,8 +605,8 @@ export namespace refl {
      * @param type class type.
      * @param containerId container id.
      */
-    export function deleteReged(type: ClassType, containerId: string) {
-        type[regedKey + containerId] = null;
+    export function deleteReged(type: ClassType, id: string) {
+        type[id] = null;
     }
 
     /**
