@@ -1,11 +1,11 @@
-import { Abstract, IProvider, ContextProvider } from '@tsdi/ioc';
+import { Abstract, IProvider, Provider } from '@tsdi/ioc';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
 
 
 /**
  * compiler identifiers providers.
  */
-export class Identifiers extends ContextProvider { }
+export class Identifiers extends Provider { }
 
 /**
  * compiler facade.

@@ -81,7 +81,6 @@ export interface AfterContentChecked {
     onAfterContentChecked(): void;
 }
 
-
 /**
  * change.
  */
@@ -90,6 +89,7 @@ export interface Change {
     currentValue: any;
     firstChange?: boolean;
 }
+
 /**
  * changes.
  */

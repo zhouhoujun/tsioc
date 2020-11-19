@@ -286,7 +286,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     isRegistered(type: ClassType): boolean {
-        return !!refl.getReged(type, this.container.id);
+        return refl.getReged(type, this.container.id) !== null;
     }
 
     hasProvider(decor: string) {
