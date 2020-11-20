@@ -18,9 +18,11 @@ export class ComponentsModule {
 
         const prdr = container.provider;
 
-        prdr.regAction(RenderView,
+        prdr.regAction(
+            RenderView,
             RefreshView,
-            RenderComponent);
+            RenderComponent
+        );
 
         prdr.getInstance(ResolveMoudleScope)
             .use(ParseTemplateHandle);

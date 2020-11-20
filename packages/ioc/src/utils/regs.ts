@@ -22,8 +22,10 @@ export function registerCores(container: IIocContainer) {
     container.setValue(METHOD_ACCESSOR, new MethodAccessor(), MethodAccessor);
 
     // bing action.
-    container.provider.regAction(DesignLifeScope,
+    container.provider.regAction(
+        DesignLifeScope,
         RuntimeLifeScope,
-        ResolveLifeScope);
+        ResolveLifeScope
+    );
 
 }
