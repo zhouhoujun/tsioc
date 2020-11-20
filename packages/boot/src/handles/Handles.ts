@@ -22,20 +22,22 @@ export abstract class Handles<T> extends Handle<T> {
      * @returns {this}
      */
     use(...handles: HandleType<T>[]): this {
+        const len = this.handles.length;
         handles.forEach(handle => {
             if (this.has(handle)) return;
             this.handles.push(handle);
-            this.registerHandle(handle);
+            this.regHandle(handle);
         });
-        this.resetFuncs();
+        if (this.handles.length !== len) this.resetFuncs();
         return this;
     }
 
     unuse(...handles: HandleType<T>[]) {
+        const len = this.handles.length;
         handles.forEach(handle => {
             lang.del(this.handles, handle);
         });
-        this.resetFuncs();
+        if (this.handles.length !== len) this.resetFuncs();
 
         return this;
     }
@@ -60,7 +62,7 @@ export abstract class Handles<T> extends Handle<T> {
         } else {
             this.handles.unshift(handle);
         }
-        this.registerHandle(handle);
+        this.regHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -80,7 +82,7 @@ export abstract class Handles<T> extends Handle<T> {
         } else {
             this.handles.push(handle);
         }
-        this.registerHandle(handle);
+        this.regHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -98,6 +100,6 @@ export abstract class Handles<T> extends Handle<T> {
 
     protected abstract toHandle(handleType: HandleType<T>): AsyncHandler<T>;
 
-    protected abstract registerHandle(handle: HandleType<T>): this;
+    protected abstract regHandle(handle: HandleType<T>): this;
 
 }

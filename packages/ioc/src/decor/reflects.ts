@@ -347,9 +347,7 @@ export namespace refl {
                 autorun: meta.autorun,
                 order: ctx.decorType === 'class' ? 0 : meta.order
             });
-            reflect.autoruns = reflect.autoruns.sort((au1, au2) => {
-                return au1.order - au2.order;
-            });
+            reflect.autoruns = reflect.autoruns.sort((au1, au2) => au1.order - au2.order);
         }
         return next();
     }
@@ -371,9 +369,7 @@ export namespace refl {
         if (!reflect.methodParams.has(ctx.propertyKey)) {
             let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey);
             const names = reflect.class.getParamNames(ctx.propertyKey);
-            reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => {
-                return { type, paramName: names[idx] };
-            }));
+            reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => ({ type, paramName: names[idx] })));
         }
         return next();
     }
@@ -401,7 +397,7 @@ export namespace refl {
 
 
     class DecorActions extends Actions<DecorContext> {
-        protected regAction(ac: any) { }
+        protected regHandle(ac: any) { }
         protected toHandle(ac: any): Handler {
             if (ac instanceof Action) {
                 return ac.toAction();

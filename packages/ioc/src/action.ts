@@ -1,6 +1,5 @@
 import { Token } from './tokens';
-import { Type } from './types';
-import { chain, Handler, isBoolean } from './utils/lang';
+import { chain, Handler, isBoolean, isFunction } from './utils/lang';
 
 /**
  * action interface.
@@ -65,20 +64,20 @@ export abstract class IocAction<T> extends Action {
  */
 export abstract class Actions<T> extends IocAction<T> {
 
-    protected actions: ActionType[];
+    protected handles: ActionType[];
     protected befores: ActionType[];
     protected afters: ActionType[];
-    private handlers: Handler[];
+    private funcs: Handler[];
 
     constructor() {
         super();
         this.befores = [];
-        this.actions = [];
+        this.handles = [];
         this.afters = [];
     }
 
     has(action: ActionType) {
-        return this.actions.indexOf(action) >= 0;
+        return this.handles.indexOf(action) >= 0;
     }
 
     /**
@@ -89,12 +88,13 @@ export abstract class Actions<T> extends IocAction<T> {
      * @returns {this}
      */
     use(...actions: ActionType[]): this {
+        const len = this.handles.length;
         actions.forEach(action => {
             if (this.has(action)) return;
-            this.actions.push(action);
-            this.regAction(action);
+            this.handles.push(action);
+            this.regHandle(action);
         });
-        this.resetFuncs();
+        if (this.handles.length !== len) this.resetFuncs();
         return this;
     }
 
@@ -110,11 +110,11 @@ export abstract class Actions<T> extends IocAction<T> {
             return this;
         }
         if (before) {
-            this.actions.splice(this.actions.indexOf(before), 0, action);
+            this.handles.splice(this.handles.indexOf(before), 0, action);
         } else {
-            this.actions.unshift(action);
+            this.handles.unshift(action);
         }
-        this.regAction(action);
+        this.regHandle(action);
         this.resetFuncs();
         return this;
     }
@@ -131,11 +131,11 @@ export abstract class Actions<T> extends IocAction<T> {
             return this;
         }
         if (after && !isBoolean(after)) {
-            this.actions.splice(this.actions.indexOf(after) + 1, 0, action);
+            this.handles.splice(this.handles.indexOf(after) + 1, 0, action);
         } else {
-            this.actions.push(action);
+            this.handles.push(action);
         }
-        this.regAction(action);
+        this.regHandle(action);
         this.resetFuncs();
         return this;
     }
@@ -148,7 +148,7 @@ export abstract class Actions<T> extends IocAction<T> {
     before(action: ActionType): this {
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
-            this.regAction(action);
+            this.regHandle(action);
             this.resetFuncs();
         }
         return this;
@@ -162,25 +162,25 @@ export abstract class Actions<T> extends IocAction<T> {
     after(action: ActionType): this {
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
-            this.regAction(action);
+            this.regHandle(action);
             this.resetFuncs();
         }
         return this;
     }
 
     execute(ctx: T, next?: () => void): void {
-        if (!this.handlers) {
-            this.handlers = [...this.befores, ...this.actions, ...this.afters].map(ac => this.toHandle(ac)).filter(f => f);
+        if (!this.funcs) {
+            this.funcs = [...this.befores, ...this.handles, ...this.afters].map(ac => this.toHandle(ac)).filter(f => f);
         }
-        this.execFuncs(ctx, this.handlers, next);
+        this.execFuncs(ctx, this.funcs, next);
     }
 
-    protected abstract regAction(ac: any);
+    protected abstract regHandle(ac: any);
 
     protected abstract toHandle(ac: any): Handler;
 
     protected resetFuncs() {
-        this.handlers = null;
+        this.funcs = null;
     }
 
 }
