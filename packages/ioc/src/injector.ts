@@ -146,12 +146,12 @@ export class Provider extends Destoryable implements IProvider {
                         this.registerType(pr.useClass, pr.provide, pr.singleton);
                     } else if (isFunction(pr.useFactory)) {
                         let deps = pr.deps;
-                        this.set(provide, (...providers: ProviderType[]) => {
+                        this.set(provide, (...pdrs: ProviderType[]) => {
                             let args = [];
                             if (isArray(deps) && deps.length) {
                                 args = deps.map(d => {
                                     if (isToken(d)) {
-                                        return this.get(d, ...providers);
+                                        return this.get(d, ...pdrs);
                                     } else {
                                         return d;
                                     }
@@ -160,16 +160,16 @@ export class Provider extends Destoryable implements IProvider {
                             return pr.useFactory.apply(pr, args.concat(providers));
                         });
                     } else if (isToken(pr.useExisting)) {
-                        this.set(provide, (...providers) => this.get(pr.useExisting, ...providers));
+                        this.set(provide, (...pdrs) => this.get(pr.useExisting, ...pdrs));
                     } else if (isClass(pr.provide)) {
                         let Ctor = pr.provide;
                         let deps = pr.deps;
-                        this.set(provide, (...providers) => {
+                        this.set(provide, (...pdrs) => {
                             let args = [];
                             if (isArray(deps) && deps.length) {
                                 args = deps.map(d => {
                                     if (isToken(d)) {
-                                        return this.get(d, ...providers);
+                                        return this.get(d, ...pdrs);
                                     } else {
                                         return d;
                                     }
@@ -252,11 +252,10 @@ export class Provider extends Destoryable implements IProvider {
 
     getFirstValue<T>(...tokens: Token<T>[]): T {
         let value: T;
-        tokens.some(k => {
+        return tokens.some(k => {
             value = this.getValue(k);
             return isDefined(value);
-        })
-        return value;
+        }) ? value : null;
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
