@@ -612,7 +612,7 @@ export namespace refl {
      * @param type class type.
      * @param containerId container id.
      */
-    export function deleteReged(type: ClassType, id: string) {
+    export function delReged(type: ClassType, id: string) {
         const inf = type[key]?.();
         if (inf && inf.type === type) {
             inf[id] = null;

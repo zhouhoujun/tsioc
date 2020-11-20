@@ -282,7 +282,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     deleteType(type: ClassType) {
-        refl.deleteReged(type, this.container.id);
+        refl.delReged(type, this.container.id);
     }
 
     isRegistered(type: ClassType): boolean {
