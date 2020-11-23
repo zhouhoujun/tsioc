@@ -5,7 +5,6 @@ import {
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
 import { Advicer } from '../advices/Advicer';
-import { NonePointcut } from '../decorators';
 
 
 export interface JoinpointOption {
@@ -34,7 +33,6 @@ export const AOP_METHOD_ANNOTATIONS = tokenId<(ClassMetadata | MethodMetadata)[]
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-@NonePointcut()
 export class Joinpoint implements IocContext {
     /**
      * none poincut for aop.
