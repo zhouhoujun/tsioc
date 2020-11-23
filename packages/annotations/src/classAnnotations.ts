@@ -58,14 +58,14 @@ export function iocAnnotations(contents: string): string {
             contents = contents.replace(oldclass, oldclass.substring(0, end) + classAnnations + oldclass.substring(end));
 
         } else if (ts.isConstructorDeclaration(node)) {
-            if (annations) {
+            if (annations && node.parameters.length) {
                 let paramNames = node.parameters.map(param => {
                     return param.name.getText();
                 });
                 annations.params['constructor'] = paramNames;
             }
         } else if (ts.isMethodDeclaration(node)) {
-            if (annations) {
+            if (annations && node.parameters.length) {
                 let paramNames = node.parameters.map(param => {
                     return param.name.getText();
                 });

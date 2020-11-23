@@ -1,10 +1,9 @@
 import { Inject, MthProviderAction, DesignRegisterer, IocExt, IIocContainer, IocContainerToken } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { Logger } from './decorators/Logger';
-import { AnnotationLoggerAspect } from './AnnotationLoggerAspect';
-import { ConsoleLogManager } from './ConsoleLogManager';
-import { ConfigureLoggerManger } from './ConfigureLoggerManger';
-import { LogFormater } from './LogFormater';
+import { AnnotationLoggerAspect } from './aspect';
+import { ConsoleLogManager, ConfigureLoggerManager } from './manager';
+import { LogFormater } from './formater';
 
 /**
  * aop logs ext for Ioc. auto run setup after registered.
@@ -31,6 +30,6 @@ export class LogModule {
             .register(Logger, 'Class', MthProviderAction)
             .register(Logger, 'Method', MthProviderAction);
 
-        container.inject(ConfigureLoggerManger, AnnotationLoggerAspect, LogFormater, ConsoleLogManager);
+        container.inject(ConfigureLoggerManager, AnnotationLoggerAspect, LogFormater, ConsoleLogManager);
     }
 }

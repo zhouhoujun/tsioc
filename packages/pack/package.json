@@ -81,10 +81,12 @@
     "rollup-plugin-uglify": "^6.0.3",
     "rollup-plugin-node-builtins": "^2.1.2",
     "tslib": "^2.0.1",
-    "typescript": "^4.0.2"
+    "typescript": "~4.0.2"
   },
   "directories": {
     "lib": "lib",
     "test": "test"
   }
 }
+
+

@@ -4,22 +4,20 @@ import {
 } from '@tsdi/ioc';
 import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
-import { MessageContext } from './messages/MessageContext';
-import { MessageQueue } from './messages/MessageQueue';
-import { RootMessageQueue } from './messages/RootMessageQueue';
-import { InjDIModuleScope } from './registers/InjDIModuleScope';
-import { MessageRegisterAction } from './registers/MessageRegisterAction';
-import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope } from './registers/module_actions';
-import { ConfigureManager, ConfigureMerger } from './annotations/ConfigureManager';
+import { MessageContext } from './messages/ctx';
+import { MessageQueue, RootMessageQueue } from './messages/queue';
+import { InjDIModuleScope } from './registers/Inj-module';
+import { MessageRegisterAction } from './registers/message';
+import { AnnoationAction, AnnoationRegInAction, AnnoationRegisterScope } from './registers/module';
+import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
-import { StartupDecoratorRegisterer } from './handles/StartupDecoratorRegisterer';
-import { ModuleInjector, ModuleProviders } from './modules/ModuleInjector';
-import { ResolveMoudleScope } from './builder/build-hanles';
-import { RunnableBuildLifeScope } from './boots/RunnableBuildLifeScope';
-import { BootLifeScope } from './boots/BootLifeScope';
-import { BuildContext } from './builder/BuildContext';
-import { StartupRegisterAction } from './registers/StartupRegisterAction';
+import { StartupDecoratorRegisterer } from './handles/register';
+import { ModuleInjector, ModuleProviders } from './modules/injector';
+import { ResolveMoudleScope } from './builder/handles';
+import { RunnableBuildLifeScope, BootLifeScope } from './boot/lifescope';
+import { BuildContext } from './builder/ctx';
+import { StartupRegisterAction } from './registers/startup';
 
 
 /**

@@ -17,7 +17,3 @@ export interface IBaseTypeParser {
     parse<T>(type: Token<T>, paramVal): T;
 }
 
-/**
- * base type parser token.
- */
-export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('BaseTypeParser');

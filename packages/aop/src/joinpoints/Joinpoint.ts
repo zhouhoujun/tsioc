@@ -1,12 +1,13 @@
 import {
-    Type, MethodMetadata, IParameter, ClassMetadata, IProviders, TypeMetadata, tokenId, Token,
-    isNullOrUndefined, IocContext, ActCtxOption, IInjector, createContext, PROVIDERS, TokenId
+    Type, MethodMetadata, IParameter, ClassMetadata, IProvider, TypeMetadata, tokenId, Token,
+    isNullOrUndefined, IocContext, IInjector, PROVIDERS
 } from '@tsdi/ioc';
-import { JoinpointState } from './JoinpointState';
+import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
+import { Advicer } from '../advices/Advicer';
 
 
-export interface JoinpointOption extends ActCtxOption {
+export interface JoinpointOption {
     provJoinpoint?: Joinpoint;
     name: string;
     fullName: string;
@@ -18,23 +19,11 @@ export interface JoinpointOption extends ActCtxOption {
     annotations?: (ClassMetadata | MethodMetadata)[];
     target?: any;
     targetType: Type;
-    providers?: IProviders;
+    providers?: IProvider;
 }
 
-export const AOP_METHOD_NAME: TokenId<string> = tokenId<string>('AOP_METHOD_NAME');
-export const AOP_METHOD_FULLNAME = tokenId<string>('AOP_METHOD_FULLNAME');
-export const AOP_METHOD_ORIGIN = tokenId<Function>('AOP_METHOD_ORIGIN');
-export const AOP_METHOD_PARAMS = tokenId<IParameter[]>('AOP_METHOD_PARAMS');
+
 export const AOP_METHOD_ANNOTATIONS = tokenId<(ClassMetadata | MethodMetadata)[]>('AOP_METHOD_ANNOTATIONS');
-export const AOP_METHOD_PROVIDERS = tokenId<IProviders>('AOP_METHOD_PROVIDERS');
-export const AOP_PROV_JOINPOINT = tokenId<Joinpoint>('AOP_PROV_JOINPOINT');
-export const AOP_ARGS = tokenId<any[]>('AOP_ARGS');
-export const AOP_TARGET = tokenId<any>('AOP_TARGET');
-export const AOP_TARGET_TYPE = tokenId<Type>('AOP_TARGET_TYPE');
-export const AOP_RETURNING = tokenId<any>('AOP_RETURNING');
-export const AOP_THROWING = tokenId<Error>('AOP_THROWING');
-export const AOP_STATE = tokenId<JoinpointState>('AOP_STATE');
-export const AOP_ADVICES = tokenId<Advices>('AOP_ADVICES');
 
 
 /**
@@ -44,16 +33,14 @@ export const AOP_ADVICES = tokenId<Advices>('AOP_ADVICES');
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-export class Joinpoint extends IocContext {
+export class Joinpoint implements IocContext {
     /**
      * method name
      *
      * @type {string}
      * @memberof Joinpoint
      */
-    get name(): string {
-        return this.getValue(AOP_METHOD_NAME);
-    }
+    name: string;
 
     /**
      * prov joinpoint.
@@ -61,20 +48,7 @@ export class Joinpoint extends IocContext {
      * @type {IJoinpoint}
      * @memberof Joinpoint
      */
-    get provJoinpoint(): Joinpoint {
-        return this.getValue(AOP_PROV_JOINPOINT);
-    }
-
-    routeValue<T>(token: Token<T>): T {
-        let value: T;
-        let currj: Joinpoint = this;
-        let key = this.injector.getTokenKey(token);
-        while (isNullOrUndefined(value) && currj) {
-            value = currj.getValue(key);
-            currj = currj.provJoinpoint;
-        }
-        return value;
-    }
+    provJoinpoint: Joinpoint;
 
     /**
      * full name.
@@ -82,13 +56,9 @@ export class Joinpoint extends IocContext {
      * @type {string}
      * @memberof Joinpoint
      */
-    get fullName(): string {
-        return this.getValue(AOP_METHOD_FULLNAME);
-    }
+    fullName: string;
 
-    get originMethod(): Function {
-        return this.getValue(AOP_METHOD_ORIGIN);
-    }
+    originMethod: Function;
 
     /**
      * join point state.
@@ -96,9 +66,7 @@ export class Joinpoint extends IocContext {
      * @type {JoinpointState}
      * @memberof Joinpoint
      */
-    get state(): JoinpointState {
-        return this.getValue(AOP_STATE);
-    }
+    state: JoinpointState;
 
     /**
      * params of pointcut.
@@ -106,9 +74,7 @@ export class Joinpoint extends IocContext {
      * @type {IParameter[]}
      * @memberof Joinpoint
      */
-    get params(): IParameter[] {
-        return this.getValue(AOP_METHOD_PARAMS);
-    }
+    params: IParameter[];
 
     /**
      * args of pointcut.
@@ -116,18 +82,19 @@ export class Joinpoint extends IocContext {
      * @type {any[]}
      * @memberof Joinpoint
      */
-    get args(): any[] {
-        return this.getValue(AOP_ARGS) ?? [];
-    }
+    args: any[];
     /**
-     * pointcut returing
+     * pointcut origin returing
      *
      * @type {*}
      * @memberof Joinpoint
      */
-    get returning(): any {
-        return this.getValue(AOP_RETURNING);
-    }
+    returning: any;
+
+    /**
+     * to reset returning for AfterReturning, Around advice.
+     */
+    resetReturning?: any;
 
     /**
      * pointcut throwing error.
@@ -135,9 +102,7 @@ export class Joinpoint extends IocContext {
      * @type {*}
      * @memberof Joinpoint
      */
-    get throwing(): Error {
-        return this.getValue(AOP_THROWING);
-    }
+    throwing: Error;
 
     /**
      * advicer of joinpoint
@@ -145,9 +110,7 @@ export class Joinpoint extends IocContext {
      * @type {Advicer}
      * @memberof Joinpoint
      */
-    get advices(): Advices {
-        return this.getValue(AOP_ADVICES);
-    }
+    advices: Advices;
 
     /**
      * orgin pointcut method metadatas.
@@ -158,6 +121,14 @@ export class Joinpoint extends IocContext {
     get annotations(): TypeMetadata[] {
         return this.routeValue(AOP_METHOD_ANNOTATIONS);
     }
+    /**
+     * set annotations.
+     */
+    set annotations(meta: TypeMetadata[]) {
+        this.providers.setValue(AOP_METHOD_ANNOTATIONS, meta);
+    }
+
+    invokeHandle: (joinPoint: Joinpoint, advicer: Advicer) => any;
 
     /**
      * pointcut target instance
@@ -165,9 +136,7 @@ export class Joinpoint extends IocContext {
      * @type {*}
      * @memberof Joinpoint
      */
-    get target(): any {
-        return this.getValue(AOP_TARGET);
-    }
+    target: any;
 
     /**
      * pointcut target type.
@@ -175,47 +144,46 @@ export class Joinpoint extends IocContext {
      * @type {Type}
      * @memberof Joinpoint
      */
-    get targetType(): Type {
-        return this.getValue(AOP_TARGET_TYPE);
+    targetType: Type;
+
+    private pdr: IProvider;
+    set providers(pdr: IProvider) {
+        this.pdr.inject(pdr);
+        // reset
+        this.pdr.inject({ provide: Joinpoint, useValue: this });
+    }
+    get providers(): IProvider {
+        return this.pdr;
     }
 
-    get providers(): IProviders {
-        if (!this.hasValue(AOP_METHOD_PROVIDERS)) {
-            this.setValue(AOP_METHOD_PROVIDERS, this.injector.getInstance(PROVIDERS));
+
+    constructor(public injector: IInjector) {
+        this.pdr = injector.get(PROVIDERS);
+        this.pdr.inject({ provide: Joinpoint, useValue: this });
+    }
+
+    routeValue<T>(token: Token<T>): T {
+        let value: T;
+        let currj: Joinpoint = this;
+        let key = this.injector.getTokenKey(token);
+        while (isNullOrUndefined(value) && currj) {
+            value = currj.providers?.get(key);
+            currj = currj.provJoinpoint;
         }
-        return this.getValue(AOP_METHOD_PROVIDERS)
+        return value;
     }
 
-    getProvProviders(): IProviders[] {
-        let pdrs: IProviders[] = [];
+    getProvProviders(): IProvider[] {
+        let pdrs: IProvider[] = [];
         let currj: Joinpoint = this.provJoinpoint;
         while (currj) {
-            let pdr = currj.hasValue(AOP_METHOD_PROVIDERS) ? currj.providers : null;
+            let pdr = currj.providers;
             if (pdr && pdr.size) {
                 pdrs.push(pdr);
             }
             currj = currj.provJoinpoint;
         }
         return pdrs;
-    }
-
-    setOptions(options: JoinpointOption) {
-        if (!options) {
-            return this;
-        }
-        super.setOptions(options);
-        this.setValue(AOP_TARGET_TYPE, options.targetType);
-        options.target && this.setValue(AOP_TARGET, options.target)
-        options.originMethod && this.setValue(AOP_METHOD_ORIGIN, options.originMethod);
-        this.setValue(AOP_METHOD_NAME, options.name);
-        this.setValue(AOP_METHOD_FULLNAME, options.fullName);
-        this.setValue(AOP_METHOD_PARAMS, options.params);
-        this.setValue(AOP_ARGS, options.args);
-        this.setValue(AOP_ADVICES, options.advices);
-        options.state && this.setValue(AOP_STATE, options.state);
-        options.providers && this.setValue(AOP_METHOD_PROVIDERS, options.providers);
-        options.annotations && this.setValue(AOP_METHOD_ANNOTATIONS, options.annotations);
-        options.provJoinpoint && this.setValue(AOP_PROV_JOINPOINT, options.provJoinpoint);
     }
 
     /**
@@ -228,6 +196,8 @@ export class Joinpoint extends IocContext {
      * @memberof ResolveActionContext
      */
     static parse<T>(injector: IInjector, options: JoinpointOption): Joinpoint {
-        return createContext<Joinpoint>(injector, Joinpoint, options);
+        let jpt = new Joinpoint(injector);
+        jpt = Object.assign(jpt, options);
+        return jpt;
     }
 }

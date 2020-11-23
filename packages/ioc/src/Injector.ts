@@ -1,11 +1,9 @@
 import { Type } from './types';
-import { lang, isClassType, isMetadataObject } from './utils/lang';
-import { Token, Factory, SymbolType, InjectTypes, InstanceFactory, ProviderTypes, isToken } from './tokens';
-import { IInjector, IProviders, InjectorProxy } from './IInjector';
+import { lang, isClassType, isMetadataObject, isArray, isClass, isObject } from './utils/lang';
+import { Token, Factory, SymbolType, Provider, InstanceFactory, isToken } from './tokens';
+import { IInjector, IProvider, InjectorProxy } from './IInjector';
 import { IIocContainer } from './IIocContainer';
 import { BaseInjector } from './BaseInjector';
-import { ObjectMapProvider, Provider } from './providers';
-
 // use core-js in browser.
 
 /**
@@ -43,20 +41,20 @@ export class Injector extends BaseInjector implements IInjector {
         return this.getFcty(key) ?? this.getFctyInRoot(key);
     }
 
-    hasSingleton<T>(key: SymbolType<T>): boolean {
-        return this.singletons.has(key) || this.hasSgltnRoot(key);
+    hasValue<T>(key: SymbolType<T>): boolean {
+        return this.values.has(key) || this.hasValInRoot(key);
     }
 
-    protected hasSgltnRoot<T>(key: SymbolType<T>) {
-        return this.getContainer().hasSingleton(key)
+    protected hasValInRoot<T>(key: SymbolType<T>) {
+        return this.getContainer().hasValue(key)
     }
 
-    getSingleton<T>(key: SymbolType<T>): T {
-        return this.singletons.get(key) ?? this.getSgltnRoot(key);
+    getValue<T>(key: SymbolType<T>): T {
+        return this.values.get(key) ?? this.getValInRoot(key);
     }
 
-    protected getSgltnRoot<T>(key: SymbolType<T>) {
-        return this.getContainer().getSingleton(key)
+    protected getValInRoot<T>(key: SymbolType<T>) {
+        return this.getContainer().getValue(key)
     }
 
     /**
@@ -101,20 +99,12 @@ export class Injector extends BaseInjector implements IInjector {
         }
     }
 
-    protected parse(...providers: InjectTypes[]): IInjector {
+    protected parse(...providers: Provider[]): IInjector {
         return new (lang.getClass(this))(this.proxy).inject(...providers);
     }
 
     protected hasInRoot(key: SymbolType): boolean {
         return this.getContainer().hasTokenKey(key);
-    }
-
-    protected hasValueInRoot(key: SymbolType): boolean {
-        return this.getContainer().hasRegisterValue(key);
-    }
-
-    protected getValueInRoot<T>(key: SymbolType<T>): T {
-        return this.getContainer().getValue(key);
     }
 
     protected getFcty<T>(key: SymbolType<T>): InstanceFactory<T> {
@@ -136,13 +126,13 @@ export class Injector extends BaseInjector implements IInjector {
 }
 
 /**
- * context injector.
+ * context provider.
  *
  * @export
- * @class ContextInjector
+ * @class ContextProvider
  * @extends {Injector}
  */
-export class InjectorProvider extends Injector implements IProviders {
+export class ContextProvider extends Injector implements IProvider {
     protected initReg() {
     }
 }
@@ -152,20 +142,19 @@ export class InjectorProvider extends Injector implements IProviders {
  *
  * @export
  * @param {*} target
- * @returns {target is ProviderTypes}
+ * @returns {target is Provider}
  */
-export function isProvider(target: any): target is ProviderTypes {
-    return target instanceof InjectorProvider
-        || target instanceof ObjectMapProvider
-        || target instanceof Provider
-        || (isMetadataObject(target, 'provide') && isToken(target.provide));
+export function isProvider(target: any): target is Provider {
+    return target instanceof ContextProvider
+        || (isMetadataObject(target, 'provide') && isToken(target.provide))
+        || (isArray(target) && target.some(it => isClass(it) || (isObject(it) && Object.values(it).some(s => isClass(it)))));
 }
 
 
 /**
- * invoked providers
+ * invoked provider
  */
-export class InvokedProviders extends Injector implements IProviders {
+export class InvokedProvider extends Injector implements IProvider {
     protected initReg() {
     }
 }

@@ -1,18 +1,19 @@
 import { Type, Modules } from './types';
 import { lang } from './utils/lang';
-import {
-    SymbolType, Token, InstanceFactory, Factory, InjectReference,
-    ProviderTypes, ParamProviders, InjectTypes, TokenId, tokenId
-} from './tokens';
-import { ResolveOption } from './actions/IocResolveAction';
+import { SymbolType, Token, InstanceFactory, Factory, InjectReference, Provider } from './tokens';
+import { ResolveOption } from './actions/res';
 import { IIocContainer } from './IIocContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType, IParameter } from './IMethodAccessor';
 
+
 /**
- * value injector.
+ * injector interface.
+ *
+ * @export
+ * @interface IInjector
  */
-export interface IValueInjector extends IDestoryable {
+export interface IInjector extends IDestoryable {
     /**
      * resolver size.
      *
@@ -20,16 +21,6 @@ export interface IValueInjector extends IDestoryable {
      * @memberof IInjector
      */
     readonly size: number;
-    /**
-     * has value or not in current injector.
-     * @param key
-     */
-    hasValue<T>(key: SymbolType<T>): boolean;
-    /**
-     * has registered value or not.
-     * @param key
-     */
-    hasRegisterValue<T>(key: SymbolType<T>): boolean;
     /**
      * get token.
      *
@@ -50,48 +41,6 @@ export interface IValueInjector extends IDestoryable {
      * @memberof IInjector
      */
     getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
-    /**
-     * get singleton value instance, the injector registered.
-     * @param key token key.
-     */
-    getValue<T>(key: SymbolType<T>): T;
-    /**
-     * set value.
-     * @param key token key.
-     * @param value value.
-     *  @param {Type<T>} [provider] the value provider.
-     */
-    setValue<T>(key: SymbolType<T>, value: T, provider?: Type<T>);
-    /**
-     * delete value.
-     * @param key token key.
-     */
-    delValue<T>(key: SymbolType<T>): void;
-    /**
-     * get the first singleton value instance, the injector registered.
-     * @param key token keys.
-     */
-    getFirstValue<T>(...keys: SymbolType<T>[]): T;
-    /**
-    * register value.
-    *
-    * @template T
-    * @param {Token<T>} token
-    * @param {T} value
-    * @param {Type<T>} provider the token provider
-    * @returns {this}
-    * @memberof IInjector
-    */
-    registerValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-}
-
-/**
- * injector interface.
- *
- * @export
- * @interface IInjector
- */
-export interface IInjector extends IValueInjector {
     /**
      * get root container.
      */
@@ -129,10 +78,10 @@ export interface IInjector extends IValueInjector {
      */
     has<T>(token: Token<T>, alias: string): boolean;
     /**
-     * has singleton or not in root.
+     * has value or not.
      * @param key
      */
-    hasSingleton<T>(key: SymbolType<T>): boolean;
+    hasValue<T>(key: SymbolType<T>): boolean;
     /**
      * has register in the injector or root container.
      * @param token the token.
@@ -149,68 +98,73 @@ export interface IInjector extends IValueInjector {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    get<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+    get<T>(token: Token<T>, ...providers: Provider[]): T;
     /**
      * get token instace in current injector or root container.
      *
      * @template T
      * @param {Token<T>} token
      * @param {string} alias
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IInjector
      */
-    get<T>(token: Token<T>, alias: string, ...providers: ProviderTypes[]): T;
+    get<T>(token: Token<T>, alias: string, ...providers: Provider[]): T;
     /**
      * get token instance in current injector or root container.
      *
      * @template T
      * @param {SymbolType<T>} key
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IInjector
      */
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderTypes[]): T;
+    getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T;
     /**
-     * get singleton instance.
-     * @param key token key.
+     * get value.
+     * @param token token key.
      */
-    getSingleton<T>(key: SymbolType<T>): T;
+    getValue<T>(token: Token<T>): T;
     /**
-     * set singleton.
-     * @param key provide key
+     * get the first value via tokens.
+     * @param tokens
+     */
+    getFirstValue<T>(...tokens: Token<T>[]): T;
+    /**
+     * set value.
+     * @param token provide key
      * @param value vaule
      */
-    setSingleton<T>(key: SymbolType<T>, value: T, provider?: Type<T>): this;
+    setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
     /**
-     * delete singleton instance.
-     * @param key key
+     * delete value.
+     * @param token key
      */
-    delSingleton<T>(key: SymbolType<T>): void;
+    delValue<T>(token: Token<T>): void;
     /**
      * resolve token instance with token and param provider.
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolve<T>(token: Token<T>, ...providers: ProviderTypes[]): T;
+    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     /**
      * resolve token instance with token and param provider.
      *
      * @template T
      * @param {ResolveOption<T>} option  resolve option
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IIocContainer
      */
-    resolve<T>(option: ResolveOption<T>, ...providers: ProviderTypes[]): T;
+    resolve<T>(option: ResolveOption<T>, ...providers: Provider[]): T;
     /**
     * get token implement class type.
     *
@@ -291,15 +245,15 @@ export interface IInjector extends IValueInjector {
      * @param target
      * @param providers
      */
-    bindTagProvider<T>(target: Token, ...providers: InjectTypes[]): InjectReference<IInjector>;
+    bindTagProvider(target: Token, ...providers: Provider[]): InjectReference<IInjector>;
     /**
      * inject providers.
      *
-     * @param {...InjectTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {this}
      * @memberof IInjector
      */
-    inject(...providers: InjectTypes[]): this;
+    inject(...providers: Provider[]): this;
     /**
      * inject modules
      *
@@ -367,11 +321,11 @@ export interface IInjector extends IValueInjector {
      * @template T
      * @param {(Token<T> | T)} target type class
      * @param {MethodType<T>} propertyKey
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {TR}
      * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ParamProviders[]): TR;
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     /**
      * create params instances with IParameter and provider
      *
@@ -380,7 +334,7 @@ export interface IInjector extends IValueInjector {
      * @returns {Promise<any[]>}
      * @memberof IMethodAccessor
      */
-    createParams(params: IParameter[], ...providers: ParamProviders[]): any[];
+    createParams(params: IParameter[], ...providers: Provider[]): any[];
 }
 
 const injectorKey = 'injector';
@@ -395,34 +349,14 @@ export function isInjector(target: any): target is IInjector {
     return lang.getClass(target)?.ρCT === injectorKey;
 }
 
-
-/**
- * injector instance token of self.
- */
-export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
-
 /**
  * injector proxy of current injector.
  */
 export type InjectorProxy<T extends IInjector = IInjector> = () => T;
-/**
- * the token of injector factory in current injector.
- */
-export const InjectorProxyToken = tokenId<InjectorProxy>('DI_INJECTOR_PROXY');
 
 /**
  * provider interface.
  */
-export interface IProviders extends IInjector {
+export interface IProvider extends IInjector {
 
 }
-
-/**
- *  injector provider token. create new injector provider.
- */
-export const PROVIDERS = tokenId<IProviders>('DI_PROVIDERS');
-
-/**
- *  injector token. create new injector.
- */
-export const InjectorFactoryToken = tokenId<IInjector>('DI_INJECTOR_FACTORY');

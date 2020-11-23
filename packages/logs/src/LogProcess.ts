@@ -1,11 +1,11 @@
-import { Abstract, Type, ObjectMapProvider, Inject, INJECTOR } from '@tsdi/ioc';
+import { Abstract, Type, Inject, INJECTOR } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { Joinpoint } from '@tsdi/aop';
 import { Level } from './Level';
 import { LoggerMetadata } from './decorators/Logger';
 import { LogConfigure } from './LogConfigure';
 import { ILogger } from './ILogger';
-import { ConfigureLoggerManger } from './ConfigureLoggerManger';
+import { ConfigureLoggerManager } from './manager';
 import { ILoggerManager } from './ILoggerManager';
 
 
@@ -40,7 +40,7 @@ export abstract class LogProcess {
     }
 
     protected getLoggerManager(): ILoggerManager {
-        return this.injector.resolve(ConfigureLoggerManger, ObjectMapProvider.parse({ config: this.config }));
+        return this.injector.resolve(ConfigureLoggerManager, { provide: 'config', useValue: this.config });
     }
 
     protected getLogger(): ILogger {

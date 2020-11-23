@@ -1,6 +1,6 @@
 import { createMethodDecorator, MetadataExtends, isString, isRegExp, ArgsIteratorAction, isArray, createClassDecorator, isClass, ClassType, Registration, ClassMetadata, Type } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata } from './metadatas';
-import { AdviceTypes } from './AdviceTypes';
+import { AdviceTypes } from './types';
 
 
 /**

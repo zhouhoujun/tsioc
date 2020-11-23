@@ -1,5 +1,5 @@
 import { Abstract, IDestoryable, Destoryable, tokenId, TokenId, ClassType } from '@tsdi/ioc';
-import { IBootContext } from '../BootContext';
+import { IBootContext } from '../Context';
 
 
 /**

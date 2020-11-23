@@ -1,15 +1,10 @@
 import { ClassType, ObjectMap, Type, DefineClassTypes } from '../types';
-import { TokenId, Token, tokenId, ParamProviders } from '../tokens';
+import { Token, Provider } from '../tokens';
 import { ITypeReflect } from './ITypeReflect';
 import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
 import { IIocContainer } from '../IIocContainer';
 import { IActionInjector } from '../actions/Action';
-
-/**
- * type reflects token.
- */
-export const TypeReflectsToken: TokenId<ITypeReflects> = tokenId<ITypeReflects>('IOC_TYPEREFLECTS');
 
 /**
  *  type reflects interface.
@@ -138,10 +133,10 @@ export interface ITypeReflects {
      * @template T
      * @param {ClassType<T>} type
      * @param {string} propertyKey
-     * @returns {ParamProviders[]}
+     * @returns {Provider[]}
      * @memberof TypeReflects
      */
-    getParamProviders<T>(type: ClassType<T>, propertyKey: string): ParamProviders[];
+    getParamProviders<T>(type: ClassType<T>, propertyKey: string): Provider[];
 
     /**
      * get type class constructor parameters.

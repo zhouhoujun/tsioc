@@ -3,18 +3,15 @@ import {
     ClassType, TypeReflectsToken, ITypeReflects, INJECTOR, lang
 } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BootContext, BootOption, IBootContext, isBootContext } from '../BootContext';
+import { IAnnoationContext, BootOption, IBootContext, IBuildOption, IBuildContext } from '../Context';
+import { BootContext, isBootContext } from '../boot/ctx';
 import { IBootApplication } from '../IBootApplication';
-import { RunnableBuildLifeScope } from '../boots/RunnableBuildLifeScope';
-import { BootLifeScope } from '../boots/BootLifeScope';
-import { IBuilderService, BuilderServiceToken, BootSubAppOption } from './IBuilderService';
-import { CTX_APP_ENVARGS, CTX_MODULE_EXPORTS, ROOT_INJECTOR } from '../tk';
-import { ResolveMoudleScope } from '../builder/build-hanles';
-import { BuildContext } from '../builder/BuildContext';
-import { IBuildOption } from '../builder/IBuildOption';
-import { IBuildContext } from '../builder/IBuildContext';
+import { BootLifeScope, RunnableBuildLifeScope } from '../boot/lifescope';
+import { IBuilderService, BootSubAppOption } from './IBuilderService';
+import { BuilderServiceToken, CTX_APP_ENVARGS, CTX_MODULE_EXPORTS, ROOT_INJECTOR } from '../tk';
+import { ResolveMoudleScope } from '../builder/handles';
+import { BuildContext } from '../builder/ctx';
 import { Handles } from '../handles/Handles';
-import { IAnnoationContext } from '../AnnoationContext';
 
 
 

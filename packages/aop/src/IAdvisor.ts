@@ -1,15 +1,6 @@
-import { Type, ObjectMap, ParamProviders, tokenId, TokenId } from '@tsdi/ioc';
+import { Type, ObjectMap, Provider } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { AdviceMetadata } from './metadatas';
-
-
-/**
- * Aop IAdvisor interface token.
- * it is a token id, you can register yourself IAdvisor for this.
- */
-export const AdvisorToken: TokenId<IAdvisor> = tokenId<IAdvisor>('DI_IAdvisor');
-
-export const AOP_EXTEND_TARGET_TOKEN = tokenId<(target: any) => void>('AOP_EXTEND_TARGET_TOKEN')
 
 /**
  * aspect and advices manager.
@@ -80,9 +71,9 @@ export interface IAdvisor {
      *
      * @template T
      * @param {Type<T>} aspect
-     * @param {...ParamProviders[]} providers
+     * @param {...Provider[]} providers
      * @returns {T}
      * @memberof IAdvisor
      */
-    resolve<T>(aspect: Type<T>, ...providers: ParamProviders[]): T;
+    resolve<T>(aspect: Type<T>, ...providers: Provider[]): T;
 }

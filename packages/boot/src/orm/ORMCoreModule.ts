@@ -1,7 +1,7 @@
 import { IocExt, Inject, IocContainerToken } from '@tsdi/ioc';
 import { IContainer } from '@tsdi/core';
-import { ConnectionsHandle } from './ConnectionsHandle';
-import { ConfigureServiceHandle, StatupServiceScope } from '../boots/boot-handles';
+import { ConnectionsHandle } from './handle';
+import { ConfigureServiceHandle, StatupServiceScope } from '../boot/handles';
 import { ExtendBaseTypeMap } from './ModelParser';
 
 

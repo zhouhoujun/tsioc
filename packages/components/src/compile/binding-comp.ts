@@ -32,7 +32,7 @@ export class BindingScope extends BuildHandles<IParseContext> implements IAction
             await next();
         }
         // after all clean.
-        ctx.destroy();
+        setTimeout(() => ctx.destroy());
     }
 
     setup() {

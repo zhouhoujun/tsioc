@@ -16,39 +16,38 @@ export * from './utils/tk';
 // services
 export * from './services/ITypeReflect';
 export * from './services/ITypeReflects';
-export * from './services/DecoratorProvider';
-
-// metadates
-export * from './metadatas';
-
-// decorators
-export * from './decorators';
+export * from './services/decor-pdr';
 
 
-// factories
-export * from './factories/ArgsIterator';
-export * from './factories/DecoratorFactory';
+// decoractors
+export * from './decor/args';
+export * from './decor/factory';
+export * from './decor/metadatas';
+export * from './decor/decorators';
+
 
 // providers
 export * from './providers';
 
 // actions
 export * from './actions/Action';
-export * from './actions/ActionInjector';
-export * from './actions/IocCacheManager';
-export * from './actions/IocRegAction';
-export * from './actions/LifeScope';
-export * from './actions/ResolveLifeScope';
-export * from './actions/MethodAccessor';
-export * from './actions/TypeDecorators';
+export * from './actions/injector';
+export * from './actions/cache';
+export * from './actions/reg'
+export * from './actions/lifescope';
+export * from './actions/accessor';
+export * from './actions/decors';
 
 // runtime actions
-export * from './actions/runtimes';
+export * from './actions/run-act';
+export * from './actions/runtime';
 
 // resolve
-export * from './actions/IocResolveAction';
-export * from './actions/resolves';
+export * from './actions/res';
+export * from './actions/res-act';
+export * from './actions/resolve';
 
 // design time action.
-export * from './actions/designs';
-export * from './actions/DesignLifeScope';
+export * from './actions/des-act';
+export * from './actions/design';
+

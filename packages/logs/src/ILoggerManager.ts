@@ -1,5 +1,6 @@
-import { ObjectMap, tokenId, TokenId } from '@tsdi/ioc';
+import { ObjectMap, Type } from '@tsdi/ioc';
 import { ILogger } from './ILogger';
+import { LogConfigure } from './LogConfigure';
 
 /**
  * logger configuation.
@@ -11,11 +12,7 @@ import { ILogger } from './ILogger';
 export interface LoggerConfig extends ObjectMap {
 }
 
-/**
- * LoggerManger interface token.
- * it is a token id, you can register yourself LoggerManger for this.
- */
-export const LoggerManagerToken: TokenId<ILoggerManager> = tokenId<ILoggerManager>('DI_ILoggerManager');
+
 /**
  * logger manager.
  *
@@ -38,4 +35,33 @@ export interface ILoggerManager {
      * @memberof ILoggerManger
      */
     getLogger(name?: string): ILogger
+}
+
+
+
+
+/**
+ * Configure logger manger. use to get configed logger manger.
+ *
+ * @export
+ * @interface IConfigureLoggerManager
+ * @extends {ILoggerManager}
+ */
+export interface IConfigureLoggerManager extends ILoggerManager {
+    /**
+     * readonly config.
+     *
+     * @type {LogConfigure}
+     * @memberof IConfigureLoggerManager
+     */
+    readonly config: LogConfigure;
+
+    /**
+     * set log configure.
+     *
+     * @param {(LogConfigure | Type<LogConfigure>)} config
+     * @memberof IConfigureLoggerManager
+     */
+    setLogConfigure(config: LogConfigure | Type<LogConfigure>);
+
 }

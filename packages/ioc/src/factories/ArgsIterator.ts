@@ -1,4 +1,4 @@
-import { Metadate } from '../metadatas';
+import { Metadate } from '../decor/metadatas';
 import { Handler } from '../utils/lang';
 
 /**
@@ -10,13 +10,15 @@ import { Handler } from '../utils/lang';
 export class ArgsContext<T extends Metadate = Metadate> {
     constructor(public args: any[]) {
         this.currIndex = 0;
-        this.metadata = {} as T;
     }
     metadata: T;
     currIndex: number;
 
     get currArg() {
         if (this.args.length) {
+            if (!this.metadata) {
+                this.metadata = {} as T;
+            }
             return this.args[this.currIndex];
         }
         return null;
@@ -32,7 +34,7 @@ export class ArgsContext<T extends Metadate = Metadate> {
     }
 
     getMetadate() {
-        return this.currIndex > 0 ? this.metadata : null;
+        return this.metadata;
     }
 
     isCompeted(): boolean {

@@ -28,6 +28,9 @@
       "@tsdi/components": [
         "packages/components/src"
       ],
+      "@tsdi/component": [
+        "packages/component/src"
+      ],
       "@tsdi/compiler": [
         "packages/compiler/src"
       ],

@@ -3,11 +3,11 @@ import {
     TypeMetadata, PatternMetadata, isClass, lang, Type, isFunction, Token
 } from '@tsdi/ioc';
 import { IStartupService } from './services/StartupService';
-import { ModuleConfigure } from './modules/ModuleConfigure';
+import { ModuleConfigure } from './modules/configure';
 import { IMessage } from './messages/IMessageQueue';
-import { MessageQueue } from './messages/MessageQueue';
-import { MessageContext } from './messages/MessageContext';
-import { MessageHandle } from './messages/MessageHandle';
+import { MessageQueue } from './messages/queue';
+import { MessageContext } from './messages/ctx';
+import { MessageHandle } from './messages/handle';
 
 export type BootDecorator = <TFunction extends ClassType<IStartupService>>(target: TFunction) => TFunction | void;
 

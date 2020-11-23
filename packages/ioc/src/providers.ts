@@ -1,16 +1,11 @@
-import { Type, ObjectMap } from './types';
-import { isUndefined } from './utils/lang';
-import { Token, ProviderTypes } from './tokens';
-import { IInjector } from './IInjector';
-import { MethodAccessorToken } from './IMethodAccessor';
+import { ObjectMap, Type } from './types';
+import { Token } from './tokens';
 
 /**
- * Provider interface.
+ * provider.
  *
- * @export
- * @interface IProvider
  */
-export interface IProvider {
+export interface ProvideProvider {
     /**
      * this type provider to.
      *
@@ -19,7 +14,6 @@ export interface IProvider {
      */
     provide: Token;
 }
-
 
 /**
  * @usageNotes
@@ -34,7 +28,7 @@ export interface IProvider {
  * Configures the `Injector` to return an instance of `useClass` for a token.
  *
  */
-export interface ClassProvider extends IProvider {
+export interface ClassProvider extends ProvideProvider {
     /**
      * use class for provide.
      *
@@ -43,8 +37,7 @@ export interface ClassProvider extends IProvider {
      */
     useClass: Type;
     /**
-     * A list of `token`s which need to be resolved by the injector. The list of values is then
-     * used as arguments to the `useFactory` function.
+     * A list of `token`s which need to be resolved by the injector.
      */
     deps?: any[];
 
@@ -63,9 +56,9 @@ export interface ClassProvider extends IProvider {
  *
  * @export
  * @interface ValueProvider
- * @extends {IProvider}
+ * @extends {ProvideProvider}
  */
-export interface ValueProvider extends IProvider {
+export interface ValueProvider extends ProvideProvider {
     /**
      * use value for provide.
      *
@@ -88,7 +81,7 @@ export interface ValueProvider extends IProvider {
  *
  *
  */
-export interface FactoryProvider extends IProvider {
+export interface FactoryProvider extends ProvideProvider {
     /**
     * A function to invoke to create a value for this `token`. The function is invoked with
     * resolved values of `token`s in the `deps` field.
@@ -102,6 +95,18 @@ export interface FactoryProvider extends IProvider {
     deps?: any[];
 }
 
+export interface ConstructorProvider {
+    /**
+     * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
+     */
+    provide: Type<any>;
+
+    /**
+     * A list of `token`s which need to be resolved by the injector.
+     */
+    deps?: any[];
+}
+
 /**
  * existing provider.
  *
@@ -111,50 +116,56 @@ export interface FactoryProvider extends IProvider {
  * ```
  * @export
  * @interface ExistingProvider
- * @extends {IProvider}
+ * @extends {ProvideProvider}
  */
-export interface ExistingProvider extends IProvider {
+export interface ExistingProvider extends ProvideProvider {
     /**
      * use existing registered token for provide.
      *
      * @type {Token}
      * @memberof ExistingProvider
      */
-    useExisting: Token
+    useExisting: Token;
 }
 
-export type StaticProviders = ClassProvider & ValueProvider & ExistingProvider & FactoryProvider;
-
 /**
- * provider type.
+ * type provider.
  */
-export type ProviderType = ObjectMapProvider | Provider | ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
+export interface TypeProvider extends Type {
+
+}
 
 
 /**
- * object map provider.
- * use to replace ObjectMap. for typed check.
+ * keyvalues map provider.
+ * use provider value for param by param name.
  *
  * @export
  * @class ObjectMapProvider
  */
-export class ObjectMapProvider {
+export class KeyValueProvider {
     protected maps: ObjectMap;
     constructor() {
         this.maps = {};
     }
 
-    get(): ObjectMap {
-        return this.maps;
+    set(options: ObjectMap): this {
+        if (options) {
+            this.maps = { ... this.maps, ...options };
+        }
+        return this;
     }
 
-    set(options: ObjectMap) {
-        if (options) {
-            this.maps = Object.assign(this.maps, options);
+    each(callback: (key, value) => boolean | void) {
+        for (let n in this.maps) {
+            if (callback(n, this.maps[n]) === false) {
+                break;
+            }
         }
     }
+
     /**
-     * parse Object map to provider.
+     * parse  provider.
      *
      * @static
      * @param {ObjectMap} options
@@ -162,163 +173,22 @@ export class ObjectMapProvider {
      * @memberof ObjectMapProvider
      */
     static parse(options: ObjectMap) {
-        let pdr = new ObjectMapProvider();
+        let pdr = new KeyValueProvider();
         pdr.set(options);
         return pdr;
     }
 }
 
 /**
- *  provider, to dynamic resovle instance of params in run time.
- *
- * @export
- * @class Provider
+ * @deprecated use `KeyValueProvider` instead.
  */
-export class Provider {
-    /**
-     * service provider is value or value factory.
-     *
-     * @memberof Provider
-     */
-    protected value?: any
-    /**
-     * service is instance of type.
-     *
-     * @type {Token}
-     * @memberof Provider
-     */
-    type?: Token;
+export const ObjectMapProvider = KeyValueProvider;
 
-    constructor(type?: Token, value?: any) {
-        this.type = type;
-        this.value = value;
-    }
 
-    /**
-     * resolve provider value.
-     *
-     * @template T
-     * @param {IInjector} injector
-     * @param {ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof Provider
-     */
-    resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
-        if (isUndefined(this.value)) {
-            return injector.has(this.type) ? injector.get(this.type, ...providers) : null;
-        } else {
-            return this.value;
-        }
-    }
 
-    /**
-     * create provider.
-     *
-     * @static
-     * @param {Token} type
-     * @param {(any)} value
-     * @returns Provider
-     * @memberof Provider
-     */
-    static create(type: Token, value: any): Provider {
-        return new Provider(type, value);
-    }
-
-    /**
-     * create invoked provider.
-     *
-     * @static
-     * @param {Token} token
-     * @param {string} method
-     * @param {(any)} [value]
-     * @returns {InvokeProvider}
-     * @memberof Provider
-     */
-    static createInvoke(token: Token, method: string, value?: any): InvokeProvider {
-        return new InvokeProvider(token, method, value);
-    }
-
-    /**
-     * create param provider.
-     *
-     * @static
-     * @param {Token} token
-     * @param {(any)} value
-     * @param {number} [index]
-     * @param {string} [method]
-     * @returns {ParamProvider}
-     * @memberof Provider
-     */
-    static createParam(token: Token, value: any, index?: number, method?: string): ParamProvider {
-        return new ParamProvider(token, value, index, method);
-    }
-
-}
+export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvider & ExistingProvider & FactoryProvider;
 
 /**
- * InvokeProvider
- *
- * @export
- * @class InvokeProvider
- * @extends {Provider}
+ * provider type.
  */
-export class InvokeProvider extends Provider {
-    /**
-     * service value is the result of type instance invoke the method return value.
-     *
-     * @type {string}
-     * @memberof Provider
-     */
-    protected method?: string;
-
-    constructor(type?: Token, method?: string, value?: any) {
-        super(type, value);
-        this.method = method;
-    }
-
-    resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
-        if (this.method) {
-            return injector.getInstance(MethodAccessorToken).invoke<T>(injector, this.type, this.method, ...providers);
-        }
-        return super.resolve(injector, ...providers);
-    }
-}
-
-
-/**
- * param provider.
- *
- * @export
- * @interface ParamProvider
- */
-export class ParamProvider extends InvokeProvider {
-    /**
-     * param index, param name.
-     *
-     * @type {number}
-     * @memberof ParamProvider
-     */
-    index?: number;
-
-    constructor(token?: Token, value?: any, index?: number, method?: string) {
-        super(token, method, value);
-        this.index = index;
-    }
-
-    getToken(): Token {
-        return this.type || `param_${this.index}`;
-    }
-
-    /**
-     * resolve param
-     *
-     * @template T
-     * @param {IInjector} injector
-     * @param {...ProviderTypes[]} providers
-     * @returns {T}
-     * @memberof ParamProvider
-     */
-    resolve<T>(injector: IInjector, ...providers: ProviderTypes[]): T {
-        return super.resolve(injector, ...providers);
-    }
-}
+export type StaticProvider = TypeProvider | ClassProvider | ValueProvider | ConstructorProvider | ExistingProvider | FactoryProvider | KeyValueProvider;

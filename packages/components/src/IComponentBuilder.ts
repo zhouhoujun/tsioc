@@ -1,4 +1,4 @@
-import { ProviderTypes, tokenId, TokenId } from '@tsdi/ioc';
+import { Provider, tokenId, TokenId } from '@tsdi/ioc';
 import { IBuilderService } from '@tsdi/boot';
 import { ITemplateOption, ITemplateContext } from './compile/TemplateContext';
 
@@ -22,20 +22,20 @@ export interface IComponentBuilder extends IBuilderService {
      * build template.
      *
      * @param {ITemplateOption} options
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {Promise<any>}
      * @memberof IComponentBuilder
      */
-    buildTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<ITemplateContext>;
+    buildTemplate(options: ITemplateOption, ...providers: Provider[]): Promise<ITemplateContext>;
     /**
      * reolve template.
      *
      * @param {ITemplateOption} options
-     * @param {...ProviderTypes[]} providers
+     * @param {...Provider[]} providers
      * @returns {Promise<ITemplateRef>}
      * @memberof IComponentBuilder
      */
-    resolveTemplate(options: ITemplateOption, ...providers: ProviderTypes[]): Promise<any>;
+    resolveTemplate(options: ITemplateOption, ...providers: Provider[]): Promise<any>;
     /**
      * serialize component as template json.
      *

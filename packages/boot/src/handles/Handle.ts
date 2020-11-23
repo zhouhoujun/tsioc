@@ -1,15 +1,6 @@
-import { ActionType, Action, AsyncHandler, chain } from '@tsdi/ioc';
+import { Action, ActionType, AsyncHandler, chain } from '@tsdi/ioc';
+import { IHandleContext } from '../Context';
 
-
-/**
- * handle context.
- *
- * @export
- * @interface IHandleContext
- */
-export interface IHandleContext {
-
-}
 
 /**
  * handle interface.
@@ -43,7 +34,6 @@ export interface IHandle<T = any> {
  *  handle type.
  */
 export type HandleType<T> = ActionType<IHandle<T>, AsyncHandler<T>>;
-
 
 /**
  * middleware

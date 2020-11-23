@@ -9,10 +9,9 @@ import { AdviceMatcher } from './AdviceMatcher';
 import {
     RegistAspectAction, BeforeCtorAdviceAction, AfterCtorAdviceAction,
     BindMthPointcutAction, MatchPointcutAction
-} from './actions/aop-actions';
-import { ProceedingScope } from './proceeding/ProceedingScope';
-import { AdvisorToken } from './IAdvisor';
-import { AdviceMatcherToken } from './IAdviceMatcher';
+} from './actions/aop';
+import { ProceedingScope } from './actions/proceed';
+import { AdvisorToken, AdviceMatcherToken } from './tk';
 
 
 
@@ -35,12 +34,12 @@ export class AopModule {
      */
     setup(@Inject(IocContainerToken) container: IIocContainer) {
 
-        const actInjector = container.getSingleton(ActionInjector);
-        const reflects = container.getSingleton(TypeReflectsToken);
+        const actInjector = container.getValue(ActionInjector);
+        const reflects = container.getValue(TypeReflectsToken);
 
         actInjector
-            .setSingleton(AdvisorToken, new Advisor(reflects), Advisor)
-            .setSingleton(AdviceMatcherToken, new AdviceMatcher(reflects), AdviceMatcher);
+            .setValue(AdvisorToken, new Advisor(reflects), Advisor)
+            .setValue(AdviceMatcherToken, new AdviceMatcher(reflects), AdviceMatcher);
 
         actInjector.regAction(ProceedingScope);
 

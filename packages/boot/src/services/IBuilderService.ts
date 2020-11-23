@@ -1,9 +1,7 @@
-import { IocCoreService, ClassType, tokenId, TokenId } from '@tsdi/ioc';
+import { IocCoreService, ClassType } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
-import { BootOption, IBootContext } from '../BootContext';
+import { BootOption, IBootContext, IBuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
-import { IBuildOption } from '../builder/IBuildOption';
-import { IBuildContext } from '../builder/IBuildContext';
 
 export interface BootSubAppOption<T extends IBootContext> {
     /**
@@ -89,5 +87,3 @@ export interface IBuilderService extends IocCoreService {
     bootApp(application: IBootApplication, ...args: string[]): Promise<IBootContext>;
 }
 
-
-export const BuilderServiceToken: TokenId<IBuilderService> = tokenId<IBuilderService>('BOOT_BuilderService');

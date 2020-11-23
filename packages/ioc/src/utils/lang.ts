@@ -282,6 +282,18 @@ export namespace lang {
         }
         return regModules;
     }
+
+    /**
+     * async clean object.
+     * @param obj.
+     */
+    export function cleanObj(obj: Object) {
+        setTimeout(() => {
+            obj && Object.keys(obj).forEach(k => {
+                obj[k] = null;
+            })
+        });
+    }
 }
 
 /**
@@ -708,7 +720,7 @@ export class Defer<T> {
      * @type {Promise<T>}
      * @memberof Defer
      */
-    promise: Promise<T>
+    promise: Promise<T>;
     /**
      * resolve.
      *

@@ -1,14 +1,15 @@
 import { Type } from './types';
 import { isClass, isFunction, isDefined } from './utils/lang';
-import { InjectToken, Token, Factory, SymbolType, ParamProviders, InjectTypes, InstanceFactory } from './tokens';
-import { IInjector, InjectorFactoryToken, PROVIDERS } from './IInjector';
+import { InjectToken, Token, Factory, SymbolType, Provider, InstanceFactory } from './tokens';
+import { IInjector } from './IInjector';
 import { IIocContainer } from './IIocContainer';
-import { registerCores } from './registerCores';
+import { registerCores } from './utils/regs';
 import { BaseInjector } from './BaseInjector';
 import { ActionInjectorToken, IActionInjector } from './actions/Action';
-import { ITypeReflects, TypeReflectsToken } from './services/ITypeReflects';
-import { DesignContext } from './actions/designs';
-import { DesignLifeScope } from './actions/DesignLifeScope';
+import { ITypeReflects } from './services/ITypeReflects';
+import { DesignContext } from './actions/des-act';
+import { DesignLifeScope } from './actions/design';
+import { InjectorFactoryToken, PROVIDERS, TypeReflectsToken } from './utils/tk';
 
 
 /**
@@ -20,12 +21,20 @@ import { DesignLifeScope } from './actions/DesignLifeScope';
  */
 export class IocContainer extends BaseInjector implements IIocContainer {
 
+    private reflects: ITypeReflects;
     getTypeReflects(): ITypeReflects {
-        return this.getSingleton(TypeReflectsToken);
+        if (!this.reflects) {
+            this.reflects = this.getValue(TypeReflectsToken);
+        }
+        return this.reflects;
     }
 
+    private actionInj: IActionInjector;
     getActionInjector(): IActionInjector {
-        return this.getSingleton(ActionInjectorToken);
+        if (!this.actionInj) {
+            this.actionInj = this.getValue(ActionInjectorToken);
+        }
+        return this.actionInj;
     }
 
     getContainer(): this {
@@ -115,12 +124,16 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         }
 
         (async () => {
-            this.getActionInjector().getInstance(DesignLifeScope).register(
-                DesignContext.parse(injector, {
-                    token: provide,
-                    type: type,
-                    singleton: singleton
-                }));
+            const ctx = {
+                injector,
+                token: provide,
+                type,
+                singleton
+            } as DesignContext;
+            this.getActionInjector().getInstance(DesignLifeScope).register(ctx);
+            Object.keys(ctx).forEach(k => {
+                ctx[k] = null;
+            });
         })();
         return this;
     }
@@ -130,20 +143,26 @@ export class IocContainer extends BaseInjector implements IIocContainer {
         registerCores(this);
     }
 
-    protected parse(...providers: InjectTypes[]): IInjector {
+    protected parse(...providers: Provider[]): IInjector {
         return this.getInstance(PROVIDERS).inject(...providers);
     }
 
     protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: InstanceFactory<T>, singleton?: boolean) {
         return singleton ?
-            (...providers: ParamProviders[]) => {
-                if (injector.hasSingleton(key)) {
-                    return injector.getSingleton(key);
+            (...providers: Provider[]) => {
+                if (injector.hasValue(key)) {
+                    return injector.getValue(key);
                 }
                 let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-                injector.setSingleton(key, instance);
+                injector.setValue(key, instance);
                 return instance;
             }
-            : (...providers: ParamProviders[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
+            : (...providers: Provider[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
+    }
+
+    protected destroying() {
+        super.destroying();
+        this.reflects =  null;
+        this.actionInj = null;
     }
 }

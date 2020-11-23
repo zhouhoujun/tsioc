@@ -1,5 +1,5 @@
 export * from './IModelParser';
 export * from './ModelParser';
-export * from './ConnectionsHandle';
-export * from './ConnectionStatupService';
+export * from './handle';
+export * from './startup';
 export * from './ORMCoreModule';

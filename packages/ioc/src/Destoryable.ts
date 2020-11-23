@@ -39,8 +39,7 @@ export abstract class Destoryable implements IDestoryable {
             this._destroyed = true;
             this.destroying();
             this.destroyCbs.forEach(cb => isFunction(cb) && cb());
-            this.destroyCbs.length = 0;
-            delete this.destroyCbs;
+            this.destroyCbs = [];
         }
     }
 
@@ -55,11 +54,4 @@ export abstract class Destoryable implements IDestoryable {
             this.destroyCbs.push(callback);
         }
     }
-}
-
-export abstract class IocDestoryable extends Destoryable {
-    /**
-     * none poincut for aop.
-     */
-    static ρNPT = true;
 }
