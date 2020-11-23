@@ -206,7 +206,6 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
 export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.instance) {
         ctx.instance = new ctx.type(...ctx.args);
-        ctx['target' as any] = ctx.instance;
     }
     next();
 };

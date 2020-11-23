@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server",
-  "version": "6.0.33",
+  "version": "6.0.35",
   "description": "@tsdi/platform-server is platform of @tsdi framework for server.",
   "scripts": {
     "build": "ts-node -r stsconfig-paths/register taskfile.ts"
@@ -35,8 +35,8 @@
   },
   "peerDependencies": {
     "tslib": "^2.0.1",
-    "@tsdi/ioc": "~6.0.33",
-    "@tsdi/core": "~6.0.33"
+    "@tsdi/ioc": "~6.0.35",
+    "@tsdi/core": "~6.0.35"
   },
   "directories": {
     "lib": "lib",

@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/unit",
-  "version": "6.0.33",
+  "version": "6.0.35",
   "description": "unit testing framework, base on AOP, Ioc container",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -37,11 +37,11 @@
   },
   "peerDependencies": {
     "@types/jasmine": "^3.5.10",
-    "@tsdi/ioc": "~6.0.33",
-    "@tsdi/core": "~6.0.33",
-    "@tsdi/aop": "~6.0.33",
-    "@tsdi/boot": "~6.0.33",
-    "@tsdi/logs": "~6.0.33",
+    "@tsdi/ioc": "~6.0.35",
+    "@tsdi/core": "~6.0.35",
+    "@tsdi/aop": "~6.0.35",
+    "@tsdi/boot": "~6.0.35",
+    "@tsdi/logs": "~6.0.35",
     "tslib": "^2.0.1"
   },
   "directories": {

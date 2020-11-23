@@ -101,6 +101,9 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
     next();
 };
 
+function getTarget(this: RuntimeContext) {
+    return this.instance;
+}
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
     let injector = ctx.injector;
@@ -120,6 +123,10 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
             singleton,
             providers: injector.get(PROVIDERS).inject(...providers)
         } as RuntimeContext;
+        Object.defineProperty(ctx, 'target', {
+            get: getTarget,
+            enumerable: false
+        });
         actInjector.getInstance(RuntimeLifeScope).register(ctx);
         if (singleton) {
             container.setValue(type, ctx.instance);
