@@ -3,7 +3,7 @@ import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
     isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined
 } from './utils/lang';
-import { StaticProviders } from './providers';
+import { KeyValueProvider, StaticProviders } from './providers';
 import {
     Token, InstanceFactory, SymbolType, Factory, Provider, InjectReference,
     isToken, Registration, getTokenKey
@@ -232,6 +232,10 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
                 this.injectModule(...p);
             } else if (p instanceof BaseInjector) {
                 this.copy(p);
+            } else if (p instanceof KeyValueProvider) {
+                p.each((k, v) => {
+                    this.setValue(k, v);
+                });
             } else if (isClass(p)) {
                 this.registerType(p);
             } else if (isBaseObject(p)) {
