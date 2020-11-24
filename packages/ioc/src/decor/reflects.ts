@@ -508,8 +508,9 @@ export namespace refl {
     }
 
     /**
-     * get type reflect. if not has own reflect will create new reflect.
+     * get type reflect.
      * @param type class type.
+     * @param ify if not has own reflect will create new reflect.
      */
     export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
         let tagRefl = type[reflFiled]?.();
@@ -630,6 +631,6 @@ export namespace refl {
     export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
     export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
         propertyKey = propertyKey || 'constructor';
-        return get(type).methodParams.get(propertyKey) || [];
+        return get(type)?.methodParams.get(propertyKey) || [];
     }
 }
