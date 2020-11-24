@@ -32,7 +32,7 @@ export const InitReflectAction = function (ctx: RegContext, next?: () => void): 
     if (!isClass(ctx.type)) {
         return;
     }
-    const tgref = ctx.reflect = refl.getIfy(ctx.type);
+    const tgref = ctx.reflect = refl.get(ctx.type);
     if (tgref.singleton) {
         ctx.singleton = tgref.singleton;
     }

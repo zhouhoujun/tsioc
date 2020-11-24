@@ -61,7 +61,7 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
     let injector = ctx.injector;
     if (isClassType(clasType)) {
         let tk = ctx.currTK;
-        refl.getIfy(clasType)
+        refl.get(clasType)
             .decors
             .some(dec => {
                 if (dec.decorType !== 'class') {
@@ -91,7 +91,7 @@ export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () =>
     let injector = ctx.injector;
     let tgtk = ctx.targetToken;
     if (isClassType(tgtk)) {
-        refl.getIfy(tgtk).class.extendTypes.some(ty => {
+        refl.get(tgtk).class.extendTypes.some(ty => {
             ctx.instance = injector.resolve({ token: ctx.currTK, target: ty, tagOnly: true }, ctx.providers);
             return ctx.instance;
         });
@@ -217,8 +217,8 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     ctx.injector.iterator((pdr, tk) => {
         if (!services.has(tk, alias)
             && (
-                (isClassType(tk) && types.some(ty => refl.getIfy(tk).class.isExtends(ty)))
-                || (pdr.provider && types.some(ty => refl.getIfy(pdr.provider).class.isExtends(ty)))
+                (isClassType(tk) && types.some(ty => refl.get(tk).class.isExtends(ty)))
+                || (pdr.provider && types.some(ty => refl.get(pdr.provider).class.isExtends(ty)))
             )
         ) {
             services.set(tk, pdr.value ? () => pdr.value : pdr.fac);

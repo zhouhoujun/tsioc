@@ -446,7 +446,7 @@ export namespace refl {
         const ctx = {
             ...define,
             target,
-            reflect: getIfy(type)
+            reflect: get(type)
         };
         actions.execute(ctx, () => {
             ctx.reflect.decors.unshift(define);
@@ -508,18 +508,10 @@ export namespace refl {
     }
 
     /**
-     * get type reflect.
-     * @param type class type
-     */
-    export function get<T extends TypeReflect>(type: ClassType): T {
-        return type[reflFiled]?.() as T || null;
-    }
-
-    /**
-     * get type reflect. if not exist create new reflect.
+     * get type reflect. if not has own reflect will create new reflect.
      * @param type class type.
      */
-    export function getIfy<T extends TypeReflect>(type: ClassType): T {
+    export function get<T extends TypeReflect>(type: ClassType): T {
         let tagRefl = type[reflFiled]?.();
         if (tagRefl?.type !== type) {
             const prRef = tagRefl;
@@ -636,6 +628,6 @@ export namespace refl {
     export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
     export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
         propertyKey = propertyKey || 'constructor';
-        return getIfy(type).methodParams.get(propertyKey) || [];
+        return get(type).methodParams.get(propertyKey) || [];
     }
 }

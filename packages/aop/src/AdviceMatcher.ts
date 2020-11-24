@@ -30,8 +30,8 @@ export class AdviceMatcher implements IAdviceMatcher {
     constructor(private container: IIocContainer) { }
 
     match(aspectType: Type, targetType: Type, adviceMetas?: AdviceMetadata[], target?: any): MatchPointcut[] {
-        const aspref = refl.getIfy<AopReflect>(aspectType);
-        const tagref = refl.getIfy<AopReflect>(targetType);
+        const aspref = refl.get<AopReflect>(aspectType);
+        const tagref = refl.get<AopReflect>(targetType);
         let aspectMeta = aspref.aspect;
         if (aspectMeta) {
             if (aspectMeta.without) {
