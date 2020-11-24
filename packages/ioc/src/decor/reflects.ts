@@ -476,23 +476,6 @@ export namespace refl {
         dispatch(paramDecorActions, target, type, define);
     }
 
-
-    export function has(type: ClassType): boolean {
-        return type[reflFiled];
-    }
-
-    export function hasOwn(type: ClassType): boolean {
-        return type[reflFiled]?.()?.type === type;
-    }
-
-    export function get<T extends TypeReflect>(type: ClassType): T {
-        return type[reflFiled]?.() as T || null;
-    }
-
-    export function getObjRelfect<T extends TypeReflect>(target: object): T {
-        return lang.getClass(target)[reflFiled]?.() as T || null;
-    }
-
     function hasMetadata(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
         type = type || 'class';
         decor = getDectorId(decor);
@@ -524,11 +507,23 @@ export namespace refl {
         return this.getDecorDefines(decor, type).map(d => d.matedata).filter(d => d);
     }
 
-    export function getIfy<T extends TypeReflect>(type: ClassType, info?: T): T {
-        let targetReflect: TypeReflect;
-        if (!hasOwn(type)) {
-            const prRef = get(type);
-            targetReflect = Object.defineProperties({
+    /**
+     * get type reflect.
+     * @param type class type
+     */
+    export function get<T extends TypeReflect>(type: ClassType): T {
+        return type[reflFiled]?.() as T || null;
+    }
+
+    /**
+     * get type reflect. if not exist create new reflect.
+     * @param type class type.
+     */
+    export function getIfy<T extends TypeReflect>(type: ClassType): T {
+        let tagRefl = type[reflFiled]?.();
+        if (tagRefl?.type !== type) {
+            const prRef = tagRefl;
+            tagRefl = Object.defineProperties({
                 type,
                 decors: prRef ? prRef.decors.filter(d => d.decorType !== 'class') : [],
                 class: new TypeDefine(type, prRef?.class),
@@ -566,14 +561,17 @@ export namespace refl {
                     enumerable: false
                 }
             });
-            type[reflFiled] = () => targetReflect;
-        } else {
-            targetReflect = get(type);
+            type[reflFiled] = () => tagRefl;
         }
-        if (info) {
-            Object.assign(targetReflect, info);
-        }
-        return targetReflect as T;
+        return tagRefl as T;
+    }
+
+    /**
+     * get object reflect.
+     * @param target object.
+     */
+    export function getObjReflect<T extends TypeReflect>(target: object): T {
+        return lang.getClass(target)[reflFiled]?.() as T || null;
     }
 
     const key = '_ρioc_';
