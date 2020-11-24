@@ -446,7 +446,7 @@ export namespace refl {
         const ctx = {
             ...define,
             target,
-            reflect: get(type)
+            reflect: get(type, true)
         };
         actions.execute(ctx, () => {
             ctx.reflect.decors.unshift(define);
@@ -511,9 +511,11 @@ export namespace refl {
      * get type reflect. if not has own reflect will create new reflect.
      * @param type class type.
      */
-    export function get<T extends TypeReflect>(type: ClassType): T {
+    export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
         let tagRefl = type[reflFiled]?.();
         if (tagRefl?.type !== type) {
+            if (!ify) return null;
+
             const prRef = tagRefl;
             tagRefl = Object.defineProperties({
                 type,

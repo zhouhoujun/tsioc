@@ -217,8 +217,8 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     ctx.injector.iterator((pdr, tk) => {
         if (!services.has(tk, alias)
             && (
-                (isClassType(tk) && types.some(ty => refl.get(tk).class.isExtends(ty)))
-                || (pdr.provider && types.some(ty => refl.get(pdr.provider).class.isExtends(ty)))
+                (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
+                || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
             )
         ) {
             services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
