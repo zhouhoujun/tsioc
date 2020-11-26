@@ -1,4 +1,4 @@
-import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, PromiseUtil } from '@tsdi/ioc';
+import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
@@ -268,7 +268,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     const injector = ctx.injector;
     const container = injector.getContainer();
     if (startups.length) {
-        await PromiseUtil.step(startups.map(tyser => () => {
+        await lang.step(startups.map(tyser => () => {
             let ser: IStartupService;
             if (isClass(tyser) && !container.regedState.isRegistered(tyser)) {
                 injector.register(tyser);
@@ -281,7 +281,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
 
     const starts = injector.get(STARTUPS) || [];
     if (starts.length) {
-        await PromiseUtil.step(starts.map(tyser => () => {
+        await lang.step(starts.map(tyser => () => {
             const ser = injector.get(tyser) ?? container.regedState.getInjector(tyser as ClassType)?.get(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);

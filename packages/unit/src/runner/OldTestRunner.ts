@@ -1,4 +1,4 @@
-import { PromiseUtil, Singleton, isFunction, Destoryable } from '@tsdi/ioc';
+import { lang, Singleton, isFunction, Destoryable } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
@@ -54,7 +54,7 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
     async configureService(ctx: IBootContext): Promise<void> {
         this.injector = ctx.injector;
         try {
-            await PromiseUtil.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
+            await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {
             // console.error(err);
         }
@@ -185,7 +185,7 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
     }
 
     runTimeout(fn: Function, describe: string, timeout: number): Promise<any> {
-        let defer = PromiseUtil.defer();
+        let defer = lang.defer();
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -215,7 +215,7 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
     }
 
     async runHook(describe: ISuiteDescribe, action: string, desc: string) {
-        await PromiseUtil.step(
+        await lang.step(
             (describe[action] || [])
                 .map(hk => () => this.runTimeout(
                     hk.fn,
@@ -240,7 +240,7 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
     }
 
     async runTest(desc: ISuiteDescribe) {
-        await PromiseUtil.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)));
+        await lang.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)));
     }
 
     async runCase(caseDesc: ICaseDescribe, suiteDesc?: ISuiteDescribe): Promise<ICaseDescribe> {

@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProvider, PromiseUtil, ParameterMetadata,
+    Type, isFunction, lang, IProvider, ParameterMetadata,
     IocActions, IActionSetup, isArray, isDefined, isPromise, refl, IIocContainer, IActionProvider, InvokedProvider
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
@@ -336,7 +336,7 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
     const advices = ctx.advices;
     const invoker = ctx.invokeHandle;
     let val;
-    ctx.returning = PromiseUtil.step([
+    ctx.returning = lang.step([
         ctx.returning.then(v => { val = v; }),
         ...advices.Around.map(a => () => invoker(ctx, a)),
         ...advices.AfterReturning.map(a => () => invoker(ctx, a)),

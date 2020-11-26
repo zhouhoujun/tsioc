@@ -1,4 +1,4 @@
-import { lang, PromiseUtil, Injectable, Refs } from '@tsdi/ioc';
+import { lang, Injectable, Refs } from '@tsdi/ioc';
 import { Runnable, IBootContext } from '@tsdi/boot';
 import { Before, BeforeEach, Test, After, AfterEach } from '../decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
@@ -61,7 +61,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
         let instance = this.ctx.boot;
-        let defer = PromiseUtil.defer();
+        let defer = lang.defer();
         let injector = this.ctx.injector;
         let timer = setTimeout(() => {
             if (timer) {
@@ -95,7 +95,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
 
     async runBefore(describe: ISuiteDescribe) {
         let befores = this.ctx.reflect.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
-        await PromiseUtil.step(
+        await lang.step(
             befores.map(df => {
                 return this.runTimeout(
                     df.propertyKey,
@@ -106,7 +106,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
 
     async runBeforeEach() {
         let befores = this.ctx.reflect.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
-        await PromiseUtil.step(
+        await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
                     df.propertyKey,
@@ -117,7 +117,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
 
     async runAfterEach() {
         let afters = this.ctx.reflect.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
-        await PromiseUtil.step(afters.map(df => () => {
+        await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
                 'after each ' + df.propertyKey,
@@ -127,7 +127,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
 
     async runAfter(describe: ISuiteDescribe) {
         let afters = this.ctx.reflect.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
-        await PromiseUtil.step(
+        await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
                     df.propertyKey,
@@ -138,7 +138,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
 
     async runTest(desc: ISuiteDescribe) {
         let tests = this.ctx.reflect.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
-        await PromiseUtil.step(
+        await lang.step(
             tests.map(df => {
                 return {
                     key: df.propertyKey,

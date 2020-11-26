@@ -13,6 +13,7 @@ export * from './container';
 export * from './utils/chk';
 export * from './utils/hdl';
 export * as lang from './utils/lang';
+export { Defer } from './utils/lang';
 export * from './utils/tk';
 
 
