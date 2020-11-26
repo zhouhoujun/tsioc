@@ -1,5 +1,7 @@
-import { isFunction, isClass, lang, chain } from '../utils/lang';
-import { ProviderType } from '../tokens';
+import { isFunction, isClass } from '../utils/chk';
+import { cleanObj } from '../utils/lang';
+import { chain } from '../utils/hdl';
+import { getToken, getTokenKey, ProviderType } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
@@ -46,7 +48,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
     let injector = ctx.injector;
-    let provide = injector.getTokenKey(ctx.token);
+    let provide = getTokenKey(ctx.token);
     let type = ctx.type;
     let singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
@@ -65,7 +67,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
         actionPdr.getInstance(RuntimeLifeScope).register(ctx);
         const instance = ctx.instance;
         // clean context
-        lang.cleanObj(ctx);
+        cleanObj(ctx);
         return instance;
     };
 
@@ -136,13 +138,13 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
 
     const registed = injector.getContainer().regedState.getRegistered(type);
     tgReflect.providers.forEach(anno => {
-        let provide = injector.getToken(anno.provide, anno.alias);
+        const provide = getToken(anno.provide, anno.alias);
         registed.provides.push(provide);
         injector.bindProvider(provide, type);
     });
 
     tgReflect.refs.forEach(rf => {
-        let tk = injector.bindRefProvider(rf.target,
+        const tk = injector.bindRefProvider(rf.target,
             rf.provide ? rf.provide : type,
             type,
             rf.provide ? rf.alias : '');

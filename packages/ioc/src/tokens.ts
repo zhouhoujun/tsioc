@@ -1,8 +1,9 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
 import { IProvider } from './IInjector';
-import { isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
+import { isFunction, isString, isClassType, isSymbol } from './utils/chk';
 import { refInjExp } from './utils/exps';
 import { StaticProvider } from './providers';
+import { getClassName } from './utils/lang';
 
 
 /**
@@ -103,18 +104,33 @@ export class Registration<T = any> {
         if (reg instanceof Registration) {
             let name = '';
             if (isFunction(reg.classType)) {
-                name = `{${lang.getClassName(reg.classType)}}`;
+                name = `{${getClassName(reg.classType)}}`;
             } else if (reg.classType) {
                 name = reg.classType.toString();
             }
             return [reg.type, name, reg.desc].filter(n => n).join('_');
         } else if (isFunction(reg)) {
-            return `{${lang.getClassName(reg)}}`;
+            return `{${getClassName(reg)}}`;
         } else if (reg) {
             return reg.toString();
         }
         return '';
     }
+}
+
+/**
+* get token.
+*
+* @template T
+* @param {Token<T>} token
+* @param {string} [alias]
+* @returns {Token<T>}
+*/
+export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
+   if (alias) {
+       return new Registration(token, alias);
+   }
+   return token;
 }
 
 /**

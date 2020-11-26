@@ -4,15 +4,17 @@ import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
 import { ResolveOption } from './actions/res';
 import { ResolveLifeScope } from './actions/resolve';
-import { refl } from './decor/reflects';
+import { delReged, getReged, setReged } from './decor/refl';
 import { Registered } from './decor/type';
 import { IInjector, IProvider } from './IInjector';
 import { IIocContainer, RegisteredState } from './IIocContainer';
 import { MethodType } from './IMethodAccessor';
 import { Provider, Injector } from './injector';
-import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token } from './tokens';
+import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
 import { ClassType, Type } from './types';
-import { Handler, isClass, isDefined, isFunction, lang } from './utils/lang';
+import { getClass, isClass, isDefined, isFunction } from './utils/chk';
+import { Handler } from './utils/hdl';
+import { cleanObj, isExtendsClass } from './utils/lang';
 import { registerCores } from './utils/regs';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
 
@@ -36,7 +38,7 @@ export class InjectorImpl extends Injector {
      * @returns {this}
      */
     register<T>(provide: Token<T>, fac?: FactoryLike<T>): this {
-        this.getContainer()?.registerFactory(this, provide, fac);
+        this.getContainer().registerFactory(this, provide, fac);
         return this;
     }
 
@@ -47,7 +49,7 @@ export class InjectorImpl extends Injector {
      * @param singleton singleton or not.
      */
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        this.getContainer()?.registerIn(this, type, provide, singleton);
+        this.getContainer().registerIn(this, type, provide, singleton);
         return this;
     }
 
@@ -60,7 +62,7 @@ export class InjectorImpl extends Injector {
      * @returns {this}
      */
     registerSingleton<T>(provide: Token<T>, fac?: FactoryLike<T>): this {
-        this.getContainer()?.registerFactory(this, provide, fac, true);
+        this.getContainer().registerFactory(this, provide, fac, true);
         return this;
     }
 
@@ -91,7 +93,7 @@ export class InjectorImpl extends Injector {
     }
 
     protected initReg() {
-        this.setValue(INJECTOR, this, lang.getClass(this));
+        this.setValue(INJECTOR, this, getClass(this));
     }
 }
 
@@ -171,7 +173,7 @@ export class IocContainer extends Injector implements IIocContainer {
     }
 
     registerFactory<T>(injector: IInjector, token: Token<T>, value?: FactoryLike<T>, singleton?: boolean): this {
-        let key = injector.getTokenKey(token);
+        let key = getTokenKey(token);
         if (isDefined(value)) {
             if (isFunction(value)) {
                 if (isClass(value)) {
@@ -223,13 +225,13 @@ export class IocContainer extends Injector implements IIocContainer {
             singleton
         } as DesignContext;
         this.provider.getInstance(DesignLifeScope).register(ctx);
-        lang.cleanObj(ctx);
+        cleanObj(ctx);
 
         return this;
     }
 
     protected initReg() {
-        const type = lang.getClass(this);
+        const type = getClass(this);
         this.setValue(Injector, this, type);
         this.setValue(INJECTOR, this, type);
         registerCores(this);
@@ -270,23 +272,23 @@ class RegisteredStateImpl implements RegisteredState {
       * @param type
       */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T {
-        return refl.getReged(type, this.container.id)?.getInjector() as T;
+        return getReged(type, this.container.id)?.getInjector() as T;
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {
-        return refl.getReged(type, this.container.id) as T;
+        return getReged(type, this.container.id) as T;
     }
 
     regType<T extends Registered>(type: ClassType, data: T) {
-        refl.setReged(type, this.container.id, data);
+        setReged(type, this.container.id, data);
     }
 
     deleteType(type: ClassType) {
-        refl.delReged(type, this.container.id);
+        delReged(type, this.container.id);
     }
 
     isRegistered(type: ClassType): boolean {
-        return refl.getReged(type, this.container.id) !== null;
+        return getReged(type, this.container.id) !== null;
     }
 
     hasProvider(decor: string) {
@@ -296,6 +298,7 @@ class RegisteredStateImpl implements RegisteredState {
     getProvider(decor: string) {
         return this.decors.get(decor) ?? NULL_PDR;
     }
+
     regDecoator(decor: string, ...providers: ProviderType[]) {
         this.decors.set(decor, this.container.getInstance(PROVIDERS).inject(...providers));
     }
@@ -325,7 +328,7 @@ class ActionProvider extends Provider implements IActionProvider {
     }
 
     protected registerAction(type: Type) {
-        if (lang.isExtendsClass(type, Action)) {
+        if (isExtendsClass(type, Action)) {
             if (this.hasTokenKey(type)) {
                 return true;
             }

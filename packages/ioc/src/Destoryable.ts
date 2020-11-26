@@ -1,4 +1,4 @@
-import { isFunction } from './utils/lang';
+import { isFunction } from './utils/chk';
 
 
 /**

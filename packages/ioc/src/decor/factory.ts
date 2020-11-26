@@ -1,14 +1,10 @@
 import 'reflect-metadata';
-import { isClass, isAbstractClass, isUndefined, isNumber, isMetadataObject } from '../utils/lang';
+import { isClass, isAbstractClass, isUndefined, isNumber, isMetadataObject } from '../utils/chk';
 import { ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './metadatas';
 import { Type } from '../types';
 import { Token } from '../tokens';
-import { refl } from './reflects';
-
-/**
- * decorator register options.
- */
-export type DecoratorOption<T> = refl.DecoratorOption<T>;
+import { DecoratorOption } from './refl';
+import * as refl from './refl';
 
 /**
  * create dectorator for class params props methods.

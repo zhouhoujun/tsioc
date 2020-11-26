@@ -1,6 +1,6 @@
 import {
     isNullOrUndefined, isClassType, InjectReference,
-    IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles
+    IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
@@ -139,7 +139,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             let defaultTk = ctx.defaultToken;
             if (defaultTk) {
                 const injector = ctx.injector;
-                let key = injector.getTokenKey(defaultTk);
+                let key = getTokenKey(defaultTk);
                 if (injector.hasRegister(key, ctx.alias)) {
                     ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
                 }

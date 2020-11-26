@@ -1,4 +1,4 @@
-import { isNullOrUndefined, lang, isClass } from '../utils/lang';
+import { isNullOrUndefined, isClass, getClass } from '../utils/chk';
 import { InjectReference, isToken } from '../tokens';
 import { PROVIDERS } from '../utils/tk';
 import { IocActions } from './act';
@@ -21,7 +21,7 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
         if (!ctx.instance) {
             let target = ctx.target;
             if (target) {
-                ctx.targetToken = isToken(target) ? target : lang.getClass(target);
+                ctx.targetToken = isToken(target) ? target : getClass(target);
             }
             super.execute(ctx);
         }

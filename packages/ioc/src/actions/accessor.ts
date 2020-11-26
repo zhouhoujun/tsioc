@@ -1,10 +1,10 @@
 import { Type } from '../types';
-import { lang, isFunction, isBaseType } from '../utils/lang';
+import { isFunction, isBaseType, getClass } from '../utils/chk';
 import { Token, isToken, ProviderType } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';
 import { INVOKED_PROVIDERS } from '../utils/tk';
-import { refl } from '../decor/reflects';
+import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
 
 
@@ -39,11 +39,11 @@ export class MethodAccessor implements IMethodAccessor {
                 throw new Error(target.toString() + ' is not implements by any class.')
             }
         } else {
-            targetClass = lang.getClass(target);
+            targetClass = getClass(target);
             instance = target;
         }
 
-        let tgRefl = refl.get(targetClass);
+        let tgRefl = get(targetClass);
         let key: string;
         if (isFunction(propertyKey)) {
             let descriptors = tgRefl.class.getPropertyDescriptors();

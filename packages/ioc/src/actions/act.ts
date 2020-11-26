@@ -1,9 +1,10 @@
 import { Type } from '../types';
-import { Handler, isClass } from '../utils/lang';
+import { Handler } from '../utils/hdl';
 import { Token } from '../tokens';
 import { IProvider } from '../IInjector';
 import { Action, Actions } from '../action';
 import { IocContext } from './ctx';
+import { isClass } from '../utils/chk';
 
 /**
  * action injector.

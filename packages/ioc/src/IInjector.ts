@@ -22,35 +22,9 @@ export interface IProvider extends IDestoryable {
      */
     readonly size: number;
     /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} target
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     */
-    getToken<T>(target: Token<T>, alias?: string): Token<T>;
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token the token.
-     * @param {string} [alias] addtion alias
-     * @returns {SymbolType<T>}
-     */
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
-    /**
      * get root container.
      */
     getContainer(): IIocContainer;
-    /**
-     * has token key.
-     *
-     * @template T
-     * @param {SymbolType<T>} key the token key.
-     * @returns {boolean}
-     */
-    hasTokenKey<T>(key: SymbolType<T>): boolean;
     /**
      * has register.
      *
@@ -68,6 +42,14 @@ export interface IProvider extends IDestoryable {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, alias: string): boolean;
+    /**
+     * has token key.
+     *
+     * @template T
+     * @param {SymbolType<T>} key the token key.
+     * @returns {boolean}
+     */
+    hasTokenKey<T>(key: SymbolType<T>): boolean;
     /**
      * has value or not.
      * @param key
@@ -117,11 +99,6 @@ export interface IProvider extends IDestoryable {
      * @param token token key.
      */
     getValue<T>(token: Token<T>): T;
-    /**
-     * get the first value via tokens.
-     * @param tokens
-     */
-    getFirstValue<T>(...tokens: Token<T>[]): T;
     /**
      * set value.
      * @param token provide key

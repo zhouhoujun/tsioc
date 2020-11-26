@@ -10,7 +10,9 @@ export * from './injector';
 export * from './container';
 
 // utils
-export * from './utils/lang';
+export * from './utils/chk';
+export * from './utils/hdl';
+export * as lang from './utils/lang';
 export * from './utils/tk';
 
 
@@ -18,7 +20,8 @@ export * from './utils/tk';
 export * from './decor/typedef';
 export * from './decor/metadatas';
 export * from './decor/type';
-export * from './decor/reflects';
+export * as refl from './decor/refl';
+export { DecoratorOption } from './decor/refl';
 export * from './decor/factory';
 export * from './decor/decorators';
 

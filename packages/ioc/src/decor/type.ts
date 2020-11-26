@@ -2,7 +2,7 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { IInjector, IProvider } from '../IInjector';
 import { ProviderType, Token } from '../tokens';
 import { ClassType, DecoratorScope } from '../types';
-import { Handler } from '../utils/lang';
+import { Handler } from '../utils/hdl';
 import {
     ParameterMetadata, PatternMetadata, PropertyMetadata,
     ProviderMetadata, RefProvider, RegInMetadata, TypeMetadata

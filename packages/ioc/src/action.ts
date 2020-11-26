@@ -1,5 +1,6 @@
 import { Token } from './tokens';
-import { chain, Handler, isBoolean, isFunction } from './utils/lang';
+import { isBoolean } from './utils/chk';
+import { chain, Handler } from './utils/hdl';
 
 /**
  * action interface.

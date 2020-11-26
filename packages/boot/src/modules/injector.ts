@@ -1,6 +1,6 @@
 import {
     Token, lang, SymbolType, Type, IInjector, Provider, IProvider,
-    TokenId, tokenId, InstFac, ProviderType, isDefined, isClass
+    TokenId, tokenId, InstFac, ProviderType, isDefined, isClass, getTokenKey
 } from '@tsdi/ioc';
 import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { ModuleRef } from './ref';
@@ -51,12 +51,12 @@ export class ModuleInjector extends CoreInjector {
     }
 
     hasValue<T>(token: Token<T>): boolean {
-        const key = this.getTokenKey(token);
+        const key = getTokenKey(token);
         return super.hasValue(key) || this.hasValInExports(key);
     }
 
     getValue<T>(token: Token<T>): T {
-        const key = this.getTokenKey(token);
+        const key = getTokenKey(token);
         return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
     }
 
@@ -106,7 +106,7 @@ export class ModuleInjector extends CoreInjector {
      * @returns {Type<T>}
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
-        let tokenKey = this.getTokenKey(token);
+        let tokenKey = getTokenKey(token);
         if (isClass(tokenKey)) return tokenKey;
 
         return this.factories.get(tokenKey)?.provider

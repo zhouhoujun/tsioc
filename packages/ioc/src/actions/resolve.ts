@@ -1,9 +1,10 @@
-import { isNullOrUndefined, lang } from '../utils/lang';
+import { isNullOrUndefined } from '../utils/chk';
 import { IInjector } from '../IInjector';
 import { isToken, ProviderType, Token } from '../tokens';
 import { INJECTOR, PROVIDERS } from '../utils/tk';
 import * as rla from './res-act';
 import { ResolveContext, ResolveOption } from './res';
+import { cleanObj } from '../utils/lang';
 
 /**
  * resolve life scope.
@@ -45,7 +46,7 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
         this.execute(ctx);
         const instance = ctx.instance;
         // clean
-        lang.cleanObj(ctx);
+        cleanObj(ctx);
         return instance;
     }
 }

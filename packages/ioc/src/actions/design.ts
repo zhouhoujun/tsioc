@@ -1,4 +1,4 @@
-import { isClass } from '../utils/lang';
+import { isClass } from '../utils/chk';
 import { DesignContext } from './ctx';
 import { IActionSetup } from '../action';
 import { InitReflectAction } from './reg';

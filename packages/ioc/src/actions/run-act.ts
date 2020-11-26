@@ -1,10 +1,10 @@
-import { chain, isDefined } from '../utils/lang';
-import { isToken } from '../tokens';
+import { isDefined } from '../utils/chk';
+import { chain } from '../utils/hdl';
+import { getTokenKey, isToken } from '../tokens';
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { METHOD_ACCESSOR } from '../utils/tk';
-
 
 /**
  * ioc runtime register action.
@@ -59,7 +59,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
         let meta = metas.find(m => m.provider);
         let token;
         if (meta) {
-            token = injector.getTokenKey(meta.provider, meta.alias);
+            token = getTokenKey(meta.provider, meta.alias);
         } else {
             token = metas.find(m => m.type)?.type;
         }

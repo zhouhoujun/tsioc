@@ -1,13 +1,15 @@
 import { ClassType, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, clsUglifyExp, STRIP_COMMENTS } from '../utils/exps';
-import { isFunction, lang } from '../utils/lang';
+import { isFunction } from '../utils/chk';
+import { getDesignAnno } from '../utils/util';
+import { forIn, getClassChain } from '../utils/lang';
 
 
 const name = '__name';
 export class TypeDefine {
     className: string;
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
-        this.className = lang.getDesignAnno(type)?.name || type.name;
+        this.className = getDesignAnno(type)?.name || type.name;
     }
 
     private _extends: ClassType[];
@@ -17,7 +19,7 @@ export class TypeDefine {
                 this._extends = this.parent.extendTypes.slice(0);
                 this._extends.unshift(this.type);
             } else {
-                this._extends = lang.getClassChain(this.type);
+                this._extends = getClassChain(this.type);
             }
         }
         return this._extends;
@@ -62,7 +64,7 @@ export class TypeDefine {
 
         let isUglify = clsUglifyExp.test(ty.name);
         let anName = '';
-        let classAnnations = lang.getDesignAnno(ty);
+        let classAnnations = getDesignAnno(ty);
         if (classAnnations && classAnnations.params) {
             anName = classAnnations.name;
             meta = {
@@ -73,7 +75,7 @@ export class TypeDefine {
         }
         if (!isUglify && ty.name !== anName) {
             let descriptors = Object.getOwnPropertyDescriptors(ty.prototype);
-            lang.forIn(descriptors, (item, name) => {
+            forIn(descriptors, (item, name) => {
                 if (name !== 'constructor') {
                     if (item.value) {
                         meta[name] = getParamNames(item.value)
@@ -97,7 +99,7 @@ export class TypeDefine {
         let pty = descriptor[name];
         if (!pty) {
             let decs = this.getPropertyDescriptors();
-            lang.forIn(decs, (dec, n) => {
+            forIn(decs, (dec, n) => {
                 if (dec === descriptor) {
                     pty = n;
                     return false;
@@ -114,7 +116,7 @@ export class TypeDefine {
             if (this.parent) {
                 descriptos = { ...this.parent.getPropertyDescriptors() };
                 let cdrs = Object.getOwnPropertyDescriptors(this.type.prototype);
-                lang.forIn(cdrs, (d, n) => {
+                forIn(cdrs, (d, n) => {
                     d[name] = n;
                     descriptos[n] = d;
                 });
@@ -124,12 +126,12 @@ export class TypeDefine {
                     if (!descriptos) {
                         descriptos = cdrs;
                         descriptos = {};
-                        lang.forIn(cdrs, (d, n) => {
+                        forIn(cdrs, (d, n) => {
                             d[name] = n;
                             descriptos[n] = d;
                         });
                     } else {
-                        lang.forIn(cdrs, (d, n) => {
+                        forIn(cdrs, (d, n) => {
                             if (!descriptos[n]) {
                                 d[name] = n;
                                 descriptos[n] = d;

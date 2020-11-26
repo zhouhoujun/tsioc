@@ -1,4 +1,4 @@
-import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang } from '@tsdi/ioc';
+import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang, getToken } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 import { IServiceProvider, IContainer } from '../link';
@@ -107,10 +107,10 @@ export class ServiceProvider implements IServiceProvider {
         }
         let tokens = ctx.tokens || [];
         if (tokens.length) {
-            tokens = tokens.filter(t => t).map(t => ctx.injector.getToken(t, ctx.alias));
+            tokens = tokens.filter(t => t).map(t => getToken(t, ctx.alias));
         }
         if (ctx.token) {
-            tokens.unshift(ctx.injector.getToken(ctx.token, ctx.alias));
+            tokens.unshift(getToken(ctx.token, ctx.alias));
         }
         ctx.tokens = tokens;
     }

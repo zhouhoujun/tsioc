@@ -1,8 +1,9 @@
 import { Type, DecoratorScope } from '../types';
-import { isClass, Handler } from '../utils/lang';
+import { isClass } from '../utils/chk';
+import { Handler } from '../utils/hdl';
 import { IocActions } from './act';
 import { Action, IocAction } from '../action';
-import { refl } from '../decor/reflects';
+import { get } from '../decor/refl';
 import { RegContext } from './ctx';
 
 
@@ -32,7 +33,7 @@ export const InitReflectAction = function (ctx: RegContext, next?: () => void): 
     if (!isClass(ctx.type)) {
         return;
     }
-    const tgref = ctx.reflect = refl.get(ctx.type, true);
+    const tgref = ctx.reflect = get(ctx.type, true);
     if (tgref.singleton) {
         ctx.singleton = tgref.singleton;
     }

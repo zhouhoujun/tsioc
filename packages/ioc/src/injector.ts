@@ -6,9 +6,10 @@ import { IInjector, IProvider } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, Registration, SymbolType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isDefined, isFunction, isNull, isString, isUndefined, lang } from './utils/lang';
+import { isArray, isPlainObject, isClass, isDefined, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { PROVIDERS } from './utils/tk';
 import { IIocContainer } from './IIocContainer';
+import { getTypes } from './utils/lang';
 
 /**
  * provider container.
@@ -45,34 +46,6 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     */
-    getToken<T>(token: Token<T>, alias?: string): Token<T> {
-        if (alias) {
-            return new Registration(token, alias);
-        }
-        return token;
-    }
-
-
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} [alias]
-     * @returns {SymbolType<T>}
-     */
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-        return getTokenKey(token, alias);
-    }
-
-    /**
      * set token factory.
      *
      * @template T
@@ -82,8 +55,7 @@ export class Provider extends Destoryable implements IProvider {
      * @returns {this}
      */
     set<T>(provide: Token<T>, fac: Factory<T> | InstFac<T>, provider?: Type<T>): this {
-        let key = this.getTokenKey(provide);
-        if (!key) return this;
+        let key = getTokenKey(provide);
         if (isFunction(fac)) {
             if (!provider) {
                 provider = isClass(key) ? key : undefined;
@@ -131,7 +103,7 @@ export class Provider extends Destoryable implements IProvider {
             } else if (isPlainObject(p)) {
                 let pr = p as StaticProviders;
                 if (isToken(pr.provide)) {
-                    let provide = this.getTokenKey(pr.provide);
+                    let provide = getTokenKey(pr.provide);
                     if (isArray(pr.deps) && pr.deps.length) {
                         pr.deps.forEach(d => {
                             if (isClass(d)) {
@@ -192,7 +164,7 @@ export class Provider extends Destoryable implements IProvider {
      * @returns {this}
      */
     use(...modules: Modules[]): Type[] {
-        let types = lang.getTypes(...modules);
+        let types = getTypes(...modules);
         types.forEach(ty => this.registerType(ty));
         return types;
     }
@@ -223,7 +195,11 @@ export class Provider extends Destoryable implements IProvider {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, alias?: string): boolean {
-        return this.hasTokenKey(this.getTokenKey(token, alias));
+        return this.hasTokenKey(getTokenKey(token, alias));
+    }
+
+    hasTokenKey<T>(key: SymbolType<T>): boolean {
+        return this.factories.has(key);
     }
     /**
      * has register.
@@ -232,34 +208,22 @@ export class Provider extends Destoryable implements IProvider {
      * @returns {boolean}
      */
     hasRegister<T>(token: Token<T>, alias?: string): boolean {
-        let key = this.getTokenKey(token, alias);
+        let key = getTokenKey(token, alias);
         return this.hasTokenKey(key) || this.parent?.hasRegister(key);
     }
 
-    hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.factories.has(key);
-    }
-
     hasValue<T>(token: Token<T>): boolean {
-        const key = this.getTokenKey(token);
+        const key = getTokenKey(token);
         return isDefined(this.factories.get(key)?.value) || this.parent?.hasValue(key);
     }
 
     getValue<T>(token: Token<T>): T {
-        const key = this.getTokenKey(token);
+        const key = getTokenKey(token);
         return this.factories.get(key)?.value ?? this.parent?.getValue(key);
     }
 
-    getFirstValue<T>(...tokens: Token<T>[]): T {
-        let value: T;
-        return tokens.some(k => {
-            value = this.getValue(k);
-            return isDefined(value);
-        }) ? value : null;
-    }
-
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
-        const key = this.getTokenKey(token);
+        const key = getTokenKey(token);
         const pds = this.factories.get(key);
         if (provider) {
             this.factories.set(key, { ...pds, value, provider });
@@ -271,7 +235,7 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     delValue(token: Token) {
-        const key = this.getTokenKey(token);
+        const key = getTokenKey(token);
         const pdr = this.factories.get(key);
         if (!pdr.fac) {
             this.factories.delete(key);
@@ -292,9 +256,9 @@ export class Provider extends Destoryable implements IProvider {
     get<T>(token: Token<T>, alias?: string | ProviderType, ...providers: ProviderType[]): T {
         let key;
         if (isString(alias)) {
-            key = this.getTokenKey(token, alias);
+            key = getTokenKey(token, alias);
         } else {
-            key = this.getTokenKey(token);
+            key = getTokenKey(token);
             if (alias) {
                 providers.unshift(alias);
             }
@@ -328,7 +292,7 @@ export class Provider extends Destoryable implements IProvider {
      * @memberof BaseInjector
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
-        let tokenKey = this.getTokenKey(token);
+        let tokenKey = getTokenKey(token);
         if (isClass(tokenKey)) return tokenKey;
         return this.factories.get(tokenKey)?.provider ?? this.parent?.getTokenProvider(tokenKey);
     }
@@ -343,7 +307,7 @@ export class Provider extends Destoryable implements IProvider {
      * @memberof BaseInjector
      */
     unregister<T>(token: Token<T>): this {
-        let key = this.getTokenKey(token);
+        let key = getTokenKey(token);
         if (this.has(key)) {
             this.factories.delete(key);
             if (isClass(key)) {
@@ -389,7 +353,7 @@ export class Provider extends Destoryable implements IProvider {
             to = filter;
             filter = undefined;
         }
-        to = to || new (lang.getClass(this))(this.parent);
+        to = to || new (getClass(this))(this.parent);
         this.merge(this, to as Provider, filter);
         return to;
     }
@@ -451,7 +415,7 @@ export abstract class Injector extends Provider implements IInjector {
      * @memberof Injector
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>): this {
-        const provideKey = this.getTokenKey(provide);
+        const provideKey = getTokenKey(provide);
         if (!provideKey) {
             return this;
         }
@@ -472,7 +436,7 @@ export abstract class Injector extends Provider implements IInjector {
      * @param alias alias.
      */
     bindRefProvider<T>(target: Token, provide: Token<T>, provider: Type<T>, alias?: string): InjectReference<T> {
-        let refToken = new InjectReference(this.getTokenKey(provide, alias), target);
+        let refToken = new InjectReference(getTokenKey(provide, alias), target);
         this.bindProvider(refToken, provider);
         return refToken;
     }
@@ -495,7 +459,7 @@ export abstract class Injector extends Provider implements IInjector {
      * @memberof Injector
      */
     use(...modules: Modules[]): Type[] {
-        let types = lang.getTypes(...modules);
+        let types = getTypes(...modules);
         types.forEach(ty => this.registerType(ty));
         return types;
     }
@@ -531,7 +495,7 @@ export abstract class Injector extends Provider implements IInjector {
             to = filter;
             filter = undefined;
         }
-        to = to || new (lang.getClass(this))(this.parent);
+        to = to || new (getClass(this))(this.parent);
         this.merge(this, to as Injector, filter);
         return to;
     }

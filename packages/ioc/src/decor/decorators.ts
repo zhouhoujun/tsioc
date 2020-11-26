@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isString, isArray } from '../utils/lang';
+import { isString, isArray } from '../utils/chk';
 import { Token, ProviderType } from '../tokens';
 import { IIocContainer } from '../IIocContainer';
 import {
