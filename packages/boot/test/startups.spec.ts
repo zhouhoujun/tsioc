@@ -1,12 +1,12 @@
 import { BootApplication, DIModule, IBootContext, StartupService, Boot } from '../src';
 import expect = require('expect');
 import { ICoreInjector } from '@tsdi/core';
-import { Singleton, PromiseUtil } from '@tsdi/ioc';
+import { lang, Singleton } from '@tsdi/ioc';
 
 @Singleton()
 export class MyStartupService extends StartupService {
     async configureService(ctx: IBootContext): Promise<void> {
-        let defer = PromiseUtil.defer<void>();
+        let defer = lang.defer<void>();
         setTimeout(() => {
             ctx.setValue('MyStartup', 'start');
             defer.resolve();
@@ -32,7 +32,7 @@ export class DeviceConnectionService extends StartupService {
     connention: any;
     async configureService(ctx: IBootContext): Promise<void> {
         const cfg = ctx.getConfiguration();
-        let defer = PromiseUtil.defer<void>();
+        let defer = lang.defer<void>();
         setTimeout(() => {
             this.connention = { name: 'device_connect' };
             defer.resolve();
