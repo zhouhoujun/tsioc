@@ -7,6 +7,7 @@ import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS } from '../utils/tk';
+import { IInjector } from '../IInjector';
 
 
 
@@ -40,10 +41,16 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.regIn = regIn;
         ctx.injector = container;
     }
-    const injector = ctx.injector;
-    container.regedState.regType(ctx.type, { provides: [], getInjector: () => injector });
+    container.regedState.regType(ctx.type, createReged(ctx.injector));
     next();
 };
+
+function createReged(injector: IInjector) {
+    return {
+        provides: [],
+        getInjector: () => injector
+    }
+}
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {

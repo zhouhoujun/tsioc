@@ -268,9 +268,9 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     /**
-      * get injector
-      * @param type
-      */
+     * get injector
+     * @param type
+     */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T {
         return getReged(type, this.container.id)?.getInjector() as T;
     }

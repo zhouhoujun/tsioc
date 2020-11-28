@@ -26,7 +26,13 @@ export type DecoratorType = 'class' | DecorMemberType;
  * registered.
  */
 export interface Registered {
-    provides: Token[];
+    /**
+     * provides.
+     */
+    readonly provides: Token[];
+    /**
+     * injector.
+     */
     getInjector(): IInjector;
 }
 

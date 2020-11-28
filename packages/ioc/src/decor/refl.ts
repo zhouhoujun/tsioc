@@ -130,15 +130,15 @@ export interface MetadataFactory<T> {
     appendProps?(metadata: T): void;
 }
 
-export interface DecorRegisteredOption extends MetadataFactory<any>, DecorPdr {
-}
+/**
+ * decor registered option.
+ */
+export interface DecorRegisteredOption extends MetadataFactory<any>, DecorPdr { }
 
 /**
  * decorator option.
  */
-export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption {
-
-}
+export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption { }
 
 /**
  * register decorator.
