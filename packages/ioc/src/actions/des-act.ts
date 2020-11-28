@@ -1,13 +1,15 @@
 import { isFunction, isClass } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
-import { getToken, getTokenKey, ProviderType } from '../tokens';
+import { getToken, getTokenKey, ProviderType, Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS } from '../utils/tk';
 import { IInjector } from '../IInjector';
+import { Type } from '../types';
+import { IActionProvider } from './act';
 
 
 
@@ -52,21 +54,15 @@ function createReged(injector: IInjector) {
     }
 }
 
-
-export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    let injector = ctx.injector;
-    let provide = getTokenKey(ctx.token);
-    let type = ctx.type;
-    let singleton = ctx.singleton || ctx.reflect.singleton;
-    const container = injector.getContainer();
-    const actionPdr = container.provider;
-    let factory = (...providers: ProviderType[]) => {
+function createFac(actionPdr: IActionProvider, injector: IInjector, type: Type, token: Token, singleton) {
+    return (...providers: ProviderType[]) => {
+        // make sure has value.
         if (singleton && injector.hasValue(type)) {
             return injector.getValue(type);
         }
         const ctx = {
             injector,
-            token: provide,
+            token,
             type,
             singleton,
             providers: injector.get(PROVIDERS).inject(...providers)
@@ -76,8 +72,16 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
         // clean context
         cleanObj(ctx);
         return instance;
-    };
+    }
+}
 
+export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
+    let injector = ctx.injector;
+    let provide = getTokenKey(ctx.token);
+    let type = ctx.type;
+    let singleton = ctx.singleton || ctx.reflect.singleton;
+    const container = injector.getContainer();
+    let factory = createFac(container.provider, injector, type, provide, singleton);
     if (provide && provide !== type) {
         injector.set(provide, factory, type);
     } else {
