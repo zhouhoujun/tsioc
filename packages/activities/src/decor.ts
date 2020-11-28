@@ -60,7 +60,7 @@ export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
         }
     },
     design: {
-        Class: (ctx, next) => {
+        class: (ctx, next) => {
             const relt = ctx.reflect as AnnotationReflect;
             const annoation = relt.annotation as ActivityMetadata;
             if (annoation.deps && annoation.deps.length) {

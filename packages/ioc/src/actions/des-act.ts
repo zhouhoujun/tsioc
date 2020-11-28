@@ -96,7 +96,7 @@ export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => vo
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('BeforeAnnoation'), ctx);
+            chain(d.decorPdr.getDesignHandle('beforeAnnoation'), ctx);
         });
 
     return next();
@@ -107,7 +107,7 @@ export const DesignClassDecorScope = function (ctx: DesignContext, next: () => v
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('Class'), ctx);
+            chain(d.decorPdr.getDesignHandle('class'), ctx);
         });
 
     return next();
@@ -127,7 +127,7 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
     ctx.reflect.decors.filter(d => d.decorType === 'property')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('Property'), ctx);
+            chain(d.decorPdr.getDesignHandle('property'), ctx);
         });
 
     return next();
@@ -222,7 +222,7 @@ export const DesignMthDecorScope = function (ctx: DesignContext, next: () => voi
     ctx.reflect.decors.filter(d => d.decorType === 'method')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('Method'), ctx);
+            chain(d.decorPdr.getDesignHandle('method'), ctx);
         });
 
     return next();
@@ -266,7 +266,7 @@ export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('Annoation'), ctx);
+            chain(d.decorPdr.getDesignHandle('annoation'), ctx);
         });
 
     return next();
@@ -276,7 +276,7 @@ export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => voi
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('AfterAnnoation'), ctx);
+            chain(d.decorPdr.getDesignHandle('afterAnnoation'), ctx);
         });
 
     return next();

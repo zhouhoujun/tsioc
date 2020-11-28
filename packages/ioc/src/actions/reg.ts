@@ -1,8 +1,9 @@
-import { Type, DecoratorScope } from '../types';
+import { Type } from '../types';
 import { isClass } from '../utils/chk';
 import { Handler } from '../utils/hdl';
 import { IocActions } from './act';
 import { Action, IocAction } from '../action';
+import { DecoratorScope } from '../decor/type';
 import { get } from '../decor/refl';
 import { RegContext } from './ctx';
 

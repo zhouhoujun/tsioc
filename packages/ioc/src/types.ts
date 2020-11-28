@@ -93,11 +93,3 @@ export interface AnnotationType<T = any> extends Function {
  */
 export type ClassType<T = any> = Type<T> | AbstractType<T>;
 
-/**
- * decorator scopes.
- *
- * Annoation: annoation actions for design time.
- * AfterAnnoation: after annoation actions for design time.
- */
-export type DecoratorScope = 'BeforeAnnoation' | 'Class' | 'Parameter' | 'Property' | 'Method'
-    | 'BeforeConstructor' | 'AfterConstructor' | 'Annoation' | 'AfterAnnoation';

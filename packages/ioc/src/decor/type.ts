@@ -1,7 +1,7 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { IInjector, IProvider } from '../IInjector';
 import { ProviderType, Token } from '../tokens';
-import { ClassType, DecoratorScope } from '../types';
+import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
 import {
     ParameterMetadata, PatternMetadata, PropertyMetadata,
@@ -20,6 +20,15 @@ export interface AutorunDefine {
 
 export type DecorMemberType = 'property' | 'method' | 'parameter';
 export type DecoratorType = 'class' | DecorMemberType;
+
+/**
+ * decorator scopes.
+ *
+ * Annoation: annoation actions for design time.
+ * AfterAnnoation: after annoation actions for design time.
+ */
+export type DecoratorScope = 'beforeAnnoation' | DecoratorType
+    | 'beforeConstructor' | 'afterConstructor' | 'annoation' | 'afterAnnoation';
 
 
 /**

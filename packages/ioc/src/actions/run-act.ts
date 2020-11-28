@@ -94,7 +94,7 @@ export const BeforeCtorDecorScope = function (ctx: RuntimeContext, next: () => v
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getRuntimeHandle('BeforeConstructor'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('beforeConstructor'), ctx);
         });
 
     return next();
@@ -126,7 +126,7 @@ export const AfterCtorDecorScope = function (ctx: RuntimeContext, next: () => vo
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getRuntimeHandle('AfterConstructor'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('afterConstructor'), ctx);
         });
 
     return next();
@@ -207,7 +207,7 @@ export const RuntimeAnnoDecorScope = function (ctx: RuntimeContext, next: () => 
     ctx.reflect.decors.filter(d => d.decorType === 'class')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getRuntimeHandle('Class'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('class'), ctx);
         });
 
     return next();
@@ -223,7 +223,7 @@ export const RuntimeMthDecorScope = function (ctx: RuntimeContext, next: () => v
     ctx.reflect.decors.filter(d => d.decorType === 'method')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getRuntimeHandle('Method'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('method'), ctx);
         });
 
     return next();
@@ -240,7 +240,7 @@ export const RuntimePropDecorScope = function (ctx: RuntimeContext, next: () => 
     ctx.reflect.decors.filter(d => d.decorType === 'property')
         .forEach(d => {
             ctx.currDecor = d.decor;
-            chain(d.decorPdr.getRuntimeHandle('Property'), ctx);
+            chain(d.decorPdr.getRuntimeHandle('property'), ctx);
         });
 
     return next();

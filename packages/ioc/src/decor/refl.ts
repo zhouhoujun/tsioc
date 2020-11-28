@@ -43,47 +43,47 @@ export interface DecorScopeHandles<T> {
     /**
      * decorator BeforeAnnoation action handles.
      */
-    BeforeAnnoation?: Handler<T> | Handler<T>[];
+    beforeAnnoation?: Handler<T> | Handler<T>[];
 
     /**
      * decorator Class action handles.
      */
-    Class?: Handler<T> | Handler<T>[];
+    class?: Handler<T> | Handler<T>[];
 
     /**
      * decorator Parameter action handles.
      */
-    Parameter?: Handler<T> | Handler<T>[];
+    parameter?: Handler<T> | Handler<T>[];
 
     /**
      * decorator Property action handles.
      */
-    Property?: Handler<T> | Handler<T>[];
+    property?: Handler<T> | Handler<T>[];
 
     /**
      * decorator Method action handles.
      */
-    Method?: Handler<T> | Handler<T>[];
+    method?: Handler<T> | Handler<T>[];
 
     /**
      * decorator BeforeConstructor action handles.
      */
-    BeforeConstructor?: Handler<T> | Handler<T>[];
+    beforeConstructor?: Handler<T> | Handler<T>[];
 
     /**
      * decorator AfterConstructor action handles.
      */
-    AfterConstructor?: Handler<T> | Handler<T>[];
+    afterConstructor?: Handler<T> | Handler<T>[];
 
     /**
      * decorator Annoation action handles.
      */
-    Annoation?: Handler<T> | Handler<T>[];
+    annoation?: Handler<T> | Handler<T>[];
 
     /**
      * decorator AfterAnnoation action handles.
      */
-    AfterAnnoation?: Handler<T> | Handler<T>[];
+    afterAnnoation?: Handler<T> | Handler<T>[];
 }
 
 /**

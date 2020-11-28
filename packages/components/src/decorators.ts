@@ -59,7 +59,7 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
         }
     },
     design: {
-        Class: (ctx, next) => {
+        class: (ctx, next) => {
             const decorRefl = ctx.reflect as DirectiveReflect;
             const type = ctx.type as DirectiveType;
             if (!(decorRefl.annoType === 'directive')) {
@@ -126,7 +126,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     design: {
-        Class: (ctx, next) => {
+        class: (ctx, next) => {
             const compRefl = ctx.reflect as ComponentReflect;
             if (!(compRefl.annoType === 'component')) {
                 return next();

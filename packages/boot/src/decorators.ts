@@ -91,7 +91,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
             ]
         },
         design: {
-            AfterAnnoation: (ctx, next) => {
+            afterAnnoation: (ctx, next) => {
                 const injector = ctx.injector;
                 const classType = ctx.type;
                 let startups = injector.get(STARTUPS) || [];
@@ -205,7 +205,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             ]
         },
         design: {
-            BeforeAnnoation: (ctx: ModuleDesignContext, next) => {
+            beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (!ctx.regIn && ctx.reflect.annoType === 'module') {
                     let injector = ctx.injector.getInstance(ModuleInjector);
                     injector.setValue(PARENT_INJECTOR, ctx.injector);
@@ -213,7 +213,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 }
                 next();
             },
-            Annoation: [
+            annoation: [
                 (ctx: ModuleDesignContext, next) => {
                     if (ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
                         next()
@@ -376,7 +376,7 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
     props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) =>
         ({ parent, before }),
     design: {
-        AfterAnnoation: (ctx, next) => {
+        afterAnnoation: (ctx, next) => {
             const classType = ctx.type;
             let reflect = ctx.reflect;
             const { parent, before, after } = reflect.getMetadata<MessageMetadata>(ctx.currDecor);
