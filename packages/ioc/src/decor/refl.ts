@@ -449,6 +449,21 @@ function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, 
         reflect: get(type, true)
     };
     actions.execute(ctx, () => {
+        switch (ctx.decorType) {
+            case 'class':
+                ctx.reflect.classDecors.unshift(define);
+                break;
+            case 'method':
+                ctx.reflect.methodDecors.unshift(define);
+                break;
+            case 'property':
+                ctx.reflect.propDecors.unshift(define);
+                break;
+
+            case 'parameter':
+                ctx.reflect.paramDecors.unshift(define);
+                break;
+        }
         ctx.reflect.decors.unshift(define);
     });
     cleanObj(ctx);
@@ -479,7 +494,19 @@ export function dispatchParamDecor(type: any, define: DecorDefine) {
 function hasMetadata(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
     type = type || 'class';
     decor = getDectorId(decor);
-    return this.decors.some(d => d.decor === decor && d.decorType === type && (propertyKey ? propertyKey === d.propertyKey : true));
+    const filter = (d: DecorDefine) => d.decor === decor && (propertyKey ? propertyKey === d.propertyKey : true)
+    switch (type) {
+        case 'class':
+            return this.classDecors.some(filter);
+        case 'method':
+            return this.methodDecors.some(filter);
+        case 'property':
+            return this.propDecors.some(filter);
+        case 'parameter':
+            return this.paramDecors.some(filter);
+        default:
+            return false;
+    }
 }
 
 function getDectorId(decor: string | Function): string {
@@ -488,7 +515,19 @@ function getDectorId(decor: string | Function): string {
 function getDecorDefine(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): DecorDefine {
     type = type || 'class';
     decor = getDectorId(decor);
-    return this.decors.find(d => d.decor === decor && d.decorType === type && (propertyKey ? propertyKey === d.propertyKey : true));
+    const filter = (d: DecorDefine) => d.decor === decor && (propertyKey ? propertyKey === d.propertyKey : true);
+    switch (type) {
+        case 'class':
+            return this.classDecors.find(filter);
+        case 'method':
+            return this.methodDecors.find(filter);
+        case 'property':
+            return this.propDecors.find(filter);
+        case 'parameter':
+            return this.paramDecors.find(filter);
+        default:
+            return null;
+    }
 }
 
 function getDecorDefines(this: TypeReflect, decor: string | Function, type?: DecoratorType): DecorDefine[] {
@@ -496,7 +535,19 @@ function getDecorDefines(this: TypeReflect, decor: string | Function, type?: Dec
     if (!type) {
         type = 'class';
     }
-    return this.decors.filter(d => d.decor === decor && d.decorType === type);
+    const filter = d => d.decor === decor && d.decorType === type;
+    switch (type) {
+        case 'class':
+            return this.classDecors.filter(filter);
+        case 'method':
+            return this.methodDecors.filter(filter);
+        case 'property':
+            return this.propDecors.filter(filter);
+        case 'parameter':
+            return this.paramDecors.filter(filter);
+        default:
+            return [];
+    }
 }
 
 function getMetadata<T = any>(this: TypeReflect, decor: string | Function, propertyKey?: string, type?: DecorMemberType): T {
@@ -521,6 +572,10 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
         tagRefl = Object.defineProperties({
             type,
             decors: prRef ? prRef.decors.filter(d => d.decorType !== 'class') : [],
+            classDecors: [],
+            propDecors: prRef ? prRef.propDecors.slice(0) : [],
+            methodDecors: prRef ? prRef.methodDecors.slice(0) : [],
+            paramDecors: prRef ? prRef.paramDecors.slice(0) : [],
             class: new TypeDefine(type, prRef?.class),
             providers: [],
             extProviders: [],

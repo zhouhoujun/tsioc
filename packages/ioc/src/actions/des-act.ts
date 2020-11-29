@@ -93,22 +93,20 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 
 
 export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.decors.filter(d => d.decorType === 'class')
-        .forEach(d => {
-            ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('beforeAnnoation'), ctx);
-        });
+    ctx.reflect.classDecors.forEach(d => {
+        ctx.currDecor = d.decor;
+        chain(d.decorPdr.getDesignHandle('beforeAnnoation'), ctx);
+    });
 
     return next();
 }
 
 
 export const DesignClassDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.decors.filter(d => d.decorType === 'class')
-        .forEach(d => {
-            ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('class'), ctx);
-        });
+    ctx.reflect.classDecors.forEach(d => {
+        ctx.currDecor = d.decor;
+        chain(d.decorPdr.getDesignHandle('class'), ctx);
+    });
 
     return next();
 }
@@ -124,7 +122,7 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
 }
 
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.decors.filter(d => d.decorType === 'property')
+    ctx.reflect.propDecors
         .forEach(d => {
             ctx.currDecor = d.decor;
             chain(d.decorPdr.getDesignHandle('property'), ctx);
@@ -219,11 +217,10 @@ export const RegMethodParamsType = function (ctx: DesignContext, next: () => voi
 
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.decors.filter(d => d.decorType === 'method')
-        .forEach(d => {
-            ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('method'), ctx);
-        });
+    ctx.reflect.methodDecors.forEach(d => {
+        ctx.currDecor = d.decor;
+        chain(d.decorPdr.getDesignHandle('method'), ctx);
+    });
 
     return next();
 }
@@ -263,21 +260,19 @@ export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetu
 
 
 export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.decors.filter(d => d.decorType === 'class')
-        .forEach(d => {
-            ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('annoation'), ctx);
-        });
+    ctx.reflect.classDecors.forEach(d => {
+        ctx.currDecor = d.decor;
+        chain(d.decorPdr.getDesignHandle('annoation'), ctx);
+    });
 
     return next();
 }
 
 export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.decors.filter(d => d.decorType === 'class')
-        .forEach(d => {
-            ctx.currDecor = d.decor;
-            chain(d.decorPdr.getDesignHandle('afterAnnoation'), ctx);
-        });
+    ctx.reflect.classDecors.forEach(d => {
+        ctx.currDecor = d.decor;
+        chain(d.decorPdr.getDesignHandle('afterAnnoation'), ctx);
+    });
 
     return next();
 }

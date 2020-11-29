@@ -127,9 +127,16 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
     readonly type: ClassType;
 
     /**
-     * decorator defines of the class type.
+     * class decorator defines.
      */
-    decors: DecorDefine[];
+    readonly classDecors: DecorDefine[];
+    readonly propDecors: DecorDefine[];
+    readonly methodDecors: DecorDefine[];
+    readonly paramDecors: DecorDefine[];
+    /**
+     * all decorator defines of the class type.
+     */
+    readonly decors: DecorDefine[];
 
     /**
      * has decorator metadata.

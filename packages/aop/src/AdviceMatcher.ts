@@ -191,9 +191,9 @@ export class AdviceMatcher implements IAdviceMatcher {
             let annotation = aExp.test(exp) ? exp : ('@' + exp);
             return (name: string, fullName: string) => {
                 if (name === 'constructor') {
-                    return reflect.decors.some(d => d.decor === annotation && d.decorType === 'class');
+                    return reflect.classDecors.some(d => d.decor === annotation);
                 }
-                return reflect.decors.some(d => d.decor === annotation && d.decorType === 'method');
+                return reflect.methodDecors.some(d => d.decor === annotation);
             }
 
         } else if (execContentExp.test(strExp)) {
