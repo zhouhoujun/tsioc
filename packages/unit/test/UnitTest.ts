@@ -1,5 +1,5 @@
-import { PromiseUtil, Inject } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { lang, Inject } from '@tsdi/ioc';
+import { IContainer, CONTAINER } from '@tsdi/core';
 import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before } from '../src';
 
 
@@ -26,7 +26,7 @@ export class SuiteTest {
     @Test('assert test timeout', 50)
     testTimeout() {
         console.log('---------assert test timeout------');
-        let def = PromiseUtil.defer();
+        let def = lang.defer();
         setTimeout(() => {
             console.log('out time do...');
             def.resolve('out time do...')
@@ -37,7 +37,7 @@ export class SuiteTest {
     @Test('assert test in time', 50)
     testInTime(assert: Assert) {
         console.log('---------assert test in time------');
-        let def = PromiseUtil.defer();
+        let def = lang.defer();
         assert.ok(assert);
         setTimeout(() => {
             console.log('in time do...');
@@ -47,7 +47,7 @@ export class SuiteTest {
     }
 
     @Test('expect test')
-    async testEqural(@Inject(ExpectToken) expect: Expect, @Inject(ContainerToken) conatiner: IContainer) {
+    async testEqural(@Inject(ExpectToken) expect: Expect, @Inject(CONTAINER) conatiner: IContainer) {
         await expect('true').not.toBe(true);
     }
 }
