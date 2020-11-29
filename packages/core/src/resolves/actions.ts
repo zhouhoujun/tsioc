@@ -179,20 +179,18 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             }
             const rlt = isClassType(tk) ? refl.get(tk) : null
             if (rlt) {
-                rlt.decors.forEach(dec => {
-                    if (dec.decorType === 'class') {
-                        const dprvoider = dec.decorPdr.getProvider(injector)
-                        dprvoider.iterator((pdr, tk) => {
-                            if (!services.has(tk, alias)
-                                && (
-                                    (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
-                                    || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
-                                )
-                            ) {
-                                services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
-                            }
-                        });
-                    }
+                rlt.classDecors.forEach(dec => {
+                    const dprvoider = dec.decorPdr.getProvider(injector)
+                    dprvoider.iterator((pdr, tk) => {
+                        if (!services.has(tk, alias)
+                            && (
+                                (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
+                                || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
+                            )
+                        ) {
+                            services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
+                        }
+                    });
                 });
             }
 
