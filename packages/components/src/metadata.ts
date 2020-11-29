@@ -41,6 +41,8 @@ export interface ComponentMetadata extends DirectiveMetadata {
      * @memberof ComponentMetadata
      */
     template?: any;
+
+    templateUrl?: string;
 }
 
 

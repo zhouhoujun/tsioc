@@ -137,6 +137,16 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
                 return next();
             }
 
+            // none template
+            if (!compRefl.annotation.template) {
+                if (compRefl.annotation.templateUrl) {
+                    // use builder async build.
+                    return next();
+                } else {
+                    throw Error(`component ${lang.getClassName(type)} has no template.`);
+                }
+            }
+
             const currDecor = ctx.currDecor;
             const injector = ctx.injector as ICoreInjector;
 
