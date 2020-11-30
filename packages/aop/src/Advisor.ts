@@ -30,10 +30,12 @@ export class Advisor implements IAdvisor {
      * @param {Advices} advices
      */
     setAdvices(type: Type, key: string, advices: Advices) {
-        if (!this.advices.has(type)) {
-            this.advices.set(type, new Map());
+        let map = this.advices.get(type);
+        if (!map) {
+            map = new Map();
+            this.advices.set(type, map);
         }
-        this.advices.get(type).set(key, advices);
+        map.set(key, advices);
     }
 
     hasAdvices(type: Type): boolean {

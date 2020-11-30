@@ -363,10 +363,12 @@ export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
         const meta = ctx.matedata as ProvidersMetadata;
-        if (!reflect.methodExtProviders.has(ctx.propertyKey)) {
-            reflect.methodExtProviders.set(ctx.propertyKey, []);
+        let pdrs = reflect.methodExtProviders.get(ctx.propertyKey);
+        if (!pdrs) {
+            pdrs = []
+            reflect.methodExtProviders.set(ctx.propertyKey, pdrs);
         }
-        reflect.methodExtProviders.get(ctx.propertyKey).push(...meta.providers);
+        pdrs.push(...meta.providers);
     }
     return next();
 }
@@ -669,6 +671,6 @@ export function getParameters<T>(type: Type<T>): ParameterMetadata[];
 export function getParameters<T>(type: Type<T>, propertyKey: string): ParameterMetadata[];
 export function getParameters<T>(type: Type<T>, propertyKey?: string): ParameterMetadata[] {
     propertyKey = propertyKey || 'constructor';
-    return get(type)?.methodParams.get(propertyKey) || [];
+    return get(type)?.methodParams.get(propertyKey) || emptyArr;
 }
 
