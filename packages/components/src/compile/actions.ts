@@ -1,6 +1,5 @@
 import { ComponentContext } from '../context';
-import { ComponentReflect, DirectiveReflect } from '../reflect';
-import { DirectiveType } from '../type';
+import { ComponentReflect } from '../reflect';
 import { CompilerFacade } from './facade';
 
 /**
@@ -13,34 +12,19 @@ import { CompilerFacade } from './facade';
 export const BuildComponentHandle = async function (ctx: ComponentContext, next?: () => Promise<void>): Promise<void> {
     const reflect = ctx.reflect as ComponentReflect;
     if (reflect.annoType === 'component') {
-        // use compiler of component, register in module of current injector.
-        // reflect.def.template(ctx.value);
+        if (!reflect.def && reflect.annotation.templateUrl) {
+            const injector = ctx.injector;
+            const tmp = await ctx.injector.getLoader().load(reflect.annotation.templateUrl);
+            reflect.annotation.template = tmp;
+            const compiler = injector.getService({ token: CompilerFacade, target: reflect.annoDecor });
+            reflect.def = compiler.compileComponent(reflect);
+        }
     }
 
     if (next) {
         await next();
     }
 };
-
-
-/**
- * build directive handle
- *
- * @export
- * @class ModuleBeforeInitHandle
- * @extends {ResolveComponentHandle}
- */
-export const BuildDirectiveHandle = async function (ctx: ComponentContext, next?: () => Promise<void>): Promise<void> {
-    const reflect = ctx.reflect as DirectiveReflect;
-    const type = ctx.type as DirectiveType;
-    if (reflect.annoType === 'directive') {
-        // use compiler of component, register in module of current injector.
-    }
-
-    if (next) {
-        await next();
-    }
-}
 
 /**
  * parse template handle
