@@ -104,7 +104,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
                 }
                 if (idx >= 0) {
                     if (meta.deps) {
-                        startups = [...startups.slice(0, idx), ...meta.deps, classType].concat(startups.slice(idx).filter(s => meta.deps.indexOf(s) < 0));
+                        startups = [...startups.slice(0, idx), ...meta.deps, classType, ...startups.slice(idx).filter(s => meta.deps.indexOf(s) < 0)];
                     } else {
                         startups.splice(idx, 0, classType);
                     }

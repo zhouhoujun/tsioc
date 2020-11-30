@@ -1,7 +1,7 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
-import { ClassType, Type } from '../types';
+import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
 import { getClass, isArray, isClass, isFunction, isString } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
@@ -140,6 +140,7 @@ export interface DecorRegisteredOption extends MetadataFactory<any>, DecorPdr { 
  */
 export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption { }
 
+
 /**
  * register decorator.
  * @param decor decorator.
@@ -154,47 +155,11 @@ export function registerDecror(decor: string, options: DecoratorOption<any>): De
 
     const option = { props: options.props, appendProps: options.appendProps } as DecorRegisteredOption;
 
-    if (options.reflect) {
-        const dechd = new Map();
-        const reflect = options.reflect;
-        for (let t in reflect) {
-            const handle = reflect[t];
-            const rged: Handler[] = dechd.get(t) || [];
-            isArray(handle) ? rged.push(...handle) : rged.push(handle);
-            dechd.set(t, rged);
-        }
-        option.getHandle = (type) => dechd.get(type) ?? [];
-    } else {
-        option.getHandle = (type) => [];
-    }
+    option.getHandle = options.reflect ? mapToFac(options.reflect as ObjectMap) : emptyHd;
 
-    if (options.design) {
-        const dsgHd = new Map();
-        const design = options.design;
-        for (let type in design) {
-            const rged: Handler[] = dsgHd.get(type) || [];
-            const handle = design[type];
-            isArray(handle) ? rged.push(...handle) : rged.push(handle);
-            dsgHd.set(type, rged);
-        }
-        option.getDesignHandle = (type) => dsgHd.get(type) ?? [];
-    } else {
-        option.getDesignHandle = (type) => [];
-    }
+    option.getDesignHandle = options.design ? mapToFac(options.design as ObjectMap) : emptyHd;
 
-    if (options.runtime) {
-        const rtmHd = new Map();
-        const runtime = options.runtime;
-        for (let type in runtime) {
-            const rged: Handler[] = rtmHd.get(type) || [];
-            const handle = runtime[type];
-            isArray(handle) ? rged.push(...handle) : rged.push(handle);
-            rtmHd.set(type, rged);
-        }
-        option.getRuntimeHandle = (type) => rtmHd.get(type) ?? [];
-    } else {
-        option.getRuntimeHandle = (type) => [];
-    }
+    option.getRuntimeHandle = options.runtime ? mapToFac(options.runtime as ObjectMap) : emptyHd;
 
     if (options.providers) {
         const providers = options.providers;
@@ -212,6 +177,24 @@ export function registerDecror(decor: string, options: DecoratorOption<any>): De
     }
 
     return option;
+}
+
+const emptyArr = [];
+
+const emptyHd = (type) => emptyArr;
+
+function mapToFac(maps: ObjectMap<Handler | Handler[]>): (type) => Handler[] {
+    const mapHd = new Map();
+    for (let type in maps) {
+        let rged: Handler[] = mapHd.get(type);
+        if (!rged) {
+            rged = [];
+            mapHd.set(type, rged);
+        }
+        const handle = maps[type];
+        isArray(handle) ? rged.push(...handle) : rged.push(handle);
+    }
+    return (type: ClassType) => mapHd.get(type) ?? emptyArr;
 }
 
 function regActionType(decor: string, type: DecorActionType) {
@@ -244,7 +227,8 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
         let meta = ctx.matedata as ParameterMetadata;
-        if (!reflect.methodParams.has(ctx.propertyKey)) {
+        let params = reflect.methodParams.get(ctx.propertyKey);
+        if (!params) {
             const names = reflect.class.getParamNames(ctx.propertyKey);
             let paramTypes: any[];
             if (ctx.propertyKey === 'constructor') {
@@ -253,14 +237,14 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
                 paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey);
             }
             if (paramTypes) {
-                reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => {
-                    return { type, paramName: names[idx] };
-                }));
+                params = paramTypes.map((type, idx) => ({ type, paramName: names[idx] }));
+                reflect.methodParams.set(ctx.propertyKey, params);
             }
         }
-        const params = reflect.methodParams.get(ctx.propertyKey);
-        meta = { ...meta, ...params[ctx.parameterIndex] };
-        params.splice(ctx.parameterIndex, 1, meta);
+        if (params) {
+            meta = { ...meta, ...params[ctx.parameterIndex] };
+            params.splice(ctx.parameterIndex, 1, meta);
+        }
     }
     return next();
 };
@@ -459,7 +443,6 @@ function dispatch(actions: Actions<DecorContext>, target: any, type: ClassType, 
             case 'property':
                 ctx.reflect.propDecors.unshift(define);
                 break;
-
             case 'parameter':
                 ctx.reflect.paramDecors.unshift(define);
                 break;
@@ -494,7 +477,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine) {
 function hasMetadata(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
     type = type || 'class';
     decor = getDectorId(decor);
-    const filter = (d: DecorDefine) => d.decor === decor && (propertyKey ? propertyKey === d.propertyKey : true)
+    const filter = propertyKey ? (d: DecorDefine) => d.decor === decor && propertyKey === d.propertyKey : (d: DecorDefine) => d.decor === decor;
     switch (type) {
         case 'class':
             return this.classDecors.some(filter);
@@ -515,7 +498,7 @@ function getDectorId(decor: string | Function): string {
 function getDecorDefine(this: TypeReflect, decor: string | Function, type?: DecoratorType, propertyKey?: string): DecorDefine {
     type = type || 'class';
     decor = getDectorId(decor);
-    const filter = (d: DecorDefine) => d.decor === decor && (propertyKey ? propertyKey === d.propertyKey : true);
+    const filter = propertyKey ? (d: DecorDefine) => d.decor === decor && propertyKey === d.propertyKey : (d: DecorDefine) => d.decor === decor;
     switch (type) {
         case 'class':
             return this.classDecors.find(filter);
@@ -535,7 +518,7 @@ function getDecorDefines(this: TypeReflect, decor: string | Function, type?: Dec
     if (!type) {
         type = 'class';
     }
-    const filter = d => d.decor === decor && d.decorType === type;
+    const filter = d => d.decor === decor;
     switch (type) {
         case 'class':
             return this.classDecors.filter(filter);
@@ -546,7 +529,7 @@ function getDecorDefines(this: TypeReflect, decor: string | Function, type?: Dec
         case 'parameter':
             return this.paramDecors.filter(filter);
         default:
-            return [];
+            return emptyArr;
     }
 }
 

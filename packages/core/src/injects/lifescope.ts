@@ -23,7 +23,7 @@ export class InjLifeScope extends LifeScope<InjContext> {
             } as InjContext;
             this.execute(ctx);
             if (ctx.registered) {
-                types.push(...ctx.registered);
+                types = types.concat(ctx.registered);
             }
             lang.cleanObj(ctx);
         });

@@ -56,8 +56,10 @@ export class MethodAccessor implements IMethodAccessor {
             throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         }
 
-        let pds = tgRefl.methodExtProviders.get(key) || [];
-        providers = providers.concat(pds);
+        let pds = tgRefl.methodExtProviders.get(key);
+        if (pds) {
+            providers = providers.concat(pds);
+        }
         let parameters = tgRefl.methodParams.get(key) || [];
         let providerMap = injector.getInstance(INVOKED_PROVIDERS).inject(...providers);
         let paramInstances = this.resolveParams(injector, parameters, providerMap);
