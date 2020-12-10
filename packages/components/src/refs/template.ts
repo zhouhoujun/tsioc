@@ -22,7 +22,7 @@ import { EmbeddedViewRef } from './view';
  * @publicApi
  */
 @Abstract()
-export abstract class TemplateRef<C> {
+export abstract class TemplateRef<C = any> {
     /**
      * The anchor element in the parent view for this embedded view.
      *

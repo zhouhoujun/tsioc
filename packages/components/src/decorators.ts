@@ -10,9 +10,11 @@ import {
 } from './metadata';
 import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect, DirectiveReflect } from './reflect';
-import { ComponentContext } from './context';
+import { ComponentBuildContext } from './context';
 import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
+import { Runnable } from 'mocha';
+import { ComponentRunnable } from './render/runnable';
 
 
 
@@ -157,7 +159,8 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     providers: [
-        { provide: BuildContext, useClass: ComponentContext },
+        { provide: BuildContext, useClass: ComponentBuildContext },
+        { provide: Runnable, useClass: ComponentRunnable },
         { provide: Identifiers, useFactory: (container) => new Identifiers(container), deps: [CONTAINER], singleton: true }
     ]
 });

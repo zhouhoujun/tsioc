@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Destoryable } from '@tsdi/ioc';
 
 
 /**
@@ -40,7 +40,7 @@ import { Abstract } from '@tsdi/ioc';
  * @publicApi
  */
 @Abstract()
-export abstract class ChangeDetectorRef {
+export abstract class ChangeDetectorRef extends Destoryable {
     /**
      * When a view uses the {@link ChangeDetectionStrategy#OnPush OnPush} (checkOnce)
      * change detection strategy, explicitly marks the view as changed so that

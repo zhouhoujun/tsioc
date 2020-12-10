@@ -1,7 +1,7 @@
 import { Injectable, Type, Refs, isToken, Token, SymbolType, isDefined } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBuildContext, createContext } from '@tsdi/boot';
-import { ComponentContext, ITemplateContext } from '@tsdi/components';
+import { ComponentBuildContext, ITemplateContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { Activity } from './Activity';
 import { ActivityMetadata, Expression } from './ActivityMetadata';
@@ -19,7 +19,7 @@ import { IWorkflowContext, WorkflowContextToken } from './IWorkflowContext';
  * @class ActivityContext
  */
 @Injectable()
-export class ActivityContext extends ComponentContext implements IActivityContext {
+export class ActivityContext extends ComponentBuildContext implements IActivityContext {
 
     /**
      * activity input data.

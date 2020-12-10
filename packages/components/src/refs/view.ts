@@ -1,6 +1,9 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Type } from '@tsdi/ioc';
 import { IBootContext } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
+import { ComponentRef } from './component';
+
+
 
 /**
  * Represents an virtual view.
@@ -10,26 +13,7 @@ import { ChangeDetectorRef } from '../chage/detector';
  * @publicApi
  */
 @Abstract()
-export abstract class ViewRef extends ChangeDetectorRef {
-  /**
-   * Destroys this view and all of the data structures associated with it.
-   */
-  abstract destroy(): void;
-
-  /**
-   * Reports whether this view has been destroyed.
-   * @returns True after the `destroy()` method has been called, false otherwise.
-   */
-  abstract get destroyed(): boolean;
-
-  /**
-   * A lifecycle hook that provides additional developer-defined cleanup
-   * functionality for views.
-   * @param callback A handler function that cleans up developer-defined data
-   * associated with a view. Called when the `destroy()` method is invoked.
-   */
-  abstract onDestroy(callback: Function): any /** TODO #9100 */;
-}
+export abstract class ViewRef extends ChangeDetectorRef { }
 
 /**
  * Represents an Angular [view](guide/glossary#view) in a view container.
@@ -96,17 +80,44 @@ export abstract class EmbeddedViewRef<C> extends ViewRef {
   abstract get rootNodes(): any[];
 }
 
+
+/**
+ * component boot context.
+ */
+export interface IComponentBootContext extends IBootContext {
+
+  readonly components: ComponentRef[];
+
+  readonly componentTypes: Type[];
+  /**
+   * Detaches a view from dirty checking again.
+   */
+  detachView(viewRef: ViewRef): void;
+  attachView(viewRef: ViewRef): void;
+  /**
+   * Invoke this method to explicitly process change detection and its side-effects.
+   *
+   * In development mode, `tick()` also performs a second change detection cycle to ensure that no
+   * further changes are detected. If additional changes are picked up during this second cycle,
+   * bindings in the app have side-effects that cannot be resolved in a single change detection
+   * pass.
+   * In this case, Angular throws an error, since an Angular application can only have one change
+   * detection pass during which all change detection must complete.
+   */
+  tick(): void;
+}
+
 /**
  * internal view ref.
  */
 export interface InternalViewRef extends ViewRef {
   /**
-   * detach form app ref.
+   * detach form app boot context.
    */
-  detachFromAppRef(): void;
+  detachContext(): void;
   /**
-   * attach to app ref.
+   * attach to app boot context.
    * @param ctx
    */
-  attachToAppRef(ctx: IBootContext): void;
+  attachContext(ctx: IComponentBootContext): void;
 }

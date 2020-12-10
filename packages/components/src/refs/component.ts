@@ -1,4 +1,4 @@
-import { Abstract, IInjector, Type } from '@tsdi/ioc';
+import { Abstract, Destoryable, IInjector, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -11,7 +11,7 @@ import { ViewRef } from './view';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C> {
+export abstract class ComponentRef<C = any> extends Destoryable {
     /**
      * The host or anchor element for this component instance.
      */
@@ -42,17 +42,4 @@ export abstract class ComponentRef<C> {
      * The type of this component (as created by a `ComponentFactory` class).
      */
     abstract get componentType(): Type<any>;
-
-    /**
-     * Destroys the component instance and all of the data structures associated with it.
-     */
-    abstract destroy(): void;
-
-    /**
-     * A lifecycle hook that provides additional developer-defined cleanup
-     * functionality for the component.
-     * @param callback A handler function that cleans up developer-defined data
-     * associated with this component. Called when the `destroy()` method is invoked.
-     */
-    abstract onDestroy(callback: Function): void;
 }
