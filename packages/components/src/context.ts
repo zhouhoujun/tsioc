@@ -15,7 +15,7 @@ export class ComponentBuildContext extends BuildContext {
 @Injectable()
 export class ComponentBootContext extends BootContext implements IComponentBootContext {
 
-    private _runningTick: boolean = false;
+    private _runningTick = false;
 
     private _views: InternalViewRef[] = [];
 

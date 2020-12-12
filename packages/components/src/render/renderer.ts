@@ -17,5 +17,4 @@ export abstract class ComponentRenderer {
         //     this._injector.get(APP_BOOTSTRAP_LISTENER, []).concat(this._bootstrapListeners);
         // listeners.forEach((listener) => listener(componentRef));
     }
-
 }

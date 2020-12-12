@@ -24,6 +24,4 @@ export class ComponentRunnable extends Runnable {
         const renderer = ctx.injector.getService({ token: ComponentRenderer, target: compRef.instance })
         renderer.render(ctx, compRef);
     }
-  
-
 }
