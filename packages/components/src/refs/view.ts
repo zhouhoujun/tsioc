@@ -93,6 +93,10 @@ export interface IComponentBootContext extends IBootContext {
    * Detaches a view from dirty checking again.
    */
   detachView(viewRef: ViewRef): void;
+  /**
+   * attach view.
+   * @param viewRef 
+   */
   attachView(viewRef: ViewRef): void;
   /**
    * Invoke this method to explicitly process change detection and its side-effects.

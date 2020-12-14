@@ -1,5 +1,5 @@
-import { Runnable } from '@tsdi/boot';
 import { Injectable, lang } from '@tsdi/ioc';
+import { Runnable } from '@tsdi/boot';
 import { ComponentRef } from '../refs/component';
 import { IComponentBootContext } from '../refs/view';
 import { ComponentRenderer } from './renderer';
