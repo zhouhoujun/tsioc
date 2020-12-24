@@ -36,7 +36,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
         }
         // clean cached config.
         this.config = null;
-        lang.del(this.configs, config);
+        lang.remove(this.configs, config);
         if (!this.baseURL && isPlainObject(config)) {
             this.baseURL = config.baseURL;
         }

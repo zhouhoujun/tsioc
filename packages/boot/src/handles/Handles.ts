@@ -35,7 +35,7 @@ export abstract class Handles<T> extends Handle<T> {
     unuse(...handles: HandleType<T>[]) {
         const len = this.handles.length;
         handles.forEach(handle => {
-            lang.del(this.handles, handle);
+            lang.remove(this.handles, handle);
         });
         if (this.handles.length !== len) this.resetFuncs();
 

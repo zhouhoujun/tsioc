@@ -2,6 +2,8 @@ import { Abstract, Type } from '@tsdi/ioc';
 import { IBootContext } from '@tsdi/boot';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ComponentRef } from './component';
+import { TemplateRef } from './template';
+import { ElementRef } from './element';
 
 
 
@@ -109,6 +111,12 @@ export interface IComponentBootContext extends IBootContext {
    * detection pass during which all change detection must complete.
    */
   tick(): void;
+
+  /**
+   * serialize curr state.
+   */
+  serialize(element?: ComponentRef | TemplateRef | ElementRef): string;
+  
 }
 
 /**

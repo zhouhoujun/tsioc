@@ -65,7 +65,7 @@ export class ModuleInjector extends CoreInjector {
         this.exports.forEach(r => {
             r.exports.unregister(token);
         });
-        lang.remove(this.exports, el => el.moduleType === token)
+        lang.remove(this.exports, this.exports?.find(el => el.moduleType === token))
         return this;
     }
 
@@ -86,7 +86,7 @@ export class ModuleInjector extends CoreInjector {
     }
 
     unexport(ref: ModuleRef) {
-        return lang.del(this.exports, ref);
+        return lang.remove(this.exports, ref);
     }
 
     iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {

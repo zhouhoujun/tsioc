@@ -2,6 +2,8 @@ import { Injectable, lang, Type } from '@tsdi/ioc';
 import { BootContext, BuildContext } from '@tsdi/boot';
 import { IComponentBootContext, InternalViewRef, ViewRef } from './refs/view';
 import { ComponentRef } from './refs/component';
+import { TemplateRef } from './refs/template';
+import { ElementRef } from './refs/element';
 
 @Injectable()
 export class ComponentBuildContext extends BuildContext {
@@ -72,5 +74,15 @@ export class ComponentBootContext extends BootContext implements IComponentBootC
             this._runningTick = false;
         }
     }
+
+    serialize(element?: ComponentRef | TemplateRef | ElementRef): string {
+        throw "no implanment";
+        // if (element) {
+        //     return element.toString();
+        // }
+        // return this._views.map(s => s.toString()).join('\n');
+    }
+
+
 }
 

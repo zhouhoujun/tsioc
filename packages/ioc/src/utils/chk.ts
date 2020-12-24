@@ -93,8 +93,7 @@ const promiseTag = '[object Promise]';
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === promiseTag
-        || (target && typeof target.then === 'function' && typeof target.catch === 'function');
+    return toString.call(target) === promiseTag || (target && typeof target.then === 'function' && typeof target.catch === 'function');
 }
 
 const obsTag = '[object Observable]';
@@ -154,9 +153,10 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return target === undefined;
+    return target === undefined || typeof target === 'undefined';
 }
 
+const nullTag = '[object Null]';
 /**
  * check target is unll or not.
  *
@@ -165,7 +165,7 @@ export function isUndefined(target: any): target is undefined {
  * @returns {target is null}
  */
 export function isNull(target: any): target is null {
-    return target === null;
+    return target === null || toString.call(target) === nullTag;
 }
 
 /**
@@ -176,7 +176,7 @@ export function isNull(target: any): target is null {
  * @returns {boolean}
  */
 export function isNullOrUndefined(target): boolean {
-    return target === null || target === undefined;
+    return isNull(target) || isUndefined(target);
 }
 
 /**
@@ -209,13 +209,13 @@ export function isArray(target: any): target is Array<any> {
  * @returns {target is object}
  */
 export function isObject(target: any): target is object {
+    if (isNull(target)) return false;
     const type = typeof target;
-    return target !== null && (type === 'object' || type === 'function');
+    return (type === 'object' || type === 'function');
 }
 
 
 const objTag = '[object Object]';
-
 /**
  * is custom class type instance or not.
  *
