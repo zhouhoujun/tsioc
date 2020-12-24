@@ -3,12 +3,12 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
-import { getClass, isArray, isClass, isFunction, isString } from '../utils/chk';
+import { getClass, isArray, isClass, isClassType, isFunction, isString } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
 import { DecoratorType, DecorContext, DecorDefine, DecorMemberType, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
-import { cleanObj } from '../utils/lang';
+import { cleanObj, getParentClass } from '../utils/lang';
 
 
 
@@ -553,7 +553,13 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
     if (tagRefl?.type !== type) {
         if (!ify) return null;
 
-        const prRef = tagRefl;
+        let prRef = tagRefl;
+        if (!prRef) {
+            const parentType = getParentClass(type);
+            if (isClassType(parentType)) {
+                prRef = get(parentType, ify);
+            }
+        }
         tagRefl = Object.defineProperties({
             type,
             decors: prRef ? prRef.decors.filter(d => d.decorType !== 'class') : [],
