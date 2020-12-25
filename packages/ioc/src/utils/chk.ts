@@ -93,7 +93,7 @@ const promiseTag = '[object Promise]';
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return toString.call(target) === promiseTag || (target && typeof target.then === 'function' && typeof target.catch === 'function');
+    return toString.call(target) === promiseTag || target instanceof Promise || (target && typeof target.then === 'function' && typeof target.catch === 'function');
 }
 
 const obsTag = '[object Observable]';
