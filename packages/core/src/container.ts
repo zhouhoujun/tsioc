@@ -30,6 +30,9 @@ export class Container extends IocContainer implements IContainer {
     protected initReg() {
         super.initReg();
         registerCores(this);
+        this.onDestroy(()=> {
+            this._serv = null;
+        });
     }
 
     /**
@@ -95,11 +98,6 @@ export class Container extends IocContainer implements IContainer {
      */
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
         return this.serv.getServiceProviders(this, target);
-    }
-
-    protected destroying() {
-        super.destroying();
-        this._serv = null;
     }
 }
 

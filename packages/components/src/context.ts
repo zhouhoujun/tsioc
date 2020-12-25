@@ -1,9 +1,10 @@
 import { Injectable, lang, Type } from '@tsdi/ioc';
 import { BootContext, BuildContext } from '@tsdi/boot';
-import { IComponentBootContext, InternalViewRef, ViewRef } from './refs/view';
+import { ViewRef } from './refs/view';
 import { ComponentRef } from './refs/component';
 import { TemplateRef } from './refs/template';
 import { ElementRef } from './refs/element';
+import { IComponentBootContext, InternalViewRef } from './refs/inter';
 
 @Injectable()
 export class ComponentBuildContext extends BuildContext {

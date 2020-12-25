@@ -316,7 +316,10 @@ export class Provider extends Destoryable implements IProvider {
                 keys.forEach(k => {
                     this.factories.delete(key);
                 });
-                this.getContainer().regedState.deleteType(key);
+                const state = this.getContainer().regedState;
+                if (state.getInjector<any>(key) === this) {
+                    state.deleteType(key);
+                }
             }
         }
         return this;
@@ -369,6 +372,9 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     protected destroying() {
+        // Array.from(this.factories.keys()).forEach(k => {
+        //     this.unregister(k);
+        // });
         this.factories.clear();
         this.factories = null;
     }

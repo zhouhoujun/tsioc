@@ -17,8 +17,6 @@ export class ModuleRef<T = any> extends Destoryable {
 
     protected destroying() {
         this.exports.destroy();
-        this.exports.moduleInjector.destroy();
-        this.exports.moduleInjector = null;
         lang.cleanObj(this);
     }
 }

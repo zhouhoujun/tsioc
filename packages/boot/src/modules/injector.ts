@@ -23,6 +23,10 @@ export class ModuleInjector extends CoreInjector {
     constructor(parent: ICoreInjector) {
         super(parent);
         this.exports = [];
+        this.onDestroy(()=>{
+            this.exports.forEach(mr => mr.destroy());
+            this.exports = [];
+        });
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
@@ -138,6 +142,14 @@ export const MODULE_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>(
 export class ModuleProviders extends Provider implements IProvider {
 
     moduleInjector: ModuleInjector;
+
+    constructor(readonly parent?: IProvider, readonly type?: string) {
+        super(parent, type);
+        this.onDestroy(()=>{
+            this.moduleInjector?.destroy();
+            this.moduleInjector = null;
+        });
+    }
 
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
         this.getContainer().registerIn(this.moduleInjector, type, provide, singleton);
