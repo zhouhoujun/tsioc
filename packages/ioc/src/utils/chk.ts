@@ -316,7 +316,7 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isBaseType(target: any): boolean {
-    return typeof target === 'function' && native.test(target.toString());
+    return isFunction(target) && native.test(target.toString());
 }
 
 /**

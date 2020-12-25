@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { ComponentRef } from '../refs/component';
-import { IComponentBootContext } from '../refs/view';
+import { IComponentBootContext } from '../refs/inter';
 
 
 /**

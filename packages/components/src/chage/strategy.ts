@@ -63,7 +63,7 @@ export enum ChangeDetectorStatus {
     /**
      * Indicates that the change detector has been destroyed.
      */
-    Destroyed,
+    Destroyed
 }
 
 /**

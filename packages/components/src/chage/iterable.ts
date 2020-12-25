@@ -1,3 +1,4 @@
+import { lang } from "@tsdi/ioc";
 
 /**
  * A type describing supported iterable types.
@@ -156,5 +157,5 @@ export class IterableDiffers {
 }
 
 export function getTypeNameForDebugging(type: any): string {
-    return type['name'] || typeof type;
+    return lang.getClassName(type) || typeof type;
 }
