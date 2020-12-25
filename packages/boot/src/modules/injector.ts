@@ -1,6 +1,6 @@
 import {
     Token, lang, SymbolType, Type, IInjector, Provider, IProvider,
-    TokenId, tokenId, InstFac, ProviderType, isDefined, isClass, getTokenKey
+    TokenId, tokenId, InstFac, ProviderType, isNil, isClass, getTokenKey
 } from '@tsdi/ioc';
 import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { ModuleRef } from './ref';
@@ -35,13 +35,13 @@ export class ModuleInjector extends CoreInjector {
             let instance: T;
             if (this.exports.some(e => {
                 instance = e.exports.getInstance(key);
-                return isDefined(instance);
+                return !isNil(instance);
             })) {
                 return instance;
             }
             return this.parent?.getInstance(key);
         }
-        if (isDefined(pdr.value)) return pdr.value;
+        if (!isNil(pdr.value)) return pdr.value;
         if (pdr.expires) {
             if (pdr.expires > Date.now()) return pdr.cache;
             pdr.expires = null;

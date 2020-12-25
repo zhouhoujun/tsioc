@@ -1,4 +1,4 @@
-import { lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isDefined, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
+import { lang, Abstract, IDestoryable, isFunction, Type, Inject, isString, Injectable, Refs, isNil, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, IBootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
@@ -86,7 +86,7 @@ export class WorkflowContext extends BootContext<ActivityOption> implements IWor
         if (!options) {
             return this;
         }
-        if (isDefined(options.data)) {
+        if (!isNil(options.data)) {
             this.setValue(ACTIVITY_INPUT, options.data);
         }
         return super.setOptions(options);
@@ -127,14 +127,14 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
         let orginData = this.context.getData();
         if (externals) {
             let input = externals.input;
-            if (isDefined(input)) {
+            if (!isNil(input)) {
                 if (isString(input) && expExp.test(input)) {
                     input = this.context.getExector().eval(input);
                 }
                 this.context.setValue(ACTIVITY_INPUT, input);
             }
             let data = externals.data;
-            if (isDefined(data)) {
+            if (!isNil(data)) {
                 this.context.setValue(ACTIVITY_ORIGIN_DATA, orginData);
                 if (isString(data) && expExp.test(data)) {
                     data = this.context.getExector().eval(data);
@@ -144,7 +144,7 @@ export abstract class ActivityRef extends ContextNode<ActivityContext> implement
             }
         }
         let result = await this.execute(ctx);
-        if (isDefined(result)) {
+        if (!isNil(result)) {
             this.context.setValue(ACTIVITY_DATA, result);
             if (this.context.hasValue(ACTIVITY_ORIGIN_DATA)) {
                 this.context.remove(CTX_RUN_SCOPE);
@@ -352,7 +352,7 @@ export class WorkflowInstance<T extends IActivityRef = IActivityRef> extends Ser
     async start(data?: any): Promise<void> {
         let context = this.getContext();
         let injector = context.injector;
-        if (isDefined(data)) {
+        if (!isNil(data)) {
             context.setValue(ACTIVITY_INPUT, data);
         }
         context.setValue(WorkflowInstance, this);

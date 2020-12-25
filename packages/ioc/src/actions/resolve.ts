@@ -1,4 +1,4 @@
-import { isNullOrUndefined } from '../utils/chk';
+import { isNil } from '../utils/chk';
 import { IInjector } from '../IInjector';
 import { isToken, ProviderType, Token } from '../tokens';
 import { INJECTOR, PROVIDERS } from '../utils/tk';
@@ -17,7 +17,7 @@ import { cleanObj } from '../utils/lang';
 export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
 
     execute(ctx: ResolveContext, next?: () => void): void {
-        if (isNullOrUndefined(ctx.instance)) {
+        if (isNil(ctx.instance)) {
             super.execute(ctx, next);
         }
     }

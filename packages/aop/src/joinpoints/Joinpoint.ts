@@ -1,6 +1,6 @@
 import {
     Type, MethodMetadata, ClassMetadata, IProvider, tokenId, Token,
-    isNullOrUndefined, IocContext, IInjector, PROVIDERS, ParameterMetadata, getTokenKey
+    isNil, IocContext, IInjector, PROVIDERS, ParameterMetadata, getTokenKey
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -154,7 +154,7 @@ export class Joinpoint implements IocContext {
         let value: T;
         let currj: Joinpoint = this;
         let key = getTokenKey(token);
-        while (isNullOrUndefined(value) && currj) {
+        while (isNil(value) && currj) {
             value = currj.providers?.get(key);
             currj = currj.provJoinpoint;
         }

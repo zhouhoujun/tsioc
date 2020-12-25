@@ -1,4 +1,4 @@
-import { isArray, isNullOrUndefined, isString } from '@tsdi/ioc';
+import { isArray, isNil, isString } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { TemplateOption, Task, Src } from '@tsdi/activities';
 import {
@@ -159,7 +159,7 @@ export class RollupActivity extends NodeActivity<void> {
             val = ctx.platform.toRootSrc(val);
         }
         if (isArray(val) && val.length) {
-            val = val.filter(f => !isNullOrUndefined(f));
+            val = val.filter(f => !isNil(f));
             if (val.length) {
                 opts[key] = val;
             }

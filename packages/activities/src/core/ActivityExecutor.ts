@@ -1,7 +1,4 @@
-import {
-    Injectable, isArray, Type, isClass, isFunction, isPromise, ObjectMap, isDefined,
-    AsyncHandler, chain, isString
-} from '@tsdi/ioc';
+import { Injectable, isArray, Type, isClass, isFunction, isPromise, ObjectMap, isNil, AsyncHandler, chain, isString } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { BUILDER } from '@tsdi/boot';
 import { ComponentBuilderToken, ELEMENT_REFS } from '@tsdi/components';
@@ -145,7 +142,7 @@ export class ActivityExecutor implements IActivityExecutor {
         let ctx = this.context;
         if (isAcitvityRef(activity)) {
             activity.context.setValue(CTX_RUN_PARENT, ctx);
-            isDefined(input) && activity.context.setValue(ACTIVITY_INPUT, input);
+            !isNil(input) && activity.context.setValue(ACTIVITY_INPUT, input);
             return activity.toAction();
         } else if (activity instanceof Activity) {
             let ref = this.context.injector.getValue(ELEMENT_REFS).get(activity) as IActivityElementRef;
@@ -154,12 +151,12 @@ export class ActivityExecutor implements IActivityExecutor {
             } else {
                 ref = new ActivityElementRef(this.context, activity);
             }
-            isDefined(input) && ref.context.setValue(ACTIVITY_INPUT, input);
+            !isNil(input) && ref.context.setValue(ACTIVITY_INPUT, input);
             return ref.toAction();
         } else if (isClass(activity)) {
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(activity) as IActivityRef;
             aref.context.setValue(CTX_RUN_PARENT, ctx);
-            isDefined(input) && aref.context.setValue(ACTIVITY_INPUT, input);
+            !isNil(input) && aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         } else if (isFunction(activity)) {
             return activity;
@@ -175,7 +172,7 @@ export class ActivityExecutor implements IActivityExecutor {
             };
             let aref = await ctx.injector.getInstance(ComponentBuilderToken).resolve(option) as IActivityRef;
             aref.context.setValue(CTX_RUN_PARENT, ctx);
-            isDefined(input) && aref.context.setValue(ACTIVITY_INPUT, input);
+            !isNil(input) && aref.context.setValue(ACTIVITY_INPUT, input);
             return aref.toAction();
         }
     }

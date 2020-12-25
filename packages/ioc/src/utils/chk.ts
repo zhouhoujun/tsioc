@@ -175,9 +175,14 @@ export function isNull(target: any): target is null {
  * @param {*} target
  * @returns {boolean}
  */
-export function isNullOrUndefined(target): boolean {
+export function isNil(target): boolean {
     return isNull(target) || isUndefined(target);
 }
+
+/**
+ * is target null or undefined.
+ */
+export const isNullOrUndefined = isNil;
 
 /**
  * check taget is defined.
@@ -187,7 +192,7 @@ export function isNullOrUndefined(target): boolean {
  * @returns {boolean}
  */
 export function isDefined(target: any): boolean {
-    return !isNullOrUndefined(target);
+    return !isNil(target);
 }
 
 /**

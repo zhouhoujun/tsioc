@@ -1,4 +1,4 @@
-import { Abstract, isFunction, isToken, isObject, isArray, isString, isDefined, Singleton } from '@tsdi/ioc';
+import { Abstract, isFunction, isToken, isObject, isArray, Singleton, isNil } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { LoggerMetadata } from './decorators/Logger';
 import { isLevel, Level } from './Level';
@@ -25,7 +25,7 @@ export abstract class LoggerAspect extends LogProcess {
     processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]) {
         if (isArray(annotation)) {
             if (!isLevel(level)) {
-                isDefined(level) && messages.unshift(level);
+                !isNil(level) && messages.unshift(level);
             }
             annotation.forEach((logmeta: LoggerMetadata) => {
                 let canlog = false;
@@ -46,12 +46,12 @@ export abstract class LoggerAspect extends LogProcess {
             });
             this.writeLog(this.logger, joinPoint, level, true, ...messages);
         } else {
-            isDefined(level) && messages.unshift(level);
+            !isNil(level) && messages.unshift(level);
             if (isLevel(annotation)) {
                 level = annotation;
             } else {
                 level = '';
-                isDefined(annotation) && messages.unshift(annotation);
+                !isNil(annotation) && messages.unshift(annotation);
             }
             this.writeLog(this.logger, joinPoint, level, true, ...messages);
         }

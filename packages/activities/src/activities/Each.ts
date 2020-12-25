@@ -1,4 +1,4 @@
-import { isNullOrUndefined } from '@tsdi/ioc';
+import { isNil } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { Expression, ActivityType } from '../core/ActivityMetadata';
@@ -19,7 +19,7 @@ export class EachActicity<T> extends ControlActivity<T> {
 
     async execute(ctx: ActivityContext): Promise<T> {
         let items = await ctx.resolveExpression(this.each);
-        items = items?.filter(i => !isNullOrUndefined(i));
+        items = items?.filter(i => !isNil(i));
         if (items && items.length) {
             if (this.parallel) {
                 if (ctx.injector.hasRegister(ParallelExecutor)) {

@@ -1,4 +1,4 @@
-import { isDefined } from '../utils/chk';
+import { isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
 import { getTokenKey, isToken } from '../tokens';
 import { IActionSetup } from '../action';
@@ -65,7 +65,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
         }
         if (isToken(token) && !ctx[key]) {
             let val = injector.resolve({ token, target: ctx.type }, providers);
-            if (isDefined(val)) {
+            if (!isNil(val)) {
                 ctx.instance[propertyKey] = val;
                 ctx[key] = true;
             }

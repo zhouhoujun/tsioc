@@ -1,6 +1,6 @@
 // use core-js in browser.
 import { ObjectMap, Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isClass, isClassType, isFunction, isNullOrUndefined, isObject } from './chk';
+import { getClass, isArray, isClass, isClassType, isFunction, isNil, isObject } from './chk';
 import { clsUglifyExp } from './exps';
 import { getDesignAnno } from './util';
 
@@ -77,7 +77,7 @@ export function first<T>(list: T[]): T {
  * @param el remove item.
  */
 export function remove<T>(list: T[], el: T) {
-    if (!isArray(list) || !list.length || isNullOrUndefined(el)) {
+    if (!isArray(list) || !list.length || isNil(el)) {
         return null;
     }
     const idx = list.indexOf(el);

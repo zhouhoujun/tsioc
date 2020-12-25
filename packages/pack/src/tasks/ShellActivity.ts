@@ -1,5 +1,5 @@
 import { ExecOptions, exec } from 'child_process';
-import { isBoolean, isArray, lang, ObjectMap, isNullOrUndefined, PromiseUtil } from '@tsdi/ioc';
+import { isBoolean, isArray, lang, ObjectMap, isNil, PromiseUtil } from '@tsdi/ioc';
 import { Input, Binding } from '@tsdi/components';
 import { Src, Task, TemplateOption } from '@tsdi/activities';
 import { NodeActivityContext, NodeExpression } from '../NodeActivityContext';
@@ -129,7 +129,7 @@ export class ShellActivity extends NodeActivity<void> {
             }
             if (isArray(val)) {
                 strArgs.push(`--${k} ${val.join(',')}`);
-            } else if (!isNullOrUndefined(val)) {
+            } else if (!isNil(val)) {
                 let arg = this.formatArg(val, k, args);
                 if (arg) {
                     strArgs.push(arg);
@@ -143,7 +143,7 @@ export class ShellActivity extends NodeActivity<void> {
         if (isBoolean(arg) && arg) {
             return `--${key}`;
         }
-        if (!isNullOrUndefined(arg)) {
+        if (!isNil(arg)) {
             return `--${key} ${arg}`
         }
         return '';

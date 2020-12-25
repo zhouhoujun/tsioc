@@ -1,4 +1,4 @@
-import { isNullOrUndefined } from '@tsdi/ioc';
+import { isNil } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
 import { Task } from '../decorators/Task';
 import { IActivityContext } from '../core/IActivityContext';
@@ -11,6 +11,6 @@ export class ExistsActvity extends ControlActivity<boolean> {
 
     async execute(ctx: IActivityContext): Promise<boolean> {
         let exp = ctx.getExector().eval(this.exists);
-        return !isNullOrUndefined(exp);
+        return !isNil(exp);
     }
 }

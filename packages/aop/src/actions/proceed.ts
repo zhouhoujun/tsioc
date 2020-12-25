@@ -1,6 +1,6 @@
 import {
-    Type, isFunction, lang, IProvider, ParameterMetadata,
-    IocActions, IActionSetup, isArray, isDefined, isPromise, refl, IIocContainer, IActionProvider, InvokedProvider
+    Type, isFunction, lang, IProvider, ParameterMetadata, IIocContainer, IActionProvider, InvokedProvider,
+    IocActions, IActionSetup, isArray, isNil, isPromise, refl
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -159,7 +159,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     protected invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
         let metadata: any = advicer.advice;
         let providers = joinPoint.providers;
-        if (isDefined(joinPoint.args) && metadata.args) {
+        if (!isNil(joinPoint.args) && metadata.args) {
             providers.inject({ provide: metadata.args, useValue: joinPoint.args })
         }
 
@@ -184,7 +184,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
             });
         }
 
-        if (isDefined(joinPoint.returning) && metadata.returning) {
+        if (!isNil(joinPoint.returning) && metadata.returning) {
             providers.inject({ provide: metadata.returning, useValue: joinPoint.returning })
         }
 
@@ -340,7 +340,7 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
         ctx.returning.then(v => { val = v; }),
         ...advices.Around.map(a => () => invoker(ctx, a)),
         ...advices.AfterReturning.map(a => () => invoker(ctx, a)),
-        () => isDefined(ctx.resetReturning) ? ctx.resetReturning : val
+        () => !isNil(ctx.resetReturning) ? ctx.resetReturning : val
     ])
         .then(v => {
             ctx.resetReturning = null;
@@ -357,7 +357,7 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
     if (ctx.throwing) {
         return next();
     }
-    if (isDefined(ctx.returning)) {
+    if (!isNil(ctx.returning)) {
         ctx.state = JoinpointState.AfterReturning;
         const advices = ctx.advices;
         const invoker = ctx.invokeHandle;
@@ -367,7 +367,7 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
         advices.AfterReturning.forEach(advicer => {
             invoker(ctx, advicer);
         });
-        if (isDefined(ctx.resetReturning)) {
+        if (!isNil(ctx.resetReturning)) {
             ctx.returning = ctx.resetReturning;
             ctx.resetReturning = null;
         }

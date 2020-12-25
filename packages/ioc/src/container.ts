@@ -12,7 +12,7 @@ import { MethodType } from './IMethodAccessor';
 import { Provider, Injector } from './injector';
 import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
 import { ClassType, Type } from './types';
-import { getClass, isClass, isDefined, isFunction } from './utils/chk';
+import { getClass, isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isExtendsClass } from './utils/lang';
 import { registerCores } from './utils/regs';
@@ -174,7 +174,7 @@ export class IocContainer extends Injector implements IIocContainer {
 
     registerFactory<T>(injector: IInjector, token: Token<T>, value?: FactoryLike<T>, singleton?: boolean): this {
         let key = getTokenKey(token);
-        if (isDefined(value)) {
+        if (!isNil(value)) {
             if (isFunction(value)) {
                 if (isClass(value)) {
                     this.registerIn(injector, value, key, singleton);
@@ -182,7 +182,7 @@ export class IocContainer extends Injector implements IIocContainer {
                     const classFactory = this.createCustomFactory(injector, key, value, singleton);
                     injector.set(key, classFactory);
                 }
-            } else if (isDefined(value)) {
+            } else if (!isNil(value)) {
                 injector.set(key, { value });
             }
 

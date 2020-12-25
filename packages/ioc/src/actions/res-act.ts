@@ -1,4 +1,4 @@
-import { isNullOrUndefined, isClass, getClass } from '../utils/chk';
+import { isNil, isClass, getClass } from '../utils/chk';
 import { InjectReference, isToken } from '../tokens';
 import { PROVIDERS } from '../utils/tk';
 import { IocActions } from './act';
@@ -26,12 +26,12 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
             super.execute(ctx);
         }
 
-        if (isNullOrUndefined(ctx.instance) && next) {
+        if (isNil(ctx.instance) && next) {
             next();
         }
 
         // after all.
-        if (isNullOrUndefined(ctx.instance) && ctx.regify && isClass(ctx.token) && !ctx.injector.has(ctx.token)) {
+        if (isNil(ctx.instance) && ctx.regify && isClass(ctx.token) && !ctx.injector.has(ctx.token)) {
             ctx.injector.registerType(ctx.token);
             ctx.instance = ctx.injector.get(ctx.token, ctx.providers);
         }
@@ -51,10 +51,10 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
 
 
 export const ResolveDefaultAction = function (ctx: ResolveContext, next: () => void): void {
-    if (isNullOrUndefined(ctx.instance) && ctx.defaultToken) {
+    if (isNil(ctx.instance) && ctx.defaultToken) {
         ctx.instance = ctx.injector.get(ctx.defaultToken, ctx.providers);
     }
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNil(ctx.instance)) {
         next();
     }
 };
@@ -63,7 +63,7 @@ export const ResolveInProvidersAction = function (ctx: ResolveContext, next: () 
     if (ctx.providers.has(ctx.token)) {
         ctx.instance = ctx.providers.get(ctx.token);
     }
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNil(ctx.instance)) {
         next();
     }
 }
@@ -74,7 +74,7 @@ export const ResolveInInjectorAction = function (ctx: ResolveContext, next: () =
         ctx.instance = injector.get(ctx.token, ctx.providers);
     }
 
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNil(ctx.instance)) {
         next();
     }
 };
@@ -85,7 +85,7 @@ export const ResolveInRootAction = function (ctx: ResolveContext, next: () => vo
     if (container.has(ctx.token)) {
         ctx.instance = container.get(ctx.token, ctx.providers);
     }
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNil(ctx.instance)) {
         next();
     }
 };
@@ -98,7 +98,7 @@ export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => v
             ctx.instance = privPdr.get(ctx.token, ctx.providers);
         }
     }
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNil(ctx.instance)) {
         next();
     }
 };
@@ -109,7 +109,7 @@ export const ResolveRefAction = function (ctx: ResolveContext, next: () => void)
         let tkn = new InjectReference(ctx.token, ctx.targetToken);
         ctx.instance = ctx.injector.get(tkn, ctx.providers);
     }
-    if (isNullOrUndefined(ctx.instance) && !ctx.tagOnly) {
+    if (isNil(ctx.instance) && !ctx.tagOnly) {
         next();
     }
 };

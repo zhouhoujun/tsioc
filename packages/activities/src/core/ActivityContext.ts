@@ -1,4 +1,4 @@
-import { Injectable, Type, Refs, isToken, Token, SymbolType, isDefined } from '@tsdi/ioc';
+import { Injectable, Type, Refs, isToken, Token, SymbolType, isNil } from '@tsdi/ioc';
 import { ICoreInjector } from '@tsdi/core';
 import { IBuildContext, createContext } from '@tsdi/boot';
 import { ComponentBuildContext, ITemplateContext } from '@tsdi/components';
@@ -38,7 +38,7 @@ export class ActivityContext extends ComponentBuildContext implements IActivityC
 
     protected getProcessData() {
         let data = this.context.getValue(CTX_RUN_PARENT)?.getValue(ACTIVITY_DATA) ?? this.runScope?.getValue(ACTIVITY_DATA)
-        isDefined(data) && this.setValue(ACTIVITY_DATA, data);
+        !isNil(data) && this.setValue(ACTIVITY_DATA, data);
         return data;
     }
 

@@ -1,4 +1,4 @@
-import { isDefined, PromiseUtil } from '@tsdi/ioc';
+import { isNil, lang } from '@tsdi/ioc';
 import { Expression } from '@tsdi/activities';
 import { NodeActivity } from '../NodeActivity';
 import { ITransform, isTransform } from '../ITransform';
@@ -39,13 +39,13 @@ export abstract class TransformActivity<T = ITransform> extends NodeActivity<T> 
         let next: ITransform = stream.pipe(transPipe);
         next.once('error', err => {
             console.error(err);
-            if (isDefined(process)) {
+            if (!isNil(process)) {
                 process.exit(1);
             }
             throw err;
         });
         if (waitend) {
-            let defer = PromiseUtil.defer();
+            let defer = lang.defer();
             next.once('end', defer.resolve);
             await defer.promise;
         }

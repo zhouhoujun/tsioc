@@ -1,5 +1,5 @@
 import {
-    isString, isRegExp, isDefined, Type, lang, isArray, isFunction, refl, ClassType, IIocContainer
+    isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, IIocContainer, isNil
 } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas';
@@ -264,7 +264,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         return (method: string, fullName: string, targetType?: Type, pointcut?: IPointcut) => {
             let flag;
             expresses.forEach((express, idx) => {
-                if (isDefined(flag)) {
+                if (!isNil(flag)) {
                     return;
                 }
                 if (isFunction(express)) {

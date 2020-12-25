@@ -1,5 +1,5 @@
 import {
-    isNullOrUndefined, isClassType, InjectReference,
+    isNil, isClassType, InjectReference,
     IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
@@ -82,7 +82,7 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
             });
     }
 
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNil(ctx.instance)) {
         return next();
     }
 };
@@ -99,7 +99,7 @@ export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () =>
         ctx.instance = injector.resolve({ token: ctx.currTK, target: tgtk, tagOnly: true }, ctx.providers);
     }
 
-    if (isNullOrUndefined(ctx.instance)) {
+    if (isNil(ctx.instance)) {
         next();
     }
 };

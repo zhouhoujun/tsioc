@@ -1,4 +1,4 @@
-import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNullOrUndefined, IocCoreService } from '@tsdi/ioc';
+import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNil, IocCoreService } from '@tsdi/ioc';
 import { TYPE_PARSER } from '../tk';
 import { IBaseTypeParser } from './IBaseTypeParser';
 
@@ -16,7 +16,7 @@ export class BaseTypeParser extends IocCoreService implements IBaseTypeParser {
      * @returns {T}
      */
     parse<T>(type: Token<T>, paramVal: any): T {
-        if (isNullOrUndefined(paramVal)) {
+        if (isNil(paramVal)) {
             return paramVal;
         }
         let val;

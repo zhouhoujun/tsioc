@@ -5,8 +5,8 @@ import { Destoryable } from './Destoryable';
 import { IInjector, IProvider } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
-import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, Registration, SymbolType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isDefined, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
+import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { PROVIDERS } from './utils/tk';
 import { IIocContainer } from './IIocContainer';
 import { getTypes } from './utils/lang';
@@ -111,7 +111,7 @@ export class Provider extends Destoryable implements IProvider {
                             }
                         });
                     }
-                    if (isDefined(pr.useValue)) {
+                    if (!isNil(pr.useValue)) {
                         let val = pr.useValue;
                         this.setValue(provide, val);
                     } else if (isClass(pr.useClass)) {
@@ -214,7 +214,7 @@ export class Provider extends Destoryable implements IProvider {
 
     hasValue<T>(token: Token<T>): boolean {
         const key = getTokenKey(token);
-        return isDefined(this.factories.get(key)?.value) || this.parent?.hasValue(key);
+        return (!isNil(this.factories.get(key)?.value)) || this.parent?.hasValue(key);
     }
 
     getValue<T>(token: Token<T>): T {
@@ -274,7 +274,7 @@ export class Provider extends Destoryable implements IProvider {
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
         const pdr = this.factories.get(key);
         if (!pdr) return this.parent?.getInstance(key);
-        if (isDefined(pdr.value)) return pdr.value;
+        if (!isNil(pdr.value)) return pdr.value;
         if (pdr.expires) {
             if (pdr.expires > Date.now()) return pdr.cache;
             pdr.expires = null;
