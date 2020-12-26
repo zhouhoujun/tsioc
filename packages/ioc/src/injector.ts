@@ -372,9 +372,6 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     protected destroying() {
-        // Array.from(this.factories.keys()).forEach(k => {
-        //     this.unregister(k);
-        // });
         this.factories.clear();
         this.factories = null;
     }

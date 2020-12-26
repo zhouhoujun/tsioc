@@ -637,6 +637,7 @@ export function getReged<T extends Registered>(type: ClassType, id: string): T {
  */
 export function setReged<T extends Registered>(type: ClassType, id: string, state: T) {
     const inf = type[key]?.();
+    state.getInjector().onDestroy(() => delReged(type, id));
     if (inf && inf.type === type) {
         inf[id] = { ...inf[id], ...state };
         return;
