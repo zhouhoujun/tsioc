@@ -14,8 +14,8 @@ import { ChangeDetectorRef } from '../chage/detector';
 export abstract class ViewRef extends ChangeDetectorRef { }
 
 /**
- * Represents an Angular [view](guide/glossary#view) in a view container.
- * An [embedded view](guide/glossary#view-tree) can be referenced from a component
+ * Represents in a view container.
+ * An can be referenced from a component
  * other than the hosting component whose template defines it, or it can be defined
  * independently by a `TemplateRef`.
  *
