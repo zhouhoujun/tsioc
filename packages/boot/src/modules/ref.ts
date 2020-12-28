@@ -12,7 +12,10 @@ export interface ModuleRegistered extends Registered {
  * module injector.
  */
 export interface IModuleInjector extends ICoreInjector {
-    exports: ModuleRef[];
+    /**
+     * export moduleRef
+     */
+    readonly exports: ModuleRef[];
     /**
      * export di module.
      * @param ref 
