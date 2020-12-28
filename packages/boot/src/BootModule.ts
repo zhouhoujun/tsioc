@@ -6,7 +6,6 @@ import { InjDIModuleScope } from './registers/Inj-module';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
-import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
 import { BuildContext } from './builder/ctx';
@@ -28,8 +27,6 @@ export class BootModule {
      * register aop for container.
      */
     setup(@Inject(CONTAINER) container: IContainer) {
-        container.set(ModuleInjector, () => new ModuleInjector(container));
-        container.set(ModuleProviders, () => new ModuleProviders(container));
 
         const prdr = container.provider;
         prdr.regAction(

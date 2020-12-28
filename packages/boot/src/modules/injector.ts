@@ -2,8 +2,9 @@ import {
     Token, lang, SymbolType, Type, IInjector, Provider, IProvider,
     TokenId, tokenId, InstFac, ProviderType, isNil, isClass, getTokenKey
 } from '@tsdi/ioc';
-import { CoreInjector, ICoreInjector } from '@tsdi/core';
-import { ModuleRef } from './ref';
+import { CoreInjector, IContainer, ICoreInjector } from '@tsdi/core';
+import { IModuleInjector, IModuleProvider, ModuleRef } from './ref';
+import { ROOT_INJECTOR } from '../tk';
 
 
 
@@ -15,7 +16,7 @@ import { ModuleRef } from './ref';
  * @extends {IocCoreService}
  * @implements {IResolver}
  */
-export class ModuleInjector extends CoreInjector {
+export class ModuleInjector extends CoreInjector implements IModuleInjector {
 
 
     protected exports: ModuleRef[];
@@ -23,10 +24,14 @@ export class ModuleInjector extends CoreInjector {
     constructor(parent: ICoreInjector) {
         super(parent);
         this.exports = [];
-        this.onDestroy(()=>{
+        this.onDestroy(() => {
             this.exports.forEach(mr => mr.destroy());
             this.exports = [];
         });
+    }
+
+    static create(parent: ICoreInjector) {
+        return new ModuleInjector(parent);
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
@@ -137,19 +142,75 @@ export class ModuleInjector extends CoreInjector {
     }
 }
 
-export const MODULE_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('MODULE_INJECTOR');
 
-export class ModuleProviders extends Provider implements IProvider {
+export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 
-    moduleInjector: ModuleInjector;
-
-    constructor(readonly parent?: IProvider, readonly type?: string) {
-        super(parent, type);
-        this.onDestroy(()=>{
-            this.moduleInjector?.destroy();
-            this.moduleInjector = null;
-        });
+    private _injector: IModuleInjector;
+    private _exports: ModuleProviders;
+    private _inst: T;
+    constructor(
+        moduleType: Type<T>,
+        parent?: IModuleInjector,
+        regIn?: string
+    ) {
+        super(moduleType, parent, regIn);
+        this.initRef();
     }
+
+    protected initRef() {
+        const container = this.parent.getContainer();
+        const root = container.getValue(ROOT_INJECTOR);
+        this._injector = ModuleInjector.create(root);
+        if (this.regIn === 'root') {
+            this._parent = root;
+        }
+        this._injector.setValue(ModuleRef, this);
+        const pdr = new ModuleProviders(container);
+        pdr.moduleInjector = this._injector;
+        pdr.export(this.moduleType);
+        this._exports = pdr;
+    }
+
+    get injector(): IModuleInjector {
+        return this._injector;
+    }
+
+    get instance(): T {
+        if (!this._inst) {
+            this._inst = this.injector.getInstance(this.moduleType);
+        }
+        return this._inst;
+    }
+
+    get exports(): IModuleProvider {
+        return this._exports;
+    }
+
+    protected destroying() {
+        const parent = this.parent;
+        if (parent instanceof ModuleInjector) {
+            parent.unexport(this);
+        } else {
+            this.exports.iterator((f, k) => {
+                parent.unregister(k);
+            });
+        }
+        this._exports.destroy();
+        this._injector.destroy();
+        this._moduleType = null;
+        this._parent = null;
+        this._regIn = null;
+        this._exports.moduleInjector = null;
+        this._exports = null;
+        this._injector = null;
+        this._inst = null;
+    }
+}
+
+
+export class ModuleProviders extends Provider implements IModuleProvider {
+
+    moduleInjector: IModuleInjector;
 
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
         this.getContainer().registerIn(this.moduleInjector, type, provide, singleton);

@@ -47,7 +47,7 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
         container.registerType(BootModule);
 
         if (!this.container.has(ROOT_INJECTOR)) {
-            this.container.setValue(ROOT_INJECTOR, this.container.get(ModuleInjector));
+            this.container.setValue(ROOT_INJECTOR, ModuleInjector.create(this.container));
         }
         container.setValue(BootApplication, this);
 

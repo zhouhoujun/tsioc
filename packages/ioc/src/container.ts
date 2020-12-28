@@ -93,7 +93,8 @@ export class InjectorImpl extends Injector {
     }
 
     protected initReg() {
-        this.setValue(INJECTOR, this, getClass(this));
+        this.setValue(INJECTOR, this);
+        this.setValue(Injector, this);
     }
 }
 
@@ -231,9 +232,8 @@ export class IocContainer extends Injector implements IIocContainer {
     }
 
     protected initReg() {
-        const type = getClass(this);
-        this.setValue(Injector, this, type);
-        this.setValue(INJECTOR, this, type);
+        this.setValue(Injector, this);
+        this.setValue(INJECTOR, this);
         registerCores(this);
     }
 

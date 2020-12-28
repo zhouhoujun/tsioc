@@ -2,6 +2,7 @@ import { Singleton, Inject, Token, Type, lang, INJECTOR, tokenId, TokenId } from
 import { ICoreInjector } from '@tsdi/core';
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Reporter, RealtimeReporter } from './Reporter';
+import { ROOT_INJECTOR } from '@tsdi/boot';
 
 /**
  * report token.
@@ -27,6 +28,7 @@ export class TestReport implements ITestReport {
     getReports() {
         if (!this.resports || this.resports.length < 0) {
             this.resports = this.injector.getServices(Reporter);
+            console.log(this.injector.get(ROOT_INJECTOR)['exports']);
         }
         return this.resports || [];
     }

@@ -2,17 +2,16 @@ import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator,
     isClass, lang, Type, isFunction, Token, isArray, isString, DesignContext, IProvider
 } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
 import { ModuleReflect } from './modules/reflect';
-import { ModuleInjector, ModuleProviders } from './modules/injector';
+import { DefaultModuleRef, ModuleInjector } from './modules/injector';
 import { IMessage, IMessageQueue } from './messages/type';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';
 import { MessageHandle } from './messages/handle';
-import { PARENT_INJECTOR, ROOT_MESSAGEQUEUE } from './tk';
-import { ModuleRef, ModuleRegistered } from './modules/ref';
+import { ROOT_MESSAGEQUEUE } from './tk';
+import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
 
 
 /**
@@ -172,7 +171,6 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
 
 interface ModuleDesignContext extends DesignContext {
     reflect: ModuleReflect;
-    exports?: IProvider;
     moduleRef?: ModuleRef;
 }
 
@@ -206,48 +204,32 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
         },
         design: {
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
-                if (!ctx.regIn && ctx.reflect.annoType === 'module') {
-                    let injector = ctx.injector.getInstance(ModuleInjector);
-                    injector.setValue(PARENT_INJECTOR, ctx.injector);
-                    ctx.injector = injector;
+                if (ctx.reflect.annoType === 'module') {
+                    ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn);
+                    ctx.injector = ctx.moduleRef.injector;
                 }
                 next();
             },
             annoation: [
                 (ctx: ModuleDesignContext, next) => {
-                    if (ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
+                    if (ctx.moduleRef && ctx.reflect.annoType === 'module' && ctx.reflect.annotation) {
                         next()
                     }
                 },
                 (ctx: ModuleDesignContext, next) => {
                     const annoation = ctx.reflect.annotation;
                     if (annoation.imports) {
-                        (<ICoreInjector>ctx.injector).use(...ctx.reflect.annotation.imports);
+                        ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
                     }
                     next();
                 },
                 (ctx: ModuleDesignContext, next: () => void) => {
-
-                    let injector = ctx.injector as ModuleInjector;
                     let mdReft = ctx.reflect;
                     const annoation = mdReft.annotation;
-
-                    const map = ctx.exports = injector.getInstance(ModuleProviders);
-                    map.moduleInjector = injector;
-                    let mdRef = new ModuleRef(ctx.type, map);
-                    mdRef.onDestroy(() => {
-                        const parent = injector.getInstance(PARENT_INJECTOR);
-                        if (parent instanceof ModuleInjector) {
-                            parent.unexport(mdRef);
-                        } else {
-                            map.iterator((f, k) => {
-                                parent.unregister(k);
-                            });
-                        }
-                    });
-                    ctx.injector.setValue(ModuleRef, mdRef);
-                    ctx.moduleRef = mdRef;
-                    ctx.injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
+                    const mdRef = ctx.moduleRef;
+                    const map = mdRef.exports;
+                    const injector = mdRef.injector;
+                    injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
 
                     let components = annoation.components ? injector.use(...annoation.components) : null;
 
@@ -272,16 +254,16 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     next();
                 },
                 (ctx: ModuleDesignContext, next: () => void) => {
-                    if (ctx.exports.size) {
-                        let parent = ctx.injector.getInstance(PARENT_INJECTOR);
+                    // if (ctx.moduleRef.exports.size) {
+                        const parent = ctx.moduleRef.parent;
                         if (parent) {
                             if (parent instanceof ModuleInjector) {
                                 parent.export(ctx.moduleRef);
                             } else {
-                                parent.copy(ctx.exports);
+                                parent.copy(ctx.moduleRef.exports);
                             }
                         }
-                    }
+                    // }
                     next();
                 }
             ]

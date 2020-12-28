@@ -5,7 +5,7 @@ import { IMessageQueue } from './messages/type';
 import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
 import { IBuilderService } from './services/IBuilderService';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
-import { ModuleInjector } from './modules/injector';
+import { IModuleInjector } from './modules/ref';
 
 
 /**
@@ -75,11 +75,6 @@ export const ROOT_MESSAGEQUEUE: TokenId<IMessageQueue> = tokenId<IMessageQueue>(
 export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
 
 /**
- * parent injector token.
- */
-export const PARENT_INJECTOR: TokenId<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
-
-/**
  * type parser token.
  */
 export const TYPE_PARSER: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');
@@ -94,7 +89,7 @@ export const BaseTypeParserToken = TYPE_PARSER;
 /**
  * appliction root module injector token.
  */
-export const ROOT_INJECTOR: TokenId<ModuleInjector> = tokenId<ModuleInjector>('ROOT_INJECTOR');
+export const ROOT_INJECTOR: TokenId<IModuleInjector> = tokenId<IModuleInjector>('ROOT_INJECTOR');
 
 /**
  * module boot startup runnable instance.

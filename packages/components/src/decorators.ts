@@ -3,7 +3,7 @@ import {
     isUndefined, createParamDecorator, createDecorator, InjectableMetadata
 } from '@tsdi/ioc';
 import { CONTAINER, ICoreInjector } from '@tsdi/core';
-import { AnnotationReflect, BuildContext } from '@tsdi/boot';
+import { AnnotationReflect, BuildContext, Runnable } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
@@ -13,7 +13,6 @@ import { ComponentReflect, DirectiveReflect } from './reflect';
 import { ComponentBuildContext } from './context';
 import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
-import { Runnable } from 'mocha';
 import { ComponentRunnable } from './render/runnable';
 
 
@@ -165,22 +164,6 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
     ]
 });
 
-
-/**
- * @NonSerialize decorator define component property not need serialized.
- */
-export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize', {
-    reflect: {
-        property: (ctx, next) => {
-            const reflect = ctx.reflect as ComponentReflect;
-            if (!reflect.nonSerialize) {
-                reflect.nonSerialize = [];
-            }
-            reflect.nonSerialize.push(ctx.propertyKey);
-            return next();
-        }
-    }
-});
 
 /**
  * HostBinding decorator.
@@ -750,6 +733,23 @@ export interface VaildatePropertyDecorator {
      */
     (metadata: VaildateMetadata): PropertyDecorator;
 }
+
+
+/**
+ * @NonSerialize decorator define component property not need serialized.
+ */
+export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize', {
+    reflect: {
+        property: (ctx, next) => {
+            const reflect = ctx.reflect as ComponentReflect;
+            if (!reflect.nonSerialize) {
+                reflect.nonSerialize = [];
+            }
+            reflect.nonSerialize.push(ctx.propertyKey);
+            return next();
+        }
+    }
+});
 
 /**
  * Vaildate decorator.
