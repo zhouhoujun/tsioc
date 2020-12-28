@@ -10,7 +10,7 @@ import { IMessage, IMessageQueue } from './messages/type';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';
 import { MessageHandle } from './messages/handle';
-import { ROOT_MESSAGEQUEUE } from './tk';
+import { ROOT_INJECTOR, ROOT_MESSAGEQUEUE } from './tk';
 import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
 
 
@@ -91,7 +91,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const injector = ctx.injector;
+                const injector = ctx.injector.getValue(ROOT_INJECTOR);
                 const classType = ctx.type;
                 let startups = injector.get(STARTUPS) || [];
                 const meta = ctx.reflect.getMetadata<BootMetadata>(ctx.currDecor) || {};
