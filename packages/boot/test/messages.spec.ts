@@ -101,11 +101,13 @@ describe('app message queue', () => {
     it('make sure singleton', async () => {
         const a = injector.get(DeviceQueue);
         const b = injector.get(DeviceQueue);
+        expect(a).toBeInstanceOf(DeviceQueue);
         expect(a).toEqual(b);
     });
 
     it('has registered', async () => {
         const a = injector.get(DeviceQueue);
+        console.log('has registered, a:', a);
         expect(a.has(DeviceStartQueue)).toBeTruthy();
         expect(injector.get(DeviceStartQueue).has(DeviceStartupHandle)).toBeTruthy();
     });

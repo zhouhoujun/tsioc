@@ -1,4 +1,4 @@
-import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType } from '@tsdi/ioc';
+import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, refl } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
@@ -7,6 +7,7 @@ import { ConfigureRegister } from '../configure/register';
 import { BuildHandles, BuildHandle } from '../builder/handles';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Runnable } from '../runnable/Runnable';
+import { AnnotationReflect } from '../annotations/reflect';
 
 /**
  * annoation handle.
@@ -146,7 +147,11 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const container = ctx.getContainer();
     if (!container.regedState.isRegistered(ctx.type)) {
-        ctx.injector.registerType(ctx.type);
+        if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
+            ctx.injector.registerType(ctx.type, { regIn: 'root' });
+        } else {
+            ctx.injector.registerType(ctx.type);
+        }
     }
     let annoation = ctx.getAnnoation();
     ctx.setValue(INJECTOR, container.regedState.getInjector(ctx.type));

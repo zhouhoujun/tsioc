@@ -1,5 +1,5 @@
 import { ICoreInjector } from '@tsdi/core';
-import { Type, Registered, Destoryable, IProvider, Abstract } from '@tsdi/ioc';
+import { Type, Registered, Destoryable, IProvider, Abstract, SymbolType, ProviderType } from '@tsdi/ioc';
 
 /**
  * module registered state.
@@ -12,6 +12,7 @@ export interface ModuleRegistered extends Registered {
  * module injector.
  */
 export interface IModuleInjector extends ICoreInjector {
+    exports: ModuleRef[];
     /**
      * export di module.
      * @param ref 
@@ -47,7 +48,7 @@ export interface IModuleProvider extends IProvider {
 @Abstract()
 export abstract class ModuleRef<T = any> extends Destoryable {
 
-    constructor(protected _moduleType: Type<T>, protected _parent?: IModuleInjector, protected _regIn?: string) {
+    constructor(protected _moduleType: Type<T>, protected _parent?: IModuleInjector, protected _regIn?: string | 'root') {
         super();
     }
 
@@ -59,9 +60,13 @@ export abstract class ModuleRef<T = any> extends Destoryable {
         return this._parent;
     }
 
-    get regIn(): string {
+    get regIn(): string | 'root' {
         return this._regIn;
     }
+
+    abstract getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T
+
+    abstract get imports(): Type[];
 
     /**
      * injecor of current module ref.

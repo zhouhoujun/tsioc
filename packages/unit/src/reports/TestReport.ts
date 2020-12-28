@@ -28,7 +28,6 @@ export class TestReport implements ITestReport {
     getReports() {
         if (!this.resports || this.resports.length < 0) {
             this.resports = this.injector.getServices(Reporter);
-            console.log(this.injector.get(ROOT_INJECTOR)['exports']);
         }
         return this.resports || [];
     }

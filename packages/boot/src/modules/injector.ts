@@ -1,8 +1,8 @@
 import {
-    Token, lang, SymbolType, Type, IInjector, Provider, IProvider,
-    TokenId, tokenId, InstFac, ProviderType, isNil, isClass, getTokenKey
+    Token, lang, SymbolType, Type, IInjector, Provider, InstFac, ProviderType, isNil, isClass,
+    getTokenKey, isPlainObject
 } from '@tsdi/ioc';
-import { CoreInjector, IContainer, ICoreInjector } from '@tsdi/core';
+import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { IModuleInjector, IModuleProvider, ModuleRef } from './ref';
 import { ROOT_INJECTOR } from '../tk';
 
@@ -19,7 +19,7 @@ import { ROOT_INJECTOR } from '../tk';
 export class ModuleInjector extends CoreInjector implements IModuleInjector {
 
 
-    protected exports: ModuleRef[];
+    exports: ModuleRef[];
 
     constructor(parent: ICoreInjector) {
         super(parent);
@@ -43,7 +43,7 @@ export class ModuleInjector extends CoreInjector implements IModuleInjector {
         if (!pdr) {
             let instance: T;
             if (this.exports.some(e => {
-                instance = e.exports.getInstance(key);
+                instance = e.getInstance(key);
                 return !isNil(instance);
             })) {
                 return instance;
@@ -148,6 +148,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     private _injector: IModuleInjector;
     private _exports: ModuleProviders;
     private _inst: T;
+    private _imports: Type[];
     constructor(
         moduleType: Type<T>,
         parent?: IModuleInjector,
@@ -171,6 +172,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         this._exports = pdr;
     }
 
+
     get injector(): IModuleInjector {
         return this._injector;
     }
@@ -180,6 +182,25 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
             this._inst = this.injector.getInstance(this.moduleType);
         }
         return this._inst;
+    }
+
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
+        let instance: T = this.exports.getInstance(key, ...providers);
+        if (!isNil(instance)) return instance;
+        if (this.injector.exports.some(e => {
+            instance = e.getInstance(key);
+            return !isNil(instance);
+        })) {
+            return instance;
+        }
+        return instance;
+    }
+
+    get imports(): Type[] {
+        return this._imports || [];
+    }
+    set imports(imports: Type[]) {
+        this._imports = imports;
     }
 
     get exports(): IModuleProvider {
@@ -202,6 +223,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         this._regIn = null;
         this._exports.moduleInjector = null;
         this._exports = null;
+        this._imports = null;
         this._injector = null;
         this._inst = null;
     }
@@ -211,9 +233,27 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 export class ModuleProviders extends Provider implements IModuleProvider {
 
     moduleInjector: IModuleInjector;
-
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        this.getContainer().registerIn(this.moduleInjector, type, provide, singleton);
+    /**
+     * register type class.
+     * @param type the class type.
+     * @param [options] the class prodvider to.
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    /**
+     * register type class.
+     * @param Type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
+        if (isPlainObject(provide)) {
+            this.getContainer()?.registerIn(this.moduleInjector, type, provide as any);
+        } else {
+            this.getContainer()?.registerIn(this.moduleInjector, type, { provide, singleton });
+        }
         provide && this.set(provide, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
         this.export(type);
         return this;

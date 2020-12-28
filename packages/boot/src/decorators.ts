@@ -219,7 +219,8 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 (ctx: ModuleDesignContext, next) => {
                     const annoation = ctx.reflect.annotation;
                     if (annoation.imports) {
-                        ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
+                        const types = ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
+                        (ctx.moduleRef as DefaultModuleRef).imports = types;
                     }
                     next();
                 },
@@ -232,7 +233,10 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
 
                     let components = annoation.components ? injector.use(...annoation.components) : null;
-
+                    
+                    if (mdRef.regIn === 'root') {
+                        mdRef.imports?.forEach(ty => map.export(ty));
+                    }
                     // inject module providers
                     if (annoation.providers?.length) {
                         map.inject(...annoation.providers);
@@ -251,10 +255,12 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     exptypes.forEach(ty => {
                         map.export(ty);
                     });
+
+                    
                     next();
                 },
                 (ctx: ModuleDesignContext, next: () => void) => {
-                    // if (ctx.moduleRef.exports.size) {
+                    if (ctx.moduleRef.exports.size) {
                         const parent = ctx.moduleRef.parent;
                         if (parent) {
                             if (parent instanceof ModuleInjector) {
@@ -263,7 +269,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                                 parent.copy(ctx.moduleRef.exports);
                             }
                         }
-                    // }
+                    }
                     next();
                 }
             ]

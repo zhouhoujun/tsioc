@@ -12,7 +12,7 @@ import { MethodType } from './IMethodAccessor';
 import { Provider, Injector } from './injector';
 import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
 import { ClassType, Type } from './types';
-import { getClass, isClass, isNil, isFunction } from './utils/chk';
+import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isExtendsClass } from './utils/lang';
 import { registerCores } from './utils/regs';
@@ -39,17 +39,6 @@ export class InjectorImpl extends Injector {
      */
     register<T>(provide: Token<T>, fac?: FactoryLike<T>): this {
         this.getContainer().registerFactory(this, provide, fac);
-        return this;
-    }
-
-    /**
-     * register type.
-     * @param type type.
-     * @param provide provide.
-     * @param singleton singleton or not.
-     */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        this.getContainer().registerIn(this, type, provide, singleton);
         return this;
     }
 
@@ -178,7 +167,7 @@ export class IocContainer extends Injector implements IIocContainer {
         if (!isNil(value)) {
             if (isFunction(value)) {
                 if (isClass(value)) {
-                    this.registerIn(injector, value, key, singleton);
+                    this.registerIn(injector, value, { provide: key, singleton });
                 } else {
                     const classFactory = this.createCustomFactory(injector, key, value, singleton);
                     injector.set(key, classFactory);
@@ -188,7 +177,7 @@ export class IocContainer extends Injector implements IIocContainer {
             }
 
         } else if (isClass(key)) {
-            this.registerIn(injector, key, null, singleton);
+            this.registerIn(injector, key, { singleton });
         }
 
         return this;
@@ -196,34 +185,25 @@ export class IocContainer extends Injector implements IIocContainer {
 
     /**
      * register type class.
-     * @param type the class.
-     * @param [provide] the class prodvider to.
-     * @param [singleton]
-     */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        return this.registerIn(this, type, provide, singleton);
-    }
-    /**
-     * register type class.
      * @param injector register in the injector.
      * @param type the class.
      * @param [provide] the class prodvider to.
      * @param [singleton]
      */
-    registerIn<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean) {
+    registerIn<T>(injector: IInjector, type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }) {
         // make sure class register once.
         if (this.regedState.isRegistered(type) || this.hasRegister(type)) {
-            if (provide) {
-                this.set(provide, (...providers) => this.regedState.getInjector(type).get(type, ...providers));
+            if (options?.provide) {
+                this.set(options?.provide, (...providers) => this.regedState.getInjector(type).get(type, ...providers));
             }
             return this;
         }
 
         const ctx = {
             injector,
-            token: provide,
-            type,
-            singleton
+            ...options,
+            token: options?.provide,
+            type
         } as DesignContext;
         this.provider.getInstance(DesignLifeScope).register(ctx);
         cleanObj(ctx);
@@ -319,12 +299,24 @@ class ActionProvider extends Provider implements IActionProvider {
         return this;
     }
 
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        if (!provide && this.registerAction(type)) {
-            return this;
-        }
-        this.getContainer().registerIn(this, type, provide, singleton);
-        return this;
+     /**
+     * register type class.
+     * @param type the class type.
+     * @param [options] the class prodvider to.
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    /**
+     * register type class.
+     * @param Type the class.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
+        if (!provide && this.registerAction(type)) return this;
+        return super.registerType(type, provide, singleton);
     }
 
     protected registerAction(type: Type) {

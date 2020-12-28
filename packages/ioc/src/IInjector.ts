@@ -149,6 +149,13 @@ export interface IProvider extends IDestoryable {
     /**
      * register type class.
      * @param type the class type.
+     * @param [options] the class prodvider to.
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    /**
+     * register type class.
+     * @param type the class type.
      * @param [provide] the class prodvider to.
      * @param [singleton]
      * @returns {this}

@@ -69,13 +69,25 @@ export class Provider extends Destoryable implements IProvider {
 
     /**
      * register type class.
+     * @param type the class type.
+     * @param [options] the class prodvider to.
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    /**
+     * register type class.
      * @param Type the class.
      * @param [provide] the class prodvider to.
      * @param [singleton]
      * @returns {this}
      */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this {
-        this.getContainer()?.registerIn(this, type, provide, singleton);
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
+        if (isPlainObject(provide)) {
+            this.getContainer()?.registerIn(this, type, provide as any);
+        } else {
+            this.getContainer()?.registerIn(this, type, { provide, singleton });
+        }
         return this;
     }
 
