@@ -143,7 +143,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
                     key: df.propertyKey,
                     order: df.matedata.setp,
                     timeout: df.matedata.timeout,
-                    title: df.matedata.title
+                    title: df.matedata.title ?? df.propertyKey
                 } as ICaseDescribe;
             })
                 .sort((a, b) => {
