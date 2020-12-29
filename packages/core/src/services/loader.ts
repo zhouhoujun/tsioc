@@ -1,6 +1,6 @@
-import { Modules, Type, isString, lang, isArray, isMetadataObject, isFunction } from '@tsdi/ioc';
-import { IModuleLoader } from '../link';
-import { ChildModule, LoadType, PathModules } from '../types';
+import { IModuleLoader, ChildModule, LoadType, PathModules, Modules, Type, isString, lang, isArray, isMetadataObject, isFunction, IInjector, IContainer, Inject, CONTAINER } from '@tsdi/ioc';
+import { InjLifeScope } from '../injects/lifescope';
+
 
 
 
@@ -25,6 +25,8 @@ export function isChildModule(target: any): target is ChildModule {
  * @implements {IModuleLoader}
  */
 export class ModuleLoader implements IModuleLoader {
+    
+    constructor(@Inject(CONTAINER) private container: IContainer){ }
 
     static ρNPT = true;
 
@@ -34,6 +36,11 @@ export class ModuleLoader implements IModuleLoader {
             this._loader = this.createLoader();
         }
         return this._loader;
+    }
+
+    async register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]> {
+        const mdls = await this.load(...modules);
+        return this.container.provider.getInstance(InjLifeScope).register(injecor, ...mdls);
     }
 
     /**

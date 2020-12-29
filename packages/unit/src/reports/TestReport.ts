@@ -1,8 +1,6 @@
-import { Singleton, Inject, Token, Type, lang, INJECTOR, tokenId, TokenId } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Singleton, Inject, Token, Type, lang, INJECTOR, tokenId, TokenId, Injector } from '@tsdi/ioc';;
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Reporter, RealtimeReporter } from './Reporter';
-import { ROOT_INJECTOR } from '@tsdi/boot';
 
 /**
  * report token.
@@ -19,8 +17,8 @@ export const ReportsToken: TokenId<Type<Reporter>[]> = tokenId<Type<Reporter>[]>
 @Singleton()
 export class TestReport implements ITestReport {
 
-    @Inject(INJECTOR)
-    injector: ICoreInjector;
+    @Inject()
+    injector: Injector;
 
     suites: Map<Token, ISuiteDescribe>;
 

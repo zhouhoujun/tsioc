@@ -1,5 +1,4 @@
-import { ObjectMap, Type, ProvidersMetadata } from '@tsdi/ioc';
-import { LoadType } from '@tsdi/core';
+import { ObjectMap, Type, LoadType, ProvidersMetadata } from '@tsdi/ioc';
 
 /**
  * connection

@@ -1,8 +1,7 @@
 import {
     Type, PropertyMetadata, Inject, ObjectMap, INJECTOR, isClass, isUndefined, isBaseType, isArray,
-    Abstract, SymbolType, Singleton, isNil, isFunction, IocCoreService, TokenId, tokenId
+    Abstract, SymbolType, Singleton, isNil, isFunction, IocCoreService, TokenId, tokenId, Injector
 } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
 import { IModelParser } from './IModelParser';
 import { TYPE_PARSER } from '../tk';
 
@@ -58,7 +57,7 @@ export class ExtendBaseTypeMap extends IocCoreService {
 @Abstract()
 export abstract class ModelParser extends IocCoreService implements IModelParser {
 
-    @Inject(INJECTOR) protected injector: ICoreInjector;
+    @Inject() protected injector: Injector;
 
     parseModel(type: Type, objMap: any): any {
         if (isArray(objMap)) {

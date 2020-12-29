@@ -1,5 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, Abstract } from '@tsdi/ioc';
-import { CONTAINER, IContainer } from '../src';
+import { CONTAINER, IContainer, AutoWired, Injectable, Param, Singleton, Registration, Inject, Abstract } from '@tsdi/ioc';
 
 export class SimppleAutoWried {
     constructor() {

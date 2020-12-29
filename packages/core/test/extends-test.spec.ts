@@ -1,6 +1,7 @@
-import { ContainerBuilder, IContainer } from '../src';
+import { ContainerBuilder } from '../src';
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
+import { IContainer } from '@tsdi/ioc';
 import * as testModules from './extends-test';
 import { Person, Home } from './extends-test';
 import expect = require('expect');

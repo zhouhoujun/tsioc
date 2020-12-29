@@ -1,5 +1,5 @@
-import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
-import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
+import { isArray, isString, isInjector, ClassType, isClassType, Destoryable, IModuleLoader, IContainer, LoadType, IInjector  } from '@tsdi/ioc';
+import { IContainerBuilder, ContainerBuilder} from '@tsdi/core';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BUILDER, ROOT_INJECTOR } from './tk';
@@ -100,7 +100,7 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
         return ctx as T;
     }
 
-    getRootInjector(): ICoreInjector {
+    getRootInjector(): IInjector {
         return this.container.get(ROOT_INJECTOR);
     }
 

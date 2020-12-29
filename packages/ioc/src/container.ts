@@ -2,21 +2,20 @@ import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
-import { ResolveOption } from './actions/res';
 import { ResolveLifeScope } from './actions/resolve';
 import { delReged, getReged, setReged } from './decor/refl';
 import { Registered } from './decor/type';
-import { IInjector, IProvider } from './IInjector';
-import { IIocContainer, RegisteredState } from './IIocContainer';
+import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
+import { IContainer, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
 import { Provider, Injector } from './injector';
-import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
-import { ClassType, Type } from './types';
+import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey, IToken, Registration } from './tokens';
+import { ClassType, LoadType, Type } from './types';
 import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isExtendsClass } from './utils/lang';
 import { registerCores } from './utils/regs';
-import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS } from './utils/tk';
+import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 
 
 /**
@@ -81,6 +80,31 @@ export class InjectorImpl extends Injector {
         return this.getValue(METHOD_ACCESSOR).invoke(this, target, propertyKey, ...providers);
     }
 
+    /**
+     * get module loader.
+     *
+     * @returns {IModuleLoader}
+     */
+    getLoader(): IModuleLoader {
+        return this.getValue(MODULE_LOADER);
+    }
+
+    async load(...modules: LoadType[]): Promise<Type[]> {
+        return await this.getLoader()?.register(this, ...modules) ?? [];
+    }
+
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
+        return this.getValue(SERVICE_PROVIDER)?.getService(this, target, ...providers) ?? null;
+    }
+
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
+        return this.getValue(SERVICE_PROVIDER)?.getServices(this, target, ...providers) ?? [];
+    }
+
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
+        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? NULL_PDR;
+    }
+
     protected initReg() {
         this.setValue(INJECTOR, this);
         this.setValue(Injector, this);
@@ -92,10 +116,10 @@ let id = 0;
  * Container
  *
  * @export
- * @class IocContainer
- * @implements {IIocContainer}
+ * @class Container
+ * @implements {IContainer}
  */
-export class IocContainer extends Injector implements IIocContainer {
+export class Container extends Injector implements IContainer {
 
     readonly regedState: RegisteredState;
     readonly provider: IActionProvider;
@@ -211,6 +235,32 @@ export class IocContainer extends Injector implements IIocContainer {
         return this;
     }
 
+
+    /**
+    * get module loader.
+    *
+    * @returns {IModuleLoader}
+    */
+    getLoader(): IModuleLoader {
+        return this.getValue(MODULE_LOADER);
+    }
+
+    async load(...modules: LoadType[]): Promise<Type[]> {
+        return await this.getLoader()?.register(this, ...modules) ?? [];
+    }
+
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
+        return this.getValue(SERVICE_PROVIDER)?.getService(this, target, ...providers) ?? null;
+    }
+
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
+        return this.getValue(SERVICE_PROVIDER)?.getServices(this, target, ...providers) ?? [];
+    }
+
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
+        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? NULL_PDR;
+    }
+
     protected initReg() {
         this.setValue(Injector, this);
         this.setValue(INJECTOR, this);
@@ -236,6 +286,7 @@ export class IocContainer extends Injector implements IIocContainer {
 
 }
 
+export const IocContainer = Container;
 
 
 const NULL_PDR = new Provider();
@@ -243,7 +294,7 @@ const NULL_PDR = new Provider();
 class RegisteredStateImpl implements RegisteredState {
 
     private decors: Map<string, IProvider>;
-    constructor(private readonly container: IIocContainer) {
+    constructor(private readonly container: IContainer) {
         this.decors = new Map();
     }
 
@@ -285,6 +336,16 @@ class RegisteredStateImpl implements RegisteredState {
 
 }
 
+/**
+ * is container or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Container}
+ */
+export function isContainer(target: any): target is Container {
+    return target && target instanceof Container;
+}
 
 /**
  * action injector.
@@ -299,12 +360,12 @@ class ActionProvider extends Provider implements IActionProvider {
         return this;
     }
 
-     /**
-     * register type class.
-     * @param type the class type.
-     * @param [options] the class prodvider to.
-     * @returns {this}
-     */
+    /**
+    * register type class.
+    * @param type the class type.
+    * @param [options] the class prodvider to.
+    * @returns {this}
+    */
     registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
     /**
      * register type class.

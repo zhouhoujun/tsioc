@@ -1,8 +1,7 @@
 import {
     Token, lang, SymbolType, Type, IInjector, Provider, InstFac, ProviderType, isNil, isClass,
-    getTokenKey, isPlainObject
+    getTokenKey, isPlainObject, InjectorImpl
 } from '@tsdi/ioc';
-import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { IModuleInjector, IModuleProvider, ModuleRef } from './ref';
 import { ROOT_INJECTOR } from '../tk';
 
@@ -16,12 +15,12 @@ import { ROOT_INJECTOR } from '../tk';
  * @extends {IocCoreService}
  * @implements {IResolver}
  */
-export class ModuleInjector extends CoreInjector implements IModuleInjector {
+export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 
 
     exports: ModuleRef[];
 
-    constructor(parent: ICoreInjector) {
+    constructor(parent: IInjector) {
         super(parent);
         this.exports = [];
         this.onDestroy(() => {
@@ -30,7 +29,7 @@ export class ModuleInjector extends CoreInjector implements IModuleInjector {
         });
     }
 
-    static create(parent: ICoreInjector) {
+    static create(parent: IInjector) {
         return new ModuleInjector(parent);
     }
 

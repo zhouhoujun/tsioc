@@ -1,7 +1,6 @@
-import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang, getToken } from '@tsdi/ioc';
+import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang, getToken, IServiceProvider, IContainer, Injector } from '@tsdi/ioc';
 import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
-import { IServiceProvider, IContainer } from '../link';
 
 /**
  * service provider.
@@ -23,6 +22,7 @@ export class ServiceProvider implements IServiceProvider {
      * @returns {T}
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
+        providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         let context = {
             injector,
             ...isToken(target) ? { token: target } : target
@@ -35,9 +35,6 @@ export class ServiceProvider implements IServiceProvider {
         let pdr = context.providers;
         providers.length && pdr.inject(...providers);
         this.initTargetRef(context);
-        if (!pdr.hasTokenKey(INJECTOR)) {
-            pdr.inject({ provide: INJECTOR, useValue: injector });
-        }
 
         if (!this.serviceScope) {
             this.serviceScope = this.container.provider.getInstance(ResolveServiceScope);
@@ -61,10 +58,9 @@ export class ServiceProvider implements IServiceProvider {
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
         let maps = this.getServiceProviders(injector, target);
         let services = [];
+        providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         let pdr = injector.get(PROVIDERS).inject(...providers);
-        if (!pdr.hasTokenKey(INJECTOR)) {
-            pdr.inject({ provide: INJECTOR, useValue: injector });
-        }
+
         maps.iterator(p => {
             services.push(p.value ? p.value : p.fac(pdr));
         });

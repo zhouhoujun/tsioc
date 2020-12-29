@@ -1,5 +1,4 @@
-import { lang, Singleton, isFunction, Destoryable } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { lang, Singleton, isFunction, Destoryable, IInjector } from '@tsdi/ioc';
 import { IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
@@ -34,7 +33,7 @@ const globals = typeof window !== 'undefined' ? window : global;
 @Singleton()
 export class OldTestRunner extends Destoryable implements ISuiteRunner {
 
-    private injector: ICoreInjector;
+    private injector: IInjector;
 
     timeout: number;
     describe: string;

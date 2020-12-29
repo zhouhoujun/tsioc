@@ -1,5 +1,4 @@
-import { ICoreInjector } from '@tsdi/core';
-import { Type, Registered, Destoryable, IProvider, Abstract, SymbolType, ProviderType } from '@tsdi/ioc';
+import { Type, Registered, Destoryable, IProvider, Abstract, SymbolType, ProviderType, IInjector } from '@tsdi/ioc';
 
 /**
  * module registered state.
@@ -11,7 +10,7 @@ export interface ModuleRegistered extends Registered {
 /**
  * module injector.
  */
-export interface IModuleInjector extends ICoreInjector {
+export interface IModuleInjector extends IInjector {
     /**
      * export moduleRef
      */

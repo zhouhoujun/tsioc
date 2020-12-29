@@ -1,5 +1,4 @@
-import { lang, Inject } from '@tsdi/ioc';
-import { IContainer, CONTAINER } from '@tsdi/core';
+import { lang, Inject, IContainer, CONTAINER } from '@tsdi/ioc';
 import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before } from '../src';
 
 

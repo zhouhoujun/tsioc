@@ -1,14 +1,13 @@
-import { Modules, Type } from './types';
-import { ResolveOption } from './actions/res';
+import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { Destoryable } from './Destoryable';
-import { IInjector, IProvider } from './IInjector';
+import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { PROVIDERS } from './utils/tk';
-import { IIocContainer } from './IIocContainer';
+import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
 
 /**
@@ -41,7 +40,7 @@ export class Provider extends Destoryable implements IProvider {
         return this.factories.size;
     }
 
-    getContainer(): IIocContainer {
+    getContainer(): IContainer {
         return this.parent?.getContainer();
     }
 
@@ -502,6 +501,50 @@ export abstract class Injector extends Provider implements IInjector {
      * @memberof Injector
      */
     abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+
+    /**
+     * get module loader.
+     *
+     * @returns {IModuleLoader}
+     */
+    abstract getLoader(): IModuleLoader;
+    
+    /**
+     * load modules.
+     *
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type[]>}  types loaded.
+     */
+    abstract load(...modules: LoadType[]): Promise<Type[]>;
+
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {(Token<T> | ServiceOption<T>)} target servive token.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+    abstract getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
+
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {...ProviderType[]} providers
+     * @returns {T[]} all service instance type of token type.
+     */
+    abstract getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
+
+    /**
+     * get all provider service in the injector.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target
+     * @returns {IProvider}
+     */
+    abstract getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
     clone(to?: Injector): IInjector;
     clone(filter: (key: SymbolType) => boolean, to?: IInjector): IInjector;

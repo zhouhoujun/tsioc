@@ -1,5 +1,5 @@
-import { Abstract, Inject, Injectable } from '@tsdi/ioc';
-import { CONTAINER, IContainer } from '../src';
+import { Abstract, Inject, Injectable, CONTAINER, IContainer  } from '@tsdi/ioc';
+
 
 @Injectable()
 export class Home {

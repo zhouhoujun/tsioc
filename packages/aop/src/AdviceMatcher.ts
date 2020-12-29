@@ -1,5 +1,5 @@
 import {
-    isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, IIocContainer, isNil
+    isString, isRegExp, Type, lang, isArray, isFunction, refl, ClassType, IContainer, isNil
 } from '@tsdi/ioc';
 import { IAdviceMatcher } from './IAdviceMatcher';
 import { AdviceMetadata } from './metadatas';
@@ -27,7 +27,7 @@ export type MatchExpress = (method: string, fullName: string, targetType?: Class
  */
 export class AdviceMatcher implements IAdviceMatcher {
 
-    constructor(private container: IIocContainer) { }
+    constructor(private container: IContainer) { }
 
     match(aspectType: Type, targetType: Type, adviceMetas?: AdviceMetadata[], target?: any): MatchPointcut[] {
         const aspref = refl.get<AopReflect>(aspectType);

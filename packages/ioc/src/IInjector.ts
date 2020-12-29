@@ -1,7 +1,6 @@
-import { Type, Modules } from './types';
+import { Type, Modules, LoadType } from './types';
 import { SymbolType, Token, FactoryLike, InjectReference, ProviderType, Factory, InstFac } from './tokens';
-import { ResolveOption } from './actions/res';
-import { IIocContainer } from './IIocContainer';
+import { IContainer } from './IContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 
@@ -24,7 +23,7 @@ export interface IProvider extends IDestoryable {
     /**
      * get root container.
      */
-    getContainer(): IIocContainer;
+    getContainer(): IContainer;
     /**
      * has register.
      *
@@ -198,6 +197,86 @@ export interface IProvider extends IDestoryable {
     clone(filter: (key: SymbolType) => boolean, to?: IProvider): IProvider;
 }
 
+/**
+ * resovle action option.
+ *
+ */
+export interface ResolveOption<T = any> {
+    /**
+     * token.
+     */
+    token?: Token<T>;
+    /**
+     * resolve token in target context.
+     */
+    target?: Token | Object | (Token | Object)[];
+    /**
+     * only for target private or ref token. if has target.
+     */
+    tagOnly?: boolean;
+    /**
+     * all faild use the default token to get instance.
+     */
+    defaultToken?: Token<T>;
+    /**
+     * register token if has not register.
+     *
+     */
+    regify?: boolean;
+
+    /**
+     * resolve providers.
+     */
+    providers?: ProviderType;
+
+}
+
+
+/**
+ * service context option.
+ *
+ * @export
+ * @interface ServiceOption
+ * @extends {ResovleActionOption}
+ */
+export interface ServiceOption<T> extends ResolveOption<T> {
+    /**
+     * token provider service type.
+     *
+     * @type {Type}
+     */
+    tokens?: Token<T>[];
+
+    /**
+     * token alias.
+     *
+     * @type {string}
+     */
+    alias?: string;
+    /**
+     * get extend servie or not.
+     *
+     * @type {boolean}
+     */
+    extend?: boolean;
+}
+
+/**
+ * services context options
+ *
+ * @export
+ * @interface ServicesOption
+ * @extends {ServiceOption}
+ */
+export interface ServicesOption<T> extends ServiceOption<T> {
+    /**
+     * get services both in container and target private refrence service.
+     *
+     * @type {boolean}
+     */
+    both?: boolean;
+}
+
 
 /**
  * injector interface.
@@ -286,4 +365,87 @@ export interface IInjector extends IProvider {
      * @returns {TR}
      */
     invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+
+    /**
+     * get module loader.
+     *
+     * @returns {IModuleLoader}
+     */
+    getLoader(): IModuleLoader;
+    /**
+     * load modules.
+     *
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type[]>}  types loaded.
+     */
+    load(...modules: LoadType[]): Promise<Type[]>;
+
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {(Token<T> | ServiceOption<T>)} target servive token.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
+
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {...ProviderType[]} providers
+     * @returns {T[]} all service instance type of token type.
+     */
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
+
+    /**
+     * get all provider service in the injector.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target
+     * @returns {IProvider}
+     */
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
+}
+
+
+/**
+ * module loader interface for ioc.
+ *
+ * @export
+ * @interface IModuleLoader
+ */
+export interface IModuleLoader {
+    /**
+     * load modules by files patterns, module name or modules.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Modules[]>}
+     */
+    load(...modules: LoadType[]): Promise<Modules[]>;
+
+    /**
+     * register types.
+     * @param modules 
+     */
+    register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]>;
+
+    /**
+     * dynamic require file.
+     *
+     * @param {string} fileName
+     * @returns {Promise<any>}
+     */
+    require(fileName: string): Promise<any>;
+
+    /**
+     * load all class types in modules
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Type[]>}
+     */
+    loadTypes(...modules: LoadType[]): Promise<Type[][]>;
+
 }

@@ -1,5 +1,4 @@
-import { Injectable, Token } from '@tsdi/ioc';
-import { LoadType } from '@tsdi/core';
+import { Injectable, Token, LoadType } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';

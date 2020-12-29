@@ -1,5 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { Injectable, IContainer } from '@tsdi/ioc';
 import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configure } from '@tsdi/boot';
 import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';

@@ -1,5 +1,4 @@
-import {  Inject, IocExt } from '@tsdi/ioc';
-import { IContainer, CONTAINER } from '@tsdi/core';
+import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
 import { RunAspect } from './aop/RunAspect';
 import * as activites from './activities';
 import { ActivityContext } from './core/ActivityContext';

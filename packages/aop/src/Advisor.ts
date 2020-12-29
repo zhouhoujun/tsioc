@@ -1,4 +1,4 @@
-import { Type, ProviderType, IIocContainer } from '@tsdi/ioc';
+import { Type, ProviderType, IContainer } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { IAdvisor } from './IAdvisor';
 
@@ -18,7 +18,7 @@ export class Advisor implements IAdvisor {
 
     aspects: Type[];
 
-    constructor(private readonly container: IIocContainer) {
+    constructor(private readonly container: IContainer) {
         this.advices = new Map();
         this.aspects = [];
     }
@@ -66,7 +66,7 @@ export class Advisor implements IAdvisor {
      * add aspect.
      *
      * @param {Type} aspect
-     * @param {IIocContainer} raiseContainer
+     * @param {IContainer} raiseContainer
      */
     add(aspect: Type) {
         this.aspects.push(aspect);

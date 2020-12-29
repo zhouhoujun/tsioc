@@ -1,7 +1,4 @@
-export * from './types';
 export * from './tk'
-
-export * from './link';
 
 export * from './services/loader';
 export * from './services/providers';
@@ -16,7 +13,7 @@ export * from './injects/actions';
 export * from './resolves/context';
 export * from './resolves/actions';
 
-export * from './container';
-export * from './injector';
+export * from './IBuilder';
 export * from './builder';
 
+export { IInjector as ICoreInjector, IContainer, LoadType, CONTAINER, Container, InjectorImpl as CoreInjector } from '@tsdi/ioc';

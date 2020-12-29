@@ -1,5 +1,4 @@
-import { IocCoreService, Inject, Singleton, isFunction, isClassType, ClassType, Type } from '@tsdi/ioc';
-import { IContainer, ICoreInjector } from '@tsdi/core';
+import { IocCoreService, Inject, Singleton, isFunction, isClassType, ClassType, Type, IInjector, IContainer } from '@tsdi/ioc';
 import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
@@ -23,7 +22,7 @@ import { BootContext } from '../boot/ctx';
 export class BuilderService extends IocCoreService implements IBuilderService {
 
     @Inject(ROOT_INJECTOR)
-    protected root: ICoreInjector;
+    protected root: IInjector;
 
 
     /**
@@ -41,7 +40,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     async build<T>(target: ClassType<T> | BuildOption<T>): Promise<IBuildContext> {
-        let injector: ICoreInjector;
+        let injector: IInjector;
         let options: BuildOption;
         const container = this.root.getContainer();
         let md: ClassType;
@@ -65,7 +64,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<any> {
         const container = this.root.getContainer();
         let md: ClassType;
-        let injector: ICoreInjector;
+        let injector: IInjector;
         let options: BootOption<T>;
         if (isClassType(target)) {
             md = target;
@@ -131,7 +130,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ctx = target as T;
         } else {
             let md: ClassType;
-            let injector: ICoreInjector;
+            let injector: IInjector;
             let options: BootOption;
             if (isClassType(target)) {
                 md = target;

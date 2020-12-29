@@ -1,8 +1,8 @@
 import {
     ClassType, IDestoryable, IocContext, IProvider, ProviderType, ObjectMap,
-    RegInMetadata, SymbolType, Token, Type, TypeReflect
+    RegInMetadata, SymbolType, Token, Type, TypeReflect, IContainer, IModuleLoader, LoadType, IInjector
 } from '@tsdi/ioc';
-import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
+import {  } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
 import { ModuleReflect } from './modules/reflect';
@@ -45,7 +45,7 @@ export interface IDesctoryableContext<T> extends IocContext, IDestoryable {
     /**
      * current injector.
      */
-    readonly injector: ICoreInjector;
+    readonly injector: IInjector;
     /**
      * get providers of options.
      */
@@ -198,7 +198,7 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
     /**
      * injector.
      */
-    injector?: ICoreInjector;
+    injector?: IInjector;
 }
 
 
@@ -222,7 +222,7 @@ export interface BuildOption<T = any> extends AnnoationOption<T> {
     /**
      * module reslove in the injector.
      */
-    injector?: ICoreInjector;
+    injector?: IInjector;
 }
 
 /**

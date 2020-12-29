@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { isString, isArray } from '../utils/chk';
 import { Token, ProviderType } from '../tokens';
-import { IIocContainer } from '../IIocContainer';
+import { IContainer } from '../IContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, RefProvider
@@ -342,7 +342,7 @@ export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Si
  *  ioc extend inteface.
  */
 export interface IocExtentd {
-    setup(container: IIocContainer);
+    setup(container: IContainer);
 }
 
 /**

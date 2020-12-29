@@ -2,7 +2,6 @@ import {
     isClass, Injectable, isString, isFunction, Token, isUndefined, Inject, isToken,
     Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR, Injector
 } from '@tsdi/ioc';
-import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './type';
 import { HandleType, IHandle } from '../handles/Handle';
@@ -25,12 +24,12 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
 
 
     @Inject(INJECTOR)
-    private _injector: CoreInjector;
+    private _injector: Injector;
 
     /**
      * get injector of current message queue.
      */
-    getInjector(): CoreInjector {
+    getInjector(): Injector {
         return this._injector;
     }
 
@@ -78,7 +77,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param {*} data
      * @returns {Promise<void>}
      */
-    send(event: string, data: any, injector?: ICoreInjector): Promise<void>;
+    send(event: string, data: any, injector?: Injector): Promise<void>;
     /**
      * send message
      *
@@ -88,13 +87,13 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @param {ICoreInjector} [injector]
      * @returns {Promise<void>}
      */
-    send(event: string, type: string, data: any, injector?: ICoreInjector): Promise<void>;
-    send(event: any, type?: any, data?: any, injector?: ICoreInjector): Promise<void> {
+    send(event: string, type: string, data: any, injector?: Injector): Promise<void>;
+    send(event: any, type?: any, data?: any, injector?: Injector): Promise<void> {
         if (event instanceof MessageContext) {
             return this.execute(event as T);
         } else {
             if (isInjector(data)) {
-                injector = data as ICoreInjector;
+                injector = data as Injector;
                 data = undefined;
             }
             injector = injector || this.getInjector();

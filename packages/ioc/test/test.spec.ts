@@ -1,12 +1,12 @@
-import { AutoWired, Injectable, IIocContainer, ParameterMetadata, Param, Registration, Inject, Singleton, IocContainer, refl } from '../src';
+import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration, Inject, Singleton, Container, refl } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
 describe('custom register test', () => {
 
-    let container: IIocContainer;
+    let container: IContainer;
     beforeEach(async () => {
-        container = new IocContainer();
+        container = new Container();
     });
 
     it('decorator toString is decorator name', () => {

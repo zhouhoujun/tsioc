@@ -1,5 +1,4 @@
-import { Inject, IocExt } from '@tsdi/ioc';
-import { CONTAINER, IContainer, MODULE_LOADER } from '@tsdi/core';
+import { Inject, IocExt, CONTAINER, IContainer, MODULE_LOADER  } from '@tsdi/ioc';
 import { NodeModuleLoader } from './NodeModuleLoader';
 
 /**
@@ -15,6 +14,6 @@ export class ServerModule {
      * register aop for container.
      */
     setup(@Inject(CONTAINER) container: IContainer) {
-        container.setValue(MODULE_LOADER, new NodeModuleLoader(), NodeModuleLoader);
+        container.setValue(MODULE_LOADER, new NodeModuleLoader(container), NodeModuleLoader);
     }
 }

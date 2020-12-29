@@ -1,5 +1,5 @@
 import {
-    Type, isFunction, lang, IProvider, ParameterMetadata, IIocContainer, IActionProvider, InvokedProvider,
+    Type, isFunction, lang, IProvider, ParameterMetadata, IContainer, IActionProvider, InvokedProvider,
     IocActions, IActionSetup, isArray, isNil, isPromise, refl
 } from '@tsdi/ioc';
 import { Advices } from '../advices/Advices';
@@ -22,7 +22,7 @@ const ctor = 'constructor';
  */
 export class ProceedingScope extends IocActions<Joinpoint> implements IActionSetup {
 
-    private container: IIocContainer;
+    private container: IContainer;
 
     constructor(provider: IActionProvider) {
         super(provider);

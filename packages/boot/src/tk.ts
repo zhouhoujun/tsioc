@@ -1,5 +1,4 @@
-import { tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { tokenId, Token, TokenId } from '@tsdi/ioc';
 import { IBootContext } from './Context';
 import { IMessageQueue } from './messages/type';
 import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';

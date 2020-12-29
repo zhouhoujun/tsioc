@@ -1,5 +1,4 @@
-import { AsyncHandler, IActionSetup, isClass, Inject, INJECTOR } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { AsyncHandler, IActionSetup, isClass, Inject, INJECTOR, Injector } from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
@@ -16,7 +15,7 @@ import { Handles } from '../handles/Handles';
  * @template T
  */
 export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> extends Handle<T> {
-    constructor(@Inject(INJECTOR) protected readonly injector: ICoreInjector) {
+    constructor(@Inject() protected readonly injector: Injector) {
         super();
     }
 }
@@ -31,7 +30,7 @@ export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> e
  */
 export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends Handles<T> {
 
-    constructor(@Inject(INJECTOR) protected readonly injector: ICoreInjector) {
+    constructor(@Inject() protected readonly injector: Injector) {
         super();
     }
 

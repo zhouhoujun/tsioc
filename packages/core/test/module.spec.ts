@@ -1,7 +1,8 @@
-import { ContainerBuilder, IContainer } from '../src';
+import { ContainerBuilder } from '../src';
 import * as debuModules from './debug';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import expect = require('expect');
+import { IContainer } from '@tsdi/ioc';
 
 describe('auto register with build', () => {
 

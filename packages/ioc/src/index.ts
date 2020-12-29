@@ -3,7 +3,7 @@ export * from './tokens';
 export * from './action';
 export * from './Destoryable';
 export * from './IInjector';
-export * from './IIocContainer';
+export * from './IContainer';
 export * from './IMethodAccessor';
 export * from './service';
 export * from './injector';

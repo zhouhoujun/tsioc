@@ -1,7 +1,7 @@
-import { IIocContainer } from '../IIocContainer';
+import { IContainer } from '../IContainer';
 import { Provider, InvokedProvider } from '../injector';
 import { MethodAccessor } from '../actions/accessor';
-import { INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS, INVOKED_PROVIDERS, IOC_CONTAINER } from './tk';
+import { INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS, INVOKED_PROVIDERS, CONTAINER } from './tk';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ResolveLifeScope } from '../actions/resolve';
@@ -11,11 +11,11 @@ import { InjectorImpl } from '../container';
  * register core for container.
  *
  * @export
- * @param {IIocContainer} container
+ * @param {IContainer} container
  */
-export function registerCores(container: IIocContainer) {
+export function registerCores(container: IContainer) {
 
-    container.setValue(IOC_CONTAINER, container);
+    container.setValue(CONTAINER, container);
     container.set(INJECTOR_FACTORY, () => new InjectorImpl(container), InjectorImpl);
     container.set(PROVIDERS, () => new Provider(container), Provider);
     container.set(INVOKED_PROVIDERS, () => new InvokedProvider(container), InvokedProvider);

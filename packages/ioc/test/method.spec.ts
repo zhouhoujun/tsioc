@@ -1,4 +1,4 @@
-import { Inject, AutoWired, Injectable, Singleton, IIocContainer, ParameterMetadata, Param, isFunction, IocContainer, refl } from '../src';
+import { Inject, AutoWired, Injectable, Singleton, IContainer, ParameterMetadata, Param, isFunction, Container, refl } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -71,9 +71,9 @@ describe('method exec test', () => {
         }
     }
 
-    let container: IIocContainer;
+    let container: IContainer;
     beforeEach(() => {
-        container = new IocContainer();
+        container = new Container();
     });
 
     it('show has prop metadata', () => {

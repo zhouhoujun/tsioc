@@ -1,7 +1,7 @@
 import { tokenId, TokenId } from '../tokens';
 import { IMethodAccessor } from '../IMethodAccessor';
-import { IInjector, IProvider } from '../IInjector';
-import { IIocContainer } from '../IIocContainer';
+import { IInjector, IModuleLoader, IProvider } from '../IInjector';
+import { IContainer, IServiceProvider } from '../IContainer';
 
 
 /**
@@ -36,13 +36,29 @@ export const MethodAccessorToken = METHOD_ACCESSOR;
 export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');
 
 /**
- * root ioc container token.
+ * root container token.
  * it is a symbol id, you can use  `@Inject()`, `@AutoWired()` or `@Param()` to get container instance in yourself class.
  */
-export const IOC_CONTAINER: TokenId<IIocContainer> = tokenId<IIocContainer>('IOC_CONTAINER');
-
+export const CONTAINER: TokenId<IContainer> = tokenId<IContainer>('IOC_CONTAINER');
+/**
+ * root container token.
+ *
+ * @deprecated use `CONTAINER` instead.
+ */
+export const ContainerToken = CONTAINER;
 /**
  * root ioc container token.
- * @deprecated use `IOC_CONTAINER` instead.
+ * @deprecated use `CONTAINER` instead.
  */
-export const IocContainerToken = IOC_CONTAINER;
+export const IOC_CONTAINER = CONTAINER;
+
+/**
+ * module loader.
+ */
+export const MODULE_LOADER = tokenId<IModuleLoader>('MODULE_LOADER');
+
+/**
+ * service provider.
+ */
+export const SERVICE_PROVIDER = tokenId<IServiceProvider>('SERVICE_PROVIDER');
+

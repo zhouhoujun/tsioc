@@ -1,6 +1,6 @@
 import expect = require('expect');
-import { IContainer, ContainerBuilder } from '../src';
-import { Injectable, Inject, Refs } from '@tsdi/ioc';
+import { ContainerBuilder } from '../src';
+import { Injectable, Inject, Refs, IContainer} from '@tsdi/ioc';
 
 
 @Injectable()

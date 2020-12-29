@@ -1,5 +1,4 @@
-import { Singleton, Type, Inject, INJECTOR } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Singleton, Type, Inject, Injector } from '@tsdi/ioc';
 import { Repository, MongoRepository, Connection } from 'typeorm';
 import { TypeormConnectionStatupService } from './TypeormConnectionStatupService';
 
@@ -10,8 +9,8 @@ export class TypeOrmHelper {
 
     private service: TypeormConnectionStatupService;
 
-    @Inject(INJECTOR)
-    private injector: ICoreInjector;
+    @Inject()
+    private injector: Injector;
 
     constructor() { }
 

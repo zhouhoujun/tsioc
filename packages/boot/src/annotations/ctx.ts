@@ -1,8 +1,7 @@
 import {
-    isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract,
-    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass, Provider
+    isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
+    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass, Provider, Injector, IInjector
 } from '@tsdi/ioc';
-import { IContainer, ICoreInjector } from '@tsdi/core';
 import { AnnoationOption, IAnnoationContext, IDesctoryableContext, ProdverOption } from '../Context';
 import { CTX_OPTIONS } from '../tk';
 
@@ -17,7 +16,7 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
     private context: IProvider;
     protected options: T;
 
-    constructor(@Inject(INJECTOR) injector: ICoreInjector, @Inject(CTX_OPTIONS) options: T) {
+    constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options: T) {
         super();
         this.context = injector.get(PROVIDERS);
         this.setOptions(options);
@@ -27,8 +26,8 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
     /**
      * raise injector of this context.
      */
-    get injector(): ICoreInjector {
-        return this.context.getValue<ICoreInjector>(INJECTOR);
+    get injector(): IInjector {
+        return this.context.getValue(INJECTOR);
     }
 
     /**

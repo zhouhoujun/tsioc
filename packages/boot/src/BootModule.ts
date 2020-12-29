@@ -1,5 +1,5 @@
-import { Inject, IocExt } from '@tsdi/ioc';
-import { IContainer, CONTAINER, InjModuleScope } from '@tsdi/core';
+import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
+import { InjModuleScope } from '@tsdi/core';
 import { MessageContext } from './messages/ctx';
 import { MessageQueue, RootMessageQueue } from './messages/queue';
 import { InjDIModuleScope } from './registers/Inj-module';
