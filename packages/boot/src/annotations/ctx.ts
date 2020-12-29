@@ -1,10 +1,10 @@
 import {
     isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract,
-    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass
+    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass, Provider
 } from '@tsdi/ioc';
 import { IContainer, ICoreInjector } from '@tsdi/core';
 import { AnnoationOption, IAnnoationContext, IDesctoryableContext, ProdverOption } from '../Context';
-import { CTX_OPTIONS, CTX_PROVIDERS } from '../tk';
+import { CTX_OPTIONS } from '../tk';
 
 
 /**
@@ -35,10 +35,10 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
      * get providers of options.
      */
     get providers(): IProvider {
-        if (!this.context.hasValue(CTX_PROVIDERS)) {
-            this.context.setValue(CTX_PROVIDERS, this.injector.getInstance(PROVIDERS))
+        if (!this.context.hasValue(Provider)) {
+            this.context.setValue(Provider, this.injector.getInstance(PROVIDERS))
         }
-        return this.context.getValue(CTX_PROVIDERS);
+        return this.context.getValue(Provider);
     }
 
     /**
@@ -144,7 +144,7 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
         }
         if (options.providers) {
             if (isInjector(options.providers)) {
-                this.setValue(CTX_PROVIDERS, options.providers)
+                this.setValue(Provider, options.providers)
             } else if (isArray(options.providers)) {
                 this.providers.inject(...options.providers);
             }

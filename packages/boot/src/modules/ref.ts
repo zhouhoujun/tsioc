@@ -51,12 +51,15 @@ export interface IModuleProvider extends IProvider {
 @Abstract()
 export abstract class ModuleRef<T = any> extends Destoryable {
 
-    constructor(protected _moduleType: Type<T>, protected _parent?: IModuleInjector, protected _regIn?: string | 'root') {
+    constructor(protected _type: Type<T>, protected _parent?: IModuleInjector, protected _regIn?: string | 'root') {
         super();
     }
 
-    get moduleType(): Type<T> {
-        return this._moduleType;
+    /**
+     * module type.
+     */
+    get type(): Type<T> {
+        return this._type;
     }
 
     get parent(): IModuleInjector {
@@ -67,8 +70,16 @@ export abstract class ModuleRef<T = any> extends Destoryable {
         return this._regIn;
     }
 
-    abstract getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T
+    /**
+     * get the token instance registered in this di module.
+     * @param key token key
+     * @param providers param providers.
+     */
+    abstract get<T>(key: SymbolType<T>, ...providers: ProviderType[]): T;
 
+    /**
+     * get module import types.
+     */
     abstract get imports(): Type[];
 
     /**

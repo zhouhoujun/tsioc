@@ -1,8 +1,7 @@
-import { Injectable } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Injectable, Injector } from '@tsdi/ioc';
+import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { ProdverOption } from '../Context';
 import { DestoryableContext } from '../annotations/ctx';
-import { CTX_CURR_INJECTOR } from '../tk';
 
 
 
@@ -59,7 +58,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Des
      * get injector of current message queue.
      */
     getQueueInjector(): ICoreInjector {
-        return this.getValue(CTX_CURR_INJECTOR) ?? this.injector;
+        return this.getValue<CoreInjector>(Injector) ?? this.injector;
     }
 
     /**

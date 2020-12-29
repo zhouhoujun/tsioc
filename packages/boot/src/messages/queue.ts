@@ -1,13 +1,13 @@
 import {
     isClass, Injectable, isString, isFunction, Token, isUndefined, Inject, isToken,
-    Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR
+    Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR, Injector
 } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { CoreInjector, ICoreInjector } from '@tsdi/core';
 import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './type';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
-import { CTX_CURR_INJECTOR, CTX_OPTIONS, ROOT_MESSAGEQUEUE } from '../tk';
+import { CTX_OPTIONS, ROOT_MESSAGEQUEUE } from '../tk';
 
 
 
@@ -25,19 +25,19 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
 
 
     @Inject(INJECTOR)
-    private _injector: ICoreInjector;
+    private _injector: CoreInjector;
 
     /**
      * get injector of current message queue.
      */
-    getInjector(): ICoreInjector {
+    getInjector(): CoreInjector {
         return this._injector;
     }
 
     private completed: ((ctx: T) => void)[];
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        ctx.setValue(CTX_CURR_INJECTOR, this.getInjector())
+        ctx.setValue(Injector, this.getInjector())
         await super.execute(ctx, next);
         this.completed && this.completed.map(cb => {
             cb(ctx);

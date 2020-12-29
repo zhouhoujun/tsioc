@@ -43,7 +43,7 @@ export class ModuleInjector extends CoreInjector implements IModuleInjector {
         if (!pdr) {
             let instance: T;
             if (this.exports.some(e => {
-                instance = e.getInstance(key);
+                instance = e.get(key);
                 return !isNil(instance);
             })) {
                 return instance;
@@ -74,7 +74,7 @@ export class ModuleInjector extends CoreInjector implements IModuleInjector {
         this.exports.forEach(r => {
             r.exports.unregister(token);
         });
-        lang.remove(this.exports, this.exports?.find(el => el.moduleType === token))
+        lang.remove(this.exports, this.exports?.find(el => el.type === token))
         return this;
     }
 
@@ -142,7 +142,9 @@ export class ModuleInjector extends CoreInjector implements IModuleInjector {
     }
 }
 
-
+/**
+ * default moduleRef.
+ */
 export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 
     private _injector: IModuleInjector;
@@ -167,8 +169,8 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         }
         this._injector.setValue(ModuleRef, this);
         const pdr = new ModuleProviders(container);
-        pdr.moduleInjector = this._injector;
-        pdr.export(this.moduleType);
+        pdr.mdlInj = this._injector;
+        pdr.export(this.type);
         this._exports = pdr;
     }
 
@@ -179,16 +181,16 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 
     get instance(): T {
         if (!this._inst) {
-            this._inst = this.injector.getInstance(this.moduleType);
+            this._inst = this.injector.getInstance(this.type);
         }
         return this._inst;
     }
 
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
+    get<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
         let instance: T = this.exports.getInstance(key, ...providers);
         if (!isNil(instance)) return instance;
         if (this.injector.exports.some(e => {
-            instance = e.getInstance(key);
+            instance = e.get(key);
             return !isNil(instance);
         })) {
             return instance;
@@ -218,10 +220,10 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         }
         this._exports.destroy();
         this._injector.destroy();
-        this._moduleType = null;
+        this._type = null;
         this._parent = null;
         this._regIn = null;
-        this._exports.moduleInjector = null;
+        this._exports.mdlInj = null;
         this._exports = null;
         this._imports = null;
         this._injector = null;
@@ -229,10 +231,15 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     }
 }
 
-
+/**
+ * module providers.
+ */
 export class ModuleProviders extends Provider implements IModuleProvider {
 
-    moduleInjector: IModuleInjector;
+    /**
+     * module injector.
+     */
+    mdlInj: IModuleInjector;
     /**
      * register type class.
      * @param type the class type.
@@ -250,19 +257,19 @@ export class ModuleProviders extends Provider implements IModuleProvider {
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
     registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
         if (isPlainObject(provide)) {
-            this.getContainer()?.registerIn(this.moduleInjector, type, provide as any);
+            this.getContainer()?.registerIn(this.mdlInj, type, provide as any);
         } else {
-            this.getContainer()?.registerIn(this.moduleInjector, type, { provide, singleton });
+            this.getContainer()?.registerIn(this.mdlInj, type, { provide, singleton });
         }
-        provide && this.set(provide, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
+        provide && this.set(provide, (...pdrs) => this.mdlInj.getInstance(type, ...pdrs));
         this.export(type);
         return this;
     }
 
     export(type: Type) {
-        this.set(type, (...pdrs) => this.moduleInjector.getInstance(type, ...pdrs));
+        this.set(type, (...pdrs) => this.mdlInj.getInstance(type, ...pdrs));
         this.getContainer().regedState.getRegistered(type).provides?.forEach(p => {
-            this.set(p, (...pdrs) => this.moduleInjector.get(p, ...pdrs));
+            this.set(p, (...pdrs) => this.mdlInj.get(p, ...pdrs));
         });
     }
 }
