@@ -6,7 +6,7 @@ import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
-import { PROVIDERS } from './utils/tk';
+import { CONTAINER, PROVIDERS } from './utils/tk';
 import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
 
@@ -31,7 +31,7 @@ export class Provider extends Destoryable implements IProvider {
      */
     protected factories: Map<SymbolType, InstFac>;
 
-    constructor(readonly parent?: IProvider, readonly type?: string) {
+    constructor(readonly parent: IProvider, readonly type?: string) {
         super();
         this.factories = new Map();
     }
@@ -41,7 +41,10 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     getContainer(): IContainer {
-        return this.parent?.getContainer();
+        if(!this.hasTokenKey(CONTAINER)){
+            this.setValue(CONTAINER, this.parent.getContainer());
+        }
+        return this.getValue(CONTAINER);
     }
 
     /**
@@ -393,7 +396,7 @@ export class Provider extends Destoryable implements IProvider {
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {
 
-    constructor(readonly parent?: IInjector) {
+    constructor(readonly parent: IInjector) {
         super(parent, 'injector');
     }
 

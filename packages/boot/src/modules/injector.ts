@@ -68,15 +68,6 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
         return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
     }
 
-    unregister<T>(token: Token<T>): this {
-        super.unregister(token);
-        this.refs.forEach(r => {
-            r.exports.unregister(token);
-        });
-        lang.remove(this.refs, this.refs?.find(el => el.type === token))
-        return this;
-    }
-
     export(ref: ModuleRef, first?: boolean): this {
         if (this.hasExport(ref)) {
             return this;
@@ -98,14 +89,11 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
     }
 
     iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        if (super.iterator(callbackfn, false) === false) {
+        if (super.iterator(callbackfn, deep) === false) {
             return false;
         }
         if (this.refs.some(exp => exp.exports.iterator(callbackfn, false) === false)) {
             return false;
-        }
-        if(deep!==false){
-            return this.parent.iterator(callbackfn);
         }
     }
 
@@ -165,10 +153,10 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     protected initRef() {
         const container = this.parent.getContainer();
         const root = container.getValue(ROOT_INJECTOR);
-        this._injector = ModuleInjector.create(root);
         if (this.regIn === 'root') {
             this._parent = root;
         }
+        this._injector = ModuleInjector.create(root);
         this._injector.setValue(ModuleRef, this);
         const pdr = new ModuleProviders(container);
         pdr.mdlInj = this._injector;
@@ -189,7 +177,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     }
 
     get<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
-        return this.exports.getInstance(key, ...providers);
+        return this.injector.getInstance(key, ...providers);
     }
 
     get imports(): Type[] {
@@ -260,6 +248,13 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         return this;
     }
 
+    export(type: Type) {
+        this.set(type, (...pdrs) => this.mdlInj.getInstance(type, ...pdrs));
+        this.getContainer().regedState.getRegistered(type).provides?.forEach(p => {
+            this.set(p, (...pdrs) => this.mdlInj.get(p, ...pdrs));
+        });
+    }
+
     hasTokenKey<T>(key: SymbolType<T>): boolean {
         return super.hasTokenKey(key) || this.mdlInj.refs.some(r => r.exports.hasTokenKey(key))
     }
@@ -285,68 +280,57 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         return pdr.fac ? pdr.fac(...providers) ?? null : null;
     }
 
-    
-    hasValue<T>(token: Token<T>): boolean {
-        const key = getTokenKey(token);
-        return super.hasValue(key) || this.hasValInExports(key);
-    }
-
-    getValue<T>(token: Token<T>): T {
-        const key = getTokenKey(token);
-        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
-    }
-
-
     iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        if (super.iterator(callbackfn, false) === false) {
+        if (super.iterator(callbackfn, deep) === false) {
             return false;
         }
         if (this.mdlInj.refs.some(exp => exp.exports.iterator(callbackfn, false) === false)) {
             return false;
         }
-        if(deep!==false){
-            return this.parent.iterator(callbackfn);
-        }
     }
 
-    export(type: Type) {
-        this.set(type, (...pdrs) => this.mdlInj.getInstance(type, ...pdrs));
-        this.getContainer().regedState.getRegistered(type).provides?.forEach(p => {
-            this.set(p, (...pdrs) => this.mdlInj.get(p, ...pdrs));
-        });
-    }
+        
+    // hasValue<T>(token: Token<T>): boolean {
+    //     const key = getTokenKey(token);
+    //     return super.hasValue(key) || this.hasValInExports(key);
+    // }
 
-    /**
-     * get token provider class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {Type<T>}
-     */
-    getTokenProvider<T>(token: Token<T>): Type<T> {
-        let tokenKey = getTokenKey(token);
-        if (isClass(tokenKey)) return tokenKey;
+    // getValue<T>(token: Token<T>): T {
+    //     const key = getTokenKey(token);
+    //     return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
+    // }
 
-        return this.factories.get(tokenKey)?.provider
-            ?? this.getTknPdr(tokenKey)
-            ?? this.parent?.getTokenProvider(tokenKey);
-    }
+    // /**
+    //  * get token provider class type.
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @returns {Type<T>}
+    //  */
+    // getTokenProvider<T>(token: Token<T>): Type<T> {
+    //     let tokenKey = getTokenKey(token);
+    //     if (isClass(tokenKey)) return tokenKey;
 
-    protected getTknPdr<T>(tokenKey: SymbolType<T>): Type<T> {
-        let type;
-        this.mdlInj.refs.some(r => {
-            type = r.exports.getTokenProvider(tokenKey);
-            return type;
-        });
-        return type || null;
+    //     return this.factories.get(tokenKey)?.provider
+    //         ?? this.getTknPdr(tokenKey)
+    //         ?? this.parent?.getTokenProvider(tokenKey);
+    // }
 
-    }
+    // protected getTknPdr<T>(tokenKey: SymbolType<T>): Type<T> {
+    //     let type;
+    //     this.mdlInj.refs.some(r => {
+    //         type = r.exports.getTokenProvider(tokenKey);
+    //         return type;
+    //     });
+    //     return type || null;
 
-    protected hasValInExports<T>(key: SymbolType<T>): boolean {
-        return this.mdlInj.refs.some(r => r.exports.hasValue(key));
-    }
+    // }
 
-    protected getValInExports<T>(key: SymbolType<T>): T {
-        return this.mdlInj.refs.find(r => r.exports.hasValue(key))?.exports.getValue(key);
-    }
+    // protected hasValInExports<T>(key: SymbolType<T>): boolean {
+    //     return this.mdlInj.refs.some(r => r.exports.hasValue(key));
+    // }
+
+    // protected getValInExports<T>(key: SymbolType<T>): T {
+    //     return this.mdlInj.refs.find(r => r.exports.hasValue(key))?.exports.getValue(key);
+    // }
 }

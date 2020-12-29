@@ -126,7 +126,7 @@ export class Container extends Injector implements IContainer {
     readonly id: string;
 
     constructor() {
-        super();
+        super(null);
         this.id = `c${id++}`;
         this.regedState = new RegisteredStateImpl(this);
         this.provider = new ActionProvider(this);
@@ -289,7 +289,7 @@ export class Container extends Injector implements IContainer {
 export const IocContainer = Container;
 
 
-const NULL_PDR = new Provider();
+const NULL_PDR = new Provider(null);
 
 class RegisteredStateImpl implements RegisteredState {
 
