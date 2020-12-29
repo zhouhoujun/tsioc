@@ -25,15 +25,15 @@ export class RunAspect extends LoggerAspect {
         this.getReport().track(joinPoint.throwing);
     }
 
-    // @AfterThrowing('execution(*.runBeforeEach)')
-    // beforeEachError(joinPoint: Joinpoint) {
-    //     this.getReport().trackError(joinPoint.throwing);
-    // }
+    @AfterThrowing('execution(*.runBeforeEach)')
+    beforeEachError(joinPoint: Joinpoint) {
+        this.getReport().track(joinPoint.throwing);
+    }
 
-    // @AfterThrowing('execution(*.runAfterEach)')
-    // afterEachError(joinPoint: Joinpoint) {
-    //     this.getReport().trackError(joinPoint.throwing);
-    // }
+    @AfterThrowing('execution(*.runAfterEach)')
+    afterEachError(joinPoint: Joinpoint) {
+        this.getReport().track(joinPoint.throwing);
+    }
 
     @AfterThrowing('execution(*.runAfter)')
     afterError(joinPoint: Joinpoint) {

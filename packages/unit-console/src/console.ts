@@ -17,7 +17,7 @@ import * as chalk from 'chalk';
 export class ConsoleReporter extends RealtimeReporter {
 
     track(error: Error): void {
-        console.error(error);
+        console.log(chalk.red(error.stack || error.message));
         throw error;
     }
 

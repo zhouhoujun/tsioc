@@ -1,4 +1,4 @@
-import { Abstract, Inject, IOC_CONTAINER, Injectable, IContainer} from '../src';
+import { Abstract, Inject, CONTAINER, Injectable, IContainer} from '../src';
 
 @Injectable()
 export class Home {
@@ -13,7 +13,7 @@ export abstract class Animal {
     @Inject()
     home: Home;
 
-    @Inject(IOC_CONTAINER)
+    @Inject(CONTAINER)
     container: IContainer;
 
     back() {

@@ -354,7 +354,7 @@ export const AfterAsyncReturningAdvicesAction = function (ctx: Joinpoint, next: 
 }
 
 export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
-    if (ctx.throwing) {
+    if (ctx.throwing || isPromise(ctx.returning)) {
         return next();
     }
     if (!isNil(ctx.returning)) {
@@ -375,9 +375,9 @@ export const AfterReturningAdvicesAction = function (ctx: Joinpoint, next: () =>
 }
 
 export const AfterThrowingAdvicesAction = function (ctx: Joinpoint, next: () => void): void {
-    if (ctx.throwing) {
-        ctx.state = JoinpointState.AfterThrowing;
-    }
+    if(!ctx.throwing) return next();
+
+    ctx.state = JoinpointState.AfterThrowing;
     const advices = ctx.advices;
     const invoker = ctx.invokeHandle;
     advices.Around.forEach(advicer => {

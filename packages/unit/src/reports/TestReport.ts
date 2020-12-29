@@ -36,8 +36,8 @@ export class TestReport implements ITestReport {
 
     track(error: Error) {
         this.resports.forEach(rep=> {
-            rep.render
-        })
+            rep.track(error);
+        });
     }
 
     addSuite(suit: Token, describe: ISuiteDescribe) {
