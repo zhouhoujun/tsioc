@@ -91,7 +91,7 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements IAct
  *
  */
 export const BeforeCtorDecorScope = function (ctx: RuntimeContext, next: () => void) {
-    ctx.reflect.classDecors.forEach(d => {
+    ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getRuntimeHandle('beforeConstructor'), ctx);
     });
@@ -122,7 +122,7 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements IActi
  * @extends {RuntimeDecorScope}
  */
 export const AfterCtorDecorScope = function (ctx: RuntimeContext, next: () => void) {
-    ctx.reflect.classDecors.forEach(d => {
+    ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getRuntimeHandle('afterConstructor'), ctx);
     });
@@ -202,7 +202,7 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IAc
  * runtime annoation decorator action scope.
  */
 export const RuntimeAnnoDecorScope = function (ctx: RuntimeContext, next: () => void) {
-    ctx.reflect.classDecors.forEach(d => {
+    ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getRuntimeHandle('class'), ctx);
     });
@@ -217,7 +217,7 @@ export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements IAct
     }
 }
 export const RuntimeMthDecorScope = function (ctx: RuntimeContext, next: () => void) {
-    ctx.reflect.methodDecors.forEach(d => {
+    ctx.reflect.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getRuntimeHandle('method'), ctx);
     });
@@ -233,7 +233,7 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IAc
 }
 
 export const RuntimePropDecorScope = function (ctx: RuntimeContext, next: () => void) {
-    ctx.reflect.propDecors.forEach(d => {
+    ctx.reflect.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getRuntimeHandle('property'), ctx);
     });

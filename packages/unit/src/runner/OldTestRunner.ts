@@ -55,7 +55,7 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {
-            // console.error(err);
+            throw err;
         }
     }
 

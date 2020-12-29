@@ -29,7 +29,6 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
             await this.runSuite(desc);
         } catch (err) {
             throw err;
-            // console.error(err);
         }
     }
 
@@ -94,9 +93,9 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     }
 
     async runBefore(describe: ISuiteDescribe) {
-        let befores = this.ctx.reflect.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
+        let befores = this.ctx.reflect.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), 'method');
         await lang.step(
-            befores.map(df => {
+            befores.map(df => () => {
                 return this.runTimeout(
                     df.propertyKey,
                     'sutie before ' + df.propertyKey,
@@ -105,7 +104,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     }
 
     async runBeforeEach() {
-        let befores = this.ctx.reflect.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
+        let befores = this.ctx.reflect.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), 'method');
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -116,7 +115,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     }
 
     async runAfterEach() {
-        let afters = this.ctx.reflect.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
+        let afters = this.ctx.reflect.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), 'method');
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -126,7 +125,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     }
 
     async runAfter(describe: ISuiteDescribe) {
-        let afters = this.ctx.reflect.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
+        let afters = this.ctx.reflect.class.getDecorDefines<BeforeTestMetadata>(After.toString(), 'method');
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -137,7 +136,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     }
 
     async runTest(desc: ISuiteDescribe) {
-        let tests = this.ctx.reflect.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
+        let tests = this.ctx.reflect.class.getDecorDefines<TestCaseMetadata>(Test.toString(), 'method');
         await lang.step(
             tests.map(df => {
                 return {

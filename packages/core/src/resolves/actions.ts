@@ -62,8 +62,7 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
     if (isClassType(clasType)) {
         let tk = ctx.currTK;
         refl.get(clasType)
-            .decors
-            .some(dec => {
+            .class.decors.some(dec => {
                 if (dec.decorType !== 'class') {
                     return false;
                 }
@@ -179,7 +178,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             }
             const rlt = isClassType(tk) ? refl.get(tk) : null
             if (rlt) {
-                rlt.classDecors.forEach(dec => {
+                rlt.class.classDecors.forEach(dec => {
                     const dprvoider = dec.decorPdr.getProvider(injector)
                     dprvoider.iterator((pdr, tk) => {
                         if (!services.has(tk, alias)

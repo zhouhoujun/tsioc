@@ -193,6 +193,11 @@ export interface ITestReport {
      */
     setCaseCompleted(testCase: ICaseDescribe);
     /**
+     * track error.
+     * @param error 
+     */
+    track(error: Error);
+    /**
      * report.
      *
      * @returns {Promise<void>}

@@ -40,7 +40,7 @@ export class UnitTestRunner extends Runnable {
         oldRunner.unregisterGlobalScope();
         await oldRunner.configureService(ctx);
         const builder = injector.resolve(BuilderService);
-        await lang.step(suites.filter(v => isClass(v) && refl.get<AnnotationReflect>(v).annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: injector })));
+        await lang.step(suites.filter(v => isClass(v) && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: injector })));
         await injector.resolve(TestReport).report();
     }
 }

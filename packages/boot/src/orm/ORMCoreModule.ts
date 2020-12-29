@@ -12,8 +12,8 @@ export class ORMCoreModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
         container.registerType(ExtendBaseTypeMap);
-        const actInjector = container.provider;
-        actInjector.getInstance(StartupGlobalService)
+        const actpdr = container.provider;
+        actpdr.getInstance(StartupGlobalService)
             .useBefore(ConnectionsHandle, ConfigureServiceHandle);
     }
 }

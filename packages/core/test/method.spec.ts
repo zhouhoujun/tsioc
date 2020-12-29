@@ -78,17 +78,17 @@ describe('method exec test', () => {
 
     it('show has prop metadata', () => {
         let refs = refl.get(MethodTest2);
-        expect(refs.hasMetadata(Inject, 'property')).toBeTruthy();
-        expect(refs.hasMetadata(Inject, 'property',  'testAt')).toBeTruthy();
-        expect(refs.hasMetadata(Inject, 'property', 'tester')).toBeFalsy();
-        expect(refs.hasMetadata(Inject, 'method')).toBeFalsy();
+        expect(refs.class.hasMetadata(Inject, 'property')).toBeTruthy();
+        expect(refs.class.hasMetadata(Inject, 'property',  'testAt')).toBeTruthy();
+        expect(refs.class.hasMetadata(Inject, 'property', 'tester')).toBeFalsy();
+        expect(refs.class.hasMetadata(Inject, 'method')).toBeFalsy();
     });
 
     it('show has method metadata', () => {
         let refs = refl.get(MethodTest3);
-        expect(refs.hasMetadata(AutoWired, 'method')).toBeTruthy();
-        expect(refs.hasMetadata(AutoWired, 'method', 'sayHello')).toBeTruthy();
-        expect(refs.hasMetadata(AutoWired, 'method', 'sayHello2')).toBeFalsy();
+        expect(refs.class.hasMetadata(AutoWired, 'method')).toBeTruthy();
+        expect(refs.class.hasMetadata(AutoWired, 'method', 'sayHello')).toBeTruthy();
+        expect(refs.class.hasMetadata(AutoWired, 'method', 'sayHello2')).toBeFalsy();
     });
 
     it('show exec with type and instance', async () => {

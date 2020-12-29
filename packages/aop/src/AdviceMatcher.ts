@@ -51,7 +51,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             if (aspectMeta.annotation) {
                 let annotation = isFunction(aspectMeta.annotation) ? aspectMeta.annotation.toString() : aspectMeta.annotation;
                 let anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
-                if (!tagref.decors.some(d => d.decor === anno)) {
+                if (!tagref.class.decors.some(d => d.decor === anno)) {
                     return [];
                 }
             }
@@ -150,7 +150,7 @@ export class AdviceMatcher implements IAdviceMatcher {
 
         if (metadata.annotation) {
             expresses.push((method: string, fullName: string, targetType?: ClassType, target?: any) => {
-                return relfect.decors.some(d => d.decor === metadata.annotation && d.propertyKey === method);
+                return relfect.class.decors.some(d => d.decor === metadata.annotation && d.propertyKey === method);
             });
             expresses.push('&&')
         }
@@ -161,7 +161,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             let pointcutReg = pointcut;
             if (annPreChkExp.test(pointcutReg.source)) {
                 expresses.push((name: string, fullName: string, targetType?: Type) => {
-                    return relfect.decors.some(n => pointcutReg.test(n.decor));
+                    return relfect.class.decors.some(n => pointcutReg.test(n.decor));
                 });
 
             } else {
@@ -191,9 +191,9 @@ export class AdviceMatcher implements IAdviceMatcher {
             let annotation = aExp.test(exp) ? exp : ('@' + exp);
             return (name: string, fullName: string) => {
                 if (name === 'constructor') {
-                    return reflect.classDecors.some(d => d.decor === annotation);
+                    return reflect.class.classDecors.some(d => d.decor === annotation);
                 }
-                return reflect.methodDecors.some(d => d.decor === annotation);
+                return reflect.class.methodDecors.some(d => d.decor === annotation);
             }
 
         } else if (execContentExp.test(strExp)) {

@@ -93,7 +93,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 
 
 export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.classDecors.forEach(d => {
+    ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getDesignHandle('beforeAnnoation'), ctx);
     });
@@ -103,7 +103,7 @@ export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => vo
 
 
 export const DesignClassDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.classDecors.forEach(d => {
+    ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getDesignHandle('class'), ctx);
     });
@@ -122,7 +122,7 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
 }
 
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.propDecors
+    ctx.reflect.class.propDecors
         .forEach(d => {
             ctx.currDecor = d.decor;
             chain(d.decorPdr.getDesignHandle('property'), ctx);
@@ -217,7 +217,7 @@ export const RegMethodParamsType = function (ctx: DesignContext, next: () => voi
 
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.methodDecors.forEach(d => {
+    ctx.reflect.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getDesignHandle('method'), ctx);
     });
@@ -260,7 +260,7 @@ export class AnnoScope extends IocRegScope<DesignContext> implements IActionSetu
 
 
 export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.classDecors.forEach(d => {
+    ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getDesignHandle('annoation'), ctx);
     });
@@ -269,7 +269,7 @@ export const AnnoDecorScope = function (ctx: DesignContext, next: () => void) {
 }
 
 export const AfterAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.classDecors.forEach(d => {
+    ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
         chain(d.decorPdr.getDesignHandle('afterAnnoation'), ctx);
     });

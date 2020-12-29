@@ -1,4 +1,4 @@
-import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
+import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
 import { LoggerAspect } from '@tsdi/logs';
 import { TestReport } from '../reports/TestReport';
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -20,8 +20,28 @@ export class RunAspect extends LoggerAspect {
         return this.report;
     }
 
+    @AfterThrowing('execution(*.runBefore)')
+    beforeError(joinPoint: Joinpoint) {
+        this.getReport().track(joinPoint.throwing);
+    }
+
+    // @AfterThrowing('execution(*.runBeforeEach)')
+    // beforeEachError(joinPoint: Joinpoint) {
+    //     this.getReport().trackError(joinPoint.throwing);
+    // }
+
+    // @AfterThrowing('execution(*.runAfterEach)')
+    // afterEachError(joinPoint: Joinpoint) {
+    //     this.getReport().trackError(joinPoint.throwing);
+    // }
+
+    @AfterThrowing('execution(*.runAfter)')
+    afterError(joinPoint: Joinpoint) {
+        this.getReport().track(joinPoint.throwing);
+    }
+
     @Around('execution(*.runSuite)')
-    logBefore(joinPoint: Joinpoint) {
+    logSuite(joinPoint: Joinpoint) {
         let runner = joinPoint.target as ISuiteRunner;
         let desc = joinPoint.args[0] as ISuiteDescribe;
         switch (joinPoint.state) {

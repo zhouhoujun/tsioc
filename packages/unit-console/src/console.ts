@@ -16,6 +16,11 @@ import * as chalk from 'chalk';
 })
 export class ConsoleReporter extends RealtimeReporter {
 
+    track(error: Error): void {
+        console.error(error);
+        throw error;
+    }
+
     renderSuite(desc: ISuiteDescribe): void {
         console.log('\n  ', desc.describe, '\n');
     }

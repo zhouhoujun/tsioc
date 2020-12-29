@@ -34,6 +34,12 @@ export class TestReport implements ITestReport {
         this.suites = new Map();
     }
 
+    track(error: Error) {
+        this.resports.forEach(rep=> {
+            rep.render
+        })
+    }
+
     addSuite(suit: Token, describe: ISuiteDescribe) {
         if (!this.suites.has(suit)) {
             describe.start = new Date().getTime();

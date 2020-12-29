@@ -118,64 +118,14 @@ export interface DecorContext extends DecorDefine {
  * type reflect metadata.
  */
 export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadata {
-
+    /**
+     * ioc ext or not.
+     */
     iocExt?: boolean;
-
     /**
      * class type.
      */
     readonly type: ClassType;
-
-    /**
-     * class decorator defines.
-     */
-    readonly classDecors: DecorDefine[];
-    readonly propDecors: DecorDefine[];
-    readonly methodDecors: DecorDefine[];
-    readonly paramDecors: DecorDefine[];
-    /**
-     * all decorator defines of the class type.
-     */
-    readonly decors: DecorDefine[];
-
-    /**
-     * has decorator metadata.
-     * @param decor
-     * @param type
-     */
-    hasMetadata(decor: string | Function): boolean;
-    /**
-     * has decorator metadata.
-     * @param decor
-     * @param type
-     */
-    hasMetadata(decor: string | Function, type: DecorMemberType, propertyKey?: string): boolean;
-    /**
-     * get all class decorator defines.
-     * @param decor
-     */
-    getDecorDefines(decor: string | Function): DecorDefine[];
-    /**
-     * get all decorator defines.
-     * @param decor decorator.
-     * @param type  decorator type.
-     */
-    getDecorDefines<T = any>(decor: string | Function, type: DecorMemberType): DecorDefine<T>[];
-    /**
-     * get all metadata of class decorator.
-     * @param decor the class decorator.
-     */
-    getMetadatas<T = any>(decor: string | Function): T[];
-    /**
-     * get all metadata of the decorator.
-     * @param decor the decorator.
-     * @param type decorator type.
-     */
-    getMetadatas<T = any>(decor: string | Function, type: DecorMemberType): T[];
-    getDecorDefine<T = any>(decor: string | Function): DecorDefine<T>;
-    getDecorDefine<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): DecorDefine<T>;
-    getMetadata<T = any>(decor: string | Function): T;
-    getMetadata<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): T;
     /**
      * class define.
      */

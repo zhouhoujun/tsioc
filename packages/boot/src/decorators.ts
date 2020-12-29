@@ -94,7 +94,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
                 const injector = ctx.injector.getValue(ROOT_INJECTOR);
                 const classType = ctx.type;
                 let startups = injector.get(STARTUPS) || [];
-                const meta = ctx.reflect.getMetadata<BootMetadata>(ctx.currDecor) || {};
+                const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
                 let idx = -1;
                 if (meta.before) {
                     idx = isString(meta.before) ? 0 : startups.indexOf(meta.before);
@@ -367,7 +367,7 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
         afterAnnoation: (ctx, next) => {
             const classType = ctx.type;
             let reflect = ctx.reflect;
-            const { parent, before, after } = reflect.getMetadata<MessageMetadata>(ctx.currDecor);
+            const { parent, before, after } = reflect.class.getMetadata<MessageMetadata>(ctx.currDecor);
             if (!parent || parent === 'none') {
                 return next();
             }
