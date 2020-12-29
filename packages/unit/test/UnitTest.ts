@@ -45,7 +45,7 @@ export class SuiteTest {
         return def.promise;
     }
 
-    @Test('expect test')
+    @Test()
     async testEqural(@Inject(ExpectToken) expect: Expect, @Inject(CONTAINER) conatiner: IContainer) {
         await expect('true').not.toBe(true);
     }
