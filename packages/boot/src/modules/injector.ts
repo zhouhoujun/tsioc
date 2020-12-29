@@ -18,14 +18,14 @@ import { ROOT_INJECTOR } from '../tk';
 export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 
 
-    exports: ModuleRef[];
+    refs: ModuleRef[];
 
     constructor(parent: IInjector) {
         super(parent);
-        this.exports = [];
+        this.refs = [];
         this.onDestroy(() => {
-            this.exports.forEach(mr => mr.destroy());
-            this.exports = [];
+            this.refs.forEach(mr => mr.destroy());
+            this.refs = [];
         });
     }
 
@@ -34,15 +34,15 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
     }
 
     hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
+        return super.hasTokenKey(key) || this.refs.some(r => r.exports.hasTokenKey(key))
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
         const pdr = this.factories.get(key);
         if (!pdr) {
             let instance: T;
-            if (this.exports.some(e => {
-                instance = e.get(key);
+            if (this.refs.some(e => {
+                instance = e.exports.getInstance(key);
                 return !isNil(instance);
             })) {
                 return instance;
@@ -70,10 +70,10 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 
     unregister<T>(token: Token<T>): this {
         super.unregister(token);
-        this.exports.forEach(r => {
+        this.refs.forEach(r => {
             r.exports.unregister(token);
         });
-        lang.remove(this.exports, this.exports?.find(el => el.type === token))
+        lang.remove(this.refs, this.refs?.find(el => el.type === token))
         return this;
     }
 
@@ -82,27 +82,30 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
             return this;
         }
         if (first) {
-            this.exports.unshift(ref);
+            this.refs.unshift(ref);
         } else {
-            this.exports.push(ref);
+            this.refs.push(ref);
         }
         return this;
     }
 
     hasExport(ref: ModuleRef): boolean {
-        return this.exports.indexOf(ref) >= 0;
+        return this.refs.indexOf(ref) >= 0;
     }
 
     unexport(ref: ModuleRef) {
-        return lang.remove(this.exports, ref);
+        return lang.remove(this.refs, ref);
     }
 
     iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
-        if (super.iterator(callbackfn, deep) === false) {
+        if (super.iterator(callbackfn, false) === false) {
             return false;
         }
-        if (this.exports.some(exp => exp.exports.iterator(callbackfn) === false)) {
+        if (this.refs.some(exp => exp.exports.iterator(callbackfn, false) === false)) {
             return false;
+        }
+        if(deep!==false){
+            return this.parent.iterator(callbackfn);
         }
     }
 
@@ -124,7 +127,7 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 
     protected getTknPdr<T>(tokenKey: SymbolType<T>): Type<T> {
         let type;
-        this.exports.some(r => {
+        this.refs.some(r => {
             type = r.exports.getTokenProvider(tokenKey);
             return type;
         });
@@ -133,11 +136,11 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
     }
 
     protected hasValInExports<T>(key: SymbolType<T>): boolean {
-        return this.exports.some(r => r.exports.hasValue(key));
+        return this.refs.some(r => r.exports.hasValue(key));
     }
 
     protected getValInExports<T>(key: SymbolType<T>): T {
-        return this.exports.find(r => r.exports.hasValue(key))?.exports.getValue(key);
+        return this.refs.find(r => r.exports.hasValue(key))?.exports.getValue(key);
     }
 }
 
@@ -186,15 +189,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     }
 
     get<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
-        let instance: T = this.exports.getInstance(key, ...providers);
-        if (!isNil(instance)) return instance;
-        if (this.injector.exports.some(e => {
-            instance = e.get(key);
-            return !isNil(instance);
-        })) {
-            return instance;
-        }
-        return instance;
+        return this.exports.getInstance(key, ...providers);
     }
 
     get imports(): Type[] {
@@ -265,10 +260,93 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         return this;
     }
 
+    hasTokenKey<T>(key: SymbolType<T>): boolean {
+        return super.hasTokenKey(key) || this.mdlInj.refs.some(r => r.exports.hasTokenKey(key))
+    }
+
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
+        const pdr = this.factories.get(key);
+        if (!pdr) {
+            let instance: T;
+            if (this.mdlInj.refs.some(e => {
+                instance = e.exports.getInstance(key);
+                return !isNil(instance);
+            })) {
+                return instance;
+            }
+            return this.parent?.getInstance(key);
+        }
+        if (!isNil(pdr.value)) return pdr.value;
+        if (pdr.expires) {
+            if (pdr.expires > Date.now()) return pdr.cache;
+            pdr.expires = null;
+            pdr.cache = null;
+        }
+        return pdr.fac ? pdr.fac(...providers) ?? null : null;
+    }
+
+    
+    hasValue<T>(token: Token<T>): boolean {
+        const key = getTokenKey(token);
+        return super.hasValue(key) || this.hasValInExports(key);
+    }
+
+    getValue<T>(token: Token<T>): T {
+        const key = getTokenKey(token);
+        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
+    }
+
+
+    iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {
+        if (super.iterator(callbackfn, false) === false) {
+            return false;
+        }
+        if (this.mdlInj.refs.some(exp => exp.exports.iterator(callbackfn, false) === false)) {
+            return false;
+        }
+        if(deep!==false){
+            return this.parent.iterator(callbackfn);
+        }
+    }
+
     export(type: Type) {
         this.set(type, (...pdrs) => this.mdlInj.getInstance(type, ...pdrs));
         this.getContainer().regedState.getRegistered(type).provides?.forEach(p => {
             this.set(p, (...pdrs) => this.mdlInj.get(p, ...pdrs));
         });
+    }
+
+    /**
+     * get token provider class type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {Type<T>}
+     */
+    getTokenProvider<T>(token: Token<T>): Type<T> {
+        let tokenKey = getTokenKey(token);
+        if (isClass(tokenKey)) return tokenKey;
+
+        return this.factories.get(tokenKey)?.provider
+            ?? this.getTknPdr(tokenKey)
+            ?? this.parent?.getTokenProvider(tokenKey);
+    }
+
+    protected getTknPdr<T>(tokenKey: SymbolType<T>): Type<T> {
+        let type;
+        this.mdlInj.refs.some(r => {
+            type = r.exports.getTokenProvider(tokenKey);
+            return type;
+        });
+        return type || null;
+
+    }
+
+    protected hasValInExports<T>(key: SymbolType<T>): boolean {
+        return this.mdlInj.refs.some(r => r.exports.hasValue(key));
+    }
+
+    protected getValInExports<T>(key: SymbolType<T>): T {
+        return this.mdlInj.refs.find(r => r.exports.hasValue(key))?.exports.getValue(key);
     }
 }

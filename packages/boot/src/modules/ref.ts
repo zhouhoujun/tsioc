@@ -14,7 +14,7 @@ export interface IModuleInjector extends IInjector {
     /**
      * export moduleRef
      */
-    readonly exports: ModuleRef[];
+    readonly refs: ModuleRef[];
     /**
      * export di module.
      * @param ref 

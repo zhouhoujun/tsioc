@@ -15,8 +15,6 @@ export class LoadReposTest {
 
     @Before()
     async beforeInit() {
-        console.log('init BootApplication');
-
         this.ctx = await BootApplication.run({
             type: MockBootTest,
             configures: [
@@ -27,13 +25,11 @@ export class LoadReposTest {
                 }
             ]
         });
-
-        console.log(this.ctx);
     }
 
     @Test()
     async hasUserRepository() {
-        expect(this.ctx.get(TypeOrmHelper).getRepository(User)).toBeDefined();
+        expect(this.ctx.injector.get(TypeOrmHelper).getRepository(User)).toBeDefined();
         expect(this.ctx.injector.has(UserRepository)).toBeTruthy();
     }
 

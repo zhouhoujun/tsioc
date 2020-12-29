@@ -1,4 +1,4 @@
-import { DIModule, IBootContext, BootApplication, IConnectionOptions } from '@tsdi/boot';
+import { DIModule, IConnectionOptions } from '@tsdi/boot';
 import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';

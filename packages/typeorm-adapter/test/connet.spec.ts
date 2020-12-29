@@ -35,7 +35,7 @@ export class ReposTest {
 
     @Test()
     async hasUserRepository() {
-        expect(this.ctx.get(TypeOrmHelper).getRepository(User)).toBeDefined();
+        expect(this.ctx.injector.get(TypeOrmHelper).getRepository(User)).toBeDefined();
         expect(this.ctx.injector.has(UserRepository)).toBeTruthy();
     }
 

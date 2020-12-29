@@ -58,6 +58,10 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return url;
     }
 
+    set baseURL(baseURL: string) {
+        this.setValue(PROCESS_ROOT, baseURL);
+    }
+
     getAnnoation<T extends BootstrapMetadata>(): T {
         return this.reflect.annotation as T;
     }
