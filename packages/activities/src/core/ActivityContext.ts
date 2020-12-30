@@ -1,5 +1,4 @@
-import { Injectable, Type, Refs, isToken, Token, SymbolType, isDefined } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Injectable, Type, Refs, isToken, Token, SymbolType, isDefined, IInjector } from '@tsdi/ioc';
 import { BuildContext, createContext } from '@tsdi/boot';
 import { ComponentContext, ITemplateContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
@@ -100,12 +99,12 @@ export class ActivityContext extends ComponentContext<ActivityOption> implements
         return this._executor;
     }
 
-    resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal> {
+    resolveExpression<TVal>(express: Expression<TVal>, injector?: IInjector): Promise<TVal> {
         return this.getExector().resolveExpression(express, injector);
     }
 
 
-    static parse(injector: ICoreInjector, target: Type | ActivityOption): ActivityContext {
+    static parse(injector: IInjector, target: Type | ActivityOption): ActivityContext {
         return createContext(injector, ActivityContext, isToken(target) ? { module: target } : target);
     }
 

@@ -1,6 +1,6 @@
 import {
     RuntimeContext, lang, isClass, Type, isBaseType, DesignContext,
-    ITypeReflects, ActionInjectorToken
+    ITypeReflects, ActionInjectorToken, AnnotationType
 } from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { NonePointcut } from '../decorators';
@@ -184,7 +184,7 @@ function isValAspectTag(targetType: Type, reflects: ITypeReflects): boolean {
     if (!isClass(targetType) || isBaseType(targetType)) {
         return false;
     }
-    if (targetType.ρNPT) {
+    if ((<AnnotationType>targetType).ρNPT) {
         return false;
     }
     return !reflects.hasMetadata(NonePointcut, targetType)

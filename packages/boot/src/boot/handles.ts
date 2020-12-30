@@ -318,9 +318,9 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
 
     let sers: StartupService[] = [];
     const prds = injector.getServiceProviders(StartupService);
-    prds.iterator((fac, tk) => {
+    prds.iterator((pdr, tk) => {
         if (startups.indexOf(tk) < 0) {
-            sers.push(fac(ctx.providers));
+            sers.push(pdr.value ? pdr.value : pdr.fac(ctx.providers));
         }
     });
     if (sers && sers.length) {

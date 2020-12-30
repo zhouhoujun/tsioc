@@ -1,9 +1,7 @@
-import { Modules } from '@tsdi/ioc';
-import { IContainer } from './IContainer';
-import { Container } from './Container';
+import { Container, IContainer, IModuleLoader, LoadType, Modules } from '@tsdi/ioc';
+import { CoreModule } from './CoreModule';
 import { IContainerBuilder } from './IContainerBuilder';
-import { IModuleLoader, ModuleLoader } from './services/loader';
-import { LoadType } from './types';
+import { ModuleLoader } from './services/loader';
 import { ContainerBuilderToken } from './tk';
 
 /**
@@ -26,6 +24,7 @@ export class ContainerBuilder implements IContainerBuilder {
         if (this._loader) {
             container.setValue(ModuleLoader, this._loader);
         }
+        container.registerType(CoreModule);
         return container;
     }
 

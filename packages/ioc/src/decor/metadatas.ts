@@ -1,5 +1,5 @@
 import { ClassType } from '../types';
-import { Token, Provider } from '../tokens';
+import { Token, ProviderType } from '../tokens';
 
 /**
  * metadata
@@ -147,7 +147,7 @@ export interface ProvidersMetadata {
      * @type {KeyValue<Token, Token>}
      * @memberof ProvidersMetadata
      */
-    providers?: Provider[];
+    providers?: ProviderType[];
 }
 
 
@@ -177,10 +177,10 @@ export interface MethodMetadata extends Metadate {
     /**
      * param providers
      *
-     * @type {Provider[]}
+     * @type {ProviderType[]}
      * @memberof MethodMetadata
      */
-    providers?: Provider[];
+    providers?: ProviderType[];
     /**
      * method property key
      *

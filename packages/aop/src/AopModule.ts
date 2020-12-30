@@ -1,7 +1,7 @@
 import {
-    Inject, BeforeCtorScope, AfterCtorScope, IocContainerToken, IIocContainer,
+    Inject, BeforeCtorScope, AfterCtorScope, IContainer,
     RuntimeMthScope, TypeProviderAction, RegSingletionAction, RuntimeLifeScope,
-    CtorArgsAction, ActionInjector, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken
+    CtorArgsAction, DesignRegisterer, RuntimeRegisterer, IocExt, TypeReflectsToken, CONTAINER
 } from '@tsdi/ioc';
 import { Aspect } from './decorators';
 import { Advisor } from './Advisor';
@@ -32,9 +32,9 @@ export class AopModule {
      *
      * @memberof AopModule
      */
-    setup(@Inject(IocContainerToken) container: IIocContainer) {
+    setup(@Inject(CONTAINER) container: IContainer) {
 
-        const actInjector = container.getValue(ActionInjector);
+        const actInjector = container.provider;
         const reflects = container.getValue(TypeReflectsToken);
 
         actInjector

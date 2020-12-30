@@ -1,10 +1,10 @@
 import { ClassType, ObjectMap, Type, DefineClassTypes } from '../types';
-import { Token, Provider } from '../tokens';
+import { Token, ProviderType } from '../tokens';
 import { ITypeReflect } from './ITypeReflect';
 import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
-import { IIocContainer } from '../IIocContainer';
-import { IActionInjector } from '../actions/Action';
+import { IActionProvider } from '../actions/Action';
+import { IContainer } from '../IContainer';
 
 /**
  *  type reflects interface.
@@ -46,7 +46,7 @@ export interface ITypeReflects {
     /**
      * get container.
      */
-    getContainer<T extends IIocContainer>(): T;
+    getContainer(): IContainer;
     /**
      * get injector of type injected.
      * @param type
@@ -55,7 +55,7 @@ export interface ITypeReflects {
     /**
      * get action injector.
      */
-    getActionInjector(): IActionInjector;
+    getActionInjector(): IActionProvider;
     /**
      * is the type extends of base class.
      * @param type the token of type.
@@ -133,10 +133,10 @@ export interface ITypeReflects {
      * @template T
      * @param {ClassType<T>} type
      * @param {string} propertyKey
-     * @returns {Provider[]}
+     * @returns {ProviderType[]}
      * @memberof TypeReflects
      */
-    getParamProviders<T>(type: ClassType<T>, propertyKey: string): Provider[];
+    getParamProviders<T>(type: ClassType<T>, propertyKey: string): ProviderType[];
 
     /**
      * get type class constructor parameters.

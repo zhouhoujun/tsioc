@@ -1,5 +1,4 @@
-import { Singleton, Type, ClassType } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Singleton, Type, ClassType, IInjector, AnnotationType } from '@tsdi/ioc';
 import { IAnnoationContext } from '@tsdi/boot';
 import { ComponentProvider } from '../ComponentProvider';
 import { ElementNode } from './ElementNode';
@@ -31,7 +30,7 @@ export class ElementProvider extends ComponentProvider {
         return target === ComponentRef;
     }
 
-    isElementType(element: ClassType): boolean {
+    isElementType(element: AnnotationType): boolean {
         return element?.ρCT === 'directive';
     }
 
@@ -39,7 +38,7 @@ export class ElementProvider extends ComponentProvider {
         return context instanceof TemplateContext;
     }
 
-    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext {
+    createTemplateContext(injector: IInjector, options?: ITemplateOption): ITemplateContext {
         return TemplateContext.parse(injector, options);
     }
 

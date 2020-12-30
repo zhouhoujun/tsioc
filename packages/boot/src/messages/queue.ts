@@ -1,5 +1,4 @@
-import { isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy, TypeReflectsToken, ClassType, isInjector, Singleton } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { isClass, Injectable, isString, isFunction, Token, isUndefined, INJECTOR, Inject, isToken, Action, AsyncHandler, InjectorProxyToken, InjectorProxy, TypeReflectsToken, ClassType, isInjector, Singleton, IInjector } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './IMessageQueue';
 import { HandleType, IHandle } from '../handles/Handle';
@@ -22,12 +21,12 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
 
 
     @Inject(InjectorProxyToken)
-    private _injector: InjectorProxy<ICoreInjector>;
+    private _injector: InjectorProxy<IInjector>;
 
     /**
      * get injector of current message queue.
      */
-    getInjector(): ICoreInjector {
+    getInjector(): IInjector {
         return this._injector();
     }
 
@@ -78,24 +77,24 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, data: any, injector?: ICoreInjector): Promise<void>;
+    send(event: string, data: any, injector?: IInjector): Promise<void>;
     /**
      * send message
      *
      * @param {string} event
      * @param {string} type
      * @param {*} data
-     * @param {ICoreInjector} [injector]
+     * @param {IInjector} [injector]
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, type: string, data: any, injector?: ICoreInjector): Promise<void>;
-    send(event: any, type?: any, data?: any, injector?: ICoreInjector): Promise<void> {
+    send(event: string, type: string, data: any, injector?: IInjector): Promise<void>;
+    send(event: any, type?: any, data?: any, injector?: IInjector): Promise<void> {
         if (event instanceof MessageContext) {
             return this.execute(event as T);
         } else {
             if (isInjector(data)) {
-                injector = data as ICoreInjector;
+                injector = data as IInjector;
                 data = undefined;
             }
             injector = injector || this.getInjector();

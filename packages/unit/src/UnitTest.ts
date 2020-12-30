@@ -1,5 +1,4 @@
-import { Type } from '@tsdi/ioc';
-import { LoadType } from '@tsdi/core';
+import { Type, LoadType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
 import { BootApplication, DIModule } from '@tsdi/boot';

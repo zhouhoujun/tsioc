@@ -1,12 +1,9 @@
-import { ModuleLoader, IModuleLoader } from '@tsdi/core';
+import { IModuleLoader } from '@tsdi/ioc';
+import { ModuleLoader } from '@tsdi/core';
 
 declare let System: any;
 declare let window: any;
 export class BrowserModuleLoader extends ModuleLoader implements IModuleLoader {
-
-    constructor() {
-        super()
-    }
 
     protected createLoader() {
         if (typeof System !== 'undefined') {

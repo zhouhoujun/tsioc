@@ -1,5 +1,4 @@
-import { Injectable, lang, tokenId, isDefined, TokenId } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Injectable, lang, tokenId, isDefined, TokenId, IInjector } from '@tsdi/ioc';
 import { createContext } from '@tsdi/boot';
 import { IBinding } from '../bindings/IBinding';
 import { PropBinding } from '../bindings/PropBinding';
@@ -93,7 +92,7 @@ export class ParseContext extends ComponentContext<IBindingParseOption> implemen
         return super.setOptions(options);
     }
 
-    static parse(injector: ICoreInjector, options: IBindingParseOption): ParseContext {
+    static parse(injector: IInjector, options: IBindingParseOption): ParseContext {
         return createContext(injector, ParseContext, options);
     }
 }

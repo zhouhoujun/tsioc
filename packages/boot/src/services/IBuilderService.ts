@@ -1,5 +1,4 @@
-import { IocCoreService, ClassType } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { IocCoreService, ClassType, IInjector } from '@tsdi/ioc';
 import { BootOption, IBootContext, IBuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 
@@ -16,7 +15,7 @@ export interface BootSubAppOption<T extends IBootContext> {
      *
      * @memberof SubAppBootOption
      */
-    regExports?: (ctx: T, parent: ICoreInjector) => void;
+    regExports?: (ctx: T, parent: IInjector) => void;
 }
 
 /**

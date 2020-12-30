@@ -1,5 +1,4 @@
-import { Type, Injectable, Token, isToken, isDefined } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Type, Injectable, Token, isToken, isDefined, IInjector } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { IStartup } from '../runnable/Startup';
 import {
@@ -127,7 +126,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return this.context.getValue(CTX_MODULE_BOOT);
     }
 
-    static parse(injector: ICoreInjector, target: Type | BootOption): BootContext {
+    static parse(injector: IInjector, target: Type | BootOption): BootContext {
         return createContext(injector, BootContext, isToken(target) ? { module: target } : target);
     }
 

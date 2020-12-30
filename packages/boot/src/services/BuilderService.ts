@@ -1,8 +1,7 @@
 import {
     IocCoreService, Inject, Singleton, isFunction, isString, isClassType,
-    ClassType, TypeReflectsToken, ITypeReflects, INJECTOR, lang
+    ClassType, TypeReflectsToken, ITypeReflects, INJECTOR, lang, IInjector
 } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext, BootOption, IBootContext, IBuildOption, IBuildContext } from '../Context';
 import { BootContext, isBootContext } from '../boot/ctx';
 import { IBootApplication } from '../IBootApplication';
@@ -12,6 +11,7 @@ import { BuilderServiceToken, CTX_APP_ENVARGS, CTX_MODULE_EXPORTS, ROOT_INJECTOR
 import { ResolveMoudleScope } from '../builder/handles';
 import { BuildContext } from '../builder/ctx';
 import { Handles } from '../handles/Handles';
+import { IModuleInjector } from '../modules/ModuleRef';
 
 
 
@@ -26,7 +26,7 @@ import { Handles } from '../handles/Handles';
 export class BuilderService extends IocCoreService implements IBuilderService {
 
     @Inject(ROOT_INJECTOR)
-    protected root: ICoreInjector;
+    protected root: IModuleInjector;
 
     @Inject(TypeReflectsToken)
     protected reflects: ITypeReflects;
@@ -47,7 +47,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
     }
 
     async build<T>(target: ClassType<T> | IBuildOption<T>): Promise<IBuildContext> {
-        let injector: ICoreInjector;
+        let injector: IInjector;
         let options: IBuildOption;
         let md: ClassType;
         if (isClassType(target)) {
@@ -159,7 +159,7 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             ctx = target as T;
         } else {
             let md: ClassType;
-            let injector: ICoreInjector;
+            let injector: IInjector;
             if (isClassType(target)) {
                 md = target;
             } else {

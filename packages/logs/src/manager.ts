@@ -1,5 +1,4 @@
-import { Inject, Injectable, INJECTOR, isClass, isString, Registration, Singleton, Token, Type } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { IInjector, Inject, Injectable, INJECTOR, isClass, isString, Registration, Singleton, Token, Type } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
 import { LogConfigure } from './LogConfigure';
 import { ILoggerManager, LoggerConfig, IConfigureLoggerManager } from './ILoggerManager';
@@ -23,7 +22,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
     private _config: LogConfigure;
     private _logManger: ILoggerManager;
 
-    constructor(@Inject(INJECTOR) protected injector: ICoreInjector, config?: LogConfigure | Type<LogConfigure>) {
+    constructor(@Inject(INJECTOR) protected injector: IInjector, config?: LogConfigure | Type<LogConfigure>) {
         this.setLogConfigure(config);
     }
 

@@ -1,5 +1,4 @@
-import { IocExt, Inject, IocContainerToken } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { IocExt, Inject, IContainer, CONTAINER } from '@tsdi/ioc';
 import { ConnectionsHandle } from './handle';
 import { ConfigureServiceHandle, StatupServiceScope } from '../boot/handles';
 import { ExtendBaseTypeMap } from './ModelParser';
@@ -11,9 +10,9 @@ import { ExtendBaseTypeMap } from './ModelParser';
 @IocExt()
 export class ORMCoreModule {
 
-    setup(@Inject(IocContainerToken) container: IContainer) {
+    setup(@Inject(CONTAINER) container: IContainer) {
         container.registerType(ExtendBaseTypeMap);
-        const actInjector = container.getActionInjector();
+        const actInjector = container.provider;
         actInjector.getInstance(StatupServiceScope)
             .useBefore(ConnectionsHandle, ConfigureServiceHandle);
     }

@@ -1,5 +1,4 @@
-import { Token } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { IInjector, Token } from '@tsdi/ioc';
 import { HandleType, IHandle } from '../handles/Handle';
 import { MessageContext, MessageOption } from './ctx';
 
@@ -50,18 +49,18 @@ export interface IMessageQueue<T extends MessageContext = MessageContext> extend
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, data: any, injector?: ICoreInjector): Promise<void>;
+    send(event: string, data: any, injector?: IInjector): Promise<void>;
     /**
      * send message
      *
      * @param {string} event
      * @param {string} type
      * @param {*} data
-     * @param {ICoreInjector} [injector]
+     * @param {IInjector} [injector]
      * @returns {Promise<void>}
      * @memberof IMessageQueue
      */
-    send(event: string, type: string, data: any, injector?: ICoreInjector): Promise<void>;
+    send(event: string, type: string, data: any, injector?: IInjector): Promise<void>;
 
     /**
      * subescribe message.

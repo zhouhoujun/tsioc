@@ -1,5 +1,4 @@
-import { Injectable, isDefined } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { IInjector, Injectable, isDefined } from '@tsdi/ioc';
 import { IHandleContext, ProdverOption } from '../Context';
 import { DestoryableContext } from '../annotations/ctx';
 import { CTX_DATA, CTX_MSG_TARGET, CTX_MSG_TYPE, CTX_MSG_EVENT, CTX_CURR_INJECTOR } from '../tk';
@@ -46,7 +45,7 @@ export interface MessageOption extends ProdverOption {
     /**
      * custom set conetext injector of message queue.
      */
-    injector?: ICoreInjector;
+    injector?: IInjector;
 }
 
 /**
@@ -62,7 +61,7 @@ export class MessageContext<T extends MessageOption = MessageOption> extends Des
     /**
      * get injector of current message queue.
      */
-    getQueueInjector(): ICoreInjector {
+    getQueueInjector(): IInjector {
         return this.getValue(CTX_CURR_INJECTOR) ?? this.injector;
     }
 

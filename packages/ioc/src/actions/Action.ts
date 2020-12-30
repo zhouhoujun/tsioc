@@ -7,20 +7,29 @@ import { ITypeReflects } from '../services/ITypeReflects';
 /**
  * action injector.
  */
-export interface IActionInjector extends IInjector {
+export interface IActionProvider extends IProvider {
     /**
      * register action, simple create instance via `new type(this)`.
-     * @param type
+     * @param types
      */
-    regAction<T extends Action>(type: Type<T>): this;
+    regAction(...types: Type<Action>[]): this;
     /**
      * get action via target.
      * @param target target.
      */
-    getAction<T extends Function>(target: Token<Action> | Action | Function): T;
+    getAction<T extends Handler>(target: Token<Action> | Action | Function): T;
 }
 
-export const ActionInjectorToken: TokenId<IActionInjector> = tokenId<IActionInjector>('ACTION_INJECTOR');
+
+/**
+ * 
+ * @deprecated use `IActionProvider` instead.
+ */
+export type IActionInjector = IActionProvider;
+/**
+ * @deprecated will not use, no replace.
+ */
+export const ActionInjectorToken: TokenId<IActionProvider> = tokenId<IActionProvider>('ACTION_INJECTOR');
 
 /**
  * action interface.
@@ -111,7 +120,7 @@ export class IocActions<T extends IocContext = IocContext> extends IocAction<T> 
     protected afters: ActionType[];
     private handlers: Handler[];
 
-    constructor(protected actInjector: IActionInjector) {
+    constructor(protected actInjector: IActionProvider) {
         super();
         this.befores = [];
         this.actions = [];

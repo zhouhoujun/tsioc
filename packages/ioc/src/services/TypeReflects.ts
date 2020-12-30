@@ -1,9 +1,8 @@
 import { ClassType, ObjectMap, Type, MetadataTypes, DefineClassTypes  } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { isUndefined, isClassType, lang } from '../utils/lang';
-import { Token, Provider } from '../tokens';
-import { IInjector, InjectorProxy } from '../IInjector';
-import { IIocContainer } from '../IIocContainer';
+import { Token, ProviderType } from '../tokens';
+import { IInjector } from '../IInjector';
 import { ITypeReflect, TargetDecoractors, TypeDefine } from './ITypeReflect';
 import {
     getMethodMetadata, getPropertyMetadata, getParamMetadata, hasOwnClassMetadata,
@@ -13,10 +12,11 @@ import { IParameter } from '../IMethodAccessor';
 import { Singleton } from '../decor/decorators';
 import { DecoratorProvider } from './decor-pdr';
 import { ITypeReflects } from './ITypeReflects';
-import { IActionInjector } from '../actions/Action';
+import { IActionProvider } from '../actions/Action';
 import { TypeDecorators, RuntimeDecorators } from '../actions/decors';
 import { DesignRegisterer, RuntimeRegisterer } from '../actions/reg';
-import { MethodAccessorToken } from '../utils/tk';
+import { METHOD_ACCESSOR } from '../utils/tk';
+import { IContainer } from '../IContainer';
 
 
 /**
@@ -28,17 +28,17 @@ import { MethodAccessorToken } from '../utils/tk';
  */
 export class TypeReflects extends IocCoreService implements ITypeReflects {
     protected map: Map<ClassType, ITypeReflect>;
-    constructor(private proxy: InjectorProxy<IIocContainer>) {
+    constructor(private container: IContainer) {
         super();
         this.map = new Map();
     }
 
-    getContainer<T extends IIocContainer>(): T {
-        return this.proxy() as T;
+    getContainer(): IContainer {
+        return this.container;
     }
 
-    private _actInj: IActionInjector;
-    getActionInjector(): IActionInjector {
+    private _actInj: IActionProvider;
+    getActionInjector(): IActionProvider {
         if (!this._actInj) {
             this._actInj = this.getContainer().getActionInjector();
         }
@@ -286,10 +286,10 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
      * @template T
      * @param {ClassType<T>} type
      * @param {string} propertyKey
-     * @returns {Provider[]}
+     * @returns {ProviderType[]}
      * @memberof TypeReflects
      */
-    getParamProviders<T>(type: ClassType<T>, propertyKey: string): Provider[] {
+    getParamProviders<T>(type: ClassType<T>, propertyKey: string): ProviderType[] {
         let tref = this.get(type);
         if (tref.methodParamProviders) {
             return tref.methodParamProviders.get(propertyKey) || [];
@@ -324,7 +324,7 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
             return targetReflect.methodParams.get(propertyKey) || [];
         }
         let container = this.getContainer();
-        return container.getInstance(MethodAccessorToken).getParameters(container, type, instance, propertyKey);
+        return container.getInstance(METHOD_ACCESSOR).getParameters(container, type, instance, propertyKey);
     }
 
 }

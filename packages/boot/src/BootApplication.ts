@@ -1,11 +1,12 @@
-import { isArray, isString, isInjector, ClassType, isClassType, Destoryable } from '@tsdi/ioc';
-import { LoadType, IContainerBuilder, ContainerBuilder, IModuleLoader, IContainer, ICoreInjector } from '@tsdi/core';
+import { isArray, isString, isInjector, ClassType, isClassType, Destoryable, LoadType, IModuleLoader, IContainer } from '@tsdi/ioc';
+import { IContainerBuilder, ContainerBuilder } from '@tsdi/core';
 import { BootContext } from './boot/ctx';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BuilderServiceToken, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption } from './Context';
+import { IModuleInjector } from './modules/ModuleRef';
 
 
 /**
@@ -49,14 +50,14 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
         }
 
         container.registerType(BootModule);
+        if (!this.container.has(ROOT_INJECTOR)) {
+            this.container.setValue(ROOT_INJECTOR, ModuleInjector.create(this.container));
+        }
 
         if (!container.has(BootContext)) {
             container.registerType(BootContext);
         }
 
-        if (!this.container.has(ROOT_INJECTOR)) {
-            this.container.setValue(ROOT_INJECTOR, this.container.get(ModuleInjector));
-        }
         container.setValue(BootApplication, this);
 
     }
@@ -110,7 +111,7 @@ export class BootApplication<T extends BootContext = BootContext> extends Destor
         return ctx as T;
     }
 
-    getRootInjector(): ICoreInjector {
+    getRootInjector(): IModuleInjector {
         return this.container.get(ROOT_INJECTOR);
     }
 

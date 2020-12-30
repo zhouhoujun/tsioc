@@ -1,8 +1,7 @@
 import {
     Inject, TypeProviderAction, IocSetCacheAction, IocAutorunAction, IocExt,
-    RegSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScope
+    RegSingletionAction, DesignRegisterer, RuntimeRegisterer, DecoratorScope, IContainer, CONTAINER
 } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
 import { DIModule, Message, Boot, Bootstrap } from './decorators';
 import { MessageContext } from './messages/ctx';
 import { MessageQueue, RootMessageQueue } from './messages/queue';
@@ -38,11 +37,9 @@ export class BootModule {
      *
      * @memberof AopModule
      */
-    setup(@Inject(ContainerToken) container: IContainer) {
-        const proxy = container.getProxy();
-        container.set(ModuleInjector, () => new ModuleInjector(proxy));
-        container.set(ModuleProviders, () => new ModuleProviders(proxy));
-        let actInjector = container.getActionInjector();
+    setup(@Inject(CONTAINER) container: IContainer) {
+
+        let actInjector = container.provider;
 
         actInjector.setValue(StartupDecoratorRegisterer, new StartupDecoratorRegisterer(actInjector))
             .regAction(AnnoationRegisterScope)

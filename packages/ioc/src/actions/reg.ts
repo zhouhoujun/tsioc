@@ -2,7 +2,7 @@ import { Type, DecoratorScope } from '../types';
 import { IocCoreService } from '../IocCoreService';
 import { isClass, Handler, isArray, isString } from '../utils/lang';
 import { Token, Registration } from '../tokens';
-import { IActionInjector, Action, IocAction, IocActions, IocContext } from './Action';
+import { IActionProvider, Action, IocAction, IocActions, IocContext } from './Action';
 import { ITypeReflect } from '../services/ITypeReflect';
 import { TypeReflectsToken } from '../utils/tk';
 
@@ -184,10 +184,10 @@ export abstract class DecorRegisterer<TAction extends Function = Handler> extend
     }
 
 
-    getFuncs(register: IActionInjector, decorator: string | Function): TAction[] {
+    getFuncs(register: IActionProvider, decorator: string | Function): TAction[] {
         let dec = this.getKey(decorator);
         if (!this.funcs.has(dec)) {
-            this.funcs.set(dec, this.get(dec).map(a => register.getAction<TAction>(a)).filter(c => c));
+            this.funcs.set(dec, this.get(dec).map(a => register.getAction<any>(a) as TAction).filter(c => c));
         }
         return this.funcs.get(dec) || [];
     }
@@ -208,7 +208,7 @@ export interface IScopeAction<TAction extends Function = Handler> {
  */
 export abstract class DecorsRegisterer<TAction extends Function = Handler> extends IocCoreService {
     protected map: Map<Token, any>;
-    constructor(protected registerer: IActionInjector) {
+    constructor(protected registerer: IActionProvider) {
         super()
         this.map = new Map();
     }
@@ -250,7 +250,7 @@ export abstract class DecorsRegisterer<TAction extends Function = Handler> exten
         return this.getRegisterer(scope).get<T>(decorator) || [];
     }
 
-    getFuncs(register: IActionInjector, decorator: string | Function, scope: DecoratorScope): TAction[] {
+    getFuncs(register: IActionProvider, decorator: string | Function, scope: DecoratorScope): TAction[] {
         return this.getRegisterer(scope).getFuncs(register, decorator);
     }
 
@@ -324,7 +324,7 @@ export class IocDecorRegisterer<T extends Function = Handler> extends DecorRegis
  */
 export abstract class ExecDecoratorAtion extends IocRegAction<RegContext> {
 
-    constructor(protected actInjector: IActionInjector) {
+    constructor(protected actInjector: IActionProvider) {
         super();
     }
 

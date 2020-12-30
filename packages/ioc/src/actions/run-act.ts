@@ -11,6 +11,7 @@ import {
     ExecDecoratorAtion, DecorsRegisterer, RuntimeRegisterer, IocDecorScope
 } from './reg';
 import { IocCacheManager } from './cache';
+import { METHOD_ACCESSOR } from '../utils/tk';
 
 /**
  * Ioc Register action context.
@@ -190,7 +191,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
             ctx.propertyKey = pkey;
             ctx.params = ctx.targetReflect.methodParams.get('constructor');
         }
-        ctx.args = injector.createParams(ctx.params, ctx.providers);
+        ctx.args = injector.getValue(METHOD_ACCESSOR).createParams(injector, ctx.params, ctx.providers);
     }
     next();
 };

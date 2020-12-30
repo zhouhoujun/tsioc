@@ -1,5 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
-import { ContainerToken, IContainer } from '@tsdi/core';
+import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObject, lang, IContainer, CONTAINER } from '@tsdi/ioc';
 import { IConfigureManager, IConfigureMerger } from './IConfigureManager';
 import { Configure } from './Configure';
 import { ConfigureMgrToken, ConfigureLoaderToken, DefaultConfigureToken, ConfigureMergerToken, ProcessRunRootToken } from '../tk';
@@ -14,7 +13,7 @@ import { ConfigureMgrToken, ConfigureLoaderToken, DefaultConfigureToken, Configu
 @Singleton(ConfigureMgrToken)
 export class ConfigureManager<T extends Configure = Configure> implements IConfigureManager<T> {
 
-    @Inject(ContainerToken) container: IContainer;
+    @Inject(CONTAINER) container: IContainer;
     private config: T;
     protected configs: (string | T)[];
 

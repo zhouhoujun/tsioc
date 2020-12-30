@@ -1,6 +1,5 @@
-import { Modules } from '@tsdi/ioc';
-import { IContainer } from './IContainer';
-import { LoadType } from './types';
+import { IContainer, LoadType, Modules } from '@tsdi/ioc';
+
 
 /**
  * container builder.

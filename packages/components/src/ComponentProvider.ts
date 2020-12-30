@@ -1,9 +1,8 @@
 import {
     Abstract, Type, isString, Inject, lang, TypeReflectsToken, ITypeReflects, IProvider,
     SymbolType, isClass, Token, DECORATOR, DecoratorProvider, tokenId, isMetadataObject,
-    ClassType, Injectable, isTypeObject, isFunction, isDefined, TokenId
+    ClassType, Injectable, isTypeObject, isFunction, isDefined, TokenId, IInjector
 } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
 import { IAnnoationContext } from '@tsdi/boot';
 import {
     COMPONENT_REFS, ELEMENT_REFS, IComponentRef, ITemplateRef, IElementRef,
@@ -95,7 +94,7 @@ export abstract class ComponentProvider {
 
     abstract isTemplateContext(context: IAnnoationContext): boolean;
 
-    abstract createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext;
+    abstract createTemplateContext(injector: IInjector, options?: ITemplateOption): ITemplateContext;
 
     createTemplateRef(context: IAnnoationContext, ...nodes: any[]): ITemplateRef {
         return this.getProviders().getInstance(TEMPLATE_REF,
@@ -109,17 +108,17 @@ export abstract class ComponentProvider {
             { provide: NATIVE_ELEMENT, useValue: target });
     }
 
-    getElementRef(target: any, injector?: ICoreInjector): IElementRef {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as ICoreInjector;
+    getElementRef(target: any, injector?: IInjector): IElementRef {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as IInjector;
         return injector.getValue(ELEMENT_REFS)?.get(target);
     }
 
-    getComponentRef<T>(target: T, injector?: ICoreInjector): IComponentRef<T, any> {
-        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as ICoreInjector;
+    getComponentRef<T>(target: T, injector?: IInjector): IComponentRef<T, any> {
+        injector = injector ?? this.reflects.get(lang.getClass(target)).getInjector() as IInjector;
         return injector.getValue(COMPONENT_REFS)?.get(target);
     }
 
-    getPipe<T extends IPipeTransform>(token: Token<T>, injector: ICoreInjector): T {
+    getPipe<T extends IPipeTransform>(token: Token<T>, injector: IInjector): T {
         return injector.get(token);
     }
 
@@ -206,13 +205,13 @@ export class AstResolver {
      * resolve expression.
      *
      * @param {string} expression
-     * @param {ICoreInjector} [injector]
+     * @param {IInjector} [injector]
      * @param {Object | Map<string, any>} [scope]
      * @param {*} [envOptions]
      * @returns {*}
      * @memberof AstResolver
      */
-    resolve(expression: string, injector: ICoreInjector, scope?: Object | Map<string, any>, envOptions?: any): any {
+    resolve(expression: string, injector: IInjector, scope?: Object | Map<string, any>, envOptions?: any): any {
         if (!expression) {
             return expression;
         }
@@ -240,7 +239,7 @@ export class AstResolver {
         }
     }
 
-    parse(expression: string, injector: ICoreInjector): (scope: Map<string, any>, envOptions?: any) => any {
+    parse(expression: string, injector: IInjector): (scope: Map<string, any>, envOptions?: any) => any {
         if (!expression) {
             return null;
         }
@@ -336,7 +335,7 @@ export class AstResolver {
         return new Function(...scopes, `return ${expression}`) as (...args) => any;
     }
 
-    protected transforms(pipes: string[], injector: ICoreInjector, scopes: string[]): ((value, args: any[], envOptions?: any) => any)[] {
+    protected transforms(pipes: string[], injector: IInjector, scopes: string[]): ((value, args: any[], envOptions?: any) => any)[] {
         return pipes.map(p => {
             let [pipeName, args] = p.split(':');
             let pipe = this.provider.getPipe(pipeName, injector);

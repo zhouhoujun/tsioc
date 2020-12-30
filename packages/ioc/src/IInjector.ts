@@ -1,136 +1,120 @@
-import { Type, Modules } from './types';
-import { lang } from './utils/lang';
-import { SymbolType, Token, InstanceFactory, Factory, InjectReference, Provider } from './tokens';
-import { ResolveOption } from './actions/res';
-import { IIocContainer } from './IIocContainer';
+import { Type, Modules, LoadType } from './types';
+import { SymbolType, Token, FactoryLike, InjectReference, ProviderType, Factory, InstFac } from './tokens';
+import { IContainer } from './IContainer';
 import { IDestoryable } from './Destoryable';
-import { MethodType, IParameter } from './IMethodAccessor';
-
+import { MethodType } from './IMethodAccessor';
 
 /**
- * injector interface.
- *
- * @export
- * @interface IInjector
+ * @deprecated will remove in next version.
  */
-export interface IInjector extends IDestoryable {
+export type InjectorProxy<T extends IProvider = IInjector> = () => T;
+
+/**
+ * provider interface.
+ */
+export interface IProvider extends IDestoryable {
+    /**
+     * parent provider.
+     */
+    readonly parent?: IProvider;
     /**
      * resolver size.
      *
      * @type {number}
-     * @memberof IInjector
      */
     readonly size: number;
     /**
-     * get token.
-     *
-     * @template T
-     * @param {Token<T>} target
-     * @param {string} [alias]
-     * @returns {Token<T>}
-     * @memberof IInjector
-     */
-    getToken<T>(target: Token<T>, alias?: string): Token<T>;
-    /**
-     * get tocken key.
-     *
-     * @template T
-     * @param {Token<T>} token the token.
-     * @param {string} [alias] addtion alias
-     * @returns {SymbolType<T>}
-     * @memberof IInjector
-     */
-    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
-    /**
      * get root container.
      */
-    getContainer(): IIocContainer;
-    /**
-     *  get injector proxy
-     */
-    getProxy(): InjectorProxy<this>;
-    /**
-     * has token key.
-     *
-     * @template T
-     * @param {SymbolType<T>} key the token key.
-     * @returns {boolean}
-     * @memberof IInjector
-     */
-    hasTokenKey<T>(key: SymbolType<T>): boolean;
+    getContainer(): IContainer;
     /**
      * has register.
      *
      * @template T
      * @param {Token<T>} token the token.
+     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
-     * @memberof IInjector
      */
-    has<T>(token: Token<T>): boolean;
+    has<T>(token: Token<T>, deep?: boolean): boolean;
     /**
      * has token in current injector.
      *
      * @template T
      * @param {Token<T>} token the token.
      * @param {string} alias addtion alias
+     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
-     * @memberof IInjector
      */
-    has<T>(token: Token<T>, alias: string): boolean;
+    has<T>(token: Token<T>, alias: string, deep?: boolean): boolean;
+
+    /**
+     * has register, check in parent deep.
+     * @deprecated use `has(token, true)`, `has(token, 'alias', true)` instead.
+     * @param token 
+     * @param alias 
+     */
+    hasRegister<T>(token: Token<T>, alias?: string): boolean;
+
+    /**
+     * get token key.
+     * @deprecated  use global `getTokenKey` instead.
+     * @param token 
+     * @param alias 
+     */
+    getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T>;
+    /**
+     * has token key.
+     *
+     * @template T
+     * @param {SymbolType<T>} key the token key.
+     * @param {boolean} deep deep check in parent or not.
+     * @returns {boolean}
+     */
+    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean;
     /**
      * has value or not.
      * @param key
+     * @param {boolean} deep deep check in parent or not.
      */
-    hasValue<T>(key: SymbolType<T>): boolean;
-    /**
-     * has register in the injector or root container.
-     * @param token the token.
-     */
-    hasRegister<T>(token: Token<T>): boolean;
-    /**
-     * has register in the injector or root container.
-     * @param {Token<T>} token the token.
-     * @param {string} alias addtion alias.
-     */
-    hasRegister<T>(token: Token<T>, alias: string): boolean;
+    hasValue<T>(key: Token<T>, deep?: boolean): boolean;
     /**
      * get token instace in current injector or root container.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
-     * @memberof IIocContainer
      */
-    get<T>(token: Token<T>, ...providers: Provider[]): T;
+    get<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
      * get token instace in current injector or root container.
      *
      * @template T
      * @param {Token<T>} token
      * @param {string} alias
-     * @param {...Provider[]} providers
+     * @param {boolean} deep get token instance deep in parent or not.
+     * @param {...ProviderType[]} providers
      * @returns {T}
-     * @memberof IInjector
      */
-    get<T>(token: Token<T>, alias: string, ...providers: Provider[]): T;
+    get<T>(token: Token<T>, alias: string, ...providers: ProviderType[]): T;
     /**
      * get token instance in current injector or root container.
      *
      * @template T
      * @param {SymbolType<T>} key
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
-     * @memberof IInjector
      */
-    getInstance<T>(key: SymbolType<T>, ...providers: Provider[]): T;
+    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T;
     /**
      * get value.
      * @param token token key.
+     * @param {boolean} deep get token value deep in parent or not.
      */
-    getValue<T>(token: Token<T>): T;
+    getValue<T>(token: Token<T>, deep?: boolean): T;
     /**
      * get the first value via tokens.
+     * @deprecated will remove in next version.
      * @param tokens
      */
     getFirstValue<T>(...tokens: Token<T>[]): T;
@@ -146,92 +130,223 @@ export interface IInjector extends IDestoryable {
      */
     delValue<T>(token: Token<T>): void;
     /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {...Provider[]} providers
-     * @returns {T}
-     * @memberof IIocContainer
-     */
-    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {ResolveOption<T>} option  resolve option
-     * @param {...Provider[]} providers
-     * @returns {T}
-     * @memberof IIocContainer
-     */
-    resolve<T>(option: ResolveOption<T>, ...providers: Provider[]): T;
-    /**
     * get token implement class type.
     *
     * @template T
     * @param {Token<T>} token
     * @param {ResoveWay} [resway]
     * @returns {Type<T>}
-    * @memberof IInjector
     */
-    getTokenProvider<T>(token: Token<T>): Type<T>;
-    /**
-     * get token factory.
-     *
-     * @template T
-     * @param {SymbolType<T>} key
-     * @returns {InstanceFactory<T>}
-     * @memberof IInjector
-     */
-    getTokenFactory<T>(key: SymbolType<T>): InstanceFactory<T>;
+    getTokenProvider<T>(token: Token<T>): Type<T>
     /**
      * set provide.
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {InstanceFactory<T>} fac
+     * @param {InstFac<T>} fac
      * @param {Type<T>} [providerType]
      * @returns {this}
-     * @memberof IInjector
      */
-    set<T>(provide: Token<T>, fac: InstanceFactory<T>, providerType?: Type<T>): this;
+    set<T>(provide: Token<T>, fac: InstFac<T>): this;
+    /**
+     * set provide.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Factory<T>} fac
+     * @param {Type<T>} [providerType]
+     * @returns {this}
+     */
+    set<T>(provide: Token<T>, fac: Factory<T>, providerType?: Type<T>): this;
+    /**
+     * inject providers.
+     *
+     * @param {...ProviderType[]} providers
+     * @returns {this}
+     */
+    inject(...providers: ProviderType[]): this;
+    /**
+     * register type class.
+     * @param type the class type.
+     * @param [options] the class prodvider to.
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    /**
+     * register type class.
+     * @param type the class type.
+     * @param [provide] the class prodvider to.
+     * @param [singleton]
+     * @returns {this}
+     */
+    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    /**
+     * unregister the token
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @returns {this}
+     */
+    unregister<T>(token: Token<T>): this;
+    /**
+     * iterator current resolver.
+     *
+     * @param {((pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void|boolean)} callbackfn
+     * @param {boolean} [deep] deep iterator all register in parent or not.
+     * @returns {(void|boolean)}
+     */
+    iterator(callbackfn: (pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
+    /**
+     * copy injector to current injector.
+     *
+     * @param {IProvider} target copy from
+     * @param {(key: SymbolType) => boolean} filter token key filter
+     * @returns {this} current injector.
+     */
+    copy(from: IProvider, filter?: (key: SymbolType) => boolean): this;
+    /**
+     * clone this injector to.
+     * @param to
+     */
+    clone(to?: IProvider): IProvider;
+    /**
+     * clone this injector to.
+     * @param {(key: SymbolType) => boolean} filter token key filter
+     * @param to
+     */
+    clone(filter: (key: SymbolType) => boolean, to?: IProvider): IProvider;
+}
+
+/**
+ * resovle action option.
+ *
+ */
+export interface ResolveOption<T = any> {
+    /**
+     * token.
+     */
+    token?: Token<T>;
+    /**
+     * resolve token in target context.
+     */
+    target?: Token | Object | (Token | Object)[];
+    /**
+     * only for target private or ref token. if has target.
+     */
+    tagOnly?: boolean;
+    /**
+     * all faild use the default token to get instance.
+     */
+    defaultToken?: Token<T>;
+    /**
+     * register token if has not register.
+     *
+     */
+    regify?: boolean;
+
+    /**
+     * resolve providers.
+     */
+    providers?: ProviderType;
+
+}
+
+
+/**
+ * service context option.
+ *
+ * @export
+ * @interface ServiceOption
+ * @extends {ResovleActionOption}
+ */
+export interface ServiceOption<T> extends ResolveOption<T> {
+    /**
+     * token provider service type.
+     *
+     * @type {Type}
+     */
+    tokens?: Token<T>[];
+
+    /**
+     * token alias.
+     *
+     * @type {string}
+     */
+    alias?: string;
+    /**
+     * get extend servie or not.
+     *
+     * @type {boolean}
+     */
+    extend?: boolean;
+}
+
+/**
+ * services context options
+ *
+ * @export
+ * @interface ServicesOption
+ * @extends {ServiceOption}
+ */
+export interface ServicesOption<T> extends ServiceOption<T> {
+    /**
+     * get services both in container and target private refrence service.
+     *
+     * @type {boolean}
+     */
+    both?: boolean;
+}
+
+
+/**
+ * injector interface.
+ *
+ * @export
+ * @interface IInjector
+ */
+export interface IInjector extends IProvider {
+
+    readonly parent?: IInjector;
+    /**
+     * use modules.
+     *
+     * @param {...Modules[]} modules
+     * @returns {Type[]}
+     */
+    use(...modules: Modules[]): Type[];
+
+    /**
+     * @deprecated will remove in next version.
+     */
+    getProxy<T extends IInjector>(): InjectorProxy<T>;
+
     /**
      * register type.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {Factory<T>} [fac]
+     * @param {FactoryLike<T>} [fac]
      * @returns {this}
-     * @memberof IInjector
      */
-    register<T>(token: Token<T>, fac?: Factory<T>): this;
+    register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
      * register stingleton type.
      *
      * @template T
      * @param {Token<T>} token
-     * @param {Factory<T>} fac
+     * @param {FactoryLike<T>} fac
      * @returns {this}
-     * @memberOf IInjector
      */
-    registerSingleton<T>(token: Token<T>, fac?: Factory<T>): this;
-    /**
-     * register type class.
-     * @param Type the class.
-     * @param [provide] the class prodvider to.
-     * @param [singleton]
-     */
-    registerType<T>(Type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
      * bind provider
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {Token<T> | Factory<T>} provider
+     * @param {Type<T>} provider
      * @returns {this}
-     * @memberof IInjector
      */
-    bindProvider<T>(provide: Token<T>, provider: Token<T> | Factory<T>): this;
+    bindProvider<T>(provide: Token<T>, provider: Type<T>): this;
     /**
      * bind provider ref to target.
      * @param target the target, provide ref to.
@@ -239,124 +354,123 @@ export interface IInjector extends IDestoryable {
      * @param provider provider factory or token.
      * @param alias alias.
      */
-    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Token<T> | Factory<T>, alias?: string): InjectReference<T>;
+    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Type<T>, alias?: string): InjectReference<T>;
     /**
      * bind target providers.
      * @param target
      * @param providers
      */
-    bindTagProvider(target: Token, ...providers: Provider[]): InjectReference<IInjector>;
+    bindTagProvider(target: Token, ...providers: ProviderType[]): InjectReference<IProvider>;
+
     /**
-     * inject providers.
-     *
-     * @param {...Provider[]} providers
-     * @returns {this}
-     * @memberof IInjector
-     */
-    inject(...providers: Provider[]): this;
-    /**
-     * inject modules
-     *
-     * @param {...Modules[]} modules
-     * @returns {Type[]} the class types in modules.
-     * @memberof IInjector
-     */
-    injectModule(...modules: Modules[]): Type[];
-    /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     * @memberof IInjector
-     */
-    use(...modules: Modules[]): this;
-    /**
-     * unregister the token
+     * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {Token<T>} token
-     * @returns {this}
-     * @memberof IInjector
+     * @param {Token<T>} token the token to resolve.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
      */
-    unregister<T>(token: Token<T>): this;
+    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
-     * clear cache.
+     * resolve token instance with token and param provider.
      *
-     * @param {Type} targetType
-     * @memberof IContainer
+     * @template T
+     * @param {ResolveOption<T>} option  resolve option
+     * @param {...ProviderType[]} providers
+     * @returns {T}
      */
-    clearCache(targetType: Type): this;
-    /**
-     * iterator current resolver.
-     *
-     * @param {((fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void|boolean)} callbackfn
-     * @param {boolean} [deep] deep iterator all register.
-     * @returns {(void|boolean)}
-     * @memberof IInjector
-     */
-    iterator(callbackfn: (fac: InstanceFactory, tk: Token, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean;
-    /**
-     * copy injector to current injector.
-     *
-     * @param {IInjector} injector copy from
-     * @param {(key: SymbolType) => boolean} filter token key filter
-     * @returns {this} current injector.
-     * @memberof IInjector
-     */
-    copy(injector: IInjector, filter?: (key: SymbolType) => boolean): this;
-    /**
-     * clone this injector to.
-     * @param to
-     */
-    clone(to?: IInjector): IInjector;
-    /**
-     * clone this injector to.
-     * @param {(key: SymbolType) => boolean} filter token key filter
-     * @param to
-     */
-    clone(filter: (key: SymbolType) => boolean, to?: IInjector): IInjector;
+    resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
      * @template T
      * @param {(Token<T> | T)} target type class
      * @param {MethodType<T>} propertyKey
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {TR}
-     * @memberof IMethodAccessor
      */
-    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+
     /**
-     * create params instances with IParameter and provider
+     * get module loader.
      *
-     * @param {IParameter[]} params
-     * @param {...AsyncParamProvider[]} providers
-     * @returns {Promise<any[]>}
-     * @memberof IMethodAccessor
+     * @returns {IModuleLoader}
      */
-    createParams(params: IParameter[], ...providers: Provider[]): any[];
+    getLoader(): IModuleLoader;
+    /**
+     * load modules.
+     *
+     * @param {...LoadType[]} modules load modules.
+     * @returns {Promise<Type[]>}  types loaded.
+     */
+    load(...modules: LoadType[]): Promise<Type[]>;
+
+    /**
+     * get service or target reference service in the injector.
+     *
+     * @template T
+     * @param {(Token<T> | ServiceOption<T>)} target servive token.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
+
+    /**
+     * get all service extends type.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target servive token or express match token.
+     * @param {...ProviderType[]} providers
+     * @returns {T[]} all service instance type of token type.
+     */
+    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
+
+    /**
+     * get all provider service in the injector.
+     *
+     * @template T
+     * @param {(Token<T> | ServicesOption<T>)} target
+     * @returns {IProvider}
+     */
+    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 }
 
-const injectorKey = 'injector';
+
 /**
- * object is provider map or not.
+ * module loader interface for ioc.
  *
  * @export
- * @param {object} target
- * @returns {target is Injector}
+ * @interface IModuleLoader
  */
-export function isInjector(target: any): target is IInjector {
-    return lang.getClass(target)?.ρCT === injectorKey;
-}
+export interface IModuleLoader {
+    /**
+     * load modules by files patterns, module name or modules.
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Modules[]>}
+     */
+    load(...modules: LoadType[]): Promise<Modules[]>;
 
-/**
- * injector proxy of current injector.
- */
-export type InjectorProxy<T extends IInjector = IInjector> = () => T;
+    /**
+     * register types.
+     * @param modules 
+     */
+    register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]>;
 
-/**
- * provider interface.
- */
-export interface IProvider extends IInjector {
+    /**
+     * dynamic require file.
+     *
+     * @param {string} fileName
+     * @returns {Promise<any>}
+     */
+    require(fileName: string): Promise<any>;
+
+    /**
+     * load all class types in modules
+     *
+     * @param {...LoadType[]} modules
+     * @returns {Promise<Type[]>}
+     */
+    loadTypes(...modules: LoadType[]): Promise<Type[][]>;
 
 }

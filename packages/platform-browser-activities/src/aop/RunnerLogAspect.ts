@@ -1,5 +1,4 @@
-import { Inject, lang } from '@tsdi/ioc';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { CONTAINER, IContainer, Inject, lang } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
 import { WorkflowInstance } from '@tsdi/activities';
@@ -16,7 +15,7 @@ import { WorkflowInstance } from '@tsdi/activities';
 })
 export class RunnerLogAspect extends LogProcess {
 
-    constructor(@Inject(ContainerToken) container: IContainer) {
+    constructor(@Inject(CONTAINER) container: IContainer) {
         super(container);
     }
 

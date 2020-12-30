@@ -1,10 +1,10 @@
 import { isFunction, lang, isString } from '../utils/lang';
 import { IocCoreService } from '../IocCoreService';
-import { Token, Provider, Factory, TokenId, tokenId } from '../tokens';
-import { IInjector, IProvider, InjectorProxy } from '../IInjector';
+import { Token, ProviderType, Factory, TokenId, tokenId } from '../tokens';
+import { IProvider } from '../IInjector';
 import { ITypeReflects } from './ITypeReflects';
-import { IIocContainer } from '../IIocContainer';
 import { PROVIDERS } from '../utils/tk';
+import { IContainer } from '../IContainer';
 
 /**
  * current decorator provide token key
@@ -18,9 +18,9 @@ export const DECORATOR: TokenId<string> = tokenId<string>('DECORATOR_KEY')
  * @extends {IocCoreService}
  */
 export class DecoratorProvider extends IocCoreService {
-    protected map: Map<string, IInjector>;
+    protected map: Map<string, IProvider>;
 
-    constructor(private proxy: InjectorProxy<IIocContainer>) {
+    constructor(private container: IContainer) {
         super()
         this.map = new Map();
     }
@@ -28,7 +28,7 @@ export class DecoratorProvider extends IocCoreService {
     private reflects: ITypeReflects;
     getTypeReflects() {
         if (!this.reflects) {
-            this.reflects = this.proxy().getTypeReflects();
+            this.reflects = this.container.getTypeReflects();
         }
         return this.reflects;
     }
@@ -75,11 +75,11 @@ export class DecoratorProvider extends IocCoreService {
      * @template T
      * @param {string} decorator
      * @param {Token<T>} provide
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      * @memberof DecoratorProvider
      */
-    resolve<T>(decorator: string | Function | object, provide: Token<T>, ...providers: Provider[]): T {
+    resolve<T>(decorator: string | Function | object, provide: Token<T>, ...providers: ProviderType[]): T {
         decorator = this.getKey(decorator);
         if (decorator && this.map.has(decorator)) {
             return this.map.get(decorator).get(provide, ...providers);
@@ -88,7 +88,7 @@ export class DecoratorProvider extends IocCoreService {
     }
 
     register<T>(decorator: string | Function, provide: Token<T>, provider: Factory<T>): this {
-        this.existify(decorator).register(provide, provider);
+        this.existify(decorator).set(provide, provider);
         return this;
     }
 
@@ -100,7 +100,7 @@ export class DecoratorProvider extends IocCoreService {
         return this;
     }
 
-    bindProviders(decorator: string | Function, ...providers: Provider[]): this {
+    bindProviders(decorator: string | Function, ...providers: ProviderType[]): this {
         this.existify(decorator).inject(...providers);
         return this;
     }
@@ -112,7 +112,7 @@ export class DecoratorProvider extends IocCoreService {
     existify(decorator: string | Function): IProvider {
         decorator = this.getKey(decorator);
         if (!this.map.has(decorator)) {
-            this.map.set(decorator, this.proxy().getInstance(PROVIDERS).inject({ provide: DECORATOR, useValue: decorator }));
+            this.map.set(decorator, this.container.getInstance(PROVIDERS).inject({ provide: DECORATOR, useValue: decorator }));
         }
         return this.map.get(decorator);
     }

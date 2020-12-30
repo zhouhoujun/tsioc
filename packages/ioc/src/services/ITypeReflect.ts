@@ -1,6 +1,6 @@
 import { ClassType, ObjectMap, DecoratorScope } from '../types';
 import { lang } from '../utils/lang';
-import { Token, Provider } from '../tokens';
+import { Token, ProviderType } from '../tokens';
 import { IParameter } from '../IMethodAccessor';
 import { IInjector } from '../IInjector';
 import { InjectableMetadata } from '../decor/metadatas';
@@ -192,10 +192,10 @@ export interface ITypeReflect extends InjectableMetadata {
     /**
      * method param providers.
      *
-     * @type {ObjectMap<Provider[]>}
+     * @type {ObjectMap<ProviderType[]>}
      * @memberof ITypeReflect
      */
-    methodParamProviders: Map<string, Provider[]>;
+    methodParamProviders: Map<string, ProviderType[]>;
     /**
      * this class provides.
      *

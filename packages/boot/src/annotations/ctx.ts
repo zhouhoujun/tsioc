@@ -1,8 +1,7 @@
 import {
     Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, IProvider, Destoryable,
-    PROVIDERS, ITypeReflects, TypeReflectsToken, SymbolType, Provider, isInjector, isArray, isBoolean
+    PROVIDERS, ITypeReflects, TypeReflectsToken, SymbolType, ProviderType, isInjector, isArray, isBoolean, IContainer, getTokenKey
 } from '@tsdi/ioc';
-import { IContainer, ICoreInjector } from '@tsdi/core';
 import {
     CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT,
     CTX_OPTIONS, CTX_TARGET_RELF, CTX_PROVIDERS
@@ -26,7 +25,7 @@ export function createContext<Ctx extends IAnnoationContext>(injector: IInjector
 export class DestoryableContext<T extends ProdverOption> extends Destoryable {
     public context: IProvider;
 
-    constructor(@Inject(INJECTOR) injector: ICoreInjector) {
+    constructor(@Inject(INJECTOR) injector: IInjector) {
         super();
         this.context = injector.get(PROVIDERS);
         this.context.setValue(INJECTOR, injector);
@@ -35,8 +34,8 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable {
     /**
      * raise injector of this context.
      */
-    get injector(): ICoreInjector {
-        return this.context.getValue(INJECTOR) as ICoreInjector;
+    get injector(): IInjector {
+        return this.context.getValue(INJECTOR) as IInjector;
     }
 
     /**
@@ -144,9 +143,9 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable {
     /**
      * set context provider of boot application.
      *
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      */
-    set(...providers: Provider[]);
+    set(...providers: ProviderType[]);
     set(...providers: any[]) {
         if (providers.length === 2 && isToken(providers[0])) {
             let provde = providers[0];
@@ -237,7 +236,7 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable {
  */
 export class AnnoationContext<T extends AnnoationOption = AnnoationOption> extends DestoryableContext<T> implements IAnnoationContext<T> {
 
-    static parse(injector: ICoreInjector, target: ClassType | AnnoationOption): AnnoationContext {
+    static parse(injector: IInjector, target: ClassType | AnnoationOption): AnnoationContext {
         return createContext(injector, AnnoationContext, isToken(target) ? { type: target } : target);
     }
 
@@ -281,7 +280,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption> exten
      * @param token
      */
     getContext<T>(token: Token<T>, success?: (value: T) => void): T {
-        let key = this.injector.getTokenKey(token);
+        let key = getTokenKey(token);
         let value = this.getInstance(key);
         if (isDefined(value)) {
             success && success(value);
@@ -307,7 +306,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption> exten
         if (this.destroyed) {
             return null;
         }
-        let key = this.injector.getTokenKey(token);
+        let key = getTokenKey(token);
         let value = this.context.getValue(key);
         if (isDefined(value)) {
             success && success(value);

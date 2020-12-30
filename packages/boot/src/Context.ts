@@ -1,8 +1,7 @@
 import {
-    ClassType, IDestoryable, IInjector, IocContext, IProvider, ITypeReflects, ObjectMap,
-    Provider, RegInMetadata, SymbolType, Token, Type
+    ClassType, IContainer, IDestoryable, IInjector, IModuleLoader, IocContext, IProvider, ITypeReflects, LoadType, ObjectMap,
+    ProviderType, RegInMetadata, SymbolType, Token, Type
 } from '@tsdi/ioc';
-import { IContainer, ICoreInjector, IModuleLoader, LoadType } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
 import { IConfigureManager } from './configure/IConfigureManager';
 import { IAnnoationReflect, IAnnotationMetadata } from './annotations/reflect';
@@ -16,14 +15,14 @@ export interface ProdverOption {
     /**
      * providers for contexts.
      *
-     * @type {(Provider[] | IProvider)}
+     * @type {(ProviderType[] | IProvider)}
      */
-    contexts?: Provider[] | IProvider;
+    contexts?: ProviderType[] | IProvider;
 
     /**
      *  providers.
      */
-    providers?: Provider[] | IInjector;
+    providers?: ProviderType[] | IProvider;
 }
 
 /**
@@ -71,7 +70,7 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     /**
      * current injector.
      */
-    readonly injector: ICoreInjector;
+    readonly injector: IInjector;
 
     /**
      * current context providers.
@@ -173,9 +172,9 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     /**
      * set context provider of boot application.
      *
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      */
-    set(...providers: Provider[]);
+    set(...providers: ProviderType[]);
     /**
      * get root container.
      */
@@ -296,7 +295,7 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
     /**
      * injector.
      */
-    injector?: ICoreInjector;
+    injector?: IInjector;
 }
 
 
@@ -321,7 +320,7 @@ export interface IBuildOption<T = any> extends AnnoationOption<T> {
     /**
      * module reslove in the injector.
      */
-    injector?: ICoreInjector;
+    injector?: IInjector;
 }
 
 

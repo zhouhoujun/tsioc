@@ -1,5 +1,4 @@
-import { Type, Singleton, SymbolType, ClassType } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Type, Singleton, SymbolType, ClassType, IInjector, AnnotationType } from '@tsdi/ioc';
 import { AnnoationContext } from '@tsdi/boot';
 import { ComponentProvider, ITemplateOption, ITemplateContext, CONTEXT_REF, NATIVE_ELEMENT, IElementRef, IComponentRef } from '@tsdi/components';
 import { SequenceActivity } from './activities';
@@ -53,7 +52,7 @@ export class ActivityProvider extends ComponentProvider {
         return context instanceof ActivityContext;
     }
 
-    createTemplateContext(injector: ICoreInjector, options?: ITemplateOption): ITemplateContext {
+    createTemplateContext(injector: IInjector, options?: ITemplateOption): ITemplateContext {
         return ActivityTemplateContext.parse(injector, options);
     }
 
@@ -74,7 +73,7 @@ export class ActivityProvider extends ComponentProvider {
         return attrSelPrefix.test(selector) ? selector : `ACT_ATTR_${selector}`;
     }
 
-    isElementType(element: ClassType): boolean {
+    isElementType(element: AnnotationType): boolean {
         return  element?.ρCT === 'activity';
     }
 }

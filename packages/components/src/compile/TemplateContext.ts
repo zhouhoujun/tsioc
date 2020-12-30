@@ -1,5 +1,4 @@
-import { Injectable, Type, tokenId, TokenId } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Injectable, Type, tokenId, TokenId, IInjector } from '@tsdi/ioc';
 import { createContext } from '@tsdi/boot';
 import { ComponentContext, IComponentOption, IComponentContext  } from '../ComponentContext';
 
@@ -37,7 +36,7 @@ export interface ITemplateContext<T extends ITemplateOption = ITemplateOption> e
 @Injectable
 export class TemplateContext extends ComponentContext<ITemplateOption> implements ITemplateContext<ITemplateOption> {
     selector?: Type;
-    static parse(injector: ICoreInjector, options: ITemplateOption): TemplateContext {
+    static parse(injector: IInjector, options: ITemplateOption): TemplateContext {
         return createContext(injector, TemplateContext, options);
     }
 }

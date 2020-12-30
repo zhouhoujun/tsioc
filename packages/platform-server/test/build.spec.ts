@@ -1,7 +1,8 @@
-import { IContainer, ContainerBuilder } from '@tsdi/core';
+import { ContainerBuilder } from '@tsdi/core';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import { ServerModule } from '../src/ServerModule';
 import expect = require('expect');
+import { IContainer } from '@tsdi/ioc';
 
 describe('auto register with build', () => {
 

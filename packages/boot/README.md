@@ -121,7 +121,7 @@ export class Logger {
     bootstrap: ClassSevice
 })
 export class ModuleB {
-    constructor(test: TestService, @Inject(INJECTOR) private injector: ICoreInjector) {
+    constructor(test: TestService, @Inject(INJECTOR) private injector: IInjector) {
         // the injector is the module injected in.
         console.log(test);
         test.test();

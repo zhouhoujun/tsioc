@@ -1,6 +1,6 @@
 import {
     DecoratorProvider, isNullOrUndefined, isClassType, InjectReference,
-    IocResolveScope, IActionSetup, isToken, lang, Provider, PROVIDERS
+    IocResolveScope, IActionSetup, isToken, lang, ProviderType, PROVIDERS, getTokenKey
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
@@ -141,9 +141,10 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
             // after all resolve default.
             let defaultTk = ctx.defaultToken;
             if (defaultTk) {
-                let key = ctx.injector.getTokenKey(defaultTk);
-                if (ctx.injector.hasRegister(key, ctx.alias)) {
-                    ctx.services.set(key, ctx.injector.getTokenFactory(key));
+                const injector = ctx.injector;
+                let key = getTokenKey(defaultTk);
+                if (injector.has(key, ctx.alias, true)) {
+                    ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
                 }
             }
         }
@@ -189,7 +190,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             types.forEach(ty => {
                 let reftk = new InjectReference(ty, tk);
                 if (!services.has(reftk, alias) && injector.hasRegister(reftk)) {
-                    services.set(reftk, (...providers: Provider[]) => injector.resolve(reftk, ...providers))
+                    services.set(reftk, (...providers: ProviderType[]) => injector.resolve(reftk, ...providers))
                 }
             });
         });

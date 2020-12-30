@@ -1,5 +1,5 @@
 // use core-js in browser.
-import { ObjectMap, Type, AbstractType, Modules, ClassType } from '../types';
+import { ObjectMap, Type, AbstractType, Modules, ClassType, AnnotationType } from '../types';
 import { clsUglifyExp, clsStartExp } from './exps';
 
 
@@ -126,7 +126,7 @@ export namespace lang {
      * @param {ClassType} target
      * @returns
      */
-    export function getClassAnnations(target: ClassType) {
+    export function getClassAnnations(target: AnnotationType) {
         let annf: Function = target.ρAnn || target['d0Ann'] || target['getClassAnnations'];
         return isFunction(annf) ? annf.call(target) : null;
     }
@@ -138,7 +138,7 @@ export namespace lang {
      * @param {ClassType} target
      * @returns {boolean}
      */
-    export function hasClassAnnations(target: ClassType): boolean {
+    export function hasClassAnnations(target: AnnotationType): boolean {
         return isFunction(target.ρAnn || target['d0Ann'] || target['getClassAnnations']);
     }
 
@@ -458,16 +458,40 @@ export function isObservable(target: any): boolean {
     return toString.call(target) === '[object Observable]' || (isDefined(target) && isFunction(target.subscribe));
 }
 
+
+const objTag = '[object Object]';
+/**
+ * is custom class type instance or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isTypeObject(target: any): boolean {
+    return toString.call(target) === objTag && target.constructor.name !== 'Object';
+}
+
 /**
  * is target base object or not.
  * eg. {}, have not self constructor;
+ *
+ * Checks if `value` is a plain object, that is, an object created by the
+ * `Object` constructor or one with a `[[Prototype]]` of `null`.
  * @export
  * @param {*} target
  * @returns {target is Promise<any>}
  */
-export function isBaseObject(target: any): target is ObjectMap {
-    return toString.call(target) === '[object Object]' && target.constructor.name === 'Object';
+export function isPlainObject(target: any): target is ObjectMap {
+    return toString.call(target) === objTag && target.constructor.name === 'Object';
 }
+
+/**
+ * is target base object or not.
+ * eg. {}, have not self constructor;
+ *
+ * @deprecated use `isPlainObject` instead.
+ */
+export const isBaseObject = isPlainObject;
 
 /**
  * is metadata object or not.
@@ -478,7 +502,7 @@ export function isBaseObject(target: any): target is ObjectMap {
  * @returns {boolean}
  */
 export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
-    if (!isBaseObject(target)) {
+    if (!isPlainObject(target)) {
         return false;
     }
     if (props.length) {
@@ -561,9 +585,14 @@ export function isNull(target: any): target is null {
  * @param {*} target
  * @returns {boolean}
  */
-export function isNullOrUndefined(target): boolean {
+export function isNil(target): boolean {
     return isNull(target) || isUndefined(target);
 }
+
+/**
+ * is target null or undefined.
+ */
+export const isNullOrUndefined = isNil;
 
 /**
  * check target is array or not.
@@ -584,19 +613,11 @@ export function isArray(target: any): target is Array<any> {
  * @returns {target is object}
  */
 export function isObject(target: any): target is object {
-    return target !== null && typeof target === 'object';
+    if (isNull(target)) return false;
+    const type = typeof target;
+    return (type === 'object' || type === 'function');
 }
 
-/**
- * is custom class type instance or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isTypeObject(target: any): boolean {
-    return toString.call(target) === '[object Object]' && target.constructor.name !== 'Object';
-}
 
 /**
  * check target is date or not.

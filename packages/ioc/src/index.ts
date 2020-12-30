@@ -2,12 +2,11 @@ export * from './types';
 export * from './tokens';
 export * from './Destoryable';
 export * from './IInjector';
-export * from './IIocContainer';
-export * from './IocContainer';
+export * from './IContainer';
 export * from './IMethodAccessor';
 export * from './IocCoreService';
-export * from './BaseInjector';
-export * from './Injector';
+export * from './injector';
+export * from './container';
 
 // utils
 export * from './utils/lang';
@@ -31,7 +30,6 @@ export * from './providers';
 
 // actions
 export * from './actions/Action';
-export * from './actions/injector';
 export * from './actions/cache';
 export * from './actions/reg'
 export * from './actions/lifescope';

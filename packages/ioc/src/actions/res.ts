@@ -1,40 +1,6 @@
-import { Provider, Token } from '../tokens';
+import { Token } from '../tokens';
 import { IocAction, IocContext } from './Action';
 
-/**
- * resovle action option.
- *
- */
-export interface ResolveOption<T = any> {
-    /**
-     * token.
-     *
-     */
-    token?: Token<T>;
-    /**
-     * resolve token in target context.
-     */
-    target?: Token | Object | (Token | Object)[];
-    /**
-     * only for target private or ref token. if has target.
-     */
-    tagOnly?: boolean;
-    /**
-     * all faild use the default token to get instance.
-     */
-    defaultToken?: Token<T>;
-    /**
-     * register token if has not register.
-     *
-     */
-    regify?: boolean;
-
-    /**
-     * resolve providers.
-     */
-    providers?: Provider;
-
-}
 
 /**
  * resovle action option.

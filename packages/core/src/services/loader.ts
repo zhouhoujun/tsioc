@@ -1,46 +1,8 @@
 import {
-    Modules, Type, Token, IocCoreService, isString, lang,
-    isObject, isArray, InjectReference
+    Modules, Type, Token, isString, lang, IContainer, IModuleLoader, IInjector,
+    isObject, isArray, InjectReference, CONTAINER, Inject, LoadType, PathModules
 } from '@tsdi/ioc';
-import { LoadType, PathModules } from '../types';
-
-
-/**
- * module loader interface for ioc.
- *
- * @export
- * @interface IModuleLoader
- */
-export interface IModuleLoader {
-    /**
-     * load modules by files patterns, module name or modules.
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Modules[]>}
-     * @memberof IModuleLoader
-     */
-    load(...modules: LoadType[]): Promise<Modules[]>;
-
-    /**
-     * dynamic require file.
-     *
-     * @param {string} fileName
-     * @returns {Promise<any>}
-     * @memberof IModuleLoader
-     */
-    require(fileName: string): Promise<any>;
-
-    /**
-     * load all class types in modules
-     *
-     * @param {...LoadType[]} modules
-     * @returns {Promise<Type[]>}
-     * @memberof IModuleLoader
-     */
-    loadTypes(...modules: LoadType[]): Promise<Type[][]>;
-
-}
-
+import { InjLifeScope } from '../injects/lifescope';
 
 declare let require: any;
 
@@ -52,7 +14,9 @@ const fileChkExp = /\/((\w|%|\.))+\.\w+$/;
  * @class DefaultModuleLoader
  * @implements {IModuleLoader}
  */
-export class ModuleLoader extends IocCoreService implements IModuleLoader {
+export class ModuleLoader implements IModuleLoader {
+
+    constructor(@Inject(CONTAINER) private container: IContainer) { }
 
     private _loader: (modulepath: string) => Promise<Modules[]>;
     getLoader() {
@@ -90,6 +54,11 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
         } else {
             return Promise.resolve([]);
         }
+    }
+
+    async register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]> {
+        const mdls = await this.load(...modules);
+        return this.container.provider.getInstance(InjLifeScope).register(injecor, ...mdls);
     }
 
     /**

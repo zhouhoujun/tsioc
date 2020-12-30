@@ -1,5 +1,4 @@
 import { Type, tokenId, IProvider, Token, TokenId, IInjector } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
 import { ModuleConfigure } from './modules/configure';
 import { Configure } from './configure/Configure';
 import { IStartup } from './runnable/Startup';
@@ -9,6 +8,7 @@ import { IBuilderService } from './services/IBuilderService';
 import { IMessageQueue } from './messages/IMessageQueue';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { IAnnoationReflect } from './annotations/reflect';
+import { IModuleInjector } from './modules/ModuleRef';
 
 export const CTX_PARENT_CONTEXT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_PARENT_CONTEXT');
 export const CTX_SUB_CONTEXT = tokenId<IAnnoationContext[]>('CTX_SUB_CONTEXT');
@@ -75,7 +75,7 @@ export const BaseTypeParserToken: TokenId<IBaseTypeParser> = tokenId<IBaseTypePa
 /**
  * appliction root injector token.
  */
-export const ROOT_INJECTOR: TokenId<ICoreInjector> = tokenId<ICoreInjector>('ROOT_INJECTOR');
+export const ROOT_INJECTOR: TokenId<IModuleInjector> = tokenId<IModuleInjector>('ROOT_INJECTOR');
 
 
 export const CTX_PROVIDERS: TokenId<IProvider> = tokenId<IProvider>('CTX_PROVIDERS');
@@ -123,5 +123,5 @@ export const CTX_ELEMENT_NAME = tokenId<any>('CTX_ELEMENT_NAME');
 // message.
 export const CTX_MSG_TARGET = tokenId<any>('CTX_MSG_TARGET');
 export const CTX_MSG_TYPE = tokenId<string>('CTX_MSG_TYPE');
-export const CTX_CURR_INJECTOR = tokenId<ICoreInjector>('CTX_CURR_INJECTOR');
+export const CTX_CURR_INJECTOR = tokenId<IInjector>('CTX_CURR_INJECTOR');
 export const CTX_MSG_EVENT = tokenId<string>('CTX_MSG_EVENT');

@@ -1,5 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { IInjector, Injectable } from '@tsdi/ioc';
 import { IBuildContext, IBuildOption } from '../Context';
 import { AnnoationContext, createContext } from '../annotations/ctx';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME } from '../tk';
@@ -21,7 +20,7 @@ export class BuildContext<T extends IBuildOption = IBuildOption> extends Annoati
         return this.context.getValue(CTX_TEMPLATE);
     }
 
-    static parse(injector: ICoreInjector, options: IBuildOption): BuildContext {
+    static parse(injector: IInjector, options: IBuildOption): BuildContext {
         return createContext(injector, BuildContext, options);
     }
 

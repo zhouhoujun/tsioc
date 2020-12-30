@@ -1,4 +1,4 @@
-import { Type, ObjectMap, Provider } from '@tsdi/ioc';
+import { Type, ObjectMap, ProviderType } from '@tsdi/ioc';
 import { Advices } from './advices/Advices';
 import { AdviceMetadata } from './metadatas';
 
@@ -61,7 +61,7 @@ export interface IAdvisor {
      * add aspect.
      *
      * @param {Type} aspect
-     * @param {IIocContainer} raiseContainer
+     * @param {IContainer} raiseContainer
      * @memberof IAdvisor
      */
     add(aspect: Type);
@@ -71,9 +71,9 @@ export interface IAdvisor {
      *
      * @template T
      * @param {Type<T>} aspect
-     * @param {...Provider[]} providers
+     * @param {...ProviderType[]} providers
      * @returns {T}
      * @memberof IAdvisor
      */
-    resolve<T>(aspect: Type<T>, ...providers: Provider[]): T;
+    resolve<T>(aspect: Type<T>, ...providers: ProviderType[]): T;
 }

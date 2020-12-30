@@ -1,5 +1,4 @@
-import { Inject, PromiseUtil, Singleton, Type, INJECTOR, isFunction, Destoryable } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Inject, PromiseUtil, Singleton, Type, INJECTOR, isFunction, Destoryable, IInjector } from '@tsdi/ioc';
 import { IBootContext } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
@@ -40,7 +39,7 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
     }
 
     @Inject(INJECTOR)
-    private injector: ICoreInjector;
+    private injector: IInjector;
 
 
     getContext() {

@@ -1,6 +1,6 @@
 import { BootApplication, DIModule, IBootContext, StartupService, Boot } from '../src';
 import expect = require('expect');
-import { ICoreInjector } from '@tsdi/core';
+import { IInjector } from '@tsdi/core';
 import { Singleton, PromiseUtil } from '@tsdi/ioc';
 
 @Singleton
@@ -108,7 +108,7 @@ class MainApp {
 
 describe('app message queue', () => {
     let ctx: IBootContext;
-    let injector: ICoreInjector;
+    let injector: IInjector;
 
     before(async () => {
         ctx = await BootApplication.run(MainApp);

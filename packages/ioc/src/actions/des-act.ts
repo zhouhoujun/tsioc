@@ -1,6 +1,6 @@
-import { DecoratorScope } from '../types';
+import { DecoratorScope, Type } from '../types';
 import { isFunction, isArray, isClass, lang } from '../utils/lang';
-import { Provider } from '../tokens';
+import { getTokenKey, ProviderType } from '../tokens';
 import { IActionSetup } from './Action';
 import { befAnn, ann, aftAnn, cls, mth, prop } from '../utils/exps';
 import { Injectable, Singleton, AutoWired, Inject, Providers, Refs, Autorun, IocExt } from '../decor/decorators';
@@ -107,12 +107,12 @@ function getTarget(this: RuntimeContext) {
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
     let injector = ctx.injector;
-    let provide = injector.getTokenKey(ctx.token);
+    let provide = getTokenKey(ctx.token);
     let type = ctx.type;
     let singleton = ctx.targetReflect.singleton;
     let actInjector = ctx.reflects.getActionInjector();
     const container = injector.getContainer();
-    let factory = (...providers: Provider[]) => {
+    let factory = (...providers: ProviderType[]) => {
         if (singleton && container.hasValue(type)) {
             return container.getValue(type);
         }
@@ -213,14 +213,14 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
             }
         }
         if (anno.provide) {
-            let provide = injector.getToken(anno.provide, anno.alias);
+            let provide = getTokenKey(anno.provide, anno.alias);
             tgReflect.provides.push(provide);
-            injector.bindProvider(provide, anno.type);
+            injector.bindProvider(provide, anno.type as Type);
         }
         if (anno.refs && anno.refs.target) {
             let tk = injector.bindRefProvider(anno.refs.target,
                 anno.refs.provide ? anno.refs.provide : anno.type,
-                anno.type,
+                anno.type as Type,
                 anno.refs.provide ? anno.refs.alias : '');
             tgReflect.provides.push(tk);
         }
@@ -258,7 +258,7 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
                 }
 
                 if (!targetReflect.propProviders.has(key)) {
-                    targetReflect.propProviders.set(key, injector.getToken(prop.provider || prop.type, prop.alias));
+                    targetReflect.propProviders.set(key, getTokenKey(prop.provider || prop.type, prop.alias));
                 }
             });
         });

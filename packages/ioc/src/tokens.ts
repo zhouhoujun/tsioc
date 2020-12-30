@@ -1,8 +1,8 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
-import { IInjector, IProvider } from './IInjector';
-import { isClass, isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
+import { IProvider } from './IInjector';
+import { isFunction, isString, isClassType, isSymbol, lang } from './utils/lang';
 import { refInjExp } from './utils/exps';
-import { StaticProvider } from './providers';
+import { StaticProvider } from './providers'
 
 
 /**
@@ -24,6 +24,7 @@ export class Registration<T = any> {
     protected type = '';
     protected classType: SymbolType;
     protected desc: string;
+    private formated: string;
     /**
      * Creates an instance of Registration.
      * @param {(Token<T> | Token)} provideType
@@ -53,7 +54,6 @@ export class Registration<T = any> {
      * get provide.
      *
      * @returns {SymbolType}
-     * @memberof Registration
      */
     getProvide(): SymbolType {
         return this.classType;
@@ -63,10 +63,9 @@ export class Registration<T = any> {
      * get class.
      *
      * @returns
-     * @memberof Registration
      */
     getClass(): Type<T> | AbstractType<T> {
-        if (isClass(this.classType)) {
+        if (isClassType(this.classType)) {
             return this.classType;
         }
         return null;
@@ -76,7 +75,6 @@ export class Registration<T = any> {
      * get desc.
      *
      * @returns
-     * @memberof Registration
      */
     getDesc() {
         return this.desc;
@@ -86,9 +84,18 @@ export class Registration<T = any> {
      * to string.
      *
      * @returns {string}
-     * @memberof Registration
      */
     toString(): string {
+        if (!this.formated) {
+            this.formated = this.formatting();
+        }
+        return this.formated;
+    }
+
+    /**
+     * frmatting this.
+     */
+    protected formatting() {
         return this.format(this);
     }
 
@@ -108,6 +115,21 @@ export class Registration<T = any> {
         }
         return '';
     }
+}
+
+/**
+* get token.
+*
+* @template T
+* @param {Token<T>} token
+* @param {string} [alias]
+* @returns {Token<T>}
+*/
+export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
+   if (alias) {
+       return new Registration(token, alias);
+   }
+   return token;
 }
 
 /**
@@ -149,37 +171,61 @@ export type ProvideToken<T> = Registration<T> | TokenId<T>;
 
 /**
  * providers.
- * note: ObjectMap provider can not resolve token.
  */
-export type Provider = IProvider | StaticProvider | Modules[];
+export type ProviderType = IProvider | StaticProvider | Modules[];
 
 /**
  * providers types
- * @deprecated use Provider instead.
+ * @deprecated use `ProviderType` instead.
  */
-export type ProviderTypes = Provider;
+export type ProviderTypes = ProviderType;
 /**
  * providers types
- * @deprecated use Provider instead.
+ * @deprecated use `ProviderType` instead.
  */
-export type ParamProviders = Provider;
+export type ParamProviders = ProviderType;
 /**
  * inject types
- * @deprecated use Provider instead.
+ * @deprecated use `ProviderType` instead.
  */
-export type InjectTypes = Provider;
+export type InjectTypes = ProviderType;
 
 /**
  * instance factory.
  */
-export type InstanceFactory<T = any> = (...providers: Provider[]) => T;
+export type Factory<T = any> = (...providers: ProviderType[]) => T;
+
+/**
+ * instance fac.
+ */
+export interface InstFac<T = any> {
+    /**
+     * factory.
+     */
+    fac?: Factory<T>;
+    /**
+     * value or singleton instance.
+     */
+    value?: T;
+    /**
+     * instance provider.
+     */
+    provider?: Type<T>;
+    /**
+     * cache value.
+     */
+    cache?: T;
+    /**
+     * cache expires.
+     */
+    expires?: number;
+}
 
 
 /**
  * Factory of Token
  */
-export type Factory<T> = T | Type<T> | ((injector?: IInjector) => T);
-
+export type FactoryLike<T> = T | Type<T> | Factory<T>;
 
 
 /**
@@ -205,7 +251,6 @@ export function tokenId<T = any>(key: string): TokenId<T> {
 }
 
 
-
 /**
  * inject reference.
  *
@@ -224,13 +269,12 @@ export class InjectReference<T = any> extends Registration<T> {
     }
 
     /**
-     * to string.
+     * formatting this.
      *
      * @returns {string}
-     * @memberof Registration
      */
-    toString(): string {
-        let key = super.toString();
+    formatting(): string {
+        let key = this.format(this);
         let target = this.format(this.target)
         return `Ref ${key} for ${target}`;
     }
@@ -287,3 +331,4 @@ export function isProvideToken(target: any): target is ProvideToken<any> {
     }
     return isTokenFunc(target);
 }
+

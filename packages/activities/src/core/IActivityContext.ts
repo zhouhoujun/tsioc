@@ -1,10 +1,9 @@
-import { tokenId, TokenId } from '@tsdi/ioc';
+import { IInjector, tokenId, TokenId } from '@tsdi/ioc';
 import { IAnnoationContext } from '@tsdi/boot';
 import { IComponentContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
 import { IWorkflowContext } from './IWorkflowContext';
 import { IActivityExecutor } from './IActivityExecutor';
-import { ICoreInjector } from '@tsdi/core';
 import { Expression, ActivityMetadata } from './ActivityMetadata';
 
 
@@ -42,6 +41,6 @@ export interface IActivityContext extends IComponentContext<ActivityOption> {
 
     getExector(): IActivityExecutor;
 
-    resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal>
+    resolveExpression<TVal>(express: Expression<TVal>, injector?: IInjector): Promise<TVal>
 
 }

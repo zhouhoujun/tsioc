@@ -1,5 +1,5 @@
-import { Modules, isString } from '@tsdi/ioc';
-import { IModuleLoader, ModuleLoader } from '@tsdi/core';
+import { Modules, isString, IModuleLoader } from '@tsdi/ioc';
+import { ModuleLoader } from '@tsdi/core';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
 import * as globby from 'globby';
 
@@ -12,10 +12,6 @@ import * as globby from 'globby';
  * @implements {IModuleLoader}
  */
 export class NodeModuleLoader extends ModuleLoader implements IModuleLoader {
-
-    constructor() {
-        super();
-    }
 
     protected normalize(pth: string) {
         return pth ? pth.split('\\').join('/') : pth;

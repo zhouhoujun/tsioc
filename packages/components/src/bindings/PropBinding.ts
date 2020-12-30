@@ -1,5 +1,4 @@
-import { lang, isTypeObject, isFunction } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { lang, isTypeObject, isFunction, IInjector } from '@tsdi/ioc';
 import { IBinding } from './IBinding';
 import { observe } from './onChange';
 import { filedMatch, pathCkExp, pipeExp } from './exps';
@@ -17,7 +16,7 @@ import { ComponentProvider } from '../ComponentProvider';
  */
 export abstract class PropBinding<T = any> {
 
-    constructor(protected injector: ICoreInjector, protected provider: ComponentProvider, public source: any, public binding: IBinding, public expression: string) {
+    constructor(protected injector: IInjector, protected provider: ComponentProvider, public source: any, public binding: IBinding, public expression: string) {
 
     }
 

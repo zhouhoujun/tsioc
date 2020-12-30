@@ -1,15 +1,8 @@
-export * from './types';
 export * from './tk';
-export * from './IContainer';
-export * from './Container';
-export * from './ICoreInjector';
-export * from './CoreInjector';
 
 export * from './IContainerBuilder';
 export * from './ContainerBuilder';
 
-export * from './services/IServiceResolver';
-export * from './services/IServicesResolver';
 export * from './services/loader';
 export * from './services/providers';
 
