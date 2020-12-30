@@ -121,7 +121,7 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      * @param token
      * @param success
      */
-    getContextValue<T>(token: Token<T>, success?: (value: T) => void): T;
+    getContextValue<T>(token: Token<T>, success?: (value: T) => void, failed?: () => any): T;
 
     /**
      * has register in context or not.

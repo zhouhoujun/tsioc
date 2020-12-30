@@ -1,6 +1,6 @@
 import {
     Type, isDefined, isToken, ClassType, lang, Token, IInjector, Inject, INJECTOR, IProvider, Destoryable,
-    PROVIDERS, ITypeReflects, TypeReflectsToken, SymbolType, ProviderType, isInjector, isArray, isBoolean, IContainer, getTokenKey
+    PROVIDERS, ITypeReflects, TypeReflectsToken, SymbolType, ProviderType, isInjector, isArray, isBoolean, IContainer, getTokenKey, isNil
 } from '@tsdi/ioc';
 import {
     CTX_MODULE_ANNOATION, CTX_MODULE, CTX_MODULE_DECTOR, CTX_PARENT_CONTEXT, CTX_SUB_CONTEXT,
@@ -302,7 +302,7 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption> exten
      * resolve token route in root contexts.
      * @param token
      */
-    getContextValue<T>(token: Token<T>, success?: (value: T) => void): T {
+    getContextValue<T>(token: Token<T>, success?: (value: T) => void, failed?: () => any): T {
         if (this.destroyed) {
             return null;
         }
@@ -320,6 +320,9 @@ export class AnnoationContext<T extends AnnoationOption = AnnoationOption> exten
                 break;
             }
             ctx = ctx.getParent();
+        }
+        if (isNil(value) && failed) {
+            return failed();
         }
         return value ?? null;
     }

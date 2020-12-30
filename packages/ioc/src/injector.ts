@@ -230,7 +230,7 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     getValue<T>(token: Token<T>, deep?: boolean): T {
-        return this.factories.get(getTokenKey(token))?.value || (deep? this.parent?.getValue(token, deep) : null);
+        return this.factories.get(getTokenKey(token))?.value || (deep ? this.parent?.getValue(token, deep) : null);
     }
 
     getFirstValue<T>(...tokens: Token<T>[]): T {

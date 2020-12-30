@@ -99,7 +99,13 @@ export class ComponentContext<T extends IComponentOption = IComponentOption>
      */
     getScope<T>(): T {
         return this.context.getValue(CTX_TEMPLATE_SCOPE)
-            ?? this.getParent()?.getContextValue(CTX_TEMPLATE_SCOPE, scope => this.setValue(CTX_TEMPLATE_SCOPE, scope));
+            ?? this.getParent()?.getContextValue(CTX_TEMPLATE_SCOPE,
+                scope => this.setValue(CTX_TEMPLATE_SCOPE, scope),
+                () => {
+                    const deft = {};
+                    this.setValue(CTX_TEMPLATE_SCOPE, deft);
+                    return deft;
+                });
     }
 
     getScopes() {

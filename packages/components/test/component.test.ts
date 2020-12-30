@@ -337,7 +337,7 @@ export class CTest {
         let comp = await injector.get(ComponentBuilder)
             .resolveTemplate({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as  ComponentRef<Components>;
 
-        console.log('comp:', comp);
+        // console.log('comp:', comp);
         expect(comp.instance instanceof Components).toBeTruthy();
         expect(comp.instance.cname).toEqual('test111');
         expect(comp.instance.address).toEqual('cd111');

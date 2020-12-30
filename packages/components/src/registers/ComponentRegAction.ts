@@ -40,19 +40,27 @@ export const ComponentRegAction = function (ctx: DesignContext, next: () => void
                 sel = sel.trim();
                 if (attrExp.test(sel)) {
                     compRefl.attrSelector = sel;
-                    injector.bindProvider(compdr.toAttrSelectorToken(sel), ctx.type);
+                    const pdkey = compdr.toAttrSelectorToken(sel);
+                    compRefl.provides.push(pdkey);
+                    injector.bindProvider(pdkey, ctx.type);
                 } else {
                     compRefl.selector = sel;
-                    injector.bindProvider(compdr.toSelectorToken(sel), ctx.type);
+                    const pdkey = compdr.toSelectorToken(sel);
+                    compRefl.provides.push(pdkey);
+                    injector.bindProvider(pdkey, ctx.type);
                 }
             })
         } else {
             if (attrExp.test(meta.selector)) {
                 compRefl.attrSelector = meta.selector;
-                injector.bindProvider(compdr.toAttrSelectorToken(meta.selector), ctx.type);
+                const pdkey = compdr.toAttrSelectorToken(meta.selector);
+                compRefl.provides.push(pdkey);
+                injector.bindProvider(pdkey, ctx.type);
             } else {
                 compRefl.selector = meta.selector;
-                injector.bindProvider(compdr.toSelectorToken(meta.selector), ctx.type);
+                const pdkey = compdr.toSelectorToken(meta.selector);
+                compRefl.provides.push(pdkey);
+                injector.bindProvider(pdkey, ctx.type);
             }
         }
     });

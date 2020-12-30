@@ -264,7 +264,7 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         } else {
             this.getContainer()?.registerIn(this.mdInjector, type, { provide, singleton });
         }
-        provide && this.set(provide, (...pdrs) => this.mdInjector.getInstance(type, ...pdrs));
+        provide && this.set(provide, { fac: (...pdrs) => this.mdInjector.getInstance(type, ...pdrs), provider: type });
         this.export(type);
         return this;
     }
@@ -277,7 +277,7 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         this.set(type, (...pdrs) => this.mdInjector.getInstance(type, ...pdrs));
         const reged = state.get<IModuleReflect>(type);
         reged.provides?.forEach(p => {
-            this.set(p, (...pdrs) => this.mdInjector.get(p, ...pdrs));
+            this.set(p, { fac: (...pdrs) => this.mdInjector.get(p, ...pdrs), provider: type });
         });
         const mdRef = reged.getModuleRef?.();
         if (mdRef) {

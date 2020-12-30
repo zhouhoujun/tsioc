@@ -16,6 +16,7 @@ export const PipeRegAction = function (ctx: DesignContext, next: () => void): vo
     metas.forEach(meta => {
         if (meta.name) {
             injector.bindProvider(meta.name, ctx.type);
+            ctx.targetReflect.provides.push(meta.name);
         }
     });
 
