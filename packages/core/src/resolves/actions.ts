@@ -128,7 +128,7 @@ export class ResolveServicesScope extends IocResolveScope implements IActionSetu
             return;
         }
         ctx.types = [
-            ...ctx.tokens.map(t => ctx.injector.getTokenProvider(t)).filter(t => t),
+            ...ctx.tokens.map(t => isClassType(t) ? t : ctx.injector.getTokenProvider(t)).filter(t => t),
             ...ctx.types || []
         ];
 
@@ -171,18 +171,18 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             let tk = isToken(t) ? t : lang.getClass(t);
             let maps = injector.get(new InjectReference(PROVIDERS, tk));
             if (maps && maps.size) {
-                maps.iterator((fac, tk) => {
+                maps.iterator((pdr, tk) => {
                     if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
-                        services.set(tk, fac);
+                        services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
                     }
                 });
             }
             if (isClassType(tk)) {
                 reflects.getDecorators(tk)
                     .some(dec => {
-                        dprvoider.getProviders(dec)?.iterator((fac, tk) => {
+                        dprvoider.getProviders(dec)?.iterator((pdr, tk) => {
                             if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
-                                services.set(tk, fac);
+                                services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
                             }
                         });
                     });
@@ -206,9 +206,9 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     let services = ctx.services;
     let reflects = ctx.reflects;
     let alias = ctx.alias;
-    ctx.injector.iterator((fac, tk) => {
+    ctx.injector.iterator((pdr, tk) => {
         if (!services.has(tk, alias) && isClassType(tk) && types.some(ty => reflects.isExtends(tk, ty))) {
-            services.set(tk, fac);
+            services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
         }
     }, true)
     next();

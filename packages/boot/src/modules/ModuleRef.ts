@@ -1,4 +1,5 @@
 import { Type, IInjector, IProvider, Destoryable, Abstract, SymbolType, ProviderType } from '@tsdi/ioc';
+import { IModuleReflect } from './reflect';
 
 
 /**
@@ -61,6 +62,14 @@ export abstract class ModuleRef<T = any> extends Destoryable {
      */
     get type(): Type<T> {
         return this._type;
+    }
+
+    private _refl:IModuleReflect;
+    get reflect(): IModuleReflect {
+        if(!this._refl){
+            this._refl = this.injector.getContainer().getTypeReflects().get(this._type);
+        }
+        return this._refl;
     }
 
     get parent(): IModuleInjector {

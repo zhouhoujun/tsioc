@@ -1,36 +1,4 @@
-import { Token, ResolveContext, ResolveOption, IInjector, ClassType, IProvider } from '@tsdi/ioc';
-
-/**
- * service context option.
- *
- * @export
- * @interface ServiceOption
- * @extends {ResovleActionOption}
- */
-export interface ServiceOption<T> extends ResolveOption<T> {
-    /**
-     * token provider service type.
-     *
-     * @type {Type}
-     * @memberof ServiceActionOption
-     */
-    tokens?: Token<T>[];
-
-    /**
-     * token alias.
-     *
-     * @type {string}
-     * @memberof ServiceOption
-     */
-    alias?: string;
-    /**
-     * get extend servie or not.
-     *
-     * @type {boolean}
-     * @memberof ServiceOption
-     */
-    extend?: boolean;
-}
+import { Token, ResolveContext, ClassType, IProvider } from '@tsdi/ioc';
 
 /**
  * service resolve context.
@@ -66,23 +34,6 @@ export interface ServiceContext extends ResolveContext {
     currTK?: Token;
 }
 
-
-/**
- * services context options
- *
- * @export
- * @interface ServicesOption
- * @extends {ServiceOption}
- */
-export interface ServicesOption<T> extends ServiceOption<T> {
-    /**
-     * get services both in container and target private refrence service.
-     *
-     * @type {boolean}
-     * @memberof ServicesActionOption
-     */
-    both?: boolean;
-}
 
 /**
  * resolve services context.

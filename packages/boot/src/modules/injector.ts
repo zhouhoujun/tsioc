@@ -168,7 +168,9 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         this._injector.setValue(ModuleRef, this);
         const pdr = new ModuleProviders(container);
         pdr.mdInjector = this._injector;
-        pdr.set(this.type, (...providers) => this.injector.get(this.type, ...providers));
+        pdr.set(this.type, (...providers) => {
+            return this.injector.getInstance(this.type, ...providers)
+        });
         this._exports = pdr;
     }
 

@@ -15,6 +15,7 @@ export * from './injects/actions';
 // service
 export * from './resolves/context';
 export * from './resolves/actions';
+export * from './adapter';
 
 
 

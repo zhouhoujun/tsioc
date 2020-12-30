@@ -257,6 +257,7 @@ export class Provider extends Destoryable implements IProvider {
     delValue(token: Token) {
         const key = getTokenKey(token);
         const pdr = this.factories.get(key);
+        if(!pdr) return;
         if (!pdr.fac) {
             this.factories.delete(key);
         } else {

@@ -191,7 +191,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
             ctx.propertyKey = pkey;
             ctx.params = ctx.targetReflect.methodParams.get('constructor');
         }
-        ctx.args = injector.getValue(METHOD_ACCESSOR).createParams(injector, ctx.params, ctx.providers);
+        ctx.args = injector.getValue(METHOD_ACCESSOR, true).createParams(injector, ctx.params, ctx.providers);
     }
     next();
 };
@@ -224,7 +224,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
     props.forEach((token, propertyKey) => {
         let key = `${propertyKey}_INJECTED`
         if (isToken(token) && !ctx[key]) {
-            let val = injector.resolve({ token, target: ctx.type }, providers);
+            let val = injector.get(token, providers);
             if (isDefined(val)) {
                 ctx.instance[propertyKey] = val;
                 ctx[key] = true;

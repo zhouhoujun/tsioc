@@ -1,4 +1,4 @@
-import { DesignContext, isClassType, isDefined } from '@tsdi/ioc';
+import { DesignContext, getTokenKey, isClassType, isDefined } from '@tsdi/ioc';
 import { BindingPropMetadata } from '../decorators/BindingPropMetadata';
 import { IComponentReflect } from '../IComponentReflect';
 
@@ -39,7 +39,7 @@ export const BindingPropTypeAction = function (ctx: DesignContext, next: () => v
                     }
 
                     if (prop.alias) {
-                        binding.provider = ctx.injector.getToken(prop.provider || prop.type, prop.alias);
+                        binding.provider = getTokenKey(prop.provider || prop.type, prop.alias);
                     }
 
                     if (prop.bindingType) {

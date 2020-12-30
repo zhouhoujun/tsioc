@@ -1,9 +1,10 @@
 import { DesignContext, isString } from '@tsdi/ioc';
 import { BootMetadata } from '../decorators';
 import { STARTUPS } from '../services/StartupService';
+import { ROOT_INJECTOR } from '../tk';
 
 export const StartupRegisterAction = function (ctx: DesignContext, next: () => void): void {
-    const injector = ctx.injector;
+    const injector = ctx.injector.getValue(ROOT_INJECTOR, true);
     const classType = ctx.type;
     let startups = injector.get(STARTUPS) || [];
     let metas = ctx.reflects.getMetadata<BootMetadata>(ctx.currDecor, classType);
