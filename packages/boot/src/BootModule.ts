@@ -12,7 +12,6 @@ import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
 import { StartupDecoratorRegisterer } from './handles/register';
-import { ModuleInjector, ModuleProviders } from './modules/injector';
 import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope } from './boot/lifescope';
 import { BuildContext } from './builder/ctx';
