@@ -15,7 +15,7 @@ export const ReportsToken: TokenId<Type<Reporter>[]> = tokenId<Type<Reporter>[]>
  * @class TestReport
  * @implements {ITestReport}
  */
-@Singleton
+@Singleton()
 export class TestReport implements ITestReport {
 
     @Inject(INJECTOR)
@@ -33,6 +33,12 @@ export class TestReport implements ITestReport {
 
     constructor() {
         this.suites = new Map();
+    }
+
+    track(error: Error) {
+        this.resports.forEach(rep=> {
+            rep.track(error);
+        });
     }
 
     addSuite(suit: Token, describe: ISuiteDescribe) {

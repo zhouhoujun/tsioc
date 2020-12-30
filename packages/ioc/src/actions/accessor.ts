@@ -16,8 +16,7 @@ import { INVOKED_PROVIDERS, TypeReflectsToken } from '../utils/tk';
  */
 export class MethodAccessor implements IMethodAccessor {
 
-    constructor() {
-    }
+    constructor() {}
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
