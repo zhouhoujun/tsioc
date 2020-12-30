@@ -12,31 +12,39 @@ export interface ModuleRegistered extends Registered {
  */
 export interface IModuleInjector extends IInjector {
     /**
-     * export moduleRef
+     * import dependencies moduleRefs 
      */
-    readonly refs: ModuleRef[];
+    readonly deps: ModuleRef[];
     /**
      * export di module.
      * @param ref 
      * @param first 
      */
-    export(ref: ModuleRef, first?: boolean): this;
+    addRef(ref: ModuleRef, first?: boolean): this;
     /**
      * has di module.
      * @param ref 
      */
-    hasExport(ref: ModuleRef): boolean;
+    hasRef(ref: ModuleRef): boolean;
     /**
      * unexport di module.
      * @param ref 
      */
-    unexport(ref: ModuleRef): ModuleRef[];
+    delRef(ref: ModuleRef): ModuleRef[];
+    /**
+     * is root or not.
+     */
+    isRoot(): boolean;
 }
 
 /**
  * module exports provider.
  */
 export interface IModuleProvider extends IProvider {
+    /**
+     * export moduleRefs.
+     */
+    exports: ModuleRef[]
     /**
      * export type.
      * @param type 

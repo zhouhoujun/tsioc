@@ -9,7 +9,7 @@ import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, Serv
 import { IContainer, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
 import { Provider, Injector } from './injector';
-import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey, IToken, Registration } from './tokens';
+import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
 import { ClassType, LoadType, Type } from './types';
 import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
@@ -27,6 +27,16 @@ export class InjectorImpl extends Injector {
         super(parent);
         this.initReg();
     }
+
+    // hasValue<T>(token: Token<T>): boolean {
+    //     const key = getTokenKey(token);
+    //     return (!isNil(this.factories.get(key)?.value)) || this.parent?.hasValue(key);
+    // }
+
+    // getValue<T>(token: Token<T>): T {
+    //     const key = getTokenKey(token);
+    //     return this.factories.get(key)?.value ?? this.parent?.getValue(key);
+    // }
 
     /**
      * register provider.
@@ -216,7 +226,7 @@ export class Container extends Injector implements IContainer {
      */
     registerIn<T>(injector: IInjector, type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }) {
         // make sure class register once.
-        if (this.regedState.isRegistered(type) || this.hasRegister(type)) {
+        if (this.regedState.isRegistered(type) || injector.has(type)) {
             if (options?.provide) {
                 this.set(options?.provide, (...providers) => this.regedState.getInjector(type).get(type, ...providers));
             }

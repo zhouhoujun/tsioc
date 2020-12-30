@@ -43,23 +43,24 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.regIn = regIn;
         ctx.injector = container;
     }
-    container.regedState.regType(ctx.type, createReged(ctx.injector));
+    container.regedState.regType(ctx.type, genReged(ctx.injector));
     next();
 };
 
-function createReged(injector: IInjector) {
+function genReged(injector: IInjector) {
     return {
         provides: [],
         getInjector: () => injector
     }
 }
 
-function createFac(actionPdr: IActionProvider, injector: IInjector, type: Type, token: Token, singleton) {
+function fac(actionPdr: IActionProvider, injector: IInjector, type: Type, token: Token, singleton) {
     return (...providers: ProviderType[]) => {
         // make sure has value.
         if (singleton && injector.hasValue(type)) {
             return injector.getValue(type);
         }
+
         const ctx = {
             injector,
             token,
@@ -81,7 +82,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     let type = ctx.type;
     let singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
-    let factory = createFac(container.provider, injector, type, provide, singleton);
+    let factory = fac(container.provider, injector, type, provide, singleton);
     if (provide && provide !== type) {
         injector.set(provide, factory, type);
     } else {

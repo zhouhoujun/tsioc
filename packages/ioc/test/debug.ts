@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, CONTAINER } from '../src';
+import { AutoWired, Injectable, Param, Singleton, Registration, Inject, IContainer, CONTAINER, Abstract } from '../src';
 
 export class SimppleAutoWried {
     constructor() {
@@ -30,6 +30,7 @@ export class ClassRoom {
     }
 }
 
+// @Abstract()
 export abstract class Student {
     @Inject(CONTAINER)
     container: IContainer;

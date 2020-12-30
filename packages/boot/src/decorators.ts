@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator,
-    isClass, lang, Type, isFunction, Token, isArray, isString, DesignContext, IProvider
+    isClass, lang, Type, isFunction, Token, isArray, isString, DesignContext, refl
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -206,6 +206,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (ctx.reflect.annoType === 'module') {
                     ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn);
+                    ctx.injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = ctx.moduleRef;
                     ctx.injector = ctx.moduleRef.injector;
                 }
                 next();
@@ -218,9 +219,17 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 },
                 (ctx: ModuleDesignContext, next) => {
                     const annoation = ctx.reflect.annotation;
+                    const mdRef = ctx.moduleRef;
                     if (annoation.imports) {
-                        const types = ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
-                        (ctx.moduleRef as DefaultModuleRef).imports = types;
+                        const types = mdRef.injector.use(...ctx.reflect.annotation.imports);
+                        (mdRef as DefaultModuleRef).imports = types;
+                        const container = ctx.injector.getContainer();
+                        types.forEach(ty => {
+                            const importRef = container.regedState.getRegistered<ModuleRegistered>(ty)?.moduleRef;
+                            if (importRef) {
+                                mdRef.injector.addRef(importRef, true);
+                            }
+                        });
                     }
                     next();
                 },
@@ -230,10 +239,8 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     const mdRef = ctx.moduleRef;
                     const map = mdRef.exports;
                     const injector = mdRef.injector;
-                    injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = mdRef;
-
                     let components = annoation.components ? injector.use(...annoation.components) : null;
-                    
+
                     if (mdRef.regIn === 'root') {
                         mdRef.imports?.forEach(ty => map.export(ty));
                     }
@@ -256,18 +263,14 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                         map.export(ty);
                     });
 
-                    
+
                     next();
                 },
                 (ctx: ModuleDesignContext, next: () => void) => {
                     if (ctx.moduleRef.exports.size) {
-                        const parent = ctx.moduleRef.parent;
-                        if (parent) {
-                            if (parent instanceof ModuleInjector) {
-                                parent.export(ctx.moduleRef);
-                            } else {
-                                parent.copy(ctx.moduleRef.exports);
-                            }
+                        const parent = ctx.moduleRef.parent as IModuleInjector;
+                        if (parent?.isRoot()) {
+                            parent.addRef(ctx.moduleRef);
                         }
                     }
                     next();

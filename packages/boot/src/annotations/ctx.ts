@@ -19,8 +19,8 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
     constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options: T) {
         super();
         this.context = injector.get(PROVIDERS);
-        this.setOptions(options);
         this.context.setValue(INJECTOR, injector);
+        this.setOptions(options);
     }
 
     /**
@@ -45,7 +45,7 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
      * @param token
      */
     has(token: Token): boolean {
-        return this.context.hasRegister(token);
+        return this.context.has(token);
     }
 
     /**

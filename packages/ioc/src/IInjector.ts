@@ -55,17 +55,6 @@ export interface IProvider extends IDestoryable {
      */
     hasValue<T>(key: Token<T>): boolean;
     /**
-     * has register in the injector or root container.
-     * @param token the token.
-     */
-    hasRegister<T>(token: Token<T>): boolean;
-    /**
-     * has register in the injector or root container.
-     * @param {Token<T>} token the token.
-     * @param {string} alias addtion alias.
-     */
-    hasRegister<T>(token: Token<T>, alias: string): boolean;
-    /**
      * get token instace in current injector or root container.
      *
      * @template T

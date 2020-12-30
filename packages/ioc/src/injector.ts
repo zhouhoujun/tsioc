@@ -41,7 +41,7 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     getContainer(): IContainer {
-        if(!this.hasTokenKey(CONTAINER)){
+        if (!this.hasTokenKey(CONTAINER)) {
             this.setValue(CONTAINER, this.parent.getContainer());
         }
         return this.getValue(CONTAINER);
@@ -215,25 +215,13 @@ export class Provider extends Destoryable implements IProvider {
     hasTokenKey<T>(key: SymbolType<T>): boolean {
         return this.factories.has(key);
     }
-    /**
-     * has register.
-     * @param token the token
-     * @param alias addtion alias
-     * @returns {boolean}
-     */
-    hasRegister<T>(token: Token<T>, alias?: string): boolean {
-        let key = getTokenKey(token, alias);
-        return this.hasTokenKey(key) || this.parent?.hasRegister(key);
-    }
 
     hasValue<T>(token: Token<T>): boolean {
-        const key = getTokenKey(token);
-        return (!isNil(this.factories.get(key)?.value)) || this.parent?.hasValue(key);
+        return !isNil(this.factories.get(getTokenKey(token))?.value);
     }
 
     getValue<T>(token: Token<T>): T {
-        const key = getTokenKey(token);
-        return this.factories.get(key)?.value ?? this.parent?.getValue(key);
+        return this.factories.get(getTokenKey(token))?.value || null;
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
@@ -339,12 +327,14 @@ export class Provider extends Destoryable implements IProvider {
         return this;
     }
 
+    
+
     iterator(callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
-        let flag = !Array.from(this.factories.keys()).some(tk => {
-            return callbackfn(this.factories.get(tk), tk, this) === false;
-        });
-        if (flag !== false && deep) {
-            return this.parent?.iterator(callbackfn);
+        if (this.each(callbackfn)) {
+            return false;
+        }
+        if (deep) {
+            return this.parent?.iterator(callbackfn, deep);
         }
     }
 
@@ -375,6 +365,13 @@ export class Provider extends Destoryable implements IProvider {
         return to;
     }
 
+    protected each(callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean) {
+        const keys = Array.from(this.factories.keys());
+        const values = Array.from(this.factories.values());
+        if (Array.from(keys).some((tk, idx) => callbackfn(values[idx], tk, this) === false)) {
+            return false;
+        }
+    }
 
     protected merge(from: Provider, to: Provider, filter?: (key: SymbolType) => boolean) {
         from.factories.forEach((pdr, key) => {
@@ -511,7 +508,7 @@ export abstract class Injector extends Provider implements IInjector {
      * @returns {IModuleLoader}
      */
     abstract getLoader(): IModuleLoader;
-    
+
     /**
      * load modules.
      *

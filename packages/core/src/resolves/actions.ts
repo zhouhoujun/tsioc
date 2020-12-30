@@ -74,7 +74,7 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
                     return true;
                 }
                 let refDec = new InjectReference(tk, dec.decor);
-                if (injector.hasRegister(refDec)) {
+                if (injector.has(refDec)) {
                     ctx.instance = injector.get(refDec, ctx.providers);
                 }
                 return !!ctx.instance;
@@ -139,7 +139,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             if (defaultTk) {
                 const injector = ctx.injector;
                 let key = getTokenKey(defaultTk);
-                if (injector.hasRegister(key, ctx.alias)) {
+                if (injector.has(key, ctx.alias)) {
                     ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
                 }
             }
@@ -195,7 +195,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 
             types.forEach(ty => {
                 let reftk = new InjectReference(ty, tk);
-                if (!services.has(reftk, alias) && injector.hasRegister(reftk)) {
+                if (!services.has(reftk, alias) && injector.has(reftk)) {
                     services.set(reftk, (...providers: ProviderType[]) => injector.resolve(reftk, ...providers))
                 }
             });
