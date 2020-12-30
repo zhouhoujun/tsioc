@@ -5,7 +5,7 @@ import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, Serv
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
 import { CONTAINER, PROVIDERS } from './utils/tk';
 import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
@@ -188,18 +188,20 @@ export class Provider extends Destoryable implements IProvider {
      *
      * @template T
      * @param {Token<T>} token the token.
+     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>): boolean;
+    has<T>(token: Token<T>, deep?: boolean): boolean;
     /**
-     *  has register.
+     * has token in current injector.
      *
      * @template T
      * @param {Token<T>} token the token.
-     * @param {string} alias addtion alias.
+     * @param {string} alias addtion alias
+     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>, alias: string): boolean;
+    has<T>(token: Token<T>, alias: string, deep?: boolean): boolean;
     /**
      *  has register token in current injector.
      *
@@ -208,20 +210,20 @@ export class Provider extends Destoryable implements IProvider {
      * @param {string} alias addtion alias.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>, alias?: string): boolean {
-        return this.hasTokenKey(getTokenKey(token, alias));
+    has<T>(token: Token<T>, alias?: string | boolean, deep?: boolean): boolean {
+        return this.hasTokenKey(getTokenKey(token, isString(alias) ? alias : ''), isBoolean(alias) ? alias : deep);
     }
 
-    hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return this.factories.has(key);
+    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean {
+        return this.factories.has(key) || (deep && this.parent?.hasTokenKey(key));
     }
 
-    hasValue<T>(token: Token<T>): boolean {
-        return !isNil(this.factories.get(getTokenKey(token))?.value);
+    hasValue<T>(token: Token<T>, deep?: boolean): boolean {
+        return !isNil(this.factories.get(getTokenKey(token))?.value) || (deep && this.parent?.hasValue(token));
     }
 
-    getValue<T>(token: Token<T>): T {
-        return this.factories.get(getTokenKey(token))?.value || null;
+    getValue<T>(token: Token<T>, deep?: boolean): T {
+        return this.factories.get(getTokenKey(token))?.value || (deep? this.parent?.getValue(token, deep) : null);
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
@@ -327,7 +329,7 @@ export class Provider extends Destoryable implements IProvider {
         return this;
     }
 
-    
+
 
     iterator(callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
         if (this.each(callbackfn)) {

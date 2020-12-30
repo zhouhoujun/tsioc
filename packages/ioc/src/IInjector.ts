@@ -29,31 +29,35 @@ export interface IProvider extends IDestoryable {
      *
      * @template T
      * @param {Token<T>} token the token.
+     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>): boolean;
+    has<T>(token: Token<T>, deep?: boolean): boolean;
     /**
      * has token in current injector.
      *
      * @template T
      * @param {Token<T>} token the token.
      * @param {string} alias addtion alias
+     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>, alias: string): boolean;
+    has<T>(token: Token<T>, alias: string, deep?: boolean): boolean;
     /**
      * has token key.
      *
      * @template T
      * @param {SymbolType<T>} key the token key.
+     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    hasTokenKey<T>(key: SymbolType<T>): boolean;
+    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean;
     /**
      * has value or not.
      * @param key
+     * @param {boolean} deep deep check in parent or not.
      */
-    hasValue<T>(key: Token<T>): boolean;
+    hasValue<T>(key: Token<T>, deep?: boolean): boolean;
     /**
      * get token instace in current injector or root container.
      *
@@ -69,6 +73,7 @@ export interface IProvider extends IDestoryable {
      * @template T
      * @param {Token<T>} token
      * @param {string} alias
+     * @param {boolean} deep get token instance deep in parent or not.
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
@@ -85,8 +90,9 @@ export interface IProvider extends IDestoryable {
     /**
      * get value.
      * @param token token key.
+     * @param {boolean} deep get token value deep in parent or not.
      */
-    getValue<T>(token: Token<T>): T;
+    getValue<T>(token: Token<T>, deep?: boolean): T;
     /**
      * set value.
      * @param token provide key
@@ -161,7 +167,7 @@ export interface IProvider extends IDestoryable {
      * iterator current resolver.
      *
      * @param {((pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void|boolean)} callbackfn
-     * @param {boolean} [deep] deep iterator all register.
+     * @param {boolean} [deep] deep iterator all register in parent or not.
      * @returns {(void|boolean)}
      */
     iterator(callbackfn: (pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;

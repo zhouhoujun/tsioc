@@ -28,15 +28,9 @@ export class InjectorImpl extends Injector {
         this.initReg();
     }
 
-    // hasValue<T>(token: Token<T>): boolean {
-    //     const key = getTokenKey(token);
-    //     return (!isNil(this.factories.get(key)?.value)) || this.parent?.hasValue(key);
-    // }
-
-    // getValue<T>(token: Token<T>): T {
-    //     const key = getTokenKey(token);
-    //     return this.factories.get(key)?.value ?? this.parent?.getValue(key);
-    // }
+    getValue<T>(token: Token<T>, deep?: boolean): T {
+        return this.factories.get(getTokenKey(token))?.value || (deep!==false? this.parent?.getValue(token, deep) : null);
+    }
 
     /**
      * register provider.
@@ -226,7 +220,7 @@ export class Container extends Injector implements IContainer {
      */
     registerIn<T>(injector: IInjector, type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }) {
         // make sure class register once.
-        if (this.regedState.isRegistered(type) || injector.has(type)) {
+        if (this.regedState.isRegistered(type) || injector.has(type, true)) {
             if (options?.provide) {
                 this.set(options?.provide, (...providers) => this.regedState.getInjector(type).get(type, ...providers));
             }

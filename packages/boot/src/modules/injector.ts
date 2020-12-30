@@ -1,6 +1,6 @@
 import {
-    Token, lang, SymbolType, Type, IInjector, Provider, InstFac, ProviderType, isNil, isClass,
-    getTokenKey, isPlainObject, InjectorImpl, IProvider, isContainer
+    Token, lang, SymbolType, Type, IInjector, Provider, InstFac, ProviderType,
+    isNil, isClass, getTokenKey, isPlainObject, InjectorImpl, IProvider, isContainer
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 import { ROOT_INJECTOR } from '../tk';
@@ -40,8 +40,8 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
         return this._root;
     }
 
-    hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return super.hasTokenKey(key) || this.deps.some(r => r.exports.hasTokenKey(key))
+    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean {
+        return super.hasTokenKey(key, deep) || this.deps.some(r => r.exports.hasTokenKey(key))
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
@@ -65,14 +65,14 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
         return pdr.fac ? pdr.fac(...providers) ?? null : null;
     }
 
-    hasValue<T>(token: Token<T>): boolean {
+    hasValue<T>(token: Token<T>, deep?: boolean): boolean {
         const key = getTokenKey(token);
-        return super.hasValue(key) || this.hasValInExports(key);
+        return super.hasValue(key, deep) || this.hasValInExports(key);
     }
 
-    getValue<T>(token: Token<T>): T {
+    getValue<T>(token: Token<T>, deep?: boolean): T {
         const key = getTokenKey(token);
-        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? this.parent?.getValue(key);
+        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? (deep !== false ? this.parent?.getValue(key, deep) : null);
     }
 
     addRef(ref: ModuleRef, first?: boolean): this {
@@ -229,9 +229,9 @@ export class ModuleProviders extends Provider implements IModuleProvider {
 
     constructor(parent: IProvider, type?: string) {
         super(parent, type);
-        this.onDestroy(()=>{
+        this.onDestroy(() => {
             this.mdInjector = null;
-            this.exports.forEach(e=> e.destroy());
+            this.exports.forEach(e => e.destroy());
             this.exports = [];
         });
     }
@@ -271,7 +271,7 @@ export class ModuleProviders extends Provider implements IModuleProvider {
 
     export(type: Type) {
         const state = this.getContainer().regedState;
-        if(!state.isRegistered(type)){
+        if (!state.isRegistered(type)) {
             this.mdInjector.registerType(type);
         }
         this.set(type, (...pdrs) => this.mdInjector.getInstance(type, ...pdrs));
@@ -279,13 +279,13 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         reged.provides?.forEach(p => {
             this.set(p, (...pdrs) => this.mdInjector.get(p, ...pdrs));
         });
-        if(reged.moduleRef){
+        if (reged.moduleRef) {
             this.exports.push(reged.moduleRef);
         }
     }
 
-    hasTokenKey<T>(key: SymbolType<T>): boolean {
-        return super.hasTokenKey(key) || this.exports.some(r => r.exports.hasTokenKey(key))
+    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean {
+        return super.hasTokenKey(key, deep) || this.exports.some(r => r.exports.hasTokenKey(key))
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
@@ -318,15 +318,14 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         }
     }
 
-
-    hasValue<T>(token: Token<T>): boolean {
+    hasValue<T>(token: Token<T>, deep?: boolean): boolean {
         const key = getTokenKey(token);
-        return super.hasValue(key) || this.hasValInExports(key);
+        return super.hasValue(key, deep) || this.hasValInExports(key);
     }
 
-    getValue<T>(token: Token<T>): T {
+    getValue<T>(token: Token<T>, deep?: boolean): T {
         const key = getTokenKey(token);
-        return this.factories.get(key)?.value ?? this.getValInExports(key);
+        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? (deep !== false ? this.parent.getValue(key, deep) : null);
     }
 
     /**
@@ -351,7 +350,6 @@ export class ModuleProviders extends Provider implements IModuleProvider {
             return type;
         });
         return type || null;
-
     }
 
     protected hasValInExports<T>(key: SymbolType<T>): boolean {

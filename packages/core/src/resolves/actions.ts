@@ -1,7 +1,4 @@
-import {
-    isNil, isClassType, InjectReference,
-    IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey
-} from '@tsdi/ioc';
+import { isNil, isClassType, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -74,7 +71,7 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
                     return true;
                 }
                 let refDec = new InjectReference(tk, dec.decor);
-                if (injector.has(refDec)) {
+                if (injector.has(refDec, true)) {
                     ctx.instance = injector.get(refDec, ctx.providers);
                 }
                 return !!ctx.instance;
@@ -139,7 +136,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             if (defaultTk) {
                 const injector = ctx.injector;
                 let key = getTokenKey(defaultTk);
-                if (injector.has(key, ctx.alias)) {
+                if (injector.has(key, ctx.alias, true)) {
                     ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
                 }
             }
