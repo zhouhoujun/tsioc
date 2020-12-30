@@ -88,10 +88,10 @@ export interface IContainer extends IInjector {
     /**
      * register type class.
      * @param {IProvider} injector
-     * @param Type the class.
+     * @param type the class.
      * @param [options] the class prodvider to.
      */
-    registerIn<T>(injector: IProvider, Type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    registerIn<T>(injector: IProvider, type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
     /**
      * register factory to injector.
      * @param injector the injector to register.

@@ -1,8 +1,8 @@
-import { CONTAINER, IContainer, Inject, IocExt, MODULE_LOADER, SERVICE_PROVIDER } from "@tsdi/ioc";
-import { ModuleLoader } from "./services/loader";
-import { ServiceProvider } from "./services/providers";
+import { CONTAINER, IContainer, Inject, IocExt, MODULE_LOADER, SERVICE_PROVIDER } from '@tsdi/ioc';
+import { ModuleLoader } from './services/loader';
+import { ServiceProvider } from './services/providers';
 import { InjLifeScope } from './injects/lifescope';
-import { ResolveServiceScope, ResolveServicesScope } from "./resolves/actions";
+import { ResolveServiceScope, ResolveServicesScope } from './resolves/actions';
 
 @IocExt()
 export class CoreModule {
