@@ -1,9 +1,8 @@
 import { BootApplication, DIModule, IBootContext, StartupService, Boot } from '../src';
 import expect = require('expect');
-import { IInjector } from '@tsdi/core';
-import { Singleton, PromiseUtil } from '@tsdi/ioc';
+import { Singleton, PromiseUtil, IInjector } from '@tsdi/ioc';
 
-@Singleton
+@Singleton()
 export class MyStartupService extends StartupService {
     async configureService(ctx: IBootContext): Promise<void> {
         let defer = PromiseUtil.defer<void>();

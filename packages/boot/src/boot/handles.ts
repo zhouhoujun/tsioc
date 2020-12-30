@@ -169,7 +169,7 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let targetReflect = ctx.getTargetReflect();
     if (!targetReflect || !targetReflect.getInjector) {
-        ctx.injector.registerType(ctx.type);
+        ctx.injector.registerType(ctx.type, { regIn: 'root' });
         targetReflect = ctx.getTargetReflect();
     }
     let annoation = targetReflect?.getAnnoation ? targetReflect.getAnnoation() : null;

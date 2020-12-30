@@ -59,12 +59,12 @@ export const AnnoationAction = function (ctx: AnnoDesignContext, next: () => voi
 
 
 export const AnnoationRegInAction = function (ctx: AnnoDesignContext, next: () => void): void {
-    if (ctx.annoation?.imports || ctx.annoation?.exports) {
-        const mdRef = ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn);
-        const reflect = ctx.targetReflect as IModuleReflect;
-        reflect.getModuleRef = ()=> mdRef;
-        ctx.injector = mdRef.injector;
-    }
+    // if (ctx.annoation?.imports || ctx.annoation?.exports) {
+    const mdRef = ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn);
+    const reflect = ctx.targetReflect as IModuleReflect;
+    reflect.getModuleRef = () => mdRef;
+    ctx.injector = mdRef.injector;
+    // }
     next();
 };
 
@@ -108,26 +108,26 @@ export const RegModuleImportsAction = function (ctx: AnnoDesignContext, next: ()
 };
 
 
-/**
- * module providers builder.
- *
- * @export
- * @interface IModuleProvidersBuilder
- */
-export interface IModuleProvidersBuilder {
-    /**
-     * build annoation providers in map.
-     *
-     * @param {ModuleProviders} providers the providers map, build annoation providers register in.
-     * @param {ModuleConfigure} annoation module metatdata annoation.
-     * @memberof IModuleProvidersBuilder
-     */
-    build(providers: IModuleProvider, annoation: ModuleConfigure): void;
-}
-/**
- * module providers builder token. for module decorator provider.
- */
-export const ModuleProvidersBuilderToken: TokenId<IModuleProvidersBuilder> = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
+// /**
+//  * module providers builder.
+//  *
+//  * @export
+//  * @interface IModuleProvidersBuilder
+//  */
+// export interface IModuleProvidersBuilder {
+//     /**
+//      * build annoation providers in map.
+//      *
+//      * @param {ModuleProviders} providers the providers map, build annoation providers register in.
+//      * @param {ModuleConfigure} annoation module metatdata annoation.
+//      * @memberof IModuleProvidersBuilder
+//      */
+//     build(providers: IModuleProvider, annoation: ModuleConfigure): void;
+// }
+// /**
+//  * module providers builder token. for module decorator provider.
+//  */
+// export const ModuleProvidersBuilderToken: TokenId<IModuleProvidersBuilder> = tokenId<IModuleProvidersBuilder>('MODULE_PROVIDERS_BUILDER');
 
 export const RegModuleProvidersAction = function (ctx: AnnoDesignContext, next: () => void): void {
     let annoation = ctx.annoation;
@@ -136,7 +136,6 @@ export const RegModuleProvidersAction = function (ctx: AnnoDesignContext, next: 
     const map = mdRef.exports;
     const injector = mdRef.injector;
     let components = annoation.components ? injector.use(...annoation.components) : null;
-
     if (mdRef.regIn === 'root') {
         mdRef.imports?.forEach(ty => map.export(ty));
     }
@@ -162,10 +161,10 @@ export const RegModuleProvidersAction = function (ctx: AnnoDesignContext, next: 
         mdReft.componentDectors = componentDectors;
     }
 
-    let builder = mdReft.getDecorProviders?.().getInstance(ModuleProvidersBuilderToken);
-    if (builder) {
-        builder.build(map, annoation);
-    }
+    // let builder = mdReft.getDecorProviders?.().getInstance(ModuleProvidersBuilderToken);
+    // if (builder) {
+    //     builder.build(map, annoation);
+    // }
 
     let exptypes: Type[] = lang.getTypes(...annoation.exports || []);
 

@@ -1,6 +1,5 @@
 import 'core-js';
-import { IocExt, Inject, IContainer, CONTAINER } from '@tsdi/ioc';
-import { ModuleLoader } from '@tsdi/core';
+import { IocExt, Inject, IContainer, CONTAINER, MODULE_LOADER } from '@tsdi/ioc';
 import { BrowserModuleLoader } from './BrowserModuleLoader';
 
 
@@ -23,6 +22,6 @@ export class BrowserModule {
      * @memberof AopModule
      */
     setup(@Inject(CONTAINER) container: IContainer) {
-        container.setValue(ModuleLoader,  new BrowserModuleLoader(container), BrowserModuleLoader);
+        container.setValue(MODULE_LOADER,  new BrowserModuleLoader(container), BrowserModuleLoader);
     }
 }
