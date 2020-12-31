@@ -77,8 +77,7 @@ export class Provider extends Destoryable implements IProvider {
             }
             this.factories.set(key, { fac, provider });
         } else if (fac) {
-            let rep = pdOrRep as boolean;
-            (fac.replace || rep) ? this.factories.set(key, fac) : this.factories.set(key, { ...this.factories.get(key), ...fac });
+            pdOrRep ? this.factories.set(key, fac) : this.factories.set(key, { ...this.factories.get(key), ...fac });
         }
         return this;
     }
