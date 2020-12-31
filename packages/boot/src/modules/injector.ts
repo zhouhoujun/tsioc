@@ -170,7 +170,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         this._injector.setValue(ModuleRef, this);
         const pdr = new ModuleProviders(container);
         pdr.mdInjector = this._injector;
-        pdr.set(this.type, (...providers) => this.injector.getInstance(this.type, ...providers));
+        pdr.export(this.type, true);
         this._exports = pdr;
     }
 
@@ -264,12 +264,11 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         } else {
             this.getContainer()?.registerIn(this.mdInjector, type, { provide, singleton });
         }
-        provide && this.set(provide, { fac: (...pdrs) => this.mdInjector.getInstance(type, ...pdrs), provider: type }, true);
         this.export(type);
         return this;
     }
 
-    export(type: Type) {
+    export(type: Type, noRef?: boolean) {
         const state = this.getContainer().regedState;
         if (!state.isRegistered(type)) {
             this.mdInjector.registerType(type);
@@ -279,7 +278,7 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         reged.provides?.forEach(p => {
             this.set(p, { fac: (...pdrs) => this.mdInjector.get(p, ...pdrs), provider: type }, true);
         });
-        if (reged.moduleRef) {
+        if (!noRef && reged.moduleRef) {
             this.exports.push(reged.moduleRef);
         }
     }

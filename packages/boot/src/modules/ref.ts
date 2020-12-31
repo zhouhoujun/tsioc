@@ -49,7 +49,7 @@ export interface IModuleProvider extends IProvider {
      * export type.
      * @param type 
      */
-    export(type: Type);
+    export(type: Type, noRef?: boolean);
 }
 
 /**

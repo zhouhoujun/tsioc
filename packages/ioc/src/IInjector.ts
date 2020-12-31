@@ -1,8 +1,9 @@
 import { Type, Modules, LoadType } from './types';
-import { SymbolType, Token, FactoryLike, InjectReference, ProviderType, Factory, InstFac } from './tokens';
+import { SymbolType, Token, FactoryLike, ProviderType, Factory, InstFac } from './tokens';
 import { IContainer } from './IContainer';
 import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
+import { Registered } from './decor/type';
 
 
 
@@ -314,24 +315,10 @@ export interface IInjector extends IProvider {
      * @template T
      * @param {Token<T>} provide
      * @param {Type<T>} provider
+     * @param {Registered} [reged]  provider registered state.
      * @returns {this}
      */
-    bindProvider<T>(provide: Token<T>, provider: Type<T>): this;
-    /**
-     * bind provider ref to target.
-     * @param target the target, provide ref to.
-     * @param provide provide token.
-     * @param provider provider factory or token.
-     * @param alias alias.
-     */
-    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Type<T>, alias?: string): InjectReference<T>;
-    /**
-     * bind target providers.
-     * @param target
-     * @param providers
-     */
-    bindTagProvider(target: Token, ...providers: ProviderType[]): InjectReference<IProvider>;
-
+    bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
     /**
      * resolve token instance with token and param provider.
      *

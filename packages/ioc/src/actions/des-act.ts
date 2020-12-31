@@ -1,7 +1,7 @@
 import { isFunction, isClass } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
-import { getToken, getTokenKey, ProviderType, Token } from '../tokens';
+import { getTokenKey, InjectReference, ProviderType, SymbolType, Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
@@ -43,13 +43,13 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.regIn = regIn;
         ctx.injector = container;
     }
-    container.regedState.regType(ctx.type, genReged(ctx.injector));
+    container.regedState.regType(ctx.type, genReged(ctx.injector, getTokenKey(ctx.token)));
     next();
 };
 
-function genReged(injector: IInjector) {
+function genReged(injector: IInjector, provide?: SymbolType) {
     return {
-        provides: [],
+        provides: provide? [provide] : [],
         getInjector: () => injector
     }
 }
@@ -77,12 +77,12 @@ function fac(actionPdr: IActionProvider, injector: IInjector, type: Type, token:
 }
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    let injector = ctx.injector;
-    let provide = getTokenKey(ctx.token);
-    let type = ctx.type;
-    let singleton = ctx.singleton || ctx.reflect.singleton;
+    const injector = ctx.injector;
+    const provide = getTokenKey(ctx.token);
+    const type = ctx.type;
+    const singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
-    let factory = fac(container.provider, injector, type, provide, singleton);
+    const factory = fac(container.provider, injector, type, provide, singleton);
     if (provide && provide !== type) {
         injector.set(provide, factory, type);
     } else {
@@ -148,25 +148,29 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
 
     const registed = injector.getContainer().regedState.getRegistered(type);
     tgReflect.providers.forEach(anno => {
-        const provide = getToken(anno.provide, anno.alias);
-        registed.provides.push(provide);
-        injector.bindProvider(provide, type);
+        const provide = getTokenKey(anno.provide, anno.alias);
+        injector.bindProvider(provide, type, registed);
     });
 
     tgReflect.refs.forEach(rf => {
-        const tk = injector.bindRefProvider(rf.target,
+        const tk = new InjectReference(
+            getTokenKey(
             rf.provide ? rf.provide : type,
-            type,
-            rf.provide ? rf.alias : '');
-        registed.provides.push(tk);
+            rf.provide ? rf.alias : ''), rf.target);
+        injector.bindProvider(tk, type, registed);
     });
 
     // class private provider.
     if (tgReflect.extProviders && tgReflect.extProviders.length) {
-        let refKey = injector.bindTagProvider(
-            type,
-            ...tgReflect.extProviders);
-        registed.provides.push(refKey);
+        const providers = tgReflect.extProviders;
+        let refToken = new InjectReference(PROVIDERS, type);
+        if (this.has(refToken)) {
+            this.get(refToken).inject(...providers);
+        } else {
+            this.setValue(refToken, this.get(PROVIDERS).inject(...providers));
+        }
+        registed.provides.push(getTokenKey(refToken));
+        
     }
 
     next();

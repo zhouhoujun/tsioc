@@ -1,14 +1,15 @@
 import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { Destoryable } from './Destoryable';
-import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
-import { FactoryLike, getTokenKey, InjectReference, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
+import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
+import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
-import { CONTAINER, PROVIDERS } from './utils/tk';
+import { CONTAINER } from './utils/tk';
 import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
+import { Registered } from './decor/type';
 
 /**
  * provider container.
@@ -441,44 +442,21 @@ export abstract class Injector extends Provider implements IInjector {
      * @template T
      * @param {Token<T>} provide
      * @param {Type<T>} provider
+     * @param {Registered} [reged]  provider registered state.
      * @returns {this}
      * @memberof Injector
      */
-    bindProvider<T>(provide: Token<T>, provider: Type<T>): this {
+    bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this {
         const provideKey = getTokenKey(provide);
-        if (!provideKey) {
-            return this;
-        }
-        if (isClass(provider)) {
+        if (provideKey && isClass(provider)) {
             const pdr = this.factories.get(provideKey);
-            const type = provider;
-            this.registerType(type);
-            this.factories.set(provideKey, { ...pdr, fac: (...providers) => this.getInstance(type, ...providers), provider: type });
+            !reged && this.registerType(provider);
+            if (reged && reged.provides.indexOf(provideKey) < 0) {
+                reged.provides.push(provideKey);
+            }
+            this.factories.set(provideKey, { fac: (...pdrs) => this.getInstance(provider, ...pdrs), ...pdr, provider: provider });
         }
         return this;
-    }
-
-    /**
-     *  bind provider ref to target.
-     * @param target the target, provide ref to.
-     * @param provide provide token.
-     * @param provider provider factory or token.
-     * @param alias alias.
-     */
-    bindRefProvider<T>(target: Token, provide: Token<T>, provider: Type<T>, alias?: string): InjectReference<T> {
-        let refToken = new InjectReference(getTokenKey(provide, alias), target);
-        this.bindProvider(refToken, provider);
-        return refToken;
-    }
-
-    bindTagProvider(target: Token, ...providers: ProviderType[]): InjectReference<IProvider> {
-        let refToken = new InjectReference(PROVIDERS, target);
-        if (this.has(refToken)) {
-            this.get(refToken).inject(...providers);
-        } else {
-            this.registerSingleton(refToken, this.get(PROVIDERS).inject(...providers));
-        }
-        return refToken;
     }
 
     /**
