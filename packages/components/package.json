@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/components",
-  "version": "6.0.35",
+  "version": "6.0.36",
   "description": "application components. base on AOP, Ioc container, via @tsdi/core .",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -34,9 +34,9 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {},
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.35",
-    "@tsdi/core": "~6.0.35",
-    "@tsdi/boot": "~6.0.35",
+    "@tsdi/ioc": "~6.0.36",
+    "@tsdi/core": "~6.0.36",
+    "@tsdi/boot": "~6.0.36",
     "rxjs": "^6.3.3",
     "tslib": "^2.0.1"
   },
