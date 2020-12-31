@@ -169,7 +169,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                             || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
                         )
                     ) {
-                        services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
+                        services.set(tk, pdr, true);
                     }
                 });
             }
@@ -184,7 +184,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                                 || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
                             )
                         ) {
-                            services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
+                            services.set(tk, pdr, true);
                         }
                     });
                 });
@@ -215,7 +215,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
                 || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
             )
         ) {
-            services.set(tk, pdr.value ? () => pdr.value : pdr.fac);
+            services.set(tk, pdr, true);
         }
     }, true);
 

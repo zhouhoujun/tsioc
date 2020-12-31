@@ -119,10 +119,10 @@ export interface IProvider extends IDestoryable {
      * @template T
      * @param {Token<T>} provide
      * @param {InstFac<T>} fac
-     * @param {Type<T>} [providerType]
+     * @param {boolean} [replace] replace only.
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: InstFac<T>): this;
+    set<T>(provide: Token<T>, fac: InstFac<T>, replace?: boolean): this;
     /**
      * set provide.
      *

@@ -220,6 +220,10 @@ export interface InstFac<T = any> {
      * cache expires.
      */
     expires?: number;
+    /**
+     * replace with this. 
+     */
+    replace?: boolean;
 }
 
 

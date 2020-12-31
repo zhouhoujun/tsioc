@@ -47,24 +47,38 @@ export class Provider extends Destoryable implements IProvider {
         return this.getValue(CONTAINER);
     }
 
+
     /**
-     * set token factory.
+     * set provide.
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {(Factory<T> | InstFac<T>)} fac
-     * @param {Type<T>} [provider]
+     * @param {InstFac<T>} fac
+     * @param {boolean} [replace] replace only.
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: Factory<T> | InstFac<T>, provider?: Type<T>): this {
+    set<T>(provide: Token<T>, fac: InstFac<T>, replace?: boolean): this;
+    /**
+     * set provide.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Factory<T>} fac
+     * @param {Type<T>} [providerType]
+     * @returns {this}
+     */
+    set<T>(provide: Token<T>, fac: Factory<T>, providerType?: Type<T>): this;
+    set<T>(provide: Token<T>, fac: Factory<T> | InstFac<T>, pdOrRep?: Type<T> | boolean): this {
         let key = getTokenKey(provide);
         if (isFunction(fac)) {
+            let provider = pdOrRep as Type;
             if (!provider) {
                 provider = isClass(key) ? key : undefined;
             }
             this.factories.set(key, { fac, provider });
-        } else {
-            this.factories.set(key, { ...this.factories.get(key), ...fac });
+        } else if (fac) {
+            let rep = pdOrRep as boolean;
+            (fac.replace || rep) ? this.factories.set(key, fac) : this.factories.set(key, { ...this.factories.get(key), ...fac });
         }
         return this;
     }
@@ -223,7 +237,7 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     getValue<T>(token: Token<T>, deep?: boolean): T {
-        return this.factories.get(getTokenKey(token))?.value || (deep? this.parent?.getValue(token, deep) : null);
+        return this.factories.get(getTokenKey(token))?.value || (deep ? this.parent?.getValue(token, deep) : null);
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
@@ -241,6 +255,7 @@ export class Provider extends Destoryable implements IProvider {
     delValue(token: Token) {
         const key = getTokenKey(token);
         const pdr = this.factories.get(key);
+        if (!pdr) return;
         if (!pdr.fac) {
             this.factories.delete(key);
         } else {
