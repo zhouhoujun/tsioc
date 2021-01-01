@@ -72,30 +72,31 @@ export class TypeReflects extends IocCoreService implements ITypeReflects {
     }
 
     create<T extends ITypeReflect>(type: ClassType, info?: T): T {
-        let targetReflect: ITypeReflect;
-        let exists = this.has(type);
-        if (exists) {
-            targetReflect = this.get(type);
-        } else {
+        let targetReflect = this.get(type);
+        if (!targetReflect) {
+            const parType = lang.getParentClass(type);
+            let prRef: T;
+            if(isClassType(parType)){
+                prRef = this.create(parType);
+            }
+
             let decs = new TargetDecoractors(
                 new TypeDecorators(type, this, this.getActionInjector().getInstance(DesignRegisterer)),
                 new RuntimeDecorators(type, this, this.getActionInjector().getInstance(RuntimeRegisterer)));
             targetReflect = {
                 type: type,
                 decorators: decs,
-                defines: new TypeDefine(type),
-                propProviders: new Map(),
-                methodParams: new Map(),
-                methodParamProviders: new Map(),
+                defines: new TypeDefine(type, prRef?.defines),
+                propProviders: prRef ? new Map(prRef.propProviders) : new Map(),
+                methodParams: prRef ? new Map(prRef.methodParams) : new Map(),
+                methodParamProviders: prRef ? new Map(prRef.methodParams): new Map(),
                 provides: []
             };
             targetReflect.singleton = this.hasMetadata(Singleton, type);
+            this.set(type, targetReflect);
         }
         if (info) {
             targetReflect = Object.assign(targetReflect, info);
-        }
-        if (!exists || info) {
-            this.set(type, targetReflect);
         }
         return targetReflect as T;
     }

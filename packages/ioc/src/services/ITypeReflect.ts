@@ -94,14 +94,19 @@ export class TargetDecoractors implements ITargetDecoractors {
 
 const name = '__name';
 export class TypeDefine {
-    constructor(public readonly type: ClassType) {
+    constructor(public readonly type: ClassType, private parent?: TypeDefine) {
 
     }
 
     private _extends: ClassType[];
     get extendTypes(): ClassType[] {
         if (!this._extends) {
-            this._extends = lang.getClassChain(this.type);
+            if (this.parent) {
+                this._extends = this.parent.extendTypes.slice(0);
+                this._extends.unshift(this.type);
+            } else {
+                this._extends = lang.getClassChain(this.type);
+            }
         }
         return this._extends;
     }
@@ -110,31 +115,50 @@ export class TypeDefine {
         if (!descriptor) {
             return '';
         }
-        return descriptor[name] ?? Object.keys(this.getPropertyDescriptors()).find(n => this.getPropertyDescriptors()[n] = descriptor);
+        let pty = descriptor[name];
+        if (!pty) {
+            let decs = this.getPropertyDescriptors();
+            lang.forIn(decs, (dec, n) => {
+                if (dec === descriptor) {
+                    pty = n;
+                    return false;
+                }
+            });
+        }
+        return pty;
     }
 
     private descriptos: ObjectMap<TypedPropertyDescriptor<any>>;
     getPropertyDescriptors(): ObjectMap<TypedPropertyDescriptor<any>> {
         if (!this.descriptos) {
             let descriptos;
-            this.extendTypes.forEach(ty => {
-                let cdrs = Object.getOwnPropertyDescriptors(ty.prototype);
-                if (!descriptos) {
-                    descriptos = cdrs;
-                    descriptos = {};
-                    lang.forIn(cdrs, (d, n) => {
-                        d[name] = n;
-                        descriptos[n] = d;
-                    });
-                } else {
-                    lang.forIn(cdrs, (d, n) => {
-                        if (!descriptos[n]) {
+            if (this.parent) {
+                descriptos = { ...this.parent.getPropertyDescriptors() };
+                let cdrs = Object.getOwnPropertyDescriptors(this.type.prototype);
+                lang.forIn(cdrs, (d, n) => {
+                    d[name] = n;
+                    descriptos[n] = d;
+                });
+            } else {
+                this.extendTypes.forEach(ty => {
+                    let cdrs = Object.getOwnPropertyDescriptors(ty.prototype);
+                    if (!descriptos) {
+                        descriptos = cdrs;
+                        descriptos = {};
+                        lang.forIn(cdrs, (d, n) => {
                             d[name] = n;
                             descriptos[n] = d;
-                        }
-                    });
-                }
-            });
+                        });
+                    } else {
+                        lang.forIn(cdrs, (d, n) => {
+                            if (!descriptos[n]) {
+                                d[name] = n;
+                                descriptos[n] = d;
+                            }
+                        });
+                    }
+                });
+            }
             this.descriptos = descriptos;
         }
         return this.descriptos;
