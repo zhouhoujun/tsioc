@@ -1,4 +1,4 @@
-import { lang } from "@tsdi/ioc";
+import { lang } from '@tsdi/ioc';
 
 /**
  * A type describing supported iterable types.

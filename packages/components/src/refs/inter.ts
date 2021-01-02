@@ -1,9 +1,9 @@
-import { IBootContext } from "@tsdi/boot";
-import { Type } from "@tsdi/ioc";
-import { ComponentRef } from "./component";
-import { ElementRef } from "./element";
-import { TemplateRef } from "./template";
-import { ViewRef } from "./view";
+import { Type } from '@tsdi/ioc';
+import { IBootContext } from '@tsdi/boot';
+import { ComponentRef } from './component';
+import { ElementRef } from './element';
+import { TemplateRef } from './template';
+import { ViewRef } from './view';
 
 /**
  * component boot context.
