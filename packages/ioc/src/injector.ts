@@ -235,18 +235,7 @@ export class Provider extends Destoryable implements IProvider {
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
         const key = getTokenKey(token);
-        const pds = this.factories.get(key);
-        if (provider) {
-            if (pds) {
-                pds.value = value;
-                pds.provider = provider;
-            } else {
-                this.factories.set(key, { value, provider });
-            }
-            if (!this.getContainer().regedState.isRegistered(provider)) this.factories.set(provider, { value, provider });
-        } else {
-            pds ? pds.value = value : this.factories.set(key, { value });
-        }
+        this.factories.set(key, { ...this.factories.get(key), value, provider });
         return this;
     }
 
