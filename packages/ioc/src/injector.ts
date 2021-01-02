@@ -69,9 +69,6 @@ export class Provider extends Destoryable implements IProvider {
         let key = getTokenKey(provide);
         if (isFunction(fac)) {
             let provider = pdOrRep as Type;
-            if (!provider) {
-                provider = isClass(key) ? key : undefined;
-            }
             this.factories.set(key, { fac, provider });
         } else if (fac) {
             pdOrRep ? this.factories.set(key, fac) : this.factories.set(key, { ...this.factories.get(key), ...fac });
