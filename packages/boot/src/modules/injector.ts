@@ -45,24 +45,15 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
-        const pdr = this.factories.get(key);
-        if (!pdr) {
+        return this.getInstVia(key, () => {
             let instance: T;
             if (this.deps.some(e => {
-                instance = e.exports.getInstance(key);
+                instance = e.exports.getInstance(key, ...providers);
                 return !isNil(instance);
             })) {
                 return instance;
             }
-            return this.parent?.getInstance(key);
-        }
-        if (!isNil(pdr.value)) return pdr.value;
-        if (pdr.expires) {
-            if (pdr.expires > Date.now()) return pdr.cache;
-            pdr.expires = null;
-            pdr.cache = null;
-        }
-        return pdr.fac ? pdr.fac(...providers) ?? null : null;
+        }, true, ...providers);
     }
 
     hasValue<T>(token: Token<T>, deep?: boolean): boolean {
@@ -288,24 +279,15 @@ export class ModuleProviders extends Provider implements IModuleProvider {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
-        const pdr = this.factories.get(key);
-        if (!pdr) {
+        return this.getInstVia(key, () => {
             let instance: T;
             if (this.exports.some(e => {
-                instance = e.exports.getInstance(key);
+                instance = e.exports.getInstance(key, ...providers);
                 return !isNil(instance);
             })) {
                 return instance;
             }
-            return null;
-        }
-        if (!isNil(pdr.value)) return pdr.value;
-        if (pdr.expires) {
-            if (pdr.expires > Date.now()) return pdr.cache;
-            pdr.expires = null;
-            pdr.cache = null;
-        }
-        return pdr.fac ? pdr.fac(...providers) ?? null : null;
+        }, false, ...providers);
     }
 
     iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {

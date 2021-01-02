@@ -6,7 +6,7 @@ import { KeyValueProvider, StaticProviders } from './providers';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
-import { CONTAINER } from './utils/tk';
+import { CONTAINER, PROVIDERS } from './utils/tk';
 import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
 import { Registered } from './decor/type';
@@ -296,8 +296,18 @@ export class Provider extends Destoryable implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
+        return this.getInstVia(key, null, true, ...providers);
+    }
+
+    protected getInstVia<T>(key: SymbolType<T>, ext: (...pdrs: ProviderType[]) => T, deep: boolean, ...providers: ProviderType[]): T {
         const pdr = this.factories.get(key);
-        if (!pdr) return this.parent?.getInstance(key);
+        if (!pdr) {
+            if (ext) {
+                let inst = ext(...providers);
+                if (!isNil(inst)) return inst;
+            }
+            return deep ? this.parent?.getInstance(key, ...providers) : null;
+        }
         if (!isNil(pdr.value)) return pdr.value;
         if (pdr.expires) {
             if (pdr.expires > Date.now()) return pdr.cache;
@@ -410,7 +420,9 @@ export class Provider extends Destoryable implements IProvider {
     }
 }
 
-
+export function isProvider(target: any): target is Provider {
+    return target instanceof Provider;
+}
 
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {
@@ -565,7 +577,7 @@ export abstract class Injector extends Provider implements IInjector {
  * @param {object} target
  * @returns {target is Injector}
  */
-export function isInjector(target: any): target is IProvider {
+export function isInjector(target: any): target is Injector {
     return target instanceof Injector && target.type === 'injector';
 }
 
