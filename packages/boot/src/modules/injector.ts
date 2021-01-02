@@ -56,14 +56,14 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
         }, true, ...providers);
     }
 
-    hasValue<T>(token: Token<T>, deep?: boolean): boolean {
+    hasValue<T>(token: Token<T>): boolean {
         const key = getTokenKey(token);
-        return super.hasValue(key, deep) || this.hasValInExports(key);
+        return super.hasValue(key) || this.hasValInExports(key);
     }
 
-    getValue<T>(token: Token<T>, deep?: boolean): T {
+    getValue<T>(token: Token<T>): T {
         const key = getTokenKey(token);
-        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? (deep !== false ? this.parent?.getValue(key, deep) : null);
+        return super.getValue(key) ?? this.getValInExports(key);
     }
 
     addRef(ref: ModuleRef, first?: boolean): this {
@@ -299,14 +299,14 @@ export class ModuleProviders extends Provider implements IModuleProvider {
         }
     }
 
-    hasValue<T>(token: Token<T>, deep?: boolean): boolean {
+    hasValue<T>(token: Token<T>): boolean {
         const key = getTokenKey(token);
-        return super.hasValue(key, deep) || this.hasValInExports(key);
+        return super.hasValue(key) || this.hasValInExports(key);
     }
 
-    getValue<T>(token: Token<T>, deep?: boolean): T {
+    getValue<T>(token: Token<T>): T {
         const key = getTokenKey(token);
-        return this.factories.get(key)?.value ?? this.getValInExports(key) ?? (deep !== false ? this.parent.getValue(key, deep) : null);
+        return super.getValue(key) ?? this.getValInExports(key);
     }
 
     /**

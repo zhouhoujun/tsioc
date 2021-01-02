@@ -6,7 +6,6 @@ import { KeyValueProvider, StaticProviders } from './providers';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
-import { CONTAINER, PROVIDERS } from './utils/tk';
 import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
 import { Registered } from './decor/type';
@@ -42,10 +41,7 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     getContainer(): IContainer {
-        if (!this.hasTokenKey(CONTAINER)) {
-            this.setValue(CONTAINER, this.parent.getContainer());
-        }
-        return this.getValue(CONTAINER);
+        return this.parent?.getContainer()
     }
 
 
@@ -232,12 +228,12 @@ export class Provider extends Destoryable implements IProvider {
         return this.factories.has(key) || (deep && this.parent?.hasTokenKey(key));
     }
 
-    hasValue<T>(token: Token<T>, deep?: boolean): boolean {
-        return !isNil(this.factories.get(getTokenKey(token))?.value) || (deep && this.parent?.hasValue(token));
+    hasValue<T>(token: Token<T>): boolean {
+        return !isNil(this.factories.get(getTokenKey(token))?.value);
     }
 
-    getValue<T>(token: Token<T>, deep?: boolean): T {
-        return this.factories.get(getTokenKey(token))?.value || (deep ? this.parent?.getValue(token, deep) : null);
+    getValue<T>(token: Token<T>): T {
+        return this.factories.get(getTokenKey(token))?.value ?? null;
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
@@ -429,6 +425,16 @@ export abstract class Injector extends Provider implements IInjector {
 
     constructor(readonly parent: IInjector) {
         super(parent, 'injector');
+    }
+
+    hasValue<T>(token: Token<T>): boolean {
+        const key = getTokenKey(token);
+        return !isNil(this.factories.get(key)?.value) || this.parent?.hasValue(key);
+    }
+
+    getValue<T>(token: Token<T>): T {
+        const key = getTokenKey(token);
+        return this.factories.get(key)?.value || this.parent?.getValue(key);
     }
 
     /**

@@ -28,10 +28,6 @@ export class InjectorImpl extends Injector {
         this.initReg();
     }
 
-    getValue<T>(token: Token<T>, deep?: boolean): T {
-        return this.factories.get(getTokenKey(token))?.value || (deep !== false ? this.parent?.getValue(token, deep) : null);
-    }
-
     /**
      * register provider.
      *

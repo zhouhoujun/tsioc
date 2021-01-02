@@ -56,9 +56,8 @@ export interface IProvider extends IDestoryable {
     /**
      * has value or not.
      * @param key
-     * @param {boolean} deep deep check in parent or not.
      */
-    hasValue<T>(key: Token<T>, deep?: boolean): boolean;
+    hasValue<T>(key: Token<T>): boolean;
     /**
      * get token instace in current injector or root container.
      *
@@ -91,9 +90,8 @@ export interface IProvider extends IDestoryable {
     /**
      * get value.
      * @param token token key.
-     * @param {boolean} deep get token value deep in parent or not.
      */
-    getValue<T>(token: Token<T>, deep?: boolean): T;
+    getValue<T>(token: Token<T>): T;
     /**
      * set value.
      * @param token provide key
