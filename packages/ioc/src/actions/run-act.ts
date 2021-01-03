@@ -64,7 +64,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             token = metas.find(m => m.type)?.type;
         }
         if (isToken(token) && !ctx[key]) {
-            let val = providers.get(token, providers) ?? injector.resolve({ token, target: ctx.type }, providers);
+            let val = providers?.get(token, providers) ?? injector.resolve({ token, target: ctx.type }, providers);
             if (!isNil(val)) {
                 ctx.instance[propertyKey] = val;
                 ctx[key] = true;

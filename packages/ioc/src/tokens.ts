@@ -1,6 +1,6 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
 import { IProvider } from './IInjector';
-import { isFunction, isString, isClassType, isSymbol, isNil } from './utils/chk';
+import { isFunction, isString, isClassType, isSymbol } from './utils/chk';
 import { refInjExp } from './utils/exps';
 import { StaticProvider } from './providers';
 import { getClassName } from './utils/lang';
@@ -220,24 +220,6 @@ export interface InstFac<T = any> {
      * cache expires.
      */
     expires?: number;
-}
-
-export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
-    if (!pd) return null;
-    if (!isNil(pd.value)) return pd.value;
-    if (pd.expires) {
-        if (pd.expires > Date.now()) return pd.cache;
-        pd.expires = null;
-        pd.cache = null;
-    }
-    return pd.fac ? pd.fac(...providers) ?? null : null;
-}
-
-export function hasFacValue<T>(pd: InstFac<T>): boolean {
-    return !isNil(pd?.value)
-}
-export function getFacValue<T>(pd: InstFac<T>): T {
-    return pd?.value ?? null;
 }
 
 /**

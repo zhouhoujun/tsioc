@@ -4,8 +4,8 @@ import { Destoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption, Strategy } from './IInjector';
-import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token, getFacInstance, getFacValue, hasFacValue } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
+import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
 import { IContainer } from './IContainer';
 import { getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
@@ -13,34 +13,7 @@ import { PROVIDERS } from './utils/tk';
 
 
 
-/**
- * default strategy.
- */
-export const defaultStrategy: Strategy = {
-    hasTokenKey: <T>(key: SymbolType<T>, curr: IProvider, deep?: boolean) => {
-        return deep && curr.parent?.hasTokenKey(key)
-    },
-    getInstance: <T>(key: SymbolType<T>, curr: IProvider, ...providers: ProviderType[]) => {
-        return curr.parent?.getInstance(key, ...providers);
-    },
-    hasValue: <T>(key: SymbolType<T>, curr: IProvider) => {
-        return curr.parent?.hasValue(key);
-    },
-    getValue: <T>(key: SymbolType<T>, curr: IProvider) => {
-        return curr.parent?.getValue(key);
-    },
-    getTokenProvider: <T>(key: SymbolType<T>, curr: IProvider) => {
-        return curr.parent?.getTokenProvider(key);
-    },
-    iterator: (map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) => {
-        if (mapEach(map, callbackfn, curr) === false) {
-            return false;
-        }
-        if (deep) {
-            return curr.parent?.iterator(callbackfn, deep);
-        }
-    }
-}
+
 
 /**
  * provider container.
@@ -74,7 +47,7 @@ export class Provider extends Destoryable implements IProvider {
 
     protected container: IContainer;
     getContainer(): IContainer {
-        if(!this.container){
+        if (!this.container) {
             this.container = this.parent?.getContainer();
         }
         return this.container;
@@ -263,17 +236,23 @@ export class Provider extends Destoryable implements IProvider {
 
     hasValue<T>(token: Token<T>): boolean {
         const key = getTokenKey(token);
-        return hasFacValue(this.factories.get(key)) || this.strategy.hasValue(key, this);
+        return !isNil(this.factories.get(key)?.value) || this.strategy.hasValue(key, this);
     }
 
     getValue<T>(token: Token<T>): T {
         const key = getTokenKey(token);
-        return getFacValue(this.factories.get(key)) ?? this.strategy.getValue(key, this);
+        return this.factories.get(key)?.value ?? this.strategy.getValue(key, this);
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
         const key = getTokenKey(token);
-        this.factories.set(key, { ...this.factories.get(key), value, provider });
+        const fc = this.factories.get(key);
+        if (fc) {
+            fc.value = value;
+            if (provider) fc.provider = provider;
+        } else {
+            this.factories.set(key, { value, provider });
+        }
         return this;
     }
 
@@ -434,11 +413,55 @@ export class Provider extends Destoryable implements IProvider {
     }
 }
 
+export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
+    if (!pd) return null;
+    if (!isNil(pd.value)) return pd.value;
+    if (pd.expires) {
+        if (pd.expires > Date.now()) return pd.cache;
+        pd.expires = null;
+        pd.cache = null;
+    }
+    return pd.fac ? pd.fac(...providers) ?? null : null;
+}
+
+
+/**
+ * default strategy.
+ */
+export const defaultStrategy: Strategy = {
+    hasTokenKey: <T>(key: SymbolType<T>, curr: IProvider, deep?: boolean) => {
+        return deep && curr.parent?.hasTokenKey(key)
+    },
+    getInstance: <T>(key: SymbolType<T>, curr: IProvider, ...providers: ProviderType[]) => {
+        return curr.parent?.getInstance(key, ...providers);
+    },
+    hasValue: <T>(key: SymbolType<T>, curr: IProvider) => {
+        return curr.parent?.hasValue(key);
+    },
+    getValue: <T>(key: SymbolType<T>, curr: IProvider) => {
+        return curr.parent?.getValue(key);
+    },
+    getTokenProvider: <T>(key: SymbolType<T>, curr: IProvider) => {
+        return curr.parent?.getTokenProvider(key);
+    },
+    iterator: (map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) => {
+        if (mapEach(map, callbackfn, curr) === false) {
+            return false;
+        }
+        if (deep) {
+            return curr.parent?.iterator(callbackfn, deep);
+        }
+    }
+}
+
 export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
 }
 
-export function getProvider(injector: IInjector, ...providers: ProviderType[]) {
+export function getProvider(injector: IInjector, ify?: boolean | ProviderType, ...providers: ProviderType[]) {
+    let force = false;
+    isBoolean(ify) ? force = ify : providers.unshift(ify);
+    if (!force && !providers.length) return null;
     if (providers.length === 1 && isProvider(providers[0])) return providers[0];
     return injector.getContainer().get(PROVIDERS).inject(...providers);
 }
