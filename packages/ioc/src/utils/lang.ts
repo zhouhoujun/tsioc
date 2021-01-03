@@ -56,7 +56,7 @@ export function forIn(target: any, iterator: (item: any, idx?: any) => void | bo
     }
 }
 
-export function mapEach<TKey, TVal, TC=any>(map: Map<TKey, TVal>, callbackfn: (fac: TVal, key: TKey, resolvor?: TC) => void | boolean, resolvor?: TC) {
+export function mapEach<TKey, TVal, TC = any>(map: Map<TKey, TVal>, callbackfn: (fac: TVal, key: TKey, resolvor?: TC) => void | boolean, resolvor?: TC) {
     const keys = Array.from(map.keys());
     const values = Array.from(map.values());
     if (Array.from(keys).some((tk, idx) => callbackfn(values[idx], tk, resolvor) === false)) {
@@ -233,16 +233,14 @@ function getContentTypes(regModule: Modules): Type[] {
 }
 
 /**
- * async clean object.
+ * clean object.
  * @param obj.
  */
 export function cleanObj(obj: Object) {
     if (!obj) return;
-    setTimeout(() => {
-        for (let k in obj) {
-            obj[k] = null;
-        }
-    });
+    for (let k in obj) {
+        obj[k] = null;
+    }
 }
 
 
