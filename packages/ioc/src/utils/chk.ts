@@ -349,7 +349,8 @@ export function isPrimitiveType(target): boolean {
         || target === String
         || target === Number
         || target === Boolean
-        || target === Symbol;
+        || target === Symbol
+        || target === Promise;
 }
 
 /**
