@@ -60,12 +60,8 @@ const invdt = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^
 
 function classCheck(target: any, abstract?: boolean): boolean {
     if (!isFunction(target)) return false;
-
     if (!target.name || !target.prototype) return false;
-
     if (target.prototype.constructor !== target) return false;
-
-    if (isPrimitiveType(target)) return false;
 
     const rf: TypeReflect = target[reflFiled]?.();
     if (rf) {
@@ -76,6 +72,7 @@ function classCheck(target: any, abstract?: boolean): boolean {
     }
 
     if (hasDesignAnno(target)) return true;
+    if (isPrimitiveType(target)) return false;
 
     const str = target.toString();
     if (invdt.test(str)) return false;
