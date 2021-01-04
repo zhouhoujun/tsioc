@@ -30,29 +30,26 @@ export interface IProvider extends IDestoryable {
      *
      * @template T
      * @param {Token<T>} token the token.
-     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>, deep?: boolean): boolean;
+    has<T>(token: Token<T>): boolean;
     /**
      * has token in current injector.
      *
      * @template T
      * @param {Token<T>} token the token.
      * @param {string} alias addtion alias
-     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>, alias: string, deep?: boolean): boolean;
+    has<T>(token: Token<T>, alias: string): boolean;
     /**
      * has token key.
      *
      * @template T
      * @param {SymbolType<T>} key the token key.
-     * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean;
+    hasTokenKey<T>(key: SymbolType<T>): boolean;
     /**
      * has value or not.
      * @param key
@@ -103,6 +100,16 @@ export interface IProvider extends IDestoryable {
      * @param token key
      */
     delValue<T>(token: Token<T>): void;
+    /**
+     * bind provider
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Type<T>} provider
+     * @param {Registered} [reged]  provider registered state.
+     * @returns {this}
+     */
+    bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
     /**
     * get token implement class type.
     *
@@ -281,6 +288,35 @@ export interface ServicesOption<T> extends ServiceOption<T> {
 export interface IInjector extends IProvider {
 
     readonly parent?: IInjector;
+
+    /**
+     * has register.
+     *
+     * @template T
+     * @param {Token<T>} token the token.
+     * @param {boolean} deep deep check in parent or not.
+     * @returns {boolean}
+     */
+    has<T>(token: Token<T>, deep?: boolean): boolean;
+    /**
+     * has token in current injector.
+     *
+     * @template T
+     * @param {Token<T>} token the token.
+     * @param {string} alias addtion alias
+     * @param {boolean} deep deep check in parent or not.
+     * @returns {boolean}
+     */
+    has<T>(token: Token<T>, alias: string, deep?: boolean): boolean;
+    /**
+     * has token key.
+     *
+     * @template T
+     * @param {SymbolType<T>} key the token key.
+     * @param {boolean} deep deep check in parent or not.
+     * @returns {boolean}
+     */
+    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean;
     /**
      * use modules.
      *
@@ -307,16 +343,6 @@ export interface IInjector extends IProvider {
      * @returns {this}
      */
     registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
-    /**
-     * bind provider
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Type<T>} provider
-     * @param {Registered} [reged]  provider registered state.
-     * @returns {this}
-     */
-    bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
     /**
      * resolve token instance with token and param provider.
      *

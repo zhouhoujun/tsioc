@@ -80,7 +80,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {any[]}
      */
     createParams(injector: IInjector, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
-        return this.resolveParams(injector, params, injector.getInstance(INVOKED_PROVIDERS).inject(...providers));
+        return this.resolveParams(injector, params, injector.getContainer().getInstance(INVOKED_PROVIDERS).inject(...providers));
     }
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider): any[] {

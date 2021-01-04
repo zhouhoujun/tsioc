@@ -16,9 +16,24 @@ import { InjectorImpl } from '../container';
 export function registerCores(container: IContainer) {
 
     container.setValue(CONTAINER, container);
-    container.set(INJECTOR_FACTORY, () => new InjectorImpl(container), InjectorImpl);
-    container.set(PROVIDERS, () => new Provider(container), Provider);
-    container.set(INVOKED_PROVIDERS, () => new InvokedProvider(container), InvokedProvider);
+    container.set(INJECTOR_FACTORY, () => {
+        const inj = new InjectorImpl();
+        inj.seContainer(container);
+        return inj;
+    }, InjectorImpl);
+
+    container.set(PROVIDERS, () => {
+        const pdr = new Provider();
+        pdr.seContainer(container);
+        return pdr;
+    }, Provider);
+
+    container.set(INVOKED_PROVIDERS, () => {
+        const pdr = new InvokedProvider();
+        pdr.seContainer(container);
+        return pdr;
+    }, Provider);
+
     container.setValue(METHOD_ACCESSOR, new MethodAccessor(), MethodAccessor);
 
     // bing action.

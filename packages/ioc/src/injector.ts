@@ -31,7 +31,7 @@ export class Provider extends Destoryable implements IProvider {
      */
     protected factories: Map<SymbolType, InstFac>;
 
-    constructor(readonly parent: IProvider, readonly type?: string) {
+    constructor(readonly parent?: IProvider, readonly type?: string) {
         super();
         this.factories = new Map();
     }
@@ -40,8 +40,13 @@ export class Provider extends Destoryable implements IProvider {
         return this.factories.size;
     }
 
+    private _container: IContainer;
     getContainer(): IContainer {
-        return this.parent?.getContainer()
+        return this._container || this.parent?.getContainer()
+    }
+
+    seContainer(container: IContainer) {
+        this._container = container;
     }
 
 
@@ -222,15 +227,17 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean {
-        return this.factories.has(key) || (deep && this.parent?.hasTokenKey(key));
+        return this.factories.has(key) || this.parent?.hasTokenKey(key) || (deep && this.getContainer().hasTokenKey(key));
     }
 
     hasValue<T>(token: Token<T>): boolean {
-        return !isNil(this.factories.get(getTokenKey(token))?.value);
+        const key = getTokenKey(token);
+        return !isNil(this.factories.get(key)?.value) || this.parent?.hasValue(key);
     }
 
     getValue<T>(token: Token<T>): T {
-        return this.factories.get(getTokenKey(token))?.value ?? null;
+        const key = getTokenKey(token);
+        return this.factories.get(key)?.value || this.parent?.getValue(key);
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
@@ -278,25 +285,57 @@ export class Provider extends Destoryable implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
-        return this.getInstVia(key, null, true, ...providers);
+        return this.strategy(key, null, ...providers);
     }
 
-    protected getInstVia<T>(key: SymbolType<T>, ext: (...pdrs: ProviderType[]) => T, deep: boolean, ...providers: ProviderType[]): T {
-        const pdr = this.factories.get(key);
-        if (!pdr) {
-            if (ext) {
-                let inst = ext(...providers);
-                if (!isNil(inst)) return inst;
+    protected strategy<T>(key: SymbolType<T>, parentStrategy: { before?: (...pdrs: ProviderType[]) => T, after?: (...pdrs: ProviderType[]) => T }, ...providers: ProviderType[]): T {
+        let inst = this.toResult(this.factories.get(key), ...providers);
+        if (!isNil(inst)) return inst;
+        if (parentStrategy?.before) {
+            inst = parentStrategy.before(...providers);
+            if (!isNil(inst)) return inst;
+        }
+        inst = this.parent?.getInstance(key, ...providers);
+        if (!isNil(inst)) return inst;
+        if (parentStrategy?.after) {
+            return parentStrategy.after(...providers);
+        }
+        return null;
+
+    }
+
+    protected toResult<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
+        if (!pd) return null;
+        if (!isNil(pd.value)) return pd.value;
+        if (pd.expires) {
+            if (pd.expires > Date.now()) return pd.cache;
+            pd.expires = null;
+            pd.cache = null;
+        }
+        return pd.fac ? pd.fac(...providers) ?? null : null;
+    }
+
+    /**
+     * bind provider.
+     *
+     * @template T
+     * @param {Token<T>} provide
+     * @param {Type<T>} provider
+     * @param {Registered} [reged]  provider registered state.
+     * @returns {this}
+     * @memberof Injector
+     */
+    bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this {
+        const provideKey = getTokenKey(provide);
+        if (provideKey && isClass(provider)) {
+            const pdr = this.factories.get(provideKey);
+            !reged && this.registerType(provider);
+            if (reged && reged.provides.indexOf(provideKey) < 0) {
+                reged.provides.push(provideKey);
             }
-            return deep ? this.parent?.getInstance(key, ...providers) : null;
+            this.factories.set(provideKey, { fac: (...pdrs) => this.getInstance(provider, ...pdrs), ...pdr, provider: provider });
         }
-        if (!isNil(pdr.value)) return pdr.value;
-        if (pdr.expires) {
-            if (pdr.expires > Date.now()) return pdr.cache;
-            pdr.expires = null;
-            pdr.cache = null;
-        }
-        return pdr.fac ? pdr.fac(...providers) ?? null : null;
+        return this;
     }
 
     /**
@@ -398,6 +437,7 @@ export class Provider extends Destoryable implements IProvider {
 
     protected destroying() {
         this.factories.clear();
+        this._container = null;
         this.factories = null;
     }
 }
@@ -409,18 +449,8 @@ export function isProvider(target: any): target is Provider {
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {
 
-    constructor(readonly parent: IInjector) {
+    constructor(readonly parent?: IInjector) {
         super(parent, 'injector');
-    }
-
-    hasValue<T>(token: Token<T>): boolean {
-        const key = getTokenKey(token);
-        return !isNil(this.factories.get(key)?.value) || this.parent?.hasValue(key);
-    }
-
-    getValue<T>(token: Token<T>): T {
-        const key = getTokenKey(token);
-        return this.factories.get(key)?.value || this.parent?.getValue(key);
     }
 
     /**
@@ -445,28 +475,7 @@ export abstract class Injector extends Provider implements IInjector {
      */
     abstract registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
 
-    /**
-     * bind provider.
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Type<T>} provider
-     * @param {Registered} [reged]  provider registered state.
-     * @returns {this}
-     * @memberof Injector
-     */
-    bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this {
-        const provideKey = getTokenKey(provide);
-        if (provideKey && isClass(provider)) {
-            const pdr = this.factories.get(provideKey);
-            !reged && this.registerType(provider);
-            if (reged && reged.provides.indexOf(provideKey) < 0) {
-                reged.provides.push(provideKey);
-            }
-            this.factories.set(provideKey, { fac: (...pdrs) => this.getInstance(provider, ...pdrs), ...pdr, provider: provider });
-        }
-        return this;
-    }
+
 
     /**
      * use modules.
@@ -578,7 +587,7 @@ export function isInjector(target: any): target is Injector {
  * invoked param provider.
  */
 export class InvokedProvider extends Provider {
-    constructor(readonly parent: IProvider) {
+    constructor(parent?: IProvider) {
         super(parent, 'invoked');
     }
 }

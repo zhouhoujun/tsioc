@@ -66,7 +66,7 @@ function fac(actionPdr: IActionProvider, injector: IInjector, type: Type, token:
         if(providers.length == 1 && isProvider(providers[0])){
             pdrs = providers[0];
         } else {
-           pdrs = injector.get(PROVIDERS).inject(...providers);
+           pdrs = injector.getContainer().get(PROVIDERS).inject(...providers);
         }
         const ctx = {
             injector,

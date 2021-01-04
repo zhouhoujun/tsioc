@@ -25,6 +25,7 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
     constructor(parent: IInjector) {
         super(parent);
         this._root = isContainer(parent);
+        parent && this.seContainer(parent.getContainer());
         this.deps = [];
         this.onDestroy(() => {
             this.deps.forEach(mr => mr.destroy());
@@ -45,15 +46,18 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
-        return this.getInstVia(key, () => {
-            let instance: T;
-            if (this.deps.some(e => {
-                instance = e.exports.getInstance(key, ...providers);
-                return !isNil(instance);
-            })) {
-                return instance;
-            }
-        }, true, ...providers);
+        return this.strategy(key, {
+            before: () => {
+                let instance: T;
+                if (this.deps.some(e => {
+                    instance = e.exports.getInstance(key, ...providers);
+                    return !isNil(instance);
+                })) {
+                    return instance;
+                }
+            },
+            after: () => this._root? this.getContainer()?.getInstance(key, ...providers) : null
+        }, ...providers);
     }
 
     hasValue<T>(token: Token<T>): boolean {
@@ -279,15 +283,17 @@ export class ModuleProviders extends Provider implements IModuleProvider {
     }
 
     getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
-        return this.getInstVia(key, () => {
-            let instance: T;
-            if (this.exports.some(e => {
-                instance = e.exports.getInstance(key, ...providers);
-                return !isNil(instance);
-            })) {
-                return instance;
+        return this.strategy(key, {
+            before: () => {
+                let instance: T;
+                if (this.exports.some(e => {
+                    instance = e.exports.getInstance(key, ...providers);
+                    return !isNil(instance);
+                })) {
+                    return instance;
+                }
             }
-        }, false, ...providers);
+        }, ...providers);
     }
 
     iterator(callbackfn: (pdr: InstFac, tk: SymbolType, resolvor?: IInjector) => void | boolean, deep?: boolean): void | boolean {

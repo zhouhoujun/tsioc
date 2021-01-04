@@ -39,11 +39,11 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
 
     setup() {
         this.use(
+            ResolveInProvidersAction,
             ResolvePrivateAction,
             ResolveRefAction,
             ResolveInInjectorAction,
-            ResolveInRootAction,
-            ResolveInProvidersAction,
+            ResolveInParentAction,
             ResolveDefaultAction
         );
     }
@@ -80,10 +80,10 @@ export const ResolveInInjectorAction = function (ctx: ResolveContext, next: () =
 };
 
 
-export const ResolveInRootAction = function (ctx: ResolveContext, next: () => void): void {
-    let container = ctx.injector.getContainer();
-    if (container.has(ctx.token)) {
-        ctx.instance = container.get(ctx.token, ctx.providers);
+export const ResolveInParentAction = function (ctx: ResolveContext, next: () => void): void {
+    let parent = ctx.injector.parent;
+    if (parent.has(ctx.token)) {
+        ctx.instance = parent.get(ctx.token, ctx.providers);
     }
     if (isNil(ctx.instance)) {
         next();
