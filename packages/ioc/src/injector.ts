@@ -31,7 +31,7 @@ export class Provider extends Destoryable implements IProvider {
      * @memberof BaseInjector
      */
     protected factories: Map<SymbolType, InstFac>;
-
+    
     constructor(readonly parent?: IProvider, readonly type?: string) {
         super();
         this.factories = new Map();

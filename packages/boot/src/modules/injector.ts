@@ -1,6 +1,6 @@
 import {
     Token, lang, SymbolType, Type, IInjector, Provider, InstFac, ProviderType,
-    isNil, isClass, getTokenKey, isPlainObject, InjectorImpl, IProvider, isContainer
+    isNil, isClass, getTokenKey, isPlainObject, InjectorImpl, isContainer, IContainer
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 import { ROOT_INJECTOR } from '../tk';
@@ -220,9 +220,9 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
  */
 export class ModuleProviders extends Provider implements IModuleProvider {
 
-    constructor(parent: IProvider, type?: string) {
-        super(null, type);
-        this.container = parent.getContainer();
+    constructor(container: IContainer) {
+        super();
+        this.container = container;
         this.onDestroy(() => {
             this.mdInjector = null;
             this.exports.forEach(e => e.destroy());
