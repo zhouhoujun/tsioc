@@ -221,7 +221,8 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 export class ModuleProviders extends Provider implements IModuleProvider {
 
     constructor(parent: IProvider, type?: string) {
-        super(parent, type);
+        super(null, type);
+        this.container = parent.getContainer();
         this.onDestroy(() => {
             this.mdInjector = null;
             this.exports.forEach(e => e.destroy());
