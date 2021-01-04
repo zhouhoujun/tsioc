@@ -5,7 +5,7 @@ import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
 import { Registered } from './decor/type';
@@ -41,13 +41,9 @@ export class Provider extends Destoryable implements IProvider {
         return this.factories.size;
     }
 
-    private _container: IContainer;
+    private container: IContainer;
     getContainer(): IContainer {
-        return this._container || this.parent?.getContainer()
-    }
-
-    seContainer(container: IContainer) {
-        this._container = container;
+        return this.container || this.parent?.getContainer()
     }
 
 
@@ -224,11 +220,11 @@ export class Provider extends Destoryable implements IProvider {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, alias?: string | boolean, deep?: boolean): boolean {
-        return this.hasTokenKey(getTokenKey(token, isString(alias) ? alias : ''), isBoolean(alias) ? alias : deep);
+        return isString(alias) ? this.hasTokenKey(getTokenKey(token, alias), deep) : this.hasTokenKey(getTokenKey(token), alias);
     }
 
     hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean {
-        return this.factories.has(key) || this.parent?.hasTokenKey(key) || (deep && this.getContainer().hasTokenKey(key));
+        return this.factories.has(key) || (deep && this.parent?.hasTokenKey(key));
     }
 
     hasValue<T>(token: Token<T>): boolean {
@@ -439,7 +435,7 @@ export class Provider extends Destoryable implements IProvider {
 
     protected destroying() {
         this.factories.clear();
-        this._container = null;
+        this.container = null;
         this.factories = null;
     }
 }
@@ -456,7 +452,7 @@ export function getProvider(injector: IInjector, ...providers: ProviderType[]) {
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {
 
-    constructor(readonly parent?: IInjector) {
+    constructor(readonly parent: IInjector) {
         super(parent, 'injector');
     }
 

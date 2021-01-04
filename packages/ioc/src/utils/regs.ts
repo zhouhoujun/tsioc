@@ -1,11 +1,19 @@
 import { IContainer } from '../IContainer';
-import { Provider, InvokedProvider } from '../injector';
+import { Provider, InvokedProvider, getProvider } from '../injector';
 import { MethodAccessor } from '../actions/accessor';
-import { INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS, INVOKED_PROVIDERS, CONTAINER } from './tk';
+import { INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS, INVOKED_PROVIDERS, CONTAINER, PARENT_INJECTOR, INJECTOR } from './tk';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
 import { ResolveLifeScope } from '../actions/resolve';
 import { InjectorImpl } from '../container';
+import { ProviderType } from '../tokens';
+import { IProvider } from '../IInjector';
+
+
+
+interface InternalProvider extends IProvider {
+    container: IContainer;
+}
 
 /**
  * register core for container.
@@ -16,23 +24,22 @@ import { InjectorImpl } from '../container';
 export function registerCores(container: IContainer) {
 
     container.setValue(CONTAINER, container);
-    container.set(INJECTOR_FACTORY, () => {
-        const inj = new InjectorImpl();
-        inj.seContainer(container);
-        return inj;
+    container.set(INJECTOR_FACTORY, (...providers: ProviderType[]) => {
+        const pdr = getProvider(container, ...providers);
+        return new InjectorImpl(pdr.getValue(PARENT_INJECTOR) ?? pdr.getValue(INJECTOR) ?? container);
     }, InjectorImpl);
 
     container.set(PROVIDERS, () => {
-        const pdr = new Provider();
-        pdr.seContainer(container);
+        const pdr: any = new Provider();
+        (pdr as InternalProvider).container = container;
         return pdr;
     }, Provider);
 
     container.set(INVOKED_PROVIDERS, () => {
-        const pdr = new InvokedProvider();
-        pdr.seContainer(container);
+        const pdr: any = new InvokedProvider();
+        (pdr as InternalProvider).container = container;
         return pdr;
-    }, Provider);
+    }, InvokedProvider);
 
     container.setValue(METHOD_ACCESSOR, new MethodAccessor(), MethodAccessor);
 

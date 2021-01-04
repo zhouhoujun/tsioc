@@ -42,8 +42,8 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
             ResolvePrivateAction,
             ResolveRefAction,
             ResolveInInjectorAction,
-            ResolveInParentAction,
             ResolveInProvidersAction,
+            ResolveInParentAction,
             ResolveDefaultAction
         );
     }
