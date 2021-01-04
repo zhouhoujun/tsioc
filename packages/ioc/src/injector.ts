@@ -9,6 +9,7 @@ import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, i
 import { IContainer } from './IContainer';
 import { getTypes } from './utils/lang';
 import { Registered } from './decor/type';
+import { PROVIDERS } from './utils/tk';
 
 /**
  * provider container.
@@ -289,7 +290,7 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     protected strategy<T>(key: SymbolType<T>, parentStrategy: { before?: (...pdrs: ProviderType[]) => T, after?: (...pdrs: ProviderType[]) => T }, ...providers: ProviderType[]): T {
-        let inst = this.toResult(this.factories.get(key), ...providers);
+        let inst = this.toInst(this.factories.get(key), ...providers);
         if (!isNil(inst)) return inst;
         if (parentStrategy?.before) {
             inst = parentStrategy.before(...providers);
@@ -304,7 +305,7 @@ export class Provider extends Destoryable implements IProvider {
 
     }
 
-    protected toResult<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
+    protected toInst<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
         if (!pd) return null;
         if (!isNil(pd.value)) return pd.value;
         if (pd.expires) {
@@ -333,7 +334,8 @@ export class Provider extends Destoryable implements IProvider {
             if (reged && reged.provides.indexOf(provideKey) < 0) {
                 reged.provides.push(provideKey);
             }
-            this.factories.set(provideKey, { fac: (...pdrs) => this.getInstance(provider, ...pdrs), ...pdr, provider: provider });
+            const fac = reged ? (...pdrs) => reged.getInjector().getInstance(provider, ...pdrs) : (...pdrs) => this.getInstance(provider, ...pdrs);
+            this.factories.set(provideKey, { fac, ...pdr, provider: provider });
         }
         return this;
     }
@@ -444,6 +446,11 @@ export class Provider extends Destoryable implements IProvider {
 
 export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
+}
+
+export function getProvider(injector: IInjector, ...providers: ProviderType[]) {
+    if (providers.length == 1 && isProvider(providers[0])) return providers[0]
+    return injector.getContainer().get(PROVIDERS).inject(...providers);
 }
 
 @Abstract()

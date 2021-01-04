@@ -1,11 +1,11 @@
 import { isNil } from '../utils/chk';
 import { IInjector, ResolveOption } from '../IInjector';
 import { isToken, ProviderType, Token } from '../tokens';
-import { INJECTOR, PROVIDERS } from '../utils/tk';
+import { INJECTOR } from '../utils/tk';
 import * as rla from './res-act';
 import { ResolveContext } from './res';
 import { cleanObj } from '../utils/lang';
-import { Injector } from '../injector';
+import { getProvider, Injector } from '../injector';
 
 /**
  * resolve life scope.
@@ -37,10 +37,16 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
      */
     resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
         providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
+        let option: ResolveOption<T>;
+        if (isToken(token)) {
+            option = { token };
+        } else {
+            option = token;
+        }
         let ctx = {
             injector,
-            ... (isToken(token) ? { token: token } : token),
-            providers: injector.get(PROVIDERS).inject(...providers)
+            ...option,
+            providers: getProvider(injector, ...(option.providers || []),  ...providers)
         } as ResolveContext;
 
         this.execute(ctx);

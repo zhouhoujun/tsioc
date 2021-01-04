@@ -39,11 +39,11 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
 
     setup() {
         this.use(
-            ResolveInProvidersAction,
             ResolvePrivateAction,
             ResolveRefAction,
             ResolveInInjectorAction,
             ResolveInParentAction,
+            ResolveInProvidersAction,
             ResolveDefaultAction
         );
     }

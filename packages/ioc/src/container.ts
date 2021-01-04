@@ -28,6 +28,16 @@ export class InjectorImpl extends Injector {
         this.initReg();
     }
 
+    hasValue<T>(token: Token<T>): boolean {
+        const key = getTokenKey(token);
+        return !isNil(this.factories.get(key)?.value) || this.parent?.hasValue(key) || this.getContainer().hasValue(key);
+    }
+
+    getValue<T>(token: Token<T>): T {
+        const key = getTokenKey(token);
+        return this.factories.get(key)?.value ?? this.parent?.getValue(key) ?? this.getContainer().getValue(key);
+    }
+
     /**
      * get token instance in current injector or root container.
      * @param key token key.

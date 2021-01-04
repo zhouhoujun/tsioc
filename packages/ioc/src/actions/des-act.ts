@@ -7,10 +7,10 @@ import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { PROVIDERS } from '../utils/tk';
-import { IInjector, IProvider } from '../IInjector';
+import { IInjector } from '../IInjector';
 import { Type } from '../types';
 import { IActionProvider } from './act';
-import { isProvider } from '../injector';
+import { getProvider } from '../injector';
 
 
 
@@ -50,7 +50,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
 
 function genReged(injector: IInjector, provide?: SymbolType) {
     return {
-        provides: provide? [provide] : [],
+        provides: provide ? [provide] : [],
         getInjector: () => injector
     }
 }
@@ -62,18 +62,12 @@ function fac(actionPdr: IActionProvider, injector: IInjector, type: Type, token:
             return injector.getValue(type);
         }
 
-        let pdrs: IProvider
-        if(providers.length == 1 && isProvider(providers[0])){
-            pdrs = providers[0];
-        } else {
-           pdrs = injector.getContainer().get(PROVIDERS).inject(...providers);
-        }
         const ctx = {
             injector,
             token,
             type,
             singleton,
-            providers: pdrs
+            providers: getProvider(injector, ...providers)
         } as RuntimeContext;
         actionPdr.getInstance(RuntimeLifeScope).register(ctx);
         const instance = ctx.instance;
@@ -162,8 +156,8 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     tgReflect.refs.forEach(rf => {
         const tk = new InjectReference(
             getTokenKey(
-            rf.provide ? rf.provide : type,
-            rf.provide ? rf.alias : ''), rf.target);
+                rf.provide ? rf.provide : type,
+                rf.provide ? rf.alias : ''), rf.target);
         injector.bindProvider(tk, type, registed);
     });
 
@@ -177,7 +171,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
             this.setValue(refToken, this.get(PROVIDERS).inject(...providers));
         }
         registed.provides.push(getTokenKey(refToken));
-        
+
     }
 
     next();

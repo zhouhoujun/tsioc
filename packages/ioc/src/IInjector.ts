@@ -228,7 +228,7 @@ export interface ResolveOption<T = any> {
     /**
      * resolve providers.
      */
-    providers?: ProviderType;
+    providers?: ProviderType[];
 
 }
 

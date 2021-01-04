@@ -1,5 +1,5 @@
-import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, PROVIDERS, isArray, lang, getToken, IServiceProvider, IContainer, Injector } from '@tsdi/ioc';
-import { ServiceOption, ServiceContext, ServicesOption, ServicesContext } from '../resolves/context';
+import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, isArray, lang, getToken, IServiceProvider, IContainer, Injector, getProvider, ServiceOption, ServicesOption } from '@tsdi/ioc';
+import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 
 /**
@@ -23,17 +23,18 @@ export class ServiceProvider implements IServiceProvider {
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
         providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
+        let option: ServiceOption<T>;
+        if (isToken(target)) {
+            option = { token: target };
+        } else {
+            option = target;
+        }
         let context = {
             injector,
-            ...isToken(target) ? { token: target } : target
+            ...option,
+            providers: getProvider(injector, ...option.providers || [], ...providers)
         } as ServiceContext;
-        if (isArray(context.providers)) {
-            context.providers = injector.get(PROVIDERS).inject(...context.providers);
-        } else {
-            context.providers = injector.get(PROVIDERS);
-        }
-        let pdr = context.providers;
-        providers.length && pdr.inject(...providers);
+
         this.initTargetRef(context);
 
         if (!this.serviceScope) {
@@ -58,8 +59,11 @@ export class ServiceProvider implements IServiceProvider {
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
         let maps = this.getServiceProviders(injector, target);
         let services = [];
+        if (!isToken(target)) {
+            providers.unshift(...target.providers || []);
+        }
         providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
-        let pdr = injector.get(PROVIDERS).inject(...providers);
+        let pdr = getProvider(injector, ...providers);
 
         maps.iterator(p => {
             services.push(p.value ? p.value : p.fac(pdr));
@@ -78,13 +82,10 @@ export class ServiceProvider implements IServiceProvider {
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
         let context = {
             injector,
-            ...isToken(target) ? { token: target } : target
+            ...isToken(target) ? { token: target } : target,
+            providers: null,
         } as ServicesContext;
-        if (isArray(context.providers)) {
-            context.providers = injector.get(PROVIDERS).inject(...context.providers);
-        } else {
-            context.providers = injector.get(PROVIDERS);
-        }
+
         this.initTargetRef(context);
         if (!this.servicesScope) {
             this.servicesScope = this.container.provider.getInstance(ResolveServicesScope);
