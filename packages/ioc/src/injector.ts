@@ -31,8 +31,8 @@ export class Provider extends Destoryable implements IProvider {
      * @memberof BaseInjector
      */
     protected factories: Map<SymbolType, InstFac>;
-    
-    constructor(readonly parent?: IProvider, readonly type?: string) {
+
+    constructor(readonly parent?: IProvider) {
         super();
         this.factories = new Map();
     }
@@ -445,7 +445,7 @@ export function isProvider(target: any): target is Provider {
 }
 
 export function getProvider(injector: IInjector, ...providers: ProviderType[]) {
-    if (providers.length == 1 && isProvider(providers[0])) return providers[0]
+    if (providers.length === 1 && isProvider(providers[0])) return providers[0];
     return injector.getContainer().get(PROVIDERS).inject(...providers);
 }
 
@@ -453,7 +453,7 @@ export function getProvider(injector: IInjector, ...providers: ProviderType[]) {
 export abstract class Injector extends Provider implements IInjector {
 
     constructor(readonly parent: IInjector) {
-        super(parent, 'injector');
+        super(parent);
     }
 
     /**
@@ -582,7 +582,7 @@ export abstract class Injector extends Provider implements IInjector {
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is Injector {
-    return target instanceof Injector && target.type === 'injector';
+    return target instanceof Injector;
 }
 
 
@@ -591,7 +591,7 @@ export function isInjector(target: any): target is Injector {
  */
 export class InvokedProvider extends Provider {
     constructor(parent?: IProvider) {
-        super(parent, 'invoked');
+        super(parent);
     }
 }
 
