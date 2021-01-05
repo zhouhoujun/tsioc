@@ -5,7 +5,17 @@ import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 import { Registered } from './decor/type';
 
-
+/**
+ * strategy.
+ */
+export interface Strategy {
+    hasTokenKey<T>(key: SymbolType<T>, curr: IProvider, deep?: boolean);
+    getInstance<T>(key: SymbolType<T>, curr: IProvider, ...providers: ProviderType[]);
+    hasValue<T>(key: SymbolType<T>, curr: IProvider): boolean;
+    getValue<T>(key: SymbolType<T>, curr: IProvider): T;
+    getTokenProvider<T>(key: SymbolType<T>, curr: IProvider): Type<T>;
+    iterator(map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
+}
 
 /**
  * provider interface.

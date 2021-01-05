@@ -9,8 +9,8 @@ import { ClassType, LoadType, Type } from './types';
 import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isExtendsClass } from './utils/lang';
-import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
-import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
+import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption, Strategy } from './IInjector';
+import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey, InstFac } from './tokens';
 import { IContainer, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
 import { Provider, Injector } from './injector';
@@ -18,13 +18,14 @@ import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, 
 import { registerCores } from './utils/regs';
 
 
+
 /**
  * injector implantment.
  */
 export class InjectorImpl extends Injector {
 
-    constructor(parent?: IInjector) {
-        super(parent);
+    constructor(parent?: IInjector, strategy?: Strategy) {
+        super(parent, strategy);
         this.initReg();
     }
 
