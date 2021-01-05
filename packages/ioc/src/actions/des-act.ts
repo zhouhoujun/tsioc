@@ -146,8 +146,8 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     const tgReflect = ctx.reflect;
     const injector = ctx.injector;
     const type = ctx.type;
-
-    const registed = injector.getContainer().regedState.getRegistered(type);
+    const container = injector.getContainer();
+    const registed = container.regedState.getRegistered(type);
     tgReflect.providers.forEach(anno => {
         const provide = getTokenKey(anno.provide, anno.alias);
         injector.bindProvider(provide, type, registed);
@@ -168,7 +168,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
         if (this.has(refToken)) {
             this.get(refToken).inject(...providers);
         } else {
-            this.setValue(refToken, this.get(PROVIDERS).inject(...providers));
+            this.setValue(refToken, container.getInstance(PROVIDERS).inject(...providers));
         }
         registed.provides.push(getTokenKey(refToken));
 

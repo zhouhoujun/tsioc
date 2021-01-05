@@ -19,7 +19,11 @@ export class LifeScope<T extends IocContext> extends IocActions<T> { }
  * @template T
  */
 export class RegisterLifeScope<T extends RegContext = RegContext> extends IocActions<T> {
-
+    /**
+     * register.
+     * @param ctx 
+     * @param next 
+     */
     register(ctx: T, next?: () => void) {
         this.execute(ctx, next);
     }

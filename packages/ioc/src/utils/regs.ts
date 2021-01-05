@@ -24,7 +24,7 @@ interface InternalProvider extends IProvider {
 export function registerCores(container: IContainer) {
 
     container.setValue(CONTAINER, container);
-    container.setValue(METHOD_ACCESSOR, new MethodAccessor(), MethodAccessor);
+    container.setValue(METHOD_ACCESSOR, new MethodAccessor(container), MethodAccessor);
 
     container.set(PROVIDERS, () => {
         const pdr: any = new Provider();

@@ -22,17 +22,23 @@ export class ServiceProvider implements IServiceProvider {
      * @returns {T}
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         let option: ServiceOption<T>;
         if (isToken(target)) {
             option = { token: target };
         } else {
             option = target;
+            if (option.providers) providers.unshift(...option.providers);
         }
-        let context = {
+
+        const pdr = getProvider(injector, ...providers);
+        if (!pdr.hasTokenKey(INJECTOR)) {
+            pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
+        }
+
+        const context = {
             injector,
             ...option,
-            providers: getProvider(injector, ...option.providers || [], ...providers)
+            providers: pdr
         } as ServiceContext;
 
         this.initTargetRef(context);
@@ -62,8 +68,10 @@ export class ServiceProvider implements IServiceProvider {
         if (!isToken(target)) {
             providers.unshift(...target.providers || []);
         }
-        providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
-        let pdr = getProvider(injector, ...providers);
+        const pdr = getProvider(injector, ...providers);
+        if (!pdr.hasTokenKey(INJECTOR)) {
+            pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
+        }
 
         maps.iterator(p => {
             services.push(p.value ? p.value : p.fac(pdr));

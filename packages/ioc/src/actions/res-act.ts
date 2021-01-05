@@ -60,16 +60,14 @@ export const ResolveDefaultAction = function (ctx: ResolveContext, next: () => v
 };
 
 export const ResolveInProvidersAction = function (ctx: ResolveContext, next: () => void): void {
-    if (ctx.providers.has(ctx.token)) {
-        ctx.instance = ctx.providers.get(ctx.token);
-    }
+    ctx.instance = ctx.providers.get(ctx.token);
     if (isNil(ctx.instance)) {
         next();
     }
 }
 
 export const ResolveInInjectorAction = function (ctx: ResolveContext, next: () => void): void {
-    let injector = ctx.injector;
+    const injector = ctx.injector;
     if (injector.has(ctx.token)) {
         ctx.instance = injector.get(ctx.token, ctx.providers);
     }
@@ -81,10 +79,7 @@ export const ResolveInInjectorAction = function (ctx: ResolveContext, next: () =
 
 
 export const ResolveInParentAction = function (ctx: ResolveContext, next: () => void): void {
-    let parent = ctx.injector.parent;
-    if (parent.has(ctx.token)) {
-        ctx.instance = parent.get(ctx.token, ctx.providers);
-    }
+    ctx.instance = ctx.injector.parent?.get(ctx.token, ctx.providers);
     if (isNil(ctx.instance)) {
         next();
     }
@@ -92,11 +87,8 @@ export const ResolveInParentAction = function (ctx: ResolveContext, next: () => 
 
 export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.targetToken) {
-        let tkn = new InjectReference(PROVIDERS, ctx.targetToken);
-        let privPdr = ctx.injector.get(tkn);
-        if (privPdr && privPdr.has(ctx.token)) {
-            ctx.instance = privPdr.get(ctx.token, ctx.providers);
-        }
+        const tkn = new InjectReference(PROVIDERS, ctx.targetToken);
+        ctx.instance = ctx.injector.get(tkn)?.get(ctx.token, ctx.providers);
     }
     if (isNil(ctx.instance)) {
         next();
@@ -106,7 +98,7 @@ export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => v
 
 export const ResolveRefAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.targetToken) {
-        let tkn = new InjectReference(ctx.token, ctx.targetToken);
+        const tkn = new InjectReference(ctx.token, ctx.targetToken);
         ctx.instance = ctx.injector.get(tkn, ctx.providers);
     }
     if (isNil(ctx.instance) && !ctx.tagOnly) {

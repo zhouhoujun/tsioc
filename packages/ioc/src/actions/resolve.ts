@@ -36,17 +36,22 @@ export class ResolveLifeScope extends rla.IocResolveScope<ResolveContext> {
      * @returns {T}
      */
     resolve<T>(injector: IInjector, token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
-        providers.unshift({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         let option: ResolveOption<T>;
         if (isToken(token)) {
             option = { token };
         } else {
             option = token;
+            if (option.providers) providers.unshift(...option.providers);
         }
-        let ctx = {
+        const pdr = getProvider(injector, ...providers);
+        if(!pdr.hasTokenKey(INJECTOR)){
+            pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
+        }
+        
+        const ctx = {
             injector,
             ...option,
-            providers: getProvider(injector, ...(option.providers || []),  ...providers)
+            providers: pdr
         } as ResolveContext;
 
         this.execute(ctx);

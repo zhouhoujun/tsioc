@@ -6,6 +6,7 @@ import { IMethodAccessor, MethodType } from '../IMethodAccessor';
 import { INVOKED_PROVIDERS } from '../utils/tk';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
+import { IContainer } from '../IContainer';
 
 
 /**
@@ -17,7 +18,7 @@ import { ParameterMetadata } from '../decor/metadatas';
  */
 export class MethodAccessor implements IMethodAccessor {
 
-    constructor() { }
+    constructor(private container: IContainer) { }
 
     /**
      * try to async invoke the method of intance, if no instance will create by type.
@@ -61,7 +62,7 @@ export class MethodAccessor implements IMethodAccessor {
             providers = providers.concat(pds);
         }
         let parameters = tgRefl.methodParams.get(key) || [];
-        let providerMap = injector.getInstance(INVOKED_PROVIDERS).inject(...providers);
+        let providerMap = this.container.getInstance(INVOKED_PROVIDERS).inject(...providers);
         let paramInstances = this.resolveParams(injector, parameters, providerMap);
         if (providerMap.size && instance[key]['_proxy']) {
             paramInstances.push(providerMap);
@@ -80,7 +81,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {any[]}
      */
     createParams(injector: IInjector, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
-        return this.resolveParams(injector, params, injector.getContainer().getInstance(INVOKED_PROVIDERS).inject(...providers));
+        return this.resolveParams(injector, params, this.container.getInstance(INVOKED_PROVIDERS).inject(...providers));
     }
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider): any[] {
