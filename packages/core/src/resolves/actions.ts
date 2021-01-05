@@ -126,7 +126,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             ...ctx.types || []
         ];
 
-        ctx.services = ctx.injector.get(PROVIDERS);
+        ctx.services = ctx.injector.getContainer().get(PROVIDERS);
         super.execute(ctx);
 
         next && next();

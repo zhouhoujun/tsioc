@@ -18,7 +18,7 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
 
     constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options: T) {
         super();
-        this.context = injector.get(PROVIDERS);
+        this.context = injector.getContainer().get(PROVIDERS);
         this.context.setValue(INJECTOR, injector);
         this.setOptions(options);
     }
@@ -35,7 +35,7 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
      */
     get providers(): IProvider {
         if (!this.context.hasValue(Provider)) {
-            this.context.setValue(Provider, this.injector.getInstance(PROVIDERS))
+            this.context.setValue(Provider, this.injector.getContainer().getInstance(PROVIDERS))
         }
         return this.context.getValue(Provider);
     }

@@ -146,7 +146,7 @@ export class Joinpoint implements IocContext {
 
 
     constructor(public injector: IInjector) {
-        this.pdr = injector.get(PROVIDERS);
+        this.pdr = injector.getContainer().get(PROVIDERS);
         this.pdr.inject({ provide: Joinpoint, useValue: this });
     }
 
