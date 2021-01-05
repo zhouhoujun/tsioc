@@ -10,7 +10,7 @@ import { IContainer, IServiceProvider } from '../IContainer';
 export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
 
 /**
- * injector instance token of self.
+ * provider/injector's parent.
  */
 export const PARENT_INJECTOR: TokenId<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
 

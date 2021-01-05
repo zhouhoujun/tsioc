@@ -25,14 +25,16 @@ export interface IDestoryable {
  */
 export abstract class Destoryable implements IDestoryable {
 
-    constructor() { }
-
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
+
+    constructor() { }
+    /**
+     * has destoryed or not.
+     */
     get destroyed() {
         return this._destroyed;
     }
-
     /**
     * destory this.
     */
@@ -44,9 +46,10 @@ export abstract class Destoryable implements IDestoryable {
             this.destroyCbs = [];
         }
     }
-
+    /**
+     * destroying.
+     */
     protected abstract destroying();
-
     /**
      * register callback on destory.
      * @param callback destory callback

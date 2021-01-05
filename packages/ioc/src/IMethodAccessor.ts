@@ -15,7 +15,6 @@ export type MethodType<T> = string | ((tag: T) => Function);
  * @interface IExecution
  */
 export interface IMethodAccessor {
-
     /**
      * try to async invoke the method of intance, if no instance will create by type.
      *
@@ -27,7 +26,6 @@ export interface IMethodAccessor {
      * @returns {TR}
      */
     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-
     /**
      * create params instances with IParameter and provider
      *

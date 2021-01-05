@@ -68,7 +68,6 @@ export interface RegisteredState {
 export interface IContainer extends IInjector {
 
     readonly id: string;
-
     /**
      * registered state.
      */

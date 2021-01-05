@@ -3,7 +3,6 @@ import { Token } from './tokens';
 
 /**
  * provider.
- *
  */
 export interface ProvideProvider {
     /**
@@ -40,7 +39,6 @@ export interface ClassProvider extends ProvideProvider {
      * A list of `token`s which need to be resolved by the injector.
      */
     deps?: any[];
-
     /**
      * singleton or not.
      */
@@ -89,7 +87,6 @@ export interface FactoryProvider extends ProvideProvider {
     * resolved values of `token`s in the `deps` field.
     */
     useFactory: Function;
-
     /**
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
@@ -97,12 +94,14 @@ export interface FactoryProvider extends ProvideProvider {
     deps?: any[];
 }
 
+/**
+ * constructor provider.
+ */
 export interface ConstructorProvider {
     /**
      * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
      */
     provide: Type<any>;
-
     /**
      * A list of `token`s which need to be resolved by the injector.
      */
@@ -179,12 +178,14 @@ export class KeyValueProvider {
  */
 export const ObjectMapProvider = KeyValueProvider;
 
-
 /**
  * type provider.
  */
 export interface TypeProvider extends Type { }
 
+/**
+ * static providers.
+ */
 export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvider & ExistingProvider & FactoryProvider;
 
 /**

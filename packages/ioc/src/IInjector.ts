@@ -247,7 +247,6 @@ export interface IProvider extends IDestoryable {
 
 /**
  * resovle action option.
- *
  */
 export interface ResolveOption<T = any> {
     /**
@@ -276,7 +275,6 @@ export interface ResolveOption<T = any> {
      * resolve providers.
      */
     providers?: ProviderType[];
-
 }
 
 
@@ -294,7 +292,6 @@ export interface ServiceOption<T> extends ResolveOption<T> {
      * @type {Type}
      */
     tokens?: Token<T>[];
-
     /**
      * token alias.
      *
@@ -333,9 +330,10 @@ export interface ServicesOption<T> extends ServiceOption<T> {
  * @interface IInjector
  */
 export interface IInjector extends IProvider {
-
+    /**
+     * parent injector.
+     */
     readonly parent?: IInjector;
-
     /**
      * use modules.
      *
@@ -343,7 +341,6 @@ export interface IInjector extends IProvider {
      * @returns {Type[]}
      */
     use(...modules: Modules[]): Type[];
-
     /**
      * register type.
      *
@@ -390,7 +387,6 @@ export interface IInjector extends IProvider {
      * @returns {TR}
      */
     invoke<T, TR = any>(target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
-
     /**
      * get module loader.
      *
@@ -404,7 +400,6 @@ export interface IInjector extends IProvider {
      * @returns {Promise<Type[]>}  types loaded.
      */
     load(...modules: LoadType[]): Promise<Type[]>;
-
     /**
      * get service or target reference service in the injector.
      *
@@ -414,7 +409,6 @@ export interface IInjector extends IProvider {
      * @returns {T}
      */
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T;
-
     /**
      * get all service extends type.
      *
@@ -424,7 +418,6 @@ export interface IInjector extends IProvider {
      * @returns {T[]} all service instance type of token type.
      */
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
-
     /**
      * get all provider service in the injector.
      *
@@ -450,13 +443,11 @@ export interface IModuleLoader {
      * @returns {Promise<Modules[]>}
      */
     load(...modules: LoadType[]): Promise<Modules[]>;
-
     /**
      * register types.
      * @param modules 
      */
     register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]>;
-
     /**
      * dynamic require file.
      *
@@ -464,7 +455,6 @@ export interface IModuleLoader {
      * @returns {Promise<any>}
      */
     require(fileName: string): Promise<any>;
-
     /**
      * load all class types in modules
      *
@@ -472,5 +462,4 @@ export interface IModuleLoader {
      * @returns {Promise<Type[]>}
      */
     loadTypes(...modules: LoadType[]): Promise<Type[][]>;
-
 }
