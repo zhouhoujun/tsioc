@@ -473,8 +473,6 @@ export abstract class Injector extends Provider implements IInjector {
      */
     abstract registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
 
-
-
     /**
      * use modules.
      *

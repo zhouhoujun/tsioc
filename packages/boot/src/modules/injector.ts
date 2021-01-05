@@ -25,7 +25,12 @@ const mdInjStrategy: Strategy = {
         return curr.deps.some(r => r.exports.hasValue(key)) || curr.parent?.hasValue(key);
     },
     getValue: <T>(key: SymbolType<T>, curr: IModuleInjector) => {
-        return curr.deps.find(r => r.exports.hasValue(key))?.exports.getValue(key) ?? curr.parent?.getValue(key);
+        let value: T;
+        if(curr.deps.some(r=> {
+            value = r.exports.getValue(key);
+            return !isNil(value)
+        })) return value;
+        return curr.parent?.getValue(key);
     },
     getTokenProvider: <T>(key: SymbolType<T>, curr: IModuleInjector) => {
         let type;
@@ -197,7 +202,12 @@ const mdPdrStrategy: Strategy = {
         return curr.exports.some(r => r.exports.hasValue(key)) || curr.parent?.hasValue(key);
     },
     getValue: <T>(key: SymbolType<T>, curr: IModuleProvider) => {
-        return curr.exports.find(r => r.exports.hasValue(key))?.exports.getValue(key) ?? curr.parent?.getValue(key);
+        let value: T;
+        if(curr.exports.some(r=> {
+            value = r.exports.getValue(key);
+            return !isNil(value)
+        })) return value;
+        return curr.parent?.getValue(key);
     },
     getTokenProvider: <T>(key: SymbolType<T>, curr: IModuleProvider) => {
         let type;
