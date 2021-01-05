@@ -74,7 +74,10 @@ export class Provider extends Destoryable implements IProvider {
 
     protected container: IContainer;
     getContainer(): IContainer {
-        return this.container ?? this.parent?.getContainer()
+        if(!this.container){
+            this.container = this.parent?.getContainer();
+        }
+        return this.container;
     }
 
 

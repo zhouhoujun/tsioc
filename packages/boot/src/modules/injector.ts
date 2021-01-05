@@ -58,9 +58,7 @@ const mdInjStrategy: Strategy = {
  */
 export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 
-
     deps: ModuleRef[];
-
     private _root: boolean;
 
     constructor(parent: IInjector) {
