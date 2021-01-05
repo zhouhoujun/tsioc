@@ -1,20 +1,20 @@
-import { Action, IActionSetup } from './action';
-import { IActionProvider } from './actions/act';
-import { DesignContext } from './actions/ctx';
-import { DesignLifeScope } from './actions/design';
-import { ResolveLifeScope } from './actions/resolve';
-import { delReged, getReged, setReged } from './decor/refl';
 import { Registered } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isExtendsClass } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption, Strategy } from './IInjector';
-import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey, InstFac } from './tokens';
 import { IContainer, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
-import { Provider, Injector } from './injector';
+import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
+import { Action, IActionSetup } from './action';
+import { IActionProvider } from './actions/act';
+import { DesignContext } from './actions/ctx';
+import { DesignLifeScope } from './actions/design';
+import { ResolveLifeScope } from './actions/resolve';
+import { delReged, getReged, setReged } from './decor/refl';
+import { Provider, Injector } from './injector';
 import { registerCores } from './utils/regs';
 
 

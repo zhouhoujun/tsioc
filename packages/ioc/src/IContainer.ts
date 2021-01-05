@@ -126,7 +126,6 @@ export interface IServiceProvider {
      * @returns {T[]} all service instance type of token type.
      */
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[];
-
     /**
      * get all provider service in the injector.
      *
