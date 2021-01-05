@@ -331,13 +331,12 @@ export class Provider extends Destoryable implements IProvider {
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this {
         const provideKey = getTokenKey(provide);
         if (provideKey && isClass(provider)) {
-            const pdr = this.factories.get(provideKey);
             !reged && this.registerType(provider);
             if (reged && reged.provides.indexOf(provideKey) < 0) {
                 reged.provides.push(provideKey);
             }
             const fac = reged ? (...pdrs) => reged.getInjector().getInstance(provider, ...pdrs) : (...pdrs) => this.getInstance(provider, ...pdrs);
-            this.factories.set(provideKey, { fac, ...pdr, provider: provider });
+            this.factories.set(provideKey, { fac, provider: provider });
         }
         return this;
     }
@@ -353,7 +352,7 @@ export class Provider extends Destoryable implements IProvider {
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let key = getTokenKey(token);
         if (isClass(key)) return key;
-        return this.factories.get(key).provider ?? this.strategy.getTokenProvider(key, this);
+        return this.factories.get(key)?.provider ?? this.strategy.getTokenProvider(key, this);
     }
 
     /**
