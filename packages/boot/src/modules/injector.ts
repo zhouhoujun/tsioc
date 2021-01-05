@@ -12,13 +12,11 @@ const mdInjStrategy: Strategy = {
         return curr.deps.some(r => r.exports.hasTokenKey(key)) || (deep && curr.parent?.hasTokenKey(key));
     },
     getInstance: <T>(key: SymbolType<T>,  curr: IModuleInjector, ...providers: ProviderType[]) => {
-        let inst: T
+        let inst: T;
         if (curr.deps.some(e => {
             inst = e.exports.getInstance(key, ...providers);
             return !isNil(inst);
-        })) {
-            return inst;
-        }
+        })) return inst;
         return curr.parent?.getInstance(key, ...providers);
     },
     hasValue: <T>(key: SymbolType<T>, curr: IModuleInjector) => {
@@ -189,13 +187,11 @@ const mdPdrStrategy: Strategy = {
         return curr.exports.some(r => r.exports.hasTokenKey(key)) || (deep && curr.parent?.hasTokenKey(key));
     },
     getInstance: <T>(key: SymbolType<T>,  curr: IModuleProvider, ...providers: ProviderType[]) => {
-        let inst: T
+        let inst: T;
         if (curr.exports.some(e => {
             inst = e.exports.getInstance(key, ...providers);
             return !isNil(inst);
-        })) {
-            return inst;
-        }
+        })) return inst;
         return curr.parent?.getInstance(key, ...providers);
     },
     hasValue: <T>(key: SymbolType<T>, curr: IModuleProvider) => {
