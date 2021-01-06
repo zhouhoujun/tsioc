@@ -68,10 +68,10 @@ export class ServiceProvider implements IServiceProvider {
         if (!isToken(target)) {
             providers.unshift(...target.providers || []);
         }
-        const pdr = getProvider(injector, ...providers);
-        // if (!pdr.hasTokenKey(INJECTOR)) {
-        //     pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
-        // }
+        const pdr = getProvider(injector, true, ...providers);
+        if (!pdr.hasTokenKey(INJECTOR)) {
+            pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
+        }
 
         maps.iterator(p => {
             services.push(p.value ? p.value : p.fac(pdr));
