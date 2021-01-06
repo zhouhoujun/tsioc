@@ -10,7 +10,6 @@ import { IContainer } from './IContainer';
 import { getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
 import { PROVIDERS } from './utils/tk';
-import { lang } from '.';
 
 
 @Abstract()
@@ -64,7 +63,9 @@ export abstract class Strategy {
 
 }
 
-
+/**
+ * default strategy.
+ */
 export class DefaultStrategy extends Strategy {
     constructor(private vaild: (parent: IProvider) => boolean) {
         super();
@@ -105,7 +106,9 @@ export class DefaultStrategy extends Strategy {
 
 }
 
-
+/**
+ * provider default strategy.
+ */
 const providerStrategy = new DefaultStrategy((p)=> !(p instanceof Injector));
 
 /**
@@ -523,9 +526,10 @@ export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]):
     return pd.fac ? pd.fac(...providers) ?? null : null;
 }
 
-
-
-
+/**
+ * is target provider or not.
+ * @param target 
+ */
 export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
 }
@@ -538,6 +542,9 @@ export function getProvider(injector: IInjector, ify?: boolean | ProviderType, .
     return injector.getContainer().get(PROVIDERS).inject(...providers);
 }
 
+/**
+ * injector default strategy.
+ */
 const injectorStrategy = new DefaultStrategy((p)=> p instanceof Injector);
 
 @Abstract()
