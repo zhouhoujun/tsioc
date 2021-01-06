@@ -63,8 +63,10 @@ export class ServiceProvider implements IServiceProvider {
      * @returns {T[]} all service instance type of token type.
      */
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        let maps = this.getServiceProviders(injector, target);
-        let services = [];
+        const maps = this.getServiceProviders(injector, target);
+        const services = [];
+        if (!maps.size) return services;
+
         if (!isToken(target)) {
             providers.unshift(...target.providers || []);
         }

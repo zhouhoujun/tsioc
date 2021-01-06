@@ -5,51 +5,6 @@ import { IDestoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 import { Registered } from './decor/type';
 
-/**
- * strategy.
- */
-export interface Strategy {
-    /**
-     * has token or not.
-     * @param key 
-     * @param curr 
-     * @param deep 
-     */
-    hasTokenKey<T>(key: SymbolType<T>, curr: IProvider, deep?: boolean): boolean;
-    /**
-     * get instance.
-     * @param key 
-     * @param curr 
-     * @param providers 
-     */
-    getInstance<T>(key: SymbolType<T>, curr: IProvider, ...providers: ProviderType[]): T;
-    /**
-     * has value
-     * @param key 
-     * @param curr 
-     */
-    hasValue<T>(key: SymbolType<T>, curr: IProvider): boolean;
-    /**
-     * get value
-     * @param key 
-     * @param curr 
-     */
-    getValue<T>(key: SymbolType<T>, curr: IProvider): T;
-    /**
-     * get token provider.
-     * @param key 
-     * @param curr 
-     */
-    getTokenProvider<T>(key: SymbolType<T>, curr: IProvider): Type<T>;
-    /**
-     * iterator.
-     * @param map 
-     * @param callbackfn 
-     * @param curr 
-     * @param deep 
-     */
-    iterator(map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
-}
 
 /**
  * provider interface.

@@ -3,17 +3,110 @@ import { Abstract } from './decor/decorators';
 import { Destoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
-import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption, Strategy } from './IInjector';
+import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
 import { IContainer } from './IContainer';
 import { getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
 import { PROVIDERS } from './utils/tk';
+import { lang } from '.';
 
 
+@Abstract()
+export abstract class Strategy {
+
+    /**
+     * vaild parent.
+     * @param parent 
+     */
+    abstract vaildParent(parent: IProvider): boolean;
+    /**
+     * has token or not.
+     * @param key 
+     * @param curr 
+     * @param deep 
+     */
+    abstract hasTokenKey<T>(key: SymbolType<T>, curr: IProvider, deep?: boolean): boolean;
+    /**
+     * get instance.
+     * @param key 
+     * @param curr 
+     * @param providers 
+     */
+    abstract getInstance<T>(key: SymbolType<T>, curr: IProvider, ...providers: ProviderType[]): T;
+    /**
+     * has value
+     * @param key 
+     * @param curr 
+     */
+    abstract hasValue<T>(key: SymbolType<T>, curr: IProvider): boolean;
+    /**
+     * get value
+     * @param key 
+     * @param curr 
+     */
+    abstract getValue<T>(key: SymbolType<T>, curr: IProvider): T;
+    /**
+     * get token provider.
+     * @param key 
+     * @param curr 
+     */
+    abstract getTokenProvider<T>(key: SymbolType<T>, curr: IProvider): Type<T>;
+    /**
+     * iterator.
+     * @param map 
+     * @param callbackfn 
+     * @param curr 
+     * @param deep 
+     */
+    abstract iterator(map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
+
+}
 
 
+export class DefaultStrategy extends Strategy {
+    constructor(private vaild: (parent: IProvider) => boolean) {
+        super();
+    }
+
+    vaildParent(parent: IProvider) {
+        return this.vaild(parent);
+    }
+
+    hasTokenKey<T>(key: SymbolType<T>, curr: IProvider, deep?: boolean) {
+        return deep && curr.parent?.hasTokenKey(key);
+    }
+
+    getInstance<T>(key: SymbolType<T>, curr: IProvider, ...providers: ProviderType[]) {
+        return curr.parent?.getInstance(key, ...providers);
+    }
+
+    hasValue<T>(key: SymbolType<T>, curr: IProvider) {
+        return curr.parent?.hasValue(key);
+    }
+
+    getValue<T>(key: SymbolType<T>, curr: IProvider) {
+        return curr.parent?.getValue(key);
+    }
+
+    getTokenProvider<T>(key: SymbolType<T>, curr: IProvider) {
+        return curr.parent?.getTokenProvider(key);
+    }
+
+    iterator(map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) {
+        if (mapEach(map, callbackfn, curr) === false) {
+            return false;
+        }
+        if (deep) {
+            return curr.parent?.iterator(callbackfn, deep);
+        }
+    }
+
+}
+
+
+const providerStrategy = new DefaultStrategy((p)=> !(p instanceof Injector));
 
 /**
  * provider container.
@@ -36,21 +129,26 @@ export class Provider extends Destoryable implements IProvider {
      */
     protected factories: Map<SymbolType, InstFac>;
 
-    constructor(readonly parent?: IProvider, private strategy: Strategy = defaultStrategy) {
+    constructor(public parent?: IProvider, private strategy: Strategy = providerStrategy) {
         super();
         this.factories = new Map();
+        if (parent && !strategy.vaildParent(parent)) {
+            this._container = parent.getContainer();
+            this.parent = null;
+        }
     }
 
     get size(): number {
         return this.factories.size;
     }
 
-    protected container: IContainer;
+
+    private _container: IContainer;
     getContainer(): IContainer {
-        if (!this.container) {
-            this.container = this.parent?.getContainer();
+        if (!this._container) {
+            this._container = this.parent?.getContainer();
         }
-        return this.container;
+        return this._container;
     }
 
 
@@ -408,8 +506,9 @@ export class Provider extends Destoryable implements IProvider {
     protected destroying() {
         this.factories.clear();
         this.strategy = null;
-        this.container = null;
         this.factories = null;
+        this.parent = null;
+        this._container = null;
     }
 }
 
@@ -425,34 +524,7 @@ export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]):
 }
 
 
-/**
- * default strategy.
- */
-export const defaultStrategy: Strategy = {
-    hasTokenKey: <T>(key: SymbolType<T>, curr: IProvider, deep?: boolean) => {
-        return deep && curr.parent?.hasTokenKey(key)
-    },
-    getInstance: <T>(key: SymbolType<T>, curr: IProvider, ...providers: ProviderType[]) => {
-        return curr.parent?.getInstance(key, ...providers);
-    },
-    hasValue: <T>(key: SymbolType<T>, curr: IProvider) => {
-        return curr.parent?.hasValue(key);
-    },
-    getValue: <T>(key: SymbolType<T>, curr: IProvider) => {
-        return curr.parent?.getValue(key);
-    },
-    getTokenProvider: <T>(key: SymbolType<T>, curr: IProvider) => {
-        return curr.parent?.getTokenProvider(key);
-    },
-    iterator: (map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) => {
-        if (mapEach(map, callbackfn, curr) === false) {
-            return false;
-        }
-        if (deep) {
-            return curr.parent?.iterator(callbackfn, deep);
-        }
-    }
-}
+
 
 export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
@@ -466,11 +538,12 @@ export function getProvider(injector: IInjector, ify?: boolean | ProviderType, .
     return injector.getContainer().get(PROVIDERS).inject(...providers);
 }
 
+const injectorStrategy = new DefaultStrategy((p)=> p instanceof Injector);
 
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {
 
-    constructor(readonly parent: IInjector, strategy?: Strategy) {
+    constructor(readonly parent: IInjector, strategy: Strategy = injectorStrategy) {
         super(parent, strategy);
     }
 

@@ -1,6 +1,6 @@
 import { tokenId, TokenId } from '../tokens';
 import { IMethodAccessor } from '../IMethodAccessor';
-import { IInjector, IModuleLoader, IProvider, Strategy } from '../IInjector';
+import { IInjector, IModuleLoader, IProvider } from '../IInjector';
 import { IContainer, IServiceProvider } from '../IContainer';
 
 
@@ -13,11 +13,6 @@ export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
  * provider/injector's parent.
  */
 export const PARENT_INJECTOR: TokenId<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
-
-/**
- * strategy.
- */
-export const STRATEGY = tokenId<Strategy>('DI_STRATEGY');
 
 /**
  *  injector provider token. create new injector provider.

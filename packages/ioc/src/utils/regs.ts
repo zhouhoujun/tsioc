@@ -1,8 +1,8 @@
-import { IInjector, IProvider } from '../IInjector';
+import { IProvider } from '../IInjector';
 import { IContainer } from '../IContainer';
 import { ProviderType } from '../tokens';
-import { INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS, INVOKED_PROVIDERS, CONTAINER, PARENT_INJECTOR, STRATEGY } from './tk';
-import { Provider, InvokedProvider, getProvider } from '../injector';
+import { INJECTOR_FACTORY, METHOD_ACCESSOR, PROVIDERS, INVOKED_PROVIDERS, CONTAINER, PARENT_INJECTOR } from './tk';
+import { Provider, InvokedProvider, getProvider, Strategy } from '../injector';
 import { MethodAccessor } from '../actions/accessor';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
@@ -26,21 +26,13 @@ export function registerCores(container: IContainer) {
     container.setValue(CONTAINER, container);
     container.setValue(METHOD_ACCESSOR, new MethodAccessor(container), MethodAccessor);
 
-    container.set(PROVIDERS, () => {
-        const pdr: any = new Provider();
-        (pdr as InternalProvider).container = container;
-        return pdr;
-    }, Provider);
+    container.set(PROVIDERS, () => new Provider(container), Provider);
 
-    container.set(INVOKED_PROVIDERS, () => {
-        const pdr: any = new InvokedProvider();
-        (pdr as InternalProvider).container = container;
-        return pdr;
-    }, InvokedProvider);
+    container.set(INVOKED_PROVIDERS, () => new InvokedProvider(container), InvokedProvider);
 
     container.set(INJECTOR_FACTORY, (...providers: ProviderType[]) => {
         const pdr = getProvider(container, ...providers);
-        return new InjectorImpl(pdr.getValue(PARENT_INJECTOR) ?? container, pdr.get(STRATEGY));
+        return new InjectorImpl(pdr.getValue(PARENT_INJECTOR) ?? container, pdr.get(Strategy));
     }, InjectorImpl);
 
 
