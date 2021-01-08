@@ -16,7 +16,7 @@ describe('auto register with build', () => {
         expect(container.has(SimppleAutoWried)).toBeTruthy();
         let instance = container.get(SimppleAutoWried);
         expect(instance).toBeDefined();
-        expect(instance.dateProperty).toBeUndefined();
+        expect(instance.dateProperty).toBeDefined();
         // expect(instance.dateProperty instanceof Date).toBeTruthy();
     });
 
@@ -25,7 +25,7 @@ describe('auto register with build', () => {
         // console.log(instance);
         expect(instance).toBeDefined();
         expect(instance.service).toBeDefined();
-        expect(instance.service.current).toBeUndefined();
+        expect(instance.service.current).toBeDefined();
     });
 
     it('should auto create prop with spec @Param() class.', () => {

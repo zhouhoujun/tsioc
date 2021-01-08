@@ -5,7 +5,6 @@ import { hasDesignAnno } from './util';
 
 
 declare let process: any;
-const native = /\[native code\]/;
 const toString = Object.prototype.toString;
 
 /**
@@ -56,7 +55,7 @@ export function isClassType(target: any): target is ClassType {
 
 // const anonyfun = /^function\s+\(|^function\s+anonymous\(/;
 // const arrfun = /^(\(?(\w+,)*\w+\)?|\(\s*\))\s*\=\>/;
-const invdt = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>|\[native code\]/;
+const invdt = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
 
 
 function classCheck(target: any, abstract?: boolean): boolean {
@@ -75,6 +74,8 @@ function classCheck(target: any, abstract?: boolean): boolean {
     }
 
     if (hasDesignAnno(target)) return true;
+
+    if (isPrimitiveType(target)) return false;
 
     const str = target.toString();
     if (invdt.test(str)) return false;
@@ -321,15 +322,34 @@ export function isRegExp(target: any): target is RegExp {
     return toString.call(target) === regTag;
 }
 
+
+
+const native = /\[native code\]/;
 /**
- * is base type or not.
+ * is native type or not.
  *
  * @export
  * @param {*} target
  * @returns {boolean}
  */
-export function isBaseType(target: any): boolean {
+export function isNative(target: any): boolean {
     return isFunction(target) && native.test(target.toString());
+}
+
+/**
+ * check target is primitive type or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {boolean}
+ */
+export function isPrimitiveType(target): boolean {
+    return target === Function
+        || target === Object
+        || target === String
+        || target === Number
+        || target === Boolean
+        || target === Symbol;
 }
 
 /**
@@ -343,7 +363,6 @@ export function isPrimitive(target: any): boolean {
         || type === 'symbol'
         || type === 'boolean';
 }
-
 
 /**
  * get class of object.
@@ -361,11 +380,20 @@ export function getClass(target: any): Type {
     }
     return target.constructor || target.prototype.constructor;
 }
+
+/**
+ * is base type or not.
+ * @param target 
+ */
+export function isBaseType(target: any): boolean {
+    return isPrimitiveType(target) || target === Date;
+}
+
 /**
  * check target is base value or not.
  *
  * @exportClassType
  */
 export function isBaseValue(target: any): boolean {
-    return isBaseType(getClass(target));
+    return isPrimitive(target) || isDate(target);
 }
