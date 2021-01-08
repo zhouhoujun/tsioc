@@ -109,7 +109,7 @@ export class DefaultStrategy extends Strategy {
 /**
  * provider default strategy.
  */
-const providerStrategy = new DefaultStrategy((p)=> !(p instanceof Injector));
+const providerStrategy = new DefaultStrategy((p) => !(p instanceof Injector));
 
 /**
  * provider container.
@@ -545,7 +545,7 @@ export function getProvider(injector: IInjector, ify?: boolean | ProviderType, .
 /**
  * injector default strategy.
  */
-const injectorStrategy = new DefaultStrategy((p)=> p instanceof Injector);
+const injectorStrategy = new DefaultStrategy((p) => p instanceof Injector);
 
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {

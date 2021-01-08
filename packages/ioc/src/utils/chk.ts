@@ -5,7 +5,7 @@ import { hasDesignAnno } from './util';
 
 
 declare let process: any;
-const native = /native code/;
+const native = /\[native code\]/;
 const toString = Object.prototype.toString;
 
 /**
@@ -53,13 +53,20 @@ export function isClassType(target: any): target is ClassType {
     return classCheck(target);
 }
 
+
+// const anonyfun = /^function\s+\(|^function\s+anonymous\(/;
+// const arrfun = /^(\(?(\w+,)*\w+\)?|\(\s*\))\s*\=\>/;
+const invdt = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>|\[native code\]/;
+
+
 function classCheck(target: any, abstract?: boolean): boolean {
     if (!isFunction(target)) return false;
 
     if (!target.name || !target.prototype) return false;
 
-    let rf: TypeReflect = target[reflFiled]?.();
+    if (target.prototype.constructor !== target) return false;
 
+    const rf: TypeReflect = target[reflFiled]?.();
     if (rf) {
         if (isBoolean(abstract) && rf.type === target) {
             return abstract ? rf.abstract : !rf.abstract;
@@ -69,7 +76,8 @@ function classCheck(target: any, abstract?: boolean): boolean {
 
     if (hasDesignAnno(target)) return true;
 
-    if (isBaseType(target)) return false;
+    const str = target.toString();
+    if (invdt.test(str)) return false;
 
     return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
 }

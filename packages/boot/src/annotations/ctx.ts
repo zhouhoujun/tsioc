@@ -211,6 +211,7 @@ export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeRefle
 
         if (options.type) {
             this._type = isClass(options.type) ? options.type : this.injector.getTokenProvider(options.type);
+            if(!this._type) console.log('options.type', options.type);
             this._reflect = refl.get(this._type);
         }
 

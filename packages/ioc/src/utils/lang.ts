@@ -138,7 +138,7 @@ export function getClassName(target: any): string {
  */
 export function getParentClass(target: ClassType): ClassType {
     let p = Reflect.getPrototypeOf(target.prototype);
-    return isClassType(p) ? p : p.constructor as ClassType;
+    return isClassType(p) ? p : p?.constructor as ClassType;
 }
 
 /**
