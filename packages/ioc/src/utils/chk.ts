@@ -65,6 +65,8 @@ function classCheck(target: any, abstract?: boolean): boolean {
 
     if (target.prototype.constructor !== target) return false;
 
+    if (isPrimitiveType(target)) return false;
+
     const rf: TypeReflect = target[reflFiled]?.();
     if (rf) {
         if (isBoolean(abstract) && rf.type === target) {
@@ -74,8 +76,6 @@ function classCheck(target: any, abstract?: boolean): boolean {
     }
 
     if (hasDesignAnno(target)) return true;
-
-    if (isPrimitiveType(target)) return false;
 
     const str = target.toString();
     if (invdt.test(str)) return false;
