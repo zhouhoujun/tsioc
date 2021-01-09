@@ -53,9 +53,10 @@ export function isClassType(target: any): target is ClassType {
 }
 
 
-// const anonyfun = /^function\s+\(|^function\s+anonymous\(/;
-// const arrfun = /^(\(?(\w+,)*\w+\)?|\(\s*\))\s*\=\>/;
-const invdt = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
+/**
+ * anonyous or array func
+ */
+const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
 
 
 function classCheck(target: any, abstract?: boolean): boolean {
@@ -75,7 +76,7 @@ function classCheck(target: any, abstract?: boolean): boolean {
     if (isPrimitiveType(target)) return false;
 
     const str = target.toString();
-    if (invdt.test(str)) return false;
+    if (anon.test(str)) return false;
 
     return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
 }
