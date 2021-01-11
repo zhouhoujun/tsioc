@@ -3,6 +3,7 @@ import { Workflow, WorkflowInstance, ActivityModule, IfActivity, Activities, Act
 import { SimpleTask, SimpleCTask, TaskModuleTest } from './simples.task';
 import { BootApplication } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
+import { PromiseUtil } from 'packages/ioc/src/utils/lang';
 
 
 describe('activity test', () => {
@@ -154,5 +155,24 @@ describe('activity test', () => {
             ]);
         });
 
+
+
+        it('should execute', async () => {
+            let exp = '';
+            await Workflow.run({
+                template: {
+                    activity: Activities.execute,
+                    action: async (ctx) => {
+                        const defer = PromiseUtil.defer();
+                        setTimeout(() => {
+                            exp = 'executed';
+                            defer.resolve();
+                        }, 100);
+                        await defer.promise;
+                    }
+                }
+            });
+            expect(exp).toEqual('executed');
+        });
     });
 });

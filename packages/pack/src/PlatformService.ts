@@ -175,13 +175,13 @@ export class PlatformService {
 
     async copyTo(filePath: string, dist: string): Promise<any> {
         const outFile = join(dist, filePath.replace(replNodeMdlExp, ''));
-        return new Promise((res) => {
+        return new Promise<any>((res) => {
             if (!existsSync(outFile)) {
                 if (!existsSync(dirname(outFile))) {
                     mkdir('-p', dirname(outFile));
                 }
                 cp('-R', join(filePath), outFile);
-                res();
+                res(true);
             }
         });
     }

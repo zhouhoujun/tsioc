@@ -112,14 +112,9 @@ export const BindParamTypeAction = function (ctx: RuntimeContext, next: () => vo
             let parm = (isArray(params) && params.length > 0) ? params[0] : null;
             if (parm && parm.index >= 0) {
                 if (isClass(parm.provider)) {
-                    if (!injector.hasRegister(parm.provider)) {
-                        injector.registerType(parm.provider);
-                    }
-                }
-                if (isClass(parm.type)) {
-                    if (!injector.hasRegister(parm.type)) {
-                        injector.registerType(parm.type);
-                    }
+                    injector.registerType(parm.provider);
+                } else if (isClass(parm.type)) {
+                    injector.registerType(parm.type);
                 }
                 if (isToken(parm.provider)) {
                     designParams[parm.index].provider = injector.getTokenKey(parm.provider, parm.alias);

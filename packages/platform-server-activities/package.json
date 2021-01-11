@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server-activities",
-  "version": "6.0.37",
+  "version": "6.0.38",
   "description": "workflow framework on node server, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -43,21 +43,21 @@
     "interpret": "^2.0.0",
     "pretty-hrtime": "^1.0.3",
     "time-stamp": "^2.2.0",
-    "tslib": "^2.0.1",
-    "ts-node": "^8.10.1",
+    "tslib": "^2.1.0",
+    "ts-node": "^9.1.1",
     "tsconfig-paths": "^3.9.0",
     "zone.js": "^0.10.3"
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.37",
-    "@tsdi/core": "~6.0.37",
-    "@tsdi/aop": "~6.0.37",
-    "@tsdi/logs": "~6.0.37",
-    "@tsdi/boot": "~6.0.37",
-    "@tsdi/activities": "~6.0.37",
-    "@tsdi/platform-server": "~6.0.37",
-    "@tsdi/platform-server-boot": "~6.0.37",
-    "@tsdi/platform-server-logs": "~6.0.37"
+    "@tsdi/ioc": "~6.0.38",
+    "@tsdi/core": "~6.0.38",
+    "@tsdi/aop": "~6.0.38",
+    "@tsdi/logs": "~6.0.38",
+    "@tsdi/boot": "~6.0.38",
+    "@tsdi/activities": "~6.0.38",
+    "@tsdi/platform-server": "~6.0.38",
+    "@tsdi/platform-server-boot": "~6.0.38",
+    "@tsdi/platform-server-logs": "~6.0.38"
   },
   "directories": {
     "lib": "lib",

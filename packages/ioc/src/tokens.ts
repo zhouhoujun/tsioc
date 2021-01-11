@@ -1,6 +1,6 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
 import { IInjector, IProvider } from './IInjector';
-import { isClass, isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
+import { isFunction, lang, isString, isClassType, isSymbol } from './utils/lang';
 import { refInjExp } from './utils/exps';
 import { StaticProvider } from './providers';
 
@@ -66,7 +66,7 @@ export class Registration<T = any> {
      * @memberof Registration
      */
     getClass(): Type<T> | AbstractType<T> {
-        if (isClass(this.classType)) {
+        if (isClassType(this.classType)) {
             return this.classType;
         }
         return null;
@@ -263,10 +263,10 @@ export function isToken(target: any): target is Token {
     if (!target) {
         return false;
     }
-    if (isClassType(target)) {
+    if (isProvideToken(target)) {
         return true;
     }
-    return isProvideToken(target);
+    return isClassType(target);
 }
 
 export function isTokenFunc(target: any): target is IToken<any> {

@@ -92,11 +92,8 @@ function storeMetadata<T>(name: string, metaName: string, args: any[], metadata?
     switch (args.length) {
         case 1:
             target = args[0];
-            if (isClass(target) || isAbstractClass(target)) {
-                setTypeMetadata(name, metaName, target, metadata, metadataExtends);
-                return target;
-            }
-            break;
+            setTypeMetadata(name, metaName, target, metadata, metadataExtends);
+            return target;
         case 2:
             target = args[0];
             let propertyKey = args[1];

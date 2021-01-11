@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/ioc",
-  "version": "6.0.37",
+  "version": "6.0.38",
   "description": "@tsdi is base Ioc container, via typescript decorator",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -31,7 +31,7 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "reflect-metadata": "^0.1.13",
-    "tslib": "^2.0.1"
+    "tslib": "^2.1.0"
   },
   "directories": {
     "lib": "lib",

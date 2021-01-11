@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/annotations",
-  "version": "6.0.37",
+  "version": "6.0.38",
   "description": "Typescript class annotations for ioc, it is a solution for typescript class compile to es5 uglify.  for project used tsioc to es5 uglify",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "tslib": "^2.0.1",
+    "tslib": "^2.1.0",
     "through2": "^2.0.1",
     "rollup": "^1.31.1",
     "rollup-pluginutils": "^2.6.0",

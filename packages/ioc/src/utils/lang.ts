@@ -168,7 +168,7 @@ export namespace lang {
      * @returns {string}
      */
     export function getClassName(target: any): string {
-        let classType = isFunction(target) ? target : getClass(target);
+        let classType = getClass(target);
         if (!isFunction(classType)) {
             return '';
         }
@@ -187,8 +187,9 @@ export namespace lang {
      * @returns {ClassType}
      */
     export function getParentClass(target: ClassType): ClassType {
-        let p = Reflect.getPrototypeOf(target.prototype);
-        return isClassType(p) ? p : p.constructor as ClassType;
+        const p = Object.getPrototypeOf(target.prototype);
+        const ty = isFunction(p) ? p : p.constructor;
+        return ty === Object ? null : ty;
     }
 
     /**
@@ -214,7 +215,7 @@ export namespace lang {
      * @param {(token: Type) => any} express
      */
     export function forInClassChain(target: ClassType, express: (token: ClassType) => any): void {
-        while (isClassType(target)) {
+        while (target) {
             if (express(target) === false) {
                 break;
             }
@@ -394,7 +395,7 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
 
     if (!target.name || !target.prototype) return false;
 
-    if(target.prototype.constructor !== target) return false;
+    if (target.prototype.constructor !== target) return false;
 
     if (exclude && exclude(target)) {
         return false;

@@ -250,10 +250,9 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
         Object.keys(propMetas).forEach(key => {
             let props = propMetas[key];
             props.forEach(prop => {
-                if (isClass(prop.provider) && !injector.hasRegister(prop.provider)) {
+                if (isClass(prop.provider)) {
                     injector.registerType(prop.provider);
-                }
-                if (isClass(prop.type) && !injector.hasRegister(prop.type)) {
+                } else if (isClass(prop.type)) {
                     injector.registerType(prop.type);
                 }
 

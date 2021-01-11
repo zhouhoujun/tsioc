@@ -417,7 +417,7 @@ export const ParseTemplateHandle = async function (ctx: IBuildContext, next: () 
             parent: ctx,
             template: template
         };
-        ctx.value = ctx.injector.getInstance(ComponentBuilderToken)
+        ctx.value = await ctx.injector.getInstance(ComponentBuilderToken)
             .resolveTemplate(options, ctx.providers);
     }
     await next();

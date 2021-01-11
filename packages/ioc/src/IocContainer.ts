@@ -116,7 +116,7 @@ export class IocContainer extends BaseInjector implements IIocContainer {
      */
     registerIn<T>(injector: IInjector, type: Type<T>, provide?: Token<T>, singleton?: boolean) {
         // make sure class register once.
-        if (this.getTypeReflects().hasRegister(type) || this.hasRegister(type)) {
+        if (this.getTypeReflects().hasRegister(type) || injector.hasRegister(type)) {
             if (provide) {
                 this.set(provide, (...providers) => injector.resolve(type, ...providers));
             }
