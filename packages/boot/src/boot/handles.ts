@@ -236,7 +236,7 @@ export const ResolveBootHandle = async function (ctx: IBootContext, next: () => 
         )
         let injector = ctx.injector;
         let boot = await injector.getInstance(BUILDER).resolve({
-            type: injector.getTokenProvider(bootModule),
+            type: isClass(bootModule) ? bootModule : injector.getTokenProvider(bootModule),
             // parent: ctx,
             template: template,
             providers: ctx.providers

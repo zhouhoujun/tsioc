@@ -1,4 +1,4 @@
-import { isNil, isClassType, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey } from '@tsdi/ioc';
+import { isNil, isClassType, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -122,7 +122,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             return;
         }
         ctx.types = [
-            ...ctx.tokens.map(t => isClassType(t) ? t : ctx.injector.getTokenProvider(t)).filter(t => t),
+            ...ctx.tokens.map(t => isProvide(t) ? ctx.injector.getTokenProvider(t) : t).filter(t => t),
             ...ctx.types || []
         ];
 

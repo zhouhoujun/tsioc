@@ -1,6 +1,6 @@
 import {
     isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
-    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass, Provider, Injector, IInjector
+    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass, Provider, Injector, IInjector, isProvide
 } from '@tsdi/ioc';
 import { AnnoationOption, IAnnoationContext, IDesctoryableContext, ProdverOption } from '../Context';
 import { CTX_OPTIONS } from '../tk';
@@ -210,8 +210,8 @@ export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeRefle
         }
 
         if (options.type) {
-            this._type = isClass(options.type) ? options.type : this.injector.getTokenProvider(options.type);
-            if(!this._type) console.log('options.type', options.type);
+            this._type = isProvide(options.type) ? this.injector.getTokenProvider(options.type) : options.type;
+            if (!this._type) console.log('options.type', options.type);
             this._reflect = refl.get(this._type);
         }
 

@@ -202,6 +202,7 @@ export class Provider extends Destoryable implements IProvider {
      */
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
     registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
+        if (!isClass(type)) return;
         if (isPlainObject(provide)) {
             this.getContainer()?.registerIn(this, type, provide as any);
         } else {
@@ -237,9 +238,7 @@ export class Provider extends Destoryable implements IProvider {
                     let provide = getTokenKey(pr.provide);
                     if (isArray(pr.deps) && pr.deps.length) {
                         pr.deps.forEach(d => {
-                            if (isClass(d)) {
-                                this.registerType(d);
-                            }
+                            this.registerType(d);
                         });
                     }
                     if (!isNil(pr.useValue)) {
@@ -434,7 +433,6 @@ export class Provider extends Destoryable implements IProvider {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let key = getTokenKey(token);
-        if (isClass(key)) return key;
         return this.factories.get(key)?.provider ?? this.strategy.getTokenProvider(key, this);
     }
 

@@ -1,6 +1,6 @@
 import {
     Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isBaseType, isArray,
-    Abstract, SymbolType, Singleton, isNil, isFunction, IocCoreService, TokenId, tokenId, Injector
+    Abstract, SymbolType, Singleton, isNil, isFunction, IocCoreService, TokenId, tokenId, Injector, isProvide
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
 import { TYPE_PARSER } from '../tk';
@@ -78,7 +78,7 @@ export abstract class ModelParser extends IocCoreService implements IModelParser
                     if (!propmeta) {
                         continue;
                     }
-                    let ptype = propmeta.provider ? this.injector.getTokenProvider(propmeta.provider) : propmeta.type;
+                    let ptype = propmeta.provider ? (isClass(propmeta.provider) ? propmeta.provider : this.injector.getTokenProvider(propmeta.provider)) : propmeta.type;
                     let reqval = objMap[n];
                     if (!isFunction(ptype) || isNil(reqval)) {
                         continue;

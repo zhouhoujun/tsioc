@@ -189,8 +189,7 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
         propMetas.forEach(prop => {
             if (isClass(prop.provider)) {
                 injector.registerType(prop.provider);
-            }
-            if (isClass(prop.type)) {
+            } else if (isClass(prop.type)) {
                 injector.registerType(prop.type);
             }
         });
@@ -210,11 +209,10 @@ export const RegMethodParamsType = function (ctx: DesignContext, next: () => voi
     const injector = ctx.injector;
     ctx.reflect.methodParams.forEach(pms => {
         pms.forEach(pm => {
-            if (isClass(pm.type)) {
-                injector.registerType(pm.type);
-            }
             if (isClass(pm.provider)) {
                 injector.registerType(pm.provider);
+            } else if (isClass(pm.type)) {
+                injector.registerType(pm.type);
             }
         });
     });

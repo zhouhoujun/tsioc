@@ -1,4 +1,3 @@
-import { isClass } from '../utils/chk';
 import { DesignContext } from './ctx';
 import { IActionSetup } from '../action';
 import { InitReflectAction } from './reg';
@@ -14,11 +13,7 @@ import * as da from './des-act';
  * @extends {LifeScope}
  */
 export class DesignLifeScope extends RegisterLifeScope<DesignContext> implements IActionSetup {
-    execute(ctx: DesignContext, next?: () => void): void {
-        if (isClass(ctx.type)) {
-            super.execute(ctx, next);
-        }
-    }
+
     setup() {
         this.use(
             InitReflectAction,

@@ -3,7 +3,7 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
-import { getClass, isArray, isClass, isClassType, isFunction } from '../utils/chk';
+import { getClass, isArray, isClass, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
 import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
@@ -475,7 +475,7 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
         let prRef = tagRefl;
         if (!prRef) {
             const parentType = getParentClass(type);
-            if (isClassType(parentType)) {
+            if (parentType) {
                 prRef = get(parentType, ify);
             }
         }

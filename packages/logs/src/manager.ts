@@ -1,4 +1,4 @@
-import { Inject, Injectable, Injector, INJECTOR, isClass, isString, Registration, Singleton, Token, Type } from '@tsdi/ioc';
+import { Inject, Injectable, Injector, isClass, isString, Registration, Singleton, Token, Type } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
 import { LogConfigure } from './LogConfigure';
 import { ILoggerManager, LoggerConfig, IConfigureLoggerManager } from './ILoggerManager';

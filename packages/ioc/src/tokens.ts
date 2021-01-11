@@ -1,6 +1,6 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
 import { IProvider } from './IInjector';
-import { isFunction, isString, isClassType, isSymbol } from './utils/chk';
+import { isFunction, isString, isClassType, isSymbol, isAbstractClass } from './utils/chk';
 import { refInjExp } from './utils/exps';
 import { StaticProvider } from './providers';
 import { getClassName } from './utils/lang';
@@ -127,10 +127,10 @@ export class Registration<T = any> {
 * @returns {Token<T>}
 */
 export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
-   if (alias) {
-       return new Registration(token, alias);
-   }
-   return token;
+    if (alias) {
+        return new Registration(token, alias);
+    }
+    return token;
 }
 
 /**
@@ -168,7 +168,7 @@ export type Token<T = any> = Registration<T> | SymbolType<T>;
 /**
  * provide token
  */
-export type ProvideToken<T> = Registration<T> | TokenId<T>;
+export type ProvideToken<T> = Registration<T> | TokenId<T> | AbstractType;
 
 /**
  * providers.
@@ -307,10 +307,10 @@ export function isToken(target: any): target is Token {
     if (!target) {
         return false;
     }
-    if (isClassType(target)) {
+    if (isProvide(target)) {
         return true;
     }
-    return isProvideToken(target);
+    return isClassType(target);
 }
 
 export function isTokenFunc(target: any): target is IToken<any> {
@@ -325,10 +325,15 @@ export function isTokenFunc(target: any): target is IToken<any> {
  * @param {*} target
  * @returns {target is ProvideToken}
  */
-export function isProvideToken(target: any): target is ProvideToken<any> {
+export function isProvide(target: any, abstract?: boolean): target is ProvideToken<any> {
     if (isString(target) || isSymbol(target) || (target instanceof Registration)) {
         return true
     }
-    return isTokenFunc(target);
+    if (isTokenFunc(target)) return true;
+    return abstract ? isAbstractClass(target) : false;
 }
 
+/**
+ * is provide token.
+ */
+export const isProvideToken = isProvide;

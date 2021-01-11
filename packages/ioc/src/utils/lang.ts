@@ -118,7 +118,7 @@ export function last<T>(list: T[]): T {
  * @returns {string}
  */
 export function getClassName(target: any): string {
-    let classType = typeof target === 'function' ? target : getClass(target);
+    let classType = getClass(target);
     if (!classType) {
         return '';
     }
@@ -137,8 +137,9 @@ export function getClassName(target: any): string {
  * @returns {ClassType}
  */
 export function getParentClass(target: ClassType): ClassType {
-    let p = Reflect.getPrototypeOf(target.prototype);
-    return isClassType(p) ? p : p?.constructor as ClassType;
+    const p = Object.getPrototypeOf(target.prototype);
+    const ty = isFunction(p) ? p : p?.constructor as ClassType;
+    return ty === Object ? null : ty;
 }
 
 /**
@@ -164,7 +165,7 @@ export function getClassChain(target: ClassType): ClassType[] {
  * @param {(token: Type) => any} express
  */
 export function forInClassChain(target: ClassType, express: (token: ClassType) => any): void {
-    while (isClassType(target)) {
+    while (target) {
         if (express(target) === false) {
             break;
         }

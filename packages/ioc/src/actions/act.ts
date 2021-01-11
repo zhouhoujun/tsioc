@@ -43,7 +43,7 @@ export class IocActions<T extends IocContext = IocContext> extends Actions<T> {
     }
 
     protected regHandle(ac: any) {
-        isClass(ac) && this.provider.regAction(ac);
+        if (isClass(ac)) this.provider.regAction(ac);
     }
 
     protected toHandle(ac: any) {

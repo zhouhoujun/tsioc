@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { isClass, isAbstractClass, isUndefined, isNumber, isMetadataObject } from '../utils/chk';
+import { isUndefined, isNumber, isMetadataObject } from '../utils/chk';
 import { ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './metadatas';
 import { Type } from '../types';
 import { Token } from '../tokens';
@@ -49,7 +49,7 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
     switch (args.length) {
         case 1:
             target = args[0];
-            if (isClass(target) || isAbstractClass(target)) {
+            if (target) {
                 refl.dispatchTypeDecor(target, { name, decor, matedata: metadata, decorType: 'class', decorPdr: option })
                 return target;
             }
