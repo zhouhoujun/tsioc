@@ -387,12 +387,14 @@ export function isClassType(target: any): target is ClassType {
     return classCheck(target);
 }
 
-const invdt = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
+const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
 
 function classCheck(target: any, exclude?: (target: Function) => boolean): boolean {
     if (!isFunction(target)) return false;
 
     if (!target.name || !target.prototype) return false;
+
+    if(target.prototype.constructor !== target) return false;
 
     if (exclude && exclude(target)) {
         return false;
@@ -405,7 +407,7 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
     if (isPrimitiveType(target)) return false;
 
     const str = target.toString();
-    if (invdt.test(str)) return false;
+    if (anon.test(str)) return false;
 
     return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
 }
