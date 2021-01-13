@@ -68,6 +68,9 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
     }
 }
 
+/**
+ * default module injector strategy.
+ */
 const mdInjStrategy = new ModuleStrategy<IModuleInjector>(p => p instanceof Injector, cu => cu.deps);
 /**
  * DI module exports.
@@ -127,7 +130,7 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 
     private _injector: IModuleInjector;
-    private _exports: ModuleProviders;
+    private _exports: ModuleProvider;
     private _inst: T;
     private _imports: Type[];
     constructor(
@@ -147,7 +150,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         }
         this._injector = ModuleInjector.create(root);
         this._injector.setValue(ModuleRef, this);
-        const pdr = new ModuleProviders(this._injector);
+        const pdr = new ModuleProvider(this._injector);
         pdr.export(this.type, true);
         this._exports = pdr;
     }
@@ -200,11 +203,14 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     }
 }
 
+/**
+ * default module provider strategy.
+ */
 const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => !(p instanceof Injector), cu => cu.exports);
 /**
  * module providers.
  */
-export class ModuleProviders extends Provider implements IModuleProvider {
+export class ModuleProvider extends Provider implements IModuleProvider {
 
     constructor(injector: IModuleInjector, strategy: Strategy = mdPdrStrategy) {
         super(injector, strategy);
