@@ -44,7 +44,8 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.regIn = regIn;
         ctx.injector = container;
     }
-    container.regedState.regType(ctx.type, genReged(ctx.injector, getTokenKey(ctx.token)));
+    const state = ctx.state = genReged(ctx.injector, getTokenKey(ctx.token));
+    container.regedState.regType(ctx.type, state);
     next();
 };
 
@@ -55,7 +56,7 @@ function genReged(injector: IInjector, provide?: SymbolType) {
     }
 }
 
-function fac(actionPdr: IActionProvider, injector: IInjector, type: Type, token: Token, singleton) {
+function getfac(actionPdr: IActionProvider, injector: IInjector, type: Type, token: Token, singleton) {
     return (...providers: ProviderType[]) => {
         // make sure has value.
         if (singleton && injector.hasValue(type)) {
@@ -83,11 +84,12 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     const type = ctx.type;
     const singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
-    const factory = fac(container.provider, injector, type, provide, singleton);
+    const fac = getfac(container.provider, injector, type, provide, singleton);
+    const origin = true;
     if (provide && provide !== type) {
-        injector.set(provide, factory, type);
+        injector.set(provide, { fac, provider: type, origin }, true);
     } else {
-        injector.set(type, factory);
+        injector.set(type, { fac, origin }, true);
     }
 
     next();
@@ -147,7 +149,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     const injector = ctx.injector;
     const type = ctx.type;
     const container = injector.getContainer();
-    const registed = container.regedState.getRegistered(type);
+    const registed = ctx.state;
     tgReflect.providers.forEach(anno => {
         const provide = getTokenKey(anno.provide, anno.alias);
         injector.bindProvider(provide, type, registed);

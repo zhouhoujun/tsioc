@@ -7,9 +7,10 @@ import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, Serv
 import { FactoryLike, getTokenKey, Factory, InstFac, isToken, ProviderType, SymbolType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
 import { IContainer } from './IContainer';
-import { getTypes, mapEach } from './utils/lang';
+import { cleanObj, getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
 import { PROVIDERS } from './utils/tk';
+import { getReged } from './decor/refl';
 
 
 @Abstract()
@@ -433,7 +434,7 @@ export class Provider extends Destoryable implements IProvider {
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
         let key = getTokenKey(token);
-        return this.factories.get(key)?.provider ?? this.strategy.getTokenProvider(key, this);
+        return this.factories.get(key)?.provider ?? (this.factories.has(key) && isClass(key) ? key : null) ?? this.strategy.getTokenProvider(key, this);
     }
 
     /**
@@ -447,19 +448,19 @@ export class Provider extends Destoryable implements IProvider {
      */
     unregister<T>(token: Token<T>): this {
         let key = getTokenKey(token);
-        if (this.has(key)) {
+        const inst = this.factories.get(key);
+        if (inst) {
             this.factories.delete(key);
-            if (isClass(key)) {
-                let keys = [];
-                this.delValue(key);
-                keys.forEach(k => {
-                    this.factories.delete(key);
-                });
+            if (inst.origin) {
                 const state = this.getContainer().regedState;
-                if (state.getInjector<any>(key) === this) {
-                    state.deleteType(key);
-                }
+                const reged = state.getRegistered(key as Type);
+                reged.provides.forEach(k => {
+                    this.factories.delete(k);
+                });
+                state.deleteType(key as Type);
             }
+
+            cleanObj(inst);
         }
         return this;
     }
@@ -505,7 +506,10 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     protected destroying() {
-        this.factories.clear();
+        Array.from(this.factories.keys())
+            .forEach(k => {
+                this.unregister(k);
+            });
         this.strategy = null;
         this.factories = null;
         this.parent = null;

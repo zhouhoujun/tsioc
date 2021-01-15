@@ -95,7 +95,8 @@ export class InjectorImpl extends Injector {
     }
 
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        return this.getValue(SERVICE_PROVIDER)?.getService(this, target, ...providers) ?? null;
+        const pdr = this.getValue(SERVICE_PROVIDER);
+        return pdr? pdr.getService(this, target, ...providers) : this.resolve(target);
     }
 
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {

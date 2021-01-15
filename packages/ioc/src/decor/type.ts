@@ -1,6 +1,6 @@
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { IInjector, IProvider } from '../IInjector';
-import { ProviderType, Token } from '../tokens';
+import { ProviderType, SymbolType } from '../tokens';
 import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
 import {
@@ -38,7 +38,7 @@ export interface Registered {
     /**
      * provides.
      */
-    readonly provides: Token[];
+    readonly provides: SymbolType[];
     /**
      * injector.
      */

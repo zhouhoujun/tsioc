@@ -1,5 +1,5 @@
 import { ParameterMetadata } from '../decor/metadatas';
-import { TypeReflect } from '../decor/type';
+import { Registered, TypeReflect } from '../decor/type';
 import { IInjector, IProvider } from '../IInjector';
 import { Token } from '../tokens';
 import { Type } from '../types';
@@ -67,6 +67,8 @@ export interface DesignContext extends RegContext {
      * type register in.
      */
     regIn?: string;
+    
+    state?: Registered;
 }
 
 /**
