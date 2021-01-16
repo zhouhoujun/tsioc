@@ -92,10 +92,6 @@ export class InjectorImpl extends Injector {
         return await this.getLoader()?.register(this, ...modules) ?? [];
     }
 
-    protected getSerPdr(){
-        return this.getValue(SERVICE_PROVIDER) ?? SERVICE;
-    }
-
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
         return this.getSerPdr().getService(this, target, ...providers);
     }
@@ -106,6 +102,10 @@ export class InjectorImpl extends Injector {
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
         return this.getSerPdr().getServiceProviders(this, target) ?? NULL_PDR;
+    }
+
+    protected getSerPdr(){
+        return this.getValue(SERVICE_PROVIDER) ?? SERVICE;
     }
 
     protected initReg() {
@@ -306,7 +306,7 @@ const SERVICE: IServiceProvider = {
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
         const tokens = isToken(target) ? [getTokenKey(target)] : (target.tokens ?? [target.token]).map(t => getTokenKey(t, target.alias));
         const services: T[] = [];
-        this.iterator((fac, key) => {
+        injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
                 services.push(getFacInstance(fac, ...providers));
             }
