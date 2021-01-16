@@ -10,7 +10,6 @@ import { IContainer } from './IContainer';
 import { cleanObj, getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
 import { PROVIDERS } from './utils/tk';
-import { getReged } from './decor/refl';
 
 
 @Abstract()
@@ -453,13 +452,13 @@ export class Provider extends Destoryable implements IProvider {
             this.factories.delete(key);
             if (inst.origin) {
                 const state = this.getContainer().regedState;
-                const reged = state.getRegistered(key as Type);
+                const ptype = inst.provider ?? key as Type;
+                const reged = state.getRegistered(ptype);
                 reged.provides.forEach(k => {
                     this.factories.delete(k);
                 });
-                state.deleteType(key as Type);
+                state.deleteType(ptype);
             }
-
             cleanObj(inst);
         }
         return this;
@@ -510,6 +509,7 @@ export class Provider extends Destoryable implements IProvider {
             .forEach(k => {
                 this.unregister(k);
             });
+        this.factories.clear();
         this.strategy = null;
         this.factories = null;
         this.parent = null;
