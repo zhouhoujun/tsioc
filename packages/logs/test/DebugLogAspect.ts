@@ -7,10 +7,6 @@ import { LoggerAspect } from '../src';
 @Aspect()
 export class DebugLogAspect extends LoggerAspect {
 
-    constructor( @Inject(CONTAINER) container: IContainer) {
-        super(container);
-    }
-
     @Around('execution(*.*)')
     logging(joinPoint: Joinpoint) {
         this.processLog(joinPoint);
