@@ -527,7 +527,12 @@ export function setReged<T extends Registered>(type: ClassType, id: string, stat
     const inf = type[key]?.();
     state.getInjector().onDestroy(() => delReged(type, id));
     if (inf && inf.type === type) {
-        inf[id] = { ...inf[id], ...state };
+        const old = inf[id];
+        if (old) {
+            Object.assign(old, state);
+        } else {
+            inf[id] = state;
+        }
         return;
     }
     const sta = { type };

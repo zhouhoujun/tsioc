@@ -206,7 +206,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (ctx.reflect.annoType === 'module') {
                     ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn);
-                    ctx.injector.getContainer().regedState.getRegistered<ModuleRegistered>(ctx.type).moduleRef = ctx.moduleRef;
+                    (ctx.state as ModuleRegistered).moduleRef = ctx.moduleRef;
                     ctx.injector = ctx.moduleRef.injector;
                 }
                 next();
