@@ -2,7 +2,7 @@ import { Registered } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
-import { cleanObj, isExtendsClass, mapEach } from './utils/lang';
+import { cleanObj, isExtendsClass } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
@@ -225,7 +225,7 @@ export class Container extends Injector implements IContainer {
             }
             return this;
         }
-        if (injector.has(type, true)) {
+        if (injector.has(type)) {
             return this;
         }
 
