@@ -2,9 +2,9 @@ import { Registered } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
-import { cleanObj, isExtendsClass } from './utils/lang';
+import { cleanObj, isExtendsClass, mapEach } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
-import { IContainer, RegisteredState } from './IContainer';
+import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
 import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
@@ -14,10 +14,8 @@ import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
 import { ResolveLifeScope } from './actions/resolve';
 import { delReged, getReged, setReged } from './decor/refl';
-import { Provider, Injector, Strategy } from './injector';
+import { Provider, Injector, Strategy, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
-
-
 
 /**
  * injector implantment.
@@ -94,17 +92,20 @@ export class InjectorImpl extends Injector {
         return await this.getLoader()?.register(this, ...modules) ?? [];
     }
 
+    protected getSerPdr(){
+        return this.getValue(SERVICE_PROVIDER) ?? SERVICE;
+    }
+
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        const pdr = this.getValue(SERVICE_PROVIDER);
-        return pdr? pdr.getService(this, target, ...providers) : this.resolve(target);
+        return this.getSerPdr().getService(this, target, ...providers);
     }
 
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        return this.getValue(SERVICE_PROVIDER)?.getServices(this, target, ...providers) ?? [];
+        return this.getSerPdr().getServices(this, target, ...providers) ?? [];
     }
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? NULL_PDR;
+        return this.getSerPdr().getServiceProviders(this, target) ?? NULL_PDR;
     }
 
     protected initReg() {
@@ -295,6 +296,27 @@ export const IocContainer = Container;
 
 
 const NULL_PDR = new Provider(null);
+
+
+const SERVICE: IServiceProvider = {
+
+    getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
+        return injector.resolve(target as ResolveOption<T>, ...providers);
+    },
+    getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
+        const tokens = isToken(target) ? [getTokenKey(target)] : (target.tokens ?? [target.token]).map(t => getTokenKey(t, target.alias));
+        const services: T[] = [];
+        this.iterator((fac, key) => {
+            if (tokens.indexOf(key)) {
+                services.push(getFacInstance(fac, ...providers));
+            }
+        });
+        return services;
+    },
+    getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
+        return NULL_PDR;
+    }
+};
 
 class RegisteredStateImpl implements RegisteredState {
 
