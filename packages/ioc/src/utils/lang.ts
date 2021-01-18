@@ -137,8 +137,7 @@ export function getClassName(target: any): string {
  * @returns {ClassType}
  */
 export function getParentClass(target: ClassType): ClassType {
-    const p = Object.getPrototypeOf(target.prototype);
-    const ty = isFunction(p) ? p : p?.constructor as ClassType;
+    const ty = Object.getPrototypeOf(target.prototype)?.constructor ?? Object.getPrototypeOf(target);
     return ty === Object ? null : ty;
 }
 
@@ -179,7 +178,7 @@ export function forInClassChain(target: ClassType, express: (token: ClassType) =
  * @param baseType 
  */
 export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is ClassType<T> {
-    return  isFunction(target) && Object.getPrototypeOf(target.prototype) instanceof baseType;
+    return  isFunction(target) && (Object.getPrototypeOf(target) === baseType || Object.getPrototypeOf(target.prototype) instanceof baseType);
 }
 
 /**

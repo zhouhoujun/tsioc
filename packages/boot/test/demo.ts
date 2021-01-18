@@ -95,9 +95,12 @@ export class ModuleB {
 
 }
 
+export abstract class MyStart extends StartupService<IBootContext> {
+
+}
 
 @Singleton()
-export class SocketService extends StartupService<IBootContext> {
+export class SocketService extends MyStart {
 
     public tcpServer: net.Server;
     private context: IBootContext;
@@ -108,7 +111,7 @@ export class SocketService extends StartupService<IBootContext> {
         this.context = ctx;
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
-        this.init_times ++;
+        this.init_times++;
         console.log('destroyed state', this.destroyed, 'init', this.init_times);
     }
 
