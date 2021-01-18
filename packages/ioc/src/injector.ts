@@ -441,7 +441,6 @@ export class Provider extends Destoryable implements IProvider {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {ResoveWay} [resway]
      * @returns {this}
      * @memberof BaseInjector
      */
@@ -450,14 +449,7 @@ export class Provider extends Destoryable implements IProvider {
         const inst = this.factories.get(key);
         if (inst) {
             this.factories.delete(key);
-            const state = this.getContainer().regedState;
-            const ptype = inst.provider ?? key as Type;
-            const reged = state.getRegistered(ptype);
-            if (reged.getInjector() as IProvider === this) {
-                reged.provides.forEach(k => {
-                    this.factories.delete(k);
-                });
-            }
+            if (isFunction(inst.unreg)) inst.unreg();
             cleanObj(inst);
         }
         return this;
@@ -504,6 +496,10 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     protected destroying() {
+        Array.from(this.factories.keys())
+            .forEach(k => {
+                this.unregister(k);
+            });
         this.factories.clear();
         this.strategy = null;
         this.factories = null;

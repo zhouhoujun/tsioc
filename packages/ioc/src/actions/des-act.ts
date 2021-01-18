@@ -84,11 +84,21 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     const type = ctx.type;
     const singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
+
     const fac = getfac(container.provider, injector, type, provide, singleton);
+
+    const state = ctx.state;
+    const regedState = container.regedState;
+    const unreg = () => {
+        state.provides?.forEach(k => injector.unregister(k));
+        regedState.deleteType(type);
+    };
+
+    injector.set(type, { fac, unreg }, true);
+    injector.onDestroy(() => injector.unregister(type));
     if (provide && provide !== type) {
         injector.set(provide, fac, type);
-    } else {
-        injector.set(type, fac);
+        injector.onDestroy(() => injector.unregister(provide));
     }
     next();
 };

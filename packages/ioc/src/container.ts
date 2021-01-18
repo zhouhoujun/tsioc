@@ -225,7 +225,7 @@ export class Container extends Injector implements IContainer {
             }
             return this;
         }
-        if (injector.has(type)) {
+        if (injector.has(type, true)) {
             return this;
         }
 

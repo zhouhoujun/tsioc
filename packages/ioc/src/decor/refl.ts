@@ -9,6 +9,7 @@ import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
+import { IInjector } from '../IInjector';
 
 
 
@@ -525,7 +526,6 @@ export function getReged<T extends Registered>(type: ClassType, id: string): T {
  */
 export function setReged<T extends Registered>(type: ClassType, id: string, state: T) {
     const inf = type[key]?.();
-    state.getInjector().onDestroy(() => delReged(type, id));
     if (inf && inf.type === type) {
         const old = inf[id];
         if (old) {

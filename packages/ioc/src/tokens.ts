@@ -220,6 +220,11 @@ export interface InstFac<T = any> {
      * cache expires.
      */
     expires?: number;
+
+    /**
+     * unregister callback.
+     */
+    unreg?: () => void;
 }
 
 /**
