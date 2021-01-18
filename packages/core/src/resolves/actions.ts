@@ -1,4 +1,4 @@
-import { isNil, isClassType, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide } from '@tsdi/ioc';
+import { isNil, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -56,7 +56,7 @@ export class RsvTagSericeScope extends resovles.IocResolveScope<ServiceContext> 
 export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => void): void {
     let clasType = ctx.targetToken;
     let injector = ctx.injector;
-    if (isClassType(clasType)) {
+    if (isFunction(clasType)) {
         let tk = ctx.currTK;
         refl.get(clasType)
             .class.decors.some(dec => {
@@ -86,7 +86,7 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
 export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () => void): void {
     let injector = ctx.injector;
     let tgtk = ctx.targetToken;
-    if (isClassType(tgtk)) {
+    if (isFunction(tgtk)) {
         refl.get(tgtk).class.extendTypes.some(ty => {
             ctx.instance = injector.resolve({ token: ctx.currTK, target: ty, tagOnly: true }, ctx.providers);
             return ctx.instance;
@@ -165,7 +165,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                 maps.iterator((pdr, tk) => {
                     if (!services.has(tk, alias)
                         && (
-                            (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
+                            (isFunction(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
                             || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
                         )
                     ) {
@@ -173,14 +173,14 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     }
                 });
             }
-            const rlt = isClassType(tk) ? refl.get(tk) : null
+            const rlt = isFunction(tk) ? refl.get(tk) : null
             if (rlt) {
                 rlt.class.classDecors.forEach(dec => {
                     const dprvoider = dec.decorPdr.getProvider(injector)
                     dprvoider.iterator((pdr, tk) => {
                         if (!services.has(tk, alias)
                             && (
-                                (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
+                                (isFunction(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
                                 || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
                             )
                         ) {
@@ -211,7 +211,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
     ctx.injector.iterator((pdr, tk) => {
         if (!services.has(tk, alias)
             && (
-                (isClassType(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
+                (isFunction(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
                 || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
             )
         ) {

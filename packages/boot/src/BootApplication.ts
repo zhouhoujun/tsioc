@@ -1,4 +1,4 @@
-import { isArray, isString, isInjector, ClassType, isClassType, Destoryable, IModuleLoader, IContainer, LoadType, IInjector  } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, Destoryable, IModuleLoader, IContainer, LoadType, IInjector, isFunction  } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder} from '@tsdi/core';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
@@ -32,7 +32,7 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
         this.deps = this.deps || [];
         let container: IContainer;
 
-        if (!isClassType(target)) {
+        if (!isFunction(target)) {
             if (isInjector(target.injector)) {
                 container = target.injector.getContainer();
             }

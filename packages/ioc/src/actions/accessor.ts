@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, isBaseType, getClass, isClass } from '../utils/chk';
+import { isFunction, isBaseType, getClass } from '../utils/chk';
 import { Token, isToken, ProviderType } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';
@@ -34,7 +34,7 @@ export class MethodAccessor implements IMethodAccessor {
         let targetClass: Type;
         let instance: T;
         if (isToken(target)) {
-            targetClass = isClass(target) ? target : injector.getTokenProvider(target);
+            targetClass = injector.getTokenProvider(target);
             instance = injector.get(target, ...providers);
             if (!targetClass) {
                 throw new Error(target.toString() + ' is not implements by any class.')

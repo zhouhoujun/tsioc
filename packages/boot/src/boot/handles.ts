@@ -1,4 +1,4 @@
-import { isClass, INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, refl } from '@tsdi/ioc';
+import { INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
@@ -85,7 +85,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
 
     const options = ctx.getOptions();
     const injector = ctx.injector;
-    if (isClass(ctx.type)) {
+    if (ctx.type) {
         if (ctx.hasValue(PROCESS_ROOT)) {
             injector.setValue(PROCESS_ROOT, ctx.baseURL)
         }
@@ -236,7 +236,7 @@ export const ResolveBootHandle = async function (ctx: IBootContext, next: () => 
         )
         let injector = ctx.injector;
         let boot = await injector.getInstance(BUILDER).resolve({
-            type: isClass(bootModule) ? bootModule : injector.getTokenProvider(bootModule),
+            type: isProvide(bootModule) ? injector.getTokenProvider(bootModule) : bootModule,
             // parent: ctx,
             template: template,
             providers: ctx.providers
@@ -275,7 +275,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
             let ser: IStartupService;
-            if (isClass(tyser) && !container.regedState.isRegistered(tyser)) {
+            if (isFunction(tyser) && !container.regedState.isRegistered(tyser)) {
                 injector.register(tyser);
             }
             ser = injector.get(tyser) ?? container.regedState.getInjector(tyser as ClassType)?.get(tyser);

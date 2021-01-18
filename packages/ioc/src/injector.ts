@@ -412,7 +412,7 @@ export class Provider extends Destoryable implements IProvider {
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this {
         const provideKey = getTokenKey(provide);
-        if (provideKey && isClass(provider)) {
+        if (provideKey && provider) {
             !reged && this.registerType(provider);
             if (reged && reged.provides.indexOf(provideKey) < 0) {
                 reged.provides.push(provideKey);

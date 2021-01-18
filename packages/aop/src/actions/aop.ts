@@ -1,4 +1,4 @@
-import { isClass, Type, isBaseType, RuntimeContext, refl, AnnotationType} from '@tsdi/ioc';
+import { Type, RuntimeContext, refl, AnnotationType} from '@tsdi/ioc';
 import { ProceedingScope } from './proceed';
 import { Advicer } from '../advices/Advicer';
 import { Advices } from '../advices/Advices';
@@ -169,9 +169,6 @@ function equals(a: Advicer, b: Advicer) {
  * @returns {boolean}
  */
 function isValAspectTag(targetType: Type, reflect: AopReflect): boolean {
-    if (!isClass(targetType) || isBaseType(targetType)) {
-        return false;
-    }
     if ((targetType as AnnotationType).ρNPT) {
         return false;
     }

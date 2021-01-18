@@ -1,6 +1,6 @@
 import {
     isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
-    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, isClass, Provider, Injector, IInjector, isProvide
+    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, Provider, Injector, IInjector, isProvide
 } from '@tsdi/ioc';
 import { AnnoationOption, IAnnoationContext, IDesctoryableContext, ProdverOption } from '../Context';
 import { CTX_OPTIONS } from '../tk';

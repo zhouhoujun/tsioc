@@ -250,7 +250,7 @@ export function isTypeObject(target: any): boolean {
  * @param {*} target
  * @returns {target is Promise<any>}
  */
-export function isPlainObject(target: any): target is ObjectMap {
+export function isPlainObject<T = ObjectMap>(target: any): target is T {
     return toString.call(target) === objTag && target.constructor.name === 'Object';
 }
 

@@ -1,11 +1,11 @@
 import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator,
-    isClass, lang, Type, isFunction, Token, isArray, isString, DesignContext, refl
+    lang, Type, isFunction, Token, isArray, isString, DesignContext
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
 import { ModuleReflect } from './modules/reflect';
-import { DefaultModuleRef, ModuleInjector } from './modules/injector';
+import { DefaultModuleRef } from './modules/injector';
 import { IMessage, IMessageQueue } from './messages/type';
 import { MessageQueue } from './messages/queue';
 import { MessageContext } from './messages/ctx';
@@ -282,7 +282,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 append(meta as T);
             }
 
-            if (!meta.name && isClass(meta.token)) {
+            if (!meta.name) {
                 meta.name = lang.getClassName(meta.token);
             }
         }
@@ -376,7 +376,7 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
             }
             const injector = ctx.injector;
             let msgQueue: IMessageQueue;
-            if (isClass(parent)) {
+            if (!isString(parent)) {
                 msgQueue = injector.getContainer().regedState.getInjector(parent)?.get(parent);
             } else {
                 msgQueue = injector.getInstance(ROOT_MESSAGEQUEUE);
@@ -462,7 +462,7 @@ export function createBootstrapDecorator<T extends BootstrapMetadata>(name: stri
                 reflect.annoDecor = ctx.decor;
                 reflect.annotation = ctx.matedata;
                 // static main.
-                if (isClass(ctx.decorType) && isFunction(ctx.decorType['main'])) {
+                if (isFunction(ctx.decorType['main'])) {
                     setTimeout(() => {
                         ctx.decorType['main'](ctx.matedata);
                     }, 500);

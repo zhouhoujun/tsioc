@@ -1,8 +1,9 @@
-import { isNil, isClass, getClass } from '../utils/chk';
+import { isNil, getClass, isFunction } from '../utils/chk';
 import { InjectReference, isToken } from '../tokens';
 import { PROVIDERS } from '../utils/tk';
 import { IocActions } from './act';
 import { ResolveContext } from './res';
+import { Type } from '../types';
 
 /**
  * register action scope.
@@ -31,8 +32,8 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
         }
 
         // after all.
-        if (isNil(ctx.instance) && ctx.regify && isClass(ctx.token) && !ctx.injector.has(ctx.token)) {
-            ctx.injector.registerType(ctx.token);
+        if (isNil(ctx.instance) && ctx.regify && isFunction(ctx.token) && !ctx.injector.has(ctx.token)) {
+            ctx.injector.registerType(ctx.token as Type);
             ctx.instance = ctx.injector.get(ctx.token, ctx.providers);
         }
     }

@@ -1,4 +1,4 @@
-import { IocCoreService, Inject, Singleton, isFunction, isClassType, ClassType, Type, IInjector, IContainer } from '@tsdi/ioc';
+import { IocCoreService, Inject, Singleton, isFunction, ClassType, Type, IInjector, IContainer, isPlainObject } from '@tsdi/ioc';
 import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
@@ -44,13 +44,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         let options: BuildOption;
         const container = this.root.getContainer();
         let md: ClassType;
-        if (isClassType(target)) {
-            options = { type: target };
-            md = target;
-        } else {
+        if (isPlainObject<BuildOption>(target)) {
             md = target.type;
             injector = target.injector;
             options = target;
+        } else {
+            options = { type: target };
+            md = target;
         }
         if (!injector) {
             injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
@@ -66,13 +66,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
         let md: ClassType;
         let injector: IInjector;
         let options: BootOption<T>;
-        if (isClassType(target)) {
-            md = target;
-            options = { bootstrap: md };
-        } else {
+        if (isPlainObject<BootOption>(target)) {
             md = target.type;
             injector = target.injector;
             options = { bootstrap: md, ...target };
+        } else {
+            md = target;
+            options = { bootstrap: md };
         }
         if (!injector) {
             injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
@@ -132,13 +132,13 @@ export class BuilderService extends IocCoreService implements IBuilderService {
             let md: ClassType;
             let injector: IInjector;
             let options: BootOption;
-            if (isClassType(target)) {
-                md = target;
-                options = { type: md, args };
-            } else {
+            if (isPlainObject<Topt>(target)) {
                 md = target.type;
                 injector = target.injector;
                 options = { ...target, args };
+            } else {
+                md = target;
+                options = { type: md, args };
             }
             if (!injector) {
                 injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;

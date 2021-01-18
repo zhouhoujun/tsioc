@@ -78,7 +78,7 @@ export abstract class ModelParser extends IocCoreService implements IModelParser
                     if (!propmeta) {
                         continue;
                     }
-                    let ptype = propmeta.provider ? (isClass(propmeta.provider) ? propmeta.provider : this.injector.getTokenProvider(propmeta.provider)) : propmeta.type;
+                    let ptype = propmeta.provider ? (isProvide(propmeta.provider) ? this.injector.getTokenProvider(propmeta.provider): propmeta.provider) : propmeta.type;
                     let reqval = objMap[n];
                     if (!isFunction(ptype) || isNil(reqval)) {
                         continue;
