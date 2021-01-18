@@ -450,14 +450,13 @@ export class Provider extends Destoryable implements IProvider {
         const inst = this.factories.get(key);
         if (inst) {
             this.factories.delete(key);
-            if (inst.origin) {
-                const state = this.getContainer().regedState;
-                const ptype = inst.provider ?? key as Type;
-                const reged = state.getRegistered(ptype);
+            const state = this.getContainer().regedState;
+            const ptype = inst.provider ?? key as Type;
+            const reged = state.getRegistered(ptype);
+            if (reged.getInjector() as IProvider === this) {
                 reged.provides.forEach(k => {
                     this.factories.delete(k);
                 });
-                state.deleteType(ptype);
             }
             cleanObj(inst);
         }
@@ -505,10 +504,6 @@ export class Provider extends Destoryable implements IProvider {
     }
 
     protected destroying() {
-        Array.from(this.factories.keys())
-            .forEach(k => {
-                this.unregister(k);
-            });
         this.factories.clear();
         this.strategy = null;
         this.factories = null;

@@ -85,13 +85,11 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
     const singleton = ctx.singleton || ctx.reflect.singleton;
     const container = injector.getContainer();
     const fac = getfac(container.provider, injector, type, provide, singleton);
-    const origin = true;
     if (provide && provide !== type) {
-        injector.set(provide, { fac, provider: type, origin }, true);
+        injector.set(provide, fac, type);
     } else {
-        injector.set(type, { fac, origin }, true);
+        injector.set(type, fac);
     }
-
     next();
 };
 
