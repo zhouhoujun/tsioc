@@ -1,4 +1,4 @@
-import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNil, IocCoreService } from '@tsdi/ioc';
+import { Token, Singleton, isNumber, isBoolean, isString, isDate, isNil } from '@tsdi/ioc';
 import { TYPE_PARSER } from '../tk';
 import { IBaseTypeParser } from './IBaseTypeParser';
 
@@ -6,7 +6,7 @@ import { IBaseTypeParser } from './IBaseTypeParser';
  * base type parser.
  */
 @Singleton(TYPE_PARSER)
-export class BaseTypeParser extends IocCoreService implements IBaseTypeParser {
+export class BaseTypeParser implements IBaseTypeParser {
     /**
      * parse param.
      *

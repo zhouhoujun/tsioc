@@ -5,7 +5,6 @@ export * from './Destoryable';
 export * from './IInjector';
 export * from './IContainer';
 export * from './IMethodAccessor';
-export * from './service';
 export * from './injector';
 export * from './container';
 

@@ -77,7 +77,6 @@ const mdInjStrategy = new ModuleStrategy<IModuleInjector>(p => p instanceof Inje
  *
  * @export
  * @class DIModuleExports
- * @extends {IocCoreService}
  * @implements {IResolver}
  */
 export class ModuleInjector extends InjectorImpl implements IModuleInjector {

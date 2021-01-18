@@ -1,4 +1,4 @@
-import { IocCoreService, ClassType } from '@tsdi/ioc';
+import { ClassType } from '@tsdi/ioc';
 import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 
@@ -8,9 +8,8 @@ import { IBootApplication } from '../IBootApplication';
  *
  * @export
  * @class BuilderService
- * @extends {IocCoreService}
  */
-export interface IBuilderService extends IocCoreService {
+export interface IBuilderService {
 
     /**
      * build target.

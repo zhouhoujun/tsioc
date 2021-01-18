@@ -1,6 +1,6 @@
 import {
     Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isBaseType, isArray,
-    Abstract, SymbolType, Singleton, isNil, isFunction, IocCoreService, TokenId, tokenId, Injector, isProvide
+    Abstract, SymbolType, Singleton, isNil, isFunction, TokenId, tokenId, Injector, isProvide
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
 import { TYPE_PARSER } from '../tk';
@@ -24,10 +24,10 @@ export interface DBPropertyMetadata extends PropertyMetadata {
 
 
 @Singleton()
-export class ExtendBaseTypeMap extends IocCoreService {
+export class ExtendBaseTypeMap {
+    static ρNPT = true;
     protected maps: Map<SymbolType<any>, (...params: any[]) => any>;
     constructor() {
-        super();
         this.maps = new Map();
     }
 
@@ -55,8 +55,10 @@ export class ExtendBaseTypeMap extends IocCoreService {
  * @class ModelParser
  */
 @Abstract()
-export abstract class ModelParser extends IocCoreService implements IModelParser {
+export abstract class ModelParser implements IModelParser {
 
+    static ρNPT = true;
+    
     @Inject() protected injector: Injector;
 
     parseModel(type: Type, objMap: any): any {
@@ -78,7 +80,7 @@ export abstract class ModelParser extends IocCoreService implements IModelParser
                     if (!propmeta) {
                         continue;
                     }
-                    let ptype = propmeta.provider ? (isProvide(propmeta.provider) ? this.injector.getTokenProvider(propmeta.provider): propmeta.provider) : propmeta.type;
+                    let ptype = propmeta.provider ? (isProvide(propmeta.provider) ? this.injector.getTokenProvider(propmeta.provider) : propmeta.provider) : propmeta.type;
                     let reqval = objMap[n];
                     if (!isFunction(ptype) || isNil(reqval)) {
                         continue;

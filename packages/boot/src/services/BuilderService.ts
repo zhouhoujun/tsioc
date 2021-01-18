@@ -1,4 +1,4 @@
-import { IocCoreService, Inject, Singleton, isFunction, ClassType, Type, IInjector, IContainer, isPlainObject } from '@tsdi/ioc';
+import { Inject, Singleton, isFunction, ClassType, Type, IInjector, IContainer, isPlainObject } from '@tsdi/ioc';
 import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
@@ -16,10 +16,11 @@ import { BootContext } from '../boot/ctx';
  *
  * @export
  * @class BuilderService
- * @extends {IocCoreService}
  */
 @Singleton(BUILDER)
-export class BuilderService extends IocCoreService implements IBuilderService {
+export class BuilderService implements IBuilderService {
+
+    static ρNPT = true;
 
     @Inject(ROOT_INJECTOR)
     protected root: IInjector;

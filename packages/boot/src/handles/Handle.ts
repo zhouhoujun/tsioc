@@ -38,7 +38,6 @@ export type HandleType<T = any> = ActionType<IHandle<T>, AsyncHandler<T>>;
  * @export
  * @abstract
  * @class Middleware
- * @extends {IocCoreService}
  * @template T
  */
 export abstract class Handle<T> extends Action implements IHandle<T> {
