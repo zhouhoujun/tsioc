@@ -1,5 +1,5 @@
 import {
-    ClassType, IDestoryable, IocContext, IProvider, ProviderType, ObjectMap,
+    ClassType, IDestroyable, IocContext, IProvider, ProviderType, ObjectMap,
     RegInMetadata, SymbolType, Token, Type, TypeReflect, IContainer, IModuleLoader, LoadType, IInjector
 } from '@tsdi/ioc';
 import {  } from '@tsdi/core';
@@ -41,7 +41,7 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
 /**
  * destoryable context.
  */
-export interface IDestoryableContext<T> extends IocContext, IDestoryable {
+export interface IDestoryableContext<T> extends IocContext, IDestroyable {
     /**
      * current injector.
      */

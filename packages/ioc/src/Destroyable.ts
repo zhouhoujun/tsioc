@@ -1,8 +1,8 @@
 
 /**
- * destoryable interface.
+ * destroyable interface.
  */
-export interface IDestoryable {
+export interface IDestroyable {
     /**
      * has destoryed or not.
      */

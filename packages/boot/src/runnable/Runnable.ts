@@ -1,4 +1,4 @@
-import { lang, Type, Abstract, IDestoryable } from '@tsdi/ioc';
+import { lang, Type, Abstract, IDestroyable } from '@tsdi/ioc';
 import { IBootContext } from '../Context';
 
 
@@ -10,7 +10,7 @@ import { IBootContext } from '../Context';
  * @template T
  * @template TCtx default IBootContext
  */
-export interface IRunnable extends IDestoryable {
+export interface IRunnable extends IDestroyable {
 
     /**
      * configure and startup this service.

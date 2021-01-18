@@ -1,4 +1,4 @@
-import { Type, Registered, IProvider, Abstract, SymbolType, ProviderType, IInjector, IDestoryable } from '@tsdi/ioc';
+import { Type, Registered, IProvider, Abstract, SymbolType, ProviderType, IInjector, IDestroyable } from '@tsdi/ioc';
 
 /**
  * module registered state.
@@ -56,7 +56,7 @@ export interface IModuleProvider extends IProvider {
  * di module ref.
  */
 @Abstract()
-export abstract class ModuleRef<T = any> implements IDestoryable {
+export abstract class ModuleRef<T = any> implements IDestroyable {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
