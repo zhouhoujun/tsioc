@@ -28,7 +28,6 @@ export abstract class Destoryable implements IDestoryable {
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
 
-    constructor() { }
     /**
      * has destoryed or not.
      */
@@ -41,7 +40,7 @@ export abstract class Destoryable implements IDestoryable {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this.destroyCbs.forEach(cb => isFunction(cb) && cb());
+            this.destroyCbs.forEach(cb => cb());
             this.destroyCbs = [];
             this.destroying();
         }

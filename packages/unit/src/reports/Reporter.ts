@@ -1,4 +1,4 @@
-import { Token, lang, isClass, Type, Abstract } from '@tsdi/ioc';
+import { Token, lang, Type, Abstract, isFunction } from '@tsdi/ioc';
 import { ISuiteDescribe, ICaseDescribe } from './ITestReport';
 
 
@@ -48,5 +48,5 @@ export abstract class RealtimeReporter extends Reporter {
  * @returns
  */
 export function isReporterClass(target: any): target is Type<Reporter> {
-    return isClass(target) && lang.isExtendsClass(target, Reporter);
+    return isFunction(target) && lang.isBaseOf(target, Reporter);
 }

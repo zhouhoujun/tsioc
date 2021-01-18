@@ -9,7 +9,6 @@ import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { IInjector } from '../IInjector';
 
 
 

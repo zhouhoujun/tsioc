@@ -52,7 +52,6 @@ export function isClassType(target: any): target is ClassType {
     return classCheck(target);
 }
 
-
 /**
  * anonyous or array func
  */
@@ -74,11 +73,13 @@ function classCheck(target: any, abstract?: boolean): boolean {
 
     if (hasDesignAnno(target)) return true;
     if (isPrimitiveType(target)) return false;
+    const pkeys = Object.getOwnPropertyNames(target);
+    if (pkeys.indexOf('caller') > 0) return false;
+    if (pkeys.length > 3) return true;
 
     const str = target.toString();
     if (anon.test(str)) return false;
-
-    return Object.getOwnPropertyNames(target).indexOf('caller') < 0;
+    return true;
 }
 
 /**
@@ -347,6 +348,7 @@ export function isPrimitiveType(target): boolean {
         || target === String
         || target === Number
         || target === Boolean
+        || target === Array
         || target === Symbol
         || target === Promise;
 }

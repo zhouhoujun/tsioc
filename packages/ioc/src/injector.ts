@@ -15,6 +15,8 @@ import { PROVIDERS } from './utils/tk';
 @Abstract()
 export abstract class Strategy {
 
+    protected constructor() { }
+
     /**
      * vaild parent.
      * @param parent 

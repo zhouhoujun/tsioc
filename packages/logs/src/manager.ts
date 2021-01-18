@@ -1,4 +1,4 @@
-import { Inject, Injectable, Injector, isClass, isString, Registration, Singleton, Token, Type } from '@tsdi/ioc';
+import { Inject, Injectable, Injector, isFunction, isString, Registration, Singleton, Token, Type } from '@tsdi/ioc';
 import { NonePointcut } from '@tsdi/aop';
 import { LogConfigure } from './LogConfigure';
 import { ILoggerManager, LoggerConfig, IConfigureLoggerManager } from './ILoggerManager';
@@ -43,7 +43,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
         if (!config) {
             return;
         }
-        if (isClass(config)) {
+        if (isFunction(config)) {
             if (!this.injector.has(LogConfigureToken)) {
                 this.injector.register(LogConfigureToken, config);
                 this._config = this.injector.getInstance(LogConfigureToken);

@@ -12,6 +12,7 @@ import { AopReflect } from '../types';
 export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
     const reflect = ctx.reflect as AopReflect;
+    // ctx.type had checked.
     if (!ctx.instance || !isValAspectTag(ctx.type, reflect)) {
         return next();
     }

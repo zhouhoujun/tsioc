@@ -2,11 +2,11 @@ import { Registered } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isClass, isNil, isFunction } from './utils/chk';
 import { Handler } from './utils/hdl';
-import { cleanObj, isExtendsClass } from './utils/lang';
+import { cleanObj, isBaseOf } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
-import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey } from './tokens';
+import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey, isProvide } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
@@ -104,7 +104,7 @@ export class InjectorImpl extends Injector {
         return this.getSerPdr().getServiceProviders(this, target) ?? NULL_PDR;
     }
 
-    protected getSerPdr(){
+    protected getSerPdr() {
         return this.getValue(SERVICE_PROVIDER) ?? SERVICE;
     }
 
@@ -408,7 +408,7 @@ class ActionProvider extends Provider implements IActionProvider {
     }
 
     protected registerAction(type: Type) {
-        if (isExtendsClass(type, Action)) {
+        if (isBaseOf(type, Action)) {
             if (this.hasTokenKey(type)) {
                 return true;
             }
@@ -430,7 +430,7 @@ class ActionProvider extends Provider implements IActionProvider {
     getAction<T extends Handler>(target: Token<Action> | Action | Function): T {
         if (target instanceof Action) {
             return target.toAction() as T;
-        } else if (isToken(target)) {
+        } else if (isProvide(target) || isBaseOf(target, Action)) {
             let act = this.get(target);
             return act ? act.toAction() as T : null;
         } else if (isFunction(target)) {

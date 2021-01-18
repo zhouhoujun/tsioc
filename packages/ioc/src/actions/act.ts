@@ -4,7 +4,7 @@ import { Token } from '../tokens';
 import { IProvider } from '../IInjector';
 import { Action, Actions } from '../action';
 import { IocContext } from './ctx';
-import { isClass } from '../utils/chk';
+import { isBaseOf } from '../utils/lang';
 
 /**
  * action injector.
@@ -43,7 +43,7 @@ export class IocActions<T extends IocContext = IocContext> extends Actions<T> {
     }
 
     protected regHandle(ac: any) {
-        if (isClass(ac)) this.provider.regAction(ac);
+        if (isBaseOf(ac, Action)) this.provider.regAction(ac as Type);
     }
 
     protected toHandle(ac: any) {
