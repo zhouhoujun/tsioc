@@ -1,4 +1,5 @@
 import { isNil, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction } from '@tsdi/ioc';
+import { getParentClass, isBaseOf } from 'packages/ioc/src/utils/lang';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -101,7 +102,7 @@ export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () =>
 };
 
 export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => void): void {
-    let injector = ctx.injector;
+    const injector = ctx.injector;
     ctx.tokens.some(tk => {
         ctx.instance = injector.resolve(tk, ctx.providers);
         return !!ctx.instance;
@@ -121,10 +122,25 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
         if (!ctx.tokens || !ctx.tokens.length) {
             return;
         }
-        ctx.types = [
-            ...ctx.tokens.map(t => isProvide(t) ? ctx.injector.getTokenProvider(t) : t).filter(t => t),
-            ...ctx.types || []
-        ];
+        const tkTypes = ctx.tokens.map(t => isProvide(t) ? ctx.injector.getTokenProvider(t) : t).filter(t => t);
+
+        if (ctx.types) {
+            ctx.types.push(...tkTypes);
+        } else {
+            ctx.types = tkTypes;
+        }
+
+        const tymchs = ctx.types.map(t => {
+            return getParentClass(t) ?
+                (tag) => refl.get(tag)?.class.isExtends(t)
+                : (tag) => isBaseOf(tag, t);
+        });
+
+        if (ctx.matchs) {
+            ctx.matchs.push(...tymchs);
+        } else {
+            ctx.matchs = tymchs;
+        }
 
         ctx.services = ctx.injector.getContainer().get(PROVIDERS);
         super.execute(ctx);
@@ -154,19 +170,19 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
     let targetRefs = ctx.targetRefs;
 
     if (targetRefs && targetRefs.length) {
-        let injector = ctx.injector;
-        let types = ctx.types;
-        let services = ctx.services;
-        let alias = ctx.alias;
+        const injector = ctx.injector;
+        const services = ctx.services;
+        const alias = ctx.alias;
+        const matchs = ctx.matchs;
         targetRefs.forEach(t => {
-            let tk = isToken(t) ? t : lang.getClass(t);
-            let maps = injector.get(new InjectReference(PROVIDERS, tk));
+            const tk = isToken(t) ? t : lang.getClass(t);
+            const maps = injector.get(new InjectReference(PROVIDERS, tk));
             if (maps && maps.size) {
                 maps.iterator((pdr, tk) => {
                     if (!services.has(tk, alias)
                         && (
-                            (isFunction(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
-                            || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
+                            (isFunction(tk) && matchs.some(mch => mch(tk)))
+                            || (pdr.provider && matchs.some(mch => mch(pdr.provider)))
                         )
                     ) {
                         services.set(tk, pdr, true);
@@ -180,8 +196,8 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     dprvoider.iterator((pdr, tk) => {
                         if (!services.has(tk, alias)
                             && (
-                                (isFunction(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
-                                || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
+                                (isFunction(tk) && matchs.some(mch => mch(tk)))
+                                || (pdr.provider && matchs.some(mch => mch(pdr.provider)))
                             )
                         ) {
                             services.set(tk, pdr, true);
@@ -190,7 +206,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                 });
             }
 
-            types.forEach(ty => {
+            ctx.types.forEach(ty => {
                 let reftk = new InjectReference(ty, tk);
                 if (!services.has(reftk, alias) && injector.has(reftk)) {
                     services.set(reftk, (...providers: ProviderType[]) => injector.resolve(reftk, ...providers))
@@ -205,14 +221,14 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 
 
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
-    let types = ctx.types;
-    let services = ctx.services;
-    let alias = ctx.alias;
+    const matchs = ctx.matchs;
+    const services = ctx.services;
+    const alias = ctx.alias;
     ctx.injector.iterator((pdr, tk) => {
         if (!services.has(tk, alias)
             && (
-                (isFunction(tk) && types.some(ty => refl.get(tk)?.class.isExtends(ty)))
-                || (pdr.provider && types.some(ty => refl.get(pdr.provider)?.class.isExtends(ty)))
+                (isFunction(tk) && matchs.some(mch => mch(tk)))
+                || (pdr.provider && matchs.some(mch => mch(pdr.provider)))
             )
         ) {
             services.set(tk, pdr, true);

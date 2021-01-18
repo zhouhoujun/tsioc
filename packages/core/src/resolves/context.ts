@@ -45,6 +45,11 @@ export interface ServicesContext extends ServiceContext {
     types?: ClassType[];
 
     /**
+     * types matchs.
+     */
+    matchs?: ((tag: ClassType) => boolean)[];
+
+    /**
      * all matched services map.
      *
      * @type {Injector}
