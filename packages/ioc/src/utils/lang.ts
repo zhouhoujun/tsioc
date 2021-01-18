@@ -178,7 +178,7 @@ export function forInClassChain(target: ClassType, express: (token: ClassType) =
  * @param baseType 
  */
 export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is ClassType<T> {
-    return  isFunction(target) && (Object.getPrototypeOf(target) === baseType || Object.getPrototypeOf(target.prototype) instanceof baseType);
+    return isFunction(target) && (Object.getPrototypeOf(target.prototype) instanceof baseType || Object.getPrototypeOf(target) === baseType);
 }
 
 /**
