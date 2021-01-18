@@ -41,7 +41,7 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
 /**
  * destoryable context.
  */
-export interface IDesctoryableContext<T> extends IocContext, IDestoryable {
+export interface IDestoryableContext<T> extends IocContext, IDestoryable {
     /**
      * current injector.
      */
@@ -113,7 +113,7 @@ export interface IDesctoryableContext<T> extends IocContext, IDestoryable {
 /**
  * annoation context interface.
  */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IDesctoryableContext<T> {
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IDestoryableContext<T> {
     /**
     * current build type.
     */

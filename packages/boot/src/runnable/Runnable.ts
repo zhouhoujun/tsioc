@@ -1,4 +1,4 @@
-import { lang, Type, Abstract, IDestoryable, Destoryable } from '@tsdi/ioc';
+import { lang, Type, Abstract, IDestoryable } from '@tsdi/ioc';
 import { IBootContext } from '../Context';
 
 
@@ -32,7 +32,10 @@ export interface IRunnable extends IDestoryable {
  * @template T
  */
 @Abstract()
-export abstract class Runnable extends Destoryable implements IRunnable {
+export abstract class Runnable implements IRunnable {
+
+    private _destroyed = false;
+    private destroyCbs: (() => void)[] = [];
 
     /**
      * configure startup service.
@@ -41,6 +44,34 @@ export abstract class Runnable extends Destoryable implements IRunnable {
      * @returns {(Promise<void>)}
      */
     abstract configureService(ctx: IBootContext): Promise<void>;
+
+    /**
+     * has destoryed or not.
+     */
+    get destroyed() {
+        return this._destroyed;
+    }
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this.destroyCbs.forEach(cb => cb());
+            this.destroyCbs = [];
+            this.destroying();
+        }
+    }
+
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
+        }
+    }
 
     /**
      * destorying. default do nothing.

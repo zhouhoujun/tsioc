@@ -1,8 +1,8 @@
 import {
     isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
-    IProvider, Destoryable, SymbolType, ProviderType, isInjector, isArray, isBoolean, Provider, Injector, IInjector, isProvide
+    IProvider, SymbolType, ProviderType, isInjector, isArray, isBoolean, Provider, Injector, IInjector, isProvide
 } from '@tsdi/ioc';
-import { AnnoationOption, IAnnoationContext, IDesctoryableContext, ProdverOption } from '../Context';
+import { AnnoationOption, IAnnoationContext, IDestoryableContext, ProdverOption } from '../Context';
 import { CTX_OPTIONS } from '../tk';
 
 
@@ -10,14 +10,15 @@ import { CTX_OPTIONS } from '../tk';
  * annoation context.
  */
 @Abstract()
-export class DestoryableContext<T extends ProdverOption> extends Destoryable implements IDesctoryableContext<T> {
+export class DestoryableContext<T extends ProdverOption> implements IDestoryableContext<T> {
 
     static ρNPT = true;
+    private _destroyed = false;
+    private destroyCbs: (() => void)[] = [];
     private context: IProvider;
     protected options: T;
 
     constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options: T) {
-        super();
         this.context = injector.getContainer().get(PROVIDERS);
         this.context.setValue(INJECTOR, injector);
         this.setOptions(options);
@@ -173,6 +174,34 @@ export class DestoryableContext<T extends ProdverOption> extends Destoryable imp
                 : new Ctx(this.getOptions(), this.injector);
         } else {
             return new Ctx({ ...this.getOptions(), contexts: this.context.clone(), ...options || {} }, this.injector);
+        }
+    }
+
+    /**
+     * has destoryed or not.
+     */
+    get destroyed() {
+        return this._destroyed;
+    }
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this.destroyCbs.forEach(cb => cb());
+            this.destroyCbs = [];
+            this.destroying();
+        }
+    }
+
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
         }
     }
 

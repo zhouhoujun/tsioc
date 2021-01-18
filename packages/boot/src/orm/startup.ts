@@ -1,12 +1,15 @@
-import { Abstract, Destoryable } from '@tsdi/ioc';
+import { Abstract, IDestoryable } from '@tsdi/ioc';
 import { IBootContext } from '../Context';
 
 /**
  * startup db connections of application.
  */
 @Abstract()
-export abstract class ConnectionStatupService<T extends IBootContext = IBootContext> extends Destoryable {
+export abstract class ConnectionStatupService<T extends IBootContext = IBootContext> implements IDestoryable {
 
+    private _destroyed = false;
+    private destroyCbs: (() => void)[] = [];
+    
     /**
      *  startup db connection
      *
@@ -14,6 +17,34 @@ export abstract class ConnectionStatupService<T extends IBootContext = IBootCont
      * @param {T} [ctx]
      */
     abstract configureService(ctx: T): Promise<void>;
+
+    /**
+     * has destoryed or not.
+     */
+    get destroyed() {
+        return this._destroyed;
+    }
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this.destroyCbs.forEach(cb => cb());
+            this.destroyCbs = [];
+            this.destroying();
+        }
+    }
+
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
+        }
+    }
 
     /**
      * default do nothing.

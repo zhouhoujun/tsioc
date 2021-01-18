@@ -1,5 +1,5 @@
-import { isArray, isString, isInjector, ClassType, Destoryable, IModuleLoader, IContainer, LoadType, IInjector, isFunction  } from '@tsdi/ioc';
-import { IContainerBuilder, ContainerBuilder} from '@tsdi/core';
+import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction } from '@tsdi/ioc';
+import { IContainerBuilder, ContainerBuilder } from '@tsdi/core';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BUILDER, ROOT_INJECTOR } from './tk';
@@ -13,8 +13,10 @@ import { BootOption, IBootContext } from './Context';
  * @export
  * @class BootApplication
  */
-export class BootApplication<T extends IBootContext = IBootContext> extends Destoryable implements IBootApplication, ContextInit<T> {
+export class BootApplication<T extends IBootContext = IBootContext> implements IBootApplication, ContextInit<T> {
 
+    private _destroyed = false;
+    private destroyCbs: (() => void)[] = [];
     /**
      * application context.
      *
@@ -24,7 +26,6 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
     protected context: T;
 
     constructor(public target?: ClassType | BootOption, public deps?: LoadType[], protected loader?: IModuleLoader) {
-        super()
         this.onInit(target);
     }
 
@@ -119,6 +120,34 @@ export class BootApplication<T extends IBootContext = IBootContext> extends Dest
 
     protected createContainerBuilder(): IContainerBuilder {
         return new ContainerBuilder(this.loader);
+    }
+
+    /**
+     * has destoryed or not.
+     */
+    get destroyed() {
+        return this._destroyed;
+    }
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this.destroyCbs.forEach(cb => cb());
+            this.destroyCbs = [];
+            this.destroying();
+        }
+    }
+
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
+        }
     }
 
     protected destroying() {

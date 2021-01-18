@@ -1,4 +1,4 @@
-import { Type, Registered, Destoryable, IProvider, Abstract, SymbolType, ProviderType, IInjector } from '@tsdi/ioc';
+import { Type, Registered, IProvider, Abstract, SymbolType, ProviderType, IInjector, IDestoryable } from '@tsdi/ioc';
 
 /**
  * module registered state.
@@ -56,10 +56,13 @@ export interface IModuleProvider extends IProvider {
  * di module ref.
  */
 @Abstract()
-export abstract class ModuleRef<T = any> extends Destoryable {
+export abstract class ModuleRef<T = any> implements IDestoryable {
+
+    private _destroyed = false;
+    private destroyCbs: (() => void)[] = [];
 
     constructor(protected _type: Type<T>, protected _parent?: IModuleInjector, protected _regIn?: string | 'root') {
-        super();
+
     }
 
     /**
@@ -101,5 +104,35 @@ export abstract class ModuleRef<T = any> extends Destoryable {
      * di module exports.
      */
     abstract get exports(): IModuleProvider;
+
+    /**
+     * has destoryed or not.
+     */
+    get destroyed() {
+        return this._destroyed;
+    }
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this.destroyCbs.forEach(cb => cb());
+            this.destroyCbs = [];
+            this.destroying();
+        }
+    }
+
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
+        }
+    }
+
+    protected abstract destroying(): void;
 
 }

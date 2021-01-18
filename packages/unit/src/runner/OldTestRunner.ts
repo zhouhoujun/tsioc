@@ -1,8 +1,9 @@
-import { lang, Singleton, isFunction, Destoryable, IInjector } from '@tsdi/ioc';
-import { IBootContext } from '@tsdi/boot';
+import { lang, Singleton, isFunction, IInjector } from '@tsdi/ioc';
+import { IBootContext, Runnable } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
+
 
 declare let window: any;
 declare let global: any;
@@ -31,7 +32,7 @@ const globals = typeof window !== 'undefined' ? window : global;
  * @implements {IRunner<any>}
  */
 @Singleton()
-export class OldTestRunner extends Destoryable implements ISuiteRunner {
+export class OldTestRunner extends Runnable implements ISuiteRunner {
 
     private injector: IInjector;
 
@@ -41,7 +42,8 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
     suites: ISuiteDescribe[];
 
     constructor(timeout?: number) {
-        super()
+        super();
+
         this.suites = [];
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
@@ -257,7 +259,4 @@ export class OldTestRunner extends Destoryable implements ISuiteRunner {
         }
         return caseDesc;
     }
-
-    protected destroying() { }
-
 }

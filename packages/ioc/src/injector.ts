@@ -1,6 +1,5 @@
 import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
-import { Destoryable } from './Destoryable';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
@@ -120,11 +119,14 @@ const providerStrategy = new DefaultStrategy((p) => !(p instanceof Injector));
  * @class Provider
  * @extends {Destoryable}
  */
-export class Provider extends Destoryable implements IProvider {
+export class Provider implements IProvider {
     /**
      * none poincut for aop.
      */
     static ρNPT = true;
+
+    private _destroyed = false;
+    private destroyCbs: (() => void)[] = [];
     /**
      * factories.
      *
@@ -135,7 +137,6 @@ export class Provider extends Destoryable implements IProvider {
     protected factories: Map<SymbolType, InstFac>;
 
     constructor(public parent?: IProvider, private strategy: Strategy = providerStrategy) {
-        super();
         this.factories = new Map();
         if (parent && !strategy.vaildParent(parent)) {
             this._container = parent.getContainer();
@@ -486,6 +487,33 @@ export class Provider extends Destoryable implements IProvider {
         to = to || new (getClass(this))(this.parent);
         this.merge(this, to as Provider, filter);
         return to;
+    }
+
+    /**
+     * has destoryed or not.
+     */
+    get destroyed() {
+        return this._destroyed;
+    }
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this._destroyed) {
+            this._destroyed = true;
+            this.destroyCbs.forEach(cb => cb());
+            this.destroyCbs = [];
+            this.destroying();
+        }
+    }
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        if (this.destroyCbs) {
+            this.destroyCbs.push(callback);
+        }
     }
 
     protected merge(from: Provider, to: Provider, filter?: (key: SymbolType) => boolean) {
