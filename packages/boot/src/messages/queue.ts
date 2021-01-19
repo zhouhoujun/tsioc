@@ -1,13 +1,12 @@
 import {
-    isClass, Injectable, isString, isFunction, Token, isUndefined, Inject,
-    Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR, Injector, isProvide
+    Injectable, isString, isFunction, Token, isUndefined, Inject,
+    Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR, Injector, isClass, isToken
 } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './type';
 import { HandleType, IHandle } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
 import { CTX_OPTIONS, ROOT_MESSAGEQUEUE } from '../tk';
-import { isBaseOf } from 'packages/ioc/src/utils/lang';
 
 
 
@@ -107,11 +106,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
                     data = type;
                     type = undefined;
                 }
-                option = {
-                    event: event,
-                    type: type,
-                    data: data
-                };
+                option = { event, type, data };
             } else {
                 if (event.injector) {
                     injector = event.injector;
@@ -177,7 +172,7 @@ export class MessageQueue<T extends MessageContext = MessageContext> extends Han
     protected toHandle(handleType: HandleType<T>): AsyncHandler<T> {
         if (handleType instanceof Action) {
             return handleType.toAction() as AsyncHandler<T>;
-        } else if (isProvide(handleType) || isBaseOf(handleType, Action)) {
+        } else if (isToken(handleType)) {
             const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().regedState.getInjector(handleType as ClassType)?.get(handleType);
             return handle?.toAction?.() as AsyncHandler<T>;
         } else if (isFunction(handleType)) {

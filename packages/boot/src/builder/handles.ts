@@ -1,5 +1,4 @@
-import { AsyncHandler, IActionSetup, isClass, Inject, INJECTOR, Injector, Action, Type } from '@tsdi/ioc';
-import { isBaseOf } from 'packages/ioc/src/utils/lang';
+import { AsyncHandler, IActionSetup, Inject, INJECTOR, Injector, Action, lang } from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
 import { Handle, HandleType } from '../handles/Handle';
 import { Handles } from '../handles/Handles';
@@ -40,7 +39,7 @@ export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends H
     }
 
     protected regHandle(handle: HandleType<T>): this {
-        isBaseOf(handle, Action) && this.injector.getContainer().provider.regAction(handle as Type);
+        lang.isBaseOf(handle, Action) && this.injector.getContainer().provider.regAction(handle);
         return this;
     }
 }

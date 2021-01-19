@@ -36,10 +36,9 @@ export const Suite: ISuiteDecorator = createDecorator<SuiteMetadata>('Suite', {
     actionType: 'annoation',
     reflect: {
         class: (ctx, next) => {
-            const reflect = ctx.reflect as AnnotationReflect;
-            reflect.annoType = 'suite';
-            reflect.annoDecor = ctx.decor;
-            reflect.annotation = ctx.matedata;
+            (ctx.reflect as AnnotationReflect).annoType = 'suite';
+            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.matedata;
             return next();
         }
     },

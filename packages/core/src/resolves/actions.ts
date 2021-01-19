@@ -1,5 +1,4 @@
 import { isNil, InjectReference, IActionSetup, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction, isTypeObject, Token, IProvider, TypeReflect } from '@tsdi/ioc';
-import { getParentClass, isBaseOf, isExtendsClass } from 'packages/ioc/src/utils/lang';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -114,7 +113,7 @@ export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => 
  * @param tag
  * @param base 
  */
-const typeMatch = (tag, base) => getParentClass(base) ? refl.get(tag)?.class.isExtends(base) ?? isExtendsClass(tag, base) : isBaseOf(tag, base);
+const typeMatch = (tag, base) => lang.getParentClass(base) ? refl.get(tag)?.class.isExtends(base) ?? lang.isExtendsClass(tag, base) : lang.isBaseOf(tag, base);
 
 // services actions
 export class ResolveServicesScope extends resovles.IocResolveScope implements IActionSetup {

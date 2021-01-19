@@ -405,22 +405,22 @@ class ActionProvider extends Provider implements IActionProvider {
      */
     registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
     registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
-        if (!provide && this.registerAction(type)) return this;
+        if (!provide && isBaseOf(type, Action)) {
+            this.registerAction(type);
+            return this;
+        }
         return super.registerType(type, provide, singleton);
     }
 
-    protected registerAction(type: Type) {
-        if (isBaseOf(type, Action)) {
-            if (this.hasTokenKey(type)) {
-                return true;
-            }
-            let instance = this.setupAction(type) as Action & IActionSetup;
-            if (instance instanceof Action && isFunction(instance.setup)) {
-                instance.setup();
-            }
+    protected registerAction(type: Type<Action>) {
+        if (this.hasTokenKey(type)) {
             return true;
         }
-        return false;
+        let instance = this.setupAction(type) as Action & IActionSetup;
+        if (instance instanceof Action && isFunction(instance.setup)) {
+            instance.setup();
+        }
+        return true;
     }
 
     protected setupAction(type: Type<Action>): Action {

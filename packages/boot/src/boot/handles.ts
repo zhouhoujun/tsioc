@@ -1,4 +1,4 @@
-import { INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction } from '@tsdi/ioc';
+import { INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction, getFacInstance } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
@@ -90,7 +90,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
             injector.setValue(PROCESS_ROOT, ctx.baseURL)
         }
     }
-    let mgr = injector.getInstance(ConfigureManager);
+    const mgr = injector.getInstance(ConfigureManager);
     if (options.configures && options.configures.length) {
         options.configures.forEach(config => {
             mgr.useConfiguration(config);
@@ -99,9 +99,8 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
         // load default config.
         mgr.useConfiguration();
     }
-    let config = await mgr.getConfig();
-    let annoation = ctx.reflect.annotation;
-    ctx.setValue(CONFIGURATION, { ...config, ...annoation });
+    const config = await mgr.getConfig();
+    ctx.setValue(CONFIGURATION, { ...config, ...ctx.reflect.annotation });
 
     if (config.deps && config.deps.length) {
         injector.load(...config.deps);
@@ -145,16 +144,16 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 };
 
 export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    const container = ctx.getContainer();
-    if (!container.regedState.isRegistered(ctx.type)) {
+    const regedState = ctx.getContainer().regedState;
+    if (!regedState.isRegistered(ctx.type)) {
         if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
             ctx.injector.registerType(ctx.type, { regIn: 'root' });
         } else {
             ctx.injector.registerType(ctx.type);
         }
     }
-    let annoation = ctx.getAnnoation();
-    ctx.setValue(INJECTOR, container.regedState.getInjector(ctx.type));
+    const annoation = ctx.getAnnoation();
+    ctx.setValue(INJECTOR, regedState.getInjector(ctx.type));
     if (annoation) {
         if (annoation.baseURL) {
             ctx.baseURL = annoation.baseURL;
@@ -172,8 +171,8 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
  * @export
  */
 export const BootConfigureRegisterHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let config = ctx.getConfiguration();
-    let container = ctx.getContainer();
+    const config = ctx.getConfiguration();
+    const container = ctx.getContainer();
     if (config.logConfig && !container.has(LogConfigureToken)) {
         container.setValue(LogConfigureToken, config.logConfig);
     }
@@ -182,7 +181,8 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
         ctx.injector.registerType(LogModule)
             .registerType(DebugLogAspect);
     }
-    let regs = ctx.injector.getServices(ConfigureRegister);
+
+    const regs = ctx.injector.getServices(ConfigureRegister);
     if (regs && regs.length) {
         await Promise.all(regs.map(reg => reg.register(config, ctx)));
 
@@ -215,19 +215,17 @@ export class ModuleBuildScope extends BuildHandles<IBootContext> implements IAct
 
 export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.type && !ctx.target) {
-        let injector = ctx.injector;
-        let target = await injector.getInstance(BUILDER).resolve({
+        ctx.target = await ctx.injector.getInstance(BUILDER).resolve({
             type: ctx.type,
             // parent: ctx,
             providers: ctx.providers
         });
-        ctx.target = target;
     }
     await next();
 };
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let bootModule = ctx.bootstrap || ctx.getAnnoation()?.bootstrap;
+    const bootModule = ctx.bootstrap || ctx.getAnnoation()?.bootstrap;
     if (!ctx.boot && (ctx.template || bootModule)) {
         ctx.providers.inject(
             { provide: BOOTCONTEXT, useValue: ctx },
@@ -268,16 +266,16 @@ export class StartupGlobalService extends BuildHandles<IBootContext> implements 
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    let startups = ctx.getStarupTokens() || [];
-    const injector = ctx.injector;
-    const container = injector.getContainer();
+    const startups = ctx.getStarupTokens() || [];
+    const { injector, providers } = ctx;
+    const regedState = ctx.getContainer().regedState;
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
             let ser: IStartupService;
-            if (isFunction(tyser) && !container.regedState.isRegistered(tyser)) {
+            if (isFunction(tyser) && !regedState.isRegistered(tyser)) {
                 injector.register(tyser);
             }
-            ser = injector.get(tyser) ?? container.regedState.getInjector(tyser as ClassType)?.get(tyser);
+            ser = injector.get(tyser) ?? regedState.getInjector(tyser as ClassType)?.get(tyser);
             ctx.onDestroy(() => ser?.destroy());
             return ser?.configureService(ctx);
         }));
@@ -286,18 +284,18 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     const starts = injector.get(STARTUPS) || [];
     if (starts.length) {
         await lang.step(starts.map(tyser => () => {
-            const ser = injector.get(tyser) ?? container.regedState.getInjector(tyser as ClassType)?.get(tyser);
+            const ser = injector.get(tyser) ?? regedState.getInjector(tyser as ClassType)?.get(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
             return ser.configureService(ctx);
         }));
     }
 
-    let sers: StartupService[] = [];
+    const sers: StartupService[] = [];
     const prds = injector.getServiceProviders(StartupService);
     prds.iterator((pdr, tk) => {
         if (startups.indexOf(tk) < 0) {
-            sers.push(pdr.value ? pdr.value : pdr.fac(ctx.providers));
+            sers.push(getFacInstance(pdr, providers));
         }
     });
     if (sers && sers.length) {

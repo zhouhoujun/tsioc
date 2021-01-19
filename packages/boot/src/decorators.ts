@@ -79,11 +79,10 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
             ...options.reflect,
             class: [
                 (ctx, next) => {
-                    const reflect = ctx.reflect as ModuleReflect;
-                    reflect.singleton = true;
-                    reflect.annoType = 'boot';
-                    reflect.annoDecor = ctx.decor;
-                    reflect.annotation = ctx.matedata;
+                    (ctx.reflect as ModuleReflect).singleton = true;
+                    (ctx.reflect as ModuleReflect).annoType = 'boot';
+                    (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
+                    (ctx.reflect as ModuleReflect).annotation = ctx.matedata;
                     return next();
                 },
                 ...hd ? (isArray(hd) ? hd : [hd]) : []
@@ -92,7 +91,6 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         design: {
             afterAnnoation: (ctx, next) => {
                 const injector = ctx.injector.getValue(ROOT_INJECTOR);
-                const classType = ctx.type;
                 let startups = injector.get(STARTUPS) || [];
                 const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
                 let idx = -1;
@@ -103,9 +101,9 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
                 }
                 if (idx >= 0) {
                     if (meta.deps) {
-                        startups = [...startups.slice(0, idx), ...meta.deps, classType, ...startups.slice(idx).filter(s => meta.deps.indexOf(s) < 0)];
+                        startups = [...startups.slice(0, idx), ...meta.deps, ctx.type, ...startups.slice(idx).filter(s => meta.deps.indexOf(s) < 0)];
                     } else {
-                        startups.splice(idx, 0, classType);
+                        startups.splice(idx, 0, ctx.type);
                     }
                 } else {
                     if (meta.deps) {
@@ -115,7 +113,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
                             }
                         });
                     }
-                    startups.push(classType);
+                    startups.push(ctx.type);
                 }
                 injector.setValue(STARTUPS, startups);
                 return next();
@@ -193,10 +191,9 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             ...options.reflect,
             class: [
                 (ctx, next) => {
-                    const reflect = ctx.reflect as ModuleReflect;
-                    reflect.annoType = 'module';
-                    reflect.annoDecor = ctx.decor;
-                    reflect.annotation = ctx.matedata;
+                    (ctx.reflect as ModuleReflect).annoType = 'module';
+                    (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
+                    (ctx.reflect as ModuleReflect).annotation = ctx.matedata;
                     return next();
                 },
                 ...hd ? (isArray(hd) ? hd : [hd]) : []
@@ -218,35 +215,31 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     }
                 },
                 (ctx: ModuleDesignContext, next) => {
-                    const annoation = ctx.reflect.annotation;
-                    const mdRef = ctx.moduleRef;
-                    if (annoation.imports) {
-                        const types = mdRef.injector.use(...ctx.reflect.annotation.imports);
-                        (mdRef as DefaultModuleRef).imports = types;
+                    if (ctx.reflect.annotation.imports) {
+                        const types = ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
+                        (ctx.moduleRef as DefaultModuleRef).imports = types;
                         const container = ctx.injector.getContainer();
                         types.forEach(ty => {
                             const importRef = container.regedState.getRegistered<ModuleRegistered>(ty)?.moduleRef;
                             if (importRef) {
-                                mdRef.injector.addRef(importRef, true);
+                                ctx.moduleRef.injector.addRef(importRef, true);
                             }
                         });
                     }
                     next();
                 },
                 (ctx: ModuleDesignContext, next: () => void) => {
-                    let mdReft = ctx.reflect;
-                    const annoation = mdReft.annotation;
                     const mdRef = ctx.moduleRef;
-                    const map = mdRef.exports;
-                    const injector = mdRef.injector;
-                    let components = annoation.components ? injector.use(...annoation.components) : null;
+                    const { exports: map, injector } = mdRef;
+                    const annotation = ctx.reflect.annotation;
+                    let components = annotation.components ? injector.use(...annotation.components) : null;
 
                     if (mdRef.regIn === 'root') {
                         mdRef.imports?.forEach(ty => map.export(ty));
                     }
                     // inject module providers
-                    if (annoation.providers?.length) {
-                        map.inject(...annoation.providers);
+                    if (annotation.providers?.length) {
+                        map.inject(...annotation.providers);
                     }
 
                     if (map.size) {
@@ -254,23 +247,19 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     }
 
                     if (components && components.length) {
-                        mdReft.components = components;
+                        ctx.reflect.components = components;
                     }
 
-                    let exptypes: Type[] = lang.getTypes(...annoation.exports || []);
-
-                    exptypes.forEach(ty => {
+                    lang.getTypes(...annotation.exports || []).forEach(ty => {
                         map.export(ty);
                     });
-
 
                     next();
                 },
                 (ctx: ModuleDesignContext, next: () => void) => {
                     if (ctx.moduleRef.exports.size) {
-                        const parent = ctx.moduleRef.parent as IModuleInjector;
-                        if (parent?.isRoot()) {
-                            parent.addRef(ctx.moduleRef);
+                        if ((ctx.moduleRef.parent as IModuleInjector)?.isRoot()) {
+                            (ctx.moduleRef.parent as IModuleInjector).addRef(ctx.moduleRef);
                         }
                     }
                     next();
@@ -368,18 +357,16 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
         ({ parent, before }),
     design: {
         afterAnnoation: (ctx, next) => {
-            const classType = ctx.type;
-            let reflect = ctx.reflect;
-            const { parent, before, after } = reflect.class.getMetadata<MessageMetadata>(ctx.currDecor);
+            const { parent, before, after } = ctx.reflect.class.getMetadata<MessageMetadata>(ctx.currDecor);
             if (!parent || parent === 'none') {
                 return next();
             }
-            const injector = ctx.injector;
+
             let msgQueue: IMessageQueue;
             if (!isString(parent)) {
-                msgQueue = injector.getContainer().regedState.getInjector(parent)?.get(parent);
+                msgQueue = ctx.injector.getContainer().regedState.getInjector(parent)?.get(parent);
             } else {
-                msgQueue = injector.getInstance(ROOT_MESSAGEQUEUE);
+                msgQueue = ctx.injector.getInstance(ROOT_MESSAGEQUEUE);
             }
 
             if (!msgQueue) {
@@ -387,11 +374,11 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
             }
 
             if (before) {
-                msgQueue.useBefore(classType, before);
+                msgQueue.useBefore(ctx.type, before);
             } else if (after) {
-                msgQueue.useAfter(classType, after);
+                msgQueue.useAfter(ctx.type, after);
             } else {
-                msgQueue.use(classType);
+                msgQueue.use(ctx.type);
             }
             next();
         }
