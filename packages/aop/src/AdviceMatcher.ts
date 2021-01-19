@@ -57,7 +57,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
         }
 
-        let className = tagref.class.className;
+        const className = tagref.class.className;
         adviceMetas = adviceMetas || aspref.advices;
         let matched: MatchPointcut[] = [];
 
@@ -75,16 +75,14 @@ export class AdviceMatcher implements IAdviceMatcher {
                 });
             }
         } else {
-            let points: IPointcut[] = [];
-            let decorators = tagref.class.getPropertyDescriptors();
+            const points: IPointcut[] = [];
+            const decorators = tagref.class.getPropertyDescriptors();
             // match method.
             for (let name in decorators) {
-                // if (name !== 'constructor') {
                 points.push({
                     name: name,
                     fullName: `${className}.${name}`
                 });
-                // }
             }
 
             adviceMetas.forEach(metadata => {
@@ -129,7 +127,6 @@ export class AdviceMatcher implements IAdviceMatcher {
     }
 
     protected matchTypeFactory(relfect: AopReflect, metadata: AdviceMetadata): MatchExpress {
-        let pointcut = metadata.pointcut;
         let expresses: (MatchExpress | string)[] = [];
         if (metadata.within) {
             expresses.push((method: string, fullName: string, targetType?: ClassType) => {
@@ -154,16 +151,15 @@ export class AdviceMatcher implements IAdviceMatcher {
             });
             expresses.push('&&')
         }
-        if (isString(pointcut)) {
-            let pointcuts = (pointcut || '').trim();
+        if (isString(metadata.pointcut)) {
+            let pointcuts = (metadata.pointcut || '').trim();
             expresses.push(this.tranlateExpress(relfect, pointcuts));
-        } else if (isRegExp(pointcut)) {
-            let pointcutReg = pointcut;
+        } else if (isRegExp(metadata.pointcut)) {
+            let pointcutReg = metadata.pointcut;
             if (annPreChkExp.test(pointcutReg.source)) {
                 expresses.push((name: string, fullName: string, targetType?: Type) => {
                     return relfect.class.decors.some(n => pointcutReg.test(n.decor));
                 });
-
             } else {
                 expresses.push((name: string, fullName: string) => pointcutReg.test(fullName));
             }

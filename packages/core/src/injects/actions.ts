@@ -22,8 +22,7 @@ export class InjModuleScope extends InjScope implements IActionSetup {
 export abstract class InjAction extends IocAction<InjContext> {
 
     execute(ctx: InjContext, next?: () => void): void {
-        let types = this.getTypes(ctx);
-        this.registerTypes(ctx, types);
+        this.registerTypes(ctx, this.getTypes(ctx));
         if (next && ctx.types.length) {
             next();
         }
@@ -33,9 +32,8 @@ export abstract class InjAction extends IocAction<InjContext> {
 
     protected registerTypes(ctx: InjContext, types: Type[]) {
         if (isArray(types) && types.length) {
-            let injector = ctx.injector;
             types.forEach(ty => {
-                injector.registerType(ty);
+                ctx.injector.registerType(ty);
                 ctx.registered.push(ty);
             });
             this.setNextRegTypes(ctx, types);
@@ -48,9 +46,8 @@ export abstract class InjAction extends IocAction<InjContext> {
 }
 
 export const InjRegDefaultAction = function (ctx: InjContext, next: () => void): void {
-    let injector = ctx.injector;
     ctx.types?.forEach(ty => {
-        injector.registerType(ty);
+        ctx.injector.registerType(ty);
         ctx.registered.push(ty);
     });
 };

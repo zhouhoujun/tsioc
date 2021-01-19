@@ -162,12 +162,11 @@ export class Joinpoint implements IocContext {
     }
 
     getProvProviders(): IProvider[] {
-        let pdrs: IProvider[] = [];
+        const pdrs: IProvider[] = [];
         let currj: Joinpoint = this.provJoinpoint;
         while (currj) {
-            let pdr = currj.providers;
-            if (pdr && pdr.size) {
-                pdrs.push(pdr);
+            if (currj.providers && currj.providers.size) {
+                pdrs.push(currj.providers);
             }
             currj = currj.provJoinpoint;
         }
@@ -183,8 +182,6 @@ export class Joinpoint implements IocContext {
      * @returns {ResolveActionContext}
      */
     static parse<T>(injector: IInjector, options: JoinpointOption): Joinpoint {
-        let jpt = new Joinpoint(injector);
-        jpt = Object.assign(jpt, options);
-        return jpt;
+        return Object.assign(new Joinpoint(injector), options);
     }
 }

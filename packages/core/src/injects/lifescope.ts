@@ -17,7 +17,7 @@ export class InjLifeScope extends LifeScope<InjContext> {
     register(injector: IInjector, ...modules: Modules[]): Type[] {
         let types: Type[] = [];
         modules.forEach(md => {
-            let ctx = {
+            const ctx = {
                 injector,
                 module: md
             } as InjContext;

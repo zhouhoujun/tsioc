@@ -11,29 +11,27 @@ import { AopReflect } from '../types';
  */
 export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.reflect as AopReflect;
     // ctx.type had checked.
-    if (!ctx.instance || !isValAspectTag(ctx.type, reflect)) {
+    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.reflect as AopReflect)) {
         return next();
     }
 
     const actpdr = ctx.injector.getContainer().provider;
-    let scope = actpdr.getInstance(ProceedingScope);
+    const scope = actpdr.getInstance(ProceedingScope);
 
-    let target = ctx.instance;
-    let targetType = ctx.type;
+    const target = ctx.instance;
+    const targetType = ctx.type;
 
-    let className = reflect.class.className;
-    let decorators = reflect.class.getPropertyDescriptors();
-    let advisor = actpdr.getInstance(ADVISOR);
-    let advicesMap = advisor.getAdviceMap(targetType);
+    const className = ctx.reflect.class.className;
+    const decorators = ctx.reflect.class.getPropertyDescriptors();
+    const advicesMap = actpdr.getInstance(ADVISOR).getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
         advicesMap.forEach((advices, name) => {
             if (name === 'constructor') {
                 return;
             }
-            let pointcut = {
+            const pointcut = {
                 name: name,
                 fullName: `${className}.${name}`,
                 descriptor: decorators[name]
@@ -53,8 +51,7 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
  */
 export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.reflect as AopReflect;
-    if (!isValAspectTag(ctx.type, reflect)) {
+    if (!isValAspectTag(ctx.type, ctx.reflect as AopReflect)) {
         return next();
     }
 
@@ -73,8 +70,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
  */
 export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.reflect as AopReflect;
-    if (!ctx.instance || !isValAspectTag(ctx.type, reflect)) {
+    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.reflect as AopReflect)) {
         return next();
     }
 
@@ -93,8 +89,7 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
  */
 export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
     // aspect class do nothing.
-    const reflect = ctx.reflect as AopReflect;
-    if (!isValAspectTag(ctx.type, reflect)) {
+    if (!isValAspectTag(ctx.type, ctx.reflect as AopReflect)) {
         return next();
     }
 

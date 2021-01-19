@@ -42,20 +42,17 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
     actionType: 'annoation',
     reflect: {
         class: (ctx, next) => {
-            let rlt = ctx.reflect as AopReflect;
-            rlt.aspect = ctx.matedata;
+            (ctx.reflect as AopReflect).aspect = ctx.matedata;
             return next();
         }
     },
     design: {
         class: (ctx, next) => {
-            const type = ctx.type;
-            const acinj = ctx.injector.getContainer().provider;
-            const advisor = acinj.getInstance(ADVISOR);
+            const advisor = ctx.injector.getContainer().provider.getInstance(ADVISOR);
             if (advisor) {
-                advisor.add(type);
+                advisor.add(ctx.type);
             } else {
-                console.error('aop module not registered. make sure register before', type);
+                console.error('aop module not registered. make sure register before', ctx.type);
             }
             next();
         }
@@ -89,8 +86,7 @@ export interface INonePointcutDecorator {
 export const NonePointcut: INonePointcutDecorator = createDecorator<ClassMetadata>('NonePointcut', {
     reflect: {
         class: (ctx, next) => {
-            const rlt = ctx.reflect as AopReflect;
-            rlt.nonePointcut = true;
+            (ctx.reflect as AopReflect).nonePointcut = true;
             return next();
         }
     }
@@ -192,11 +188,10 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         ...options,
         reflect: {
             method: (ctx, next) => {
-                let ret = ctx.reflect as AopReflect;
-                if (!ret.advices) {
-                    ret.advices = [];
+                if (!(ctx.reflect as AopReflect).advices) {
+                    (ctx.reflect as AopReflect).advices = [];
                 }
-                ret.advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
+                (ctx.reflect as AopReflect).advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
                 return next();
             }
         },

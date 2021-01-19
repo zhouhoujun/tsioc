@@ -251,44 +251,40 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
 
 
 export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
-    const meta = ctx.matedata as PropertyMetadata;
-    if (!meta.type) {
-        const target = ctx.target;
-        let type = Reflect.getOwnMetadata('design:type', target, ctx.propertyKey);
+    if (!(ctx.matedata as PropertyMetadata).type) {
+        let type = Reflect.getOwnMetadata('design:type', ctx.target, ctx.propertyKey);
         if (!type) {
             // Needed to support react native inheritance
-            type = Reflect.getOwnMetadata('design:type', target.constructor, ctx.propertyKey);
+            type = Reflect.getOwnMetadata('design:type', ctx.target.constructor, ctx.propertyKey);
         }
-        meta.type = type;
+        (ctx.matedata as PropertyMetadata).type = type;
     }
     return next();
 }
 export const propInjectDecors = ['@Inject', '@AutoWired'];
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
     if (propInjectDecors.indexOf(ctx.decor) >= 0) {
-        const reflect = ctx.reflect;
-        const meta = ctx.matedata as PropertyMetadata;
-        if (!reflect.propProviders.has(ctx.propertyKey)) {
-            reflect.propProviders.set(ctx.propertyKey, []);
+        let pdrs = ctx.reflect.propProviders.get(ctx.propertyKey);
+        if (!pdrs) {
+            pdrs = [];
+            ctx.reflect.propProviders.set(ctx.propertyKey, pdrs);
         }
-        const pdrs = reflect.propProviders.get(ctx.propertyKey);
-        pdrs.push(meta);
+        pdrs.push(ctx.matedata as PropertyMetadata);
     }
     return next();
 };
 
 
 export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
-    const reflect = ctx.reflect;
     const propertyKey = 'constructor';
-    if (!reflect.methodParams.has(propertyKey)) {
-        let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', reflect.type);
+    if (!ctx.reflect.methodParams.has(propertyKey)) {
+        let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.reflect.type);
         if (paramTypes) {
-            const names = reflect.class.getParamNames(propertyKey);
+            const names = ctx.reflect.class.getParamNames(propertyKey);
             if (!paramTypes) {
                 paramTypes = [];
             }
-            reflect.methodParams.set(propertyKey, paramTypes.map((type, idx) => {
+            ctx.reflect.methodParams.set(propertyKey, paramTypes.map((type, idx) => {
                 return { type, paramName: names[idx] };
             }));
         }
@@ -324,14 +320,12 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
 export const autorunDecors = ['@Autorun', '@IocExt'];
 export const AutorunAction = (ctx: DecorContext, next: () => void) => {
     if (autorunDecors.indexOf(ctx.decor) >= 0) {
-        const reflect = ctx.reflect;
-        const meta = ctx.matedata as AutorunMetadata;
-        reflect.autoruns.push({
+        ctx.reflect.autoruns.push({
             decorType: ctx.decorType,
-            autorun: meta.autorun,
-            order: ctx.decorType === 'class' ? 0 : meta.order
+            autorun: (ctx.matedata as AutorunMetadata).autorun,
+            order: ctx.decorType === 'class' ? 0 : (ctx.matedata as AutorunMetadata).order
         });
-        reflect.autoruns = reflect.autoruns.sort((au1, au2) => au1.order - au2.order);
+        ctx.reflect.autoruns = ctx.reflect.autoruns.sort((au1, au2) => au1.order - au2.order);
     }
     return next();
 }
@@ -339,21 +333,20 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
 export const typeProvidersDecors = ['@Injectable', '@Providers'];
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (typeProvidersDecors.indexOf(ctx.decor) >= 0) {
-        const reflect = ctx.reflect;
-        const meta = ctx.matedata as ProvidersMetadata;
-        if (meta.providers) {
-            reflect.extProviders.push(...meta.providers);
+        if ((ctx.matedata as ProvidersMetadata).providers) {
+            ctx.reflect.extProviders.push(...(ctx.matedata as ProvidersMetadata).providers);
         }
     }
     return next();
 }
 
 export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
-    const reflect = ctx.reflect;
-    if (!reflect.methodParams.has(ctx.propertyKey)) {
-        let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey);
-        const names = reflect.class.getParamNames(ctx.propertyKey);
-        reflect.methodParams.set(ctx.propertyKey, paramTypes.map((type, idx) => ({ type, paramName: names[idx] })));
+    if (!ctx.reflect.methodParams.has(ctx.propertyKey)) {
+        const names = ctx.reflect.class.getParamNames(ctx.propertyKey);
+        ctx.reflect.methodParams.set(
+            ctx.propertyKey,
+            Reflect.getMetadata('design:paramtypes', ctx.target, ctx.propertyKey).map((type, idx) => ({ type, paramName: names[idx] }))
+        );
     }
     return next();
 }
@@ -361,14 +354,12 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
 export const methodProvidersDecors = ['@Providers', '@AutoWired'];
 export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (methodProvidersDecors.indexOf(ctx.decor) >= 0) {
-        const reflect = ctx.reflect;
-        const meta = ctx.matedata as ProvidersMetadata;
-        let pdrs = reflect.methodExtProviders.get(ctx.propertyKey);
+        let pdrs = ctx.reflect.methodExtProviders.get(ctx.propertyKey);
         if (!pdrs) {
             pdrs = []
-            reflect.methodExtProviders.set(ctx.propertyKey, pdrs);
+            ctx.reflect.methodExtProviders.set(ctx.propertyKey, pdrs);
         }
-        pdrs.push(...meta.providers);
+        pdrs.push(...(ctx.matedata as ProvidersMetadata).providers);
     }
     return next();
 }

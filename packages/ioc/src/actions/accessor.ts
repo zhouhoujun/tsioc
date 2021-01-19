@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, isBaseType, getClass } from '../utils/chk';
+import { isFunction, isBaseType, getClass, isTypeObject } from '../utils/chk';
 import { Token, isToken, ProviderType } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';
@@ -32,15 +32,15 @@ export class MethodAccessor implements IMethodAccessor {
      */
     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
         let targetClass: Type, instance: T, key: string;
-        if (isToken(target)) {
-            targetClass = injector.getTokenProvider(target);
-            instance = injector.get(target, ...providers);
+        if (isTypeObject(target)) {
+            targetClass = getClass(target);
+            instance = target as T;
+        } else {
+            targetClass = injector.getTokenProvider(target as Token);
+            instance = injector.get(target as Token, ...providers);
             if (!targetClass) {
                 throw new Error(target.toString() + ' is not implements by any class.')
             }
-        } else {
-            targetClass = getClass(target);
-            instance = target;
         }
 
         const tgRefl = get(targetClass);

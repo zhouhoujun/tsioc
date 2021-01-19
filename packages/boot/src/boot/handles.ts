@@ -228,8 +228,7 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     let bootModule = ctx.bootstrap || ctx.getAnnoation()?.bootstrap;
-    let template = ctx.template;
-    if (!ctx.boot && (template || bootModule)) {
+    if (!ctx.boot && (ctx.template || bootModule)) {
         ctx.providers.inject(
             { provide: BOOTCONTEXT, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx }
@@ -238,7 +237,7 @@ export const ResolveBootHandle = async function (ctx: IBootContext, next: () => 
         let boot = await injector.getInstance(BUILDER).resolve({
             type: isProvide(bootModule) ? injector.getTokenProvider(bootModule) : bootModule,
             // parent: ctx,
-            template: template,
+            template: ctx.template,
             providers: ctx.providers
         });
         ctx.boot = boot;
