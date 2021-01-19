@@ -4,7 +4,7 @@ import { StaticProvider } from '../providers';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
 import { getClass, isArray, isClass, isFunction } from '../utils/chk';
-import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata, AutorunMetadata } from './metadatas';
+import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './metadatas';
 import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
@@ -296,7 +296,7 @@ export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract', '@Refs'
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
-        const meta = ctx.matedata as ClassMetadata;
+        const meta = ctx.matedata as InjectableMetadata;
         if (meta.abstract) {
             reflect.abstract = true;
         }
@@ -312,6 +312,10 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
 
         if (meta.refs) {
             reflect.refs.push(meta.refs);
+        }
+
+        if(meta.regIn) {
+            reflect.regIn = meta.regIn;
         }
     }
     return next();
