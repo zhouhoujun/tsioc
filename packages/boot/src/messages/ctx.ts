@@ -54,13 +54,6 @@ export interface MessageOption extends ProdverOption {
 export class MessageContext<T extends MessageOption = MessageOption> extends DestroyableContext<T>  {
 
     /**
-     * get injector of current message queue.
-     */
-    getQueueInjector(): IInjector {
-        return this.getValue(Injector) ?? this.injector;
-    }
-
-    /**
      * message of target.
      *
      * @type {*}

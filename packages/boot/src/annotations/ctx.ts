@@ -1,5 +1,5 @@
 import {
-    lang, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
+    lang, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
     IProvider, isArray, isBoolean, Injector, IInjector, isProvide, Token
 } from '@tsdi/ioc';
 import { AnnoationOption, IAnnoationContext, IDestroyableContext, ProdverOption } from '../Context';
@@ -20,7 +20,7 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
 
     constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options: T) {
         this._provider = injector.getContainer().get(PROVIDERS);
-        this._provider.setValue(INJECTOR, injector);
+        this._provider.setValue(Injector, injector);
         this.setOptions(options);
     }
 
@@ -28,7 +28,7 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
      * raise injector of this context.
      */
     get injector(): IInjector {
-        return this._provider.getValue(INJECTOR);
+        return this._provider.getValue(Injector);
     }
 
     /**
