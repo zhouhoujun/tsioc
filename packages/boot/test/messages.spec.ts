@@ -106,7 +106,6 @@ describe('app message queue', () => {
 
     it('has registered', async () => {
         const a = injector.get(DeviceQueue);
-        console.log('has registered, a:', a);
         expect(a.has(DeviceStartQueue)).toBeTruthy();
         expect(injector.get(DeviceStartQueue).has(DeviceStartupHandle)).toBeTruthy();
     });
