@@ -1,7 +1,7 @@
 import { isFunction, isClass } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
-import { getTokenKey, InjectReference, ProviderType, SymbolType, Token } from '../tokens';
+import { getTokenKey, InjectReference, InstFac, ProviderType, SymbolType, Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
@@ -11,6 +11,8 @@ import { IInjector } from '../IInjector';
 import { Type } from '../types';
 import { IActionProvider } from './act';
 import { getProvider } from '../injector';
+import { Registered } from '../decor/type';
+import { RegisteredState } from '../IContainer';
 
 
 
@@ -55,48 +57,47 @@ function genReged(injector: IInjector, provide?: SymbolType) {
     }
 }
 
-function getfac(actionPdr: IActionProvider, injector: IInjector, type: Type, token: Token, singleton) {
-    return (...providers: ProviderType[]) => {
-        // make sure has value.
-        if (singleton && injector.hasValue(type)) {
-            return injector.getValue(type);
+function regInstf(actionPdr: IActionProvider, regedState: RegisteredState, injector: IInjector, reged: Registered, type: Type, token: Token, singleton: boolean): InstFac {
+    const insf = {
+        fac: (...providers: ProviderType[]) => {
+            // make sure has value.
+            if (singleton && injector.hasValue(type)) {
+                return injector.getValue(type);
+            }
+
+            const ctx = {
+                injector,
+                token,
+                type,
+                singleton,
+                providers: getProvider(injector, ...providers)
+            } as RuntimeContext;
+            actionPdr.getInstance(RuntimeLifeScope).register(ctx);
+            const instance = ctx.instance;
+            // clean context
+            cleanObj(ctx);
+            return instance;
+        },
+        unreg: () => {
+            reged.provides?.forEach(k => injector.unregister(k));
+            regedState.deleteType(type);
         }
-
-        const ctx = {
-            injector,
-            token,
-            type,
-            singleton,
-            providers: getProvider(injector, ...providers)
-        } as RuntimeContext;
-        actionPdr.getInstance(RuntimeLifeScope).register(ctx);
-        const instance = ctx.instance;
-        // clean context
-        cleanObj(ctx);
-        return instance;
-    }
-}
-
-export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    const injector = ctx.injector;
-    const provide = getTokenKey(ctx.token);
-    const type = ctx.type;
-    const singleton = ctx.singleton || ctx.reflect.singleton;
-    const { provider, regedState } = injector.getContainer();
-
-    const fac = getfac(provider, injector, type, provide, singleton);
-    const state = ctx.state;
-    const unreg = () => {
-        state.provides?.forEach(k => injector.unregister(k));
-        regedState.deleteType(type);
     };
 
-    injector.set(type, { fac, unreg }, true);
+    injector.set(type, insf, true);
     injector.onDestroy(() => injector.unregister(type));
-    if (provide && provide !== type) {
-        injector.set(provide, fac, type);
-        injector.onDestroy(() => injector.unregister(provide));
+    if (token && token !== type) {
+        injector.set(token, insf.fac, type);
+        injector.onDestroy(() => injector.unregister(token));
     }
+
+    return insf;
+}
+
+
+export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
+    const { provider, regedState } = ctx.injector.getContainer();
+    regInstf(provider, regedState, ctx.injector, ctx.state, ctx.type, getTokenKey(ctx.token), ctx.singleton || ctx.reflect.singleton);
     next();
 };
 
@@ -150,9 +151,7 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    const injector = ctx.injector;
-    const type = ctx.type;
-    const state = ctx.state;
+    const { injector, type, state } = ctx;
     ctx.reflect.providers.forEach(anno => {
         injector.bindProvider(getTokenKey(anno.provide, anno.alias), type, state);
     });
