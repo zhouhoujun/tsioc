@@ -1,4 +1,4 @@
-import { IInjector, Token, ProviderType, isToken, IProvider, INJECTOR, isArray, lang, getToken, IServiceProvider, IContainer, Injector, getProvider, ServiceOption, ServicesOption } from '@tsdi/ioc';
+import { IInjector, Token, ProviderType, IProvider, INJECTOR, isArray, lang, getToken, IServiceProvider, IContainer, Injector, getProvider, ServiceOption, ServicesOption, isPlainObject } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 
@@ -23,11 +23,11 @@ export class ServiceProvider implements IServiceProvider {
      */
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
         let option: ServiceOption<T>;
-        if (isToken(target)) {
-            option = { token: target };
-        } else {
-            option = target;
+        if (isPlainObject(target)) {
+            option = target as ServiceOption<T>;
             if (option.providers) providers.unshift(...option.providers);
+        } else {
+            option = { token: target };
         }
 
         const pdr = getProvider(injector, true, ...providers);
@@ -67,8 +67,8 @@ export class ServiceProvider implements IServiceProvider {
         const services = [];
         if (!maps.size) return services;
 
-        if (!isToken(target)) {
-            providers.unshift(...target.providers || []);
+        if (isPlainObject(target)) {
+            providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
         const pdr = getProvider(injector, true, ...providers);
         if (!pdr.hasTokenKey(INJECTOR)) {
@@ -92,7 +92,7 @@ export class ServiceProvider implements IServiceProvider {
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
         let context = {
             injector,
-            ...isToken(target) ? { token: target } : target,
+            ...isPlainObject(target) ?  target :  { token: target },
             providers: null,
         } as ServicesContext;
 

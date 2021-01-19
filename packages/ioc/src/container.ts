@@ -1,12 +1,12 @@
 import { Registered } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
-import { isClass, isNil, isFunction } from './utils/chk';
+import { isClass, isNil, isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
-import { FactoryLike, InjectToken, Factory, isToken, ProviderType, SymbolType, Token, getTokenKey, isProvide } from './tokens';
+import { FactoryLike, InjectToken, Factory, ProviderType, SymbolType, Token, getTokenKey, isProvide } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
@@ -304,7 +304,9 @@ const SERVICE: IServiceProvider = {
         return injector.resolve(target as ResolveOption<T>, ...providers);
     },
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        const tokens = isToken(target) ? [getTokenKey(target)] : (target.tokens ?? [target.token]).map(t => getTokenKey(t, target.alias));
+        const tokens = isPlainObject(target) ?
+            ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token]).map(t => getTokenKey(t, (target as ServicesOption<T>).alias))
+            : [getTokenKey(target)];
         const services: T[] = [];
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {

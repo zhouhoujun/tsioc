@@ -1,5 +1,5 @@
 import {
-    isClass, Injectable, isString, isFunction, Token, isUndefined, Inject, isToken,
+    isClass, Injectable, isString, isFunction, Token, isUndefined, Inject,
     Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR, Injector, isProvide
 } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './ctx';

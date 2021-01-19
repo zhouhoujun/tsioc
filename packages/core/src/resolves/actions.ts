@@ -1,4 +1,4 @@
-import { isNil, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction, isTypeObject, Token, IProvider, TypeReflect } from '@tsdi/ioc';
+import { isNil, InjectReference, IActionSetup, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction, isTypeObject, Token, IProvider, TypeReflect } from '@tsdi/ioc';
 import { getParentClass, isBaseOf, isExtendsClass } from 'packages/ioc/src/utils/lang';
 import { ServiceContext, ServicesContext } from './context';
 
@@ -30,7 +30,7 @@ export class RsvTagSericeScope extends resovles.IocResolveScope<ServiceContext> 
 
     execute(ctx: ServiceContext, next?: () => void): void {
         if (ctx.targetRefs) {
-            const { tokens } = ctx;
+            const tokens = ctx.tokens;
             ctx.targetRefs.some(t => {
                 ctx.targetToken = isTypeObject(t) ? lang.getClass(t) : t;
                 return tokens.some(tk => {

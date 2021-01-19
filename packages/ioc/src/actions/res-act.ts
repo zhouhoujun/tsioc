@@ -1,5 +1,5 @@
-import { isNil, getClass, isFunction } from '../utils/chk';
-import { InjectReference, isToken } from '../tokens';
+import { isNil, getClass, isFunction, isTypeObject } from '../utils/chk';
+import { InjectReference, Token } from '../tokens';
 import { PROVIDERS } from '../utils/tk';
 import { IocActions } from './act';
 import { ResolveContext } from './res';
@@ -21,7 +21,7 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
     execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {
             if (ctx.target) {
-                ctx.targetToken = isToken(ctx.target) ? ctx.target : getClass(ctx.target);
+                ctx.targetToken = isTypeObject(ctx.target) ? getClass(ctx.target) : ctx.target as Token;
             }
             super.execute(ctx);
         }
