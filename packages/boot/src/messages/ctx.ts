@@ -1,6 +1,6 @@
 import { IInjector, Injectable, Injector } from '@tsdi/ioc';
 import { ProdverOption } from '../Context';
-import { DestoryableContext } from '../annotations/ctx';
+import { DestroyableContext } from '../annotations/ctx';
 
 
 
@@ -51,7 +51,7 @@ export interface MessageOption extends ProdverOption {
  * @extends {HandleContext}
  */
 @Injectable()
-export class MessageContext<T extends MessageOption = MessageOption> extends DestoryableContext<T>  {
+export class MessageContext<T extends MessageOption = MessageOption> extends DestroyableContext<T>  {
 
     /**
      * get injector of current message queue.

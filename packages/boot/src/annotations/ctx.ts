@@ -2,15 +2,15 @@ import {
     isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
     IProvider, SymbolType, ProviderType, isInjector, isArray, isBoolean, Provider, Injector, IInjector, isProvide
 } from '@tsdi/ioc';
-import { AnnoationOption, IAnnoationContext, IDestoryableContext, ProdverOption } from '../Context';
+import { AnnoationOption, IAnnoationContext, IDestroyableContext, ProdverOption } from '../Context';
 import { CTX_OPTIONS } from '../tk';
 
 
 /**
- * annoation context.
+ * Destroyable context.
  */
 @Abstract()
-export class DestoryableContext<T extends ProdverOption> implements IDestoryableContext<T> {
+export class DestroyableContext<T extends ProdverOption> implements IDestroyableContext<T> {
 
     static ρNPT = true;
     private _destroyed = false;
@@ -216,7 +216,7 @@ export class DestoryableContext<T extends ProdverOption> implements IDestoryable
  * annoation context.
  */
 @Abstract()
-export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeReflect = TypeReflect> extends DestoryableContext<T> implements IAnnoationContext<T> {
+export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeReflect = TypeReflect> extends DestroyableContext<T> implements IAnnoationContext<T> {
 
 
     private _type: Type;

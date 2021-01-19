@@ -130,11 +130,9 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             ctx.types = tkTypes;
         }
 
-        const tymchs = ctx.types.map(t => {
-            return getParentClass(t) ?
-                (tag) => refl.get(tag)?.class.isExtends(t)
-                : (tag) => isBaseOf(tag, t);
-        });
+        const tymchs = ctx.types.map(t => getParentClass(t) ?
+            (tag) => refl.get(tag)?.class.isExtends(t)
+            : (tag) => isBaseOf(tag, t));
 
         if (ctx.matchs) {
             ctx.matchs.push(...tymchs);

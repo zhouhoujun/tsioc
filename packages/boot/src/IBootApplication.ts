@@ -1,4 +1,4 @@
-import { ClassType, IContainer, IDestroyable, IInjector, LoadType } from '@tsdi/ioc';
+import { ClassType, IContainer, Destroyable, IInjector, LoadType } from '@tsdi/ioc';
 import { IBootContext, BootOption } from './Context';
 
 
@@ -25,7 +25,7 @@ export interface ContextInit<T extends IBootContext = IBootContext> {
  * @extends {ContextInit<T>}
  * @template T
  */
-export interface IBootApplication<T extends IBootContext = IBootContext> extends ContextInit<T>, IDestroyable {
+export interface IBootApplication<T extends IBootContext = IBootContext> extends ContextInit<T>, Destroyable {
 
     /**
      * boot target.

@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Destroyable } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 
 
@@ -11,7 +11,24 @@ import { ChangeDetectorRef } from '../chage/detector';
  * @publicApi
  */
 @Abstract()
-export abstract class ViewRef extends ChangeDetectorRef { }
+export abstract class ViewRef extends ChangeDetectorRef implements Destroyable {
+
+  /**
+   * has destoryed or not.
+   */
+  abstract get destroyed();
+  /**
+  * destory this.
+  */
+  abstract destroy(): void;
+
+  /**
+   * register callback on destory.
+   * @param callback destory callback
+   */
+  abstract onDestroy(callback: () => void): void;
+
+}
 
 /**
  * Represents in a view container.

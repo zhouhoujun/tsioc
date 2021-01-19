@@ -1,4 +1,4 @@
-import { lang, Abstract, IDestroyable, isFunction, Type, Inject, isString, Injectable, Refs, isNil, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
+import { lang, Abstract, Destroyable, isFunction, Type, Inject, isString, Injectable, Refs, isNil, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, IBootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
@@ -202,7 +202,7 @@ export class ActivityElementRef<T extends Activity = Activity> extends ActivityR
     }
 
     protected destroying(): void {
-        let element = this.nativeElement as T & IDestroyable;
+        let element = this.nativeElement as T & Destroyable;
         if (element && isFunction(element.destroy)) {
             element.destroy();
         }
@@ -252,7 +252,7 @@ export class ActivityTemplateRef<T extends ActivityNodeType = ActivityNodeType> 
 
     protected destroying(): void {
         this.rootNodes
-            .forEach((node: T & IDestroyable) => {
+            .forEach((node: T & Destroyable) => {
                 if (node && isFunction(node.destroy)) {
                     node.destroy();
                 }

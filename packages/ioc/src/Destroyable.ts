@@ -2,7 +2,7 @@
 /**
  * destroyable interface.
  */
-export interface IDestroyable {
+export interface Destroyable {
     /**
      * has destoryed or not.
      */

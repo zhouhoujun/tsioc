@@ -1,7 +1,7 @@
 import { Type, Modules, LoadType } from './types';
 import { SymbolType, Token, FactoryLike, ProviderType, Factory, InstFac } from './tokens';
 import { IContainer } from './IContainer';
-import { IDestroyable } from './Destroyable';
+import { Destroyable } from './Destroyable';
 import { MethodType } from './IMethodAccessor';
 import { Registered } from './decor/type';
 
@@ -9,7 +9,7 @@ import { Registered } from './decor/type';
 /**
  * provider interface.
  */
-export interface IProvider extends IDestroyable {
+export interface IProvider extends Destroyable {
     /**
      * parent provider.
      */
