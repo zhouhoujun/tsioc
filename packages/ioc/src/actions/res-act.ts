@@ -20,9 +20,8 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
 
     execute(ctx: T, next?: () => void): void {
         if (!ctx.instance) {
-            let target = ctx.target;
-            if (target) {
-                ctx.targetToken = isToken(target) ? target : getClass(target);
+            if (ctx.target) {
+                ctx.targetToken = isToken(ctx.target) ? ctx.target : getClass(ctx.target);
             }
             super.execute(ctx);
         }
@@ -68,9 +67,8 @@ export const ResolveInProvidersAction = function (ctx: ResolveContext, next: () 
 }
 
 export const ResolveInInjectorAction = function (ctx: ResolveContext, next: () => void): void {
-    const injector = ctx.injector;
-    if (injector.has(ctx.token)) {
-        ctx.instance = injector.get(ctx.token, ctx.providers);
+    if (ctx.injector.has(ctx.token)) {
+        ctx.instance = ctx.injector.get(ctx.token, ctx.providers);
     }
 
     if (isNil(ctx.instance)) {
@@ -88,8 +86,7 @@ export const ResolveInParentAction = function (ctx: ResolveContext, next: () => 
 
 export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.targetToken) {
-        const tkn = new InjectReference(PROVIDERS, ctx.targetToken);
-        ctx.instance = ctx.injector.get(tkn)?.get(ctx.token, ctx.providers);
+        ctx.instance = ctx.injector.get(new InjectReference(PROVIDERS, ctx.targetToken))?.get(ctx.token, ctx.providers);
     }
     if (isNil(ctx.instance)) {
         next();
@@ -99,8 +96,7 @@ export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => v
 
 export const ResolveRefAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.targetToken) {
-        const tkn = new InjectReference(ctx.token, ctx.targetToken);
-        ctx.instance = ctx.injector.get(tkn, ctx.providers);
+        ctx.instance = ctx.injector.get(new InjectReference(ctx.token, ctx.targetToken), ctx.providers);
     }
     if (isNil(ctx.instance) && !ctx.tagOnly) {
         next();

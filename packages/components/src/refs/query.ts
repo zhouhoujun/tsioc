@@ -7,18 +7,18 @@ import { flatten } from '../util/array';
  * @param this query list.
  */
 function symbolIterator<T>(this: QueryList<T>): Iterator<T> {
-  return ((this as any as { _results: Array<T> })._results as any)[Symbol.iterator]();
+  return ((this as any as {_results: Array<T>})._results as any)[Symbol.iterator]();
 }
 
 /**
- * An unmodifiable list of items that Angular keeps up to date when the state
+ * An unmodifiable list of items that keeps up to date when the state
  * of the application changes.
  *
  * The type of object that {@link ViewChildren}, {@link ContentChildren}, and {@link QueryList}
  * provide.
  *
  * Implements an iterable interface, therefore it can be used in both ES6
- * javascript `for (var i of items)` loops as well as in Angular templates with
+ * javascript `for (var i of items)` loops as well as in templates with
  * `*ngFor="let i of myList"`.
  *
  * Changes can be observed by subscribing to the changes `Observable`.
@@ -42,8 +42,10 @@ export class QueryList<T> implements Iterable<T> {
   public readonly changes: Observable<any> = new EventEmitter();
 
   readonly length: number = 0;
-  readonly first: T;
-  readonly last: T;
+  // TODO(issue/24571): remove '!'.
+  readonly first!: T;
+  // TODO(issue/24571): remove '!'.
+  readonly last!: T;
 
   constructor() {
     // This function should be declared on the prototype, but doing so there will cause the class
@@ -75,7 +77,7 @@ export class QueryList<T> implements Iterable<T> {
    * See
    * [Array.find](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find)
    */
-  find(fn: (item: T, index: number, array: T[]) => boolean): T | undefined {
+  find(fn: (item: T, index: number, array: T[]) => boolean): T|undefined {
     return this._results.find(fn);
   }
 
@@ -121,12 +123,12 @@ export class QueryList<T> implements Iterable<T> {
    *
    * @param resultsTree The query results to store
    */
-  reset(resultsTree: Array<T | any[]>): void {
+  reset(resultsTree: Array<T|any[]>): void {
     this._results = flatten(resultsTree);
-    (this as { dirty: boolean }).dirty = false;
-    (this as { length: number }).length = this._results.length;
-    (this as { last: T }).last = this._results[this.length - 1];
-    (this as { first: T }).first = this._results[0];
+    (this as {dirty: boolean}).dirty = false;
+    (this as {length: number}).length = this._results.length;
+    (this as {last: T}).last = this._results[this.length - 1];
+    (this as {first: T}).first = this._results[0];
   }
 
   /**
@@ -138,7 +140,7 @@ export class QueryList<T> implements Iterable<T> {
 
   /** internal */
   setDirty() {
-    (this as { dirty: boolean }).dirty = true;
+    (this as {dirty: boolean}).dirty = true;
   }
 
   /** internal */

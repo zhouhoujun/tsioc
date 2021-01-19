@@ -1,10 +1,11 @@
 import { isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
-import { getTokenKey, isToken } from '../tokens';
+import { getTokenKey, isToken, Token } from '../tokens';
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { METHOD_ACCESSOR } from '../utils/tk';
+import { PropertyMetadata } from '../decor/metadatas';
 
 /**
  * ioc runtime register action.
@@ -49,22 +50,20 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  * inject property value action, to inject property value for resolve instance.
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
-    let providers = ctx.providers;
-    let injector = ctx.injector;
+    const providers = ctx.providers;
+    const injector = ctx.injector;
+    let key: string, meta: PropertyMetadata, token: Token, val: any;
 
-    let props = ctx.reflect.propProviders;
-
-    props.forEach((metas, propertyKey) => {
-        let key = `${propertyKey}_INJECTED`;
-        let meta = metas.find(m => m.provider);
-        let token;
+    ctx.reflect.propProviders.forEach((metas, propertyKey) => {
+        key = `${propertyKey}_INJECTED`;
+        meta = metas.find(m => m.provider);
         if (meta) {
             token = getTokenKey(meta.provider, meta.alias);
         } else {
             token = metas.find(m => m.type)?.type;
         }
         if (isToken(token) && !ctx[key]) {
-            let val = providers?.get(token, providers) ?? injector.resolve({ token, target: ctx.type }, providers);
+            val = providers?.get(token, providers) ?? injector.resolve({ token, target: ctx.type }, providers);
             if (!isNil(val)) {
                 ctx.instance[propertyKey] = val;
                 ctx[key] = true;
@@ -141,11 +140,10 @@ export abstract class IocExtendRegAction extends IocRuntimeAction { }
  * @export
  */
 export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void) {
-    let tgref = ctx.reflect;
-    if (!ctx.instance || ctx.singleton || !tgref.expires || tgref.expires <= 0) {
+    if (!ctx.instance || ctx.singleton || !ctx.reflect.expires || ctx.reflect.expires <= 0) {
         return next();
     }
-    ctx.injector.set(ctx.type, { cache: ctx.instance, expires: tgref.expires + Date.now() });
+    ctx.injector.set(ctx.type, { cache: ctx.instance, expires: ctx.reflect.expires + Date.now() });
     return next();
 };
 
@@ -159,9 +157,8 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     const injector = ctx.injector;
-    const autoruns = ctx.reflect.autoruns;
-    if (autoruns.length) {
-        autoruns.sort((au1, au2) => {
+    if (ctx.reflect.autoruns.length) {
+        ctx.reflect.autoruns.sort((au1, au2) => {
             return au1.order - au2.order;
         }).forEach(aut => {
             injector.invoke(ctx.instance || ctx.type, aut.autorun, ctx.instance);

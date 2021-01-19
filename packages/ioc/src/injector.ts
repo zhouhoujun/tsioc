@@ -349,10 +349,10 @@ export class Provider implements IProvider {
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
         const key = getTokenKey(token);
-        const fc = this.factories.get(key);
-        if (fc) {
-            fc.value = value;
-            if (provider) fc.provider = provider;
+        const isp = this.factories.get(key);
+        if (isp) {
+            isp.value = value;
+            if (provider) isp.provider = provider;
         } else {
             this.factories.set(key, { value, provider });
         }
@@ -361,12 +361,12 @@ export class Provider implements IProvider {
 
     delValue(token: Token) {
         const key = getTokenKey(token);
-        const pdr = this.factories.get(key);
-        if (!pdr) return;
-        if (!pdr.fac) {
+        const isp = this.factories.get(key);
+        if (!isp) return;
+        if (!isp.fac) {
             this.factories.delete(key);
         } else {
-            pdr.value = null;
+            isp.value = null;
         }
     }
 
@@ -414,14 +414,14 @@ export class Provider implements IProvider {
      * @memberof Injector
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this {
-        const provideKey = getTokenKey(provide);
-        if (provideKey && provider) {
+        const key = getTokenKey(provide);
+        if (key && provider) {
             !reged && this.registerType(provider);
-            if (reged && reged.provides.indexOf(provideKey) < 0) {
-                reged.provides.push(provideKey);
+            if (reged && reged.provides.indexOf(key) < 0) {
+                reged.provides.push(key);
             }
             const fac = reged ? (...pdrs) => reged.getInjector().getInstance(provider, ...pdrs) : (...pdrs) => this.getInstance(provider, ...pdrs);
-            this.factories.set(provideKey, { fac, provider: provider });
+            this.factories.set(key, { fac, provider: provider });
         }
         return this;
     }
@@ -449,11 +449,11 @@ export class Provider implements IProvider {
      */
     unregister<T>(token: Token<T>): this {
         let key = getTokenKey(token);
-        const inst = this.factories.get(key);
-        if (inst) {
+        const isp = this.factories.get(key);
+        if (isp) {
             this.factories.delete(key);
-            if (isFunction(inst.unreg)) inst.unreg();
-            cleanObj(inst);
+            if (isFunction(isp.unreg)) isp.unreg();
+            cleanObj(isp);
         }
         return this;
     }

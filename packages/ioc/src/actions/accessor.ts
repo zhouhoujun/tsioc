@@ -31,8 +31,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {T}
      */
     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        let targetClass: Type;
-        let instance: T;
+        let targetClass: Type, instance: T, key: string;
         if (isToken(target)) {
             targetClass = injector.getTokenProvider(target);
             instance = injector.get(target, ...providers);
@@ -44,11 +43,9 @@ export class MethodAccessor implements IMethodAccessor {
             instance = target;
         }
 
-        let tgRefl = get(targetClass);
-        let key: string;
+        const tgRefl = get(targetClass);
         if (isFunction(propertyKey)) {
-            let descriptors = tgRefl.class.getPropertyDescriptors();
-            key = tgRefl.class.getPropertyName(propertyKey(descriptors as any) as TypedPropertyDescriptor<any>);
+            key = tgRefl.class.getPropertyName(propertyKey(tgRefl.class.getPropertyDescriptors() as any) as TypedPropertyDescriptor<any>);
         } else {
             key = propertyKey;
         }
@@ -57,13 +54,11 @@ export class MethodAccessor implements IMethodAccessor {
             throw new Error(`type: ${targetClass} has no method ${(key || '').toString()}.`);
         }
 
-        let pds = tgRefl.methodExtProviders.get(key);
-        if (pds) {
-            providers = providers.concat(pds);
+        if (tgRefl.methodExtProviders.has(key)) {
+            providers = providers.concat(tgRefl.methodExtProviders.get(key));
         }
-        let parameters = tgRefl.methodParams.get(key) || [];
-        let providerMap = this.container.getInstance(INVOKED_PROVIDERS).inject(...providers);
-        let paramInstances = this.resolveParams(injector, parameters, providerMap);
+        const providerMap = this.container.getInstance(INVOKED_PROVIDERS).inject(...providers);
+        const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], providerMap);
         if (providerMap.size && instance[key]['_proxy']) {
             paramInstances.push(providerMap);
         } else {

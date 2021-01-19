@@ -1,5 +1,5 @@
 import { Token } from '@tsdi/ioc';
-import { QueryList } from './query_list';
+import { QueryList } from '../refs/query';
 import { TNode } from './node';
 import { TView } from './view';
 

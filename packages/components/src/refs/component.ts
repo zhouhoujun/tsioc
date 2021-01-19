@@ -1,4 +1,4 @@
-import { Abstract, Destroyable, IInjector, Type } from '@tsdi/ioc';
+import { Abstract, IInjector, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ElementRef } from './element';
 import { ViewRef } from './view';
@@ -11,9 +11,7 @@ import { ViewRef } from './view';
  * @publicApi
  */
 @Abstract()
-export abstract class ComponentRef<C = any> implements Destroyable {
-    private _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
+export abstract class ComponentRef<C = any> {
 
     /**
      * The host or anchor element for this component instance.
@@ -47,35 +45,13 @@ export abstract class ComponentRef<C = any> implements Destroyable {
     abstract get componentType(): Type<any>;
 
     /**
-     * has destoryed or not.
-     */
-    get destroyed() {
-        return this._destroyed;
-    }
-    /**
     * destory this.
     */
-    destroy(): void {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = [];
-            this.destroying();
-        }
-    }
+    abstract destroy(): void;
 
     /**
      * register callback on destory.
      * @param callback destory callback
      */
-    onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
-        }
-    }
-
-    /**
-     * destorying. default do nothing.
-     */
-    protected destroying() { }
+    abstract onDestroy(callback: () => void): void;
 }
