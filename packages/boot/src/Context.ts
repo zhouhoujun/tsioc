@@ -1,8 +1,8 @@
 import {
     ClassType, Destroyable, IocContext, IProvider, ProviderType, ObjectMap,
-    RegInMetadata, SymbolType, Token, Type, TypeReflect, IContainer, IModuleLoader, LoadType, IInjector
+    RegInMetadata, Token, Type, TypeReflect, IContainer, IModuleLoader, LoadType, IInjector
 } from '@tsdi/ioc';
-import {  } from '@tsdi/core';
+import { } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
 import { ModuleReflect } from './modules/reflect';
@@ -12,6 +12,7 @@ export interface ProdverOption {
     /**
      * providers for contexts.
      *
+     * @deprecated use providers instead.
      * @type {(ProviderType[] | IProvider)}
      */
     contexts?: ProviderType[] | IProvider;
@@ -51,55 +52,28 @@ export interface IDestroyableContext<T> extends IocContext, Destroyable {
      */
     readonly providers: IProvider;
 
-    getOptions(): T;
-
     /**
-     * has register in context or not.
-     * @param token
-     */
-    has(token: Token): boolean;
-    /**
-    * has value in context or not.
+    * has value in context providers or not.
     * @param token
     */
-    hasValue(token: SymbolType): boolean;
-    /**
-     * remove contexts.
-     * @param tokens
-     */
-    remove(...tokens: Token[]);
-    /**
-     * get context provider of boot application.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {T}
-     */
-    get<T>(token: Token<T>): T;
+    hasValue(token: Token): boolean;
     /**
      * get value from context.
      * @param key token key
      */
-    getValue<T>(key: SymbolType<T>): T;
+    getValue<T>(key: Token<T>): T;
     /**
-     * set value to this contet.
+     * set value to this context providers.
      * @param key token key
      * @param value value of key.
      */
-    setValue<T>(key: SymbolType<T>, value: T): this;
+    setValue<T>(key: Token<T>, value: T): this;
+
     /**
-     * set provider of this context.
-     *
-     * @param {Token} token context provider token.
-     * @param {*} value context value.
+     * options.
      */
-    set(token: Token, value: any);
-    /**
-     * set context provider of boot application.
-     *
-     * @param {...ProviderType[]} providers
-     */
-    set(...providers: ProviderType[]);
+    getOptions(): T;
+
     /**
      * get root container.
      */

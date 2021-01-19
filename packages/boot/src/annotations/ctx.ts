@@ -1,6 +1,6 @@
 import {
-    isToken, lang, Token, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
-    IProvider, SymbolType, ProviderType, isInjector, isArray, isBoolean, Provider, Injector, IInjector, isProvide
+    lang, INJECTOR, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
+    IProvider, isArray, isBoolean, Injector, IInjector, isProvide, Token
 } from '@tsdi/ioc';
 import { AnnoationOption, IAnnoationContext, IDestroyableContext, ProdverOption } from '../Context';
 import { CTX_OPTIONS } from '../tk';
@@ -15,12 +15,12 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
     static ρNPT = true;
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
-    private context: IProvider;
+    private _provider: IProvider;
     protected options: T;
 
     constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options: T) {
-        this.context = injector.getContainer().get(PROVIDERS);
-        this.context.setValue(INJECTOR, injector);
+        this._provider = injector.getContainer().get(PROVIDERS);
+        this._provider.setValue(INJECTOR, injector);
         this.setOptions(options);
     }
 
@@ -28,61 +28,25 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
      * raise injector of this context.
      */
     get injector(): IInjector {
-        return this.context.getValue(INJECTOR);
+        return this._provider.getValue(INJECTOR);
     }
 
     /**
      * get providers of options.
      */
     get providers(): IProvider {
-        if (!this.context.hasValue(Provider)) {
-            this.context.setValue(Provider, this.injector.getContainer().getInstance(PROVIDERS))
-        }
-        return this.context.getValue(Provider);
+        return this._provider;
     }
 
-    /**
-     * has register in context or not.
-     * @param token
-     */
-    has(token: Token): boolean {
-        return this.context.has(token);
+    hasValue(token: Token): boolean {
+        return this._provider.hasValue(token);
     }
-
-    /**
-     * has value in context or not.
-     * @param token
-     */
-    hasValue(token: SymbolType): boolean {
-        return this.context.hasValue(token);
-    }
-
-    /**
-     * remove contexts.
-     * @param tokens
-     */
-    remove(...tokens: SymbolType[]) {
-        tokens.forEach(tk => {
-            this.context.delValue(tk);
-        });
-    }
-    /**
-     * get context provider of boot application.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @returns {T}
-     */
-    get<T>(token: Token<T>): T {
-        return this.context.get(token);
-    }
-
     /**
      * get value from context.
      * @param key token key
      */
     getValue<T>(key: Token<T>): T {
-        return this.context.getValue(key);
+        return this._provider.getValue(key);
     }
 
     /**
@@ -91,31 +55,7 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
      * @param value value of key.
      */
     setValue<T>(key: Token<T>, value: T) {
-        this.context.setValue(key, value);
-        return this;
-    }
-
-    /**
-     * set provider of this context.
-     *
-     * @param {Token} token context provider token.
-     * @param {*} value context value.
-     */
-    set(token: Token, value: any);
-    /**
-     * set context provider of boot application.
-     *
-     * @param {...ProviderType[]} providers
-     */
-    set(...providers: ProviderType[]);
-    set(...providers: any[]) {
-        if (providers.length === 2 && isToken(providers[0])) {
-            let provde = providers[0];
-            let value = providers[1];
-            this.context.setValue(provde, value);
-        } else {
-            this.context.inject(...providers);
-        }
+        this._provider.setValue(key, value);
         return this;
     }
 
@@ -123,7 +63,7 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
      * get root container.
      */
     getContainer(): IContainer {
-        return this.injector.getContainer();
+        return this._provider.getContainer();
     }
 
     /**
@@ -136,20 +76,20 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
         }
 
         if (options.contexts) {
-            if (isInjector(options.contexts)) {
-                this.context.copy(options.contexts);
-            } else if (isArray(options.contexts)) {
-                this.context.inject(...options.contexts);
+            if (isArray(options.contexts)) {
+                this._provider.inject(...options.contexts);
+            } else {
+                this._provider.copy(options.contexts);
             }
         }
         if (options.providers) {
-            if (isInjector(options.providers)) {
-                this.setValue(Provider, options.providers)
-            } else if (isArray(options.providers)) {
-                this.providers.inject(...options.providers);
+            if (isArray(options.providers)) {
+                this._provider.inject(...options.providers);
+            } else {
+                this._provider.copy(options.providers);
             }
         }
-        this.options = lang.omit(options, 'contexts', 'providers', 'injector');
+        this.options = Object.assign(this.options|| {}, options);
         return this;
     }
 
@@ -173,7 +113,7 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
             return options ? new Ctx(null, this.injector)
                 : new Ctx(this.getOptions(), this.injector);
         } else {
-            return new Ctx({ ...this.getOptions(), contexts: this.context.clone(), ...options || {} }, this.injector);
+            return new Ctx({ ...this.getOptions(), contexts: this._provider.clone(), ...options || {} }, this.injector);
         }
     }
 
@@ -206,9 +146,10 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
     }
 
     protected destroying() {
-        this.context.destroy();
+        this._provider.destroy();
+        lang.cleanObj(this.options);
         this.options = null;
-        this.context = null;
+        this._provider = null;
     }
 }
 
