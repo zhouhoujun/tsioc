@@ -1,5 +1,5 @@
 import { isNil, InjectReference, IActionSetup, isToken, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction, isTypeObject, Token, IProvider, TypeReflect } from '@tsdi/ioc';
-import { getParentClass, isBaseOf } from 'packages/ioc/src/utils/lang';
+import { getParentClass, isBaseOf, isExtendsClass } from 'packages/ioc/src/utils/lang';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -105,7 +105,12 @@ export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => 
     }
 }
 
-
+/**
+ * default service type match.
+ * @param tag
+ * @param base 
+ */
+const typeMatch = (tag, base) => getParentClass(base) ? refl.get(tag)?.class.isExtends(base) ?? isExtendsClass(tag, base) : isBaseOf(tag, base);
 
 // services actions
 export class ResolveServicesScope extends resovles.IocResolveScope implements IActionSetup {
@@ -124,14 +129,8 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             ctx.types = tkTypes;
         }
 
-        const tymchs = ctx.types.map(t => getParentClass(t) ?
-            (tag) => refl.get(tag)?.class.isExtends(t)
-            : (tag) => isBaseOf(tag, t));
-
-        if (ctx.matchs) {
-            ctx.matchs.push(...tymchs);
-        } else {
-            ctx.matchs = tymchs;
+        if(!ctx.match){
+            ctx.match = typeMatch;
         }
 
         ctx.services = ctx.injector.getContainer().get(PROVIDERS);
@@ -162,7 +161,8 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
         const injector = ctx.injector;
         const services = ctx.services;
         const alias = ctx.alias;
-        const matchs = ctx.matchs;
+        const types = ctx.types;
+        const match = ctx.match;
         ctx.targetRefs.forEach(t => {
             let tk = isTypeObject(t) ? lang.getClass(t) : t;
             let maps = injector.get(new InjectReference(PROVIDERS, tk));
@@ -170,8 +170,8 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                 maps.iterator((pdr, tk) => {
                     if (!services.has(tk, alias)
                         && (
-                            (isFunction(tk) && matchs.some(mch => mch(tk)))
-                            || (pdr.provider && matchs.some(mch => mch(pdr.provider)))
+                            (isFunction(tk) && types.some(ty => match(tk, ty)))
+                            || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
                         )
                     ) {
                         services.set(tk, pdr, true);
@@ -185,8 +185,8 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     dprvoider.iterator((pdr, tk) => {
                         if (!services.has(tk, alias)
                             && (
-                                (isFunction(tk) && matchs.some(mch => mch(tk)))
-                                || (pdr.provider && matchs.some(mch => mch(pdr.provider)))
+                                (isFunction(tk) && types.some(ty => match(tk, ty)))
+                                || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
                             )
                         ) {
                             services.set(tk, pdr, true);
@@ -210,14 +210,15 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 
 
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
-    const matchs = ctx.matchs;
+    const match = ctx.match;
     const services = ctx.services;
     const alias = ctx.alias;
+    const types = ctx.types;
     ctx.injector.iterator((pdr, tk) => {
         if (!services.has(tk, alias)
             && (
-                (isFunction(tk) && matchs.some(mch => mch(tk)))
-                || (pdr.provider && matchs.some(mch => mch(pdr.provider)))
+                (isFunction(tk) && types.some(ty => match(tk, ty)))
+                || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
             )
         ) {
             services.set(tk, pdr, true);

@@ -47,7 +47,7 @@ export interface ServicesContext extends ServiceContext {
     /**
      * types matchs.
      */
-    matchs?: ((tag: ClassType) => boolean)[];
+    match?: (tag: ClassType, base: ClassType) => boolean;
 
     /**
      * all matched services map.
