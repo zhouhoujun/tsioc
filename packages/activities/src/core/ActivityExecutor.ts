@@ -1,5 +1,4 @@
-import { Injectable, isArray, Type, isClass, isFunction, isPromise, ObjectMap, isNil, AsyncHandler, chain, isString } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { Injectable, IInjector, isArray, Type, isClass, isFunction, isPromise, ObjectMap, isNil, AsyncHandler, chain, isString } from '@tsdi/ioc';
 import { BUILDER } from '@tsdi/boot';
 import { ComponentBuilderToken, ELEMENT_REFS } from '@tsdi/components';
 import { ActivityType, Expression } from './ActivityMetadata';
@@ -84,7 +83,7 @@ export class ActivityExecutor implements IActivityExecutor {
             .resolve(expression, this.context.injector, envOptions);
     }
 
-    async resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal> {
+    async resolveExpression<TVal>(express: Expression<TVal>, injector?: IInjector): Promise<TVal> {
         let ctx = this.context;
         injector = injector || this.context.injector;
         if (isClass(express)) {

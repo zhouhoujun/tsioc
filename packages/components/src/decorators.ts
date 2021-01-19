@@ -1,8 +1,7 @@
 import {
     Token, createPropDecorator, PropertyMetadata, Type, refl, lang, isBoolean,
-    isUndefined, createParamDecorator, createDecorator, InjectableMetadata
+    isUndefined, createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, IInjector
 } from '@tsdi/ioc';
-import { CONTAINER, ICoreInjector } from '@tsdi/core';
 import { AnnotationReflect, BuildContext, Runnable } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
@@ -73,7 +72,7 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
             }
 
             const currDecor = ctx.currDecor;
-            const injector = ctx.injector as ICoreInjector;
+            const injector = ctx.injector;
             const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
             decorRefl.def = compiler.compileDirective(decorRefl);
 
@@ -149,7 +148,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
             }
 
             const currDecor = ctx.currDecor;
-            const injector = ctx.injector as ICoreInjector;
+            const injector = ctx.injector;
 
             const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
             compRefl.def = compiler.compileComponent(compRefl);

@@ -2,20 +2,12 @@ import {
     ClassType, Destroyable, IocContext, IProvider, ProviderType, ObjectMap,
     RegInMetadata, Token, Type, TypeReflect, IContainer, IModuleLoader, LoadType, IInjector
 } from '@tsdi/ioc';
-import { } from '@tsdi/core';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
 import { ModuleReflect } from './modules/reflect';
 import { BootstrapMetadata } from './decorators';
 
 export interface ProdverOption {
-    /**
-     * providers for contexts.
-     *
-     * @deprecated use providers instead.
-     * @type {(ProviderType[] | IProvider)}
-     */
-    contexts?: ProviderType[] | IProvider;
 
     /**
      *  providers.

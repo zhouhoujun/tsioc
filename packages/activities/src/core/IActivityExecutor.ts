@@ -1,5 +1,4 @@
-import { tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
-import { ICoreInjector } from '@tsdi/core';
+import { tokenId, IInjector, AsyncHandler, TokenId } from '@tsdi/ioc';
 import { Expression, ActivityType } from './ActivityMetadata';
 import { WorkflowContext } from './WorkflowContext';
 
@@ -32,11 +31,11 @@ export interface IActivityExecutor {
      *
      * @template TVal
      * @param {Expression<TVal>} express
-     * @param {ICoreInjector} [injector]
+     * @param {IInjector} [injector]
      * @returns {Promise<TVal>}
      * @memberof IActivityExecutor
      */
-    resolveExpression<TVal>(express: Expression<TVal>, injector?: ICoreInjector): Promise<TVal>;
+    resolveExpression<TVal>(express: Expression<TVal>, injector?: IInjector): Promise<TVal>;
     /**
      * run activities.
      *

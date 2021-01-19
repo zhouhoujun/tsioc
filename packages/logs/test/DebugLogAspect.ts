@@ -1,5 +1,4 @@
-import { Singleton, Inject } from '@tsdi/ioc';
-import { IContainer, CONTAINER } from '@tsdi/core';
+import { Singleton } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
 import { LoggerAspect } from '../src';
 

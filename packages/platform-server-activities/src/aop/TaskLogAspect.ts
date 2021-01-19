@@ -1,5 +1,4 @@
-import { Inject, lang } from '@tsdi/ioc';
-import { IContainer, CONTAINER } from '@tsdi/core';
+import { Inject, lang, IContainer, CONTAINER } from '@tsdi/ioc';
 import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logs';
 import { IActivityRef, ActivityRef, ControlActivityElementRef } from '@tsdi/activities';

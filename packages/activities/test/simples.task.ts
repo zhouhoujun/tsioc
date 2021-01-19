@@ -1,5 +1,5 @@
 import { Task, Activity, ActivityContext, Activities } from '../src';
-import { IContainer, ContainerToken } from '@tsdi/core';
+import { IContainer, ContainerToken } from '@tsdi/ioc';
 import { Inject, isString, isFunction, Token } from '@tsdi/ioc';
 import { ServerActivitiesModule } from '@tsdi/platform-server-activities';
 import { Input } from '@tsdi/components';

@@ -1,5 +1,4 @@
-import { ObjectMap, tokenId, TokenId } from '@tsdi/ioc';
-import { IContainer } from '@tsdi/core';
+import { ObjectMap, tokenId, TokenId, IContainer } from '@tsdi/ioc';
 import { CompilerOptions } from 'typescript';
 import { Src } from '@tsdi/activities';
 import { GlobbyOptions } from 'globby';

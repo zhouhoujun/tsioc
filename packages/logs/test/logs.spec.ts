@@ -1,5 +1,5 @@
-import { Injectable, Inject, AutoWired } from '@tsdi/ioc';
-import { IContainer, ContainerBuilder } from '@tsdi/core';
+import { Injectable, Inject, AutoWired, IContainer } from '@tsdi/ioc';
+import { ContainerBuilder } from '@tsdi/core';
 import { LogModule, Logger } from '../src';
 import { DebugLogAspect } from './DebugLogAspect';
 import { AnntotationLogAspect } from './AnntotationLogAspect';

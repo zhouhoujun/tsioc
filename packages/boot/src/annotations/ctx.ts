@@ -75,13 +75,6 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
             return;
         }
 
-        if (options.contexts) {
-            if (isArray(options.contexts)) {
-                this._provider.inject(...options.contexts);
-            } else {
-                this._provider.copy(options.contexts);
-            }
-        }
         if (options.providers) {
             if (isArray(options.providers)) {
                 this._provider.inject(...options.providers);
