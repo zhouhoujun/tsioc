@@ -331,7 +331,7 @@ export function isTokenFunc(target: any): target is IToken<any> {
  * @returns {target is ProvideToken}
  */
 export function isProvide(target: any, abstract?: boolean): target is ProvideToken<any> {
-    if (isString(target) || isSymbol(target) || (target instanceof Registration)) {
+    if (isSymbol(target) || (target instanceof Registration)) {
         return true
     }
     if (isTokenFunc(target)) return true;

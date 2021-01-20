@@ -237,7 +237,7 @@ export class Provider implements IProvider {
                 });
             } else if (isPlainObject(p)) {
                 let pr = p as StaticProviders;
-                if (isToken(pr.provide)) {
+                if (pr.provide) {
                     let provide = getTokenKey(pr.provide);
                     if (isArray(pr.deps) && pr.deps.length) {
                         pr.deps.forEach(d => {

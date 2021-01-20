@@ -1,4 +1,4 @@
-import { isNil, InjectReference, IActionSetup, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction, isTypeObject, Token, IProvider, TypeReflect } from '@tsdi/ioc';
+import { isNil, InjectReference, IActionSetup, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction, isTypeObject } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -60,14 +60,14 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
                 if (dec.decorType !== 'class') {
                     return false;
                 }
-                let dprvoider = dec.decorPdr.getProvider(injector)
+                const dprvoider = dec.decorPdr.getProvider(injector)
                 if (dprvoider.has(currTK)) {
                     ctx.instance = dprvoider.get(currTK, providers);
                 }
                 if (ctx.instance) {
                     return true;
                 }
-                let refDec = new InjectReference(currTK, dec.decor);
+                const refDec = new InjectReference(currTK, dec.decor);
                 if (injector.has(refDec, true)) {
                     ctx.instance = injector.get(refDec, providers);
                 }
@@ -81,14 +81,14 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
 };
 
 export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () => void): void {
-    const { injector, currTK, targetToken, providers } = ctx;
-    if (isFunction(targetToken)) {
-        refl.get(targetToken).class.extendTypes.some(ty => {
+    if (isFunction(ctx.targetToken)) {
+        const { injector, currTK, providers } = ctx;
+        refl.get(ctx.targetToken).class.extendTypes.some(ty => {
             ctx.instance = injector.resolve({ token: currTK, target: ty, tagOnly: true }, providers);
             return ctx.instance;
         });
     } else {
-        ctx.instance = injector.resolve({ token: currTK, target: targetToken, tagOnly: true }, providers);
+        ctx.instance = ctx.injector.resolve({ token: ctx.currTK, target: ctx.targetToken, tagOnly: true }, ctx.providers);
     }
 
     if (isNil(ctx.instance)) {
@@ -162,10 +162,9 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     if (ctx.targetRefs && ctx.targetRefs.length) {
         const { injector, services, alias, types, match } = ctx;
-        let tk: Token, reftk: Token, maps: IProvider, dprvoider: IProvider, rlt: TypeReflect;
         ctx.targetRefs.forEach(t => {
-            tk = isTypeObject(t) ? lang.getClass(t) : t;
-            maps = injector.get(new InjectReference(PROVIDERS, tk));
+            const tk = isTypeObject(t) ? lang.getClass(t) : t;
+            const maps = injector.get(new InjectReference(PROVIDERS, tk));
             if (maps && maps.size) {
                 maps.iterator((pdr, tk) => {
                     if (!services.has(tk, alias)
@@ -178,10 +177,10 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     }
                 });
             }
-            rlt = isFunction(tk) ? refl.get(tk) : null
+            const rlt = isFunction(tk) ? refl.get(tk) : null
             if (rlt) {
                 rlt.class.classDecors.forEach(dec => {
-                    dprvoider = dec.decorPdr.getProvider(injector)
+                    const dprvoider = dec.decorPdr.getProvider(injector)
                     dprvoider.iterator((pdr, tk) => {
                         if (!services.has(tk, alias)
                             && (
@@ -196,7 +195,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             }
 
             ctx.types.forEach(ty => {
-                reftk = new InjectReference(ty, tk);
+                const reftk = new InjectReference(ty, tk);
                 if (!services.has(reftk, alias) && injector.has(reftk)) {
                     services.set(reftk, (...providers: ProviderType[]) => injector.resolve(reftk, ...providers))
                 }

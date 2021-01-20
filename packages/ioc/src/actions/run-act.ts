@@ -1,11 +1,10 @@
 import { isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
-import { getTokenKey, isToken, Token } from '../tokens';
+import { getTokenKey, Token } from '../tokens';
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
 import { METHOD_ACCESSOR } from '../utils/tk';
-import { PropertyMetadata } from '../decor/metadatas';
 
 /**
  * ioc runtime register action.
@@ -50,26 +49,26 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  * inject property value action, to inject property value for resolve instance.
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
-    const providers = ctx.providers;
-    const injector = ctx.injector;
-    let key: string, meta: PropertyMetadata, token: Token, val: any;
-
-    ctx.reflect.propProviders.forEach((metas, propertyKey) => {
-        key = `${propertyKey}_INJECTED`;
-        meta = metas.find(m => m.provider);
-        if (meta) {
-            token = getTokenKey(meta.provider, meta.alias);
-        } else {
-            token = metas.find(m => m.type)?.type;
-        }
-        if (isToken(token) && !ctx[key]) {
-            val = providers?.get(token, providers) ?? injector.resolve({ token, target: ctx.type }, providers);
-            if (!isNil(val)) {
-                ctx.instance[propertyKey] = val;
-                ctx[key] = true;
+    if (ctx.reflect.propProviders.size) {
+        const { injector, providers, type } = ctx;
+        ctx.reflect.propProviders.forEach((metas, propertyKey) => {
+            const key = `${propertyKey}_INJECTED`;
+            const meta = metas.find(m => m.provider);
+            let token: Token;
+            if (meta) {
+                token = getTokenKey(meta.provider, meta.alias);
+            } else {
+                token = metas.find(m => m.type)?.type;
             }
-        }
-    });
+            if (token && !ctx[key]) {
+                let val = providers?.get(token, providers) ?? injector.resolve({ token, target: type }, providers);
+                if (!isNil(val)) {
+                    ctx.instance[propertyKey] = val;
+                    ctx[key] = true;
+                }
+            }
+        });
+    }
 
     next();
 };
@@ -156,12 +155,12 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  * @extends {IocRuntimeAction}
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
-    const injector = ctx.injector;
     if (ctx.reflect.autoruns.length) {
+        const { injector, type, instance } = ctx;
         ctx.reflect.autoruns.sort((au1, au2) => {
             return au1.order - au2.order;
         }).forEach(aut => {
-            injector.invoke(ctx.instance || ctx.type, aut.autorun, ctx.instance);
+            injector.invoke(instance || type, aut.autorun, instance);
         });
     }
 

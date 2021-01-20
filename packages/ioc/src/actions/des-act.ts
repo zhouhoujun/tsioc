@@ -242,9 +242,10 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
 
     const injector = ctx.injector;
     const instance = injector.get(ctx.token || ctx.type);
+    if (!instance) return;
     ctx.reflect.autoruns.forEach(meta => {
         if (meta && meta.autorun) {
-            if (instance && isFunction(instance[meta.autorun])) {
+            if (isFunction(instance[meta.autorun])) {
                 injector.invoke(instance, meta.autorun);
             }
         }
