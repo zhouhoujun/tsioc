@@ -31,9 +31,8 @@ export class ComponentBootContext extends BootContext implements IComponentBootC
      * Detaches a view from dirty checking again.
      */
     detachView(viewRef: ViewRef): void {
-        const view = (viewRef as InternalViewRef);
-        lang.remove(this._views, view);
-        view.detachContext();
+        lang.remove(this._views, viewRef);
+        ((viewRef as InternalViewRef)).detachContext();
     }
 
     /**
@@ -42,9 +41,8 @@ export class ComponentBootContext extends BootContext implements IComponentBootC
      * This will throw if the view is already attached to a ViewContainer.
      */
     attachView(viewRef: ViewRef): void {
-        const view = (viewRef as InternalViewRef);
-        this._views.push(view);
-        view.attachContext(this);
+        this._views.push(viewRef as InternalViewRef);
+        (viewRef as InternalViewRef).attachContext(this);
     }
 
 

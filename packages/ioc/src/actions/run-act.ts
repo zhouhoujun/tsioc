@@ -1,10 +1,10 @@
 import { isNil } from '../utils/chk';
-import { chain } from '../utils/hdl';
 import { getTokenKey, Token } from '../tokens';
+import { chain } from '../utils/hdl';
+import { METHOD_ACCESSOR } from '../utils/tk'
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
-import { METHOD_ACCESSOR } from '../utils/tk';
 
 /**
  * ioc runtime register action.
@@ -19,7 +19,6 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 
 /**
  * resolve constructor args action.
- *
  */
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
@@ -61,7 +60,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
                 token = metas.find(m => m.type)?.type;
             }
             if (token && !ctx[key]) {
-                let val = providers?.get(token, providers) ?? injector.resolve({ token, target: type }, providers);
+                const val = providers?.get(token, providers) ?? injector.resolve({ token, target: type }, providers);
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;
                     ctx[key] = true;

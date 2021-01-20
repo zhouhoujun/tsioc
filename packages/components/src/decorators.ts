@@ -51,30 +51,25 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
     props: (selector: string, option?: InjectableMetadata) => ({ selector, ...option }),
     reflect: {
         class: (ctx, next) => {
-            const reflect = ctx.reflect as AnnotationReflect;
-            reflect.annoType = 'directive';
-            reflect.annoDecor = ctx.decor;
-            reflect.annotation = ctx.matedata;
+            (ctx.reflect as AnnotationReflect).annoType = 'directive';
+            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.matedata;
             return next();
         }
     },
     design: {
         class: (ctx, next) => {
-            const decorRefl = ctx.reflect as DirectiveReflect;
-            const type = ctx.type as DirectiveType;
-            if (!(decorRefl.annoType === 'directive')) {
+            if (!((ctx.reflect as DirectiveReflect).annoType === 'directive')) {
                 return next();
             }
 
-            if (type.ρdir && (type.ρdir as any).type === ctx.type) {
-                decorRefl.def = type.ρdir;
+            if ((ctx.type as DirectiveType).ρdir && ((ctx.type as DirectiveType).ρdir as any).type === ctx.type) {
+                (ctx.reflect as DirectiveReflect).def = (ctx.type as DirectiveType).ρdir;
                 return next();
             }
 
-            const currDecor = ctx.currDecor;
-            const injector = ctx.injector;
-            const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
-            decorRefl.def = compiler.compileDirective(decorRefl);
+            const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
+            (ctx.reflect as DirectiveReflect).def = compiler.compileDirective((ctx.reflect as DirectiveReflect));
 
             next();
         }
@@ -118,10 +113,9 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     reflect: {
         class: (ctx, next) => {
-            const reflect = ctx.reflect as AnnotationReflect;
-            reflect.annoType = 'component';
-            reflect.annoDecor = ctx.decor;
-            reflect.annotation = ctx.matedata;
+            (ctx.reflect as AnnotationReflect).annoType = 'component';
+            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.matedata;
             return next();
         }
     },
@@ -131,9 +125,8 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
             if (!(compRefl.annoType === 'component')) {
                 return next();
             }
-            const type = ctx.type as ComponentType;
-            if (type.ρcmp && (type.ρcmp as any).type === ctx.type) {
-                compRefl.def = type.ρcmp;
+            if ((ctx.type as ComponentType).ρcmp && ((ctx.type as ComponentType).ρcmp as any).type === ctx.type) {
+                compRefl.def = (ctx.type as ComponentType).ρcmp;
                 return next();
             }
 
@@ -143,16 +136,12 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
                     // use builder async build.
                     return next();
                 } else {
-                    throw Error(`component ${lang.getClassName(type)} has no template.`);
+                    throw Error(`component ${lang.getClassName(ctx.type)} has no template.`);
                 }
             }
 
-            const currDecor = ctx.currDecor;
-            const injector = ctx.injector;
-
-            const compiler = injector.getService({ token: CompilerFacade, target: currDecor });
+            const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
             compRefl.def = compiler.compileComponent(compRefl);
-
             next();
         }
     },
@@ -441,10 +430,9 @@ export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
     actionType: ['annoation', 'typeProviders'],
     reflect: {
         class: (ctx, next) => {
-            const reflect = ctx.reflect as AnnotationReflect;
-            reflect.annoType = 'pipe';
-            reflect.annoDecor = ctx.decor;
-            reflect.annotation = ctx.matedata;
+            (ctx.reflect as AnnotationReflect).annoType = 'pipe';
+            (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.matedata;
             return next();
         }
     },
@@ -519,9 +507,8 @@ export interface ContentChildrenDecorator {
 export const ContentChildren: ContentChildrenDecorator = createPropDecorator('ContentChildren', {
     reflect: {
         property: (ctx, next) => {
-            const meta = ctx.matedata as QueryMetadata;
-            if (!meta.selector) {
-                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+            if (!(ctx.matedata as QueryMetadata).selector) {
+                (ctx.matedata as QueryMetadata).selector = isDirOrComponent(ctx.matedata.type) ? ctx.matedata.type : ctx.propertyKey;
             }
             return next();
         }
@@ -685,9 +672,8 @@ export interface ViewChildDecorator {
 export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
     reflect: {
         property: (ctx, next) => {
-            const meta = ctx.matedata as QueryMetadata;
-            if (!meta.selector) {
-                meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
+            if (!(ctx.matedata as QueryMetadata).selector) {
+                (ctx.matedata as QueryMetadata).selector = isDirOrComponent(ctx.matedata.type) ? ctx.matedata.type : ctx.propertyKey;
             }
             return next();
         }
@@ -740,11 +726,10 @@ export interface VaildatePropertyDecorator {
 export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize', {
     reflect: {
         property: (ctx, next) => {
-            const reflect = ctx.reflect as ComponentReflect;
-            if (!reflect.nonSerialize) {
-                reflect.nonSerialize = [];
+            if (!(ctx.reflect as ComponentReflect).nonSerialize) {
+                (ctx.reflect as ComponentReflect).nonSerialize = [];
             }
-            reflect.nonSerialize.push(ctx.propertyKey);
+            (ctx.reflect as ComponentReflect).nonSerialize.push(ctx.propertyKey);
             return next();
         }
     }

@@ -1,10 +1,10 @@
 import { Type } from '../types';
 import { Handler } from '../utils/hdl';
-import { Token } from '../tokens';
+import { isBaseOf } from '../utils/lang';
 import { IProvider } from '../IInjector';
+import { Token } from '../tokens';
 import { Action, Actions } from '../action';
 import { IocContext } from './ctx';
-import { isBaseOf } from '../utils/lang';
 
 /**
  * action injector.

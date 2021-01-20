@@ -11,7 +11,7 @@ import { CompilerFacade } from './facade';
  */
 export const BuildComponentHandle = async function (ctx: ComponentBuildContext, next?: () => Promise<void>): Promise<void> {
     const reflect = ctx.reflect as ComponentReflect;
-    if (reflect.annoType === 'component') {
+    if ((ctx.reflect as ComponentReflect).annoType === 'component') {
         if (!reflect.def && reflect.annotation.templateUrl) {
             const injector = ctx.injector;
             const tmp = await ctx.injector.getLoader().load(reflect.annotation.templateUrl);
