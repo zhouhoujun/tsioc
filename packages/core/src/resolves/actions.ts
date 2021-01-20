@@ -123,9 +123,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
             return;
         }
 
-
         const tkTypes = ctx.tokens.map(t => isProvide(t) ? ctx.injector.getTokenProvider(t) : t).filter(t => t);
-
         if (ctx.types) {
             ctx.types.push(...tkTypes);
         } else {
