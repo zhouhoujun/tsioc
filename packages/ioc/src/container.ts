@@ -412,23 +412,6 @@ class ActionProvider extends Provider implements IActionProvider {
         return super.registerType(type, provide, singleton);
     }
 
-    protected registerAction(type: Type<Action>) {
-        if (this.hasTokenKey(type)) {
-            return true;
-        }
-        let instance = this.setupAction(type) as Action & IActionSetup;
-        if (instance instanceof Action && isFunction(instance.setup)) {
-            instance.setup();
-        }
-        return true;
-    }
-
-    protected setupAction(type: Type<Action>): Action {
-        let instance = new type(this);
-        this.setValue(type, instance);
-        return instance;
-    }
-
     getAction<T extends Handler>(target: Token<Action> | Action | Function): T {
         if (target instanceof Action) {
             return target.toAction() as T;
@@ -440,4 +423,15 @@ class ActionProvider extends Provider implements IActionProvider {
         }
         return null;
     }
+
+    protected registerAction(type: Type<Action>) {
+        if (this.hasTokenKey(type)) return true;
+        const instance = new type(this) as Action & IActionSetup;
+        if (instance instanceof Action) {
+            this.setValue(type, instance);
+            if (isFunction(instance.setup)) instance.setup();
+        }
+        return true;
+    }
+
 }
