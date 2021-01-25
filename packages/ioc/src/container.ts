@@ -415,7 +415,7 @@ class ActionProvider extends Provider implements IActionProvider {
     getAction<T extends Handler>(target: Token<Action> | Action | Function): T {
         if (target instanceof Action) {
             return target.toAction() as T;
-        } else if (isBaseOf(target, Action) || isProvide(target)) {
+        } else if (isBaseOf(target, Action)) {
             let act = this.get(target);
             return act ? act.toAction() as T : null;
         } else if (isFunction(target)) {
@@ -427,10 +427,10 @@ class ActionProvider extends Provider implements IActionProvider {
     protected registerAction(type: Type<Action>) {
         if (this.hasTokenKey(type)) return true;
         const instance = new type(this) as Action & IActionSetup;
-        if (instance instanceof Action) {
-            this.setValue(type, instance);
-            if (isFunction(instance.setup)) instance.setup();
-        }
+
+        this.setValue(type, instance);
+        if (isFunction(instance.setup)) instance.setup();
+
         return true;
     }
 
