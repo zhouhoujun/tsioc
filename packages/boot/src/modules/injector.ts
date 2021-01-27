@@ -20,7 +20,7 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
     }
 
 
-    hasTokenKey<T>(key: SymbolType<T>, curr: TI, deep?: boolean) {
+    hasToken<T>(key: SymbolType<T>, curr: TI, deep?: boolean) {
         return this.getMDRef(curr).some(r => r.exports.hasTokenKey(key)) || (deep && curr.parent?.hasTokenKey(key));
     }
 

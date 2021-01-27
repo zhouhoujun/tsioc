@@ -6,7 +6,7 @@ import { cleanObj, isBaseOf } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
-import { FactoryLike, InjectToken, Factory, ProviderType, SymbolType, Token, getTokenKey, isProvide } from './tokens';
+import { FactoryLike, InjectToken, Factory, ProviderType, Token } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
@@ -190,21 +190,20 @@ export class Container extends Injector implements IContainer {
     }
 
     registerFactory<T>(injector: IInjector, token: Token<T>, value?: FactoryLike<T>, singleton?: boolean): this {
-        let key = getTokenKey(token);
         if (!isNil(value)) {
             if (isFunction(value)) {
                 if (isClass(value)) {
-                    this.registerIn(injector, value, { provide: key, singleton });
+                    this.registerIn(injector, value, { provide: token, singleton });
                 } else {
-                    const classFactory = this.createCustomFactory(injector, key, value, singleton);
-                    injector.set(key, classFactory);
+                    const classFactory = this.createCustomFactory(injector, token, value, singleton);
+                    injector.set(token, classFactory);
                 }
             } else if (!isNil(value)) {
-                injector.set(key, { value });
+                injector.set(token, { value });
             }
 
-        } else if (isClass(key)) {
-            this.registerIn(injector, key, { singleton });
+        } else if (isClass(token)) {
+            this.registerIn(injector, token, { singleton });
         }
 
         return this;
@@ -277,7 +276,7 @@ export class Container extends Injector implements IContainer {
         return this.getInstance(PROVIDERS).inject(...providers);
     }
 
-    protected createCustomFactory<T>(injector: IInjector, key: SymbolType<T>, factory?: Factory<T>, singleton?: boolean) {
+    protected createCustomFactory<T>(injector: IInjector, key: Token<T>, factory?: Factory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ProviderType[]) => {
                 if (injector.hasValue(key)) {
@@ -305,8 +304,8 @@ const SERVICE: IServiceProvider = {
     },
     getServices<T>(injector: IInjector, target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
         const tokens = isPlainObject(target) ?
-            ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token]).map(t => getTokenKey(t, (target as ServicesOption<T>).alias))
-            : [getTokenKey(target)];
+            ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token])
+            : [target];
         const services: T[] = [];
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
@@ -383,7 +382,7 @@ class ActionProvider extends Provider implements IActionProvider {
 
     regAction(...types: Type<Action>[]): this {
         types.forEach(type => {
-            if (this.hasTokenKey(type)) return;
+            if (this.has(type)) return;
             this.registerAction(type);
         });
         return this;
@@ -425,7 +424,7 @@ class ActionProvider extends Provider implements IActionProvider {
     }
 
     protected registerAction(type: Type<Action>) {
-        if (this.hasTokenKey(type)) return true;
+        if (this.has(type)) return true;
         const instance = new type(this) as Action & IActionSetup;
 
         this.setValue(type, instance);

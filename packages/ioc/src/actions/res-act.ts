@@ -1,5 +1,5 @@
 import { isNil, getClass, isFunction, isTypeObject } from '../utils/chk';
-import { InjectReference, Token } from '../tokens';
+import { Token } from '../tokens';
 import { PROVIDERS } from '../utils/tk';
 import { IocActions } from './act';
 import { ResolveContext } from './res';

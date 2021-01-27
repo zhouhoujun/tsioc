@@ -46,13 +46,6 @@ export interface ProvideMetadata {
      * @memberof Provide
      */
     provider?: Token;
-
-    /**
-     * alias name. use to create Registration with provider.
-     *
-     * @type {string}
-     */
-    alias?: string;
 }
 
 

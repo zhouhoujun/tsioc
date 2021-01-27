@@ -1,5 +1,5 @@
 import { isNil } from '../utils/chk';
-import { getTokenKey, Token } from '../tokens';
+import { Token } from '../tokens';
 import { chain } from '../utils/hdl';
 import { METHOD_ACCESSOR } from '../utils/tk'
 import { IActionSetup } from '../action';
@@ -55,7 +55,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             const meta = metas.find(m => m.provider);
             let token: Token;
             if (meta) {
-                token = getTokenKey(meta.provider, meta.alias);
+                token = meta.provider;
             } else {
                 token = metas.find(m => m.type)?.type;
             }

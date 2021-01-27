@@ -82,11 +82,11 @@ export class MethodAccessor implements IMethodAccessor {
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider): any[] {
         return params.map((param, index) => {
             if (param.provider && providers.has(param.provider)) {
-                return providers.get(param.provider, param.alias);
+                return providers.get(param.provider);
             } else if (param.paramName && providers.has(param.paramName)) {
-                return providers.get(param.paramName, param.alias);
+                return providers.get(param.paramName);
             } else if (param.provider) {
-                return injector.get(param.provider, param.alias, providers);
+                return injector.get(param.provider, providers);
             } else if (isToken(param.type)) {
                 if (providers.has(param.type)) {
                     return providers.get(param.type);

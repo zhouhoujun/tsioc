@@ -1,18 +1,18 @@
 import { isFunction, isClass } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
-import { getTokenKey, InjectReference, InstFac, ProviderType, SymbolType, Token } from '../tokens';
+import { PROVIDERS } from '../utils/tk';
+import { Type } from '../types';
+import { getTokenKey, InstFac, ProviderType, SymbolType, Token } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { PROVIDERS } from '../utils/tk';
 import { IInjector } from '../IInjector';
-import { Type } from '../types';
+import { RegisteredState } from '../IContainer';
 import { IActionProvider } from './act';
 import { getProvider } from '../injector';
 import { Registered } from '../decor/type';
-import { RegisteredState } from '../IContainer';
 
 
 

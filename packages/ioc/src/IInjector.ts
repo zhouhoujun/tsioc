@@ -1,5 +1,5 @@
 import { Type, Modules, LoadType } from './types';
-import { SymbolType, Token, FactoryLike, ProviderType, Factory, InstFac } from './tokens';
+import { Token, FactoryLike, ProviderType, Factory, InstFac } from './tokens';
 import { IContainer } from './IContainer';
 import { Destroyable } from './Destroyable';
 import { MethodType } from './IMethodAccessor';
@@ -34,25 +34,6 @@ export interface IProvider extends Destroyable {
      */
     has<T>(token: Token<T>, deep?: boolean): boolean;
     /**
-     * has token in current injector.
-     *
-     * @template T
-     * @param {Token<T>} token the token.
-     * @param {string} alias addtion alias
-     * @param {boolean} deep deep check in parent or not.
-     * @returns {boolean}
-     */
-    has<T>(token: Token<T>, alias: string, deep?: boolean): boolean;
-    /**
-     * has token key.
-     *
-     * @template T
-     * @param {SymbolType<T>} key the token key.
-     * @param {boolean} deep deep check in parent or not.
-     * @returns {boolean}
-     */
-    hasTokenKey<T>(key: SymbolType<T>, deep?: boolean): boolean;
-    /**
      * has value or not.
      * @param key
      */
@@ -67,25 +48,14 @@ export interface IProvider extends Destroyable {
      */
     get<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
-     * get token instace in current injector or root container.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {string} alias
-     * @param {boolean} deep get token instance deep in parent or not.
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    get<T>(token: Token<T>, alias: string, ...providers: ProviderType[]): T;
-    /**
      * get token instance in current injector or root container.
      *
      * @template T
-     * @param {SymbolType<T>} key
+     * @param {Token<T>} key
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getInstance<T>(key: SymbolType<T>, ...providers: ProviderType[]): T;
+    getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T;
     /**
      * get value.
      * @param token token key.
@@ -174,19 +144,19 @@ export interface IProvider extends Destroyable {
     /**
      * iterator current resolver.
      *
-     * @param {((pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void|boolean)} callbackfn
+     * @param {((pdr: InstFac, key: Token, resolvor?: IProvider) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register in parent or not.
      * @returns {(void|boolean)}
      */
-    iterator(callbackfn: (pdr: InstFac, key: SymbolType, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
+    iterator(callbackfn: (pdr: InstFac, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
     /**
      * copy injector to current injector.
      *
      * @param {IProvider} target copy from
-     * @param {(key: SymbolType) => boolean} filter token key filter
+     * @param {(key: Token) => boolean} filter token key filter
      * @returns {this} current injector.
      */
-    copy(from: IProvider, filter?: (key: SymbolType) => boolean): this;
+    copy(from: IProvider, filter?: (key: Token) => boolean): this;
     /**
      * clone this injector to.
      * @param to
@@ -194,10 +164,10 @@ export interface IProvider extends Destroyable {
     clone(to?: IProvider): IProvider;
     /**
      * clone this injector to.
-     * @param {(key: SymbolType) => boolean} filter token key filter
+     * @param {(key: Token) => boolean} filter token key filter
      * @param to
      */
-    clone(filter: (key: SymbolType) => boolean, to?: IProvider): IProvider;
+    clone(filter: (key: Token) => boolean, to?: IProvider): IProvider;
 }
 
 /**
