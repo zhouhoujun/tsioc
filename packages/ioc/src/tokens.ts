@@ -33,11 +33,7 @@ export class InjectToken<T = any> {
 }
 
 function format(token: Token) {
-    if (isFunction(token)) {
-        return `{${getClassName(token)}}`;
-    } else if (token) {
-        return token.toString();
-    }
+    return isFunction(token) ? `{${getClassName(token)}}` : token.toString();
 }
 
 /**
