@@ -63,12 +63,6 @@ export interface ProviderMetadata {
      * @type {SymbolType}
      */
     provide?: Token;
-    /**
-     * provide alias.
-     *
-     * @type {string}
-     */
-    alias?: string;
 }
 
 /**
@@ -91,13 +85,6 @@ export interface RefProvider {
      * @type {Token}
      */
     provide?: Token;
-
-    /**
-     * provide alias.
-     *
-     * @type {string}
-     */
-    alias?: string;
 }
 
 /**

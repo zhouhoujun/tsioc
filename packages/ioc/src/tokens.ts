@@ -1,7 +1,8 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
 import { IProvider } from './IInjector';
-import { isFunction, isClassType, isSymbol, isAbstractClass } from './utils/chk';
 import { StaticProvider } from './providers';
+import { isFunction, isClassType, isSymbol, isAbstractClass } from './utils/chk';
+import { getClassName } from './utils/lang';
 
 
 /**
@@ -31,143 +32,26 @@ export class InjectToken<T = any> {
     }
 }
 
-// /**
-//  * inject token.
-//  * @export
-//  * @class Registration
-//  * @template T
-//  */
-// export class Registration<T = any> {
-//     protected type = '';
-//     protected classType: SymbolType;
-//     protected desc: string;
-//     private formated: string;
-//     /**
-//      * Creates an instance of Registration.
-//      * @param {(Token<T> | Token)} provideType
-//      * @param {string} desc
-//      * @memberof Registration
-//      */
-//     constructor(provideType: Token<T> | Token, desc: string) {
-//         this.init(provideType, desc);
-//     }
+function format(token: Token) {
+    if (isFunction(token)) {
+        return `{${getClassName(token)}}`;
+    } else if (token) {
+        return token.toString();
+    }
+}
 
-//     protected init(provideType: Token<T> | Token, desc?: string) {
-//         if (provideType instanceof Registration) {
-//             if (desc) {
-//                 this.classType = provideType.toString();
-//                 this.desc = desc;
-//             } else {
-//                 this.classType = provideType.getProvide();
-//                 this.desc = provideType.getDesc();
-//             }
-//         } else {
-//             this.classType = provideType;
-//             this.desc = desc;
-//         }
-//     }
+export function getToken<T>(token: Token<T>, alias: string): Token<T> {
+    return alias ? `${format(token)}_${alias}` : token;
+}
 
-//     /**
-//      * get provide.
-//      *
-//      * @returns {SymbolType}
-//      */
-//     getProvide(): SymbolType {
-//         return this.classType;
-//     }
-
-//     /**
-//      * get class.
-//      *
-//      * @returns
-//      */
-//     getClass(): Type<T> | AbstractType<T> {
-//         if (isClassType(this.classType)) {
-//             return this.classType;
-//         }
-//         return null;
-//     }
-
-//     /**
-//      * get desc.
-//      *
-//      * @returns
-//      */
-//     getDesc() {
-//         return this.desc;
-//     }
-
-//     /**
-//      * to string.
-//      *
-//      * @returns {string}
-//      */
-//     toString(): string {
-//         if (!this.formated) {
-//             this.formated = this.formatting();
-//         }
-//         return this.formated;
-//     }
-
-//     /**
-//      * frmatting this.
-//      */
-//     protected formatting() {
-//         return this.format(this);
-//     }
-
-//     protected format(reg: Token<T>): string {
-//         if (reg instanceof Registration) {
-//             let name = '';
-//             if (isFunction(reg.classType)) {
-//                 name = `{${getClassName(reg.classType)}}`;
-//             } else if (reg.classType) {
-//                 name = reg.classType.toString();
-//             }
-//             return [reg.type, name, reg.desc].filter(n => n).join('_');
-//         } else if (isFunction(reg)) {
-//             return `{${getClassName(reg)}}`;
-//         } else if (reg) {
-//             return reg.toString();
-//         }
-//         return '';
-//     }
-// }
-
-// /**
-// * get token.
-// *
-// * @template T
-// * @param {Token<T>} token
-// * @param {string} [alias]
-// * @returns {Token<T>}
-// */
-// export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
-//     if (alias) {
-//         return new Registration(token, alias);
-//     }
-//     return token;
-// }
-
-// /**
-//  * get token key.
-//  * @param token token.
-//  * @param alias alias.
-//  */
-// export function getTokenKey<T>(token: Token<T>, alias?: string): SymbolType<T> {
-//     if (alias) {
-//         return new Registration(token, alias).toString();
-//     } else if (token instanceof Registration) {
-//         return token.toString();
-//     }
-//     return token;
-// }
-
+export function tokenRef<T>(token: Token<T>, target: Token): TokenId<T> {
+    return `Ref ${format(token)} for ${format(target)}`;
+}
 
 /**
  *  token id.
  */
-export type TokenId<T = any> = symbol | IToken<T>;
+export type TokenId<T = any> = string | symbol | IToken<T>;
 
 
 /**

@@ -1,6 +1,6 @@
 import {
     Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isBaseType, isArray,
-    Abstract, SymbolType, Singleton, isNil, isFunction, TokenId, tokenId, Injector, isProvide
+    Abstract, Singleton, isNil, isFunction, TokenId, tokenId, Injector, isProvide, Token
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
 import { TYPE_PARSER } from '../tk';
@@ -26,20 +26,20 @@ export interface DBPropertyMetadata extends PropertyMetadata {
 @Singleton()
 export class ExtendBaseTypeMap {
     static ρNPT = true;
-    protected maps: Map<SymbolType<any>, (...params: any[]) => any>;
+    protected maps: Map<Token, (...params: any[]) => any>;
     constructor() {
         this.maps = new Map();
     }
 
-    has(type: SymbolType): boolean {
+    has(type: Token): boolean {
         return this.maps.has(type);
     }
 
-    register<T>(type: SymbolType<T>, factory: (...params: any[]) => T) {
+    register<T>(type: Token<T>, factory: (...params: any[]) => T) {
         this.maps.set(type, factory);
     }
 
-    resolve<T>(type: SymbolType<T>, ...params: any[]): T {
+    resolve<T>(type: Token<T>, ...params: any[]): T {
         if (this.maps.has(type)) {
             return this.maps.get(type)(...params);
         }
@@ -108,11 +108,11 @@ export abstract class ModelParser implements IModelParser {
         return this.typeMap;
     }
 
-    protected isExtendBaseType(type: SymbolType, propmeta?: DBPropertyMetadata): boolean {
+    protected isExtendBaseType(type: Token, propmeta?: DBPropertyMetadata): boolean {
         return this.getTypeMap().has(type);
     }
 
-    protected resolveExtendType(type: SymbolType, value: any, propmeta?: DBPropertyMetadata): any {
+    protected resolveExtendType(type: Token, value: any, propmeta?: DBPropertyMetadata): any {
         return this.getTypeMap().resolve(type, value);
     }
 

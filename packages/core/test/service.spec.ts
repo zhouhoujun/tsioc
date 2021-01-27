@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { ContainerBuilder } from '../src';
-import { Injectable, Inject, Refs, IContainer} from '@tsdi/ioc';
+import { Injectable, Inject, Refs, IContainer, getToken} from '@tsdi/ioc';
 
 
 @Injectable()
@@ -78,7 +78,7 @@ describe('getService', () => {
     })
 
     it('get service with alias in option', () => {
-        let tsr = container.getService({ token: DataProvider, target: TestService, alias: 'tt' });
+        let tsr = container.getService({ token: getToken(DataProvider, 'tt'), target: TestService });
         expect(tsr).toBeInstanceOf(TestServiceProvider);
         expect(tsr.fetch()).toEqual('tt');
     })

@@ -309,26 +309,7 @@ export class Provider implements IProvider {
      * @param {boolean} deep deep check in parent or not.
      * @returns {boolean}
      */
-    has<T>(token: Token<T>, deep?: boolean): boolean;
-    /**
-     * has token in current injector.
-     *
-     * @template T
-     * @param {Token<T>} token the token.
-     * @param {string} alias addtion alias
-     * @param {boolean} deep deep check in parent or not.
-     * @returns {boolean}
-     */
-    has<T>(token: Token<T>, alias: string, deep?: boolean): boolean;
-    /**
-     *  has register token in current injector.
-     *
-     * @template T
-     * @param {Token<T>} token the token.
-     * @param {string} alias addtion alias.
-     * @returns {boolean}
-     */
-    has<T>(token: Token<T>, alias?: string | boolean, deep?: boolean): boolean {
+    has<T>(token: Token<T>, deep?: boolean): boolean {
         return this.factories.has(token) || this.strategy.hasToken(token, this, deep);
     }
 

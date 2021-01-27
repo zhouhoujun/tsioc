@@ -2,7 +2,7 @@ import { ContainerBuilder } from '../src';
 import * as debuModules from './debug';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, Student, InjCollegeClassRoom, InjMClassRoom, StringIdTest, SymbolIdest } from './debug';
 import expect = require('expect');
-import { IContainer } from '@tsdi/ioc';
+import { getToken, IContainer } from '@tsdi/ioc';
 
 describe('auto register with build', () => {
 
@@ -63,7 +63,7 @@ describe('auto register with build', () => {
         // console.log(instance.sayHi());
         expect(instance.sayHi()).toEqual('I am a middle school student');
 
-        let instance2 = container.get(Student, 'college');
+        let instance2 = container.get(getToken(Student, 'college'));
         // console.log(instance2);
         expect(instance2).toBeDefined();
         expect(instance2.sayHi()).toEqual('I am a college student');

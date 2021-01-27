@@ -1,5 +1,5 @@
 import {
-    Token, lang, SymbolType, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
+    Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
     isNil, isPlainObject, InjectorImpl, isContainer, IProvider, Injector
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
@@ -20,11 +20,11 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
     }
 
 
-    hasToken<T>(key: SymbolType<T>, curr: TI, deep?: boolean) {
-        return this.getMDRef(curr).some(r => r.exports.hasTokenKey(key)) || (deep && curr.parent?.hasTokenKey(key));
+    hasToken<T>(key: Token<T>, curr: TI, deep?: boolean) {
+        return this.getMDRef(curr).some(r => r.exports.has(key)) || (deep && curr.parent?.has(key));
     }
 
-    getInstance<T>(key: SymbolType<T>, curr: TI, ...providers: ProviderType[]) {
+    getInstance<T>(key: Token<T>, curr: TI, ...providers: ProviderType[]) {
         let inst: T;
         if (this.getMDRef(curr).some(e => {
             inst = e.exports.getInstance(key, ...providers);
@@ -33,11 +33,11 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return curr.parent?.getInstance(key, ...providers);
     }
 
-    hasValue<T>(key: SymbolType<T>, curr: TI) {
+    hasValue<T>(key: Token<T>, curr: TI) {
         return this.getMDRef(curr).some(r => r.exports.hasValue(key)) || curr.parent?.hasValue(key);
     }
 
-    getValue<T>(key: SymbolType<T>, curr: TI) {
+    getValue<T>(key: Token<T>, curr: TI) {
         let value: T;
         if (this.getMDRef(curr).some(r => {
             value = r.exports.getValue(key);
@@ -46,7 +46,7 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return curr.parent?.getValue(key);
     }
 
-    getTokenProvider<T>(key: SymbolType<T>, curr: TI) {
+    getTokenProvider<T>(key: Token<T>, curr: TI) {
         let type;
         this.getMDRef(curr).some(r => {
             type = r.exports.getTokenProvider(key);
@@ -55,7 +55,7 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return type ?? curr.parent?.getTokenProvider(key);
     }
 
-    iterator(map: Map<SymbolType, InstFac>, callbackfn: (fac: InstFac, key: SymbolType, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
+    iterator(map: Map<Token, InstFac>, callbackfn: (fac: InstFac, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
         if (lang.mapEach(map, callbackfn, curr) === false) {
             return false;
         }
@@ -166,7 +166,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         return this._inst;
     }
 
-    get<T>(key: SymbolType<T>, ...providers: ProviderType[]): T {
+    get<T>(key: Token<T>, ...providers: ProviderType[]): T {
         return this.injector.getInstance(key, ...providers);
     }
 

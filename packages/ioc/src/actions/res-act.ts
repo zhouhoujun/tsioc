@@ -1,5 +1,5 @@
 import { isNil, getClass, isFunction, isTypeObject } from '../utils/chk';
-import { Token } from '../tokens';
+import { Token, tokenRef } from '../tokens';
 import { PROVIDERS } from '../utils/tk';
 import { IocActions } from './act';
 import { ResolveContext } from './res';
@@ -86,7 +86,7 @@ export const ResolveInParentAction = function (ctx: ResolveContext, next: () => 
 
 export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.targetToken) {
-        ctx.instance = ctx.injector.get(new InjectReference(PROVIDERS, ctx.targetToken))?.get(ctx.token, ctx.providers);
+        ctx.instance = ctx.injector.get(tokenRef(PROVIDERS, ctx.targetToken))?.get(ctx.token, ctx.providers);
     }
     if (isNil(ctx.instance)) {
         next();
@@ -96,7 +96,7 @@ export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => v
 
 export const ResolveRefAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.targetToken) {
-        ctx.instance = ctx.injector.get(new InjectReference(ctx.token, ctx.targetToken), ctx.providers);
+        ctx.instance = ctx.injector.get(tokenRef(ctx.token, ctx.targetToken), ctx.providers);
     }
     if (isNil(ctx.instance) && !ctx.tagOnly) {
         next();

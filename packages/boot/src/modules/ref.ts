@@ -1,4 +1,4 @@
-import { Type, Registered, IProvider, Abstract, SymbolType, ProviderType, IInjector, Destroyable } from '@tsdi/ioc';
+import { Type, Registered, IProvider, Abstract, ProviderType, IInjector, Destroyable, Token } from '@tsdi/ioc';
 
 /**
  * module registered state.
@@ -85,7 +85,7 @@ export abstract class ModuleRef<T = any> implements Destroyable {
      * @param key token key
      * @param providers param providers.
      */
-    abstract get<T>(key: SymbolType<T>, ...providers: ProviderType[]): T;
+    abstract get<T>(key: Token<T>, ...providers: ProviderType[]): T;
 
     /**
      * get module import types.

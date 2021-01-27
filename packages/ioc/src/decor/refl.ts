@@ -304,7 +304,7 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
             reflect.singleton = true;
         }
         if (meta.provide) {
-            reflect.providers.push({ provide: meta.provide, alias: meta.alias });
+            reflect.providers.push({ provide: meta.provide });
         }
         if (meta.expires) {
             reflect.expires = meta.expires;

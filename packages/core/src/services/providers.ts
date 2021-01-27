@@ -1,4 +1,4 @@
-import { IInjector, Token, ProviderType, IProvider, INJECTOR, isArray, lang, getToken, IServiceProvider, IContainer, Injector, getProvider, ServiceOption, ServicesOption, isPlainObject } from '@tsdi/ioc';
+import { IInjector, Token, ProviderType, IProvider, INJECTOR, isArray, lang, IServiceProvider, IContainer, Injector, getProvider, ServiceOption, ServicesOption, isPlainObject } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 
@@ -31,7 +31,7 @@ export class ServiceProvider implements IServiceProvider {
         }
 
         const pdr = getProvider(injector, true, ...providers);
-        if (!pdr.hasTokenKey(INJECTOR)) {
+        if (!pdr.has(INJECTOR)) {
             pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         }
 
@@ -71,7 +71,7 @@ export class ServiceProvider implements IServiceProvider {
             providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
         const pdr = getProvider(injector, true, ...providers);
-        if (!pdr.hasTokenKey(INJECTOR)) {
+        if (!pdr.has(INJECTOR)) {
             pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         }
 
@@ -114,10 +114,10 @@ export class ServiceProvider implements IServiceProvider {
         }
         let tokens = ctx.tokens || [];
         if (tokens.length) {
-            tokens = tokens.filter(t => t).map(t => getToken(t, ctx.alias));
+            tokens = tokens.filter(t => t)
         }
         if (ctx.token) {
-            tokens.unshift(getToken(ctx.token, ctx.alias));
+            tokens.unshift(ctx.token);
         }
         ctx.tokens = tokens;
     }

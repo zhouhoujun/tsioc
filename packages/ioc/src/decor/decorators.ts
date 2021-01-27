@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { isString, isArray } from '../utils/chk';
-import { Token, ProviderType } from '../tokens';
+import { Token, ProviderType, getToken } from '../tokens';
 import { IContainer } from '../IContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
@@ -66,7 +66,7 @@ export const AutoWired: IAutoWiredDecorator = createDecorator<AutoWiredMetadata>
         if (isArray(pdr)) {
             return { providers: pdr };
         } else {
-            return { provider: pdr, alias };
+            return { provider: getToken(pdr, alias) };
         }
     }
 });
@@ -105,7 +105,7 @@ export const Inject: IInjectDecorator = createDecorator<InjectMetadata>('Inject'
         if (isArray(pdr)) {
             return { providers: pdr };
         } else {
-            return { provider: pdr, alias };
+            return { provider: getToken(pdr, alias) };
         }
     }
 });
@@ -184,7 +184,7 @@ export interface IInjectableDecorator {
 export const Injectable: IInjectableDecorator = createDecorator<InjectableMetadata>('Injectable', {
     props: (provide: Token, arg2: any, arg3?: any) => {
         if (isString(arg2)) {
-            return { provide, alias: arg2, ...arg3 }
+            return { provide: getToken(provide, arg2), ...arg3 }
         } else {
             return { provide, ...arg2 }
         }
@@ -279,7 +279,7 @@ export interface IRefsDecorator {
  */
 export const Refs: IRefsDecorator = createDecorator<RefMetadata>('Refs', {
     props: (target: Token, provide?: Token, alias?: string) => {
-        const refs = { target, provide, alias } as RefProvider;
+        const refs = { target, provide: getToken(provide, alias) } as RefProvider;
         return { refs };
     }
 }) as IRefsDecorator;
@@ -330,7 +330,7 @@ export interface ISingletonDecorator {
  * @Singleton()
  */
 export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Singleton', {
-    props: (provide: Token, alias?: string) => ({ provide, alias }),
+    props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.singleton = true;
     }

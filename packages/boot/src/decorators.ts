@@ -243,7 +243,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     }
 
                     if (map.size) {
-                        injector.copy(map, k => !injector.hasTokenKey(k));
+                        injector.copy(map, k => !injector.has(k));
                     }
 
                     if (components && components.length) {

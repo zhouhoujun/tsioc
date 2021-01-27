@@ -218,12 +218,6 @@ export interface ServiceOption<T> extends ResolveOption<T> {
      */
     tokens?: Token<T>[];
     /**
-     * token alias.
-     *
-     * @type {string}
-     */
-    alias?: string;
-    /**
      * get extend servie or not.
      *
      * @type {boolean}

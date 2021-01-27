@@ -1,4 +1,4 @@
-import { CONTAINER, IContainer, AutoWired, Injectable, Param, Singleton, Registration, Inject, Abstract } from '@tsdi/ioc';
+import { CONTAINER, IContainer, AutoWired, Injectable, Param, Singleton, Inject, Abstract } from '@tsdi/ioc';
 
 export class SimppleAutoWried {
     constructor() {
@@ -62,7 +62,7 @@ export class MClassRoom {
 }
 
 
-@Injectable({ provide: Student, alias: 'college' })
+@Injectable(Student, 'college')
 export class CollegeStudent extends Student {
     constructor() {
         super();
@@ -117,7 +117,7 @@ export class InjCollegeClassRoom {
 export class InjCollegeAliasClassRoom {
     constructor(
         // all below decorator can work, also @AutoWired(), @Param() is.
-        @AutoWired(new Registration(Student, 'college')) // need CollegeStudent also register.
+        @AutoWired(Student, 'college') // need CollegeStudent also register.
         // @Inject(CollegeStudent)
         // @Inject({ provider: CollegeStudent })
         // @Inject({ provider: Student, alias: 'college' }) // need CollegeStudent also register.
@@ -141,7 +141,7 @@ export class StingMClassRoom {
 }
 
 export class StringIdTest {
-    constructor( @Inject('StringClassRoom') public room: IClassRoom) {
+    constructor(@Inject('StringClassRoom') public room: IClassRoom) {
 
     }
 }
@@ -164,7 +164,7 @@ export class SymbolIdest {
 
     @Inject(CONTAINER)
     public container: IContainer
-    constructor( @Inject('StringClassRoom')
+    constructor(@Inject('StringClassRoom')
     public room2: IClassRoom) {
 
     }

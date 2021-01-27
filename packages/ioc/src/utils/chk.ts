@@ -1,5 +1,5 @@
 import { TypeReflect } from '../decor/type';
-import { Registration } from '../tokens';
+import { InjectToken } from '../tokens';
 import { AbstractType, ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from './exps';
 import { hasDesignAnno } from './util';
@@ -238,7 +238,7 @@ const objTag = '[object Object]';
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    return toString.call(target) === objTag && target.constructor.name !== 'Object' && !(target instanceof Registration);
+    return toString.call(target) === objTag && target.constructor.name !== 'Object' && !(target instanceof InjectToken);
 }
 
 

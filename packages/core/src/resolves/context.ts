@@ -16,9 +16,6 @@ export interface ServiceContext extends ResolveContext {
      * @memberof ResolveServiceContext
      */
     tokens?: Token[];
-
-    alias?: string;
-
     /**
      * get extend servie or not.
      *

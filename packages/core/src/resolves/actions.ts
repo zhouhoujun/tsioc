@@ -1,4 +1,4 @@
-import { isNil, InjectReference, IActionSetup, lang, ProviderType, PROVIDERS, refl, resovles, getTokenKey, isProvide, isFunction, isTypeObject } from '@tsdi/ioc';
+import { isNil, IActionSetup, lang, ProviderType, PROVIDERS, refl, resovles, isProvide, isFunction, isTypeObject, tokenRef } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -67,7 +67,7 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
                 if (ctx.instance) {
                     return true;
                 }
-                const refDec = new InjectReference(currTK, dec.decor);
+                const refDec = tokenRef(currTK, dec.decor);
                 if (injector.has(refDec, true)) {
                     ctx.instance = injector.get(refDec, providers);
                 }
@@ -141,7 +141,7 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
         // after all.
         if (ctx.services.size < 1) {
             if (ctx.defaultToken) {
-                const key = getTokenKey(ctx.defaultToken, ctx.alias);
+                const key = ctx.defaultToken;
                 const injector = ctx.injector;
                 if (injector.has(key, true)) {
                     ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
@@ -159,13 +159,13 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
 
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     if (ctx.targetRefs && ctx.targetRefs.length) {
-        const { injector, services, alias, types, match } = ctx;
+        const { injector, services, types, match } = ctx;
         ctx.targetRefs.forEach(t => {
             const tk = isTypeObject(t) ? lang.getClass(t) : t;
-            const maps = injector.get(new InjectReference(PROVIDERS, tk));
+            const maps = injector.get(tokenRef(PROVIDERS, tk));
             if (maps && maps.size) {
                 maps.iterator((pdr, tk) => {
-                    if (!services.has(tk, alias)
+                    if (!services.has(tk)
                         && (
                             (isFunction(tk) && types.some(ty => match(tk, ty)))
                             || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
@@ -180,7 +180,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                 rlt.class.classDecors.forEach(dec => {
                     const dprvoider = dec.decorPdr.getProvider(injector)
                     dprvoider.iterator((pdr, tk) => {
-                        if (!services.has(tk, alias)
+                        if (!services.has(tk)
                             && (
                                 (isFunction(tk) && types.some(ty => match(tk, ty)))
                                 || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
@@ -193,8 +193,8 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             }
 
             ctx.types.forEach(ty => {
-                const reftk = new InjectReference(ty, tk);
-                if (!services.has(reftk, alias) && injector.has(reftk)) {
+                const reftk = tokenRef(ty, tk);
+                if (injector.has(reftk)) {
                     services.set(reftk, (...providers: ProviderType[]) => injector.resolve(reftk, ...providers))
                 }
             });
@@ -207,9 +207,9 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 
 
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
-    const { services, alias, types, match } = ctx;
+    const { services, types, match } = ctx;
     ctx.injector.iterator((pdr, tk) => {
-        if (!services.has(tk, alias)
+        if (!services.has(tk)
             && (
                 (isFunction(tk) && types.some(ty => match(tk, ty)))
                 || (pdr.provider && types.some(ty => match(pdr.provider, ty)))

@@ -1,4 +1,4 @@
-import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Registration, Inject, Singleton, Container, refl } from '../src';
+import { AutoWired, Injectable, IContainer, ParameterMetadata, Param, Inject, Singleton, Container, refl, getToken } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
@@ -84,7 +84,7 @@ describe('custom register test', () => {
         expect(instance).toBeDefined();
         expect(instance.sayHi()).toEqual('I am a middle school student');
 
-        let instance2 = container.get(new Registration(Student, 'college'));
+        let instance2 = container.get(getToken(Student, 'college'));
         expect(instance2).toBeDefined();
         expect(instance2.sayHi()).toEqual('I am a college student');
     });
