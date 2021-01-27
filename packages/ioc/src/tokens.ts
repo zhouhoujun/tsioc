@@ -162,11 +162,6 @@ export function isToken(target: any): target is Token {
     return isClassType(target);
 }
 
-export function isTokenFunc(target: any): target is IToken<any> {
-    return isFunction(target) && (<IToken>target).tokenId;
-}
-
-
 /**
  * check target is provide token or not.
  *
@@ -175,11 +170,11 @@ export function isTokenFunc(target: any): target is IToken<any> {
  * @returns {target is ProvideToken}
  */
 export function isProvide(target: any, abstract?: boolean): target is ProvideToken<any> {
-    if (isSymbol(target) || (target instanceof InjectToken)) {
-        return true
+    if (isFunction(target)) {
+        if ((target as IToken).tokenId) return true;
+        return abstract ? isAbstractClass(target) : false;
     }
-    if (isTokenFunc(target)) return true;
-    return abstract ? isAbstractClass(target) : false;
+    return isSymbol(target) || (target instanceof InjectToken);
 }
 
 /**
