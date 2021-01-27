@@ -40,10 +40,20 @@ function format(token: Token) {
     }
 }
 
+/**
+ * get token with alias.
+ * @param token token
+ * @param alias the alias of token.
+ */
 export function getToken<T>(token: Token<T>, alias: string): Token<T> {
     return alias ? `${format(token)}_${alias}` : token;
 }
 
+/**
+ * create token ref
+ * @param token token
+ * @param target token ref target.
+ */
 export function tokenRef<T>(token: Token<T>, target: Token): TokenId<T> {
     return `Ref ${format(token)} for ${format(target)}`;
 }
