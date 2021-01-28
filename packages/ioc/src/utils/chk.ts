@@ -27,7 +27,7 @@ export function isFunction(target: any): target is Function {
  * @returns {target is AbstractType}
  */
 export function isAbstractClass(target: any): target is AbstractType {
-    return classCheck(target, true)
+    return isClassType(target, true);
 }
 
 
@@ -39,7 +39,7 @@ export function isAbstractClass(target: any): target is AbstractType {
  * @returns {target is Type}
  */
 export function isClass(target: any): target is Type {
-    return classCheck(target, false)
+    return isClassType(target, false);
 }
 
 /**
@@ -49,17 +49,7 @@ export function isClass(target: any): target is Type {
  * @param {*} target
  * @returns {target is ClassType}
  */
-export function isClassType(target: any): target is ClassType {
-    return classCheck(target);
-}
-
-/**
- * anonyous or array func
- */
-const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
-
-
-function classCheck(target: any, abstract?: boolean): boolean {
+export function isClassType(target: any, abstract?: boolean): target is ClassType {
     if (!isFunction(target)) return false;
     if (!target.name || !target.prototype) return false;
     if (target.prototype.constructor !== target) return false;
@@ -82,6 +72,12 @@ function classCheck(target: any, abstract?: boolean): boolean {
     if (anon.test(str)) return false;
     return true;
 }
+
+/**
+ * anonyous or array func
+ */
+const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
+
 
 /**
  * is run in nodejs or not.

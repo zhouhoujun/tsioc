@@ -20,7 +20,7 @@ export class InjectToken<T = any> {
     }
 
     toString(): string {
-        return `InjectToken ${this.desc}`;
+        return `Token ${this.desc}`;
     }
 }
 
@@ -153,9 +153,7 @@ export function isToken(target: any): target is Token {
  * @returns {target is ProvideToken}
  */
 export function isProvide(target: any): target is ProvideToken<any> {
-    if (isFunction(target)) {
-        return false;
-    }
+    if (isFunction(target)) return false;
     return isString(target) || isSymbol(target) || (target instanceof InjectToken);
 }
 
