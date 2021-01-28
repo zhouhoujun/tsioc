@@ -69,8 +69,7 @@ export abstract class ViewContainerRef {
      *
      * @returns The `ViewRef` instance for the newly created view.
      */
-    abstract createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, index?: number):
-        EmbeddedViewRef<C>;
+    abstract createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, index?: number): EmbeddedViewRef<C>;
 
     /**
      * Instantiates a single component and inserts its host view into this container.

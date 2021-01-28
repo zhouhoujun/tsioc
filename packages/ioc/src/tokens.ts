@@ -157,7 +157,3 @@ export function isProvide(target: any): target is ProvideToken<any> {
     return isString(target) || isSymbol(target) || (target instanceof InjectToken);
 }
 
-/**
- * is provide token.
- */
-export const isProvideToken = isProvide;

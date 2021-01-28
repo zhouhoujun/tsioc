@@ -1,6 +1,6 @@
 import {
     Token, createPropDecorator, PropertyMetadata, Type, refl, lang, isBoolean,
-    isUndefined, createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, IInjector
+    isUndefined, createParamDecorator, createDecorator, InjectableMetadata, CONTAINER
 } from '@tsdi/ioc';
 import { AnnotationReflect, BuildContext, Runnable } from '@tsdi/boot';
 import {
