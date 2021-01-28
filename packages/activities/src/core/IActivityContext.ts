@@ -1,4 +1,4 @@
-import { tokenId, IInjector, TokenId } from '@tsdi/ioc';
+import { tokenId, IInjector, Token } from '@tsdi/ioc';
 import { IAnnoationContext } from '@tsdi/boot';
 import { IComponentContext } from '@tsdi/components';
 import { ActivityOption } from './ActivityOption';
@@ -7,7 +7,7 @@ import { IActivityExecutor } from './IActivityExecutor';
 import { Expression, ActivityMetadata } from './ActivityMetadata';
 
 
-export const CTX_RUN_PARENT: TokenId<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
+export const CTX_RUN_PARENT: Token<IAnnoationContext> = tokenId<IAnnoationContext>('CTX_RUN_PARENT');
 export const CTX_RUN_SCOPE = tokenId<IActivityContext>('CTX_RUN_SCOPE');
 export const CTX_BASEURL = tokenId<string>('CTX_BASEURL');
 

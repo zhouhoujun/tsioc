@@ -1,4 +1,4 @@
-import { Singleton, tokenId, TokenId } from '@tsdi/ioc';
+import { Singleton, tokenId, Token } from '@tsdi/ioc';
 
 /**
  * uuid factory.
@@ -19,7 +19,7 @@ export interface UUIDFactory {
 /**
  * uuid factory token.
  */
-export const UUIDToken: TokenId<UUIDFactory> = tokenId<UUIDFactory>('uuid_factory');
+export const UUIDToken: Token<UUIDFactory> = tokenId<UUIDFactory>('uuid_factory');
 
 /**
  * random uuid factory.

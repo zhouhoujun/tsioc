@@ -1,9 +1,9 @@
 import { ModelParser, DefaultModelParserToken, DBPropertyMetadata } from '@tsdi/boot';
-import { Singleton, Type, ObjectMap, Autorun, SymbolType, Token, isFunction, isString, tokenId, Inject, TokenId } from '@tsdi/ioc';
+import { Singleton, Type, ObjectMap, Autorun, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
 import { getMetadataArgsStorage } from 'typeorm';
 import { ColumnMetadataArgs } from 'typeorm/metadata-args/ColumnMetadataArgs';
 
-export const ObjectIDToken: TokenId<Type> = tokenId<Type>('ObjectID');
+export const ObjectIDToken: Token<Type> = tokenId<Type>('ObjectID');
 
 const numbExp = /(int|float|double|dec|numeric|number)/;
 const intExp = /int/;
@@ -20,7 +20,7 @@ export class TypeOrmModelParser extends ModelParser {
     @Inject(ObjectIDToken)
     private _ObjectID: Type;
 
-    isObjectId(type: SymbolType) {
+    isObjectId(type: Token) {
         return this._ObjectID && this._ObjectID === type;
     }
 
@@ -57,7 +57,7 @@ export class TypeOrmModelParser extends ModelParser {
         return metas;
     }
 
-    protected isExtendBaseType(type: SymbolType, propmeta?: DBPropertyMetadata): boolean {
+    protected isExtendBaseType(type: Token, propmeta?: DBPropertyMetadata): boolean {
         if (propmeta.dbtype) {
             if (intExp.test(propmeta.dbtype)) {
                 return true;
@@ -69,7 +69,7 @@ export class TypeOrmModelParser extends ModelParser {
         return super.isExtendBaseType(type, propmeta);
     }
 
-    protected resolveExtendType(type: SymbolType, value: any, propmeta?: DBPropertyMetadata): any {
+    protected resolveExtendType(type: Token, value: any, propmeta?: DBPropertyMetadata): any {
         if (propmeta.dbtype) {
             if (intExp.test(propmeta.dbtype)) {
                 return parseInt(value);
@@ -82,7 +82,7 @@ export class TypeOrmModelParser extends ModelParser {
     }
 
     protected getModeType(col: ColumnMetadataArgs): Token {
-        let type: SymbolType = col.options.type;
+        let type: Token = col.options.type;
         if (type) {
             if (isString(type)) {
                 if (type === 'uuid') {

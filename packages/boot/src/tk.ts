@@ -1,4 +1,4 @@
-import { tokenId, Token, TokenId } from '@tsdi/ioc';
+import { tokenId, Token } from '@tsdi/ioc';
 import { IBootContext } from './Context';
 import { IMessageQueue } from './messages/type';
 import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
@@ -10,7 +10,7 @@ import { IModuleInjector } from './modules/ref';
 /**
  *  current application boot context token.
  */
-export const BOOTCONTEXT: TokenId<IBootContext> = tokenId<IBootContext>('BOOT_CONTEXT');
+export const BOOTCONTEXT: Token<IBootContext> = tokenId<IBootContext>('BOOT_CONTEXT');
 
 /**
  * config token.
@@ -20,17 +20,17 @@ export const CONFIGURATION = tokenId<Configure>('CONFIGURATION');
 /**
  * configure manager token.
  */
-export const CONFIG_MANAGER: TokenId<IConfigureManager> = tokenId<IConfigureManager>('CONFIG_MANAGER');
+export const CONFIG_MANAGER: Token<IConfigureManager> = tokenId<IConfigureManager>('CONFIG_MANAGER');
 
 /**
  * default configuration token.
  */
-export const DEFAULT_CONFIG: TokenId<Configure> = tokenId<Configure>('DEFAULT_CONFIG');
+export const DEFAULT_CONFIG: Token<Configure> = tokenId<Configure>('DEFAULT_CONFIG');
 
 /**
  * configure loader token.
  */
-export const CONFIG_LOADER: TokenId<IConfigureLoader> = tokenId<IConfigureLoader>('CONFIG_LOADER');
+export const CONFIG_LOADER: Token<IConfigureLoader> = tokenId<IConfigureLoader>('CONFIG_LOADER');
 
 /**
  * configure merger token.
@@ -40,7 +40,7 @@ export const CONFIG_MERGER = tokenId<IConfigureMerger>('CONFIG_MERGER');
 /**
  *  appliaction boot process root path.
  */
-export const PROCESS_ROOT: TokenId<string> = tokenId<string>('PROCESS_ROOT');
+export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 
 /**
  * appliaction boot process root path.
@@ -52,7 +52,7 @@ export const ProcessRunRootToken = PROCESS_ROOT;
 /**
  * build service token.
  */
-export const BUILDER: TokenId<IBuilderService> = tokenId<IBuilderService>('BUILDER');
+export const BUILDER: Token<IBuilderService> = tokenId<IBuilderService>('BUILDER');
 
 /**
  * build service token.
@@ -64,7 +64,7 @@ export const BuilderServiceToken = BUILDER;
 /**
  * root message queue token.
  */
-export const ROOT_MESSAGEQUEUE: TokenId<IMessageQueue> = tokenId<IMessageQueue>('ROOT_MESSAGEQUEUE');
+export const ROOT_MESSAGEQUEUE: Token<IMessageQueue> = tokenId<IMessageQueue>('ROOT_MESSAGEQUEUE');
 
 /**
  * root message queue token.
@@ -76,7 +76,7 @@ export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
 /**
  * type parser token.
  */
-export const TYPE_PARSER: TokenId<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');
+export const TYPE_PARSER: Token<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYPE_PARSER');
 
 /**
  * type parser token.
@@ -88,7 +88,7 @@ export const BaseTypeParserToken = TYPE_PARSER;
 /**
  * appliction root module injector token.
  */
-export const ROOT_INJECTOR: TokenId<IModuleInjector> = tokenId<IModuleInjector>('ROOT_INJECTOR');
+export const ROOT_INJECTOR: Token<IModuleInjector> = tokenId<IModuleInjector>('ROOT_INJECTOR');
 
 /**
  * module boot startup runnable instance.

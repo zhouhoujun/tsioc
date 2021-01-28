@@ -1,6 +1,6 @@
 import {
     Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isBaseType, isArray,
-    Abstract, Singleton, isNil, isFunction, TokenId, tokenId, Injector, isProvide, Token
+    Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, isProvide
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
 import { TYPE_PARSER } from '../tk';
@@ -9,7 +9,7 @@ import { TYPE_PARSER } from '../tk';
 /**
  * default module parser token.
  */
-export const DefaultModelParserToken: TokenId<IModelParser> = tokenId<IModelParser>('DefaultModelParser')
+export const DefaultModelParserToken: Token<IModelParser> = tokenId<IModelParser>('DefaultModelParser')
 
 /**
  * db property metadata.

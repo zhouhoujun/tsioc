@@ -1,11 +1,11 @@
-import { Abstract, Destroyable, tokenId, TokenId, ClassType } from '@tsdi/ioc';
+import { Abstract, Destroyable, tokenId, Token, ClassType } from '@tsdi/ioc';
 import { IBootContext } from '../Context';
 
 
 /**
  * startups token.
  */
-export const STARTUPS: TokenId<ClassType<IStartupService>[]> = tokenId<ClassType<IStartupService>[]>('STARTUPS');
+export const STARTUPS: Token<ClassType<IStartupService>[]> = tokenId<ClassType<IStartupService>[]>('STARTUPS');
 
 /**
  * startup and configure services for application.

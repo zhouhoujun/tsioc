@@ -1,4 +1,4 @@
-import { tokenId, IInjector, AsyncHandler, TokenId } from '@tsdi/ioc';
+import { tokenId, IInjector, AsyncHandler, Token } from '@tsdi/ioc';
 import { Expression, ActivityType } from './ActivityMetadata';
 import { WorkflowContext } from './WorkflowContext';
 
@@ -69,4 +69,4 @@ export interface IActivityExecutor {
     parseAction<T extends WorkflowContext>(activities: ActivityType | ActivityType[], input?: any): AsyncHandler<T> | AsyncHandler<T>[];
 }
 
-export const ActivityExecutorToken: TokenId<IActivityExecutor> = tokenId<IActivityExecutor>('ActivityExecutor');
+export const ActivityExecutorToken: Token<IActivityExecutor> = tokenId<IActivityExecutor>('ActivityExecutor');

@@ -1,4 +1,4 @@
-import { Singleton, Token, tokenId, TokenId } from '@tsdi/ioc';
+import { Singleton, Token, tokenId } from '@tsdi/ioc';
 import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
 
 
@@ -6,7 +6,7 @@ import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
  * Log formater interface token.
  * it is a token id, you can register yourself formater for log.
  */
-export const LogFormaterToken: TokenId<ILogFormater> = tokenId<ILogFormater>('DI_LogFormater');
+export const LogFormaterToken: Token<ILogFormater> = tokenId<ILogFormater>('DI_LogFormater');
 
 /**
  * log formater logs

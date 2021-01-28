@@ -1,4 +1,4 @@
-import { lang, Abstract, Destroyable, isFunction, Type, Inject, isString, Injectable, Refs, isNil, tokenId, AsyncHandler, TokenId } from '@tsdi/ioc';
+import { lang, Abstract, Destroyable, isFunction, Type, Inject, isString, Injectable, Refs, isNil, tokenId, AsyncHandler, Token } from '@tsdi/ioc';
 import { CTX_TEMPLATE, CTX_ELEMENT_NAME, Service, Startup, IBootContext } from '@tsdi/boot';
 import {
     IElementRef, ITemplateRef, IComponentRef, ContextNode, ELEMENT_REFS, COMPONENT_REFS,
@@ -18,7 +18,7 @@ import { IWorkflowContext } from './IWorkflowContext';
 /**
  * each body token.
  */
-export const CTX_CURR_ACT_REF: TokenId = tokenId<any>('CTX_CURR_ACT_REF');
+export const CTX_CURR_ACT_REF: Token = tokenId<any>('CTX_CURR_ACT_REF');
 /**
  * each body token.
  */

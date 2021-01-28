@@ -1,4 +1,4 @@
-import { tokenId, TokenId } from '../tokens';
+import { Token, tokenId } from '../tokens';
 import { IMethodAccessor } from '../IMethodAccessor';
 import { IInjector, IModuleLoader, IProvider } from '../IInjector';
 import { IContainer, IServiceProvider } from '../IContainer';
@@ -7,12 +7,12 @@ import { IContainer, IServiceProvider } from '../IContainer';
 /**
  * injector instance token of self.
  */
-export const INJECTOR: TokenId<IInjector> = tokenId<IInjector>('DI_INJECTOR');
+export const INJECTOR: Token<IInjector> = tokenId<IInjector>('DI_INJECTOR');
 
 /**
  * provider/injector's parent.
  */
-export const PARENT_INJECTOR: TokenId<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
+export const PARENT_INJECTOR: Token<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
 
 /**
  *  injector provider token. create new injector provider.
@@ -27,7 +27,7 @@ export const INJECTOR_FACTORY = tokenId<IInjector>('INJECTOR_FACTORY');
 /**
  * method accessor token.
  */
-export const METHOD_ACCESSOR: TokenId<IMethodAccessor> = tokenId<IMethodAccessor>('METHOD_ACCESSOR');
+export const METHOD_ACCESSOR: Token<IMethodAccessor> = tokenId<IMethodAccessor>('METHOD_ACCESSOR');
 
 /**
  * method accessor token.
@@ -44,7 +44,7 @@ export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');
  * root container token.
  * it is a symbol id, you can use  `@Inject()`, `@AutoWired()` or `@Param()` to get container instance in yourself class.
  */
-export const CONTAINER: TokenId<IContainer> = tokenId<IContainer>('IOC_CONTAINER');
+export const CONTAINER: Token<IContainer> = tokenId<IContainer>('IOC_CONTAINER');
 /**
  * root container token.
  *

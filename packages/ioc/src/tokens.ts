@@ -1,17 +1,9 @@
 import { AbstractType, Type, ClassType, Modules } from './types';
 import { IProvider } from './IInjector';
 import { StaticProvider } from './providers';
-import { isFunction, isClassType, isSymbol, isAbstractClass } from './utils/chk';
+import { isFunction, isClassType, isSymbol, isString } from './utils/chk';
 import { getClassName } from './utils/lang';
 
-
-/**
- *  token interface.
- */
-export interface IToken<T = any> {
-    (): T;
-    tokenId: true;
-}
 
 /**
  * inject token.
@@ -32,43 +24,15 @@ export class InjectToken<T = any> {
     }
 }
 
-function format(token: Token) {
-    return isFunction(token) ? `{${getClassName(token)}}` : token.toString();
-}
-
-/**
- * get token with alias.
- * @param token token
- * @param alias the alias of token.
- */
-export function getToken<T>(token: Token<T>, alias: string): Token<T> {
-    return alias ? `${format(token)}_${alias}` : token;
-}
-
-/**
- * create token ref
- * @param token token
- * @param target token ref target.
- */
-export function tokenRef<T>(token: Token<T>, target: Token): TokenId<T> {
-    return `Ref ${format(token)} for ${format(target)}`;
-}
-
-/**
- *  token id.
- */
-export type TokenId<T = any> = string | symbol | IToken<T>;
-
-
 /**
  * factory tocken.
  */
-export type Token<T = any> = InjectToken<T> | ClassType<T> | TokenId<T>;
+export type Token<T = any> = string | symbol | InjectToken<T> | ClassType<T>;
 
 /**
  * provide token
  */
-export type ProvideToken<T> = InjectToken<T> | TokenId<T> | AbstractType;
+export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType;
 
 /**
  * providers.
@@ -132,17 +96,36 @@ export interface InstFac<T = any> {
  */
 export type FactoryLike<T> = T | Type<T> | Factory<T>;
 
-
-
-
 /**
  * parse id string to token id.
  * @param key id
  */
-export function tokenId<T = any>(key: string): TokenId<T> {
+export function tokenId<T = any>(key: string): Token<T> {
     return Symbol(key);
 }
 
+
+function format(token: Token) {
+    return isFunction(token) ? `{${getClassName(token)}}` : token.toString();
+}
+
+/**
+ * get token with alias.
+ * @param token token
+ * @param alias the alias of token.
+ */
+export function getToken<T>(token: Token<T>, alias: string): Token<T> {
+    return alias ? `${format(token)}_${alias}` : token;
+}
+
+/**
+ * create token ref
+ * @param token token
+ * @param target token ref target.
+ */
+export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
+    return `Ref ${format(token)} for ${format(target)}`;
+}
 
 
 /**
@@ -169,12 +152,11 @@ export function isToken(target: any): target is Token {
  * @param {*} target
  * @returns {target is ProvideToken}
  */
-export function isProvide(target: any, abstract?: boolean): target is ProvideToken<any> {
+export function isProvide(target: any): target is ProvideToken<any> {
     if (isFunction(target)) {
-        if ((target as IToken).tokenId) return true;
-        return abstract ? isAbstractClass(target) : false;
+        return false;
     }
-    return isSymbol(target) || (target instanceof InjectToken);
+    return isString(target) || isSymbol(target) || (target instanceof InjectToken);
 }
 
 /**
