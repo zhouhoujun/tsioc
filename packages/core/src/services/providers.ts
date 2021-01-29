@@ -1,4 +1,7 @@
-import { IInjector, Token, ProviderType, IProvider, INJECTOR, isArray, lang, IServiceProvider, IContainer, Injector, getProvider, ServiceOption, ServicesOption, isPlainObject } from '@tsdi/ioc';
+import {
+    IInjector, Token, ProviderType, IProvider, INJECTOR, isArray, IContainer, Injector,
+    getProvider, ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider
+} from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
 
@@ -92,7 +95,7 @@ export class ServiceProvider implements IServiceProvider {
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
         let context = {
             injector,
-            ...isPlainObject(target) ?  target :  { token: target },
+            ...isPlainObject(target) ? target : { token: target },
             providers: null,
         } as ServicesContext;
 
