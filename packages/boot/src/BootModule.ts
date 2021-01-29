@@ -1,8 +1,6 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
-import { InjModuleScope } from '@tsdi/core';
 import { MessageContext } from './messages/ctx';
 import { MessageQueue, RootMessageQueue } from './messages/queue';
-import { InjDIModuleScope } from './registers/Inj-module';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
@@ -34,9 +32,6 @@ export class BootModule {
             StartupServiceScope,
             RunnableBuildLifeScope,
             BootLifeScope);
-
-        prdr.getInstance(InjModuleScope)
-            .useBefore(InjDIModuleScope);
 
         container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
 

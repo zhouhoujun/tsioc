@@ -20,9 +20,6 @@ export * from './decorators';
 export * from './Context';
 export * from './annotations/ctx';
 
-// registers
-export * from './registers/Inj-module';
-
 // modules
 export * from './modules/reflect';
 export * from './modules/ref';

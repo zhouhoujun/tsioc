@@ -16,6 +16,6 @@ export class BrowserModule {
      * register aop for container.
      */
     setup(@Inject(CONTAINER) container: IContainer) {
-        container.setValue(MODULE_LOADER, new BrowserModuleLoader(container), BrowserModuleLoader);
+        container.setValue(MODULE_LOADER, new BrowserModuleLoader(), BrowserModuleLoader);
     }
 }

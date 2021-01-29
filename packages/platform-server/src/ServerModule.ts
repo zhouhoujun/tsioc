@@ -14,6 +14,6 @@ export class ServerModule {
      * register aop for container.
      */
     setup(@Inject(CONTAINER) container: IContainer) {
-        container.setValue(MODULE_LOADER, new NodeModuleLoader(container), NodeModuleLoader);
+        container.setValue(MODULE_LOADER, new NodeModuleLoader(), NodeModuleLoader);
     }
 }
