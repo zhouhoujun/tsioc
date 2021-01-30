@@ -1,7 +1,7 @@
 import { TypeReflect } from '../decor/type';
 import { InjectToken } from '../tokens';
 import { AbstractType, ClassType, ObjectMap, Type } from '../types';
-import { reflFiled } from './exps';
+import { clsStartExp, clsUglifyExp, reflFiled } from './exps';
 import { hasDesignAnno } from './util';
 
 
@@ -63,6 +63,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     }
 
     if (hasDesignAnno(target)) return true;
+    if (clsUglifyExp.test(target.name) || !clsStartExp.test(target.name)) return false;
     if (isPrimitiveType(target)) return false;
     const pkeys = Object.getOwnPropertyNames(target);
     if (pkeys.indexOf('caller') > 0) return false;
