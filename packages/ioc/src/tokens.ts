@@ -269,10 +269,6 @@ export function isToken(target: any): target is Token {
     return isClassType(target);
 }
 
-export function isTokenFunc(target: any): target is IToken<any> {
-    return isFunction(target) && (<IToken>target).tokenId;
-}
-
 
 /**
  * check target is provide token or not.
@@ -282,8 +278,6 @@ export function isTokenFunc(target: any): target is IToken<any> {
  * @returns {target is ProvideToken}
  */
 export function isProvideToken(target: any): target is ProvideToken<any> {
-    if (isString(target) || isSymbol(target) || (target instanceof Registration)) {
-        return true
-    }
-    return isTokenFunc(target);
+    if (isFunction(target)) return false;
+    return isString(target) || isSymbol(target) || target instanceof Registration;
 }
