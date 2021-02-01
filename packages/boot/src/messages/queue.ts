@@ -1,6 +1,6 @@
 import {
-    Injectable, isString, isFunction, Token, isUndefined, Inject,
-    Action, AsyncHandler, ClassType, isInjector, Singleton, INJECTOR, Injector, isClass, isToken
+    Injectable, isString, isFunction, Token, isUndefined, Inject, INJECTOR, Injector,
+    Action, AsyncHandler, ClassType, isInjector, Singleton, isClass, isToken
 } from '@tsdi/ioc';
 import { MessageContext, MessageOption } from './ctx';
 import { IMessageQueue } from './type';

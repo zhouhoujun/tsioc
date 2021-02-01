@@ -1,4 +1,4 @@
-import { IInjector, Injectable, Injector } from '@tsdi/ioc';
+import { IInjector, Injectable } from '@tsdi/ioc';
 import { ProdverOption } from '../Context';
 import { DestroyableContext } from '../annotations/ctx';
 

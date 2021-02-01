@@ -3,7 +3,9 @@ import { DoCheck } from '../lifecycle';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';
 
-
+/**
+ * switch view.
+ */
 export class SwitchView {
   private _created = false;
 

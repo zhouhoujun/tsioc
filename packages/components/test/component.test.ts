@@ -102,11 +102,11 @@ class ObjectComponent1 {
 
     @Input() options: any;
 
-    @RefChild('comp1') cmp1: Component1;
+    @ViewChild('comp1') cmp1: Component1;
 
-    @RefChild() cmp2: Component2;
+    @ViewChild() cmp2: Component2;
 
-    @RefChild('cmps') cmps: Components;
+    @ViewChild('cmps') cmps: Components;
 }
 
 @Component({

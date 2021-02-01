@@ -54,7 +54,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (!target.name || !target.prototype) return false;
     if (target.prototype.constructor !== target) return false;
 
-    const rf: TypeReflect = target[reflFiled]?.();
+    const rf: TypeReflect = target[reflFiled];
     if (rf) {
         if (isBoolean(abstract) && rf.type === target) {
             return abstract ? rf.abstract : !rf.abstract;
