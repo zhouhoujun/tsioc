@@ -407,7 +407,7 @@ function classCheck(target: any, exclude?: (target: Function) => boolean): boole
 
     if (isPrimitiveType(target)) return false;
 
-    if (clsUglifyExp.test(target.name) || !clsStartExp.test(target.name)) return false;
+    if (!clsStartExp.test(target.name)) return false;
 
     const str = target.toString();
     if (anon.test(str)) return false;
