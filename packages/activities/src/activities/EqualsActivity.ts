@@ -1,5 +1,5 @@
 import { Input } from '@tsdi/components';
-import { Task } from '../decorators/Task';
+import { Task } from '../decor';
 import { IActivityContext } from '../core/IActivityContext';
 import { ControlActivity } from '../core/ControlActivity';
 

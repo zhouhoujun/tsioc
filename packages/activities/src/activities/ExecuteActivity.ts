@@ -1,6 +1,6 @@
 import { isFunction, isString } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
-import { Task } from '../decorators/Task';
+import { Task } from '../decor';
 import { Activity } from '../core/Activity';
 import { IActivityContext } from '../core/IActivityContext';
 

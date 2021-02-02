@@ -1,6 +1,6 @@
-import { PromiseUtil } from '@tsdi/ioc';
+import { lang } from '@tsdi/ioc';
 import { Input } from '@tsdi/components';
-import { Task } from '../decorators/Task';
+import { Task } from '../decor';
 import { ControlActivity } from '../core/ControlActivity';
 import { ActivityContext } from '../core/ActivityContext';
 import { ActivityType } from '../core/ActivityMetadata';
@@ -24,7 +24,7 @@ export class DelayActivity extends ControlActivity {
 
     async execute(ctx: ActivityContext): Promise<void> {
         let timeout = await this.timer.execute(ctx);
-        let defer = PromiseUtil.defer();
+        let defer = lang.defer();
         let timmer = setTimeout(() => {
             defer.resolve();
             clearTimeout(timmer);

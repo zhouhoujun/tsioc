@@ -45,7 +45,7 @@ export interface ITaskDecorator {
  */
 export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
     actionType: 'annoation',
-    props: (selector: string) => ({ selector }),
+    props: (selector: string) => ({ selector }) as ActivityMetadata,
     reflect: {
         class: (ctx, next) => {
             const reflect = ctx.reflect as AnnotationReflect;
