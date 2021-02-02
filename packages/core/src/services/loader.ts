@@ -1,6 +1,6 @@
 import {
-    IModuleLoader, ChildModule, LoadType, PathModules, Modules, Type, isString, lang, isArray,
-    isMetadataObject, isFunction, IInjector, IContainer, Inject, CONTAINER
+    IModuleLoader, ChildModule, LoadType, PathModules, Modules, Type, lang,
+    isString, isArray, isMetadataObject, isFunction, IInjector
 } from '@tsdi/ioc';
 
 
