@@ -1,4 +1,4 @@
-import { Injectable, Injector, Singleton, Type, Token, tokenId, isPlainObject, isString } from '@tsdi/ioc';
+import { Injectable, Injector, Type, isPlainObject, isString } from '@tsdi/ioc';
 import { MsgContext } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 import { RouteVaildator } from './route';
@@ -128,25 +128,3 @@ export class MessageQueue extends Middlewares {
 
 }
 
-/**
- * root message queue token.
- */
-export const ROOT_MESSAGEQUEUE: Token<MessageQueue> = tokenId<MessageQueue>('ROOT_MESSAGEQUEUE');
-
-/**
- * root message queue token.
- *
- * @deprecated use `ROOT_MESSAGEQUEUE` instead.
- */
-export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
-
-/**
- * message queue.
- *
- * @export
- * @class MessageQueue
- * @extends {BuildHandles<T>}
- * @template T
- */
-@Singleton(ROOT_MESSAGEQUEUE)
-export class RootMessageQueue extends MessageQueue { }

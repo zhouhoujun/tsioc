@@ -4,7 +4,6 @@ import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from
 import { IBuilderService } from './services/IBuilderService';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { IModuleInjector } from './modules/ref';
-import { MessageQueue } from './middlewares/queue';
 
 
 /**

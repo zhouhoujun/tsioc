@@ -6,10 +6,12 @@ import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
 import { ModuleReflect } from './modules/reflect';
 import { DefaultModuleRef } from './modules/injector';
-import { Middleware, Middlewares } from './middlewares/handle';
-import { ROOT_MESSAGEQUEUE } from './middlewares/queue';
+import { Middleware, Middlewares, MiddlewareType } from './middlewares/handle';
+import { MessageRouter, ROOT_MESSAGEQUEUE } from './middlewares/router';
 import { ROOT_INJECTOR } from './tk';
 import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
+import { FactoryRoute } from './middlewares/route';
+import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
 
 
 /**
@@ -284,32 +286,37 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
 export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule');
 
 
-export type MessageDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
 
 /**
- * message metadata. use to define the class as message handle register in global message queue.
+ * Handle metadata. use to define the class as handle handle register in global handle queue.
  *
  * @export
  * @interface RegisterForMetadata
  * @extends {TypeMetadata}
  */
-export interface MessageMetadata extends TypeMetadata, PatternMetadata {
+export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     /**
-     * message parent.
-     * default register in root message queue.
-     * @type {boolean}
+     * handle route
      */
-    parent?: Type<Middlewares> | 'root' | 'none';
+    route?: string;
 
     /**
-     * register this message handle before this handle.
+     * handle parent.
+     * default register in root handle queue.
+     * @type {boolean}
+     */
+    parent?: Type<Middlewares>;
+
+    /**
+     * register this handle handle before this handle.
      *
      * @type {Type<Middleware>}
      */
     before?: Type<Middleware>;
 
     /**
-     * register this message handle after this handle.
+     * register this handle handle after this handle.
      *
      * @type {Type<Middleware>}
      */
@@ -317,22 +324,35 @@ export interface MessageMetadata extends TypeMetadata, PatternMetadata {
 }
 
 /**
- * Message decorator, for class. use to define the class as message handle register in global message queue.
+ * Handle decorator, for class. use to define the class as handle handle register in global handle queue.
  *
  * @export
- * @interface IMessageDecorator
- * @extends {ITypeDecorator<ClassMetadata>}
+ * @interface IHandleDecorator
  */
-export interface IMessageDecorator {
+export interface IHandleDecorator {
     /**
-     * Message decorator, for class. use to define the the way to register the module. default as child module.
+     * Handle decorator, for class. use to define the the way to register the module. default as child module.
+     *
+     */
+    (): HandleDecorator;
+    /**
+     * Handle decorator, for class. use to define the the way to register the module. default as child module.
      *
      * @RegisterFor
      *
-     * @param {Type<Middlewares<MsgContext>>} [parent] the message reg in the message queue. default register in root message queue.
-     * @param {Type<Middleware<MsgContext>>} [before] register this message handle before this handle.
+     * @param {string} parent the handle reg in the handle queue. default register in root handle queue.
+     * @param {Type<MessageRouter>} [parent] register this handle handle before this handle.
      */
-    (parent?: Type<Middlewares> | 'root' | 'none', before?: Type<Middleware>): MessageDecorator;
+    (route: string, parent?: Type<MessageRouter>): HandleDecorator;
+    /**
+     * Handle decorator, for class. use to define the the way to register the module. default as child module.
+     *
+     * @RegisterFor
+     *
+     * @param {Type<Middlewares>} [parent] the handle reg in the handle queue. default register in root handle queue.
+     * @param {Type<Middleware>} [before] register this handle handle before this handle.
+     */
+    (parent: Type<Middlewares>, before?: Type<Middleware>): HandleDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
@@ -341,28 +361,30 @@ export interface IMessageDecorator {
      *
      * @param {ClassMetadata} [metadata] metadata map.
      */
-    (metadata: MessageMetadata): MessageDecorator;
+    (metadata: HandleMetadata): HandleDecorator;
 }
 
 /**
- * Message decorator, for class. use to define the class as message handle register in global message queue.
+ * Handle decorator, for class. use to define the class as handle handle register in global handle queue.
  *
- * @Message
+ * @Handle
  */
-export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Message', {
+export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle', {
     actionType: 'annoation',
-    props: (parent?: Type<Middlewares> | 'root' | 'none', before?: Type<Middleware>) =>
-        ({ parent, before }),
+    props: (parent?: Type<Middlewares> | string, before?: Type<Middleware>) =>
+        (isString(parent) ? ({ route: parent, parent: before }) : ({ parent, before })) as HandleMetadata,
     design: {
         afterAnnoation: (ctx, next) => {
-            const { parent, before, after } = ctx.reflect.class.getMetadata<MessageMetadata>(ctx.currDecor);
-            if (!parent || parent === 'none') {
+            const { route, parent, before, after } = ctx.reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
+
+            if (!isString(route) && !parent) {
                 return next();
             }
 
+            const state = ctx.injector.getContainer().regedState;
             let msgQueue: Middlewares;
-            if (!isString(parent)) {
-                msgQueue = ctx.injector.getContainer().regedState.getInjector(parent)?.get(parent);
+            if (parent) {
+                msgQueue = state.getInjector(parent)?.get(parent);
             } else {
                 msgQueue = ctx.injector.getInstance(ROOT_MESSAGEQUEUE);
             }
@@ -371,12 +393,18 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
                 throw new Error(lang.getClassName(parent) + 'has not registered!')
             }
 
-            if (before) {
-                msgQueue.useBefore(ctx.type, before);
-            } else if (after) {
-                msgQueue.useAfter(ctx.type, after);
+            if (isString(route)) {
+                if (!(msgQueue instanceof MessageRouter)) throw new Error(lang.getClassName(msgQueue) + 'is not message router!');
+                const type = ctx.type;
+                msgQueue.use(new FactoryRoute(route, (msgQueue as MessageRouter).url, () => state.getInjector(type)?.get(type)));
             } else {
-                msgQueue.use(ctx.type);
+                if (before) {
+                    msgQueue.useBefore(ctx.type, before);
+                } else if (after) {
+                    msgQueue.useAfter(ctx.type, after);
+                } else {
+                    msgQueue.use(ctx.type);
+                }
             }
             next();
         }
@@ -384,12 +412,92 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
     appendProps: (meta) => {
         meta.singleton = true;
         // default register in root.
-        if (!meta.parent) {
-            meta.parent = 'root';
-        }
     }
 });
 
+/**
+ * message handle decorator.
+ * use `Handle` instead.
+ */
+export const Message = Handle;
+
+
+/**
+ * decorator used to define Request route mapping.
+ *
+ * @export
+ * @interface IRouteMappingDecorator
+ */
+export interface IRouteMappingDecorator {
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {MiddlewareType[]} [middlewares] the middlewares for the route.
+     */
+    (route: string, middlewares?: MiddlewareType[]): MethodDecorator | ClassDecorator;
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {RequestMethod} [method] set request method.
+     */
+    (route: string, method: string): MethodDecorator;
+
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {{ middlewares?: MiddlewareType[], contentType?: string, method?: string}} options
+     *  [middlewares] the middlewares for the route.
+     *  [contentType] set request contentType.
+     *  [method] set request method.
+     */
+    (route: string, options: { middlewares: MiddlewareType[], contentType?: string, method?: string }): MethodDecorator;
+
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {RouteMetadata} [metadata] route metadata.
+     */
+    (metadata: RouteMapingMetadata): MethodDecorator;
+}
+
+
+export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingMetadata>('RouteMapping', {
+    props: (route: string, arg2?: MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
+        if (isArray(arg2)) {
+            return { route, middlewares: arg2 };
+        } else if (isString(arg2)) {
+            return { route, method: arg2 };
+        } else {
+            return { ...arg2, route };
+        }
+    },
+    design: {
+        afterAnnoation: (ctx, next) => {
+            const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
+
+            const state = ctx.injector.getContainer().regedState;
+            let msgQueue: Middlewares;
+            if (parent) {
+                msgQueue = state.getInjector(parent)?.get(parent);
+            } else {
+                msgQueue = ctx.injector.getInstance(ROOT_MESSAGEQUEUE);
+            }
+
+            if (!msgQueue) {
+                throw new Error(lang.getClassName(parent) + 'has not registered!')
+            }
+
+            if (!(msgQueue instanceof MessageRouter)) throw new Error(lang.getClassName(msgQueue) + 'is not message router!');
+            const type = ctx.type;
+            msgQueue.use(new MappingRoute(route, (msgQueue as MessageRouter).url, ctx.reflect as MappingReflect, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs), middlewares));
+
+            next();
+        }
+    }
+});
 
 /**
  * bootstrap metadata.

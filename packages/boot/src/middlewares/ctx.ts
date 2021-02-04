@@ -7,10 +7,11 @@ export interface MsgContext extends ProdverOption {
      * navigate message
      */
     readonly url?: string;
-    /**
-     * query params.
-     */
-    readonly query?: any;
+
+    
+    readonly request?: { body: any, query: any }
+
+    readonly method?: string;
     /**
      * response status
      */
@@ -20,7 +21,7 @@ export interface MsgContext extends ProdverOption {
      * response body data.
      */
     body?: any;
-    
+
     /**
      * injector of message queue.
      */
@@ -29,8 +30,10 @@ export interface MsgContext extends ProdverOption {
     vaild?: IRouteVaildator;
 }
 
+
 export interface IRouteVaildator {
     isRoute(url: string): boolean;
     vaildify(routePath: string, foreNull?: boolean): string;
-    isActiveRoute(ctx: MsgContext, route: string);
+    isActiveRoute(ctx: MsgContext, route: string, routePrefix: string);
+    getReqRoute(ctx: MsgContext, routePrefix: string): string;
 }

@@ -26,15 +26,12 @@ export * from './modules/ref';
 export * from './modules/injector';
 export * from './modules/configure';
 
-// handles
-export * from './handles/Handle';
-export * from './handles/Handles';
-
-// messages
-export * from './middlewares/type';
+// middlewares
 export * from './middlewares/ctx';
 export * from './middlewares/handle';
 export * from './middlewares/queue';
+export * from './middlewares/route';
+export * from './middlewares/router';
 
 // orm core
 export * from './orm';
