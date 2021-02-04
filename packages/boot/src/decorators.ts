@@ -6,11 +6,9 @@ import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
 import { ModuleReflect } from './modules/reflect';
 import { DefaultModuleRef } from './modules/injector';
-import { IMessage, IMessageQueue } from './messages/type';
-import { MessageQueue } from './messages/queue';
-import { MessageContext } from './messages/ctx';
-import { MessageHandle } from './messages/handle';
-import { ROOT_INJECTOR, ROOT_MESSAGEQUEUE } from './tk';
+import { Middleware, Middlewares } from './middlewares/handle';
+import { ROOT_MESSAGEQUEUE } from './middlewares/queue';
+import { ROOT_INJECTOR } from './tk';
 import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
 
 
@@ -286,7 +284,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
 export const DIModule: IDIModuleDecorator<DIModuleMetadata> = createDIModuleDecorator<DIModuleMetadata>('DIModule');
 
 
-export type MessageDecorator = <TFunction extends Type<IMessage>>(target: TFunction) => TFunction | void;
+export type MessageDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
 
 /**
  * message metadata. use to define the class as message handle register in global message queue.
@@ -301,21 +299,21 @@ export interface MessageMetadata extends TypeMetadata, PatternMetadata {
      * default register in root message queue.
      * @type {boolean}
      */
-    parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none';
+    parent?: Type<Middlewares> | 'root' | 'none';
 
     /**
      * register this message handle before this handle.
      *
-     * @type {Type<MessageHandle>}
+     * @type {Type<Middleware>}
      */
-    before?: Type<MessageHandle<MessageContext>>;
+    before?: Type<Middleware>;
 
     /**
      * register this message handle after this handle.
      *
-     * @type {Type<MessageHandle>}
+     * @type {Type<Middleware>}
      */
-    after?: Type<MessageHandle<MessageContext>>;
+    after?: Type<Middleware>;
 }
 
 /**
@@ -331,10 +329,10 @@ export interface IMessageDecorator {
      *
      * @RegisterFor
      *
-     * @param {Type<MessageQueue<MessageContext>>} [parent] the message reg in the message queue. default register in root message queue.
-     * @param {Type<MessageHandle<MessageContext>>} [before] register this message handle before this handle.
+     * @param {Type<Middlewares<MsgContext>>} [parent] the message reg in the message queue. default register in root message queue.
+     * @param {Type<Middleware<MsgContext>>} [before] register this message handle before this handle.
      */
-    (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>): MessageDecorator;
+    (parent?: Type<Middlewares> | 'root' | 'none', before?: Type<Middleware>): MessageDecorator;
 
     /**
      * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
@@ -353,7 +351,7 @@ export interface IMessageDecorator {
  */
 export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Message', {
     actionType: 'annoation',
-    props: (parent?: Type<MessageQueue<MessageContext>> | 'root' | 'none', before?: Type<MessageHandle<MessageContext>>) =>
+    props: (parent?: Type<Middlewares> | 'root' | 'none', before?: Type<Middleware>) =>
         ({ parent, before }),
     design: {
         afterAnnoation: (ctx, next) => {
@@ -362,7 +360,7 @@ export const Message: IMessageDecorator = createDecorator<MessageMetadata>('Mess
                 return next();
             }
 
-            let msgQueue: IMessageQueue;
+            let msgQueue: Middlewares;
             if (!isString(parent)) {
                 msgQueue = ctx.injector.getContainer().regedState.getInjector(parent)?.get(parent);
             } else {

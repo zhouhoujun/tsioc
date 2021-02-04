@@ -1,6 +1,6 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
-import { MessageContext } from './messages/ctx';
-import { MessageQueue, RootMessageQueue } from './messages/queue';
+import { MessageContext } from './middlewares/ctx';
+import { MessageQueue, RootMessageQueue } from './middlewares/queue';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';

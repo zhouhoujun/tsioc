@@ -1,10 +1,10 @@
 import { tokenId, Token } from '@tsdi/ioc';
 import { IBootContext } from './Context';
-import { IMessageQueue } from './messages/type';
 import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
 import { IBuilderService } from './services/IBuilderService';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { IModuleInjector } from './modules/ref';
+import { MessageQueue } from './middlewares/queue';
 
 
 /**
@@ -61,17 +61,6 @@ export const BUILDER: Token<IBuilderService> = tokenId<IBuilderService>('BUILDER
  */
 export const BuilderServiceToken = BUILDER;
 
-/**
- * root message queue token.
- */
-export const ROOT_MESSAGEQUEUE: Token<IMessageQueue> = tokenId<IMessageQueue>('ROOT_MESSAGEQUEUE');
-
-/**
- * root message queue token.
- *
- * @deprecated use `ROOT_MESSAGEQUEUE` instead.
- */
-export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
 
 /**
  * type parser token.

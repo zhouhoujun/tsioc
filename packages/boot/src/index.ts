@@ -31,10 +31,10 @@ export * from './handles/Handle';
 export * from './handles/Handles';
 
 // messages
-export * from './messages/type';
-export * from './messages/ctx';
-export * from './messages/handle';
-export * from './messages/queue';
+export * from './middlewares/type';
+export * from './middlewares/ctx';
+export * from './middlewares/handle';
+export * from './middlewares/queue';
 
 // orm core
 export * from './orm';
