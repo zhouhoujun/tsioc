@@ -1,5 +1,5 @@
 import {
-    Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isBaseType, isArray,
+    Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isPrimitiveType, isArray,
     Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, isProvide
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
@@ -67,7 +67,7 @@ export abstract class ModelParser implements IModelParser {
         }
 
         let parser = this.injector.getInstance(TYPE_PARSER);
-        if (isBaseType(type)) {
+        if (isPrimitiveType(type)) {
             return parser.parse(type, objMap);
         }
         let meta = this.getPropertyMeta(type);
@@ -88,7 +88,7 @@ export abstract class ModelParser implements IModelParser {
                     let parmVal;
                     if (this.isExtendBaseType(ptype, propmeta)) {
                         parmVal = this.resolveExtendType(ptype, reqval, propmeta);
-                    } else if (isBaseType(ptype)) {
+                    } else if (isPrimitiveType(ptype)) {
                         parmVal = parser.parse(ptype, reqval);
                     } else if (isClass(ptype)) {
                         parmVal = this.parseModel(ptype, reqval);

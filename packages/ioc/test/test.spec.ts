@@ -7,6 +7,7 @@ describe('custom register test', () => {
     let container: IContainer;
     beforeEach(async () => {
         container = new Container();
+        container.setValue(Date, new Date());
     });
 
     it('decorator toString is decorator name', () => {

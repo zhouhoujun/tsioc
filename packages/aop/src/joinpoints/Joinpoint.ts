@@ -1,6 +1,6 @@
 import {
     Type, MethodMetadata, ClassMetadata, IProvider, tokenId, Token,
-    isNil, IocContext, IInjector, PROVIDERS, ParameterMetadata
+    isNil, IocContext, IInjector, PROVIDERS, ParameterMetadata, Injectable
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -33,6 +33,7 @@ export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
+@Injectable()
 export class Joinpoint implements IocContext {
     /**
      * method name

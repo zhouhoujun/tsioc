@@ -3,12 +3,12 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
-import { getClass, isArray, isClass, isFunction } from '../utils/chk';
+import { getClass, isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './metadatas';
 import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
-import { cleanObj, getParentClass } from '../utils/lang';
+import { cleanObj, getParentClass, isBaseOf } from '../utils/lang';
 
 
 
@@ -382,7 +382,7 @@ class DecorActions extends Actions<DecorContext> {
     protected toHandle(ac: any): Handler {
         if (ac instanceof Action) {
             return ac.toAction();
-        } else if (isClass(ac)) {
+        } else if (isBaseOf(ac, Action)) {
             const act = new ac();
             return act instanceof Action ? act.toAction() : null;
         } else if (isFunction(ac)) {

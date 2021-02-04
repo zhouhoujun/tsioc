@@ -20,67 +20,6 @@ export function isFunction(target: any): target is Function {
 }
 
 /**
- * check Abstract class with @Abstract or not
- *
- * @export
- * @param {*} target
- * @returns {target is AbstractType}
- */
-export function isAbstractClass(target: any): target is AbstractType {
-    return isClassType(target, true);
-}
-
-
-/**
- * check target is class or not.
- *
- * @export
- * @param {*} target
- * @returns {target is Type}
- */
-export function isClass(target: any): target is Type {
-    return isClassType(target, false);
-}
-
-/**
- * is class or not.
- *
- * @export
- * @param {*} target
- * @returns {target is ClassType}
- */
-export function isClassType(target: any, abstract?: boolean): target is ClassType {
-    if (!isFunction(target)) return false;
-    if (!target.name || !target.prototype) return false;
-    if (target.prototype.constructor !== target) return false;
-
-    const rf: TypeReflect = target[reflFiled];
-    if (rf) {
-        if (isBoolean(abstract) && rf.type === target) {
-            return abstract ? rf.abstract : !rf.abstract;
-        }
-        return true;
-    }
-
-    if (hasDesignAnno(target)) return true;
-    if (!clsNameExp.test(target.name)) return false;
-    if (isPrimitiveType(target)) return false;
-    const pkeys = Object.getOwnPropertyNames(target);
-    if (pkeys.indexOf('caller') > 0) return false;
-    if (pkeys.length > 3) return true;
-
-    const str = target.toString();
-    if (anon.test(str)) return false;
-    return true;
-}
-
-/**
- * anonyous or array func
- */
-const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
-
-
-/**
  * is run in nodejs or not.
  *
  * @export
@@ -114,7 +53,6 @@ export function isObservable(target: any): boolean {
     return toString.call(target) === obsTag || (target && typeof target.subscribe === 'function');
 }
 
-const strTag = '[object String]';
 /**
  * check target is string or not.
  *
@@ -123,10 +61,9 @@ const strTag = '[object String]';
  * @returns {target is string}
  */
 export function isString(target: any): target is string {
-    return typeof target === 'string' || toString.call(target) === strTag;
+    return typeof target === 'string';
 }
 
-const boolTag = '[object Boolean]';
 /**
  * check target is boolean or not.
  *
@@ -135,11 +72,9 @@ const boolTag = '[object Boolean]';
  * @returns {target is boolean}
  */
 export function isBoolean(target: any): target is boolean {
-    return typeof target === 'boolean' || toString.call(target) === boolTag;
+    return typeof target === 'boolean';
 }
 
-
-const numbTag = '[object Number]';
 /**
  * check target is number or not.
  *
@@ -148,7 +83,7 @@ const numbTag = '[object Number]';
  * @returns {target is number}
  */
 export function isNumber(target: any): target is number {
-    return typeof target === 'number' || toString.call(target) === numbTag;
+    return typeof target === 'number';
 }
 
 /**
@@ -159,10 +94,10 @@ export function isNumber(target: any): target is number {
  * @returns {target is undefined}
  */
 export function isUndefined(target: any): target is undefined {
-    return target === undefined || typeof target === 'undefined';
+    return typeof target === 'undefined';
 }
 
-const nullTag = '[object Null]';
+
 /**
  * check target is unll or not.
  *
@@ -171,7 +106,7 @@ const nullTag = '[object Null]';
  * @returns {target is null}
  */
 export function isNull(target: any): target is null {
-    return target === null || toString.call(target) === nullTag;
+    return target === null;
 }
 
 /**
@@ -341,26 +276,86 @@ export function isNative(target: any): boolean {
  * @returns {boolean}
  */
 export function isPrimitiveType(target): boolean {
+    return isFunction(target) && isPrimitive(target);
+}
+
+function isPrimitive(target: Function): boolean {
     return target === Function
         || target === Object
         || target === String
         || target === Number
         || target === Boolean
         || target === Array
+        || target === Date
         || target === Symbol
         || target === Promise;
 }
 
 /**
- * target is primitive type or not.
- * @param target
+ * is base type or not.
+ * @param target 
+ * 
+ * @deprecated use `isPrimitiveType` instead.
  */
-export function isPrimitive(target: any): boolean {
-    const type = typeof target;
-    return type === 'string'
-        || type === 'number'
-        || type === 'symbol'
-        || type === 'boolean';
+export const isBaseType = isPrimitiveType;
+
+
+/**
+ * check abstract class with @Abstract or not
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is AbstractType}
+ */
+export function isAbstractClass(target: any): target is AbstractType {
+    return isClassType(target, true);
+}
+
+
+/**
+ * check target is class or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is Type}
+ */
+export function isClass(target: any): target is Type {
+    return isClassType(target, false);
+}
+
+
+/**
+ * anonyous or array func
+ */
+const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
+
+/**
+ * is annotation class type or not.
+ *
+ * @export
+ * @param {*} target
+ * @returns {target is ClassType}
+ */
+export function isClassType(target: any, abstract?: boolean): target is ClassType {
+    if (!isFunction(target)) return false;
+    if (!target.name || !target.prototype) return false;
+    if (target.prototype.constructor !== target) return false;
+
+    const rf: TypeReflect = target[reflFiled];
+    if (rf) {
+        if (isBoolean(abstract) && rf.type === target) {
+            return abstract ? rf.abstract : !rf.abstract;
+        }
+        return true;
+    }
+
+    if (hasDesignAnno(target)) return true;
+    if (!clsNameExp.test(target.name)) return false;
+    if (isPrimitive(target)) return false;
+    const pkeys = Object.getOwnPropertyNames(target);
+    if (pkeys.indexOf('caller') > 0) return false;
+    if (pkeys.length > 3) return true;
+    return !anon.test(target.toString());
 }
 
 /**
@@ -378,21 +373,4 @@ export function getClass(target: any): Type {
         return target as Type;
     }
     return target.constructor || target.prototype.constructor;
-}
-
-/**
- * is base type or not.
- * @param target 
- */
-export function isBaseType(target: any): boolean {
-    return isPrimitiveType(target) || target === Date;
-}
-
-/**
- * check target is base value or not.
- *
- * @exportClassType
- */
-export function isBaseValue(target: any): boolean {
-    return isPrimitive(target) || isDate(target);
 }

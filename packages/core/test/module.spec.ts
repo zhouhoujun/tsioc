@@ -10,6 +10,7 @@ describe('auto register with build', () => {
     before(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build(debuModules);
+        container.setValue(Date, new Date());
     });
 
     it('should auto wried property', () => {

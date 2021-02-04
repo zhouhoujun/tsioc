@@ -1,6 +1,6 @@
 import { Type } from '../types';
-import { isFunction, isBaseType, getClass, isTypeObject } from '../utils/chk';
-import { Token, isToken, ProviderType } from '../tokens';
+import { isFunction, getClass, isTypeObject } from '../utils/chk';
+import { Token, ProviderType } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';
 import { INVOKED_PROVIDERS } from '../utils/tk';
@@ -81,20 +81,12 @@ export class MethodAccessor implements IMethodAccessor {
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider): any[] {
         return params.map((param, index) => {
-            if (param.provider && providers.has(param.provider)) {
-                return providers.get(param.provider);
+            if (param.provider) {
+                return (providers.has(param.provider) ? providers.get(param.provider) : injector.get(param.provider, providers)) ?? param.defaultValue;
             } else if (param.paramName && providers.has(param.paramName)) {
                 return providers.get(param.paramName);
-            } else if (param.provider) {
-                return injector.get(param.provider, providers);
-            } else if (isToken(param.type)) {
-                if (providers.has(param.type)) {
-                    return providers.get(param.type);
-                }
-                if (isBaseType(param.type)) {
-                    return param.defaultValue;
-                }
-                return injector.get(param.type, providers);
+            } else if (param.type) {
+                return (providers.has(param.type)? providers.get(param.type) : injector.get(param.type, providers)) ?? param.defaultValue;
             } else {
                 return param.defaultValue;
             }

@@ -1,4 +1,4 @@
-import { INJECTOR, lang, isBaseType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction, getFacInstance } from '@tsdi/ioc';
+import { INJECTOR, lang, isPrimitiveType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction, getFacInstance } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
@@ -127,7 +127,7 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
             }
             return;
         }
-        if (isBaseType(ctx.type)) {
+        if (isPrimitiveType(ctx.type)) {
             return;
         }
         // has module register or not.

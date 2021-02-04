@@ -1,5 +1,4 @@
 import { Type } from '../types';
-import { isClass } from '../utils/chk';
 import { Handler } from '../utils/hdl';
 import { IocActions } from './act';
 import { Action, IocAction } from '../action';
@@ -31,9 +30,6 @@ export interface IScopeAction<TAction extends Function = Handler> {
 
 
 export const InitReflectAction = function (ctx: RegContext, next?: () => void): void {
-    if (!isClass(ctx.type)) {
-        return;
-    }
     const tgref = ctx.reflect = get(ctx.type, true);
     if (tgref.singleton) {
         ctx.singleton = tgref.singleton;

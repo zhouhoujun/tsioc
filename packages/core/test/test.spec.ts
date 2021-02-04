@@ -9,6 +9,7 @@ describe('custom register test', () => {
     beforeEach(async () => {
         let builder = new ContainerBuilder();
         container = await builder.build();
+        container.setValue(Date, new Date());
     });
 
     it('decorator toString is decorator name', () => {

@@ -192,7 +192,7 @@ export function isBaseOf<T>(target: any, baseType: ClassType<T>): target is Type
 export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass: T | ((type: T) => boolean)): target is T {
     let isExtnds = false;
     if (isClassType(target) && baseClass) {
-        let isCls = isClassType(baseClass);
+        const isCls = isClassType(baseClass);
         forInClassChain(target, t => {
             if (isCls) {
                 isExtnds = t === baseClass;
