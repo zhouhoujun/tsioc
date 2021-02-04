@@ -72,12 +72,12 @@ export class MessageQueue extends Middlewares {
      * @param {*} data query data.
      * @returns {Promise<void>}
      */
-    send(url: string, data: any, injector?: Injector): Promise<void>;
+    send(url: string, options: {body?: any, query?: any}, injector?: Injector): Promise<void>;
     send(url: any, data?: any, injector?: Injector): Promise<void> {
         if (isPlainObject(url)) {
             return this.execute(url);
         } else if (isString(url)) {
-            return this.execute({ url, query: data, injector });
+            return this.execute({ url, request: data, injector });
         }
     }
 

@@ -4,8 +4,7 @@ import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
 import { BUILDER, CTX_OPTIONS, ROOT_INJECTOR } from '../tk';
-import { ResolveMoudleScope } from '../builder/handles';
-import { IHandle } from '../handles/Handle';
+import { IBuildHandle, ResolveMoudleScope } from '../builder/handles';
 import { BuildContext } from '../builder/ctx';
 import { BootContext } from '../boot/ctx';
 
@@ -122,7 +121,7 @@ export class BuilderService implements IBuilderService {
     protected async execLifeScope<T extends IBootContext = IBootContext, Topt extends BootOption = BootOption>(
         container: IContainer,
         contextInit: (ctx: T) => void,
-        handle: Type<IHandle>,
+        handle: Type<IBuildHandle>,
         target: ClassType | Topt | T,
         ...args: string[]): Promise<T> {
 

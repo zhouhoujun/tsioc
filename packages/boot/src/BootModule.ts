@@ -1,6 +1,4 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
-import { MessageContext } from './middlewares/ctx';
-import { MessageQueue, RootMessageQueue } from './middlewares/queue';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
@@ -8,6 +6,7 @@ import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
 import { BuildContext } from './builder/ctx';
 import { BootContext } from './boot/ctx';
+import { MiddlewareModule } from './middlewares/mdl';
 
 
 /**
@@ -33,7 +32,7 @@ export class BootModule {
             RunnableBuildLifeScope,
             BootLifeScope);
 
-        container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, RootMessageQueue, MessageContext, MessageQueue);
+        container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, MiddlewareModule);
 
     }
 }
