@@ -1,4 +1,4 @@
-import { Abstract, AsyncHandler, chain, ClassType, Inject, Injector, INJECTOR, isFunction, lang, Type } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, ClassType, Inject, Injector, INJECTOR, isFunction, lang, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
 
 
@@ -163,5 +163,23 @@ export abstract class Middlewares extends Middleware {
  * router interface
  */
 export interface IRouter extends Middlewares {
-    readonly url: string;
+    readonly  url: string;
+    getPrefixUrl(): string;
 }
+
+/**
+ * middleware handle route reflect.
+ */
+export interface RouteReflect extends TypeReflect {
+    route_url?: string;
+    route_prefix?: string;
+}
+
+/**
+ * route url token.
+ */
+export const ROUTE_URL = tokenId<string>('ROUTE_URL');
+/**
+ * route prefix token.
+ */
+export const ROUTE_PREFIX = tokenId<string>('ROUTE_PREFIX');

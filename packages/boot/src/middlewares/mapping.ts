@@ -1,9 +1,12 @@
-import { Abstract, AsyncHandler, ClassType, DecorDefine, isArray, isClass, isFunction, isNullOrUndefined, isObject, isPrimitiveType, isPromise, isString, isUndefined, lang, ParameterMetadata, ProviderType, tokenId, Type, TypeReflect } from '@tsdi/ioc';
+import {
+    Abstract, AsyncHandler, ClassType, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, 
+    isObject, isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNullOrUndefined
+} from '@tsdi/ioc';
 import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
 import { DefaultModelParserToken, ModelParser } from './ModelParser';
-import { MessageRoute } from './route';
+import { Route } from './route';
 
 
 export interface RouteMapingMetadata {
@@ -52,7 +55,7 @@ const isRest = /\/:/;
 const restParms = /^\S*:/;
 
 
-export class MappingRoute extends MessageRoute {
+export class MappingRoute extends Route {
 
     constructor(url: string, prefix: string, private reflect: MappingReflect, private factory: (...prds) => any, private middlewares: MiddlewareType[]) {
         super(url, prefix);
@@ -86,7 +89,7 @@ export class MappingRoute extends MessageRoute {
                 await result(ctx);
             } else if (result instanceof Middleware) {
                 await result.execute(ctx, emptyNext);
-            } else if (isObject(result)){
+            } else if (isObject(result)) {
                 ctx.body = result;
                 ctx.status = 200;
             }
@@ -170,11 +173,15 @@ export class MappingRoute extends MessageRoute {
                         } else if (isPrimitiveType(ptype)) {
                             val = parser.parse(ptype, body[param.paramName]);
                         } else if (isClass(ptype)) {
-                            let mdparser = injector.getService({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
-                            if (mdparser) {
-                                val = mdparser.parseModel(ptype, body);
+                            if (body instanceof ptype) {
+                                val = body;
                             } else {
-                                val = await injector.getInstance(BUILDER).resolve({ type: ptype, template: body })
+                                let mdparser = injector.getService({ token: ModelParser, target: ptype, defaultToken: DefaultModelParserToken });
+                                if (mdparser) {
+                                    val = mdparser.parseModel(ptype, body);
+                                } else {
+                                    val = await injector.getInstance(BUILDER).resolve({ type: ptype, template: body })
+                                }
                             }
                         }
                     }

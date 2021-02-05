@@ -17,6 +17,10 @@ export interface MessageContext extends ProdverOption {
 
     readonly method?: string;
     /**
+     * raise target.
+     */
+    readonly target?: any;
+    /**
      * response status
      */
     status?: number;

@@ -6,12 +6,13 @@ import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
 import { ModuleReflect } from './modules/reflect';
 import { DefaultModuleRef } from './modules/injector';
-import { Middleware, Middlewares, MiddlewareType } from './middlewares/handle';
-import { MessageRouter, ROOT_MESSAGEQUEUE } from './middlewares/router';
+import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_URL } from './middlewares/handle';
+import { RootRouter, Router } from './middlewares/router';
 import { ROOT_INJECTOR } from './tk';
 import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
-import { FactoryRoute } from './middlewares/route';
+import { FactoryRoute, Route } from './middlewares/route';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
+import { ROOT_QUEUE } from './middlewares';
 
 
 /**
@@ -341,9 +342,9 @@ export interface IHandleDecorator {
      * @RegisterFor
      *
      * @param {string} parent the handle reg in the handle queue. default register in root handle queue.
-     * @param {Type<MessageRouter>} [parent] register this handle handle before this handle.
+     * @param {Type<Router>} [parent] register this handle handle before this handle.
      */
-    (route: string, parent?: Type<MessageRouter>): HandleDecorator;
+    (route: string, parent?: Type<Router>): HandleDecorator;
     /**
      * Handle decorator, for class. use to define the the way to register the module. default as child module.
      *
@@ -375,35 +376,48 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
         (isString(parent) ? ({ route: parent, parent: before }) : ({ parent, before })) as HandleMetadata,
     design: {
         afterAnnoation: (ctx, next) => {
-            const { route, parent, before, after } = ctx.reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
+            const reflect = ctx.reflect as RouteReflect;
+            const { route, parent, before, after } = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
 
             if (!isString(route) && !parent) {
                 return next();
             }
 
             const state = ctx.injector.getContainer().regedState;
-            let msgQueue: Middlewares;
+            let queue: Middlewares;
             if (parent) {
-                msgQueue = state.getInjector(parent)?.get(parent);
-            } else {
-                msgQueue = ctx.injector.getInstance(ROOT_MESSAGEQUEUE);
-            }
-
-            if (!msgQueue) {
-                throw new Error(lang.getClassName(parent) + 'has not registered!')
+                queue = state.getInjector(parent)?.get(parent);
+                if (!queue) {
+                    throw new Error(lang.getClassName(parent) + 'has not registered!')
+                }
             }
 
             if (isString(route)) {
-                if (!(msgQueue instanceof MessageRouter)) throw new Error(lang.getClassName(msgQueue) + 'is not message router!');
+                if (!queue) {
+                    queue = ctx.injector.getInstance(RootRouter);
+                } else if (!(queue instanceof Router)) {
+                    throw new Error(lang.getClassName(queue) + 'is not message router!');
+                }
                 const type = ctx.type;
-                msgQueue.use(new FactoryRoute(route, (msgQueue as MessageRouter).url, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs)));
-            } else {
-                if (before) {
-                    msgQueue.useBefore(ctx.type, before);
-                } else if (after) {
-                    msgQueue.useAfter(ctx.type, after);
+                const prefix = (queue as Router).getPrefixUrl();
+                reflect.route_url = route;
+                reflect.route_prefix = prefix;
+                if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
+                    reflect.extProviders.push({ provide: ROUTE_URL, useValue: route }, { provide: ROUTE_PREFIX, useValue: prefix });
+                    queue.use(type);
                 } else {
-                    msgQueue.use(ctx.type);
+                    queue.use(new FactoryRoute(route, prefix, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs)));
+                }
+            } else {
+                if (!queue) {
+                    queue = ctx.injector.getInstance(ROOT_QUEUE);
+                }
+                if (before) {
+                    queue.useBefore(ctx.type, before);
+                } else if (after) {
+                    queue.useAfter(ctx.type, after);
+                } else {
+                    queue.use(ctx.type);
                 }
             }
             next();
@@ -433,9 +447,26 @@ export interface IRouteMappingDecorator {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
+     * @param {Type<Router>} [parent] the middlewares for the route.
+     */
+    (route: string, parent?: Type<Router>): ClassDecorator;
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {string} route route sub path.
      * @param {MiddlewareType[]} [middlewares] the middlewares for the route.
      */
     (route: string, middlewares?: MiddlewareType[]): ClassMethodDecorator;
+
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {{ middlewares?: MiddlewareType[], contentType?: string, method?: string}} options
+     *  [parent] set parent route.
+     *  [middlewares] the middlewares for the route.
+     */
+    (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareType[] }): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -467,11 +498,13 @@ export interface IRouteMappingDecorator {
  * RouteMapping decorator
  */
 export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingMetadata>('RouteMapping', {
-    props: (route: string, arg2?: MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
+    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {
             return { route, middlewares: arg2 };
         } else if (isString(arg2)) {
             return { route, method: arg2 };
+        } else if (lang.isBaseOf(arg2, Router)) {
+            return { route, parent: arg2 };
         } else {
             return { ...arg2, route };
         }
@@ -481,20 +514,18 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
             const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
 
             const state = ctx.injector.getContainer().regedState;
-            let msgQueue: Middlewares;
+            let queue: Middlewares;
             if (parent) {
-                msgQueue = state.getInjector(parent)?.get(parent);
+                queue = state.getInjector(parent)?.get(parent);
             } else {
-                msgQueue = ctx.injector.getInstance(ROOT_MESSAGEQUEUE);
+                queue = ctx.injector.getInstance(RootRouter);
             }
 
-            if (!msgQueue) {
-                throw new Error(lang.getClassName(parent) + 'has not registered!')
-            }
+            if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
+            if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            if (!(msgQueue instanceof MessageRouter)) throw new Error(lang.getClassName(msgQueue) + 'is not message router!');
             const type = ctx.type;
-            msgQueue.use(new MappingRoute(route, (msgQueue as MessageRouter).url, ctx.reflect as MappingReflect, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs), middlewares));
+            queue.use(new MappingRoute(route, (queue as Router).getPrefixUrl(), ctx.reflect as MappingReflect, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs), middlewares));
 
             next();
         }

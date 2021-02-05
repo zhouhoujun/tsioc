@@ -1,21 +1,20 @@
-import { Inject, Injectable, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, isFunction, refl, Singleton } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
-import { IRouter } from './handle';
+import { IRouter, ROUTE_URL, ROUTE_PREFIX, MiddlewareType, RouteReflect } from './handle';
 import { MessageQueue } from './queue';
-import { MessageRoute, RouteVaildator, ROUTE_URL } from './route';
-
-
+import { Route, RouteVaildator } from './route';
 
 
 @Injectable()
-export class MessageRouter extends MessageQueue implements IRouter {
+export class Router extends MessageQueue implements IRouter {
 
-    constructor(@Inject(ROUTE_URL) private _url: string) {
+    constructor(@Inject(ROUTE_URL) public url: string, @Inject(ROUTE_PREFIX) private prefix = '') {
         super();
     }
 
-    get url() {
-        return this._url ?? '';
+
+    getPrefixUrl() {
+        return this.prefix ? `${this.prefix}/${this.url}` : this.url;
     }
 
     private sorted = false;
@@ -24,14 +23,9 @@ export class MessageRouter extends MessageQueue implements IRouter {
         if (!ctx.vaild) {
             ctx.vaild = ctx.injector.get(RouteVaildator);
         }
-        if ((!ctx.status || ctx.status === 404) && ctx.vaild.isRoute(ctx.url)) {
+        if (this.match(ctx)) {
             if (!this.sorted) {
-                this.handles = this.handles.sort((a, b) => {
-                    if (a instanceof MessageRoute && b instanceof MessageRoute) {
-                        return (b.url || '').length - (a.url || '').length;
-                    }
-                    return -1;
-                });
+                this.handles = this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
                 this.resetFuncs();
                 this.sorted = true;
             }
@@ -42,25 +36,27 @@ export class MessageRouter extends MessageQueue implements IRouter {
         }
     }
 
+    getUrlFrom(mddl: MiddlewareType) {
+        if (isFunction(mddl)) {
+            return refl.get<RouteReflect>(mddl)?.route_url ?? '';
+        } else if (mddl instanceof Router) {
+            return mddl.url;
+        } else if (mddl instanceof Route) {
+            return mddl.url;
+        }
+        return '';
+    }
+
+    protected match(ctx: MessageContext) {
+        return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
+    }
+
     protected resetFuncs() {
         super.resetFuncs();
         this.sorted = false;
     }
-
 }
 
-
-/**
- * root message queue token.
- */
-export const ROOT_MESSAGEQUEUE: Token<MessageRouter> = tokenId<MessageRouter>('ROOT_MESSAGEQUEUE');
-
-/**
- * root message queue token.
- *
- * @deprecated use `ROOT_MESSAGEQUEUE` instead.
- */
-export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
 
 /**
  * message queue.
@@ -70,5 +66,9 @@ export const RootMessageQueueToken = ROOT_MESSAGEQUEUE;
  * @extends {BuildHandles<T>}
  * @template T
  */
-@Singleton(ROOT_MESSAGEQUEUE)
-export class RootMessageQueue extends MessageRouter { }
+@Singleton()
+export class RootRouter extends Router {
+    constructor() {
+        super('', '');
+    }
+}

@@ -1,7 +1,7 @@
-import { Abstract, ProviderType, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Abstract, Inject, ProviderType, Singleton } from '@tsdi/ioc';
 import { CONTEXT } from '../tk';
 import { IRouteVaildator, MessageContext } from './ctx';
-import { Middleware } from './handle';
+import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
 const noParms = /\/\s*$/;
@@ -45,13 +45,12 @@ export class RouteVaildator implements IRouteVaildator {
     }
 }
 
-export const ROUTE_URL: Token<string> = tokenId<string>('ROUTE_URL');
 
 
 @Abstract()
-export abstract class MessageRoute extends Middleware {
+export abstract class Route extends Middleware {
 
-    constructor(private _url: string, protected prefix: string) {
+    constructor(@Inject(ROUTE_URL) private _url: string, @Inject(ROUTE_PREFIX) protected prefix: string) {
         super();
     }
 
@@ -75,7 +74,7 @@ export abstract class MessageRoute extends Middleware {
 }
 
 
-export class FactoryRoute extends MessageRoute {
+export class FactoryRoute extends Route {
 
     constructor(url: string, prefix: string, private factory: (...pdrs: ProviderType[]) => Middleware) {
         super(url, prefix);
