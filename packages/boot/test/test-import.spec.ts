@@ -1,5 +1,5 @@
 import { ModuleA, ModuleB, ClassSevice, SubMessageQueue, SocketService, StatupModule, TestService } from './demo';
-import { BootApplication, ROOT_ROUTER } from '../src';
+import { BootApplication } from '../src';
 import expect = require('expect');
 import * as net from 'net';
 
@@ -22,6 +22,7 @@ describe('di module', () => {
     it('message test.', async () => {
         let ctx = await BootApplication.run(ModuleB);
         let q =   ctx.injector.get(SubMessageQueue);
+        ctx.getMessager().send()
         q.subscribe((ctx, next) => {
             if (ctx.event === 'test') {
                 console.log('message queue test: ' + ctx.data);

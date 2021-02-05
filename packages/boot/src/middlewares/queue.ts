@@ -1,4 +1,4 @@
-import { Injectable, Injector, Type, isPlainObject, isString, tokenId, Singleton } from '@tsdi/ioc';
+import { Injectable, Injector, Type, isPlainObject, tokenId, Singleton } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 import { RouteVaildator } from './route';
@@ -22,7 +22,7 @@ export class MessageQueue extends Middlewares {
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         const orgInj = ctx.injector;
         ctx.injector = this.getInjector();
-        if(!ctx.vaild) {
+        if (!ctx.vaild) {
             ctx.vaild = ctx.injector.get(RouteVaildator);
         }
         this.beforeExec(ctx);
@@ -36,7 +36,7 @@ export class MessageQueue extends Middlewares {
 
     protected afterExec(ctx: MessageContext) { }
 
-    protected onCompleted(ctx: MessageContext){
+    protected onCompleted(ctx: MessageContext) {
         this.completed && this.completed.map(cb => {
             cb(ctx);
         });
@@ -60,21 +60,19 @@ export class MessageQueue extends Middlewares {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(ctx: MessageContext): Promise<void>;
+    send(ctx: MessageContext): Promise<MessageContext>;
     /**
      * send message
      *
      * @param {string} url route url
      * @param {*} data query data.
-     * @returns {Promise<void>}
+     * @returns {Promise<MessageContext>}
      */
-    send(url: string, options: {body?: any, query?: any}, injector?: Injector): Promise<void>;
-    send(url: any, data?: any, injector?: Injector): Promise<void> {
-        if (isPlainObject(url)) {
-            return this.execute(url);
-        } else if (isString(url)) {
-            return this.execute({ url, request: data, injector });
-        }
+    send(url: string, options: { body?: any, query?: any }, injector?: Injector): Promise<MessageContext>;
+    async send(url: any, data?: any, injector?: Injector): Promise<MessageContext> {
+        let ctx: MessageContext = isPlainObject(url) ? url : { url, request: data, injector };
+        await this.execute(url);
+        return ctx;
     }
 
     /**

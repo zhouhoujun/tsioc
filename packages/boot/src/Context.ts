@@ -6,6 +6,7 @@ import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
 import { ModuleReflect } from './modules/reflect';
 import { BootstrapMetadata } from './decorators';
+import { MessageQueue } from './middlewares/queue';
 
 export interface ProdverOption {
 
@@ -215,6 +216,11 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * get target reflect.
      */
     readonly reflect: ModuleReflect;
+
+    /**
+     * get message queue.
+     */
+    getMessager(): MessageQueue;
 
     /**
      * get log manager.

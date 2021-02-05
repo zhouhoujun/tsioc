@@ -7,6 +7,7 @@ import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';
 import { BootstrapMetadata } from '../decorators';
 import { BootOption, IBootContext, Template } from '../Context';
+import { MessageQueue, ROOT_QUEUE } from '../middlewares';
 
 
 /**
@@ -19,6 +20,9 @@ import { BootOption, IBootContext, Template } from '../Context';
 @Injectable()
 export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T, ModuleReflect> implements IBootContext<T> {
 
+    getMessager(): MessageQueue {
+        return this.injector.getInstance(ROOT_QUEUE);
+    }
     /**
      * get log manager.
      */
