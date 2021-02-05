@@ -13,13 +13,9 @@ export interface MessageContext extends ProdverOption {
     /**
      * request.
      */
-    readonly request?: { body: any, query: any }
+    readonly request?: { body: any, query: any, target?: any }
 
     readonly method?: string;
-    /**
-     * raise target.
-     */
-    readonly target?: any;
     /**
      * response status
      */

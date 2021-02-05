@@ -68,7 +68,7 @@ export class MessageQueue extends Middlewares {
      * @param {*} data query data.
      * @returns {Promise<MessageContext>}
      */
-    send(url: string, options: { body?: any, query?: any }, injector?: Injector): Promise<MessageContext>;
+    send(url: string, options: { body?: any, query?: any, target?: any }, injector?: Injector): Promise<MessageContext>;
     async send(url: any, data?: any, injector?: Injector): Promise<MessageContext> {
         let ctx: MessageContext = isPlainObject(url) ? url : { url, request: data, injector };
         await this.execute(url);

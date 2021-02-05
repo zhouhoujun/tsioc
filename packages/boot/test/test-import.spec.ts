@@ -21,7 +21,7 @@ describe('di module', () => {
 
     it('message test.', async () => {
         let ctx = await BootApplication.run(ModuleB);
-        let q =   ctx.injector.get(SubMessageQueue);
+        let q = ctx.injector.get(SubMessageQueue);
         ctx.getMessager().send()
         q.subscribe((ctx, next) => {
             if (ctx.event === 'test') {
@@ -32,8 +32,7 @@ describe('di module', () => {
         let qb = ctx.injector.get(SubMessageQueue);
         expect(q === qb).toBeTruthy();
         expect(qb['handles'].length).toEqual(1);
-        ctx.injector.get(ROOT_ROUTER)
-            .send('test', 'hello');
+        ctx.getMessager().send('test', { query: 'hello' });
     });
 
     it('options test.', async () => {

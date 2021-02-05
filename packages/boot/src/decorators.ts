@@ -7,12 +7,13 @@ import { ModuleConfigure } from './modules/configure';
 import { ModuleReflect } from './modules/reflect';
 import { DefaultModuleRef } from './modules/injector';
 import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_URL } from './middlewares/handle';
-import { RootRouter, Router } from './middlewares/router';
+
 import { ROOT_INJECTOR } from './tk';
 import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
+import { ROOT_QUEUE } from './middlewares/queue';
 import { FactoryRoute, Route } from './middlewares/route';
+import { RootRouter, Router } from './middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
-import { ROOT_QUEUE } from './middlewares';
 
 
 /**

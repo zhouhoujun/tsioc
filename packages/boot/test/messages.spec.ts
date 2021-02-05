@@ -1,4 +1,4 @@
-import { BootApplication, ROOT_ROUTER, DIModule, Message, MessageQueue, MessageContext, Middleware, IBootContext, MappingRoute, RouteMapping, CONTEXT } from '../src';
+import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware, IBootContext, MappingRoute, RouteMapping, CONTEXT } from '../src';
 import expect = require('expect');
 import { IInjector, Inject, Injectable, refl } from '@tsdi/ioc';
 
@@ -11,18 +11,18 @@ class DeviceController {
     }
 }
 
-@RouteMapping('/map')
-class MapController {
+// @RouteMapping('/map')
+// class MapController {
 
-    @Inject() mapAdapter: MapAdapter;
+//     @Inject() mapAdapter: MapAdapter;
 
-    @RouteMapping('/mark', 'post')
-    drawMark(name: string, @Inject(CONTEXT) ctx: MessageContext ) {
-        ctx.body;
-        this.mapAdapter.drow(ctx.body);
-    }
+//     @RouteMapping('/mark', 'post')
+//     drawMark(name: string, @Inject(CONTEXT) ctx: MessageContext ) {
+//         ctx.body;
+//         this.mapAdapter.drow(ctx.body);
+//     }
 
-}
+// }
 
 @Message('none')
 class DeviceQueue extends MessageQueue {
@@ -120,7 +120,7 @@ describe('app message queue', () => {
     });
 
     it('make sure singleton', async () => {
-        injector.get(ROOT_ROUTER).send('msg:://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
+        ctx.getMessager().send('msg:://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
         const a = injector.get(DeviceQueue);
         const b = injector.get(DeviceQueue);
         expect(a).toBeInstanceOf(DeviceQueue);
