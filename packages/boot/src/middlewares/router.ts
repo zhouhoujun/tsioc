@@ -1,5 +1,6 @@
 import { Inject, Injectable, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
+import { IRouter } from './handle';
 import { MessageQueue } from './queue';
 import { MessageRoute, RouteVaildator, ROUTE_URL } from './route';
 
@@ -7,7 +8,7 @@ import { MessageRoute, RouteVaildator, ROUTE_URL } from './route';
 
 
 @Injectable()
-export class MessageRouter extends MessageQueue {
+export class MessageRouter extends MessageQueue implements IRouter {
 
     constructor(@Inject(ROUTE_URL) private _url: string) {
         super();

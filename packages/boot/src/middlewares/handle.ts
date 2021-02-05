@@ -157,3 +157,11 @@ export abstract class Middlewares extends Middleware {
         return null;
     }
 }
+
+
+/**
+ * router interface
+ */
+export interface IRouter extends Middlewares {
+    readonly url: string;
+}

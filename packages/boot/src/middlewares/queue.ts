@@ -127,4 +127,3 @@ export class MessageQueue extends Middlewares {
     }
 
 }
-

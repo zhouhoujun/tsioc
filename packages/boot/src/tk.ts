@@ -4,6 +4,7 @@ import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from
 import { IBuilderService } from './services/IBuilderService';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { IModuleInjector } from './modules/ref';
+import { MessageContext } from './middlewares/ctx';
 
 
 /**
@@ -92,3 +93,9 @@ export const MODULE_STARTUPS = tokenId<Token[]>('MODULE_STARTUPS');
  * context options.
  */
 export const CTX_OPTIONS = tokenId<any>('CTX_OPTIONS');
+
+
+/**
+ * middleware context.
+ */
+export const CONTEXT: Token<MessageContext> = tokenId<MessageContext>('MIDDLE_CONTEXT');

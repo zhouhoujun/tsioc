@@ -1,10 +1,9 @@
 import { Abstract, AsyncHandler, ClassType, DecorDefine, isArray, isClass, isFunction, isNullOrUndefined, isObject, isPrimitiveType, isPromise, isString, isUndefined, lang, ParameterMetadata, ProviderType, tokenId, Type, TypeReflect } from '@tsdi/ioc';
-import { BUILDER, TYPE_PARSER } from '../tk';
+import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
-import { Middleware, MiddlewareType } from './handle';
+import { IRouter, Middleware, MiddlewareType } from './handle';
 import { DefaultModelParserToken, ModelParser } from './ModelParser';
 import { MessageRoute } from './route';
-import { MessageRouter } from './router';
 
 
 export interface RouteMapingMetadata {
@@ -16,7 +15,7 @@ export interface RouteMapingMetadata {
      */
     route?: string;
 
-    parent?: Type<MessageRouter>;
+    parent?: Type<IRouter>;
 
     method?: string;
 
@@ -48,8 +47,6 @@ export abstract class RouteMappingVaildator {
     abstract getMiddlewares(ctx: MessageContext, reflect: MappingReflect, propertyKey?: string): MiddlewareType[];
 }
 
-export const CONTEXT = tokenId<MessageContext>('MIDDLE_CONTEXT')
-
 
 const isRest = /\/:/;
 const restParms = /^\S*:/;
@@ -57,8 +54,8 @@ const restParms = /^\S*:/;
 
 export class MappingRoute extends MessageRoute {
 
-    constructor(url: string, parentRoute: string, private reflect: MappingReflect, private factory: (...prds) => any, private middlewares: MiddlewareType[]) {
-        super(url, parentRoute);
+    constructor(url: string, prefix: string, private reflect: MappingReflect, private factory: (...prds) => any, private middlewares: MiddlewareType[]) {
+        super(url, prefix);
     }
 
     protected async navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
@@ -112,7 +109,7 @@ export class MappingRoute extends MessageRoute {
 
     protected getRouteMetaData(ctx: MessageContext) {
         const vaild = ctx.vaild;
-        let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.parentRoute).replace(this.url, ''), true);
+        let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.prefix).replace(this.url, ''), true);
         if (!this.reflect.sortRoutes) {
             this.reflect.sortRoutes = this.reflect.class.methodDecors
                 .filter(m => m && isString(m.matedata.route))

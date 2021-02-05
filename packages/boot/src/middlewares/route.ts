@@ -1,7 +1,7 @@
-import { Abstract, Inject, ProviderType, Singleton, Token, tokenId, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, ProviderType, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { CONTEXT } from '../tk';
 import { IRouteVaildator, MessageContext } from './ctx';
 import { Middleware } from './handle';
-import { CONTEXT } from './mapping';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
 const noParms = /\/\s*$/;
@@ -51,7 +51,7 @@ export const ROUTE_URL: Token<string> = tokenId<string>('ROUTE_URL');
 @Abstract()
 export abstract class MessageRoute extends Middleware {
 
-    constructor(private _url: string, protected parentRoute: string) {
+    constructor(private _url: string, protected prefix: string) {
         super();
     }
 
@@ -70,15 +70,15 @@ export abstract class MessageRoute extends Middleware {
     protected abstract navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 
     protected match(ctx: MessageContext) {
-        return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.parentRoute);
+        return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
     }
 }
 
 
 export class FactoryRoute extends MessageRoute {
 
-    constructor(url: string, parentRoute: string, private factory: (...pdrs: ProviderType[]) => Middleware) {
-        super(url, parentRoute);
+    constructor(url: string, prefix: string, private factory: (...pdrs: ProviderType[]) => Middleware) {
+        super(url, prefix);
     }
 
     protected navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
