@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator,
-    lang, Type, isFunction, Token, isArray, isString, DesignContext
+    lang, Type, isFunction, Token, isArray, isString, DesignContext, ClassMethodDecorator
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -417,7 +417,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
 
 /**
  * message handle decorator.
- * use `Handle` instead.
+ * @deprecated use `Handle` instead.
  */
 export const Message = Handle;
 
@@ -435,7 +435,7 @@ export interface IRouteMappingDecorator {
      * @param {string} route route sub path.
      * @param {MiddlewareType[]} [middlewares] the middlewares for the route.
      */
-    (route: string, middlewares?: MiddlewareType[]): MethodDecorator | ClassDecorator;
+    (route: string, middlewares?: MiddlewareType[]): ClassMethodDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -460,7 +460,7 @@ export interface IRouteMappingDecorator {
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: RouteMapingMetadata): MethodDecorator;
+    (metadata: RouteMapingMetadata): ClassMethodDecorator;
 }
 
 /**

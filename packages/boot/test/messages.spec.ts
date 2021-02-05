@@ -1,6 +1,15 @@
-import { BootApplication, ROOT_MESSAGEQUEUE, DIModule, Message, MessageQueue, MessageContext, Middleware, IBootContext } from '../src';
+import { BootApplication, ROOT_MESSAGEQUEUE, DIModule, Message, MessageQueue, MessageContext, Middleware, IBootContext, MappingRoute, RouteMapping } from '../src';
 import expect = require('expect');
 import { IInjector, Injectable, refl } from '@tsdi/ioc';
+
+@RouteMapping('/device')
+class DeviceController {
+
+    @RouteMapping('/init', 'post')
+    req() {
+
+    }
+}
 
 @Message('none')
 class DeviceQueue extends MessageQueue {

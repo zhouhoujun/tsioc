@@ -31,7 +31,7 @@ describe('di module', () => {
         let qb = ctx.injector.get(SubMessageQueue);
         expect(q === qb).toBeTruthy();
         expect(qb['handles'].length).toEqual(1);
-        ctx.getContainer().get(ROOT_MESSAGEQUEUE)
+        ctx.injector.get(ROOT_MESSAGEQUEUE)
             .send('test', 'hello');
     });
 
