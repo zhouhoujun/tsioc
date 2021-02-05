@@ -1,5 +1,5 @@
 import { Inject, Injectable, Singleton, Token, tokenId } from '@tsdi/ioc';
-import { MsgContext } from './ctx';
+import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
 import { MessageRoute, RouteVaildator, ROUTE_URL } from './route';
 
@@ -18,7 +18,7 @@ export class MessageRouter extends MessageQueue {
     }
 
     private sorted = false;
-    async execute(ctx: MsgContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         ctx.injector = this.getInjector();
         if (!ctx.vaild) {
             ctx.vaild = ctx.injector.get(RouteVaildator);

@@ -1,6 +1,7 @@
-import { Abstract, Inject, Singleton, Token, tokenId, Type, TypeReflect } from '@tsdi/ioc';
-import { IRouteVaildator, MsgContext } from './ctx';
+import { Abstract, Inject, ProviderType, Singleton, Token, tokenId, Type, TypeReflect } from '@tsdi/ioc';
+import { IRouteVaildator, MessageContext } from './ctx';
 import { Middleware } from './handle';
+import { CONTEXT } from './mapping';
 
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
 const noParms = /\/\s*$/;
@@ -26,7 +27,7 @@ export class RouteVaildator implements IRouteVaildator {
         return routePath;
     }
 
-    isActiveRoute(ctx: MsgContext, route: string, routePrefix: string) {
+    isActiveRoute(ctx: MessageContext, route: string, routePrefix: string) {
         let routeUrl = this.getReqRoute(ctx, routePrefix);
         if (route === '') {
             return true;
@@ -34,7 +35,7 @@ export class RouteVaildator implements IRouteVaildator {
         return routeUrl.startsWith(route);
     }
 
-    getReqRoute(ctx: MsgContext, routePrefix: string): string {
+    getReqRoute(ctx: MessageContext, routePrefix: string): string {
         let reqUrl = this.vaildify(ctx.url, true);
 
         if (routePrefix) {
@@ -58,7 +59,7 @@ export abstract class MessageRoute extends Middleware {
         return this._url;
     }
 
-    async execute(ctx: MsgContext, next: () => Promise<void>): Promise<void> {
+    async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         if (this.match(ctx)) {
             this.navigate(ctx, next);
         } else {
@@ -66,9 +67,9 @@ export abstract class MessageRoute extends Middleware {
         }
     }
 
-    protected abstract navigate(ctx: MsgContext, next: () => Promise<void>): Promise<void>;
+    protected abstract navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 
-    protected match(ctx: MsgContext) {
+    protected match(ctx: MessageContext) {
         return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.parentRoute);
     }
 }
@@ -76,12 +77,12 @@ export abstract class MessageRoute extends Middleware {
 
 export class FactoryRoute extends MessageRoute {
 
-    constructor(url: string, parentRoute: string, private factory: () => Middleware) {
+    constructor(url: string, parentRoute: string, private factory: (...pdrs: ProviderType[]) => Middleware) {
         super(url, parentRoute);
     }
 
-    protected navigate(ctx: MsgContext, next: () => Promise<void>): Promise<void> {
-        return this.factory()?.execute(ctx, next);
+    protected navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
+        return this.factory({provide: CONTEXT, useValue: ctx})?.execute(ctx, next);
     }
 
 }

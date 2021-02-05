@@ -1,5 +1,5 @@
 import { Injectable, Injector, Type, isPlainObject, isString } from '@tsdi/ioc';
-import { MsgContext } from './ctx';
+import { MessageContext } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 import { RouteVaildator } from './route';
 
@@ -17,9 +17,9 @@ import { RouteVaildator } from './route';
 @Injectable()
 export class MessageQueue extends Middlewares {
 
-    private completed: ((ctx: MsgContext) => void)[];
+    private completed: ((ctx: MessageContext) => void)[];
 
-    async execute(ctx: MsgContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         const orgInj = ctx.injector;
         ctx.injector = this.getInjector();
         if(!ctx.vaild) {
@@ -32,15 +32,15 @@ export class MessageQueue extends Middlewares {
         this.onCompleted(ctx);
     }
 
-    protected beforeExec(ctx: MsgContext) {
+    protected beforeExec(ctx: MessageContext) {
 
     }
 
-    protected afterExec(ctx: MsgContext) {
+    protected afterExec(ctx: MessageContext) {
 
     }
 
-    protected onCompleted(ctx: MsgContext){
+    protected onCompleted(ctx: MessageContext){
         this.completed && this.completed.map(cb => {
             cb(ctx);
         });
@@ -50,7 +50,7 @@ export class MessageQueue extends Middlewares {
      * register completed callbacks.
      * @param callback callback.T
      */
-    done(callback: (ctx: MsgContext) => void) {
+    done(callback: (ctx: MessageContext) => void) {
         if (!this.completed) {
             this.completed = [];
         }
@@ -64,7 +64,7 @@ export class MessageQueue extends Middlewares {
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(ctx: MsgContext): Promise<void>;
+    send(ctx: MessageContext): Promise<void>;
     /**
      * send message
      *
@@ -84,9 +84,9 @@ export class MessageQueue extends Middlewares {
     /**
      * subescribe message.
      *
-     * @param {(ctx: MsgContext, next: () => Promise<void>) => Promise<void>} subscriber
+     * @param {(ctx: MessageContext, next: () => Promise<void>) => Promise<void>} subscriber
      */
-    subscribe(subscriber: (ctx: MsgContext, next: () => Promise<void>) => Promise<void>);
+    subscribe(subscriber: (ctx: MessageContext, next: () => Promise<void>) => Promise<void>);
     /**
      * subscribe message by handle instance;
      *
@@ -106,10 +106,10 @@ export class MessageQueue extends Middlewares {
     /**
      * subescribe message.
      *
-     * @param {(ctx: MsgContext, next: () => Promise<void>) => Promise<void>} subscriber
+     * @param {(ctx: MessageContext, next: () => Promise<void>) => Promise<void>} subscriber
      * @memberof IMessageQueue
      */
-    unsubscribe(subscriber: (ctx: MsgContext, next: () => Promise<void>) => Promise<void>);
+    unsubscribe(subscriber: (ctx: MessageContext, next: () => Promise<void>) => Promise<void>);
     /**
      * subscribe message by handle instance;
      *

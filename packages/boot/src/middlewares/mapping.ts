@@ -1,6 +1,6 @@
 import { Abstract, AsyncHandler, ClassType, DecorDefine, isArray, isClass, isFunction, isNullOrUndefined, isObject, isPrimitiveType, isPromise, isString, isUndefined, lang, ParameterMetadata, ProviderType, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { BUILDER, TYPE_PARSER } from '../tk';
-import { MsgContext } from './ctx';
+import { MessageContext } from './ctx';
 import { Middleware, MiddlewareType } from './handle';
 import { DefaultModelParserToken, ModelParser } from './ModelParser';
 import { MessageRoute } from './route';
@@ -45,10 +45,10 @@ const emptyNext = async () => { };
 
 @Abstract()
 export abstract class RouteMappingVaildator {
-    abstract getMiddlewares(ctx: MsgContext, reflect: MappingReflect, propertyKey?: string): MiddlewareType[];
+    abstract getMiddlewares(ctx: MessageContext, reflect: MappingReflect, propertyKey?: string): MiddlewareType[];
 }
 
-export const MSG_CONTEXT = tokenId<MsgContext>('MSG_CONTEXT')
+export const CONTEXT = tokenId<MessageContext>('MIDDLE_CONTEXT')
 
 
 const isRest = /\/:/;
@@ -61,7 +61,7 @@ export class MappingRoute extends MessageRoute {
         super(url, parentRoute);
     }
 
-    protected async navigate(ctx: MsgContext, next: () => Promise<void>): Promise<void> {
+    protected async navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         let meta = this.getRouteMetaData(ctx);
         if (!meta) {
             return await next();
@@ -74,10 +74,10 @@ export class MappingRoute extends MessageRoute {
         return await next();
     }
 
-    async invoke(ctx: MsgContext, meta: DecorDefine) {
+    async invoke(ctx: MessageContext, meta: DecorDefine) {
         let injector = ctx.injector;
         if (meta && meta.propertyKey) {
-            let ctrl = this.factory({ provide: MSG_CONTEXT, useValue: ctx });
+            let ctrl = this.factory({ provide: CONTEXT, useValue: ctx });
             let providers = await this.createProvider(ctx, ctrl, meta.matedata, this.reflect.methodParams.get(meta.propertyKey));
             let result = await injector.invoke(ctrl, meta.propertyKey, ...providers);
             if (isPromise(result)) {
@@ -89,32 +89,14 @@ export class MappingRoute extends MessageRoute {
                 await result(ctx);
             } else if (result instanceof Middleware) {
                 await result.execute(ctx, emptyNext);
-            } else if (isPrimitiveType(result)) {
-                // if (isBuffer(result)) {
-                //     if (typeof Buffer !== 'undefined') {
-                //         ctx.body = Buffer.from(result)
-                //     } else {
-                //         ctx.body = result;
-                //     }
-                // } else {
-                ctx.body = result;
-                // }
-                ctx.status = 200;
-            } else if (isObject(result)) {
-                // if (result instanceof ResultValue) {
-                //     await result.sendValue(ctx);
-                // } else {
-                ctx.body = result;
-                ctx.status = 200;
-                // }
-            } else {
+            } else if (isObject(result)){
                 ctx.body = result;
                 ctx.status = 200;
             }
         }
     }
 
-    protected getRouteMiddleware(ctx: MsgContext, meta: DecorDefine) {
+    protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {
         let vailds = ctx.injector.getServices(RouteMappingVaildator);
         let middlewares = this.middlewares || [];
         if (vailds && vailds.length) {
@@ -128,7 +110,7 @@ export class MappingRoute extends MessageRoute {
         return middlewares;
     }
 
-    protected getRouteMetaData(ctx: MsgContext) {
+    protected getRouteMetaData(ctx: MessageContext) {
         const vaild = ctx.vaild;
         let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.parentRoute).replace(this.url, ''), true);
         if (!this.reflect.sortRoutes) {
@@ -157,9 +139,9 @@ export class MappingRoute extends MessageRoute {
         return meta;
     }
 
-    protected async createProvider(ctx: MsgContext, ctrl: any, meta: RouteMapingMetadata, params: ParameterMetadata[]): Promise<ProviderType[]> {
+    protected async createProvider(ctx: MessageContext, ctrl: any, meta: RouteMapingMetadata, params: ParameterMetadata[]): Promise<ProviderType[]> {
         const { injector, vaild } = ctx;
-        let providers: ProviderType[] = [{ provide: MSG_CONTEXT, useValue: ctx }];
+        let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
         if (params && params.length) {
             let restParams: any = {};
             if (isRest.test(meta.route)) {
@@ -212,14 +194,14 @@ export class MappingRoute extends MessageRoute {
         return providers;
     }
 
-    protected toHandle(injector, handleType: MiddlewareType): AsyncHandler<MsgContext> {
+    protected toHandle(injector, handleType: MiddlewareType): AsyncHandler<MessageContext> {
         if (handleType instanceof Middleware) {
             return handleType.toAction();
         } else if (lang.isBaseOf(handleType, Middleware)) {
             const handle = injector.get(handleType) ?? injector.getContainer().regedState.getInjector(handleType as ClassType)?.get(handleType);
             return handle?.toAction?.();
         } else if (isFunction(handleType)) {
-            return handleType as AsyncHandler<MsgContext>;
+            return handleType as AsyncHandler<MessageContext>;
         }
         return null;
     }

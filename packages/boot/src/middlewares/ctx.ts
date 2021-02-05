@@ -1,14 +1,18 @@
 import { IInjector } from '@tsdi/ioc';
 import { ProdverOption } from '../Context';
 
-
-export interface MsgContext extends ProdverOption {
+/**
+ * message context for middlewares.
+ */
+export interface MessageContext extends ProdverOption {
     /**
      * navigate message
      */
     readonly url?: string;
 
-    
+    /**
+     * request.
+     */
     readonly request?: { body: any, query: any }
 
     readonly method?: string;
@@ -34,6 +38,6 @@ export interface MsgContext extends ProdverOption {
 export interface IRouteVaildator {
     isRoute(url: string): boolean;
     vaildify(routePath: string, foreNull?: boolean): string;
-    isActiveRoute(ctx: MsgContext, route: string, routePrefix: string);
-    getReqRoute(ctx: MsgContext, routePrefix: string): string;
+    isActiveRoute(ctx: MessageContext, route: string, routePrefix: string);
+    getReqRoute(ctx: MessageContext, routePrefix: string): string;
 }

@@ -396,7 +396,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             if (isString(route)) {
                 if (!(msgQueue instanceof MessageRouter)) throw new Error(lang.getClassName(msgQueue) + 'is not message router!');
                 const type = ctx.type;
-                msgQueue.use(new FactoryRoute(route, (msgQueue as MessageRouter).url, () => state.getInjector(type)?.get(type)));
+                msgQueue.use(new FactoryRoute(route, (msgQueue as MessageRouter).url, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs)));
             } else {
                 if (before) {
                     msgQueue.useBefore(ctx.type, before);
@@ -463,7 +463,9 @@ export interface IRouteMappingDecorator {
     (metadata: RouteMapingMetadata): MethodDecorator;
 }
 
-
+/**
+ * RouteMapping decorator
+ */
 export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingMetadata>('RouteMapping', {
     props: (route: string, arg2?: MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
         if (isArray(arg2)) {

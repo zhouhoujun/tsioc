@@ -1,5 +1,5 @@
 import { Abstract, AsyncHandler, chain, ClassType, Inject, Injector, INJECTOR, isFunction, lang, Type } from '@tsdi/ioc';
-import { MsgContext } from './ctx';
+import { MessageContext } from './ctx';
 
 
 
@@ -17,21 +17,21 @@ export abstract class Middleware {
      * execute middleware.
      *
      * @abstract
-     * @param {MsgContext} ctx
+     * @param {MessageContext} ctx
      * @param {() => Promise<void>} next
      * @returns {Promise<void>}
      */
-    abstract execute(ctx: MsgContext, next: () => Promise<void>): Promise<void>;
+    abstract execute(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 
-    private _action: AsyncHandler<MsgContext>;
-    toAction(): AsyncHandler<MsgContext> {
+    private _action: AsyncHandler<MessageContext>;
+    toAction(): AsyncHandler<MessageContext> {
         if (!this._action) {
-            this._action = (ctx: MsgContext, next?: () => Promise<void>) => this.execute(ctx, next);
+            this._action = (ctx: MessageContext, next?: () => Promise<void>) => this.execute(ctx, next);
         }
         return this._action;
     }
 
-    protected execFuncs(ctx: MsgContext, handles: AsyncHandler<MsgContext>[], next?: () => Promise<void>): Promise<void> {
+    protected execFuncs(ctx: MessageContext, handles: AsyncHandler<MessageContext>[], next?: () => Promise<void>): Promise<void> {
         return chain(handles, ctx, next);
     }
 }
@@ -39,13 +39,13 @@ export abstract class Middleware {
 /**
  * message type.
  */
-export type MiddlewareType = AsyncHandler<MsgContext> | Middleware | Type<Middleware>;
+export type MiddlewareType = AsyncHandler<MessageContext> | Middleware | Type<Middleware>;
 
 
 @Abstract()
 export abstract class Middlewares extends Middleware {
     protected handles: MiddlewareType[] = [];
-    private funcs: AsyncHandler<MsgContext>[];
+    private funcs: AsyncHandler<MessageContext>[];
 
     @Inject(INJECTOR)
     private _injector: Injector;
@@ -129,7 +129,7 @@ export abstract class Middlewares extends Middleware {
         return this;
     }
 
-    async execute(ctx: MsgContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
             this.funcs = this.handles.map(ac => this.toHandle(ac)).filter(f => f);
         }
@@ -145,14 +145,14 @@ export abstract class Middlewares extends Middleware {
         return this;
     }
 
-    protected toHandle(handleType: MiddlewareType): AsyncHandler<MsgContext> {
+    protected toHandle(handleType: MiddlewareType): AsyncHandler<MessageContext> {
         if (handleType instanceof Middleware) {
             return handleType.toAction();
         } else if (lang.isBaseOf(handleType, Middleware)) {
             const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().regedState.getInjector(handleType as ClassType)?.get(handleType);
             return handle?.toAction?.();
         } else if (isFunction(handleType)) {
-            return handleType as AsyncHandler<MsgContext>;
+            return handleType as AsyncHandler<MessageContext>;
         }
         return null;
     }
