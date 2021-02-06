@@ -7,4 +7,3 @@ export * from './route';
 export * from './router';
 export * from './root';
 export * from './mapping';
-export * from './mdl';

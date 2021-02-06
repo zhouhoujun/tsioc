@@ -1,5 +1,5 @@
-import { Injectable, Injector, Type, isPlainObject } from '@tsdi/ioc';
-import { MessageContext } from './ctx';
+import { Injectable, Injector, Type, isPlainObject, isString } from '@tsdi/ioc';
+import { MessageContext, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 import { RouteVaildator } from './route';
 
@@ -69,13 +69,13 @@ export class MessageQueue extends Middlewares {
      * send message
      *
      * @param {string} url route url
-     * @param {*} data query data.
+     * @param {RequestOption} options query data.
      * @returns {Promise<MessageContext>}
      */
-    send(url: string, options: { body?: any, query?: any, target?: any }, injector?: Injector): Promise<MessageContext>;
+    send(url: string, options: RequestOption, injector?: Injector): Promise<MessageContext>;
     async send(url: any, data?: any, injector?: Injector): Promise<MessageContext> {
-        let ctx: MessageContext = isPlainObject(url) ? url : { url, request: data, injector };
-        await this.execute(url);
+        let ctx: MessageContext = isString(url) ? { url, request: data, injector } : url;
+        await this.execute(ctx);
         return ctx;
     }
 

@@ -4,19 +4,21 @@ import { ProdverOption } from '../Context';
 /**
  * Request
  */
-export interface Request extends ProdverOption {
+export interface RequestOption extends ProdverOption {
     /**
      * request body.
      */
-    body: any;
+    readonly body?: any;
     /**
      * request query params
      */
-    query: any;
+    readonly query?: any;
+
+    readonly event?: string;
     /**
      * the target raise request.
      */
-    target?: any;
+    readonly target?: any;
 }
 
 /**
@@ -31,7 +33,7 @@ export interface MessageContext {
     /**
      * request.
      */
-    readonly request?: Request;
+    readonly request?: RequestOption;
 
     /**
      * reuqest method

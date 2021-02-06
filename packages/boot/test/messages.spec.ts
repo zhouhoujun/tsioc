@@ -24,7 +24,7 @@ class DeviceController {
 
 // }
 
-@Message('none')
+@Message('/device')
 class DeviceQueue extends MessageQueue {
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
@@ -120,7 +120,8 @@ describe('app message queue', () => {
     });
 
     it('make sure singleton', async () => {
-        ctx.getMessager().send('msg:://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
+        // ctx.getMessager().send('msg:://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
+        console.log(ctx.getMessager());
         const a = injector.get(DeviceQueue);
         const b = injector.get(DeviceQueue);
         expect(a).toBeInstanceOf(DeviceQueue);
@@ -142,7 +143,7 @@ describe('app message queue', () => {
             aState = ctx.getValue('deviceA_state');
             bState = ctx.getValue('deviceB_state');
         })
-        await a.send({ event: 'startup' });
+        await ctx.getMessager().send('/device', { event: 'startup' });
         expect(device).toBe('device data');
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');

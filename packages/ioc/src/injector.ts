@@ -536,11 +536,6 @@ export abstract class Injector extends Provider implements IInjector {
     }
 
     /**
-     * register types.
-     * @param types
-     */
-    abstract register(types: Type[]): this;
-    /**
      * register type.
      * @abstract
      * @template T

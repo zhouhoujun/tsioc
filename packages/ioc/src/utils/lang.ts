@@ -1,6 +1,6 @@
 // use core-js in browser.
 import { ObjectMap, Type, Modules, ClassType } from '../types';
-import { getClass, isArray, isClass, isClassType, isFunction, isNil, isObject } from './chk';
+import { getClass, isArray, isClass, isClassType, isFunction, isNil, isObject, isPlainObject } from './chk';
 import { clsUglifyExp } from './exps';
 import { getDesignAnno } from './util';
 
@@ -229,7 +229,7 @@ function getContentTypes(regModule: Modules): Type[] {
     let regModules: Type[] = [];
     if (isClass(regModule)) {
         regModules.push(regModule);
-    } else if (regModule) {
+    } else if (isPlainObject(regModule)) {
         let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
         for (let p in rmodules) {
             let type = rmodules[p];

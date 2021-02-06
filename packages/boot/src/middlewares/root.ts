@@ -1,4 +1,5 @@
-import { isArray, PROVIDERS, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, isArray, PROVIDERS, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Startup } from '../runnable/Runnable';
 import { BOOTCONTEXT } from '../tk';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -21,10 +22,14 @@ export const RootMessageQueueToken = ROOT_QUEUE;
  * root queue.
  */
 @Singleton(ROOT_QUEUE)
+@Autorun('setup')
 export class RootMessageQueue extends MessageQueue {
 
     constructor() {
         super();
+    }
+
+    setup() {
         this.use(
             initQueue,
             RootRouter
@@ -64,17 +69,17 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
             enumerable: false
         }
     });
-    const logger = injector.getInstance(BOOTCONTEXT).getLogManager().getLogger();
+    const logger = injector.getInstance(BOOTCONTEXT).getLogManager()?.getLogger();
     const start = Date.now();
-    logger.debug(ctx.method, ctx.url);
+    logger?.debug(ctx.method, ctx.url);
     try {
         await next();
     } catch (err) {
-        logger.error(err);
+        logger?.error(err);
         ctx.status = 500;
         ctx.error = err;
     } finally {
-        logger.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
+        logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
 
 };

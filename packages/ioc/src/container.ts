@@ -28,11 +28,6 @@ export class InjectorImpl extends Injector {
     }
 
     /**
-     * register types.
-     * @param types
-     */
-    register(types: Type[]): this;
-    /**
      * register provider.
      *
      * @template T
@@ -40,14 +35,8 @@ export class InjectorImpl extends Injector {
      * @param { FactoryLike<T>} fac
      * @returns {this}
      */
-    register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
-    register(token: any, fac?: FactoryLike<any>) {
-        if (isArray(token)) {
-            const ct = this.getContainer();
-            token.forEach((t: Type) => ct.registerIn(this, t));
-        } else {
-            this.getContainer().registerFactory(this, token, fac);
-        }
+    register<T>(token: Token<T>, fac?: FactoryLike<T>): this {
+        this.getContainer().registerFactory(this, token, fac);
         return this;
     }
 
@@ -183,11 +172,6 @@ export class Container extends Injector implements IContainer {
     }
 
     /**
-     * register types.
-     * @param types
-     */
-    register(types: Type[]): this;
-    /**
      * register provider.
      *
      * @template T
@@ -195,21 +179,8 @@ export class Container extends Injector implements IContainer {
      * @param { FactoryLike<T>} fac
      * @returns {this}
      */
-    register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
-    /**
-     * register type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [fac]
-     * @returns {this}
-     */
-    register(token: any, fac?: FactoryLike<any>) {
-        if (isArray(token)) {
-            token.forEach(t => this.registerType(t));
-        } else {
-            this.registerFactory(this, token, fac);
-        }
+    register<T>(token: Token<T>, fac?: FactoryLike<T>): this {
+        this.registerFactory(this, token, fac);
         return this;
     }
 
