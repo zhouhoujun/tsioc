@@ -270,6 +270,11 @@ export interface IInjector extends IProvider {
      */
     register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
+     * register types.
+     * @param types
+     */
+    register(types: Type[]): this;
+    /**
      * register stingleton type.
      *
      * @template T

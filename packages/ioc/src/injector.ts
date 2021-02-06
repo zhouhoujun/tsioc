@@ -85,7 +85,7 @@ export class DefaultStrategy extends Strategy {
     }
 
     hasValue<T>(key: Token<T>, curr: IProvider) {
-        return curr.parent?.hasValue(key);
+        return curr.parent?.hasValue(key) ?? false;
     }
 
     getValue<T>(key: Token<T>, curr: IProvider) {
@@ -310,16 +310,15 @@ export class Provider implements IProvider {
      * @returns {boolean}
      */
     has<T>(token: Token<T>, deep?: boolean): boolean {
-        return this.factories.has(token) || this.strategy.hasToken(token, this, deep);
+        return this.factories.has(token) || (this.strategy.hasToken(token, this, deep) ?? false);
     }
 
-
     hasValue<T>(token: Token<T>): boolean {
-        return !isNil(this.factories.get(token)?.value) || this.strategy.hasValue(token, this);
+        return !isNil(this.factories.get(token)?.value) || (this.strategy.hasValue(token, this) ?? false);
     }
 
     getValue<T>(token: Token<T>): T {
-        return this.factories.get(token)?.value ?? this.strategy.getValue(token, this);
+        return this.factories.get(token)?.value ?? this.strategy.getValue(token, this) ?? null;
     }
 
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this {
@@ -362,10 +361,8 @@ export class Provider implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T {
-        return getFacInstance(this.factories.get(key), ...providers) ?? this.strategy.getInstance(key, this, ...providers);
+        return getFacInstance(this.factories.get(key), ...providers) ?? this.strategy.getInstance(key, this, ...providers) ?? null;
     }
-
-
 
     /**
      * bind provider.
@@ -538,6 +535,11 @@ export abstract class Injector extends Provider implements IInjector {
         super(parent, strategy);
     }
 
+    /**
+     * register types.
+     * @param types
+     */
+    abstract register(types: Type[]): this;
     /**
      * register type.
      * @abstract
