@@ -5,7 +5,7 @@ import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BUILDER, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
-
+import { MiddlewareModule } from './middlewares';
 
 /**
  * boot application.
@@ -45,12 +45,12 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
             container = this.getContainer();
         }
 
-        container.registerType(BootModule);
 
         if (!this.container.has(ROOT_INJECTOR)) {
             this.container.setValue(ROOT_INJECTOR, ModuleInjector.create(this.container));
         }
         container.setValue(BootApplication, this);
+        container.registerType(BootModule, MiddlewareModule);
 
     }
 

@@ -6,7 +6,6 @@ import { ResolveMoudleScope } from './builder/handles';
 import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
 import { BuildContext } from './builder/ctx';
 import { BootContext } from './boot/ctx';
-import { MiddlewareModule } from './middlewares/mdl';
 
 
 /**
@@ -32,7 +31,7 @@ export class BootModule {
             RunnableBuildLifeScope,
             BootLifeScope);
 
-        container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser, MiddlewareModule);
+        container.inject(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser);
 
     }
 }

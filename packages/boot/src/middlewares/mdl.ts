@@ -1,18 +1,25 @@
-import { CONTAINER, IContainer, Inject, IocExt } from '@tsdi/ioc';
+import { DIModule } from '../decorators';
 import { ExtendBaseTypeMap } from './ModelParser';
-import { MessageQueue, RootMessageQueue } from './queue';
+import { MessageQueue } from './queue';
+import { RootMessageQueue } from './root';
 import { RouteVaildator } from './route';
 import { RootRouter, Router } from './router';
 
 
 /**
-* ORM Core module.  
+* router module.
 */
-@IocExt()
+@DIModule({
+    regIn: 'root',
+    providers: [
+        RouteVaildator,
+        ExtendBaseTypeMap,
+        MessageQueue,
+        Router,
+        RootRouter,
+        RootMessageQueue
+    ]
+})
 export class MiddlewareModule {
 
-   setup(@Inject(CONTAINER) container: IContainer) {
-       container.use(RouteVaildator, ExtendBaseTypeMap, MessageQueue, RootMessageQueue, Router, RootRouter);
-       container.get(RootMessageQueue).use(RootRouter);
-   }
 }

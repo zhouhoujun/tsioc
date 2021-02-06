@@ -10,7 +10,7 @@ import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, RO
 
 import { ROOT_INJECTOR } from './tk';
 import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
-import { ROOT_QUEUE } from './middlewares/queue';
+import { ROOT_QUEUE } from './middlewares/root';
 import { FactoryRoute, Route } from './middlewares/route';
 import { RootRouter, Router } from './middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';

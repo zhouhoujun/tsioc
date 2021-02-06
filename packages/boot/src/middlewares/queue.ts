@@ -1,4 +1,4 @@
-import { Injectable, Injector, Type, isPlainObject, tokenId, Singleton } from '@tsdi/ioc';
+import { Injectable, Injector, Type, isPlainObject } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 import { RouteVaildator } from './route';
@@ -22,9 +22,6 @@ export class MessageQueue extends Middlewares {
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         const orgInj = ctx.injector;
         ctx.injector = this.getInjector();
-        if (!ctx.vaild) {
-            ctx.vaild = ctx.injector.get(RouteVaildator);
-        }
         this.beforeExec(ctx);
         await super.execute(ctx, next);
         this.afterExec(ctx);
@@ -32,7 +29,14 @@ export class MessageQueue extends Middlewares {
         this.onCompleted(ctx);
     }
 
-    protected beforeExec(ctx: MessageContext) { }
+    protected beforeExec(ctx: MessageContext) {
+        if (!ctx.vaild) {
+            ctx.vaild = ctx.injector.get(RouteVaildator);
+        }
+        if(!ctx.setValue) {
+
+        }
+    }
 
     protected afterExec(ctx: MessageContext) { }
 
@@ -122,22 +126,5 @@ export class MessageQueue extends Middlewares {
 
 }
 
-
-export const ROOT_QUEUE = tokenId<MessageQueue>('ROOT_QUEUE');
-
-/**
- * root message queue token.
- *
- * @deprecated use `ROOT_QUEUE` instead.
- */
-export const RootMessageQueueToken = ROOT_QUEUE;
-
-/**
- * root queue.
- */
-@Singleton(ROOT_QUEUE)
-export class RootMessageQueue extends MessageQueue {
-
-}
 
 

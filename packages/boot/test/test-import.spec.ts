@@ -22,10 +22,9 @@ describe('di module', () => {
     it('message test.', async () => {
         let ctx = await BootApplication.run(ModuleB);
         let q = ctx.injector.get(SubMessageQueue);
-        ctx.getMessager().send()
         q.subscribe((ctx, next) => {
             if (ctx.event === 'test') {
-                console.log('message queue test: ' + ctx.data);
+                console.log('message queue test: ' + ctx.request.body);
             }
             return next()
         });

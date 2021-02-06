@@ -21,13 +21,13 @@ import { MessageQueue, ROOT_QUEUE } from '../middlewares';
 export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T, ModuleReflect> implements IBootContext<T> {
 
     getMessager(): MessageQueue {
-        return this.injector.getInstance(ROOT_QUEUE);
+        return this.injector.get(ROOT_QUEUE);
     }
     /**
      * get log manager.
      */
     getLogManager(): ILoggerManager {
-        return this.injector.resolve(ConfigureLoggerManager);
+        return this.injector.get(ConfigureLoggerManager);
     }
 
     /**
