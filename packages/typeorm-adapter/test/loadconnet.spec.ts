@@ -73,6 +73,7 @@ export class LoadReposTest {
     @Test()
     async addUser() {
         const rep = await this.ctx.getMessager().send('/users', { method: 'post', body: {name: 'test1', account: 'test1', password: '111111'}});
+        expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
         expect(rep.body.name).toEqual('test1');
     }
@@ -80,6 +81,7 @@ export class LoadReposTest {
     @Test()
     async getUser() {
         const rep = await this.ctx.getMessager().send('/users/test1', { method: 'get' });
+        expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
         expect(rep.body.name).toEqual('test1');
     }
@@ -87,8 +89,10 @@ export class LoadReposTest {
     @Test()
     async detUser() {
         const rep1 = await this.ctx.getMessager().send('/users/test1', { method: 'get' });
+        expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeInstanceOf(User);
         const rep = await this.ctx.getMessager().send('/users/'+ rep1.body.id, { method: 'delete' });
+        expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
 

@@ -3,7 +3,7 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
-import { getClass, isArray, isClass, isFunction, isUndefined } from '../utils/chk';
+import { getClass, isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './metadatas';
 import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
@@ -466,7 +466,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine) {
  * @param ify if not has own reflect will create new reflect.
  */
 export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
-    let tagRefl = type[reflFiled];
+    let tagRefl = type[reflFiled]?.();
     if (tagRefl?.type !== type) {
         if (!ify) return null;
 
@@ -488,10 +488,11 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
             methodParams: prRef ? new Map(prRef.methodParams) : new Map(),
             methodExtProviders: prRef ? new Map(prRef.methodParams) : new Map()
         };
-        Object.defineProperty(type, reflFiled, {
-            get: () => tagRefl,
-            configurable: false
-        });
+        type[reflFiled] = () => tagRefl;
+        // Object.defineProperty(type, reflFiled, {
+        //     get: () => tagRefl,
+        //     configurable: false
+        // });
     }
     return tagRefl as T;
 }
@@ -511,7 +512,7 @@ const key = '_ρioc_';
  * @param containerId container id.
  */
 export function getReged<T extends Registered>(type: ClassType, id: string): T {
-    const inf = type[key];
+    const inf = type[key]?.();
     if (inf && inf.type === type) {
         return inf[id] || null;
     }
@@ -525,7 +526,7 @@ export function getReged<T extends Registered>(type: ClassType, id: string): T {
  * @param state state.
  */
 export function setReged<T extends Registered>(type: ClassType, id: string, state: T) {
-    const inf = type[key];
+    const inf = type[key]?.();
     if (inf && inf.type === type) {
         const old = inf[id];
         if (old) {
@@ -537,10 +538,11 @@ export function setReged<T extends Registered>(type: ClassType, id: string, stat
     }
     const sta = { type };
     sta[id] = state;
-    Object.defineProperty(type, key, {
-        get: ()=> sta,
-        configurable: false
-    });
+    type[key] = () => sta;
+    //     Object.defineProperty(type, key, {
+    //         get: ()=> sta,
+    //         configurable: false
+    //     });
 }
 
 /**
@@ -549,7 +551,7 @@ export function setReged<T extends Registered>(type: ClassType, id: string, stat
  * @param containerId container id.
  */
 export function delReged(type: ClassType, id: string) {
-    const inf = type[key];
+    const inf = type[key]?.();
     if (inf && inf.type === type) {
         cleanObj(inf[id]);
         inf[id] = null;
