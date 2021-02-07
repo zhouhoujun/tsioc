@@ -7,7 +7,7 @@ class DeviceController {
 
     @RouteMapping('/init', 'post')
     req(name: string) {
-        
+        return { name };
     }
 }
 
@@ -24,7 +24,7 @@ class DeviceController {
 
 // }
 
-@Message('/device')
+@Message('/hdevice')
 class DeviceQueue extends MessageQueue {
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         console.log('device msg start.');
@@ -103,6 +103,7 @@ class DeviceAModule {
         DeviceAModule
     ],
     providers: [
+        DeviceController,
         DeviceStartupHandle
     ]
 })
@@ -143,10 +144,17 @@ describe('app message queue', () => {
             aState = ctx.getValue('deviceA_state');
             bState = ctx.getValue('deviceB_state');
         })
-        await ctx.getMessager().send('/device', { event: 'startup' });
+        await ctx.getMessager().send('/hdevice', { event: 'startup' });
         expect(device).toBe('device data');
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');
+    });
+
+    it('route response', async ()=> {
+        const a = await ctx.getMessager().send('/device/init', { method: 'post', query:{ name: 'test'}});
+        expect(a.status).toEqual(200);
+        expect(a.body).toBeDefined();
+        expect(a.body.name).toEqual('test');
     });
 
     after(() => {

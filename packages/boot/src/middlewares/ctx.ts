@@ -13,7 +13,13 @@ export interface RequestOption extends ProdverOption {
      * request query params
      */
     readonly query?: any;
-
+    /**
+     * reuqest method
+     */
+    readonly method?: string;
+    /**
+     * event
+     */
     readonly event?: string;
     /**
      * the target raise request.
@@ -29,6 +35,12 @@ export interface MessageContext {
      * navigate message
      */
     readonly url?: string;
+
+    readonly protocol?: string;
+    readonly host?: string;
+    readonly port?: number;
+    readonly pathname?: string;
+
 
     /**
      * request.

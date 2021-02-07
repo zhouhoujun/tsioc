@@ -1,5 +1,4 @@
 import { Autorun, isArray, PROVIDERS, Singleton, Token, tokenId } from '@tsdi/ioc';
-import { Startup } from '../runnable/Runnable';
 import { BOOTCONTEXT } from '../tk';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -57,6 +56,10 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         ctx.providers.inject(...isArray(request.providers) ? request.providers : [request.providers]);
     }
 
+    if (!ctx.method) {
+        Object.assign(ctx, { event: request.event, method: request.method });
+    }
+
     Object.defineProperties(ctx, {
         getValue: {
             value: getValue,
@@ -69,6 +72,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
             enumerable: false
         }
     });
+
     const logger = injector.getInstance(BOOTCONTEXT).getLogManager()?.getLogger();
     const start = Date.now();
     logger?.debug(ctx.method, ctx.url);
@@ -81,5 +85,4 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
-
 };

@@ -1,4 +1,4 @@
-import { Injectable, Injector, Type, isPlainObject, isString } from '@tsdi/ioc';
+import { Injectable, Injector, Type, isString } from '@tsdi/ioc';
 import { MessageContext, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 import { RouteVaildator } from './route';

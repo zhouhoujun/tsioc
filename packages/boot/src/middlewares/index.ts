@@ -6,4 +6,6 @@ export * from './queue';
 export * from './route';
 export * from './router';
 export * from './root';
+export * from './result';
 export * from './mapping';
+export * from './strategy';

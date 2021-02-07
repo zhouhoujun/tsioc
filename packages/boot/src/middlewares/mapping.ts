@@ -1,12 +1,14 @@
 import {
-    Abstract, AsyncHandler, ClassType, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, 
+    Abstract, AsyncHandler, ClassType, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect,
     isObject, isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNullOrUndefined
 } from '@tsdi/ioc';
 import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
 import { DefaultModelParserToken, ModelParser } from './ModelParser';
+import { ResultValue } from './result';
 import { Route } from './route';
+import { ResultStrategy } from './strategy';
 
 
 export interface RouteMapingMetadata {
@@ -90,6 +92,15 @@ export class MappingRoute extends Route {
             } else if (result instanceof Middleware) {
                 await result.execute(ctx, emptyNext);
             } else if (isObject(result)) {
+                if (result instanceof ResultValue) {
+                    return await result.sendValue(ctx);
+                }
+
+                const strategy = injector.resolve({ token: ResultStrategy, target: result });
+                if (strategy) {
+                    return await strategy.send(ctx, result);
+                }
+
                 ctx.body = result;
                 ctx.status = 200;
             }
