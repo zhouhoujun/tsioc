@@ -23,6 +23,9 @@ export interface DBPropertyMetadata extends PropertyMetadata {
 }
 
 
+/**
+ * extend base type map.
+ */
 @Singleton()
 export class ExtendBaseTypeMap {
     static ρNPT = true;
@@ -73,13 +76,9 @@ export abstract class ModelParser implements IModelParser {
         let meta = this.getPropertyMeta(type);
         let result = this.injector.resolve({ token: type, regify: true });
         for (let n in meta) {
-            let propmetas = meta[n];
-            if (propmetas.length) {
+            const propmeta = meta[n];
+            if (propmeta) {
                 if (!isUndefined(objMap[n])) {
-                    let propmeta = propmetas.find(p => p && !!(p.provider || p.type));
-                    if (!propmeta) {
-                        continue;
-                    }
                     let ptype = propmeta.provider ? (isProvide(propmeta.provider) ? this.injector.getTokenProvider(propmeta.provider) : propmeta.provider) : propmeta.type;
                     let reqval = objMap[n];
                     if (!isFunction(ptype) || isNil(reqval)) {
@@ -116,6 +115,6 @@ export abstract class ModelParser implements IModelParser {
         return this.getTypeMap().resolve(type, value);
     }
 
-    protected abstract getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata[]>;
+    protected abstract getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata>;
 
 }

@@ -32,27 +32,25 @@ export class TypeOrmModelParser extends ModelParser {
         }
     }
 
-    protected getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata[]> {
+    protected getPropertyMeta(type: Type): ObjectMap<DBPropertyMetadata> {
         let metas = {};
         getMetadataArgsStorage().columns.filter(col => col.target === type)
             .forEach(col => {
-                metas[col.propertyName] = metas[col.propertyName] || [];
-                metas[col.propertyName].push(<DBPropertyMetadata>{
+                metas[col.propertyName] = {
                     propertyKey: col.propertyName,
                     dbtype: isString(col.options.type) ? col.options.type : '',
                     type: this.getModeType(col)
-                });
+                };
             });
 
         getMetadataArgsStorage().relations.filter(col => col.target === type)
             .forEach(col => {
-                metas[col.propertyName] = metas[col.propertyName] || [];
                 let relaModel = isFunction(col.type) ? col.type() as Token : undefined;
-                metas[col.propertyName].push(<DBPropertyMetadata>{
+                metas[col.propertyName] = {
                     propertyKey: col.propertyName,
                     provider: relaModel,
                     type: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many') ? Array : relaModel
-                });
+                };
             });
         return metas;
     }

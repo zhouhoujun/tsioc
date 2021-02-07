@@ -1,5 +1,5 @@
-import { Abstract } from "@tsdi/ioc";
-import { MessageContext } from "./ctx";
+import { Abstract } from '@tsdi/ioc';
+import { MessageContext } from './ctx';
 
 
 @Abstract()

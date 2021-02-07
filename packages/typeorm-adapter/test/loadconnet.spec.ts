@@ -8,6 +8,7 @@ import { UserRepository } from './repositories/UserRepository';
 import { connectOption, MockBootTest } from './MockBootTest';
 
 
+
 @Suite('load Repository test')
 export class LoadReposTest {
 
@@ -69,6 +70,27 @@ export class LoadReposTest {
         await rep.remove(svu);
     }
 
+    @Test()
+    async addUser() {
+        const rep = await this.ctx.getMessager().send('/users', { method: 'post', body: {name: 'test1', account: 'test1', password: '111111'}});
+        expect(rep.body).toBeInstanceOf(User);
+        expect(rep.body.name).toEqual('test1');
+    }
+
+    @Test()
+    async getUser() {
+        const rep = await this.ctx.getMessager().send('/users/test1', { method: 'get' });
+        expect(rep.body).toBeInstanceOf(User);
+        expect(rep.body.name).toEqual('test1');
+    }
+
+    @Test()
+    async detUser() {
+        const rep1 = await this.ctx.getMessager().send('/users/test1', { method: 'get' });
+        expect(rep1.body).toBeInstanceOf(User);
+        const rep = await this.ctx.getMessager().send('/users/'+ rep1.body.id, { method: 'delete' });
+        expect(rep.body).toBeTruthy();
+    }
 
     @After()
     async after() {
