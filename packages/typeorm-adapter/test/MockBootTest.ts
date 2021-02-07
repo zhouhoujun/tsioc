@@ -23,8 +23,13 @@ export class UserController {
     @RouteMapping('/', 'put')
     async modify(user: User) {
         console.log('user:', user);
-        console.log(this.usrRep);
-        return await this.usrRep.save(user);
+        try {
+            const sd = await this.usrRep.save(user);
+            console.log(sd);
+            return sd;
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     @RouteMapping('/:id', 'delete')

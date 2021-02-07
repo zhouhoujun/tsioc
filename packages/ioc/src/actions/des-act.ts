@@ -127,7 +127,10 @@ export const DesignClassDecorScope = function (ctx: DesignContext, next: () => v
 export class DesignPropScope extends IocRegScope<DesignContext> implements IActionSetup {
 
     setup() {
-        this.use(PropProviderAction, DesignPropDecorScope);
+        this.use(
+            // PropProviderAction,
+            DesignPropDecorScope
+        );
     }
 }
 
@@ -174,45 +177,48 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-/**
- * register bind property provider action. to get the property autowride token of Type calss.
- *
- * @export
- */
-export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
-    const injector = ctx.injector;
-    ctx.reflect.propProviders.forEach((propMetas, name) => {
-        propMetas.forEach(prop => {
-            if (isClass(prop.provider)) {
-                injector.registerType(prop.provider);
-            } else if (isClass(prop.type)) {
-                injector.registerType(prop.type);
-            }
-        });
-    });
+// /**
+//  * register bind property provider action. to get the property autowride token of Type calss.
+//  *
+//  * @export
+//  */
+// export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
+//     const injector = ctx.injector;
+//     ctx.reflect.propProviders.forEach((propMetas, name) => {
+//         propMetas.forEach(prop => {
+//             if (isClass(prop.provider)) {
+//                 injector.registerType(prop.provider);
+//             } else if (isClass(prop.type)) {
+//                 injector.registerType(prop.type);
+//             }
+//         });
+//     });
 
-    next();
-};
+//     next();
+// };
 
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
-        this.use(RegMethodParamsType, DesignMthDecorScope);
+        this.use(
+            // RegMethodParamsType,
+            DesignMthDecorScope
+        );
     }
 }
 
-export const RegMethodParamsType = function (ctx: DesignContext, next: () => void) {
-    const injector = ctx.injector;
-    ctx.reflect.methodParams.forEach(pms => {
-        pms.forEach(pm => {
-            if (isClass(pm.provider)) {
-                injector.registerType(pm.provider);
-            } else if (isClass(pm.type)) {
-                injector.registerType(pm.type);
-            }
-        });
-    });
-    return next();
-}
+// export const RegMethodParamsType = function (ctx: DesignContext, next: () => void) {
+//     const injector = ctx.injector;
+//     ctx.reflect.methodParams.forEach(pms => {
+//         pms.forEach(pm => {
+//             if (isClass(pm.provider)) {
+//                 injector.registerType(pm.provider);
+//             } else if (isClass(pm.type)) {
+//                 injector.registerType(pm.type);
+//             }
+//         });
+//     });
+//     return next();
+// }
 
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {

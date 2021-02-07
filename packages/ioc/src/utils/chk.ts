@@ -1,6 +1,6 @@
 import { TypeReflect } from '../decor/type';
 import { InjectToken } from '../tokens';
-import { AbstractType, ClassType, ObjectMap, Type } from '../types';
+import { AbstractType, AnnotationType, ClassType, ObjectMap, Type } from '../types';
 import { clsNameExp, reflFiled } from './exps';
 import { hasDesignAnno } from './util';
 
@@ -328,6 +328,14 @@ export function isClass(target: any): target is Type {
  * anonyous or array func
  */
 const anon = /^function\s+\(|^function\s+anonymous\(|^\(?(\w+,)*\w+\)?\s*\=\>|^\(\s*\)\s*\=\>/;
+
+export function isAnnotation(target: any): target is AnnotationType {
+    if (!isFunction(target)) return false;
+    if (!target.name || !target.prototype) return false;
+    if (target.prototype.constructor !== target) return false;
+
+    return target[reflFiled]?.type === target;
+}
 
 /**
  * is annotation class type or not.

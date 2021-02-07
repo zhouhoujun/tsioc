@@ -192,7 +192,6 @@ export interface ResolveOption<T = any> {
     defaultToken?: Token<T>;
     /**
      * register token if has not register.
-     *
      */
     regify?: boolean;
 
