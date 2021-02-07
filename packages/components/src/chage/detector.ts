@@ -1,4 +1,4 @@
-import { Abstract, Destroyable } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 
 
 /**

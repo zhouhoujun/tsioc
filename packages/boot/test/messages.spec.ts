@@ -9,6 +9,15 @@ class DeviceController {
     req(name: string) {
         return { name };
     }
+
+    @RouteMapping('/update', 'post')
+    async update(version: string) {
+        // do smth.
+        console.log('update version:', version);
+        return version;
+    }
+
+
 }
 
 // @RouteMapping('/map')
@@ -122,7 +131,7 @@ describe('app message queue', () => {
 
     it('make sure singleton', async () => {
         // ctx.getMessager().send('msg:://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
-        console.log(ctx.getMessager());
+        // console.log(ctx.getMessager());
         const a = injector.get(DeviceQueue);
         const b = injector.get(DeviceQueue);
         expect(a).toBeInstanceOf(DeviceQueue);
@@ -150,11 +159,15 @@ describe('app message queue', () => {
         expect(bState).toBe('startuped');
     });
 
-    it('route response', async ()=> {
-        const a = await ctx.getMessager().send('/device/init', { method: 'post', query:{ name: 'test'}});
+    it('route response', async () => {
+        const a = await ctx.getMessager().send('/device/init', { method: 'post', query: { name: 'test' } });
         expect(a.status).toEqual(200);
         expect(a.body).toBeDefined();
         expect(a.body.name).toEqual('test');
+
+        const b = await ctx.getMessager().send('/device/update', { method: 'post', query: { version: '1.0.0' } });
+        expect(b.status).toEqual(200);
+        expect(b.body).toEqual('1.0.0');
     });
 
     after(() => {

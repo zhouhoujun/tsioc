@@ -46,4 +46,3 @@ export function chain<T, TR = void>(handlers: Handler<T, TR>[], ctx: T, next?: (
     }
     return dispatch(0);
 }
-

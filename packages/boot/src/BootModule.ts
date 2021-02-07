@@ -3,9 +3,9 @@ import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BuilderService } from './services/BuilderService';
 import { ResolveMoudleScope } from './builder/handles';
-import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
 import { BuildContext } from './builder/ctx';
 import { BootContext } from './boot/ctx';
+import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
 import { ExtendBaseTypeMap, MessageQueue, RootMessageQueue, RootRouter, Router, RouteVaildator } from './middlewares';
 
 

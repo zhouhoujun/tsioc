@@ -1,6 +1,6 @@
 import {
     Abstract, AsyncHandler, ClassType, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect,
-    isObject, isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNullOrUndefined
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil
 } from '@tsdi/ioc';
 import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
@@ -81,7 +81,7 @@ export class MappingRoute extends Route {
         if (meta && meta.propertyKey) {
             let ctrl = this.factory({ provide: CONTEXT, useValue: ctx });
             let providers = await this.createProvider(ctx, ctrl, meta.matedata, this.reflect.methodParams.get(meta.propertyKey));
-            let result = await injector.invoke(ctrl, meta.propertyKey, ...providers);
+            let result = injector.invoke(ctrl, meta.propertyKey, ...providers);
             if (isPromise(result)) {
                 result = await result;
             }
@@ -91,7 +91,7 @@ export class MappingRoute extends Route {
                 await result(ctx);
             } else if (result instanceof Middleware) {
                 await result.execute(ctx, emptyNext);
-            } else if (isObject(result)) {
+            } else if (!isNil(result)) {
                 if (result instanceof ResultValue) {
                     return await result.sendValue(ctx);
                 }
@@ -178,7 +178,7 @@ export class MappingRoute extends Route {
                         }
                         val = parser.parse(ptype, paramVal);
                     }
-                    if (isNullOrUndefined(val) && Object.keys(body).length) {
+                    if (isNil(val) && Object.keys(body).length) {
                         if (isArray(ptype) && isArray(body)) {
                             val = body;
                         } else if (isPrimitiveType(ptype)) {
@@ -198,7 +198,7 @@ export class MappingRoute extends Route {
                     }
                 }
 
-                if (isNullOrUndefined(val)) {
+                if (isNil(val)) {
                     return null;
                 }
                 return { provide: param.paramName || ptype, useValue: val };
