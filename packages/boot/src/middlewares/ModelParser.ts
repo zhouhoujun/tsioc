@@ -3,7 +3,7 @@ import {
     Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, isProvide
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
-import { TYPE_PARSER } from '../tk';
+import { ROOT_INJECTOR, TYPE_PARSER } from '../tk';
 
 
 /**
@@ -62,7 +62,7 @@ export abstract class ModelParser implements IModelParser {
 
     static ρNPT = true;
     
-    @Inject() protected injector: Injector;
+    @Inject(ROOT_INJECTOR) protected injector: Injector;
 
     parseModel(type: Type, objMap: any): any {
         if (isArray(objMap)) {
@@ -74,7 +74,7 @@ export abstract class ModelParser implements IModelParser {
             return parser.parse(type, objMap);
         }
         let meta = this.getPropertyMeta(type);
-        let result = this.injector.resolve({ token: type, regify: true });
+        let result = this.injector.resolve({ token: type, regify: true }) ?? this.injector.getContainer().regedState.getInstance(type);
         for (let n in meta) {
             const propmeta = meta[n];
             if (propmeta) {

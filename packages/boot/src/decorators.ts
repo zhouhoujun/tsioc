@@ -387,7 +387,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             const state = ctx.injector.getContainer().regedState;
             let queue: Middlewares;
             if (parent) {
-                queue = state.getInjector(parent)?.get(parent);
+                queue = state.getInstance(parent);
                 if (!queue) {
                     throw new Error(lang.getClassName(parent) + 'has not registered!')
                 }
@@ -407,7 +407,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     reflect.extProviders.push({ provide: ROUTE_URL, useValue: route }, { provide: ROUTE_PREFIX, useValue: prefix });
                     queue.use(type);
                 } else {
-                    queue.use(new FactoryRoute(route, prefix, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs)));
+                    queue.use(new FactoryRoute(route, prefix, (...pdrs) => state.getInstance(type, ...pdrs)));
                 }
             } else {
                 if (!queue) {
@@ -517,7 +517,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
             const state = ctx.injector.getContainer().regedState;
             let queue: Middlewares;
             if (parent) {
-                queue = state.getInjector(parent)?.get(parent);
+                queue = state.getInstance(parent);
             } else {
                 queue = ctx.injector.getInstance(RootRouter);
             }
@@ -526,7 +526,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
             const type = ctx.type;
-            queue.use(new MappingRoute(route, (queue as Router).getPrefixUrl(), ctx.reflect as MappingReflect, (...pdrs) => state.getInjector(type)?.get(type, ...pdrs), middlewares));
+            queue.use(new MappingRoute(route, (queue as Router).getPrefixUrl(), ctx.reflect as MappingReflect, state.getInjector(type), middlewares));
 
             next();
         }

@@ -87,7 +87,11 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     try {
         await next();
     } catch (err) {
-        logger?.error(err);
+        if(logger){
+            logger.error(err);
+        } else {
+            console.error(err);
+        }
         ctx.status = err.status ?? 500;
         ctx.message = err.message ?? err.toString();
         throw err;

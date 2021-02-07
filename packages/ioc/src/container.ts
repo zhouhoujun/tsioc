@@ -334,6 +334,10 @@ class RegisteredStateImpl implements RegisteredState {
         return getReged(type, this.container.id)?.getInjector() as T;
     }
 
+    getInstance<T>(type: Type<T>, ...providers: ProviderType[]): T {
+        return getReged(type, this.container.id)?.getInjector().getInstance(type, ...providers) ?? null;
+    }
+
     getRegistered<T extends Registered>(type: ClassType): T {
         return getReged(type, this.container.id) as T;
     }

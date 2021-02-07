@@ -21,6 +21,11 @@ export interface RegisteredState {
      */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T;
     /**
+     * get instance.
+     * @param type 
+     */
+    getInstance<T>(type: Type<T>, ...providers: ProviderType[]): T;
+    /**
      * check the type registered or not.
      * @param type
      */

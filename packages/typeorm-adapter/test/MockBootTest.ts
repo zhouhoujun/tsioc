@@ -15,20 +15,23 @@ export class UserController {
 
     @RouteMapping('/:name', 'get')
     getUser(name: string) {
+        console.log('name:', name);
         return this.usrRep.findByAccount(name);
     }
 
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
-    modify(user: User) {
-        console.log(user);
-        return this.usrRep.save(user);
+    async modify(user: User) {
+        console.log('user:', user);
+        console.log(this.usrRep);
+        return await this.usrRep.save(user);
     }
 
     @RouteMapping('/:id', 'delete')
     async del(id: string) {
-       await this.usrRep.delete(id);
-       return true;
+        console.log('id:', id);
+        await this.usrRep.delete(id);
+        return true;
     }
 
 }
@@ -39,7 +42,7 @@ export class UserController {
         ServerBootstrapModule,
         TypeOrmModule
     ],
-    providers:[
+    providers: [
         UserController
     ]
 })
@@ -66,7 +69,7 @@ export const connectOption = <IConnectionOptions>{
     host: 'localhost',
     port: 5432,
     username: 'postgres',
-    password: 'zhouyou81',
+    password: '',
     database: 'testdb',
     // useNewUrlParser: true,
     synchronize: true, // 同步数据库

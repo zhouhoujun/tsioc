@@ -44,6 +44,9 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         if (options.initDb) {
             await options.initDb(connection);
         }
+        options.entities.forEach(e=> {
+            injector.registerType(e);
+        });
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
             if (options.entities.indexOf(meta.entity as Type) >= 0) {
                 injector.set(meta.target, () => getCustomRepository(meta.target, options.name));

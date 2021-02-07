@@ -1,6 +1,6 @@
 import {
     Abstract, AsyncHandler, ClassType, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, IInjector
 } from '@tsdi/ioc';
 import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
@@ -61,7 +61,7 @@ const restParms = /^\S*:/;
  */
 export class MappingRoute extends Route {
 
-    constructor(url: string, prefix: string, private reflect: MappingReflect, private factory: (...prds) => any, private middlewares: MiddlewareType[]) {
+    constructor(url: string, prefix: string, private reflect: MappingReflect, private injector: IInjector, private middlewares: MiddlewareType[]) {
         super(url, prefix);
     }
 
@@ -72,17 +72,17 @@ export class MappingRoute extends Route {
         }
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
-            await this.execFuncs(ctx, middlewares.map(m => this.toHandle(ctx.injector, m)).filter(f => !!f))
+            await this.execFuncs(ctx, middlewares.map(m => this.toHandle(this.injector, m)).filter(f => !!f))
         }
         await this.invoke(ctx, meta);
         return await next();
     }
 
     async invoke(ctx: MessageContext, meta: DecorDefine) {
-        let injector = ctx.injector;
+        const injector = this.injector;
         if (meta && meta.propertyKey) {
-            let ctrl = this.factory({ provide: CONTEXT, useValue: ctx });
-            let providers = await this.createProvider(ctx, ctrl, meta.matedata, this.reflect.methodParams.get(meta.propertyKey));
+            const ctrl = injector.getInstance(this.reflect.type, { provide: CONTEXT, useValue: ctx });
+            const providers = await this.createProvider(ctx, ctrl, meta.matedata, this.reflect.methodParams.get(meta.propertyKey));
             let result = injector.invoke(ctrl, meta.propertyKey, ...providers);
             if (isPromise(result)) {
                 result = await result;
@@ -110,7 +110,7 @@ export class MappingRoute extends Route {
     }
 
     protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {
-        let vailds = ctx.injector.getServices(RouteMappingVaildator);
+        let vailds = this.injector.getServices(RouteMappingVaildator);
         let middlewares = this.middlewares || [];
         if (vailds && vailds.length) {
             middlewares = vailds.map(auth => auth.getMiddlewares(ctx, this.reflect)).reduce((p, c) => p.concat(c), [])
@@ -153,7 +153,8 @@ export class MappingRoute extends Route {
     }
 
     protected async createProvider(ctx: MessageContext, ctrl: any, meta: RouteMapingMetadata, params: ParameterMetadata[]): Promise<ProviderType[]> {
-        const { injector, vaild } = ctx;
+        const { vaild } = ctx;
+        const injector = this.injector;
         let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
         if (params && params.length) {
             let restParams: any = {};
