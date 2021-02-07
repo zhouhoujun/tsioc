@@ -58,9 +58,9 @@ export interface MessageContext {
      */
     status?: number;
     /**
-     * response error.
+     * response error message.
      */
-    error?: Error;
+    message?: string;
 
     /**
      * response body data.

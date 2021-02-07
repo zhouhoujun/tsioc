@@ -56,7 +56,9 @@ export abstract class RouteMappingVaildator {
 const isRest = /\/:/;
 const restParms = /^\S*:/;
 
-
+/**
+ * mapping route.
+ */
 export class MappingRoute extends Route {
 
     constructor(url: string, prefix: string, private reflect: MappingReflect, private factory: (...prds) => any, private middlewares: MiddlewareType[]) {

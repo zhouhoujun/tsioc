@@ -88,8 +88,8 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         await next();
     } catch (err) {
         logger?.error(err);
-        ctx.status = 500;
-        ctx.error = err;
+        ctx.status = err.status ?? 500;
+        ctx.message = err.message ?? err.toString();
         throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
