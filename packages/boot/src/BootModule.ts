@@ -6,7 +6,6 @@ import { ResolveMoudleScope } from './builder/handles';
 import { BuildContext } from './builder/ctx';
 import { BootContext } from './boot/ctx';
 import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
-import { ExtendBaseTypeMap, MessageQueue, RootMessageQueue, RootRouter, Router, RouteVaildator } from './middlewares';
 
 
 /**
@@ -33,7 +32,7 @@ export class BootModule {
             BootLifeScope);
 
         container.use(BuildContext, BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser);
-        container.use(RouteVaildator, ExtendBaseTypeMap, MessageQueue, Router, RootRouter, RootMessageQueue);
+
 
     }
 }

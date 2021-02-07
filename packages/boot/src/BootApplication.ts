@@ -5,6 +5,7 @@ import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BUILDER, ROOT_INJECTOR } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
+import { MiddlewareModule } from './middlewares';
 
 /**
  * boot application.
@@ -95,6 +96,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
      */
     async run(...args: string[]): Promise<T> {
         const root = this.getRootInjector();
+        root.use(MiddlewareModule);
         await root.load(...this.getBootDeps());
         let ctx = await root.getInstance(BUILDER).boot(this, ...args);
         return ctx as T;
