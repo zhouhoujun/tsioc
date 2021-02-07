@@ -72,6 +72,8 @@ export class LoadReposTest {
 
     @Test()
     async addUser() {
+        const repos = this.ctx.injector.get(UserRepository);
+        expect(repos).toBeInstanceOf(UserRepository);
         const rep = await this.ctx.getMessager().send('/users', { method: 'post', body: {name: 'test1', account: 'test1', password: '111111'}});
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);

@@ -62,7 +62,7 @@ export abstract class ModelParser implements IModelParser {
 
     static ρNPT = true;
     
-    @Inject(ROOT_INJECTOR) protected injector: Injector;
+    @Inject() protected injector: Injector;
 
     parseModel(type: Type, objMap: any): any {
         if (isArray(objMap)) {

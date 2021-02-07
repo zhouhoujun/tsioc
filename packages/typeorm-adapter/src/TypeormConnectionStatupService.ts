@@ -41,9 +41,6 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
 
     async statupConnection(injector: IInjector, options: IConnectionOptions, config: Configure) {
         const connection = await this.createConnection(options, config);
-        if (options.initDb) {
-            await options.initDb(connection);
-        }
         options.entities.forEach(e=> {
             injector.registerType(e);
         });
@@ -52,6 +49,9 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
                 injector.set(meta.target, () => getCustomRepository(meta.target, options.name));
             }
         });
+        if (options.initDb) {
+            await options.initDb(connection);
+        }
     }
 
     /**
