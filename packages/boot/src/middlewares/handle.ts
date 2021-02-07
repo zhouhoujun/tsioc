@@ -149,7 +149,7 @@ export abstract class Middlewares extends Middleware {
         if (handleType instanceof Middleware) {
             return handleType.toAction();
         } else if (lang.isBaseOf(handleType, Middleware)) {
-            const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().regedState.getInjector(handleType as ClassType)?.get(handleType);
+            const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().regedState.getInstance(handleType);
             return handle?.toAction?.();
         } else if (isFunction(handleType)) {
             return handleType as AsyncHandler<MessageContext>;

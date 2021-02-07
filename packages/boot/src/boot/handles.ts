@@ -275,7 +275,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
             if (isFunction(tyser) && !regedState.isRegistered(tyser)) {
                 injector.register(tyser);
             }
-            ser = injector.get(tyser) ?? regedState.getInjector(tyser as ClassType)?.get(tyser);
+            ser = injector.get(tyser) ?? regedState.getInstance(tyser as ClassType);
             ctx.onDestroy(() => ser?.destroy());
             return ser?.configureService(ctx);
         }));
@@ -284,7 +284,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     const starts = injector.get(STARTUPS) || [];
     if (starts.length) {
         await lang.step(starts.map(tyser => () => {
-            const ser = injector.get(tyser) ?? regedState.getInjector(tyser as ClassType)?.get(tyser);
+            const ser = injector.get(tyser) ?? regedState.getInstance(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
             return ser.configureService(ctx);

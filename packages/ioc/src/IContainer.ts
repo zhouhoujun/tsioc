@@ -24,7 +24,12 @@ export interface RegisteredState {
      * get instance.
      * @param type 
      */
-    getInstance<T>(type: Type<T>, ...providers: ProviderType[]): T;
+    getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
+    /**
+     * get instance.
+     * @param type 
+     */
+    resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
     /**
      * check the type registered or not.
      * @param type
