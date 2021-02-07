@@ -1,5 +1,5 @@
 import { ModelParser, DefaultModelParserToken, DBPropertyMetadata } from '@tsdi/boot';
-import { Singleton, Type, ObjectMap, Autorun, Token, isFunction, isString, tokenId, Inject } from '@tsdi/ioc';
+import { Singleton, Type, ObjectMap, Autorun, Token, isFunction, isString, tokenId, Inject, isClass } from '@tsdi/ioc';
 import { getMetadataArgsStorage } from 'typeorm';
 import { ColumnMetadataArgs } from 'typeorm/metadata-args/ColumnMetadataArgs';
 
@@ -49,6 +49,7 @@ export class TypeOrmModelParser extends ModelParser {
                 metas[col.propertyName] = {
                     propertyKey: col.propertyName,
                     provider: relaModel,
+                    isProviderType: true,
                     type: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many') ? Array : relaModel
                 };
             });

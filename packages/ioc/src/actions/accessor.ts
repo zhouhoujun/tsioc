@@ -83,16 +83,16 @@ export class MethodAccessor implements IMethodAccessor {
         return params.map((param, index) => {
             if (param.provider) {
                 if (providers.has(param.provider)) return providers.get(param.provider, providers);
-                if (isClass(param.provider) && !this.container.regedState.isRegistered(param.provider)) {
-                    injector.registerType(param.provider);
+                if (param.isProviderType && !this.container.regedState.isRegistered(param.provider as Type)) {
+                    injector.registerType(param.provider as Type);
                 }
                 return injector.get(param.provider, providers) ?? param.defaultValue;
             } else if (param.paramName && providers.has(param.paramName)) {
                 return providers.get(param.paramName, providers);
             } else if (param.type) {
                 if (providers.has(param.type)) return providers.get(param.type, providers);
-                if (isClass(param.type) && !this.container.regedState.isRegistered(param.type)) {
-                    injector.registerType(param.type);
+                if (param.isType && !this.container.regedState.isRegistered(param.type)) {
+                    injector.registerType(param.type as Type);
                 }
                 return injector.get(param.type, providers) ?? param.defaultValue;
             } else {

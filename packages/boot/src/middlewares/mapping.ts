@@ -171,7 +171,7 @@ export class MappingRoute extends Route {
             let body = ctx.request?.body || {};
             let parser = injector.get(TYPE_PARSER);
             let ppds: ProviderType[] = await Promise.all(params.map(async (param) => {
-                let ptype = param.provider ? injector.getTokenProvider(param.provider) : param.type;
+                let ptype = param.isProviderType ? param.provider : param.type;
                 let val;
                 if (isFunction(ptype)) {
                     if (isPrimitiveType(ptype)) {

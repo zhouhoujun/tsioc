@@ -79,7 +79,7 @@ export abstract class ModelParser implements IModelParser {
             const propmeta = meta[n];
             if (propmeta) {
                 if (!isUndefined(objMap[n])) {
-                    let ptype = propmeta.provider ? (isProvide(propmeta.provider) ? this.injector.getTokenProvider(propmeta.provider) : propmeta.provider) : propmeta.type;
+                    let ptype = propmeta.isProviderType ? propmeta.provider  : propmeta.type;
                     let reqval = objMap[n];
                     if (!isFunction(ptype) || isNil(reqval)) {
                         continue;

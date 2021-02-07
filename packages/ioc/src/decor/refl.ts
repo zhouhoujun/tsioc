@@ -3,7 +3,7 @@ import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { StaticProvider } from '../providers';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
-import { getClass, isArray, isFunction } from '../utils/chk';
+import { getClass, isArray, isClass, isFunction, isUndefined } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './metadatas';
 import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
@@ -261,6 +261,9 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
     }
     return next();
 }
+
+
+
 export const propInjectDecors = ['@Inject', '@AutoWired'];
 export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
     if (propInjectDecors.indexOf(ctx.decor) >= 0) {

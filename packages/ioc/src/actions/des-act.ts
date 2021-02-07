@@ -1,4 +1,4 @@
-import { isFunction, isClass } from '../utils/chk';
+import { isFunction, isClass, isUndefined } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
 import { PROVIDERS } from '../utils/tk';
@@ -13,6 +13,7 @@ import { RegisteredState } from '../IContainer';
 import { IActionProvider } from './act';
 import { getProvider } from '../injector';
 import { Registered } from '../decor/type';
+import { PropertyMetadata } from '../decor/metadatas';
 
 
 
@@ -128,7 +129,7 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
 
     setup() {
         this.use(
-            // PropProviderAction,
+            PropProviderAction,
             DesignPropDecorScope
         );
     }
@@ -177,48 +178,84 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-// /**
-//  * register bind property provider action. to get the property autowride token of Type calss.
-//  *
-//  * @export
-//  */
-// export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
-//     const injector = ctx.injector;
-//     ctx.reflect.propProviders.forEach((propMetas, name) => {
-//         propMetas.forEach(prop => {
-//             if (isClass(prop.provider)) {
-//                 injector.registerType(prop.provider);
-//             } else if (isClass(prop.type)) {
-//                 injector.registerType(prop.type);
-//             }
-//         });
-//     });
+const typfd= '_isType';
+function isDesignType(this: PropertyMetadata) {
+    if(isUndefined(this['_isType'])) {
+        this['_isType'] = isClass(this.type);
+    }
+    return this['_isType'];
+}
 
-//     next();
-// };
+const pdrfd = '_isPdrType';
+function isPdrType(this: PropertyMetadata) {
+    if(isUndefined(this[pdrfd])) {
+        this[pdrfd] = isClass(this.provider);
+    }
+    return this[pdrfd];
+}
+
+/**
+ * register bind property provider action. to get the property autowride token of Type calss.
+ *
+ * @export
+ */
+export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
+    // const injector = ctx.injector;
+    ctx.reflect.propProviders.forEach((propMetas, name) => {
+        propMetas.forEach(prop => {
+            Object.defineProperties(prop, {
+                isType: {
+                    get: isDesignType,
+                    enumerable: false
+                },
+                isProviderType: {
+                    get: isPdrType,
+                    enumerable: false
+                }
+            });
+            // if (isClass(prop.provider)) {
+            // injector.registerType(prop.provider);
+            // } else if (isClass(prop.type)) {
+            // injector.registerType(prop.type);
+            // }
+        });
+    });
+
+    next();
+};
 
 export class DesignMthScope extends IocRegScope<DesignContext> implements IActionSetup {
     setup() {
         this.use(
-            // RegMethodParamsType,
+            RegMethodParamsType,
             DesignMthDecorScope
         );
     }
 }
 
-// export const RegMethodParamsType = function (ctx: DesignContext, next: () => void) {
-//     const injector = ctx.injector;
-//     ctx.reflect.methodParams.forEach(pms => {
-//         pms.forEach(pm => {
-//             if (isClass(pm.provider)) {
-//                 injector.registerType(pm.provider);
-//             } else if (isClass(pm.type)) {
-//                 injector.registerType(pm.type);
-//             }
-//         });
-//     });
-//     return next();
-// }
+export const RegMethodParamsType = function (ctx: DesignContext, next: () => void) {
+    // const injector = ctx.injector;
+    ctx.reflect.methodParams.forEach(pms => {
+        pms.forEach(pm => {
+            Object.defineProperties(pm, {
+                isType: {
+                    get: isDesignType,
+                    enumerable: false
+                },
+                isProviderType: {
+                    get: isPdrType,
+                    enumerable: false
+                }
+            });
+            // if (isClass(pm.provider)) {
+            // injector.registerType(pm.provider);
+            // } else if (isClass(pm.type)) {
+            // injector.registerType(pm.type);
+            // }
+        });
+    });
+    return next();
+}
 
 
 export const DesignMthDecorScope = function (ctx: DesignContext, next: () => void) {
