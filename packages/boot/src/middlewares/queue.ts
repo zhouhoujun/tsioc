@@ -1,7 +1,6 @@
 import { Injectable, Injector, Type, isString } from '@tsdi/ioc';
 import { MessageContext, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
-import { RouteVaildator } from './route';
 
 
 
@@ -29,14 +28,7 @@ export class MessageQueue extends Middlewares {
         this.onCompleted(ctx);
     }
 
-    protected beforeExec(ctx: MessageContext) {
-        if (!ctx.vaild) {
-            ctx.vaild = ctx.injector.get(RouteVaildator);
-        }
-        if(!ctx.setValue) {
-
-        }
-    }
+    protected beforeExec(ctx: MessageContext) {}
 
     protected afterExec(ctx: MessageContext) { }
 

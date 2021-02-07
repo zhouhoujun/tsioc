@@ -46,11 +46,19 @@ function setValue(this: MessageContext, token: Token, value: any): void {
 }
 
 
-
+/**
+ * init queue.
+ * @param ctx 
+ * @param next 
+ */
 export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) => {
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);
     ctx.providers = injector.get(PROVIDERS);
+    
+    if (!ctx.vaild) {
+        ctx.vaild = ctx.injector.get(RouteVaildator);
+    }
 
     if (request.providers) {
         ctx.providers.inject(...isArray(request.providers) ? request.providers : [request.providers]);
@@ -82,6 +90,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         logger?.error(err);
         ctx.status = 500;
         ctx.error = err;
+        throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
