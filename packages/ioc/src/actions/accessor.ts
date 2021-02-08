@@ -7,6 +7,7 @@ import { INVOKED_PROVIDERS } from '../utils/tk';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
 import { IContainer } from '../IContainer';
+import { getProvider } from '../injector';
 
 
 /**
@@ -57,12 +58,16 @@ export class MethodAccessor implements IMethodAccessor {
         if (tgRefl.methodExtProviders.has(key)) {
             providers = providers.concat(tgRefl.methodExtProviders.get(key));
         }
-        const providerMap = this.container.getInstance(INVOKED_PROVIDERS).inject(...providers);
-        const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], providerMap);
-        if (providerMap.size && instance[key]['_proxy']) {
-            paramInstances.push(providerMap);
-        } else {
-            providerMap.destroy();
+
+        const proxy = instance[key]['_proxy'];
+        const pdr = proxy ? this.container.getInstance(INVOKED_PROVIDERS).inject(...providers) : getProvider(injector, ...providers)
+        const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], pdr);
+        if (proxy) {
+            if (pdr.size) {
+                paramInstances.push(pdr);
+            } else {
+                pdr.destroy();
+            }
         }
         return instance[key](...paramInstances) as TR;
     }
@@ -76,7 +81,7 @@ export class MethodAccessor implements IMethodAccessor {
      * @returns {any[]}
      */
     createParams(injector: IInjector, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
-        return this.resolveParams(injector, params, this.container.getInstance(INVOKED_PROVIDERS).inject(...providers));
+        return this.resolveParams(injector, params, getProvider(injector, ...providers));
     }
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider): any[] {

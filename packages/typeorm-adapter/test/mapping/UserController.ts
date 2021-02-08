@@ -8,7 +8,7 @@ export class UserController {
 
     @Inject() injector: Injector;
 
-    constructor(private usrRep: UserRepository) {
+    constructor(public usrRep: UserRepository) {
 
     }
 
