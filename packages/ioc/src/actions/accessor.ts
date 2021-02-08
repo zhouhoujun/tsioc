@@ -1,5 +1,5 @@
 import { Type } from '../types';
-import { isFunction, getClass, isTypeObject, isClass } from '../utils/chk';
+import { isFunction, getClass, isTypeObject } from '../utils/chk';
 import { Token, ProviderType } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
 import { IMethodAccessor, MethodType } from '../IMethodAccessor';

@@ -1,5 +1,4 @@
 import { isNil } from '../utils/chk';
-import { Token } from '../tokens';
 import { chain } from '../utils/hdl';
 import { METHOD_ACCESSOR } from '../utils/tk'
 import { IActionSetup } from '../action';
@@ -52,14 +51,12 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
         const { injector, providers, type } = ctx;
         ctx.reflect.propProviders.forEach((metas, propertyKey) => {
             const key = `${propertyKey}_INJECTED`;
-            const meta = metas.find(m => m.provider);
-            let token: Token;
-            if (meta) {
-                token = meta.provider;
-            } else {
-                token = metas.find(m => m.type)?.type;
+            let meta = metas.find(m => m.provider);
+            if (!meta) {
+                meta = metas.find(m => m.type);
             }
-            if (token && !ctx[key]) {
+            if (meta && !ctx[key]) {
+                const token = meta.provider || meta.type;
                 const val = providers?.get(token, providers) ?? injector.resolve({ token, target: type, regify: true }, providers);
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;

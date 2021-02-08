@@ -14,11 +14,6 @@ export interface Metadata {
      * @type {SymbolType}
      */
     type?: ClassType;
-
-    /**
-     * the type is Type or not.
-     */
-    isType?: boolean;
 }
 
 /**
@@ -51,10 +46,6 @@ export interface ProvideMetadata {
      * @memberof Provide
      */
     provider?: Token;
-    /**
-     * the provider is Type or not.
-     */
-    isProviderType?: boolean;
 }
 
 
@@ -142,6 +133,16 @@ export interface PropertyMetadata extends ProvideMetadata, Metadata {
      * @type {string}
      */
     propertyKey?: string;
+
+    /**
+     * the type is Type or not.
+     */
+    isType?: boolean;
+
+    /**
+     * the provider is Type or not.
+     */
+    isProviderType?: boolean;
 }
 
 /**
