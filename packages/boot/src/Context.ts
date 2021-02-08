@@ -7,6 +7,7 @@ import { Configure, IConfigureManager } from './configure/config';
 import { ModuleReflect } from './modules/reflect';
 import { BootstrapMetadata } from './decorators';
 import { MessageQueue } from './middlewares/queue';
+import { MessageContext, RequestOption } from './middlewares';
 
 export interface ProdverOption {
 
@@ -221,6 +222,23 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * get message queue.
      */
     getMessager(): MessageQueue;
+
+    /**
+     * send message
+     *
+     * @param {T} ctx message context
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     */
+    send(ctx: MessageContext): Promise<MessageContext>;
+    /**
+     * send message
+     *
+     * @param {string} url route url
+     * @param {RequestOption} options query data.
+     * @returns {Promise<MessageContext>}
+     */
+    send(url: string, options: RequestOption, injector?: IInjector): Promise<MessageContext>;
 
     /**
      * get log manager.

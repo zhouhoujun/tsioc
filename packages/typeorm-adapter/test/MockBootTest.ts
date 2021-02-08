@@ -1,45 +1,12 @@
-import { DIModule, IConnectionOptions, RouteMapping } from '@tsdi/boot';
+import { DIModule, IConnectionOptions } from '@tsdi/boot';
 import { ServerBootstrapModule } from '@tsdi/platform-server-boot';
 import { TypeOrmModule } from '../src';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
-import { Inject } from '@tsdi/ioc';
-import { UserRepository } from './repositories/UserRepository';
+import { RouteStartup, UserController } from './mapping/UserController';
 
 
 
-@RouteMapping('/users')
-export class UserController {
-
-    @Inject() usrRep: UserRepository;
-
-    @RouteMapping('/:name', 'get')
-    getUser(name: string) {
-        console.log('name:', name);
-        return this.usrRep.findByAccount(name);
-    }
-
-    @RouteMapping('/', 'post')
-    @RouteMapping('/', 'put')
-    async modify(user: User) {
-        console.log('user:', user);
-        try {
-            const sd = await this.usrRep.save(user);
-            console.log(sd);
-            return sd;
-        } catch (err) {
-            console.log(err);
-        }
-    }
-
-    @RouteMapping('/:id', 'delete')
-    async del(id: string) {
-        console.log('id:', id);
-        await this.usrRep.delete(id);
-        return true;
-    }
-
-}
 
 @DIModule({
     baseURL: __dirname,
@@ -48,6 +15,7 @@ export class UserController {
         TypeOrmModule
     ],
     providers: [
+        // RouteStartup,
         UserController
     ]
 })

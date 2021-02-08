@@ -1,4 +1,4 @@
-import { Injectable, Injector, Type, isString } from '@tsdi/ioc';
+import { Injectable, Injector, Type, isString, IInjector } from '@tsdi/ioc';
 import { MessageContext, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 
@@ -21,19 +21,13 @@ export class MessageQueue extends Middlewares {
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         const orgInj = ctx.injector;
         ctx.injector = this.getInjector();
-        this.beforeExec(ctx);
         await super.execute(ctx, next);
-        this.afterExec(ctx);
         if (orgInj) ctx.injector = orgInj;
         this.onCompleted(ctx);
     }
 
-    protected beforeExec(ctx: MessageContext) {}
-
-    protected afterExec(ctx: MessageContext) { }
-
     protected onCompleted(ctx: MessageContext) {
-        this.completed && this.completed.map(cb => {
+        this.completed?.forEach(cb => {
             cb(ctx);
         });
     }
@@ -64,9 +58,9 @@ export class MessageQueue extends Middlewares {
      * @param {RequestOption} options query data.
      * @returns {Promise<MessageContext>}
      */
-    send(url: string, options: RequestOption, injector?: Injector): Promise<MessageContext>;
-    async send(url: any, data?: any, injector?: Injector): Promise<MessageContext> {
-        let ctx: MessageContext = isString(url) ? { url, request: data, injector } : url;
+    send(url: string, options: RequestOption, injector?: IInjector): Promise<MessageContext>;
+    async send(url: any, data?: any, injector?: IInjector): Promise<MessageContext> {
+        const ctx = isString(url) ? { url, request: data, injector } : url;
         await this.execute(ctx);
         return ctx;
     }

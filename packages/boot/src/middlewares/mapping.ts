@@ -1,5 +1,5 @@
 import {
-    Abstract, AsyncHandler, ClassType, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect,
+    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect,
     isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, IInjector
 } from '@tsdi/ioc';
 import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
@@ -81,9 +81,10 @@ export class MappingRoute extends Route {
     async invoke(ctx: MessageContext, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
-            const ctrl = injector.getInstance(this.reflect.type, { provide: CONTEXT, useValue: ctx });
+            const ctrl = injector.getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
             const providers = await this.createProvider(ctx, ctrl, meta.matedata, this.reflect.methodParams.get(meta.propertyKey));
-            let result = injector.invoke(ctrl, meta.propertyKey, ...providers);
+
+            let result = await injector.invoke(ctrl, meta.propertyKey, ctx.providers, ...providers);
             if (isPromise(result)) {
                 result = await result;
             }
@@ -98,7 +99,7 @@ export class MappingRoute extends Route {
                     return await result.sendValue(ctx);
                 }
 
-                const strategy = injector.resolve({ token: ResultStrategy, target: result });
+                const strategy = injector.getService({ token: ResultStrategy, target: result });
                 if (strategy) {
                     return await strategy.send(ctx, result);
                 }
@@ -153,7 +154,7 @@ export class MappingRoute extends Route {
     }
 
     protected async createProvider(ctx: MessageContext, ctrl: any, meta: RouteMapingMetadata, params: ParameterMetadata[]): Promise<ProviderType[]> {
-        const { vaild } = ctx;
+        const vaild = ctx.vaild;
         const injector = this.injector;
         let providers: ProviderType[] = [{ provide: CONTEXT, useValue: ctx }];
         if (params && params.length) {

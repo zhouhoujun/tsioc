@@ -75,7 +75,7 @@ export interface MessageContext {
     /**
      * the context providers.
      */
-    providers?: IProvider;
+    readonly providers?: IProvider;
 
     /**
      * route vaildator.

@@ -47,7 +47,7 @@ export class User {
     @Column({ type: 'int', nullable: true })
     age: number;
 
-    @ManyToOne(type => Role, role => role.users)
+    @ManyToOne(type => Role, role => role.users, { nullable: true })
     role: Role;
 
 }

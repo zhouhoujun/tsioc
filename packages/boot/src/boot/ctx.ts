@@ -1,4 +1,4 @@
-import { Injectable, Token, LoadType } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, IInjector } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
@@ -7,7 +7,7 @@ import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';
 import { BootstrapMetadata } from '../decorators';
 import { BootOption, IBootContext, Template } from '../Context';
-import { MessageQueue, ROOT_QUEUE } from '../middlewares';
+import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
 /**
@@ -23,6 +23,27 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     getMessager(): MessageQueue {
         return this.injector.get(ROOT_QUEUE);
     }
+
+    /**
+    * send message
+    *
+    * @param {T} ctx message context
+    * @param {() => Promise<void>} [next]
+    * @returns {Promise<void>}
+    */
+    send(ctx: MessageContext): Promise<MessageContext>;
+    /**
+     * send message
+     *
+     * @param {string} url route url
+     * @param {RequestOption} options query data.
+     * @returns {Promise<MessageContext>}
+     */
+    send(url: string, options: RequestOption, injector?: IInjector): Promise<MessageContext>;
+    send(url: any, options?: RequestOption, injector?: IInjector): Promise<MessageContext> {
+        return this.getMessager().send(url, options, injector);
+    }
+
     /**
      * get log manager.
      */

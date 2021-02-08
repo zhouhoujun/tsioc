@@ -1,4 +1,4 @@
-import { IBootContext, BootApplication } from '@tsdi/boot';
+import { IBootContext, BootApplication, ROOT_QUEUE } from '@tsdi/boot';
 
 import { User } from './models/models';
 import { Suite, Before, Test, After } from '@tsdi/unit';
@@ -37,15 +37,6 @@ export class LoadReposTest {
     @Test()
     async canGetUserRepository() {
         let rep = this.ctx.injector.get(UserRepository);
-        // let [users, total] = await rep.search('xxx');
-        // let [user] = users;
-        // let name = 'xxx';
-        // let edited = new User();
-        // edited = { ...user, ...edited, name };
-
-        // let { name: name1, account, age } = user;
-        // name1
-
         expect(rep).toBeInstanceOf(UserRepository);
     }
 
@@ -64,6 +55,16 @@ export class LoadReposTest {
     }
 
     @Test()
+    async getUser0() {
+        const usrRep = this.ctx.injector.getInstance(UserRepository);
+        expect(usrRep).toBeInstanceOf(UserRepository);
+        const rep = await this.ctx.send('/users/admin----test', { method: 'get', providers: [{ provide: UserRepository, useValue: usrRep }] });
+        expect(rep.status).toEqual(200);
+        expect(rep.body).toBeInstanceOf(User);
+        expect(rep.body.account).toEqual('admin----test');
+    }
+
+    @Test()
     async deleteUser() {
         const rep = this.ctx.injector.get(UserRepository);
         let svu = await rep.findByAccount('admin----test');
@@ -71,10 +72,8 @@ export class LoadReposTest {
     }
 
     @Test()
-    async addUser() {
-        const repos = this.ctx.injector.get(UserRepository);
-        expect(repos).toBeInstanceOf(UserRepository);
-        const rep = await this.ctx.getMessager().send('/users', { method: 'post', body: {name: 'test1', account: 'test1', password: '111111'}});
+    async postUser() {
+        const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'post_test', account: 'post_test', password: '111111' } });
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
         expect(rep.body.name).toEqual('test1');
@@ -82,25 +81,25 @@ export class LoadReposTest {
 
     @Test()
     async getUser() {
-        const rep = await this.ctx.getMessager().send('/users/test1', { method: 'get' });
+        const rep = await this.ctx.send('/users/post_test', { method: 'get' });
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body.name).toEqual('test1');
+        expect(rep.body.account).toEqual('post_test');
     }
 
     @Test()
     async detUser() {
-        const rep1 = await this.ctx.getMessager().send('/users/test1', { method: 'get' });
+        const rep1 = await this.ctx.send('/users/post_test', { method: 'get' });
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeInstanceOf(User);
-        const rep = await this.ctx.getMessager().send('/users/'+ rep1.body.id, { method: 'delete' });
+        const rep = await this.ctx.send('/users/' + rep1.body.id, { method: 'delete' });
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
 
     @After()
     async after() {
-        this.ctx.destroy()
+        this.ctx.destroy();
     }
 
 }

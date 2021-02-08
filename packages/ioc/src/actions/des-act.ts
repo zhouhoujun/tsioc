@@ -178,17 +178,17 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     next();
 };
 
-const typfd= '_isType';
+const typfd = '_isType';
 function isDesignType(this: PropertyMetadata) {
-    if(isUndefined(this['_isType'])) {
-        this['_isType'] = isClass(this.type);
+    if (isUndefined(this[typfd])) {
+        this[typfd] = isClass(this.type);
     }
-    return this['_isType'];
+    return this[typfd];
 }
 
 const pdrfd = '_isPdrType';
 function isPdrType(this: PropertyMetadata) {
-    if(isUndefined(this[pdrfd])) {
+    if (isUndefined(this[pdrfd])) {
         this[pdrfd] = isClass(this.provider);
     }
     return this[pdrfd];
