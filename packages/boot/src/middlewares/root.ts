@@ -65,6 +65,10 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     }
 
     Object.defineProperties(ctx, {
+        url: {
+            get: ()=> request.url,
+            enumerable: false
+        },
         providers: {
             get: ()=> providers,
             enumerable: false

@@ -1,4 +1,4 @@
-import { Injectable, Token, LoadType, IInjector } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
@@ -25,23 +25,23 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     }
 
     /**
-    * send message
-    *
-    * @param {T} ctx message context
-    * @param {() => Promise<void>} [next]
-    * @returns {Promise<void>}
-    */
-    send(ctx: MessageContext): Promise<MessageContext>;
+     * send message
+     *
+     * @param {RequestOption} request request option
+     * @param {() => Promise<void>} [next]
+     * @returns {Promise<void>}
+     */
+    send(request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
     /**
      * send message
      *
      * @param {string} url route url
-     * @param {RequestOption} options query data.
+     * @param {RequestOption} request request options data.
      * @returns {Promise<MessageContext>}
      */
-    send(url: string, options: RequestOption, injector?: IInjector): Promise<MessageContext>;
-    send(url: any, options?: RequestOption, injector?: IInjector): Promise<MessageContext> {
-        return this.getMessager().send(url, options, injector);
+    send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
+    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<MessageContext> {
+        return this.getMessager().send(url, request, ...providers);
     }
 
     /**

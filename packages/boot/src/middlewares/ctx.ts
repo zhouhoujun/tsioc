@@ -6,6 +6,10 @@ import { ProdverOption } from '../Context';
  */
 export interface RequestOption extends ProdverOption {
     /**
+     * request url.
+     */
+    readonly url?: string;
+    /**
      * request body.
      */
     readonly body?: any;

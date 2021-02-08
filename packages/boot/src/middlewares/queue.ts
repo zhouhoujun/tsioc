@@ -1,4 +1,4 @@
-import { Injectable, Injector, Type, isString, IInjector } from '@tsdi/ioc';
+import { Injectable, Injector, Type, isString, IInjector, ProviderType } from '@tsdi/ioc';
 import { MessageContext, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 
@@ -46,21 +46,21 @@ export class MessageQueue extends Middlewares {
     /**
      * send message
      *
-     * @param {T} ctx message context
+     * @param {RequestOption} request request option
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(ctx: MessageContext): Promise<MessageContext>;
+    send(request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
     /**
      * send message
      *
      * @param {string} url route url
-     * @param {RequestOption} options query data.
+     * @param {RequestOption} request request options data.
      * @returns {Promise<MessageContext>}
      */
-    send(url: string, options: RequestOption, injector?: IInjector): Promise<MessageContext>;
-    async send(url: any, data?: any, injector?: IInjector): Promise<MessageContext> {
-        const ctx = isString(url) ? { url, request: data, injector } : url;
+    send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
+    async send(url: any, request?: any, ...providers: ProviderType[]): Promise<MessageContext> {
+        const ctx = isString(url) ? { request: { ...request, url, providers } } : { request: { ...url, providers } };
         await this.execute(ctx);
         return ctx;
     }

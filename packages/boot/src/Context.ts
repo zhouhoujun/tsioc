@@ -226,19 +226,19 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
     /**
      * send message
      *
-     * @param {T} ctx message context
+     * @param {RequestOption} request request option
      * @param {() => Promise<void>} [next]
      * @returns {Promise<void>}
      */
-    send(ctx: MessageContext): Promise<MessageContext>;
+    send(request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>;
     /**
      * send message
      *
      * @param {string} url route url
-     * @param {RequestOption} options query data.
+     * @param {RequestOption} request request options data.
      * @returns {Promise<MessageContext>}
      */
-    send(url: string, options: RequestOption, injector?: IInjector): Promise<MessageContext>;
+    send(url: string, request: RequestOption, ...providers: ProviderType[]): Promise<MessageContext>
 
     /**
      * get log manager.
