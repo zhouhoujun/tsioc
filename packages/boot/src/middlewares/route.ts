@@ -60,9 +60,9 @@ export abstract class Route extends Middleware {
 
     async execute(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
         if (this.match(ctx)) {
-            this.navigate(ctx, next);
+            await this.navigate(ctx, next);
         } else {
-            return await next();
+            await next();
         }
     }
 
@@ -81,7 +81,7 @@ export class FactoryRoute extends Route {
     }
 
     protected navigate(ctx: MessageContext, next: () => Promise<void>): Promise<void> {
-        return this.factory({provide: CONTEXT, useValue: ctx})?.execute(ctx, next);
+        return this.factory({ provide: CONTEXT, useValue: ctx })?.execute(ctx, next);
     }
 
 }

@@ -77,7 +77,7 @@ export class LoadReposTest {
         const rep = await this.ctx.send('/users', { method: 'post', body: { name: 'post_test', account: 'post_test', password: '111111' } });
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body.name).toEqual('test1');
+        expect(rep.body.name).toEqual('post_test');
     }
 
     @Test()
