@@ -1,6 +1,6 @@
 import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware, IBootContext, MappingRoute, RouteMapping, CONTEXT } from '../src';
 import expect = require('expect');
-import { IInjector, Inject, Injectable, refl } from '@tsdi/ioc';
+import { IInjector, Inject, Injectable, lang, refl } from '@tsdi/ioc';
 
 @RouteMapping('/device')
 class DeviceController {
@@ -14,7 +14,13 @@ class DeviceController {
     async update(version: string) {
         // do smth.
         console.log('update version:', version);
-        return version;
+        let defer = lang.defer();
+
+        setTimeout(()=> {
+            defer.resolve(version);
+        }, 50);
+
+        return await defer.promise;
     }
 
 
