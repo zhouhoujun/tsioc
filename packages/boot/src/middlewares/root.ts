@@ -55,7 +55,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);
     const providers = injector.get(PROVIDERS);
-    
+
     if (!ctx.vaild) {
         ctx.vaild = ctx.injector.get(RouteVaildator);
     }
@@ -66,19 +66,19 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
 
     Object.defineProperties(ctx, {
         url: {
-            get: ()=> request.url,
+            get: () => request.url,
             enumerable: false
         },
         providers: {
-            get: ()=> providers,
+            get: () => providers,
             enumerable: false
         },
         event: {
-            get: ()=> request.event,
+            get: () => request.event,
             enumerable: false
         },
         method: {
-            get: ()=> request.method,
+            get: () => request.method,
             enumerable: false
         },
         getValue: {
@@ -96,20 +96,17 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
     const logger = injector.getInstance(BOOTCONTEXT).getLogManager()?.getLogger();
     const start = Date.now();
     logger?.debug(ctx.method, ctx.url);
-    console.debug(ctx.method, ctx.url);
+    // console.debug(ctx.method, ctx.url);
     try {
         await next();
     } catch (err) {
-        if(logger){
-            logger.error(err);
-        } else {
-            console.error(err);
-        }
+        logger.error(err);
+        console.error(err);
         ctx.status = err.status ?? 500;
         ctx.message = err.message ?? err.toString();
         throw err;
     } finally {
         logger?.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
-        console.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
+        // console.debug(ctx.method, ctx.url, `- ${Date.now() - start}ms`);
     }
 };
