@@ -179,7 +179,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
 };
 
 const typfd = '_isType';
-function isDesignType(this: PropertyMetadata) {
+function isDesType(this: PropertyMetadata) {
     if (isUndefined(this[typfd])) {
         this[typfd] = isClass(this.type);
     }
@@ -205,7 +205,7 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
         propMetas.forEach(prop => {
             Object.defineProperties(prop, {
                 isType: {
-                    get: isDesignType,
+                    get: isDesType,
                     enumerable: false
                 },
                 isProviderType: {
@@ -239,7 +239,7 @@ export const RegMethodParamsType = function (ctx: DesignContext, next: () => voi
         pms.forEach(pm => {
             Object.defineProperties(pm, {
                 isType: {
-                    get: isDesignType,
+                    get: isDesType,
                     enumerable: false
                 },
                 isProviderType: {
