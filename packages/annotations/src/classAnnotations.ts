@@ -40,7 +40,8 @@ export function iocAnnotations(contents: string): string {
 
             let className = node.name.text;
             let annations: any = {
-                name: className
+                name: className,
+                abstract: node.modifiers.some(s=> s.getText()=== 'abstract')
             };
 
             let oldclass = node.getText();

@@ -2,11 +2,11 @@
 import { ObjectMap, Type, Modules, ClassType } from '../types';
 import { getClass, isArray, isClass, isClassType, isFunction, isNil, isObject, isPlainObject } from './chk';
 import { clsUglifyExp } from './exps';
-import { getDesignAnno } from './util';
+import { getClassAnnotation } from './util';
 
 
 export { getClass } from './chk';
-export { getDesignAnno, hasDesignAnno } from './util';
+export { getClassAnnotation as getDesignAnno, hasClassAnnotation as hasDesignAnno } from './util';
 
 /**
  * create an new object from target object omit some field.
@@ -123,7 +123,7 @@ export function getClassName(target: any): string {
         return '';
     }
     if (clsUglifyExp.test(classType.name)) {
-        let classAnnations = getDesignAnno(classType);
+        let classAnnations = getClassAnnotation(classType);
         return classAnnations ? classAnnations.name : classType.name;
     }
     return classType.name;

@@ -215,7 +215,7 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
             });
             // if (isClass(prop.provider)) {
             // injector.registerType(prop.provider);
-            // } else if (isClass(prop.type)) {
+            // } else if (!prop.provider && isClass(prop.type)) {
             // injector.registerType(prop.type);
             // }
         });
@@ -249,7 +249,7 @@ export const RegMethodParamsType = function (ctx: DesignContext, next: () => voi
             });
             // if (isClass(pm.provider)) {
             // injector.registerType(pm.provider);
-            // } else if (isClass(pm.type)) {
+            // } else if (!pm.provider && isClass(pm.type)) {
             // injector.registerType(pm.type);
             // }
         });

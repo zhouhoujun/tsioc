@@ -2,7 +2,7 @@ import { TypeReflect } from '../decor/type';
 import { InjectToken } from '../tokens';
 import { AbstractType, AnnotationType, ClassType, ObjectMap, Type } from '../types';
 import { clsNameExp, reflFiled } from './exps';
-import { hasDesignAnno } from './util';
+import { getClassAnnotation } from './util';
 
 
 declare let process: any;
@@ -350,14 +350,11 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (target.prototype.constructor !== target) return false;
 
     const rf: TypeReflect = target[reflFiled]?.();
-    if (rf) {
-        if (isBoolean(abstract) && rf.type === target) {
-            return abstract ? rf.abstract : !rf.abstract;
-        }
-        return true;
-    }
+    if (rf) return isBoolean(abstract) ? (abstract && rf.type === target ? rf.abstract : !rf.abstract) : true;
 
-    if (hasDesignAnno(target)) return true;
+    const ann = getClassAnnotation(target);
+    if (ann) return isBoolean(abstract) ? (abstract ? ann.abstract : !ann.abstract) : true;
+
     if (!clsNameExp.test(target.name)) return false;
     if (isPrimitive(target)) return false;
     const pkeys = Object.getOwnPropertyNames(target);

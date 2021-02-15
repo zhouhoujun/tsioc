@@ -7,7 +7,7 @@ import { AnnotationType } from '../types';
  * @param {ClassType} target
  * @returns
  */
-export function getDesignAnno(target: AnnotationType) {
+export function getClassAnnotation(target: AnnotationType) {
     let annf: Function = target.ρAnn || target.d0Ann || target.getClassAnnations;
     return typeof annf === 'function' ? annf.call(target) : null;
 }
@@ -19,6 +19,6 @@ export function getDesignAnno(target: AnnotationType) {
  * @param {ClassType} target
  * @returns {boolean}
  */
-export function hasDesignAnno(target: AnnotationType): boolean {
+export function hasClassAnnotation(target: AnnotationType): boolean {
     return typeof (target.ρAnn || target.d0Ann || target.getClassAnnations) === 'function';
 }

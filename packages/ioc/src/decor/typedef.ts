@@ -1,7 +1,7 @@
 import { ClassType, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, clsUglifyExp, STRIP_COMMENTS } from '../utils/exps';
 import { isFunction, isString } from '../utils/chk';
-import { getDesignAnno } from '../utils/util';
+import { getClassAnnotation } from '../utils/util';
 import { forIn, getClassChain } from '../utils/lang';
 import { DecoratorType, DecorDefine, DecorMemberType } from './type';
 
@@ -19,7 +19,7 @@ export class TypeDefine {
     protected paramDMap: Map<string, DecorDefine[]>;
 
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
-        this.className = getDesignAnno(type)?.name || type.name;
+        this.className = getClassAnnotation(type)?.name || type.name;
         this.classDecors = [];
         this.propDMap = new Map();
         this.methodDMap = new Map();
@@ -258,7 +258,7 @@ export class TypeDefine {
 
         let isUglify = clsUglifyExp.test(ty.name);
         let anName = '';
-        let classAnnations = getDesignAnno(ty);
+        let classAnnations = getClassAnnotation(ty);
         if (classAnnations && classAnnations.params) {
             anName = classAnnations.name;
             meta = {

@@ -9,6 +9,7 @@ import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass, isBaseOf } from '../utils/lang';
+import { getClassAnnotation } from '../utils/util';
 
 
 
@@ -302,6 +303,8 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         const meta = ctx.matedata as InjectableMetadata;
         if (meta.abstract) {
             reflect.abstract = true;
+        } else {
+            reflect.abstract = getClassAnnotation(reflect.type)?.abstract === true;
         }
         if (meta.singleton) {
             reflect.singleton = true;
