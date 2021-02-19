@@ -42,7 +42,7 @@ export class UserController {
 export class RouteStartup extends StartupService {
    
     async configureService(ctx: IBootContext): Promise<void> {
-        ctx.injector.registerType(UserController);
+        ctx.injector.register(UserController);
     }
 
 }

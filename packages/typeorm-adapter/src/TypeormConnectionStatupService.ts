@@ -42,7 +42,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
     async statupConnection(injector: IInjector, options: IConnectionOptions, config: Configure) {
         const connection = await this.createConnection(options, config);
         options.entities.forEach(e=> {
-            injector.registerType(e);
+            injector.register(e);
         });
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
             if (options.entities.indexOf(meta.entity as Type) >= 0) {
