@@ -1,6 +1,6 @@
 import {
     Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
-    isNil, isPlainObject, InjectorImpl, isContainer, IProvider, Injector, RegisterOption, ClassRegister, ValueRegister, ProviderOption
+    isNil, InjectorImpl, isContainer, IProvider, Injector, ProviderOption
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 import { ROOT_INJECTOR } from '../tk';

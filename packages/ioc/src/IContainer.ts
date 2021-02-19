@@ -87,10 +87,6 @@ export interface IContainer extends IInjector {
      */
     readonly provider: IActionProvider;
     /**
-     * get root contianer.
-     */
-    getContainer(): this;
-    /**
      * create injector.
      */
     createInjector(): IInjector;
