@@ -141,7 +141,7 @@ export abstract class Middlewares extends Middleware {
     }
 
     protected regHandle(handle: MiddlewareType): this {
-        lang.isBaseOf(handle, Middleware) && this.getInjector().registerType(handle);
+        lang.isBaseOf(handle, Middleware) && this.getInjector().register(handle);
         return this;
     }
 

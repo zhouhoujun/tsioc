@@ -1,4 +1,4 @@
-import { INJECTOR, lang, isPrimitiveType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction, getFacInstance } from '@tsdi/ioc';
+import { INJECTOR, lang, isPrimitiveType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction, getFacInstance, Type } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
@@ -147,9 +147,9 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
     const regedState = ctx.getContainer().regedState;
     if (!regedState.isRegistered(ctx.type)) {
         if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
-            ctx.injector.registerType(ctx.type, { regIn: 'root' });
+            ctx.injector.register({ useClass: ctx.type, regIn: 'root' });
         } else {
-            ctx.injector.registerType(ctx.type);
+            ctx.injector.register(ctx.type);
         }
     }
     const annoation = ctx.getAnnoation();
@@ -178,8 +178,8 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
     }
     if (config.debug) {
         // make sure log module registered.
-        ctx.injector.registerType(LogModule)
-            .registerType(DebugLogAspect);
+        ctx.injector.register(LogModule)
+            .register(DebugLogAspect);
     }
 
     const regs = ctx.injector.getServices(ConfigureRegister);
@@ -273,7 +273,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
         await lang.step(startups.map(tyser => () => {
             let ser: IStartupService;
             if (isFunction(tyser) && !regedState.isRegistered(tyser)) {
-                injector.register(tyser);
+                injector.register(tyser as Type);
             }
             ser = injector.get(tyser) ?? regedState.getInstance(tyser as ClassType);
             ctx.onDestroy(() => ser?.destroy());

@@ -19,7 +19,7 @@ export class LogModule {
      */
     setup(@Inject(CONTAINER) container: IContainer) {
         if (!container.has(AopModule)) {
-            container.registerType(AopModule);
+            container.register(AopModule);
         }
 
         container.inject(ConfigureLoggerManager, AnnotationLoggerAspect, LogFormater, ConsoleLogManager);

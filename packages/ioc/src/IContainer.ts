@@ -1,6 +1,6 @@
 import { ClassType, Type } from './types';
-import { Token, FactoryLike, ProviderType } from './tokens';
-import { IInjector, IProvider, ServiceOption, ServicesOption } from './IInjector';
+import { Token, ProviderType } from './tokens';
+import { IInjector, IProvider, ProviderOption, ServiceOption, ServicesOption } from './IInjector';
 import { IActionProvider } from './actions/act';
 import { Registered } from './decor/type';
 
@@ -100,15 +100,7 @@ export interface IContainer extends IInjector {
      * @param type the class.
      * @param [options] the class prodvider to.
      */
-    registerIn<T>(injector: IProvider, type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
-    /**
-     * register factory to injector.
-     * @param injector the injector to register.
-     * @param token register token
-     * @param fac factory of token.
-     * @param singleton singlteon or not.
-     */
-    registerFactory<T>(injector: IProvider, token: Token<T>, fac?: FactoryLike<T>, singleton?: boolean): this;
+    registerIn<T>(injector: IProvider, type: Type<T>, options?: ProviderOption): this;
 }
 
 export type IIocContainer = IContainer;

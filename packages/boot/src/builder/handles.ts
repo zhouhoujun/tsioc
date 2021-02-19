@@ -189,7 +189,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
         }
         const regedState = ctx.getContainer().regedState;
         if (ctx.type && !regedState.isRegistered(ctx.type)) {
-            ctx.injector.registerType(ctx.type);
+            ctx.injector.register(ctx.type);
             ctx.setValue(INJECTOR, regedState.getInjector(ctx.type))
         }
         // has build module instance.

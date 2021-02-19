@@ -118,7 +118,7 @@ export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootA
     protected createUUID() {
         let container = this.getContainer();
         if (!container.has(UUIDToken)) {
-            container.registerType(RandomUUIDFactory);
+            container.register(RandomUUIDFactory);
         }
         return container.getInstance(UUIDToken).generate();
     }

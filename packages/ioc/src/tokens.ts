@@ -94,7 +94,7 @@ export interface InstFac<T = any> {
 /**
  * Factory of Token
  */
-export type FactoryLike<T> = T | Type<T> | Factory<T>;
+export type FactoryLike<T> = Type<T> | Factory<T>;
 
 /**
  * parse id string to token id.

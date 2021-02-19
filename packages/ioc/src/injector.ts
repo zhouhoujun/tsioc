@@ -2,13 +2,13 @@ import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
-import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
+import { ClassRegister, IInjector, IModuleLoader, IProvider, ProviderOption, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
-import { PROVIDERS } from './utils/tk';
+import { INJECTOR, PROVIDERS } from './utils/tk';
 
 
 @Abstract()
@@ -194,23 +194,48 @@ export class Provider implements IProvider {
      * @param [options] the class prodvider to.
      * @returns {this}
      */
-    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    register<T>(type: Type<T>): this;
+    /**
+     * register with option.
+     * @param options
+     */
+    register<T>(option: RegisterOption<T>): this;
     /**
      * register type class.
      * @param Type the class.
-     * @param [provide] the class prodvider to.
+     * @param [provider] the class prodvider to.
      * @param [singleton]
      * @returns {this}
      */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
-    registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
-        if (!isClass(type)) return this;
-        if (provide) {
-            this.getContainer()?.registerIn(this, type, isPlainObject(provide) ? provide : { provide, singleton });
+    register<T>(token: Token<T>, provider: FactoryLike<T>, singleton?: boolean): this;
+    register(token: any, provider?: any, singleton?: boolean): this {
+        if (provider) {
+            this.regToken(token, provider, singleton);
         } else {
-            this.getContainer()?.registerIn(this, type);
+            if (isFunction(token)) {
+                this.regType(token);
+            } else {
+                if ((token as ClassRegister).useClass) {
+                    this.regType((token as ClassRegister).useClass, token as ClassRegister);
+                } else if ((token as ValueRegister).provide) {
+                    this.setValue((token as ValueRegister).provide, (token as ValueRegister).useValue);
+                }
+            }
         }
         return this;
+    }
+
+    protected regType<T>(target: Type<T>, option?: ProviderOption) {
+        this.getContainer()?.registerIn(this, target, option);
+    }
+
+    protected regToken<T>(token: Token<T>, provider: FactoryLike<T>, singleton?: boolean) {
+        if (isClass(provider)) {
+            this.getContainer()?.registerIn(this, provider, { provide: token, singleton });
+        } else {
+            const classFactory = this.createCustomFactory(token, provider, singleton);
+            this.set(token, classFactory);
+        }
     }
 
     /**
@@ -229,7 +254,7 @@ export class Provider implements IProvider {
             } else if (p instanceof Provider) {
                 this.copy(p);
             } else if (isClass(p)) {
-                this.registerType(p);
+                this.regType(p);
             } else if (p instanceof KeyValueProvider) {
                 p.each((k, value) => {
                     this.set(k, { value });
@@ -240,14 +265,14 @@ export class Provider implements IProvider {
                     let provide = pr.provide;
                     if (isArray(pr.deps) && pr.deps.length) {
                         pr.deps.forEach(d => {
-                            if (isClass(d)) this.registerType(d);
+                            if (isClass(d)) this.regType(d);
                         });
                     }
                     if (!isNil(pr.useValue)) {
                         let val = pr.useValue;
                         this.setValue(provide, val);
                     } else if (isClass(pr.useClass)) {
-                        this.registerType(pr.useClass, pr.provide, pr.singleton);
+                        this.regType(pr.useClass, pr);
                     } else if (isFunction(pr.useFactory)) {
                         let deps = pr.deps;
                         this.set(provide, (...pdrs: ProviderType[]) => {
@@ -297,7 +322,7 @@ export class Provider implements IProvider {
      */
     use(...modules: Modules[]): Type[] {
         let types = getTypes(...modules);
-        types.forEach(ty => this.registerType(ty));
+        types.forEach(ty => this.regType(ty));
         return types;
     }
 
@@ -376,7 +401,7 @@ export class Provider implements IProvider {
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this {
         if (provide && provider) {
-            !reged && this.registerType(provider);
+            !reged && this.register(provider);
             if (reged && reged.provides.indexOf(provide) < 0) {
                 reged.provides.push(provide);
             }
@@ -474,6 +499,23 @@ export class Provider implements IProvider {
         }
     }
 
+    protected parse(...providers: ProviderType[]): IProvider {
+        return this.getInstance(PROVIDERS).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
+    }
+
+    protected createCustomFactory<T>(key: Token<T>, factory?: Factory<T>, singleton?: boolean) {
+        return singleton ?
+            (...providers: ProviderType[]) => {
+                if (this.hasValue(key)) {
+                    return this.getValue(key);
+                }
+                let instance = factory(this.parse(...providers));
+                this.setValue(key, instance);
+                return instance;
+            }
+            : (...providers: ProviderType[]) => factory(this.parse(...providers));
+    }
+
     protected merge(from: Provider, to: Provider, filter?: (key: Token) => boolean) {
         from.factories.forEach((pdr, key) => {
             if (filter && !filter(key)) {
@@ -536,28 +578,6 @@ export abstract class Injector extends Provider implements IInjector {
     }
 
     /**
-     * register type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {T} [value]
-     * @returns {this}
-     * @memberOf Injector
-     */
-    abstract register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
-
-    /**
-     * register stingleton type.
-     * @abstract
-     * @template T
-     * @param {Token<T>} token
-     * @param {FactoryLike<T>} [fac]
-     * @returns {this}
-     * @memberOf Injector
-     */
-    abstract registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
-
-    /**
      * use modules.
      *
      * @param {...Modules[]} modules
@@ -566,7 +586,7 @@ export abstract class Injector extends Provider implements IInjector {
      */
     use(...modules: Modules[]): Type[] {
         let types = getTypes(...modules);
-        types.forEach(ty => this.registerType(ty));
+        types.forEach(ty => this.register(ty));
         return types;
     }
 

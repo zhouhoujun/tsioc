@@ -1,12 +1,12 @@
 import { Registered } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
-import { isClass, isNil, isFunction, isPlainObject, isArray } from './utils/chk';
+import { isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
-import { IInjector, IModuleLoader, IProvider, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
+import { IInjector, IModuleLoader, IProvider, ProviderOption, RegisterOption, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
 import { MethodType } from './IMethodAccessor';
-import { FactoryLike, InjectToken, Factory, ProviderType, Token } from './tokens';
+import { ProviderType, Token } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
@@ -25,32 +25,6 @@ export class InjectorImpl extends Injector {
     constructor(parent?: IInjector, strategy?: Strategy) {
         super(parent, strategy);
         this.initReg();
-    }
-
-    /**
-     * register provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param { FactoryLike<T>} fac
-     * @returns {this}
-     */
-    register<T>(token: Token<T>, fac?: FactoryLike<T>): this {
-        this.getContainer().registerFactory(this, token, fac);
-        return this;
-    }
-
-    /**
-     * register provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param { FactoryLike<T>} fac
-     * @returns {this}
-     */
-    registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this {
-        this.getContainer().registerFactory(this, token, fac, true);
-        return this;
     }
 
     /**
@@ -172,51 +146,13 @@ export class Container extends Injector implements IContainer {
     }
 
     /**
-     * register provider.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param { FactoryLike<T>} fac
-     * @returns {this}
-     */
-    register<T>(token: Token<T>, fac?: FactoryLike<T>): this {
-        this.registerFactory(this, token, fac);
-        return this;
-    }
-
-    registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this {
-        this.registerFactory(this, token, fac, true);
-        return this;
-    }
-
-    registerFactory<T>(injector: IInjector, token: Token<T>, value?: FactoryLike<T>, singleton?: boolean): this {
-        if (!isNil(value)) {
-            if (isFunction(value)) {
-                if (isClass(value)) {
-                    this.registerIn(injector, value, { provide: token, singleton });
-                } else {
-                    const classFactory = this.createCustomFactory(injector, token, value, singleton);
-                    injector.set(token, classFactory);
-                }
-            } else if (!isNil(value)) {
-                injector.set(token, { value });
-            }
-
-        } else if (isClass(token)) {
-            this.registerIn(injector, token, { singleton });
-        }
-
-        return this;
-    }
-
-    /**
      * register type class.
      * @param injector register in the injector.
      * @param type the class.
      * @param [provide] the class prodvider to.
      * @param [singleton]
      */
-    registerIn<T>(injector: IInjector, type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }) {
+    registerIn<T>(injector: IInjector, type: Type<T>, options?: ProviderOption) {
         // make sure class register once.
         if (this.regedState.isRegistered(type)) {
             if (options?.provide) {
@@ -270,23 +206,6 @@ export class Container extends Injector implements IContainer {
         this.setValue(Injector, this);
         this.setValue(INJECTOR, this);
         registerCores(this);
-    }
-
-    protected parse(...providers: ProviderType[]): IProvider {
-        return this.getInstance(PROVIDERS).inject(...providers);
-    }
-
-    protected createCustomFactory<T>(injector: IInjector, key: Token<T>, factory?: Factory<T>, singleton?: boolean) {
-        return singleton ?
-            (...providers: ProviderType[]) => {
-                if (injector.hasValue(key)) {
-                    return injector.getValue(key);
-                }
-                let instance = factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
-                injector.setValue(key, instance);
-                return instance;
-            }
-            : (...providers: ProviderType[]) => factory(this.parse({ provide: InjectToken, useValue: injector }, ...providers));
     }
 
 }
@@ -396,27 +315,12 @@ class ActionProvider extends Provider implements IActionProvider {
         return this;
     }
 
-    /**
-    * register type class.
-    * @param type the class type.
-    * @param [options] the class prodvider to.
-    * @returns {this}
-    */
-    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
-    /**
-     * register type class.
-     * @param Type the class.
-     * @param [provide] the class prodvider to.
-     * @param [singleton]
-     * @returns {this}
-     */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
-    registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
-        if (!provide && isBaseOf(type, Action)) {
-            this.registerAction(type);
-            return this;
+    protected regType<T>(target: Type<T>, option?: ProviderOption) {
+        if (!option && isBaseOf(target, Action)) {
+            this.registerAction(target);
+            return;
         }
-        return super.registerType(type, provide, singleton);
+        super.regType(target, option);
     }
 
     getAction<T extends Handler>(target: Token<Action> | Action | Function): T {

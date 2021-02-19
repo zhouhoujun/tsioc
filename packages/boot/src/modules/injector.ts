@@ -1,6 +1,6 @@
 import {
     Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
-    isNil, isPlainObject, InjectorImpl, isContainer, IProvider, Injector
+    isNil, isPlainObject, InjectorImpl, isContainer, IProvider, Injector, RegisterOption, ClassRegister, ValueRegister, ProviderOption
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 import { ROOT_INJECTOR } from '../tk';
@@ -228,35 +228,16 @@ export class ModuleProvider extends Provider implements IModuleProvider {
      * module injector.
      */
     exports: ModuleRef[] = [];
-    /**
-     * register type class.
-     * @param type the class type.
-     * @param [options] the class prodvider to.
-     * @returns {this}
-     */
-    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
-    /**
-     * register type class.
-     * @param Type the class.
-     * @param [provide] the class prodvider to.
-     * @param [singleton]
-     * @returns {this}
-     */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
-    registerType<T>(type: Type<T>, provide?: any, singleton?: boolean): this {
-        if (isPlainObject(provide)) {
-            this.getContainer()?.registerIn(this.mdInjector, type, provide as any);
-        } else {
-            this.getContainer()?.registerIn(this.mdInjector, type, { provide, singleton });
-        }
-        this.export(type);
-        return this;
+
+    protected regType<T>(target: Type<T>, option?: ProviderOption) {
+        this.getContainer()?.registerIn(this.mdInjector, target, option);
+        this.export(target);
     }
 
     export(type: Type, noRef?: boolean) {
         const state = this.getContainer().regedState;
         if (!state.isRegistered(type)) {
-            this.mdInjector.registerType(type);
+            this.mdInjector.register(type);
         }
         this.set(type, (...pdrs) => this.mdInjector.getInstance(type, ...pdrs));
         const reged = state.getRegistered<ModuleRegistered>(type);

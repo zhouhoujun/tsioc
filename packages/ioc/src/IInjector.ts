@@ -7,6 +7,36 @@ import { Registered } from './decor/type';
 
 
 /**
+ * value register.
+ */
+export interface ValueRegister<T = any> {
+    provide: Token<T>;
+    /**
+     * use value for provide.
+     *
+     * @type {*}
+     */
+    useValue: any;
+}
+
+export interface ProviderOption {
+    provide?: Token;
+    singleton?: boolean;
+    regIn?: 'root';
+}
+
+export interface ClassRegister<T = any> extends ProviderOption {
+    provide?: Token<T>;
+    useClass: Type<T>;
+}
+
+/**
+ * register option.
+ */
+export type RegisterOption<T> = ValueRegister<T> | ClassRegister<T>;
+
+
+/**
  * provider interface.
  */
 export interface IProvider extends Destroyable {
@@ -124,15 +154,22 @@ export interface IProvider extends Destroyable {
      * @param [options] the class prodvider to.
      * @returns {this}
      */
-    registerType<T>(type: Type<T>, options?: { provide?: Token<T>, singleton?: boolean, regIn?: 'root' }): this;
+    register<T>(type: Type<T>): this;
     /**
-     * register type class.
-     * @param type the class type.
-     * @param [provide] the class prodvider to.
-     * @param [singleton]
+     * register with option.
+     * @param options
+     */
+    register<T>(option: RegisterOption<T>): this;
+    /**
+     * register type.
+     *
+     * @template T
+     * @param {Token<T>} token
+     * @param {FactoryLike<T>} provider
+     * @param {boolean} singleton
      * @returns {this}
      */
-    registerType<T>(type: Type<T>, provide?: Token<T>, singleton?: boolean): this;
+    register<T>(token: Token<T>, provider: FactoryLike<T>, singleton: boolean): this;
     /**
      * unregister the token
      *
@@ -259,24 +296,6 @@ export interface IInjector extends IProvider {
      * @returns {Type[]}
      */
     use(...modules: Modules[]): Type[];
-    /**
-     * register type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {FactoryLike<T>} [fac]
-     * @returns {this}
-     */
-    register<T>(token: Token<T>, fac?: FactoryLike<T>): this;
-    /**
-     * register stingleton type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {FactoryLike<T>} fac
-     * @returns {this}
-     */
-    registerSingleton<T>(token: Token<T>, fac?: FactoryLike<T>): this;
     /**
      * resolve token instance with token and param provider.
      *

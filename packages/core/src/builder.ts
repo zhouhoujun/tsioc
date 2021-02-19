@@ -23,7 +23,7 @@ export class ContainerBuilder implements IContainerBuilder {
         if (this._loader) {
             container.setValue(MODULE_LOADER, this._loader);
         }
-        container.registerType(CoreModule);
+        container.register(CoreModule);
         return container;
     }
 

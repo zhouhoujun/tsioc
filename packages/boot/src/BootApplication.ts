@@ -50,7 +50,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
             this.container.setValue(ROOT_INJECTOR, ModuleInjector.create(this.container));
         }
         container.setValue(BootApplication, this);
-        container.registerType(BootModule);
+        container.register(BootModule);
 
     }
 
@@ -96,7 +96,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
      */
     async run(...args: string[]): Promise<T> {
         const root = this.getRootInjector();
-        root.registerType(MiddlewareModule);
+        root.register(MiddlewareModule);
         await root.load(...this.getBootDeps());
         let ctx = await root.getInstance(BUILDER).boot(this, ...args);
         return ctx as T;
