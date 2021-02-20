@@ -17,10 +17,10 @@ export class ComponentsModule {
 
         const prdr = container.provider;
 
-        prdr.register(RenderComponent)
-            .regAction(
+        prdr.regAction(
                 RenderView,
-                RefreshView
+                RefreshView,
+                RenderComponent
             );
 
         prdr.getInstance(ResolveMoudleScope)
