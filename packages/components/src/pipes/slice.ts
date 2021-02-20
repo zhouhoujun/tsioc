@@ -16,7 +16,7 @@ export class SlicePipe implements PipeTransform {
             throw invalidPipeArgumentError(this, value);
         }
 
-        return value.slice(start, end);
+        return (value as String | Array<any>).slice(start, end);
     }
 
     private supports(obj: any): boolean {

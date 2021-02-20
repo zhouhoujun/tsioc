@@ -23,7 +23,7 @@ export class DirIf<T> {
      * The Boolean expression to evaluate as the condition for showing a template.
      */
     @Input()
-    set ngIf(condition: T) {
+    set if(condition: T) {
         this._context.$implicit = this._context.dirIf = condition;
         this._updateView();
     }

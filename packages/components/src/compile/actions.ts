@@ -14,8 +14,8 @@ export const BuildComponentHandle = async function (ctx: ComponentBuildContext, 
     if ((ctx.reflect as ComponentReflect).annoType === 'component') {
         if (!reflect.def && reflect.annotation.templateUrl) {
             const injector = ctx.injector;
-            const tmp = await ctx.injector.getLoader().load(reflect.annotation.templateUrl);
-            reflect.annotation.template = tmp;
+            // const tmp = await ctx.injector.getLoader().load(reflect.annotation.templateUrl);
+            // reflect.annotation.template = tmp;
             const compiler = injector.getService({ token: CompilerFacade, target: reflect.annoDecor });
             reflect.def = compiler.compileComponent(reflect);
         }

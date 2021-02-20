@@ -83,6 +83,7 @@ export abstract class ViewRef extends ChangeDetectorRef implements Destroyable {
  * ```
  * @publicApi
  */
+@Abstract()
 export abstract class EmbeddedViewRef<C> extends ViewRef {
   /**
    * The context for this view, inherited from the anchor element.

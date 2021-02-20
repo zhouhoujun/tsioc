@@ -42,10 +42,8 @@ export class QueryList<T> implements Iterable<T> {
   public readonly changes: Observable<any> = new EventEmitter();
 
   readonly length: number = 0;
-  // TODO(issue/24571): remove '!'.
-  readonly first!: T;
-  // TODO(issue/24571): remove '!'.
-  readonly last!: T;
+  readonly first: T;
+  readonly last: T;
 
   constructor() {
     // This function should be declared on the prototype, but doing so there will cause the class
@@ -154,5 +152,5 @@ export class QueryList<T> implements Iterable<T> {
   // there) and this declaration is left here to ensure that TypeScript considers QueryList to
   // implement the Iterable interface. This is required for template type-checking of NgFor loops
   // over QueryLists to work correctly, since QueryList must be assignable to NgIterable.
-  [Symbol.iterator]!: () => Iterator<T>;
+  [Symbol.iterator]: () => Iterator<T>;
 }

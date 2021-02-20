@@ -15,7 +15,7 @@ export abstract class CompilerFacade {
     /**
      * compiler providers. the IInjector compiler registered in.
      */
-    abstract getCompilerProviders(): IProvider;
+    abstract getIdentifiers(): Identifiers;
     /**
      * compiler template.
      * @param template
