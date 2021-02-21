@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
+import { ApplicationRef } from '../refs/app';
 import { ComponentRef } from '../refs/component';
-import { IComponentBootContext } from '../refs/inter';
 
 
 /**
@@ -8,7 +8,7 @@ import { IComponentBootContext } from '../refs/inter';
  */
 @Abstract()
 export abstract class ComponentRenderer {
-    render(ctx: IComponentBootContext, componentRef: ComponentRef) {
+    render(ctx: ApplicationRef, componentRef: ComponentRef) {
         ctx.attachView(componentRef.hostView);
         ctx.tick();
         ctx.components.push(componentRef);
