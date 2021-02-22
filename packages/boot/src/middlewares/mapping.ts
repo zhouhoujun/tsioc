@@ -61,7 +61,7 @@ const restParms = /^\S*:/;
  */
 export class MappingRoute extends Route {
 
-    constructor(url: string, prefix: string, private reflect: MappingReflect, private injector: IInjector, private middlewares: MiddlewareType[]) {
+    constructor(url: string, prefix: string, protected reflect: MappingReflect, protected injector: IInjector, protected middlewares: MiddlewareType[]) {
         super(url, prefix);
     }
 
@@ -81,7 +81,10 @@ export class MappingRoute extends Route {
     async invoke(ctx: MessageContext, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
-            const ctrl = injector.getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
+            const ctrl = this.getInstance(ctx);
+            if(!ctrl){
+                return;
+            }
             const providers = await this.createProvider(ctx, ctrl, meta.matedata, this.reflect.methodParams.get(meta.propertyKey));
 
             let result = await injector.invoke(ctrl, meta.propertyKey, ctx.providers, ...providers);
@@ -108,6 +111,10 @@ export class MappingRoute extends Route {
                 ctx.status = 200;
             }
         }
+    }
+
+    protected getInstance(ctx: MessageContext) {
+        return this.injector.getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
     }
 
     protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {

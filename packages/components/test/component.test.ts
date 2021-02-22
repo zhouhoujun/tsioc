@@ -1,6 +1,6 @@
 import { DIModule, BootApplication, BootContext, IBootContext, BUILDER } from '@tsdi/boot';
 import { Suite, Test, Before } from '@tsdi/unit';
-import { Component, Input, ComponentsModule, RefChild, NonSerialize, CompilerFacade, ElementRef, ViewChild, ContentChild, ViewChildren, ComponentRef } from '../src';
+import { Component, Input, ComponentsModule, RefChild, NonSerialize, CompilerFacade, ElementRef, ViewChild, ContentChild, ViewChildren, ComponentRef, HostMapping } from '../src';
 import expect = require('expect');
 import { Inject, Injectable, INJECTOR, IInjector } from '@tsdi/ioc';
 
@@ -17,9 +17,16 @@ class Component1 {
 
 
 @Component('selector2')
+@HostMapping()
 class Component2 extends Component1 {
     @Input('test', 'default test') defaultTest: string;
     @Input() address: string;
+
+
+    @HostMapping('/map')
+    drawMap() {
+        console.log('begin draw map');
+    }
 }
 
 

@@ -1,8 +1,8 @@
 import {
     Token, createPropDecorator, PropertyMetadata, Type, refl, lang, isBoolean,
-    isUndefined, createParamDecorator, createDecorator, InjectableMetadata, CONTAINER
+    isUndefined, createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, isArray, ClassMethodDecorator, isString
 } from '@tsdi/ioc';
-import { AnnotationReflect, BuildContext, Runnable } from '@tsdi/boot';
+import { AnnotationReflect, BuildContext, MappingReflect, MessageQueue, Middlewares, MiddlewareType, RootRouter, RouteMapingMetadata, Router, Runnable } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
@@ -13,6 +13,7 @@ import { ComponentBuildContext } from './context';
 import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
 import { ComponentRunnable } from './render/runnable';
+import { HostMappingRoute } from './router';
 
 
 
@@ -236,7 +237,7 @@ export interface HostBindingPropertyDecorator {
 }
 
 /**
- * output property decorator.
+ * HostBinding property decorator.
  */
 export const HostBinding: HostBindingPropertyDecorator = createPropDecorator<HostBindingMetadata>('HostBinding', {
     props: (hostPropertyName?: string) => ({ hostPropertyName })
@@ -258,7 +259,16 @@ export interface HostListenerPropertyDecorator {
      *
      * @param {string} eventName binding property name
      */
-    (eventName?: string, args?: string[]): PropertyDecorator;
+    (eventName: string, args?: string[]): PropertyDecorator;
+
+    /**
+     * Decorator that binds a Message Queue event to a host listener and supplies configuration metadata.
+     * Components invokes the supplied handler method when the host element emits the specified event,
+     * and updates the bound element with the result.
+     *
+     * @param {string} eventName binding property name
+     */
+    (eventName: string, queue?: Type<MessageQueue>): PropertyDecorator;
 
     /**
      * define HostListener property decorator with binding metadata.
@@ -269,11 +279,119 @@ export interface HostListenerPropertyDecorator {
 }
 
 /**
- * output property decorator.
+ * HostListener property decorator.
  */
 export const HostListener: HostListenerPropertyDecorator = createPropDecorator<HostListenerMetadata>('HostListener', {
-    props: (eventName?: string, args?: string[]) => ({ eventName, args })
+    props: (eventName?: string, args?: any) => {
+        if (isArray(args)) {
+            return { eventName, args }
+        } else {
+            return { eventName, queue: args }
+        }
+    }
 });
+
+
+/**
+ * decorator used to define Request route mapping.
+ *
+ * @export
+ * @interface IHostMappingDecorator
+ */
+export interface IHostMappingDecorator {
+    /**
+     * use component selector as route or use the component method name as an route.
+     */
+    (): ClassMethodDecorator;
+    /**
+     * route decorator. define the component method as an route.
+     *
+     * @param {string} route route sub path. default use component selector.
+     * @param {Type<Router>} [parent] the middlewares for the route.
+     */
+    (route: string, parent: Type<Router>): ClassDecorator;
+    /**
+     * route decorator. define the component method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {MiddlewareType[]} [middlewares] the middlewares for the route.
+     */
+    (route: string, middlewares?: MiddlewareType[]): ClassMethodDecorator;
+
+    /**
+     * route decorator. define the component method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {{ middlewares?: MiddlewareType[], contentType?: string, method?: string}} options
+     *  [parent] set parent route.
+     *  [middlewares] the middlewares for the route.
+     */
+    (route: string, options: { parent?: Type<Router>, middlewares: MiddlewareType[] }): ClassDecorator;
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {RequestMethod} [method] set request method.
+     */
+    (route: string, method: string): MethodDecorator;
+
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {string} route route sub path.
+     * @param {{ middlewares?: MiddlewareType[], contentType?: string, method?: string}} options
+     *  [middlewares] the middlewares for the route.
+     *  [contentType] set request contentType.
+     *  [method] set request method.
+     */
+    (route: string, options: { middlewares: MiddlewareType[], contentType?: string, method?: string }): MethodDecorator;
+
+    /**
+     * route decorator. define the controller method as an route.
+     *
+     * @param {RouteMetadata} [metadata] route metadata.
+     */
+    (metadata: RouteMapingMetadata): ClassMethodDecorator;
+}
+
+/**
+ * HostMapping decorator
+ */
+export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMetadata>('HostMapping', {
+    props: (route: string, arg2?: Type<Router> | MiddlewareType[] | string | { middlewares: MiddlewareType[], contentType?: string, method?: string }) => {
+        if (isArray(arg2)) {
+            return { route, middlewares: arg2 };
+        } else if (isString(arg2)) {
+            return { route, method: arg2 };
+        } else if (lang.isBaseOf(arg2, Router)) {
+            return { route, parent: arg2 };
+        } else {
+            return { ...arg2, route };
+        }
+    },
+    design: {
+        afterAnnoation: (ctx, next) => {
+            const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
+            const injector = ctx.injector;
+            const state = injector.getContainer().regedState;
+            let queue: Middlewares;
+            if (parent) {
+                queue = state.getInstance(parent);
+            } else {
+                queue = injector.getInstance(RootRouter);
+            }
+
+            if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
+            if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
+
+            const mapping = new HostMappingRoute(route, (queue as Router).getPrefixUrl(), ctx.reflect as MappingReflect, injector, middlewares);
+            injector.onDestroy(() => queue.unuse(mapping));
+            queue.use(mapping);
+            next();
+        }
+    }
+});
+
 
 
 /**
@@ -719,6 +837,19 @@ export interface VaildatePropertyDecorator {
     (metadata: VaildateMetadata): PropertyDecorator;
 }
 
+/**
+ * Vaildate decorator.
+ */
+export const Vaildate: VaildatePropertyDecorator = createPropDecorator<VaildateMetadata>('Vaildate', {
+    props: (vaild: any, errorMsg?: string) => {
+        if (isBoolean(vaild)) {
+            return { required: vaild, errorMsg };
+        } else {
+            return { vaild, errorMsg };
+        }
+    }
+}) as VaildatePropertyDecorator;
+
 
 /**
  * @NonSerialize decorator define component property not need serialized.
@@ -734,16 +865,3 @@ export const NonSerialize = createPropDecorator<PropertyMetadata>('NonSerialize'
         }
     }
 });
-
-/**
- * Vaildate decorator.
- */
-export const Vaildate: VaildatePropertyDecorator = createPropDecorator<VaildateMetadata>('Vaildate', {
-    props: (vaild: any, errorMsg?: string) => {
-        if (isBoolean(vaild)) {
-            return { required: vaild, errorMsg };
-        } else {
-            return { vaild, errorMsg };
-        }
-    }
-}) as VaildatePropertyDecorator;

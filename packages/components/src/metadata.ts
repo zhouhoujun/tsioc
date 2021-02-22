@@ -1,4 +1,5 @@
-import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Metadata } from '@tsdi/ioc';
+import { MessageQueue } from '@tsdi/boot';
+import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Metadata, Type } from '@tsdi/ioc';
 
 
 /**
@@ -117,6 +118,10 @@ export interface HostListenerMetadata extends Metadata {
      * @memberof HostListenerMetadata
      */
     args?: string[];
+    /**
+     * listener from message queue.
+     */
+    queue?: Type<MessageQueue>;
 }
 
 

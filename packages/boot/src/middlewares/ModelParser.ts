@@ -1,9 +1,9 @@
 import {
     Type, PropertyMetadata, Inject, ObjectMap, isClass, isUndefined, isPrimitiveType, isArray,
-    Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector, isProvide
+    Abstract, Singleton, isNil, isFunction, Token, tokenId, Injector
 } from '@tsdi/ioc';
 import { IModelParser } from './IModelParser';
-import { ROOT_INJECTOR, TYPE_PARSER } from '../tk';
+import { TYPE_PARSER } from '../tk';
 
 
 /**

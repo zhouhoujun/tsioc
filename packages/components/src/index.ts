@@ -1,6 +1,8 @@
 export * from './EventEmitter';
 export * from './type';
 
+export * from './router';
+
 // decorators
 export * from './metadata';
 export * from './decorators';

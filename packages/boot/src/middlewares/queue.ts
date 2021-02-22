@@ -1,8 +1,13 @@
-import { Injectable, Injector, Type, isString, IInjector, ProviderType } from '@tsdi/ioc';
+import { Injectable, Type, isString, ProviderType } from '@tsdi/ioc';
 import { MessageContext, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 
-
+/**
+ * message subscripted.
+ */
+export interface Subscripted {
+    unsubscribe();
+}
 
 /**
  * composite message.
@@ -70,21 +75,24 @@ export class MessageQueue extends Middlewares {
      *
      * @param {(ctx: MessageContext, next: () => Promise<void>) => Promise<void>} subscriber
      */
-    subscribe(subscriber: (ctx: MessageContext, next: () => Promise<void>) => Promise<void>);
+    subscribe(subscriber: (ctx: MessageContext, next: () => Promise<void>) => Promise<void>): Subscripted;
     /**
      * subscribe message by handle instance;
      *
      * @param {Middleware} handle
      */
-    subscribe(handle: Middleware);
+    subscribe(handle: Middleware): Subscripted;
     /**
      * subscribe message by handle type or token.
      *
      * @param {Type<Middleware>} handle
      */
-    subscribe(handle: Type<Middleware>);
+    subscribe(handle: Type<Middleware>): Subscripted;
     subscribe(haddle: MiddlewareType) {
         this.use(haddle);
+        return {
+            unsubscribe: () => this.unsubscribe(haddle as any)
+        };
     }
 
     /**

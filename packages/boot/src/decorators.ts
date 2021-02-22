@@ -378,7 +378,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect as RouteReflect;
             const { route, parent, before, after } = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
-
+            const injector = ctx.injector;
             if (!isString(route) && !parent) {
                 return next();
             }
@@ -392,33 +392,38 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 }
             }
 
+            const type = ctx.type;
             if (isString(route)) {
                 if (!queue) {
-                    queue = ctx.injector.getInstance(RootRouter);
+                    queue = injector.getInstance(RootRouter);
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
-                const type = ctx.type;
                 const prefix = (queue as Router).getPrefixUrl();
                 reflect.route_url = route;
                 reflect.route_prefix = prefix;
+                let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                     reflect.extProviders.push({ provide: ROUTE_URL, useValue: route }, { provide: ROUTE_PREFIX, useValue: prefix });
-                    queue.use(type);
+                    middl = type;
                 } else {
-                    queue.use(new FactoryRoute(route, prefix, (...pdrs) => state.getInstance(type, ...pdrs)));
+                    middl = new FactoryRoute(route, prefix, (...pdrs) => injector.getInstance(type, ...pdrs));
                 }
+                queue.use(middl);
+                injector.onDestroy(() => queue.unuse(middl));
             } else {
                 if (!queue) {
-                    queue = ctx.injector.getInstance(ROOT_QUEUE);
+                    queue = injector.getInstance(ROOT_QUEUE);
                 }
                 if (before) {
-                    queue.useBefore(ctx.type, before);
+                    queue.useBefore(type, before);
                 } else if (after) {
-                    queue.useAfter(ctx.type, after);
+                    queue.useAfter(type, after);
                 } else {
-                    queue.use(ctx.type);
+                    queue.use(type);
                 }
+                injector.onDestroy(() => queue.unuse(type));
+
             }
             next();
         }
@@ -512,20 +517,21 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
     design: {
         afterAnnoation: (ctx, next) => {
             const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
-
-            const state = ctx.injector.getContainer().regedState;
+            const injector = ctx.injector;
+            const state = injector.getContainer().regedState;
             let queue: Middlewares;
             if (parent) {
                 queue = state.getInstance(parent);
             } else {
-                queue = ctx.injector.getInstance(RootRouter);
+                queue = injector.getInstance(RootRouter);
             }
 
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const type = ctx.type;
-            queue.use(new MappingRoute(route, (queue as Router).getPrefixUrl(), ctx.reflect as MappingReflect, state.getInjector(type), middlewares));
+            const mapping = new MappingRoute(route, (queue as Router).getPrefixUrl(), ctx.reflect as MappingReflect, injector, middlewares);
+            injector.onDestroy(() => queue.unuse(mapping));
+            queue.use(mapping);
 
             next();
         }
