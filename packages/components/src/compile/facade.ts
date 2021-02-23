@@ -1,4 +1,4 @@
-import { Abstract, IProvider, Provider } from '@tsdi/ioc';
+import { Abstract, Provider } from '@tsdi/ioc';
 import { ComponentReflect, DirectiveReflect } from '../reflect';
 
 
