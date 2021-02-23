@@ -382,7 +382,7 @@ export interface IModuleLoader {
     load(...modules: LoadType[]): Promise<Modules[]>;
     /**
      * register types.
-     * @param modules 
+     * @param modules modules.
      */
     register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]>;
     /**

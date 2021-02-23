@@ -164,14 +164,14 @@ export class TypeDefine {
 
     /**
      * get class metadata.
-     * @param decor 
+     * @param decor decoractor or decoractor name.
      */
     getMetadata<T = any>(decor: string | Function): T;
     /**
      * get property or method metadta.
-     * @param decor 
-     * @param propertyKey 
-     * @param type 
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey property name.
+     * @param type decoractor type.
      */
     getMetadata<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): T;
     getMetadata<T = any>(decor: string | Function, propertyKey?: string, type?: DecorMemberType): T {

@@ -67,7 +67,10 @@ export interface DesignContext extends RegContext {
      * type register in.
      */
     regIn?: string;
-    
+
+    /**
+     * registered state.
+     */
     state?: Registered;
 }
 

@@ -22,12 +22,12 @@ export interface RegisteredState {
     getInjector<T extends IInjector = IInjector>(type: ClassType): T;
     /**
      * get instance.
-     * @param type 
+     * @param type class type.
      */
     getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
     /**
      * get instance.
-     * @param type 
+     * @param type class type.
      */
     resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
     /**

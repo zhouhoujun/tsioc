@@ -293,8 +293,7 @@ function isPrimitive(target: Function): boolean {
 
 /**
  * is base type or not.
- * @param target 
- * 
+ *
  * @deprecated use `isPrimitiveType` instead.
  */
 export const isBaseType = isPrimitiveType;

@@ -18,47 +18,47 @@ export abstract class Strategy {
 
     /**
      * vaild parent.
-     * @param parent 
+     * @param parent parent provider.
      */
     abstract vaildParent(parent: IProvider): boolean;
     /**
      * has token or not.
-     * @param key 
-     * @param curr 
-     * @param deep 
+     * @param key token key.
+     * @param curr current provider.
+     * @param deep deep or not.
      */
     abstract hasToken<T>(key: Token<T>, curr: IProvider, deep?: boolean): boolean;
     /**
      * get instance.
-     * @param key 
-     * @param curr 
-     * @param providers 
+     * @param key token key.
+     * @param curr current provider.
+     * @param providers providers
      */
     abstract getInstance<T>(key: Token<T>, curr: IProvider, ...providers: ProviderType[]): T;
     /**
      * has value
-     * @param key 
-     * @param curr 
+     * @param key token key.
+     * @param curr current provider.
      */
     abstract hasValue<T>(key: Token<T>, curr: IProvider): boolean;
     /**
      * get value
-     * @param key 
-     * @param curr 
+     * @param key token key.
+     * @param curr current provider.
      */
     abstract getValue<T>(key: Token<T>, curr: IProvider): T;
     /**
      * get token provider.
-     * @param key 
-     * @param curr 
+     * @param key token key.
+     * @param curr current provider.
      */
     abstract getTokenProvider<T>(key: Token<T>, curr: IProvider): Type<T>;
     /**
      * iterator.
-     * @param map 
-     * @param callbackfn 
-     * @param curr 
-     * @param deep 
+     * @param map the fac map.
+     * @param callbackfn call back func.
+     * @param curr current provider.
+     * @param deep deep iterator or not.
      */
     abstract iterator(map: Map<Token, InstFac>, callbackfn: (fac: InstFac, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
 
@@ -551,7 +551,7 @@ export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]):
 
 /**
  * is target provider or not.
- * @param target 
+ * @param target target
  */
 export function isProvider(target: any): target is Provider {
     return target instanceof Provider;

@@ -135,4 +135,4 @@ export interface ChildModule  {
 /**
  * load module type.
  */
-export type LoadType = Modules | string | PathModules | ChildModule
+export type LoadType = Modules | string | PathModules | ChildModule;
