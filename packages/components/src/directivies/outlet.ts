@@ -29,9 +29,9 @@ import { EmbeddedViewRef } from '../refs/view';
  *
  * @publicApi
  */
-@Directive({selector: '[templateOutlet]'})
+@Directive({ selector: '[templateOutlet]' })
 export class DirTemplateOutlet implements OnChanges {
-  private _viewRef: EmbeddedViewRef<any>|null = null;
+  private _viewRef: EmbeddedViewRef<any> | null = null;
 
   /**
    * A context object to attach to the {@link EmbeddedViewRef}. This should be an
@@ -39,14 +39,14 @@ export class DirTemplateOutlet implements OnChanges {
    * declarations.
    * Using the key `$implicit` in the context object will set its value as default.
    */
-  @Input() public templateOutletContext: Object|null = null;
+  @Input() public templateOutletContext: Object | null = null;
 
   /**
    * A string defining the template reference and optionally the context object for the template.
    */
-  @Input() public templateOutlet: TemplateRef<any>|null = null;
+  @Input() public templateOutlet: TemplateRef<any> | null = null;
 
-  constructor(private _viewContainerRef: ViewContainerRef) {}
+  constructor(private _viewContainerRef: ViewContainerRef) { }
 
   onChanges(changes: Changes) {
     const recreateView = this._shouldRecreateView(changes);
@@ -59,8 +59,8 @@ export class DirTemplateOutlet implements OnChanges {
       }
 
       this._viewRef = this.templateOutlet ?
-          viewContainerRef.createEmbeddedView(this.templateOutlet, this.templateOutletContext) :
-          null;
+        viewContainerRef.createEmbeddedView(this.templateOutlet, this.templateOutletContext) :
+        null;
     } else if (this._viewRef && this.templateOutletContext) {
       this._updateExistingContext(this.templateOutletContext);
     }
@@ -150,17 +150,17 @@ export class DirTemplateOutlet implements OnChanges {
  * ```
  *
  */
-@Directive({selector: '[componentOutlet]'})
+@Directive({ selector: '[componentOutlet]' })
 export class DirComponentOutlet implements OnChanges, OnDestroy {
   @Input() componentOutlet: Type<any>;
   @Input() componentOutletInjector: IInjector;
   @Input() componentOutletContent: any[][];
   @Input() componentOutletModuleFactory: ModuleFactory<any>;
 
-  private _componentRef: ComponentRef<any>|null = null;
-  private _moduleRef: ModuleRef<any>|null = null;
+  private _componentRef: ComponentRef<any> | null = null;
+  private _moduleRef: ModuleRef<any> | null = null;
 
-  constructor(private _viewContainerRef: ViewContainerRef) {}
+  constructor(private _viewContainerRef: ViewContainerRef) { }
 
   onChanges(changes: Changes) {
     this._viewContainerRef.clear();
@@ -181,7 +181,7 @@ export class DirComponentOutlet implements OnChanges, OnDestroy {
 
       this._componentRef = this._viewContainerRef.createComponent(
         this.componentOutlet, this._viewContainerRef.length, injector,
-          this.componentOutletContent);
+        this.componentOutletContent);
     }
   }
 
