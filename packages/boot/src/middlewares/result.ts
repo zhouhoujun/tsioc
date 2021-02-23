@@ -11,8 +11,7 @@ import { MessageContext } from './ctx';
 @Abstract()
 export abstract class ResultValue {
 
-    constructor(public contentType: string) {
-    }
+    constructor(public contentType: string) { }
 
     /**
      * send value.

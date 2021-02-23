@@ -1,6 +1,5 @@
-import { MessageQueue } from '@tsdi/boot';
 import { InjectableMetadata, ProviderMetadata, PropertyMetadata, Metadata, Type } from '@tsdi/ioc';
-
+import { MessageQueue } from '@tsdi/boot';
 
 /**
  * component metadata.

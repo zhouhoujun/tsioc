@@ -1,4 +1,4 @@
-import { Abstract, AsyncHandler, chain, ClassType, Inject, Injector, INJECTOR, isFunction, lang, tokenId, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, Inject, Injector, INJECTOR, isFunction, lang, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
 
 
