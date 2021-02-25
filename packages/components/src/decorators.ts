@@ -13,7 +13,7 @@ import { ComponentBuildContext } from './context';
 import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
 import { ComponentRunnable } from './render/runnable';
-import { HostMappingRoute } from './router';
+import { CompRouter, HostMappingRoute } from './router';
 
 
 
@@ -378,13 +378,13 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
             if (parent) {
                 queue = state.getInstance(parent);
             } else {
-                queue = injector.getInstance(RootRouter);
+                queue = injector.getInstance(CompRouter);
             }
 
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new HostMappingRoute(route, (queue as Router).getPrefixUrl(), ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new HostMappingRoute(route, (queue as Router).getPath(), ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
             next();

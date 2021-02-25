@@ -164,7 +164,7 @@ export abstract class Middlewares extends Middleware {
  */
 export interface IRouter extends Middlewares {
     readonly  url: string;
-    getPrefixUrl(): string;
+    getPath(): string;
 }
 
 /**
@@ -175,6 +175,7 @@ export interface RouteReflect extends TypeReflect {
     route_prefix?: string;
 }
 
+export const ROUTE_PROTOCOL = tokenId<string>('ROUTE_PROTOCOL');
 /**
  * route url token.
  */

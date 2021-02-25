@@ -1,6 +1,6 @@
 import { Inject, Injectable, isFunction, refl, Singleton } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
-import { IRouter, ROUTE_URL, ROUTE_PREFIX, MiddlewareType, RouteReflect } from './handle';
+import { IRouter, ROUTE_URL, ROUTE_PREFIX, MiddlewareType, RouteReflect, ROUTE_PROTOCOL } from './handle';
 import { MessageQueue } from './queue';
 import { Route, RouteVaildator } from './route';
 
@@ -8,13 +8,16 @@ import { Route, RouteVaildator } from './route';
 @Injectable()
 export class Router extends MessageQueue implements IRouter {
 
-    constructor(@Inject(ROUTE_URL) public url: string, @Inject(ROUTE_PREFIX) private prefix = '') {
+    constructor(@Inject(ROUTE_URL) public url: string, @Inject(ROUTE_PREFIX) private prefix = '', @Inject(ROUTE_PROTOCOL) private protocol?: string) {
         super();
     }
 
-
-    getPrefixUrl() {
-        return this.prefix ? `${this.prefix}/${this.url}` : this.url;
+    private urlpath: string;
+    getPath() {
+        if (!this.urlpath) {
+            this.urlpath = this.prefix ? `${this.prefix}/${this.url}` : (this.protocol ? `${this.protocol}//${this.url}` : this.url);
+        }
+        return this.urlpath;
     }
 
     private sorted = false;
