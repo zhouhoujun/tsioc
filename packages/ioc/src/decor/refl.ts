@@ -492,10 +492,6 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
             methodExtProviders: prRef ? new Map(prRef.methodParams) : new Map()
         };
         type[reflFiled] = () => tagRefl;
-        // Object.defineProperty(type, reflFiled, {
-        //     get: () => tagRefl,
-        //     configurable: false
-        // });
     }
     return tagRefl as T;
 }
@@ -542,10 +538,6 @@ export function setReged<T extends Registered>(type: ClassType, id: string, stat
     const sta = { type };
     sta[id] = state;
     type[key] = () => sta;
-    //     Object.defineProperty(type, key, {
-    //         get: ()=> sta,
-    //         configurable: false
-    //     });
 }
 
 /**
