@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-server",
-  "version": "6.0.39",
+  "version": "6.0.40",
   "description": "@tsdi/platform-server is platform of @tsdi framework for server.",
   "scripts": {
     "build": "ts-node -r stsconfig-paths/register taskfile.ts"
@@ -31,12 +31,12 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "globby": "^11.0.0"
   },
   "peerDependencies": {
     "tslib": "^2.1.0",
-    "@tsdi/ioc": "~6.0.39",
-    "@tsdi/core": "~6.0.39"
+    "globby": "^11.0.0",
+    "@tsdi/ioc": "~6.0.40",
+    "@tsdi/core": "~6.0.40"
   },
   "directories": {
     "lib": "lib",

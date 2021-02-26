@@ -1,6 +1,6 @@
 {
   "name": "@tsdi/platform-browser-activities",
-  "version": "6.0.39",
+  "version": "6.0.40",
   "description": "workflow framework on browser, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"
@@ -37,13 +37,13 @@
   "dependencies": {
   },
   "peerDependencies": {
-    "@tsdi/ioc": "~6.0.39",
-    "@tsdi/core": "~6.0.39",
-    "@tsdi/aop": "~6.0.39",
-    "@tsdi/logs": "~6.0.39",
-    "@tsdi/boot": "~6.0.39",
-    "@tsdi/activities": "~6.0.39",
-    "@tsdi/platform-browser": "~6.0.39",
+    "@tsdi/ioc": "~6.0.40",
+    "@tsdi/core": "~6.0.40",
+    "@tsdi/aop": "~6.0.40",
+    "@tsdi/logs": "~6.0.40",
+    "@tsdi/boot": "~6.0.40",
+    "@tsdi/activities": "~6.0.40",
+    "@tsdi/platform-browser": "~6.0.40",
     "tslib": "^2.1.0"
   },
   "directories": {
