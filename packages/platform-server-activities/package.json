@@ -35,20 +35,20 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/platform-server-activities#readme",
   "dependencies": {
-    "bluebird": "^3.7.2",
     "chalk": "^4.0.0",
-    "globby": "^11.0.0",
     "minimatch": "^3.0.4",
     "minimist": "^1.2.5",
     "interpret": "^2.0.0",
     "pretty-hrtime": "^1.0.3",
-    "time-stamp": "^2.2.0",
+    "time-stamp": "^2.2.0"
+  },
+  "peerDependencies": {
+    "bluebird": "^3.7.2",
+    "globby": "^11.0.0",
     "tslib": "^2.0.1",
     "ts-node": "^8.10.1",
     "tsconfig-paths": "^3.9.0",
-    "zone.js": "^0.10.3"
-  },
-  "peerDependencies": {
+    "zone.js": "^0.10.3",
     "@tsdi/ioc": "~6.0.31",
     "@tsdi/core": "~6.0.31",
     "@tsdi/aop": "~6.0.31",
