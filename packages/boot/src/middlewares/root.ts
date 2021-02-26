@@ -1,4 +1,4 @@
-import { Autorun, isArray, PROVIDERS, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, isArray, lang, PROVIDERS, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { BOOTCONTEXT } from '../tk';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -45,7 +45,7 @@ function setValue(this: MessageContext, token: Token, value: any): void {
     this.providers.setValue(token, value);
 }
 
-
+const protocolReg = /^\w+:\/\//;
 /**
  * init queue.
  * @param ctx 
@@ -64,9 +64,21 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         providers.inject(...isArray(request.providers) ? request.providers : [request.providers]);
     }
 
+    if (!request.protocol) {
+        const match = lang.first(request.url.match(protocolReg));
+        const protocol = match ? match.toString().replace('//', '').trim() : '';
+        Object.defineProperty(request, 'protocol', {
+            get: () => protocol
+        });
+    }
+
     Object.defineProperties(ctx, {
         url: {
             get: () => request.url,
+            enumerable: false
+        },
+        protocol: {
+            get: () => request.protocol,
             enumerable: false
         },
         providers: {

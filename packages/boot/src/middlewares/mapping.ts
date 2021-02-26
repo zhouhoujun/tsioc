@@ -10,7 +10,9 @@ import { ResultValue } from './result';
 import { Route } from './route';
 import { ResultStrategy } from './strategy';
 
-
+/**
+ * route mapping metadata.
+ */
 export interface RouteMapingMetadata {
     /**
      * route.

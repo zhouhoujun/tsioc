@@ -8,7 +8,7 @@ import { Route, RouteVaildator } from './route';
 @Injectable()
 export class Router extends MessageQueue implements IRouter {
 
-    constructor(@Inject(ROUTE_URL) public url: string, @Inject(ROUTE_PREFIX) private prefix = '', @Inject(ROUTE_PROTOCOL) private protocol?: string) {
+    constructor(@Inject(ROUTE_URL) public url: string, @Inject(ROUTE_PREFIX) private prefix = '', @Inject(ROUTE_PROTOCOL) public protocol = '') {
         super();
     }
 
@@ -51,7 +51,7 @@ export class Router extends MessageQueue implements IRouter {
     }
 
     protected match(ctx: MessageContext) {
-        return (!ctx.status || ctx.status === 404) && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
+        return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
     }
 
     protected resetFuncs() {

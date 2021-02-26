@@ -10,6 +10,10 @@ export interface RequestOption extends ProdverOption {
      */
     readonly url?: string;
     /**
+     * protocol.
+     */
+    readonly protocol?: string;
+    /**
      * request body.
      */
     readonly body?: any;
@@ -99,10 +103,32 @@ export interface MessageContext {
     setValue?(token: Token, value: any): void;
 }
 
-
+/**
+ * route vaildator.
+ */
 export interface IRouteVaildator {
+    /**
+     * is route url or not.
+     * @param url 
+     */
     isRoute(url: string): boolean;
+    /**
+     * vaildify
+     * @param routePath route path. 
+     * @param foreNull fore null.
+     */
     vaildify(routePath: string, foreNull?: boolean): string;
+    /**
+     * is active route or not.
+     * @param ctx context.
+     * @param route route.
+     * @param routePrefix route prefix.
+     */
     isActiveRoute(ctx: MessageContext, route: string, routePrefix: string);
+    /**
+     * get request route.
+     * @param ctx context.
+     * @param routePrefix route prefix.
+     */
     getReqRoute(ctx: MessageContext, routePrefix: string): string;
 }

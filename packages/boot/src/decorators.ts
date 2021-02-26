@@ -326,6 +326,11 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
     after?: Type<Middleware>;
 }
 
+export interface HandlesMetadata extends HandleMetadata {
+
+    autorun?: string;
+}
+
 /**
  * Handle decorator, for class. use to define the class as handle handle register in global handle queue.
  *
@@ -373,13 +378,19 @@ export interface IHandleDecorator {
  * @Handle
  */
 export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle', {
-    actionType: 'annoation',
+    actionType: ['annoation', 'autorun'],
     props: (parent?: Type<Middlewares> | string, before?: Type<Middleware>) =>
         (isString(parent) ? ({ route: parent, parent: before }) : ({ parent, before })) as HandleMetadata,
     design: {
         afterAnnoation: (ctx, next) => {
             const reflect = ctx.reflect as RouteReflect;
-            const { route, protocol, parent, before, after } = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
+            const metadata = reflect.class.getMetadata<HandleMetadata>(ctx.currDecor);
+            if (reflect.class.isExtends(Middlewares)) {
+                if (!(metadata as HandlesMetadata).autorun) {
+                    (metadata as HandlesMetadata).autorun = 'setup';
+                }
+            }
+            const { route, protocol, parent, before, after } = metadata;
             const injector = ctx.injector;
             if (!isString(route) && !parent) {
                 return next();
@@ -407,8 +418,8 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                     reflect.extProviders.push({ provide: ROUTE_URL, useValue: route }, { provide: ROUTE_PREFIX, useValue: prefix });
-                    if(protocol){
-                        reflect.extProviders.push({provide: ROUTE_PROTOCOL, useValue: protocol});
+                    if (protocol) {
+                        reflect.extProviders.push({ provide: ROUTE_PROTOCOL, useValue: protocol });
                     }
                     middl = type;
                 } else {
