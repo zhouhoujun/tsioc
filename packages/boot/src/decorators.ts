@@ -332,19 +332,19 @@ export interface HandlesMetadata extends HandleMetadata {
 }
 
 /**
- * Handle decorator, for class. use to define the class as handle handle register in global handle queue.
+ * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
  *
  * @export
  * @interface IHandleDecorator
  */
 export interface IHandleDecorator {
     /**
-     * Handle decorator, for class. use to define the the way to register the module. default as child module.
+     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
      */
     (): HandleDecorator;
     /**
-     * Handle decorator, for class. use to define the the way to register the module. default as child module.
+     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
      * @RegisterFor
      *
@@ -353,7 +353,7 @@ export interface IHandleDecorator {
      */
     (route: string, parent?: Type<Router>): HandleDecorator;
     /**
-     * Handle decorator, for class. use to define the the way to register the module. default as child module.
+     * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
      * @RegisterFor
      *
@@ -363,7 +363,7 @@ export interface IHandleDecorator {
     (parent: Type<Middlewares>, before?: Type<Middleware>): HandleDecorator;
 
     /**
-     * RegisterFor decorator, for class. use to define the the way to register the module. default as child module.
+     * RegisterFor decorator, for class. use to define the class as handle register in global handle queue or parent.
      *
      * @RegisterFor
      *
@@ -373,8 +373,7 @@ export interface IHandleDecorator {
 }
 
 /**
- * Handle decorator, for class. use to define the class as handle handle register in global handle queue.
- *
+ * Handle decorator, for class. use to define the class as handle register in global handle queue or parent.
  * @Handle
  */
 export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle', {
