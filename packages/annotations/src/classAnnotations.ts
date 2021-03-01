@@ -39,15 +39,15 @@ export function iocAnnotations(contents: string): string {
         if (ts.isClassDeclaration(node)) {
 
             let className = node.name.text;
-            let annations: any = {
+            annations = {
                 name: className,
-                abstract: node.modifiers.some(s=> s.getText()=== 'abstract')
+                abstract: node.modifiers.some(s => s.getText() === 'abstract')
             };
 
             let oldclass = node.getText();
             if ((node.decorators && node.decorators.length) || (node.getChildren()?.some(n => n.decorators && n.decorators.length))) {
                 annations.params = {};
-                ts.forEachChild(node, (node) => eachChild(node, annations));
+                ts.forEachChild(node, (nd) => eachChild(nd, annations));
             }
 
             let classAnnations = `
