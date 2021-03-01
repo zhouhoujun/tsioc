@@ -7,6 +7,9 @@ const urlReg = /\/((\w|%|\.))+\.\w+$/;
 const noParms = /\/\s*$/;
 const hasParms = /\?\S*$/;
 
+/**
+ * route vaildator.
+ */
 @Singleton()
 export class RouteVaildator implements IRouteVaildator {
 
@@ -46,7 +49,9 @@ export class RouteVaildator implements IRouteVaildator {
 }
 
 
-
+/**
+ * route
+ */
 @Abstract()
 export abstract class Route extends Middleware {
 
@@ -73,7 +78,9 @@ export abstract class Route extends Middleware {
     }
 }
 
-
+/**
+ * custom route factory.
+ */
 export class FactoryRoute extends Route {
 
     constructor(url: string, prefix: string, private factory: (...pdrs: ProviderType[]) => Middleware) {
@@ -85,4 +92,3 @@ export class FactoryRoute extends Route {
     }
 
 }
-

@@ -406,7 +406,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             }
 
             const type = ctx.type;
-            if (isString(route)) {
+            if (isString(route) || reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                 if (!queue) {
                     queue = injector.getInstance(RootRouter);
                 } else if (!(queue instanceof Router)) {
@@ -417,7 +417,12 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 reflect.route_prefix = prefix;
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
-                    reflect.extProviders.push({ provide: ROUTE_URL, useValue: route }, { provide: ROUTE_PREFIX, useValue: prefix });
+                    if (route) {
+                        reflect.extProviders.push({ provide: ROUTE_URL, useValue: route });
+                    }
+                    if (prefix) {
+                        reflect.extProviders.push({ provide: ROUTE_PREFIX, useValue: prefix });
+                    }
                     if (protocol) {
                         reflect.extProviders.push({ provide: ROUTE_PROTOCOL, useValue: protocol });
                     }

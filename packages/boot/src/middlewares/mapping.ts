@@ -229,7 +229,7 @@ export class MappingRoute extends Route {
             const handle = injector.get(handleType) ?? injector.getContainer().regedState.getInstance(handleType);
             return handle?.toAction?.();
         } else if (isFunction(handleType)) {
-            return handleType as AsyncHandler<MessageContext>;
+            return handleType;
         }
         return null;
     }

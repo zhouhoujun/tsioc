@@ -40,6 +40,7 @@ export class ExtendBaseTypeMap {
 
     register<T>(type: Token<T>, factory: (...params: any[]) => T) {
         this.maps.set(type, factory);
+        return this;
     }
 
     resolve<T>(type: Token<T>, ...params: any[]): T {

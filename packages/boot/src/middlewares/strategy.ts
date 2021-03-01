@@ -2,6 +2,9 @@ import { Abstract } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
 
 
+/**
+ * mapping controller result
+ */
 @Abstract()
 export abstract class ResultStrategy {
     /**

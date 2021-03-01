@@ -1,8 +1,11 @@
-import { Handle, Router } from "@tsdi/boot";
+import { Handle, Router } from '@tsdi/boot';
 
+/**
+ * component host mapping message router root.
+ */
 @Handle()
-export class CompRouter extends Router {
+export class HostMappingRoot extends Router {
     constructor() {
-        super('', '', 'comp:')
+        super('', '', 'hostmsg:')
     }
 }

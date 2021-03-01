@@ -2,7 +2,7 @@ import {
     Token, createPropDecorator, PropertyMetadata, Type, refl, lang, isBoolean, isArray, isString,
     isUndefined, createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, ClassMethodDecorator
 } from '@tsdi/ioc';
-import { AnnotationReflect, BuildContext, MappingReflect, MessageQueue, Middlewares, MiddlewareType, RootRouter, RouteMapingMetadata, Router, Runnable } from '@tsdi/boot';
+import { AnnotationReflect, BuildContext, MappingReflect, MessageQueue, Middlewares, MiddlewareType, RouteMapingMetadata, Router, Runnable } from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata
@@ -13,7 +13,7 @@ import { ComponentBuildContext } from './context';
 import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
 import { ComponentRunnable } from './render/runnable';
-import { CompRouter, HostMappingRoute } from './router';
+import { HostMappingRoot, HostMappingRoute } from './router';
 
 
 
@@ -60,7 +60,7 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
     },
     design: {
         class: (ctx, next) => {
-            if (!((ctx.reflect as DirectiveReflect).annoType === 'directive')) {
+            if ((ctx.reflect as DirectiveReflect).annoType !== 'directive') {
                 return next();
             }
 
@@ -123,7 +123,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
     design: {
         class: (ctx, next) => {
             const compRefl = ctx.reflect as ComponentReflect;
-            if (!(compRefl.annoType === 'component')) {
+            if (compRefl.annoType !== 'component') {
                 return next();
             }
             if ((ctx.type as ComponentType).ρcmp && ((ctx.type as ComponentType).ρcmp as any).type === ctx.type) {
@@ -378,13 +378,13 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
             if (parent) {
                 queue = state.getInstance(parent);
             } else {
-                queue = injector.getInstance(CompRouter);
+                queue = injector.getInstance(HostMappingRoot);
             }
 
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');
             if (!(queue instanceof Router)) throw new Error(lang.getClassName(queue) + 'is not message router!');
 
-            const mapping = new HostMappingRoute(route, (queue as Router).getPath(), ctx.reflect as MappingReflect, injector, middlewares);
+            const mapping = new HostMappingRoute(route, queue.getPath(), ctx.reflect as MappingReflect, injector, middlewares);
             injector.onDestroy(() => queue.unuse(mapping));
             queue.use(mapping);
             next();
