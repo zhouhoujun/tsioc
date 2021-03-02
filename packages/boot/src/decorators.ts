@@ -259,8 +259,8 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 },
                 (ctx: ModuleDesignContext, next: () => void) => {
                     if (ctx.moduleRef.exports.size) {
-                        if ((ctx.moduleRef.parent as IModuleInjector)?.isRoot()) {
-                            (ctx.moduleRef.parent as IModuleInjector).addRef(ctx.moduleRef);
+                        if (ctx.moduleRef.parent?.isRoot()) {
+                            ctx.moduleRef.parent.addRef(ctx.moduleRef);
                         }
                     }
                     next();
@@ -302,6 +302,9 @@ export interface HandleMetadata extends TypeMetadata, PatternMetadata {
      */
     route?: string;
 
+    /**
+     * route protocol
+     */
     protocol?: string;
 
     /**

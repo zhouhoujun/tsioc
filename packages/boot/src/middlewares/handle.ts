@@ -24,6 +24,9 @@ export abstract class Middleware {
     abstract execute(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 
     private _action: AsyncHandler<MessageContext>;
+    /**
+     * to action handler func.
+     */
     toAction(): AsyncHandler<MessageContext> {
         if (!this._action) {
             this._action = (ctx: MessageContext, next?: () => Promise<void>) => this.execute(ctx, next);

@@ -1,4 +1,3 @@
-
 import { DIModule } from '../decorators';
 import { ExtendBaseTypeMap } from './ModelParser';
 import { MessageQueue } from './queue';

@@ -65,6 +65,11 @@ export abstract class ModelParser implements IModelParser {
     
     @Inject() protected injector: Injector;
 
+    /**
+     * parse model.
+     * @param type type.
+     * @param objMap object.
+     */
     parseModel(type: Type, objMap: any): any {
         if (isArray(objMap)) {
             return objMap.map(o => this.parseModel(type, o));
