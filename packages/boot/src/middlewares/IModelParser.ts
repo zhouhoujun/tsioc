@@ -18,4 +18,3 @@ export interface IModelParser<T = any> {
     parseModel(type: Type<T>, objMap: any): T;
 
 }
-

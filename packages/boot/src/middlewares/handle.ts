@@ -44,7 +44,9 @@ export abstract class Middleware {
  */
 export type MiddlewareType = AsyncHandler<MessageContext> | Middleware | Type<Middleware>;
 
-
+/**
+ * middlewares.
+ */
 @Abstract()
 export abstract class Middlewares extends Middleware {
     protected handles: MiddlewareType[] = [];
