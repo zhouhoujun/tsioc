@@ -6,6 +6,7 @@ import { Middleware, ROUTE_URL, ROUTE_PREFIX } from './handle';
 const urlReg = /\/((\w|%|\.))+\.\w+$/;
 const noParms = /\/\s*$/;
 const hasParms = /\?\S*$/;
+const subStart = /^\s*\/|\?/;
 
 /**
  * route vaildator.
@@ -32,10 +33,10 @@ export class RouteVaildator implements IRouteVaildator {
 
     isActiveRoute(ctx: MessageContext, route: string, routePrefix: string) {
         let routeUrl = this.getReqRoute(ctx, routePrefix);
-        if (route === '') {
+        if (route === '' || route === routeUrl) {
             return true;
         }
-        return routeUrl.startsWith(route);
+        return routeUrl.startsWith(route) && subStart.test(routeUrl.substring(route.length));
     }
 
     getReqRoute(ctx: MessageContext, routePrefix: string): string {
