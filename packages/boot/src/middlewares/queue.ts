@@ -1,4 +1,4 @@
-import { Injectable, Type, isString, ProviderType } from '@tsdi/ioc';
+import { Injectable, Type, isString, ProviderType, lang, AsyncHandler, isFunction, Inject, Injector } from '@tsdi/ioc';
 import { MessageContext, RequestOption } from './ctx';
 import { Middleware, Middlewares, MiddlewareType } from './handle';
 
@@ -21,20 +21,49 @@ export interface Subscripted {
 @Injectable()
 export class MessageQueue extends Middlewares {
 
+    @Inject()
+    protected injector: Injector;
+
     private completed: ((ctx: MessageContext) => void)[];
 
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
-        const orgInj = ctx.injector;
-        ctx.injector = this.getInjector();
-        await super.execute(ctx, next);
-        if (orgInj) ctx.injector = orgInj;
-        this.onCompleted(ctx);
+        if (!ctx.injector) {
+            ctx.injector = this.injector;
+        }
+        try {
+            if (this.canExecute(ctx)) {
+                this.beforeExec(ctx);
+                await super.execute(ctx);
+                this.afterExec(ctx);
+            }
+            if (next) {
+                await next();
+            }
+        } catch (err) {
+            this.onFailed(ctx, err)
+        } finally {
+            this.onCompleted(ctx);
+        }
     }
 
-    protected onCompleted(ctx: MessageContext) {
+    protected canExecute(ctx: MessageContext): boolean {
+        return !!ctx.request;
+    }
+
+    protected beforeExec(ctx: MessageContext): void { }
+
+    protected afterExec(ctx: MessageContext): void { }
+
+    protected onCompleted(ctx: MessageContext): void {
         this.completed?.forEach(cb => {
             cb(ctx);
         });
+    }
+
+    protected onFailed(ctx: MessageContext, err: Error): void {
+        ctx.status = 500;
+        ctx.message = err.stack;
+        ctx.error = err;
     }
 
     /**
@@ -116,6 +145,23 @@ export class MessageQueue extends Middlewares {
     unsubscribe(handle: Type<Middleware>);
     unsubscribe(haddle: MiddlewareType) {
         this.unuse(haddle);
+    }
+
+    protected regHandle(handle: MiddlewareType): this {
+        lang.isBaseOf(handle, Middleware) && this.injector.register(handle);
+        return this;
+    }
+
+    protected toHandle(handleType: MiddlewareType): AsyncHandler<MessageContext> {
+        if (handleType instanceof Middleware) {
+            return handleType.toAction();
+        } else if (lang.isBaseOf(handleType, Middleware)) {
+            const handle = this.injector.get(handleType); // ?? this.injector.getContainer().regedState.getInstance(handleType);
+            return handle?.toAction?.();
+        } else if (isFunction(handleType)) {
+            return handleType;
+        }
+        return null;
     }
 
 }

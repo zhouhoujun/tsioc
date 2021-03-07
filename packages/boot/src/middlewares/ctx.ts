@@ -70,6 +70,8 @@ export interface MessageContext {
      */
     message?: string;
 
+    error?: Error;
+
     /**
      * response body data.
      */

@@ -1,4 +1,4 @@
-import { Abstract, AsyncHandler, chain, Inject, Injector, INJECTOR, isFunction, lang, tokenId, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, lang, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
 
 
@@ -51,16 +51,6 @@ export type MiddlewareType = AsyncHandler<MessageContext> | Middleware | Type<Mi
 export abstract class Middlewares extends Middleware {
     protected handles: MiddlewareType[] = [];
     private funcs: AsyncHandler<MessageContext>[];
-
-    @Inject(INJECTOR)
-    private _injector: Injector;
-
-    /**
-     * get injector of current message queue.
-     */
-    getInjector(): Injector {
-        return this._injector;
-    }
 
     /**
      * use handle.
@@ -145,22 +135,9 @@ export abstract class Middlewares extends Middleware {
         this.funcs = null;
     }
 
-    protected regHandle(handle: MiddlewareType): this {
-        lang.isBaseOf(handle, Middleware) && this.getInjector().register(handle);
-        return this;
-    }
+    protected abstract regHandle(handle: MiddlewareType): this;
 
-    protected toHandle(handleType: MiddlewareType): AsyncHandler<MessageContext> {
-        if (handleType instanceof Middleware) {
-            return handleType.toAction();
-        } else if (lang.isBaseOf(handleType, Middleware)) {
-            const handle = this.getInjector().get(handleType) ?? this.getInjector().getContainer().regedState.getInstance(handleType);
-            return handle?.toAction?.();
-        } else if (isFunction(handleType)) {
-            return handleType as AsyncHandler<MessageContext>;
-        }
-        return null;
-    }
+    protected abstract toHandle(handleType: MiddlewareType): AsyncHandler<MessageContext>;
 }
 
 
@@ -168,7 +145,7 @@ export abstract class Middlewares extends Middleware {
  * router interface
  */
 export interface IRouter extends Middlewares {
-    readonly  url: string;
+    readonly url: string;
     getPath(): string;
 }
 

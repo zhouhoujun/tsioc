@@ -18,7 +18,7 @@ class DeviceController {
 
         setTimeout(()=> {
             defer.resolve(version);
-        }, 50);
+        }, 10);
 
         return await defer.promise;
     }
@@ -160,7 +160,7 @@ describe('app message queue', () => {
             bState = ctx.getValue('deviceB_state');
         })
         await ctx.getMessager().send('/hdevice', { event: 'startup' });
-        expect(device).toBe('device data');
+        expect(device).toBe('device next');
         expect(aState).toBe('startuped');
         expect(bState).toBe('startuped');
     });

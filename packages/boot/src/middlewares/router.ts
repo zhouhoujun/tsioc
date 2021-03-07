@@ -21,21 +21,18 @@ export class Router extends MessageQueue implements IRouter {
     }
 
     private sorted = false;
-    async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
-        ctx.injector = this.getInjector();
+    protected canExecute(ctx: MessageContext) {
         if (!ctx.vaild) {
-            ctx.vaild = ctx.injector.get(RouteVaildator);
+            ctx.vaild = this.injector.get(RouteVaildator);
         }
-        if (this.match(ctx)) {
-            if (!this.sorted) {
-                this.handles = this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
-                this.resetFuncs();
-                this.sorted = true;
-            }
-            await super.execute(ctx);
-        }
-        if (next) {
-            return await next();
+        return this.match(ctx);
+    }
+
+    protected beforeExec(ctx: MessageContext) {
+        if (!this.sorted) {
+            this.handles = this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
+            this.resetFuncs();
+            this.sorted = true;
         }
     }
 
