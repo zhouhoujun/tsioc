@@ -156,7 +156,7 @@ export class MessageQueue extends Middlewares {
         if (handleType instanceof Middleware) {
             return handleType.toAction();
         } else if (lang.isBaseOf(handleType, Middleware)) {
-            const handle = this.injector.get(handleType); // ?? this.injector.getContainer().regedState.getInstance(handleType);
+            const handle = this.injector.get(handleType) ?? this.injector.getContainer().regedState.getInstance(handleType);
             return handle?.toAction?.();
         } else if (isFunction(handleType)) {
             return handleType;
