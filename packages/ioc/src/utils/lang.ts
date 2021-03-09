@@ -271,7 +271,7 @@ export class Defer<T> {
      * @returns {Defer<T>}
      */
     static create<T>(then?: (val: T) => T | PromiseLike<T>): Defer<T> {
-        let defer = new Defer<T>();
+        const defer = new Defer<T>();
         if (then) {
             defer.promise = defer.promise.then(then);
             return defer;
