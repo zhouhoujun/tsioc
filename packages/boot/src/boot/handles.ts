@@ -92,8 +92,8 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     }
     const mgr = injector.getInstance(ConfigureManager);
     if (options.configures && options.configures.length) {
-        options.configures.forEach(config => {
-            mgr.useConfiguration(config);
+        options.configures.forEach(cfg => {
+            mgr.useConfiguration(cfg);
         });
     } else {
         // load default config.

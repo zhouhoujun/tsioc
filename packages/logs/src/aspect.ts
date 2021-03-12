@@ -29,9 +29,7 @@ export abstract class LoggerAspect extends LogProcess {
             }
             annotation.forEach((logmeta: LoggerMetadata) => {
                 let canlog = false;
-                if (logmeta.express && logmeta.express(joinPoint)) {
-                    canlog = true;
-                } else if (!logmeta.express) {
+                if (logmeta?.express(joinPoint)) {
                     canlog = true;
                 }
                 if (canlog && logmeta.message) {

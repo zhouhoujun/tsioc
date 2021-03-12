@@ -153,9 +153,11 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.autoruns.length) {
         const { injector, type, instance } = ctx;
-        ctx.reflect.autoruns.sort((au1, au2) => {
-            return au1.order - au2.order;
-        }).forEach(aut => {
+        // refl has sorted.
+        // ctx.reflect.autoruns.sort((au1, au2) => {
+        //     return au1.order - au2.order;
+        // })
+        ctx.reflect.autoruns.forEach(aut => {
             injector.invoke(instance || type, aut.autorun, instance);
         });
     }

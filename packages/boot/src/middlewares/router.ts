@@ -30,7 +30,7 @@ export class Router extends MessageQueue implements IRouter {
 
     protected beforeExec(ctx: MessageContext) {
         if (!this.sorted) {
-            this.handles = this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
+            this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
             this.resetFuncs();
             this.sorted = true;
         }

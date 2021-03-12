@@ -208,7 +208,7 @@ export function isMetadataObject(target: any, ...props: (string | string[])[]): 
     if (!isPlainObject(target)) return false;
     if (props.length) {
         for (let n in target) {
-            if (props.some(ps => isString(ps) ? ps === n : ps.indexOf(n) > 0)) {
+            if (props.some(ps => isString(ps) ? ps === n : ps.includes(n))) {
                 return true;
             }
         }
@@ -357,7 +357,7 @@ export function isClassType(target: any, abstract?: boolean): target is ClassTyp
     if (!clsNameExp.test(target.name)) return false;
     if (isPrimitive(target)) return false;
     const pkeys = Object.getOwnPropertyNames(target);
-    if (pkeys.indexOf('caller') > 0) return false;
+    if (pkeys.includes('caller')) return false;
     if (pkeys.length > 3) return true;
     return !anon.test(target.toString());
 }

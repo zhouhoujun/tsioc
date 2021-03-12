@@ -13,7 +13,7 @@ export class UnitTestRunner extends Runnable {
 
     async configureService(context: IBootContext): Promise<void> {
         const ctx = context;
-        let config = await ctx.getConfiguration() as UnitTestConfigure;
+        let config = ctx.getConfiguration() as UnitTestConfigure;
         let src = config.src;
         let injector = ctx.injector;
         let suites: any[] = [];

@@ -29,8 +29,8 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
             }
         }
 
-        return (...args: any[]) => {
-            return storeMetadata(name, decor, args, metadata, option);
+        return (...pms: any[]) => {
+            return storeMetadata(name, decor, pms, metadata, option);
         }
     }
 
@@ -39,7 +39,7 @@ export function createDecorator<T>(name: string, options: DecoratorOption<T>): a
 }
 
 function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, option: DecorRegisteredOption): any {
-    let target;
+    let target, propertyKey;
     if (!metadata) {
         metadata = {};
     }
@@ -56,22 +56,22 @@ function storeMetadata<T>(name: string, decor: string, args: any[], metadata: an
             break;
         case 2:
             target = args[0];
-            let propertyKey = args[1];
+            propertyKey = args[1];
             refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property', decorPdr: option })
             break;
         case 3:
             if (isNumber(args[2])) {
                 target = args[0];
-                let propertyKey = args[1];
+                propertyKey = args[1];
                 let parameterIndex = args[2];
                 refl.dispatchParamDecor(target, { name, decor, matedata: metadata, propertyKey, parameterIndex, decorType: 'parameter', decorPdr: option });
             } else if (isUndefined(args[2])) {
                 target = args[0];
-                let propertyKey = args[1];
+                propertyKey = args[1];
                 refl.dispatchPorpDecor(target, { name, decor, matedata: metadata, propertyKey, decorType: 'property', decorPdr: option });
             } else {
                 target = args[0];
-                let propertyKey = args[1];
+                propertyKey = args[1];
                 let descriptor = args[2] as TypedPropertyDescriptor<any>;
                 if (!descriptor) {
                     return;

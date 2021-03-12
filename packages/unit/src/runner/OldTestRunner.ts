@@ -80,43 +80,43 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
 
             suites.push(suiteDesc);
 
-            globals.describe = (subname: string, fn: () => any) => {
-                describe(name + ' ' + subname, fn, suiteDesc);
+            globals.describe = (subname: string, descrifn: () => any) => {
+                describe(name + ' ' + subname, descrifn, suiteDesc);
             }
 
             globals.it = (title: string, test: () => any, timeout?: number) => {
                 if (!isFunction(test)) return;
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
             }
-            globals.before = globals.beforeAll = (fn: () => any, timeout?: number) => {
+            globals.before = globals.beforeAll = (beforefn: () => any, timeout?: number) => {
                 if (!isFunction(fn)) return;
                 suiteDesc.before = suiteDesc.before || [];
                 suiteDesc.before.push({
-                    fn: fn,
+                    fn: beforefn,
                     timeout: timeout
                 })
             }
-            globals.beforeEach = (fn: () => any, timeout?: number) => {
-                if (!isFunction(fn)) return;
+            globals.beforeEach = (beachfn: () => any, timeout?: number) => {
+                if (!isFunction(beachfn)) return;
                 suiteDesc.beforeEach = suiteDesc.beforeEach || [];
                 suiteDesc.beforeEach.push({
-                    fn: fn,
+                    fn: beachfn,
                     timeout: timeout
                 });
             }
-            globals.after = globals.afterAll = (fn: () => any, timeout?: number) => {
-                if (!isFunction(fn)) return;
+            globals.after = globals.afterAll = (afterfn: () => any, timeout?: number) => {
+                if (!isFunction(afterfn)) return;
                 suiteDesc.after = suiteDesc.after || [];
                 suiteDesc.after.push({
-                    fn: fn,
+                    fn: afterfn,
                     timeout: timeout
                 });
             }
-            globals.afterEach = (fn: () => any, timeout?: number) => {
-                if (!isFunction(fn)) return;
+            globals.afterEach = (aeachfn: () => any, timeout?: number) => {
+                if (!isFunction(aeachfn)) return;
                 suiteDesc.afterEach = suiteDesc.afterEach || [];
                 suiteDesc.afterEach.push({
-                    fn: fn,
+                    fn: aeachfn,
                     timeout: timeout
                 });
             }
@@ -133,8 +133,8 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
             } as ISuiteDescribe;
             suites.push(suiteDesc);
 
-            globals.suite = (subname: string, fn: () => any) => {
-                suite(name + ' ' + subname, fn, suiteDesc);
+            globals.suite = (subname: string, suitefn: () => any) => {
+                suite(name + ' ' + subname, suitefn, suiteDesc);
             }
             globals.test = (title: string, test: () => any, timeout?: number) => {
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })

@@ -24,7 +24,7 @@ export class TestReport implements ITestReport {
 
     resports: Reporter[];
     getReports() {
-        if (!this.resports || this.resports.length < 0) {
+        if (!this.resports || !this.resports.length) {
             this.resports = this.injector.getServices(Reporter);
         }
         return this.resports || [];

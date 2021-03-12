@@ -335,7 +335,7 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
             autorun: (ctx.matedata as AutorunMetadata).autorun,
             order: ctx.decorType === 'class' ? 0 : (ctx.matedata as AutorunMetadata).order
         });
-        ctx.reflect.autoruns = ctx.reflect.autoruns.sort((au1, au2) => au1.order - au2.order);
+        ctx.reflect.autoruns.sort((au1, au2) => au1.order - au2.order);
     }
     return next();
 }

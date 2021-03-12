@@ -164,14 +164,14 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             const tk = isTypeObject(t) ? lang.getClass(t) : t;
             const maps = injector.get(tokenRef(PROVIDERS, tk));
             if (maps && maps.size) {
-                maps.iterator((pdr, tk) => {
-                    if (!services.has(tk)
+                maps.iterator((pdr, t1) => {
+                    if (!services.has(t1)
                         && (
-                            (isFunction(tk) && types.some(ty => match(tk, ty)))
+                            (isFunction(t1) && types.some(ty => match(t1, ty)))
                             || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
                         )
                     ) {
-                        services.set(tk, pdr, true);
+                        services.set(t1, pdr, true);
                     }
                 });
             }
@@ -179,14 +179,14 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             if (rlt) {
                 rlt.class.classDecors.forEach(dec => {
                     const dprvoider = dec.decorPdr.getProvider(injector)
-                    dprvoider.iterator((pdr, tk) => {
-                        if (!services.has(tk)
+                    dprvoider.iterator((pdr, t1) => {
+                        if (!services.has(t1)
                             && (
-                                (isFunction(tk) && types.some(ty => match(tk, ty)))
+                                (isFunction(t1) && types.some(ty => match(t1, ty)))
                                 || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
                             )
                         ) {
-                            services.set(tk, pdr, true);
+                            services.set(t1, pdr, true);
                         }
                     });
                 });

@@ -269,13 +269,13 @@ export class TypeDefine {
         }
         if (!isUglify && ty.name !== anName) {
             let descriptors = Object.getOwnPropertyDescriptors(ty.prototype);
-            forIn(descriptors, (item, name) => {
-                if (name !== 'constructor') {
+            forIn(descriptors, (item, n) => {
+                if (n !== 'constructor') {
                     if (item.value) {
-                        meta[name] = getParamNames(item.value)
+                        meta[n] = getParamNames(item.value)
                     }
                     if (item.set) {
-                        meta[name] = getParamNames(item.set);
+                        meta[n] = getParamNames(item.set);
                     }
                 }
             });
