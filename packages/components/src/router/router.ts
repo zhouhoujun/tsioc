@@ -6,6 +6,6 @@ import { Handle, Router } from '@tsdi/boot';
 @Handle()
 export class HostMappingRoot extends Router {
     constructor() {
-        super('', '', 'hostmsg:')
+        super('', '', 'comp:')
     }
 }

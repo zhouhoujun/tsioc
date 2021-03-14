@@ -16,7 +16,6 @@ import { ComponentRunnable } from './render/runnable';
 import { HostMappingRoot, HostMappingRoute } from './router';
 
 
-
 /**
  * Directive decorator
  *
@@ -130,16 +129,6 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
                 compRefl.def = (ctx.type as ComponentType).ρcmp;
                 return next();
             }
-
-            // // none template
-            // if (!compRefl.annotation.template) {
-            //     if (compRefl.annotation.templateUrl) {
-            //         // use builder async build.
-            //         return next();
-            //     } else {
-            //         throw Error(`component ${lang.getClassName(ctx.type)} has no template.`);
-            //     }
-            // }
 
             const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
             compRefl.def = compiler.compileComponent(compRefl);
@@ -391,7 +380,6 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
         }
     }
 });
-
 
 
 /**

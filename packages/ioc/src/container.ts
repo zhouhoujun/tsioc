@@ -262,7 +262,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {
-        return getReged(type, this.container.id) as T;
+        return getReged(type, this.container.id);
     }
 
     regType<T extends Registered>(type: ClassType, data: T) {
@@ -341,8 +341,6 @@ class ActionProvider extends Provider implements IActionProvider {
 
         this.setValue(type, instance);
         if (isFunction(instance.setup)) instance.setup();
-
-        return true;
     }
 
 }
