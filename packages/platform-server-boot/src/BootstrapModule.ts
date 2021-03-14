@@ -1,5 +1,5 @@
-import { Injectable, IContainer } from '@tsdi/ioc';
-import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configure } from '@tsdi/boot';
+import { Injectable } from '@tsdi/ioc';
+import { IConfigureLoader, CONFIG_LOADER, DIModule, PROCESS_ROOT, Configure, PROCESS_EXIT, IBootApplication } from '@tsdi/boot';
 import { ServerModule, runMainPath, syncRequire } from '@tsdi/platform-server';
 import * as path from 'path';
 
@@ -27,9 +27,11 @@ Date.prototype.toJSON = function () {
  */
 @Injectable(CONFIG_LOADER)
 export class ConfigureFileLoader implements IConfigureLoader<Configure> {
-    constructor(private baseURL: string, private container: IContainer) {
+
+    constructor(private baseURL: string) {
         this.baseURL = this.baseURL || runMainPath();
     }
+
     async load(uri?: string): Promise<Configure> {
         const fs = syncRequire('fs');
         if (uri) {
@@ -66,7 +68,29 @@ export class ConfigureFileLoader implements IConfigureLoader<Configure> {
     ],
     providers: [
         ConfigureFileLoader,
-        { provide: PROCESS_ROOT, useValue: runMainPath() }
+        {
+            provide: PROCESS_ROOT,
+            useValue: runMainPath()
+        },
+        {
+            provide: PROCESS_EXIT,
+            useValue: (app: IBootApplication) => {
+                process.once('beforeExit', () => {
+                    app.destroy();
+                });
+
+                process.on('SIGINT', () => {
+                    app.destroy();
+                    console.log('SIGINT: app destoryed.')
+                    process.exit();
+                });
+
+                process.on('SIGTERM', () => {
+                    app.destroy();
+                    console.log('SIGTERM: ctx destoryed.');
+                });
+            }
+        }
     ]
 })
 export class ServerBootstrapModule { }

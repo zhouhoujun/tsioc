@@ -30,18 +30,18 @@ export interface IStartupService<T extends IBootContext = IBootContext> extends 
  */
 @Abstract()
 export abstract class StartupService<T extends IBootContext = IBootContext> implements IStartupService<T> {
-    
+
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
-    
+
     /**
      * config service of application.
      *
      * @abstract
      * @param {T} [ctx]
-     * @returns {Promise<void>} startup service token.
      */
     abstract configureService(ctx: T): Promise<void>;
+
     /**
      * has destoryed or not.
      */

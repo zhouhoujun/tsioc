@@ -5,6 +5,7 @@ import { IBuilderService } from './services/IBuilderService';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { IModuleInjector } from './modules/ref';
 import { MessageContext } from './middlewares/ctx';
+import { IBootApplication } from './IBootApplication';
 
 
 /**
@@ -48,6 +49,11 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
  * @deprecated use `PROCESS_ROOT` instead.
  */
 export const ProcessRunRootToken = PROCESS_ROOT;
+
+/**
+ *  appliaction boot process root path.
+ */
+ export const PROCESS_EXIT = tokenId<(app: IBootApplication) => void>('PROCESS_ROOT');
 
 /**
  * build service token.

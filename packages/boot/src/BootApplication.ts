@@ -152,7 +152,9 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     }
 
     protected destroying() {
-        this.getContext()?.destroy();
+        if (!this.getContext().destroyed) {
+            this.getContext()?.destroy();
+        }
     }
 
 }

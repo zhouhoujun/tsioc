@@ -1,13 +1,14 @@
 import { INJECTOR, lang, isPrimitiveType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction, getFacInstance, Type } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
-import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS } from '../tk';
+import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_EXIT } from '../tk';
 import { ConfigureManager } from '../configure/manager';
 import { ConfigureRegister } from '../configure/register';
 import { BuildHandles, BuildHandle } from '../builder/handles';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Runnable } from '../runnable/Runnable';
 import { AnnotationReflect } from '../annotations/reflect';
+import { BootApplication } from '../BootApplication';
 
 /**
  * annoation handle.
@@ -37,6 +38,14 @@ export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActi
         if (next) {
             await next();
         }
+        // after all register application exit events
+        const injector = ctx.injector;
+        const app = injector.getInstance(BootApplication);
+        ctx.onDestroy(() => {
+            app.destroy();
+        });
+        const exit = injector.get(PROCESS_EXIT);
+        exit && exit(app);
     }
 
     setup() {
