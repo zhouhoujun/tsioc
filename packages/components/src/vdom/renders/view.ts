@@ -1,7 +1,6 @@
 import { HostMapping } from '../../decorators';
-import { RendererMapping } from '../../router/render';
 
-@HostMapping('/view', RendererMapping)
+@HostMapping('/render/view')
 export class RenderView {
 
     @HostMapping('/:selector', 'create')

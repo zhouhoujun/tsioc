@@ -1,7 +1,6 @@
 import { HostMapping } from '../../decorators';
-import { RendererMapping } from '../../router/render';
 
-@HostMapping('/compoent', RendererMapping)
+@HostMapping('/render/component')
 export class RenderComponent {
 
     @HostMapping('/:selector', 'create')
