@@ -313,6 +313,18 @@ export const enum SelectorFlags {
  */
 export type CssSelector = (string | SelectorFlags)[];
 
+
+/**
+ * A list of CssSelectors.
+ *
+ * A directive or component can have multiple selectors. This type is used for
+ * directive defs so any of the selectors in the list will match that directive.
+ *
+ * Original: 'form, [ngForm]'
+ * Parsed: [['form'], ['', 'ngForm', '']]
+ */
+ export type CssSelectorList = CssSelector[];
+
 /**
  * A combination of:
  * - Attribute names and values.

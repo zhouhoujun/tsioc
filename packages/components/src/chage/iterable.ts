@@ -107,10 +107,10 @@ export interface IterableChangeRecord<V> {
 export interface CollectionChangeRecord<V> extends IterableChangeRecord<V> { }
 
 /**
- * An optional function passed into the `NgForOf` directive that defines how to track
+ * An optional function passed into the `each` directive that defines how to track
  * changes for items in an iterable.
  * The function takes the iteration index and item ID.
- * When supplied, Angular tracks changes by the return value of the function.
+ * When supplied, tracks changes by the return value of the function.
  *
  * @publicApi
  */
@@ -129,7 +129,7 @@ export interface IterableDifferFactory {
 }
 
 /**
- * A repository of different iterable diffing strategies used by NgFor, NgClass, and others.
+ * A repository of different iterable diffing strategies used by each, and others.
  *
  * @publicApi
  */
