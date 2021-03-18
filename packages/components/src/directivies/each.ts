@@ -181,7 +181,7 @@ export class DirEach<T, U extends IterableType<T> = IterableType<T>> implements 
                 try {
                     this._differ = this._differs.find(value).create(this.eachTrackBy);
                 } catch {
-                    throw new Error(`Cannot find a differ supporting object '${value}' of type '${getTypeName(value)}'. NgFor only supports binding to Iterables such as Arrays.`);
+                    throw new Error(`Cannot find a differ supporting object '${value}' of type '${getTypeName(value)}'. DirEach only supports binding to Iterables such as Arrays.`);
                 }
             }
         }
