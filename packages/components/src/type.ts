@@ -177,7 +177,6 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
      */
     readonly id: string;
 
-
     /**
      * The View template of the component.
      */
@@ -190,7 +189,6 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
      * An array of `v-content[selector]` values that were found in the template.
      */
     readonly contentSelectors?: string[];
-
 
     /**
      * A set of styles that the component needs to be present for component to render correctly.
@@ -211,7 +209,6 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
     /** Whether or not this component's ChangeDetectionStrategy is OnPush */
     readonly onPush: boolean;
 
-
     /**
      * Registry of directives and components that may be found in this view.
      *
@@ -227,7 +224,6 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
      * `PipeDefs`s. The function is necessary to be able to support forward declarations.
      */
     pipeDefs?: PipeTypesOrFactory;
-
 
     /**
      * runtime uses this place to store the computed virtual view for the component. This gets filled on

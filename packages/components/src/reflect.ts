@@ -11,7 +11,6 @@ import { ComponentDef, DirectiveDef } from './type';
  * @extends {ITypeReflect}
  */
 export interface DirectiveReflect extends AnnotationReflect {
-
     /**
      * directive defined.
      * Runtime link information for Directives.
@@ -24,12 +23,10 @@ export interface DirectiveReflect extends AnnotationReflect {
      * can change between versions.
      */
     def?: DirectiveDef<any>;
-
     /**
      * directive selector.
      */
     selector?: string;
-
     /**
      * annoation metadata.
      */
@@ -46,7 +43,6 @@ export interface DirectiveReflect extends AnnotationReflect {
  * @extends {ITypeReflect}
  */
 export interface ComponentReflect extends AnnotationReflect {
-
     /**
      * component defined.
      * Runtime link information for Components.
@@ -67,13 +63,6 @@ export interface ComponentReflect extends AnnotationReflect {
      * component annoation metadata.
      */
     annotation?: ComponentMetadata;
-
-    // directives?: any[];
-    // pipes?: any[];
-
-    inputs?: any[];
-    outputs?: any[];
-
     /**
      * none serializes.
      */
