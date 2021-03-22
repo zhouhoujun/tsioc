@@ -2,7 +2,10 @@ import {
     Token, createPropDecorator, PropertyMetadata, Type, refl, lang, isBoolean, isArray, isString, isUndefined,
     createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, ClassMethodDecorator
 } from '@tsdi/ioc';
-import { AnnotationReflect, BuildContext, MappingReflect, MessageQueue, Middlewares, MiddlewareType, RouteMapingMetadata, Router, Runnable } from '@tsdi/boot';
+import {
+    AnnotationReflect, BuildContext, MappingReflect, MessageQueue, Middlewares,
+    MiddlewareType, RouteMapingMetadata, Router, Runnable
+} from '@tsdi/boot';
 import {
     BindingMetadata, ComponentMetadata, DirectiveMetadata, HostBindingMetadata,
     HostListenerMetadata, PipeMetadata, QueryMetadata, VaildateMetadata

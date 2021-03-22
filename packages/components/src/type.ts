@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { VView } from './vdom/view';
+import { IView } from './vdom/view';
 import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/vnode';
 
 /**
@@ -229,7 +229,7 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
      * runtime uses this place to store the computed virtual view for the component. This gets filled on
      * the first run of component.
      */
-    view?: VView;
+    view?: IView;
 
 }
 

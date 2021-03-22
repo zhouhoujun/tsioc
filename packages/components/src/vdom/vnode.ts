@@ -1,7 +1,7 @@
 import { ObjectMap } from '@tsdi/ioc';
 import { KeyValueArray } from '../util/array';
-import { NNode } from './node';
-import { VView } from './view';
+import { INode } from './node';
+import { IView } from './view';
 
 
 /**
@@ -596,7 +596,7 @@ export interface VNode {
      *
      * If this VNode corresponds to an element, views will be null .
      */
-    views?: VView | VView[];
+    views?: IView | IView[];
 
     /**
      * The next sibling node. Necessary so we can propagate through the root nodes of a view
@@ -675,7 +675,7 @@ export interface VNode {
      * If `projection` is of type `RNode[][]` than we have a collection of native nodes passed as
      * projectable nodes during dynamic component creation.
      */
-    projection?: (VNode | NNode[])[] | number;
+    projection?: (VNode | INode[])[] | number;
 
     /**
      * A collection of all `style` static values for an element (including from host).
@@ -816,7 +816,7 @@ export interface VElemenVNode extends VNode {
      * VNodes or native nodes (see VNode.projection for more info). If it's a regular element node
      * or a component without projection, it will be null.
      */
-    projection: (VNode | NNode[])[] | null;
+    projection: (VNode | INode[])[] | null;
 
     /**
      * Stores TagName
@@ -857,7 +857,7 @@ export interface VContainerNode extends VNode {
      * - They are dynamically created
      */
     parent: VElemenVNode | VElementContainerNode | null;
-    views: VView | VView[] | null;
+    views: IView | IView[] | null;
     projection: null;
     value: null;
 }
@@ -967,7 +967,7 @@ export type VNodeWithLocalRefs = VContainerNode | VElemenVNode | VElementContain
  * - `<div #nativeDivEl>` - `nativeDivEl` should point to the native `<div>` element;
  * - `<ng-template #tplRef>` - `tplRef` should point to the `TemplateRef` instance;
  */
-export type LocalRefExtractor = (VNode: VNodeWithLocalRefs, currentView: VView) => any;
+export type LocalRefExtractor = (VNode: VNodeWithLocalRefs, currentView: IView) => any;
 
 /**
  * Returns `true` if the `VNode` has a directive which has `@Input()` for `class` binding.

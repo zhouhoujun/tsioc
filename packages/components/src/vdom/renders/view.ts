@@ -11,7 +11,8 @@ export class RenderView {
 
     @HostMapping('/:selector', 'update')
     refresh(selector: string) {
-
+        this.enterView();
+        this.leaveView();
     }
 
     enterView(){

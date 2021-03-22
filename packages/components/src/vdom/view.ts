@@ -1,5 +1,4 @@
 
-
 /**
  * Explicitly marks `View` as a specific type in `ngDevMode`
  *
@@ -28,21 +27,16 @@ export const enum ViewType {
      */
     Embedded = 2,
 }
-
-
- 
   
 /**
  * The static data for an LView (shared between all templates of a
  * given type).
  *
  */
-export interface VView {
+export interface IView {
     /**
      * Type of `View` (`Root`|`Component`|`Embedded`).
      */
     type: ViewType;
-
- 
     
 }
