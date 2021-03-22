@@ -1,4 +1,4 @@
-import { AsyncHandler, IActionSetup, Inject, INJECTOR, Injector, Action, lang, ActionType, chain } from '@tsdi/ioc';
+import { AsyncHandler, IActionSetup, Inject, INJECTOR, Injector, Action, lang, ActionType, chain, Type } from '@tsdi/ioc';
 import { IAnnoationContext, IBuildContext } from '../Context';
 
 /**
@@ -42,7 +42,7 @@ export type HandleType<T = any> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> extends Action implements IBuildHandle<T> {
+export abstract class BuildHandle<T> extends Action implements IBuildHandle<T> {
     constructor(@Inject() protected readonly injector: Injector) {
         super();
     }
@@ -70,7 +70,7 @@ export abstract class BuildHandle<T extends IAnnoationContext = IBuildContext> e
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends IAnnoationContext = IBuildContext> extends BuildHandle<T> {
+export class BuildHandles<T> extends BuildHandle<T> {
 
     protected handles: HandleType<T>[] = [];
     private funcs: AsyncHandler<T>[];
@@ -187,10 +187,10 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
         if (ctx.value) {
             return;
         }
-        const regedState = ctx.getContainer().regedState;
+        const regedState = ctx.injector.getContainer().regedState;
         if (ctx.type && !regedState.isRegistered(ctx.type)) {
-            ctx.injector.register(ctx.type);
-            ctx.setValue(INJECTOR, regedState.getInjector(ctx.type))
+            ctx.injector.register(ctx.type as Type);
+            ctx.injector = regedState.getInjector(ctx.type);
         }
         // has build module instance.
         await super.execute(ctx);
@@ -199,7 +199,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
             await next();
         }
         // after all clean.
-        setTimeout(() => ctx.destroy());
+        // lang.cleanObj(ctx);
     }
 
     setup() {

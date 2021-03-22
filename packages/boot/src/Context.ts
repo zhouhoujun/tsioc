@@ -172,25 +172,19 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
 
 export type Template = string | ObjectMap<any>;
 
-/**
- * module resolve option.
- *
- * @export
- * @interface IModuleResolveOption
- */
 export interface BuildOption<T = any> extends AnnoationOption<T> {
     /**
-     * name of component.
+     * build type.
      */
-    name?: string;
+    readonly type: ClassType<T>;
     /**
      * template to binding.
      */
-    template?: Template;
-    /**
-     * module reslove in the injector.
-     */
-    injector?: IInjector;
+     template?: Template;
+     /**
+      * module reslove in the injector.
+      */
+     injector?: IInjector;
 }
 
 /**
@@ -200,8 +194,12 @@ export interface BuildOption<T = any> extends AnnoationOption<T> {
  * @interface IBuildContext
  * @extends {IHandleContext}
  */
-export interface IBuildContext<T extends BuildOption = BuildOption> extends IAnnoationContext<T> {
-
+export interface IBuildContext extends BuildOption<any> {
+    /**
+     * type reflect.
+     */
+    readonly reflect?: TypeReflect;
+    
     /**
      * build instance.
      */

@@ -3,7 +3,7 @@ import {
     createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, ClassMethodDecorator
 } from '@tsdi/ioc';
 import {
-    AnnotationReflect, BuildContext, MappingReflect, MessageQueue, Middlewares,
+    AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
     MiddlewareType, RouteMapingMetadata, Router, Runnable
 } from '@tsdi/boot';
 import {
@@ -12,7 +12,6 @@ import {
 } from './metadata';
 import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect, DirectiveReflect } from './reflect';
-import { ComponentBuildContext } from './context';
 import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
 import { ComponentRunnable } from './render/runnable';
@@ -139,7 +138,6 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     providers: [
-        { provide: BuildContext, useClass: ComponentBuildContext },
         { provide: Runnable, useClass: ComponentRunnable },
         { provide: Identifiers, useFactory: (container) => new Identifiers(container), deps: [CONTAINER], singleton: true }
     ]

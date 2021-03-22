@@ -1,5 +1,5 @@
 import { ClassType } from '@tsdi/ioc';
-import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
+import { BootOption, BuildOption, IBootContext, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 
 
@@ -10,15 +10,6 @@ import { IBootApplication } from '../IBootApplication';
  * @class BuilderService
  */
 export interface IBuilderService {
-
-    /**
-     * build target.
-     *
-     * @template T
-     * @param {(ClassType<T> | BuildOption<T>)} target
-     * @returns {Promise<IBuildContext>}
-     */
-    build<T>(target: ClassType<T> | BuildOption<T>): Promise<IBuildContext>;
 
     /**
      * resolve binding module.

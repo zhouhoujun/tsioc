@@ -1,11 +1,10 @@
-import { Inject, Singleton, isFunction, ClassType, Type, IInjector, IContainer, isPlainObject } from '@tsdi/ioc';
-import { BootOption, IBootContext, BuildOption, IBuildContext } from '../Context';
+import { Inject, Singleton, isFunction, ClassType, Type, IInjector, IContainer, isPlainObject, lang } from '@tsdi/ioc';
+import { BootOption, BuildOption, IBootContext, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
 import { BUILDER, CTX_OPTIONS, ROOT_INJECTOR } from '../tk';
 import { IBuildHandle, ResolveMoudleScope } from '../builder/handles';
-import { BuildContext } from '../builder/ctx';
 import { BootContext } from '../boot/ctx';
 
 
@@ -35,11 +34,6 @@ export class BuilderService implements IBuilderService {
      * @returns {Promise<T>}
      */
     async resolve<T>(target: ClassType<T> | BuildOption<T>): Promise<T> {
-        let ctx = await this.build(target);
-        return ctx.value;
-    }
-
-    async build<T>(target: ClassType<T> | BuildOption<T>): Promise<IBuildContext> {
         let injector: IInjector;
         let options: BuildOption;
         const container = this.root.getContainer();
@@ -55,10 +49,12 @@ export class BuilderService implements IBuilderService {
         if (!injector) {
             injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
         }
-        let rctx = injector.getService({ token: BuildContext, target: md, defaultToken: BuildContext }, { provide: CTX_OPTIONS, useValue: options });
+        let rctx = { ...options, injector } as IBuildContext;
         await container.provider.getInstance(ResolveMoudleScope)
             .execute(rctx);
-        return rctx;
+        const value = rctx.value;
+        lang.cleanObj(rctx);
+        return value;
     }
 
     async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<any> {

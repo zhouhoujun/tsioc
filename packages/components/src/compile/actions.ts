@@ -1,4 +1,4 @@
-import { ComponentBuildContext } from '../context';
+import { IBuildContext } from '@tsdi/boot';
 import { ComponentReflect } from '../reflect';
 import { CompilerFacade } from './facade';
 
@@ -9,7 +9,7 @@ import { CompilerFacade } from './facade';
  * @class ModuleBeforeInitHandle
  * @extends {ResolveComponentHandle}
  */
-export const BuildComponentHandle = async function (ctx: ComponentBuildContext, next?: () => Promise<void>): Promise<void> {
+export const BuildComponentHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
     const reflect = ctx.reflect as ComponentReflect;
     if ((ctx.reflect as ComponentReflect).annoType === 'component') {
         if (!reflect.def && reflect.annotation.templateUrl) {
@@ -33,7 +33,7 @@ export const BuildComponentHandle = async function (ctx: ComponentBuildContext, 
  * @class ModuleBeforeInitHandle
  * @extends {ResolveComponentHandle}
  */
-export const ParseTemplateHandle = async function (ctx: ComponentBuildContext, next?: () => Promise<void>): Promise<void> {
+export const ParseTemplateHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
     let temp = ctx.template;
     if (!ctx.value && temp) {
         // use compiler of component, register in module of current injector.
