@@ -51,7 +51,7 @@ export interface IElement extends INode {
     style: ICssStyleDeclaration;
     classList: IDomTokenList;
     className: string;
-    textContent: string | null;
+    textContent?: string;
     setAttribute(name: string, value: string): void;
     removeAttribute(name: string): void;
     setAttributeNS(namespaceURI: string, qualifiedName: string, value: string): void;
@@ -63,11 +63,11 @@ export interface IElement extends INode {
 
 
 export interface IText extends INode {
-    textContent: string | null;
+    textContent?: string;
 }
 
 export interface IComment extends INode {
-    textContent: string | null;
+    textContent?: string;
 }
 
 export interface IDomTokenList {
@@ -77,5 +77,5 @@ export interface IDomTokenList {
 
 export interface ICssStyleDeclaration {
     removeProperty(propertyName: string): string;
-    setProperty(propertyName: string, value: string | null, priority?: string): void;
+    setProperty(propertyName: string, value?: string, priority?: string): void;
 }

@@ -1,5 +1,5 @@
-import { AsyncHandler, IActionSetup, Inject, INJECTOR, Injector, Action, lang, ActionType, chain, Type } from '@tsdi/ioc';
-import { IAnnoationContext, IBuildContext } from '../Context';
+import { AsyncHandler, IActionSetup, Inject, Injector, Action, lang, ActionType, chain, Type, refl, TypeReflect } from '@tsdi/ioc';
+import { IBuildContext } from '../Context';
 
 /**
  * handle interface.
@@ -192,14 +192,15 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
             ctx.injector.register(ctx.type as Type);
             ctx.injector = regedState.getInjector(ctx.type);
         }
+        if (!ctx.reflect) {
+            (ctx as { reflect: TypeReflect }).reflect = refl.get(ctx.type);
+        }
         // has build module instance.
         await super.execute(ctx);
 
         if (next) {
             await next();
         }
-        // after all clean.
-        // lang.cleanObj(ctx);
     }
 
     setup() {

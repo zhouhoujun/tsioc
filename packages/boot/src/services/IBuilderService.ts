@@ -1,5 +1,5 @@
 import { ClassType } from '@tsdi/ioc';
-import { BootOption, BuildOption, IBootContext, IBuildContext } from '../Context';
+import { BootOption, BuildOption, IBootContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 
 
