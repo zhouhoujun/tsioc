@@ -290,12 +290,12 @@ export class RootViewRef<T> extends ViewRef<T> {
     }
 
     detectChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send('host:://detech', { body: this._view });
+        this._view[INJECTOR].get(BOOTCONTEXT).send(api.detechChanges, { body: this._view });
         // detectChangesInRootView(this._view);
     }
 
     checkNoChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send('host:://check/nochanges', { body: this._view });
+        this._view[INJECTOR].get(BOOTCONTEXT).send(api.checkNoChanges, { body: this._view });
         // checkNoChangesInRootView(this._view);
     }
 

@@ -61,7 +61,7 @@ export interface LContainer extends Array<any> {
      *
      * The host could be an LView if this container is on a component node.
      * In that case, the component LView is its HOST.
-     *
+     */
     readonly [HOST]: IElement | IComment | LView;
 
     /**
