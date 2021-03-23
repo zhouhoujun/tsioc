@@ -1,6 +1,6 @@
 import { Type } from '@tsdi/ioc';
-import { IView } from './vdom/view';
-import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/vnode';
+import { View } from './vdom/interfaces/view';
+import { CssSelectorList, VAttributes, VConstantsOrFactory } from './vdom/interfaces/vnode';
 
 /**
  * component type.
@@ -70,6 +70,20 @@ export type ViewQueriesFunction<T> = <U extends T>(rf: RenderFlags, ctx: U) => v
 export type ContentQueriesFunction<T> =
     <U extends T>(rf: RenderFlags, ctx: U, directiveIndex: number) => void;
 
+
+export type FactoryFn<T> = {
+    /**
+       * Subclasses without an explicit constructor call through to the factory of their base
+       * definition, providing it with their own constructor to instantiate.
+       */
+    <U extends T>(t: Type<U>): U;
+
+    /**
+     * If no constructor to instantiate is provided, an instance of type T itself is created.
+     */
+    (t?: undefined): T;
+};
+
 /**
  * Runtime link information for Directives.
  *
@@ -77,7 +91,7 @@ export type ContentQueriesFunction<T> =
  * directives into templates.
  * 
  */
-export interface DirectiveDef<T> {
+export interface DirectiveDef<T = any> {
     /**
     * A dictionary mapping the inputs' minified property names to their public API names, which
     * are their aliases if any, or their original unminified property names
@@ -162,6 +176,12 @@ export interface DirectiveDef<T> {
     /** The selectors that will be used to match nodes to this directive. */
     readonly selectors: CssSelectorList;
 
+    /**
+     * Factory function used to create a new directive instance. Will be null initially.
+     * Populated when the factory is first requested by directive instantiation logic.
+     */
+    readonly factory?: FactoryFn<T>;
+
 }
 
 /**
@@ -171,7 +191,7 @@ export interface DirectiveDef<T> {
  * components into templates.
  * 
  */
-export interface ComponentDef<T> extends DirectiveDef<T> {
+export interface ComponentDef<T = any> extends DirectiveDef<T> {
     /**
      * Runtime unique component ID.
      */
@@ -223,16 +243,57 @@ export interface ComponentDef<T> extends DirectiveDef<T> {
      * The property is either an array of `PipeDefs`s or a function which returns the array of
      * `PipeDefs`s. The function is necessary to be able to support forward declarations.
      */
-    pipeDefs?: PipeTypesOrFactory;
+    pipeDefs?: PipeDefListOrFactory;
 
     /**
      * runtime uses this place to store the computed virtual view for the component. This gets filled on
      * the first run of component.
      */
-    view?: IView;
+    view?: View;
 
 }
 
+
+/**
+ * Runtime link information for Pipes.
+ *
+ * This is an internal data structure used by the renderer to link
+ * pipes into templates.
+ *
+ * NOTE: Always use `definePipe` function to create this object,
+ * never create the object directly since the shape of this object
+ * can change between versions.
+ *
+ * See: {@link definePipe}
+ */
+export interface PipeDef<T = any> {
+    /** Token representing the pipe. */
+    type: Type<T>;
+
+    /**
+     * Pipe name.
+     *
+     * Used to resolve pipe in templates.
+     */
+    readonly name: string;
+
+    /**
+     * Factory function used to create a new pipe instance. Will be null initially.
+     * Populated when the factory is first requested by pipe instantiation logic.
+     */
+    factory?: FactoryFn<T>;
+
+    /**
+     * Whether or not the pipe is pure.
+     *
+     * Pure pipes result only depends on the pipe input and not on internal
+     * state of the pipe.
+     */
+    readonly pure: boolean;
+
+    /* The following are lifecycle hooks for this pipe */
+    onDestroy: (() => void) | null;
+}
 
 /**
  * Type used for directiveDefs on component definition.
@@ -244,5 +305,14 @@ export type DirectiveDefListOrFactory = (() => DirectiveDefList) | DirectiveDefL
 export type DirectiveDefList = (DirectiveDef<any> | ComponentDef<any>)[];
 
 export type PipeTypesOrFactory = (() => PipeTypeList) | PipeTypeList;
+
+/**
+ * Type used for PipeDefs on component definition.
+ *
+ * The function is necessary to be able to support forward declarations.
+ */
+ export type PipeDefListOrFactory = (() => PipeDefList)|PipeDefList;
+
+export type PipeDefList = PipeDef<any>[];
 
 export type PipeTypeList = PipeType<any> | Type<any>;

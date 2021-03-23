@@ -1,17 +1,27 @@
+
 /**
- * Before component init.
- *
- * @export
- * @interface BeforeInit
+ * change.
  */
-export interface BeforeInit {
-    /**
-     * component before init hooks. after constructor befor property inject.
-     *
-     * @memberof BeforeInit
-     */
-    onBeforeInit(): void;
+ export interface Change {
+    previousValue: any;
+    currentValue: any;
+    firstChange?: boolean;
 }
+
+/**
+ * changes.
+ */
+export interface Changes {
+    [p: string]: Change
+}
+
+/**
+ * on changes.
+ */
+export interface OnChanges {
+    onChanges(changs: Changes);
+}
+
 
 /**
  * on component init.
@@ -26,21 +36,6 @@ export interface OnInit {
      * @memberof OnInit
      */
     onInit(): void;
-}
-
-/**
- * after component init.
- *
- * @export
- * @interface AfterInit
- */
-export interface AfterInit {
-    /**
-     * component after init hooks. after property inject.
-     *
-     * @memberof AfterInit
-     */
-    onAfterInit(): void;
 }
 
 /**
@@ -80,30 +75,6 @@ export interface AfterContentChecked {
      */
     onAfterContentChecked(): void;
 }
-
-/**
- * change.
- */
-export interface Change {
-    previousValue: any;
-    currentValue: any;
-    firstChange?: boolean;
-}
-
-/**
- * changes.
- */
-export interface Changes {
-    [p: string]: Change
-}
-
-/**
- * on changes.
- */
-export interface OnChanges {
-    onChanges(changs: Changes);
-}
-
 
 /**
  * A lifecycle hook that invokes a custom change-detection function for a directive,

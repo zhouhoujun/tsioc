@@ -46,3 +46,6 @@ export * from './util/stringify';
 export * from './reflect';
 export * from './lifecycle';
 export * from './components';
+
+
+export * as vdom from './vdom';

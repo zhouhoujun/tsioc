@@ -1,7 +1,7 @@
 import { ObjectMap } from '@tsdi/ioc';
-import { KeyValueArray } from '../util/array';
+import { KeyValueArray } from '../../util/array';
 import { INode } from './node';
-import { IView } from './view';
+import { View } from './view';
 
 
 /**
@@ -33,19 +33,14 @@ export enum VNodeType {
     Container = 0b100,
 
     /**
-     * The VNode contains information about an `<ng-container>` element {@link NNode}.
+     * The VNode contains information about an `<v-container>` element {@link NNode}.
      */
     ElementContainer = 0b1000,
 
     /**
-     * The VNode contains information about an `<ng-content>` projection
+     * The VNode contains information about an `<v-content>` projection
      */
     Projection = 0b10000,
-
-    /**
-     * The VNode contains information about an ICU comment used in `i18n`.
-     */
-    Icu = 0b100000,
 
     /**
      * Special node type representing a placeholder for future `VNode` at this location.
@@ -74,7 +69,6 @@ export function toVNodeTypeAsString(nodeType: VNodeType): string {
     (nodeType & VNodeType.Container) && (text += '|Container');
     (nodeType & VNodeType.ElementContainer) && (text += '|ElementContainer');
     (nodeType & VNodeType.Projection) && (text += '|Projection');
-    (nodeType & VNodeType.Icu) && (text += '|IcuContainer');
     (nodeType & VNodeType.Placeholder) && (text += '|Placeholder');
     return text.length > 0 ? text.substring(1) : text;
 }
@@ -596,7 +590,7 @@ export interface VNode {
      *
      * If this VNode corresponds to an element, views will be null .
      */
-    views?: IView | IView[];
+    views?: View | View[];
 
     /**
      * The next sibling node. Necessary so we can propagate through the root nodes of a view
@@ -634,7 +628,7 @@ export interface VNode {
      *
      * If this is an inline view node (V), the parent will be its container.
      */
-    parent?: VElemenVNode | VContainerNode;
+    parent?: VElementNode | VContainerNode;
 
     /**
      * List of projected VNodes for a given component host element OR index into the said nodes.
@@ -799,16 +793,16 @@ export interface VNode {
 export type InsertBeforeIndex = null | number | number[];
 
 /** Static data for an element  */
-export interface VElemenVNode extends VNode {
+export interface VElementNode extends VNode {
     /** Index in the data[] array */
     index: number;
-    child: VElemenVNode | VTexVNode | VElementContainerNode | VContainerNode | VProjectionNode | null;
+    child: VElementNode | VTexVNode | VElementContainerNode | VContainerNode | VProjectionNode | null;
     /**
      * Element nodes will have parents unless they are the first node of a component or
      * embedded view (which means their parent is in a different view and must be
      * retrieved using viewData[HOST_NODE]).
      */
-    parent: VElemenVNode | VElementContainerNode | null;
+    parent: VElementNode | VElementContainerNode | null;
     views: null;
 
     /**
@@ -834,7 +828,7 @@ export interface VTexVNode extends VNode {
      * embedded view (which means their parent is in a different view and must be
      * retrieved using LView.node).
      */
-    parent: VElemenVNode | VElementContainerNode | null;
+    parent: VElementNode | VElementContainerNode | null;
     views: null;
     projection: null;
 }
@@ -856,8 +850,8 @@ export interface VContainerNode extends VNode {
      * - They are the first node of a component or embedded view
      * - They are dynamically created
      */
-    parent: VElemenVNode | VElementContainerNode | null;
-    views: IView | IView[] | null;
+    parent: VElementNode | VElementContainerNode | null;
+    views: View | View[] | null;
     projection: null;
     value: null;
 }
@@ -866,8 +860,8 @@ export interface VContainerNode extends VNode {
 export interface VElementContainerNode extends VNode {
     /** Index in the LView[] array. */
     index: number;
-    child: VElemenVNode | VTexVNode | VContainerNode | VElementContainerNode | VProjectionNode | null;
-    parent: VElemenVNode | VElementContainerNode | null;
+    child: VElementNode | VTexVNode | VContainerNode | VElementContainerNode | VProjectionNode | null;
+    parent: VElementNode | VElementContainerNode | null;
     views: null;
     projection: null;
 }
@@ -882,7 +876,7 @@ export interface VProjectionNode extends VNode {
      * or embedded view (which means their parent is in a different view and must be
      * retrieved using LView.node).
      */
-    parent: VElemenVNode | VElementContainerNode | null;
+    parent: VElementNode | VElementContainerNode | null;
     views: null;
 
     /** Index of the projection node. (See VNode.projection for more info.) */
@@ -893,7 +887,7 @@ export interface VProjectionNode extends VNode {
 /**
  * A union type representing all VNode types that can host a directive.
  */
-export type VDirectiveHosVNode = VElemenVNode | VContainerNode | VElementContainerNode;
+export type VDirectiveHosVNode = VElementNode | VContainerNode | VElementContainerNode;
 
 /**
  * This mapping is necessary so we can set input properties and output listeners
@@ -959,7 +953,7 @@ export const unusedValueExportToPlacateAjd = 1;
 /**
  * Type representing a set of VNodes that can have local refs (`#foo`) placed on them.
  */
-export type VNodeWithLocalRefs = VContainerNode | VElemenVNode | VElementContainerNode;
+export type VNodeWithLocalRefs = VContainerNode | VElementNode | VElementContainerNode;
 
 /**
  * Type for a function that extracts a value for a local refs.
@@ -967,7 +961,7 @@ export type VNodeWithLocalRefs = VContainerNode | VElemenVNode | VElementContain
  * - `<div #nativeDivEl>` - `nativeDivEl` should point to the native `<div>` element;
  * - `<ng-template #tplRef>` - `tplRef` should point to the `TemplateRef` instance;
  */
-export type LocalRefExtractor = (VNode: VNodeWithLocalRefs, currentView: IView) => any;
+export type LocalRefExtractor = (VNode: VNodeWithLocalRefs, currentView: View) => any;
 
 /**
  * Returns `true` if the `VNode` has a directive which has `@Input()` for `class` binding.
