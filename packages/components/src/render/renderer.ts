@@ -8,10 +8,10 @@ import { ComponentRef } from '../refs/component';
  */
 @Abstract()
 export abstract class ComponentRenderer {
-    render(ctx: ApplicationRef, componentRef: ComponentRef) {
-        ctx.attachView(componentRef.hostView);
-        ctx.tick();
-        ctx.components.push(componentRef);
+    render(appRef: ApplicationRef, componentRef: ComponentRef) {
+        appRef.attachView(componentRef.hostView);
+        appRef.tick();
+        appRef.components.push(componentRef);
         // // Get the listeners lazily to prevent DI cycles.
         // const listeners =
         //     this._injector.get(APP_BOOTSTRAP_LISTENER, []).concat(this._bootstrapListeners);

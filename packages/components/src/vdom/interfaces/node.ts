@@ -1,4 +1,3 @@
-
 export const containerTag = 'v-container';
 export const contentTag = 'v-content';
 export const templateTag = 'v-template';

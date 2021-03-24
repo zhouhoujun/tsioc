@@ -1,8 +1,8 @@
 import { isLContainer } from './chk';
-import { CONTAINER_HEADER_OFFSET, LContainer } from './interfaces/container';
 import { INode } from './interfaces/node';
-import { DECLARATION_COMPONENT_VIEW, HOST, LView, PARENT, VIEW, View, V_HOST } from './interfaces/view';
 import { VElementNode, VNode, VNodeType } from './interfaces/vnode';
+import { CONTAINER_HEADER_OFFSET, LContainer } from './interfaces/container';
+import { DECLARATION_COMPONENT_VIEW, HOST, LView, PARENT, VIEW, View, V_HOST } from './interfaces/view';
 
 export function unwrapNode(value: INode | LView | LContainer): INode {
     while (Array.isArray(value)) {
@@ -11,9 +11,7 @@ export function unwrapNode(value: INode | LView | LContainer): INode {
     return value as INode;
 }
 
-export function collectNativeNodes(
-    view: View, lView: LView, node: VNode | null, result: any[],
-    isProjection: boolean = false): any[] {
+export function collectNativeNodes(view: View, lView: LView, node: VNode | null, result: any[], isProjection = false): any[] {
     while (node !== null) {
         const lNode = lView[node.index];
         if (lNode !== null) {

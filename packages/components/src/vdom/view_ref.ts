@@ -1,10 +1,10 @@
+import { BOOTCONTEXT } from '@tsdi/boot';
 import { InternalViewRef, ViewRefTracker } from '../refs/inter';
 import { EmbeddedViewRef } from '../refs/view';
 import { VIEW_REFS } from './interfaces/container';
 import { CONTEXT, FLAGS, INJECTOR, LView, LViewFlags, PARENT, VIEW } from './interfaces/view';
 import { isLContainer } from './chk';
 import { collectNativeNodes } from './native_nodes';
-import { BOOTCONTEXT } from 'packages/boot/src/tk';
 
 /**
  * viewRef implement.
@@ -283,7 +283,9 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
     }
 }
 
-
+/**
+ * Root view Ref.
+ */
 export class RootViewRef<T> extends ViewRef<T> {
     constructor(public _view: LView) {
         super(_view);

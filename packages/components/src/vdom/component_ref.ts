@@ -7,8 +7,10 @@ import { INJECTOR, LView } from './interfaces/view';
 import { VContainerNode, VElementContainerNode, VElementNode } from './interfaces/vnode';
 import { RootViewRef, ViewRef } from './view_ref';
 
-
-export class VComponentRef<T> extends ComponentRef<T>{
+/**
+ * component ref.
+ */
+export class VComponentRef<T> extends ComponentRef<T> {
   instance: T;
   hostView: ViewRef<T>;
   changeDetectorRef: ChangeDetectorRef;

@@ -21,6 +21,7 @@ export class ComponentRunnable extends Runnable {
         const app = injector.get(ApplicationRef);
         app.componentTypes.push(compRef.componentType);
         compRef.onDestroy(() => {
+            app.detachView(compRef.hostView);
             lang.remove(app.components, compRef);
         });
 
