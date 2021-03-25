@@ -40,8 +40,8 @@ export class IocResolveScope<T extends ResolveContext = ResolveContext> extends 
         this.use(
             ResolvePrivateAction,
             ResolveRefAction,
-            ResolveInInjectorAction,
             ResolveInProvidersAction,
+            ResolveInInjectorAction,
             ResolveInParentAction,
             ResolveDefaultAction
         );
