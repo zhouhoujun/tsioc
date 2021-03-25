@@ -250,15 +250,24 @@ class RegisteredStateImpl implements RegisteredState {
      * @param type
      */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T {
-        return getReged(type, this.container.id)?.getInjector() as T;
+        return getReged(type, this.container.id)?.injector as T;
+    }
+
+    /**
+     * get injector
+     * @param type
+     */
+    getTypeProvider(type: ClassType): IProvider {
+        return getReged(type, this.container.id)?.providers;
     }
 
     getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
-        return getReged(type, this.container.id)?.getInjector().getInstance(type, ...providers) ?? null;
+        const state = getReged(type, this.container.id);
+        return (state.providers?.has(type)) ? state.providers.getInstance(type, ...providers) : state?.injector.getInstance(type, ...providers) ?? null;
     }
 
     resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
-        return getReged(type, this.container.id)?.getInjector().resolve(type, ...providers) ?? null;
+        return getReged(type, this.container.id)?.injector.resolve(type, ...providers) ?? null;
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {

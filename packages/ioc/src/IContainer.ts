@@ -21,6 +21,11 @@ export interface RegisteredState {
      */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T;
     /**
+     * get the type private providers.
+     * @param type
+     */
+     getTypeProvider(type: ClassType): IProvider;
+    /**
      * get instance.
      * @param type class type.
      */

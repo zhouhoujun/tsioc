@@ -548,6 +548,7 @@ export function setReged<T extends Registered>(type: ClassType, id: string, stat
 export function delReged(type: ClassType, id: string) {
     const inf = type[key]?.();
     if (inf && inf.type === type) {
+        inf[id]?.providers?.destory();
         cleanObj(inf[id]);
         inf[id] = null;
     }

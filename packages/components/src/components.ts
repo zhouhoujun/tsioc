@@ -1,7 +1,6 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
 import { ResolveMoudleScope } from '@tsdi/boot';
 import { ParseTemplateHandle } from './compile/actions';
-// import { RefreshView, RenderComponent, RenderView } from './vnode/actions/render';
 import { HostMappingRoot } from './router';
 
 

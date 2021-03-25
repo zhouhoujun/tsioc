@@ -1,6 +1,5 @@
 import { isNil, getClass, isFunction, isTypeObject } from '../utils/chk';
 import { Token, tokenRef } from '../tokens';
-import { PROVIDERS } from '../utils/tk';
 import { IocActions } from './act';
 import { ResolveContext } from './res';
 import { Type } from '../types';
@@ -86,7 +85,7 @@ export const ResolveInParentAction = function (ctx: ResolveContext, next: () => 
 
 export const ResolvePrivateAction = function (ctx: ResolveContext, next: () => void): void {
     if (ctx.targetToken) {
-        ctx.instance = ctx.injector.get(tokenRef(PROVIDERS, ctx.targetToken))?.get(ctx.token, ctx.providers);
+        ctx.instance = ctx.injector.getContainer().regedState.getTypeProvider(ctx.targetToken as Type)?.get(ctx.token, ctx.providers);
     }
     if (isNil(ctx.instance)) {
         next();

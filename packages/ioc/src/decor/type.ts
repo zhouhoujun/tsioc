@@ -42,7 +42,11 @@ export interface Registered {
     /**
      * injector.
      */
-    getInjector(): IInjector;
+    injector: IInjector;
+    /**
+     * type private providers.
+     */
+    providers?: IProvider;
 }
 
 

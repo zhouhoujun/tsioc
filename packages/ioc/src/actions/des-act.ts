@@ -14,6 +14,7 @@ import { IActionProvider } from './act';
 import { getProvider } from '../injector';
 import { Registered } from '../decor/type';
 import { PropertyMetadata } from '../decor/metadatas';
+import { reflFiled } from '../utils/exps';
 
 
 
@@ -54,7 +55,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
 function genReged(injector: IInjector, provide?: Token) {
     return {
         provides: provide ? [provide] : [],
-        getInjector: () => injector
+        injector
     }
 }
 
@@ -166,13 +167,12 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
 
     // class private provider.
     if (ctx.reflect.extProviders && ctx.reflect.extProviders.length) {
-        const refToken = tokenRef(PROVIDERS, type);
-        if (injector.has(refToken)) {
-            injector.get(refToken).inject(...ctx.reflect.extProviders);
+        if (ctx.state.providers) {
+            ctx.state.providers.inject(...ctx.reflect.extProviders);
         } else {
-            injector.setValue(refToken, injector.getContainer().getInstance(PROVIDERS).inject(...ctx.reflect.extProviders));
+            const pdrs = injector.getInstance(PROVIDERS).inject(...ctx.reflect.extProviders);
+            ctx.state.providers = pdrs;
         }
-        state.provides.push(refToken);
     }
 
     next();

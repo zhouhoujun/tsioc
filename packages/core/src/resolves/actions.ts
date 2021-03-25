@@ -160,9 +160,10 @@ export class ResolveServicesScope extends resovles.IocResolveScope implements IA
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     if (ctx.targetRefs && ctx.targetRefs.length) {
         const { injector, services, types, match } = ctx;
+        const regState = injector.getContainer().regedState;
         ctx.targetRefs.forEach(t => {
             const tk = isTypeObject(t) ? lang.getClass(t) : t;
-            const maps = injector.get(tokenRef(PROVIDERS, tk));
+            const maps = regState.getTypeProvider(tk);
             if (maps && maps.size) {
                 maps.iterator((pdr, t1) => {
                     if (!services.has(t1)

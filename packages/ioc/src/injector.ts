@@ -405,7 +405,7 @@ export class Provider implements IProvider {
             if (reged && reged.provides.indexOf(provide) < 0) {
                 reged.provides.push(provide);
             }
-            const fac = reged ? (...pdrs) => reged.getInjector().getInstance(provider, ...pdrs) : (...pdrs) => this.getInstance(provider, ...pdrs);
+            const fac = reged ? (...pdrs) => reged.injector.getInstance(provider, ...pdrs) : (...pdrs) => this.getInstance(provider, ...pdrs);
             this.factories.set(provide, { fac, provider: provider });
         }
         return this;
