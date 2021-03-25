@@ -14,7 +14,6 @@ import { IActionProvider } from './act';
 import { getProvider } from '../injector';
 import { Registered } from '../decor/type';
 import { PropertyMetadata } from '../decor/metadatas';
-import { reflFiled } from '../utils/exps';
 
 
 
@@ -170,7 +169,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
         if (ctx.state.providers) {
             ctx.state.providers.inject(...ctx.reflect.extProviders);
         } else {
-            const pdrs = injector.getInstance(PROVIDERS).inject(...ctx.reflect.extProviders);
+            const pdrs = injector.getContainer().getInstance(PROVIDERS).inject(...ctx.reflect.extProviders);
             ctx.state.providers = pdrs;
         }
     }
@@ -200,7 +199,6 @@ function isPdrType(this: PropertyMetadata) {
  * @export
  */
 export const PropProviderAction = function (ctx: DesignContext, next: () => void) {
-    // const injector = ctx.injector;
     ctx.reflect.propProviders.forEach((propMetas, name) => {
         propMetas.forEach(prop => {
             Object.defineProperties(prop, {
@@ -213,11 +211,6 @@ export const PropProviderAction = function (ctx: DesignContext, next: () => void
                     enumerable: false
                 }
             });
-            // if (isClass(prop.provider)) {
-            // injector.registerType(prop.provider);
-            // } else if (!prop.provider && isClass(prop.type)) {
-            // injector.registerType(prop.type);
-            // }
         });
     });
 
@@ -234,7 +227,6 @@ export class DesignMthScope extends IocRegScope<DesignContext> implements IActio
 }
 
 export const RegMethodParamsType = function (ctx: DesignContext, next: () => void) {
-    // const injector = ctx.injector;
     ctx.reflect.methodParams.forEach(pms => {
         pms.forEach(pm => {
             Object.defineProperties(pm, {
@@ -247,11 +239,6 @@ export const RegMethodParamsType = function (ctx: DesignContext, next: () => voi
                     enumerable: false
                 }
             });
-            // if (isClass(pm.provider)) {
-            // injector.registerType(pm.provider);
-            // } else if (!pm.provider && isClass(pm.type)) {
-            // injector.registerType(pm.type);
-            // }
         });
     });
     return next();

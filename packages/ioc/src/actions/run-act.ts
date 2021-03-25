@@ -22,7 +22,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? [];
-        ctx.args = ctx.injector.getContainer().getInstance(METHOD_ACCESSOR).createParams(ctx.injector, ctx.params, ctx.providers);
+        ctx.args = ctx.injector.getContainer().getInstance(METHOD_ACCESSOR).createParams(ctx.injector, ctx.type, ctx.params, ctx.providers);
     }
     next();
 };
@@ -49,6 +49,7 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.propProviders.size) {
         const { injector, providers, type } = ctx;
+        const typepdr = injector.getContainer().regedState.getTypeProvider(type);
         ctx.reflect.propProviders.forEach((metas, propertyKey) => {
             const key = `${propertyKey}_INJECTED`;
             let meta = metas.find(m => m.provider);
@@ -57,7 +58,7 @@ export const InjectPropAction = function (ctx: RuntimeContext, next: () => void)
             }
             if (meta && !ctx[key]) {
                 const token = meta.provider || meta.type;
-                const val = injector.resolve({ token, target: type, regify: true }, providers);
+                const val = typepdr?.get(token, providers) ?? providers?.get(token, providers) ?? injector.resolve({ token, target: type, regify: true }, providers);
                 if (!isNil(val)) {
                     ctx.instance[propertyKey] = val;
                     ctx[key] = true;
