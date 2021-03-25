@@ -33,12 +33,15 @@ export class MethodAccessor implements IMethodAccessor {
      */
     invoke<T, TR = any>(injector: IInjector, target: Token<T> | T, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
         let targetClass: Type, instance: T, key: string;
+        let typepdr: IProvider;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
+            typepdr = this.container.regedState.getTypeProvider(targetClass);
             instance = target as T;
         } else {
             targetClass = injector.getTokenProvider(target as Token);
-            instance = injector.get(target as Token, ...providers);
+            typepdr = this.container.regedState.getTypeProvider(targetClass);
+            instance = injector.get(target as Token, typepdr, ...providers);
             if (!targetClass) {
                 throw new Error(target.toString() + ' is not implements by any class.')
             }
@@ -61,7 +64,7 @@ export class MethodAccessor implements IMethodAccessor {
 
         const proxy = instance[key]['_proxy'];
         const pdr = proxy ? this.container.getInstance(INVOKED_PROVIDERS).inject(...providers) : getProvider(injector, ...providers)
-        const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], pdr);
+        const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], pdr, typepdr);
         if (proxy) {
             if (pdr.size) {
                 paramInstances.push(pdr);
@@ -84,22 +87,26 @@ export class MethodAccessor implements IMethodAccessor {
         return this.resolveParams(injector, params, getProvider(injector, ...providers));
     }
 
-    protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider): any[] {
+    protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {
         return params.map((param, index) => {
             if (param.provider) {
+                if (typepdrs && typepdrs.has(param.provider)) return typepdrs.get(param.provider, providers);
                 if (providers.has(param.provider)) return providers.get(param.provider, providers);
                 if (param.isProviderType && !this.container.regedState.isRegistered(param.provider as Type) && !injector.has(param.type, true)) {
                     injector.register(param.provider as Type);
                 }
-                return injector.resolve(param.provider, providers) ?? param.defaultValue;
+                return injector.get(param.provider, providers) ?? param.defaultValue;
+            } else if (typepdrs && param.paramName && typepdrs.has(param.paramName)) {
+                return typepdrs.get(param.paramName, providers);
             } else if (param.paramName && providers.has(param.paramName)) {
                 return providers.get(param.paramName, providers);
             } else if (param.type) {
+                if (typepdrs && typepdrs.has(param.provider)) return typepdrs.get(param.provider, providers);
                 if (providers.has(param.type)) return providers.get(param.type, providers);
                 if (param.isType && !this.container.regedState.isRegistered(param.type) && !injector.has(param.type, true)) {
                     injector.register(param.type as Type);
                 }
-                return injector.resolve(param.type, providers) ?? param.defaultValue;
+                return injector.get(param.type, providers) ?? param.defaultValue;
             } else {
                 return param.defaultValue;
             }

@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator,
-    lang, Type, isFunction, Token, isArray, isString, DesignContext, ClassMethodDecorator
+    lang, Type, isFunction, Token, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -419,14 +419,19 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 reflect.route_prefix = prefix;
                 let middl: MiddlewareType;
                 if (reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
+                    let exts: ProviderType[] = [];
                     if (route) {
-                        reflect.extProviders.push({ provide: ROUTE_URL, useValue: route });
+                        exts.push({ provide: ROUTE_URL, useValue: route });
                     }
                     if (prefix) {
-                        reflect.extProviders.push({ provide: ROUTE_PREFIX, useValue: prefix });
+                        exts.push({ provide: ROUTE_PREFIX, useValue: prefix });
                     }
                     if (protocol) {
-                        reflect.extProviders.push({ provide: ROUTE_PROTOCOL, useValue: protocol });
+                        exts.push({ provide: ROUTE_PROTOCOL, useValue: protocol });
+                    }
+                    if(exts.length){
+                        reflect.extProviders.push(...exts);
+                        state.getTypeProvider(type)?.inject(...exts);
                     }
                     middl = type;
                 } else {
