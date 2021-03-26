@@ -3,8 +3,8 @@ import { Abstract } from './decor/decorators';
 import { MethodType } from './IMethodAccessor';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { ClassRegister, IInjector, IModuleLoader, IProvider, ProviderOption, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
-import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
+import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token, tokenRef } from './tokens';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean, isTypeObject, isDefined } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
@@ -15,6 +15,31 @@ import { INJECTOR, PROVIDERS } from './utils/tk';
 export abstract class Strategy {
 
     protected constructor() { }
+
+    resolve<T>(curr: IProvider, option: ResolveOption<T>): T {
+        let targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
+        let pdr = getProvider(curr as IInjector, ...option.providers || []);
+        let inst: T;
+        const regState = curr.getContainer().regedState;
+        if (isFunction(targetToken)) {
+            inst = regState.getTypeProvider(targetToken)?.get(option.token, pdr) ?? curr.get(tokenRef(option.token, targetToken), pdr);
+        }
+
+        if (option.tagOnly || isDefined(inst)) return inst ?? null;
+
+        inst = pdr?.get(option.token, pdr) ?? curr.get(option.token, pdr) ?? curr.parent?.get(option.token, pdr);
+
+        if (isDefined(inst)) return inst;
+
+        if (option.regify && isFunction(option.token) && !regState.isRegistered(option.token)) {
+            curr.register(option.token as Type);
+            inst = curr.get(option.token, pdr);
+        }
+        if (isNil(inst) && option.defaultToken) {
+            inst = curr.get(option.defaultToken, pdr);
+        }
+        return inst ?? null;
+    }
 
     /**
      * vaild parent.
@@ -136,7 +161,7 @@ export class Provider implements IProvider {
      */
     protected factories: Map<Token, InstFac>;
 
-    constructor(public parent?: IProvider, private strategy: Strategy = providerStrategy) {
+    constructor(public parent?: IProvider, protected strategy: Strategy = providerStrategy) {
         this.factories = new Map();
         if (parent && !strategy.vaildParent(parent)) {
             this._container = parent.getContainer();
@@ -599,7 +624,20 @@ export abstract class Injector extends Provider implements IInjector {
      * @returns {T}
      * @memberof IocContainer
      */
-    abstract resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T;
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
+        let option: ResolveOption<T>;
+        if (isPlainObject(token)) {
+            option = token as ResolveOption;
+            if (option.providers) {
+                option.providers.push(...providers);
+            } else {
+                option.providers = providers;
+            }
+        } else {
+            option = { token, providers };
+        }
+        return this.strategy.resolve(this, option);
+    }
 
     /**
      * invoke method.

@@ -1,8 +1,8 @@
-import { isNil, IActionSetup, lang, ProviderType, PROVIDERS, refl, resovles, isProvide, isFunction, isTypeObject, tokenRef } from '@tsdi/ioc';
+import { isNil, IActionSetup, lang, ProviderType, PROVIDERS, refl, isProvide, isFunction, isTypeObject, tokenRef, IocActions } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
-export class ResolveServiceScope extends resovles.IocResolveScope<ServiceContext> implements IActionSetup {
+export class ResolveServiceScope extends IocActions<ServiceContext> implements IActionSetup {
     execute(ctx: ServiceContext, next?: () => void): void {
         if (ctx.instance || !ctx.tokens || !ctx.tokens.length) {
             return;
@@ -25,7 +25,7 @@ export class ResolveServiceScope extends resovles.IocResolveScope<ServiceContext
 }
 
 
-export class RsvTagSericeScope extends resovles.IocResolveScope<ServiceContext> implements IActionSetup {
+export class RsvTagSericeScope extends IocActions<ServiceContext> implements IActionSetup {
 
     execute(ctx: ServiceContext, next?: () => void): void {
         if (ctx.targetRefs) {
@@ -116,7 +116,7 @@ export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => 
 const typeMatch = (tag, base) => lang.getParentClass(base) ? refl.get(tag)?.class.isExtends(base) ?? lang.isExtendsClass(tag, base) : lang.isBaseOf(tag, base);
 
 // services actions
-export class ResolveServicesScope extends resovles.IocResolveScope implements IActionSetup {
+export class ResolveServicesScope extends IocActions implements IActionSetup {
 
     execute(ctx: ServicesContext, next?: () => void): void {
         if (!ctx.tokens || !ctx.tokens.length) {

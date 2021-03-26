@@ -5,7 +5,6 @@ import { Provider, InvokedProvider, getProvider, Strategy } from '../injector';
 import { MethodAccessor } from '../actions/accessor';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
-import { ResolveLifeScope } from '../actions/resolve';
 import { InjectorImpl } from '../container';
 
 
@@ -32,8 +31,7 @@ export function registerCores(container: IContainer) {
     // bing action.
     container.provider.regAction(
         DesignLifeScope,
-        RuntimeLifeScope,
-        ResolveLifeScope
+        RuntimeLifeScope
     );
 
 }

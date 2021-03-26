@@ -12,7 +12,6 @@ import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
-import { ResolveLifeScope } from './actions/resolve';
 import { delReged, getReged, setReged } from './decor/refl';
 import { Provider, Injector, Strategy, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
@@ -25,18 +24,6 @@ export class InjectorImpl extends Injector {
     constructor(parent?: IInjector, strategy?: Strategy) {
         super(parent, strategy);
         this.initReg();
-    }
-
-    /**
-     * resolve instance with token and param provider via resolve scope.
-     *
-     * @template T
-     * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
-        return this.getContainer().provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**
@@ -112,19 +99,6 @@ export class Container extends Injector implements IContainer {
 
     getContainer(): this {
         return this;
-    }
-
-
-    /**
-     * resolve instance with token and param provider via resolve scope.
-     *
-     * @template T
-     * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
-        return this.provider.getInstance(ResolveLifeScope).resolve(this, token, ...providers);
     }
 
     /**

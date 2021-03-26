@@ -40,11 +40,6 @@ export * from './actions/accessor';
 export * as runtimes from './actions/run-act';
 export * from './actions/runtime';
 
-// resolve
-export * from './actions/res';
-export * as resovles from './actions/res-act';
-export * from './actions/resolve';
-
 // design time action.
 export * as designs from './actions/des-act';
 export * from './actions/design';
