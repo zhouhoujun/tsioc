@@ -25,12 +25,12 @@ export const PROVIDERS = tokenId<IProvider>('DI_PROVIDERS');
 export const INJECTOR_FACTORY = tokenId<IInjector>('INJECTOR_FACTORY');
 
 /**
- * method accessor token.
+ * method invoker token.
  */
 export const INVOKER: Token<Invoker> = tokenId<Invoker>('INVOKER');
 /**
- * method accessor token.
- * @deprecated use `METHOD_ACCESSOR` instead.
+ * method invoker token.
+ * @deprecated use `INVOKER` instead.
  */
 export const MethodAccessorToken = INVOKER;
 

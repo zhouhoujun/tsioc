@@ -5,7 +5,7 @@ import { KeyValueProvider, StaticProviders } from './providers';
 import { ClassRegister, IInjector, IModuleLoader, IProvider, ProviderOption, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token, tokenRef } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean, isTypeObject, isDefined } from './utils/chk';
-import { IContainer } from './IContainer';
+import { IContainer, RegisteredState } from './IContainer';
 import { cleanObj, getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
 import { INJECTOR, PROVIDERS } from './utils/tk';
@@ -14,15 +14,17 @@ import { INJECTOR, PROVIDERS } from './utils/tk';
 @Abstract()
 export abstract class Strategy {
 
+    private state: RegisteredState;
+
     protected constructor() { }
 
     resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (...providers: ProviderType[]) => IProvider): T {
-        let targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
-        let pdr = toProvider(...option.providers || []);
+        const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
+        const pdr = toProvider(...option.providers || []);
         let inst: T;
-        const regState = curr.getContainer().regedState;
+        const regState = this.state ?? this.initState(curr);
         if (isFunction(targetToken)) {
-            inst = regState.getTypeProvider(targetToken)?.get(option.token, pdr) ?? curr.get(tokenRef(option.token, targetToken), pdr);
+            inst = regState?.getTypeProvider(targetToken)?.get(option.token, pdr) ?? curr.get(tokenRef(option.token, targetToken), pdr);
         }
 
         if (option.tagOnly || isDefined(inst)) return inst ?? null;
@@ -31,7 +33,7 @@ export abstract class Strategy {
 
         if (isDefined(inst)) return inst;
 
-        if (option.regify && isFunction(option.token) && !regState.isRegistered(option.token)) {
+        if (option.regify && isFunction(option.token) && !regState?.isRegistered(option.token)) {
             curr.register(option.token as Type);
             inst = curr.get(option.token, pdr);
         }
@@ -39,6 +41,12 @@ export abstract class Strategy {
             inst = curr.get(option.defaultToken, pdr);
         }
         return inst ?? null;
+    }
+
+    
+    private initState(curr: IProvider) {
+        this.state = curr.getContainer().regedState;
+        return this.state;
     }
 
     /**
