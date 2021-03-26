@@ -3,16 +3,8 @@ import { Token, ClassType, IProvider, IocContext } from '@tsdi/ioc';
 
 /**
  * resovle action option.
- *
  */
  export interface ResolveContext extends IocContext {
-    /**
-     * reslove result instance.
-     *
-     * @type {*}
-     * @memberof IResolveContext
-     */
-    instance?: any;
 
     token?: Token;
     /**
@@ -35,6 +27,27 @@ import { Token, ClassType, IProvider, IocContext } from '@tsdi/ioc';
      */
     regify?: boolean;
 
+    /**
+     * service tokens.
+     *
+     * @type {Type}
+     * @memberof ResolveServiceContext
+     */
+     tokens?: Token[];
+     /**
+      * get extend servie or not.
+      *
+      * @type {boolean}
+      */
+     extend?: boolean;
+ 
+     targetRefs?: any[];
+ 
+     /**
+      * current token.
+      */
+     currTK?: Token;
+
 }
 
 
@@ -46,32 +59,21 @@ import { Token, ClassType, IProvider, IocContext } from '@tsdi/ioc';
  * @extends {ResovleActionContext}
  */
 export interface ServiceContext extends ResolveContext {
+    
     /**
-     * service tokens.
+     * reslove result instance.
      *
-     * @type {Type}
-     * @memberof ResolveServiceContext
+     * @type {*}
+     * @memberof IResolveContext
      */
-    tokens?: Token[];
-    /**
-     * get extend servie or not.
-     *
-     * @type {boolean}
-     */
-    extend?: boolean;
+     instance?: any;
 
-    targetRefs?: any[];
-
-    /**
-     * current token.
-     */
-    currTK?: Token;
 }
 
 /**
  * resolve services context.
  */
-export interface ServicesContext extends ServiceContext {
+export interface ServicesContext extends ResolveContext {
 
     /**
      * types.
