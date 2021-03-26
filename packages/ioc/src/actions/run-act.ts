@@ -1,6 +1,6 @@
 import { isNil } from '../utils/chk';
 import { chain } from '../utils/hdl';
-import { METHOD_ACCESSOR } from '../utils/tk'
+import { INVOKER } from '../utils/tk'
 import { IActionSetup } from '../action';
 import { RuntimeContext } from './ctx';
 import { IocRegAction, IocRegScope } from './reg';
@@ -22,7 +22,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? [];
-        ctx.args = ctx.injector.getContainer().getInstance(METHOD_ACCESSOR).createParams(ctx.injector, ctx.type, ctx.params, ctx.providers);
+        ctx.args = ctx.injector.getContainer().getInstance(INVOKER).createParams(ctx.injector, ctx.type, ctx.params, ctx.providers);
     }
     next();
 };

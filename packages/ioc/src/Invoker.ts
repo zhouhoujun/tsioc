@@ -11,11 +11,8 @@ export type MethodType<T> = string | ((tag: T) => Function);
 
 /**
  * execution, invoke some type method.
- *
- * @export
- * @interface IExecution
  */
-export interface IMethodAccessor {
+export interface Invoker {
     /**
      * try to async invoke the method of intance, if no instance will create by type.
      *
@@ -38,3 +35,8 @@ export interface IMethodAccessor {
      */
     createParams(injector: IInjector, target: Type, params: ParameterMetadata[],  ...providers: ProviderType[]): any[];
 }
+
+/**
+ * @deprecated use `Invoker` instead.
+ */
+export type IMethodAccessor = Invoker;

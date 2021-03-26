@@ -4,7 +4,7 @@ export * from './action';
 export * from './Destroyable';
 export * from './IInjector';
 export * from './IContainer';
-export * from './IMethodAccessor';
+export * from './Invoker';
 export * from './injector';
 export * from './container';
 
@@ -34,7 +34,6 @@ export * from './actions/ctx';
 export * from './actions/act';
 export * from './actions/reg'
 export * from './actions/lifescope';
-export * from './actions/accessor';
 
 // runtime actions
 export * as runtimes from './actions/run-act';

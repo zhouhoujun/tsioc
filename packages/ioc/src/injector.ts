@@ -1,6 +1,6 @@
 import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
-import { MethodType } from './IMethodAccessor';
+import { MethodType } from './Invoker';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { ClassRegister, IInjector, IModuleLoader, IProvider, ProviderOption, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token, tokenRef } from './tokens';

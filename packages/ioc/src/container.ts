@@ -5,9 +5,9 @@ import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ProviderOption, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
-import { MethodType } from './IMethodAccessor';
+import { MethodType } from './Invoker';
 import { ProviderType, Token } from './tokens';
-import { INJECTOR, INJECTOR_FACTORY, METHOD_ACCESSOR, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
+import { INJECTOR, INJECTOR_FACTORY, INVOKER, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
 import { DesignContext } from './actions/ctx';
@@ -37,7 +37,7 @@ export class InjectorImpl extends Injector {
      * @returns {TR}
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.getValue(METHOD_ACCESSOR).invoke(this, target, propertyKey, ...providers);
+        return this.getValue(INVOKER).invoke(this, target, propertyKey, ...providers);
     }
 
     /**
@@ -112,7 +112,7 @@ export class Container extends Injector implements IContainer {
      * @returns {TR}
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.getValue(METHOD_ACCESSOR).invoke(this, target, propertyKey, ...providers);
+        return this.getValue(INVOKER).invoke(this, target, propertyKey, ...providers);
     }
 
     createInjector(): IInjector {

@@ -2,7 +2,7 @@ import { Type } from '../types';
 import { isFunction, getClass, isTypeObject } from '../utils/chk';
 import { Token, ProviderType } from '../tokens';
 import { IInjector, IProvider } from '../IInjector';
-import { IMethodAccessor, MethodType } from '../IMethodAccessor';
+import { Invoker, MethodType } from '../Invoker';
 import { INVOKED_PROVIDERS } from '../utils/tk';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
@@ -15,9 +15,9 @@ import { getProvider } from '../injector';
  *
  * @export
  * @class MethodAccessor
- * @implements {IMethodAccessor}
+ * @implements {Invoker}
  */
-export class MethodAccessor implements IMethodAccessor {
+export class InvokerImpl implements Invoker {
 
     constructor(private container: IContainer) { }
 

@@ -1,5 +1,5 @@
 import { Token, tokenId } from '../tokens';
-import { IMethodAccessor } from '../IMethodAccessor';
+import { Invoker } from '../Invoker';
 import { IInjector, IModuleLoader, IProvider } from '../IInjector';
 import { IContainer, IServiceProvider } from '../IContainer';
 
@@ -27,13 +27,12 @@ export const INJECTOR_FACTORY = tokenId<IInjector>('INJECTOR_FACTORY');
 /**
  * method accessor token.
  */
-export const METHOD_ACCESSOR: Token<IMethodAccessor> = tokenId<IMethodAccessor>('METHOD_ACCESSOR');
-
+export const INVOKER: Token<Invoker> = tokenId<Invoker>('INVOKER');
 /**
  * method accessor token.
  * @deprecated use `METHOD_ACCESSOR` instead.
  */
-export const MethodAccessorToken = METHOD_ACCESSOR;
+export const MethodAccessorToken = INVOKER;
 
 /**
  * invoked providers token.

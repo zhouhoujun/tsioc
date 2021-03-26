@@ -2,7 +2,7 @@ import { Type, Modules, LoadType } from './types';
 import { Token, FactoryLike, ProviderType, Factory, InstFac } from './tokens';
 import { IContainer } from './IContainer';
 import { Destroyable } from './Destroyable';
-import { MethodType } from './IMethodAccessor';
+import { MethodType } from './Invoker';
 import { Registered } from './decor/type';
 
 
