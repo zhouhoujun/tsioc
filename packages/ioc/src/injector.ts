@@ -9,6 +9,7 @@ import { IContainer } from './IContainer';
 import { cleanObj, getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
 import { INJECTOR, PROVIDERS } from './utils/tk';
+import { Destroyable } from './Destroyable';
 
 
 @Abstract()
@@ -20,6 +21,9 @@ export abstract class Strategy {
         let targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
         let pdr = getProvider(curr as IInjector, ...option.providers || []);
         let inst: T;
+        if(pdr !== option.providers?.[0]) {
+           (option as Destroyable).destroy = ()=> pdr.destroy(); 
+        }
         const regState = curr.getContainer().regedState;
         if (isFunction(targetToken)) {
             inst = regState.getTypeProvider(targetToken)?.get(option.token, pdr) ?? curr.get(tokenRef(option.token, targetToken), pdr);
@@ -636,7 +640,10 @@ export abstract class Injector extends Provider implements IInjector {
         } else {
             option = { token, providers };
         }
-        return this.strategy.resolve(this, option);
+        const inst = this.strategy.resolve(this, option);
+        (option as Destroyable).destroy?.();
+        cleanObj(option);
+        return inst;
     }
 
     /**
