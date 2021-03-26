@@ -14,7 +14,7 @@ import { PipeTransform } from './pipes/pipe';
 import { ComponentReflect, DirectiveReflect } from './reflect';
 import { CompilerFacade, Identifiers } from './compile/facade';
 import { ComponentType, DirectiveType } from './type';
-import { ComponentRunnable } from './render/runnable';
+import { ComponentRunnable } from './runnable';
 import { HostMappingRoot, HostMappingRoute } from './router';
 
 

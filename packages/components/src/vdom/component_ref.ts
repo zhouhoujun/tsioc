@@ -41,6 +41,7 @@ export class VComponentRef<T> extends ComponentRef<T> {
 
   destroy(): void {
     this.hostView.destroy();
+    this.injector?.destroy();
   }
 
   onDestroy(callback: () => void): void {

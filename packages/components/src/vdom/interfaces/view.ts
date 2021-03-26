@@ -168,7 +168,7 @@ export const enum LViewFlags {
 export const enum ViewType {
     /**
      * Root `View` is the used to bootstrap components into. It is used in conjunction with
-     * `LView` which takes an existing DOM node not owned by Angular and wraps it in `View`/``
+     * `LView` which takes an existing DOM node not owned by component and wraps it in `View`/``
      * so that other components can be loaded into it.
      */
     Root = 0,

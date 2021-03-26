@@ -10,7 +10,7 @@ import { collectNativeNodes } from './native_nodes';
  * viewRef implement.
  */
 export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalViewRef {
-    private _appRef: ViewRefTracker | null = null;
+    private _appRef?: ViewRefTracker = null;
     private _attachedToViewContainer = false;
 
     get rootNodes(): any[] {
