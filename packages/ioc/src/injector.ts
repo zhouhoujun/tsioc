@@ -9,7 +9,6 @@ import { IContainer } from './IContainer';
 import { cleanObj, getTypes, mapEach } from './utils/lang';
 import { Registered } from './decor/type';
 import { INJECTOR, PROVIDERS } from './utils/tk';
-import { Destroyable } from './Destroyable';
 
 
 @Abstract()
@@ -17,13 +16,10 @@ export abstract class Strategy {
 
     protected constructor() { }
 
-    resolve<T>(curr: IProvider, option: ResolveOption<T>): T {
+    resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (...providers: ProviderType[]) => IProvider): T {
         let targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
-        let pdr = getProvider(curr as IInjector, ...option.providers || []);
+        let pdr = toProvider(...option.providers || []);
         let inst: T;
-        if(pdr !== option.providers?.[0]) {
-           (option as Destroyable).destroy = ()=> pdr.destroy(); 
-        }
         const regState = curr.getContainer().regedState;
         if (isFunction(targetToken)) {
             inst = regState.getTypeProvider(targetToken)?.get(option.token, pdr) ?? curr.get(tokenRef(option.token, targetToken), pdr);
@@ -640,8 +636,18 @@ export abstract class Injector extends Provider implements IInjector {
         } else {
             option = { token, providers };
         }
-        const inst = this.strategy.resolve(this, option);
-        (option as Destroyable).destroy?.();
+        let destroy: Function;
+        const inst = this.strategy.resolve(this, option, (...pdrs) => {
+            if (pdrs.length) {
+                let pdr = getProvider(this, ...pdrs);
+                if (pdr !== pdrs[0]) {
+                    destroy = () => pdr.destroy();
+                }
+                return pdr;
+            }
+            return null;
+        });
+        destroy?.();
         cleanObj(option);
         return inst;
     }
