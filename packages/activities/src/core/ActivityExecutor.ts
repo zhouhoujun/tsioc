@@ -1,6 +1,5 @@
 import { Injectable, IInjector, isArray, Type, isClass, isFunction, isPromise, ObjectMap, isNil, AsyncHandler, chain, isString } from '@tsdi/ioc';
 import { BUILDER } from '@tsdi/boot';
-import { ComponentBuilderToken, ELEMENT_REFS } from '@tsdi/components';
 import { ActivityType, Expression } from './ActivityMetadata';
 import { IActivityRef, ACTIVITY_INPUT, ACTIVITY_DATA } from './IActivityRef';
 import { ActivityExecutorToken, IActivityExecutor } from './IActivityExecutor';

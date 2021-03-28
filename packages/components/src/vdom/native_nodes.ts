@@ -40,7 +40,7 @@ export function collectNativeNodes(view: View, lView: LView, node: VNode | null,
             const componentHost = componentView[V_HOST] as VElementNode;
             const slotIdx = node.projection as number;
 
-            const nodesInSlot = componentHost.projection![slotIdx];
+            const nodesInSlot = componentHost.projection[slotIdx];
             if (Array.isArray(nodesInSlot)) {
                 result.push(...nodesInSlot);
             } else {
