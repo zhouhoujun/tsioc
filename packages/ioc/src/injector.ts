@@ -24,27 +24,35 @@ export abstract class Strategy {
         let inst: T;
         const regState = this.state ?? this.initState(curr);
         if (isFunction(targetToken)) {
-            inst = regState?.getTypeProvider(targetToken)?.get(option.token, pdr) ?? curr.get(tokenRef(option.token, targetToken), pdr);
+            inst = this.rsvWithTarget(regState, curr, option.token, targetToken, pdr);
         }
 
         if (option.tagOnly || isDefined(inst)) return inst ?? null;
 
-        inst = pdr?.get(option.token, pdr) ?? curr.get(option.token, pdr) ?? curr.parent?.get(option.token, pdr);
-
-        if (isDefined(inst)) return inst;
-
-        if (option.regify && isFunction(option.token) && !regState?.isRegistered(option.token)) {
-            curr.register(option.token as Type);
-            inst = curr.get(option.token, pdr);
-        }
-        if (isNil(inst) && option.defaultToken) {
-            inst = curr.get(option.defaultToken, pdr);
-        }
-        return inst ?? null;
+        return this.rsvToken(curr, option.token, pdr) ?? this.rsvFailed(regState, curr, option, pdr) ?? null;
     }
 
-    
-    private initState(curr: IProvider) {
+
+    protected rsvWithTarget<T>(regState: RegisteredState, curr: IProvider, token: Token<T>, targetToken: Type, pdr: IProvider): T {
+        return regState?.getTypeProvider(targetToken)?.get(token, pdr) ?? curr.get(tokenRef(token, targetToken), pdr);
+    }
+
+    protected rsvToken<T>(curr: IProvider, token: Token<T>, pdr: IProvider): T {
+        return pdr?.get(token, pdr) ?? curr.get(token, pdr) ?? curr.parent?.get(token, pdr);
+    }
+
+    protected rsvFailed<T>(regState: RegisteredState, curr: IProvider, option: ResolveOption<T>, pdr: IProvider): T {
+        if (option.regify && isFunction(option.token) && !regState?.isRegistered(option.token)) {
+            curr.register(option.token as Type);
+            return curr.get(option.token, pdr);
+        }
+        if (option.defaultToken) {
+            return curr.get(option.defaultToken, pdr);
+        }
+        return null;
+    }
+
+    protected initState(curr: IProvider) {
         this.state = curr.getContainer().regedState;
         return this.state;
     }
