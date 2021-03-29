@@ -250,7 +250,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * See {@link ChangeDetectorRef#detach detach} for more information.
      */
     detectChanges(): void {
-        detectChangesInternal(this._lView[VIEW], this._lView, this.context);
+        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_DETECH_CHANGES, { method: 'check', body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
     }
 
     /**
@@ -260,7 +260,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * introduce other changes.
      */
     checkNoChanges(): void {
-        checkNoChangesInternal(this._lView[VIEW], this._lView, this.context);
+        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_CHECK_NOCHANGES, { method: 'check', body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
     }
 
     attachToViewContainerRef() {
@@ -292,13 +292,11 @@ export class RootViewRef<T> extends ViewRef<T> {
     }
 
     detectChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send(api.detechChanges, { body: this._view });
-        // detectChangesInRootView(this._view);
+        this._view[INJECTOR].get(BOOTCONTEXT).send(api.ROOT_DETECH_CHANGES, { method: 'check',  body: { lview: this._view, context: this._view[CONTEXT] } });
     }
 
     checkNoChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send(api.checkNoChanges, { body: this._view });
-        // checkNoChangesInRootView(this._view);
+        this._view[INJECTOR].get(BOOTCONTEXT).send(api.ROOT_CHECK_NOCHANGES, { method: 'check', body: { lview: this._view, context: this._view[CONTEXT] } });
     }
 
     get context(): T {

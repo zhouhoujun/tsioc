@@ -73,8 +73,7 @@ export enum ChangeDetectorStatus {
  * @see `ChangeDetectorStatus`
  * @see `ChangeDetectorRef`
  */
-export function isDefaultChangeDetectionStrategy(changeDetectionStrategy: ChangeDetectionStrategy):
-    boolean {
+export function isDefaultChangeDetectionStrategy(changeDetectionStrategy: ChangeDetectionStrategy): boolean {
     return changeDetectionStrategy == null ||
         changeDetectionStrategy === ChangeDetectionStrategy.Default;
 }
