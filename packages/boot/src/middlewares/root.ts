@@ -64,6 +64,18 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         providers.inject(...isArray(request.providers) ? request.providers : [request.providers]);
     }
 
+    if (request.restful) {
+        let matchs = request.url.match(/\/:\w+/gi);
+        if (matchs) {
+            matchs.forEach(m => {
+                const pn = m.slice(2);
+                if (request.restful[pn]) {
+                    request.url = request.url.replace(m, `/${request.restful[pn]}`);
+                }
+            });
+        }
+    }
+
     if (!request.protocol) {
         const match = lang.first(request.url.match(protocolReg));
         const protocol = match ? match.toString().replace('//', '').trim() : '';

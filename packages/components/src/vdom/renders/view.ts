@@ -3,66 +3,34 @@ import { Inject } from 'packages/ioc/src/decor/decorators';
 import { HostMapping } from '../../decorators'
 import { LView, RootContext, View } from '../interfaces/view';
 
-@HostMapping('/render/view')
+/**
+ * default render.
+ */
+@HostMapping('/render')
 export class RenderView {
 
-    @HostMapping('/:selector', 'create')
+    @HostMapping('/:type/:selector', 'create')
     render(selector: string) {
         this.enterView();
         this.leaveView();
     }
 
-    @HostMapping('/:selector', 'update')
+    @HostMapping('/:type/:selector', 'update')
     refresh(selector: string) {
         this.enterView();
         this.leaveView();
     }
 
-    @HostMapping('/detech_changes', 'check')
-    detech(@Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
+    @HostMapping('/:type/:view/detech_changes', 'change')
+    detech(type: string, view: string, @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
+        
+    }
+
+    @HostMapping('/:type/:view/check_nochanges', 'nochange')
+    checkNoChange(type: string, view: string, @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
 
     }
 
-    @HostMapping('/check_nochanges', 'check')
-    checkNoChange(@Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any  }) {
-
-    }
-
-
-    enterView() {
-
-    }
-
-    leaveView() {
-
-    }
-}
-
-
-@HostMapping('/render/rootview')
-export class RenderRootView {
-
-    @HostMapping('/:selector', 'create')
-    render(selector: string) {
-        this.enterView();
-        this.leaveView();
-    }
-
-    @HostMapping('/:selector', 'update')
-    refresh(selector: string) {
-        this.enterView();
-        this.leaveView();
-    }
-
-    @HostMapping('/detech_changes', 'check')
-    detech(@Inject(REQUEST_BODY) body: { context: RootContext }) {
-
-    }
-
-    @HostMapping('/check_nochanges', 'check')
-    checkNoChange(@Inject(REQUEST_BODY) body: { context: RootContext }) {
-
-    }
 
     enterView() {
 

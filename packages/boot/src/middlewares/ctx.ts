@@ -1,4 +1,4 @@
-import { IInjector, IProvider, Token } from '@tsdi/ioc';
+import { IInjector, IProvider, ObjectMap, Token } from '@tsdi/ioc';
 import { ProdverOption } from '../Context';
 
 /**
@@ -8,7 +8,11 @@ export interface RequestOption extends ProdverOption {
     /**
      * request url.
      */
-    readonly url?: string;
+    url?: string;
+    /**
+     * restful params.
+     */
+    readonly restful?: ObjectMap<string|number>;
     /**
      * protocol.
      */
