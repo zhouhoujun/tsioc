@@ -1,6 +1,6 @@
 import {
-    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, IInjector, isPlainObject, tokenId
+    Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector,
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, tokenId
 } from '@tsdi/ioc';
 import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
