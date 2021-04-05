@@ -31,7 +31,7 @@ export class VComponentRef<T> extends ComponentRef<T> {
     if (!this._injector) {
       const tyInj = this._rootLView[INJECTOR].getContainer().regedState.getInjector(this.componentType);
       this._injector = new InjectorImpl(tyInj);
-      const { providers } = refl.get<ComponentReflect>(this.componentType).annotation;
+      const providers = refl.get<ComponentReflect>(this.componentType).extProviders;
       if (providers && providers.length) {
         this._injector.inject(...providers);
       }
