@@ -429,9 +429,8 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     if (protocol) {
                         exts.push({ provide: ROUTE_PROTOCOL, useValue: protocol });
                     }
-                    if(exts.length){
-                        reflect.extProviders.push(...exts);
-                        state.getTypeProvider(type)?.inject(...exts);
+                    if (exts.length) {
+                        state.setTypeProvider(reflect, ...exts);
                     }
                     middl = type;
                 } else {

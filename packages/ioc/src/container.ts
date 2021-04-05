@@ -1,4 +1,4 @@
-import { Registered } from './decor/type';
+import { Registered, TypeReflect } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
@@ -12,7 +12,7 @@ import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
-import { delReged, getReged, setReged } from './decor/refl';
+import { delReged, get, getReged, setReged } from './decor/refl';
 import { Provider, Injector, Strategy, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
 
@@ -233,6 +233,18 @@ class RegisteredStateImpl implements RegisteredState {
      */
     getTypeProvider(type: ClassType): IProvider {
         return getReged(type, this.container.id)?.providers;
+    }
+
+
+
+    setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
+        if (isFunction(type)) {
+            get(type)?.extProviders.push(...providers);
+            getReged(type, this.container.id)?.providers.inject(...providers);
+        } else {
+            type.extProviders.push(...providers);
+            getReged(type.type, this.container.id)?.providers.inject(...providers);
+        }
     }
 
     getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T {

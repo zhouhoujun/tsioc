@@ -2,7 +2,7 @@ import { ClassType, Type } from './types';
 import { Token, ProviderType } from './tokens';
 import { IInjector, IProvider, ProviderOption, ServiceOption, ServicesOption } from './IInjector';
 import { IActionProvider } from './actions/act';
-import { Registered } from './decor/type';
+import { Registered, TypeReflect } from './decor/type';
 
 
 
@@ -24,7 +24,13 @@ export interface RegisteredState {
      * get the type private providers.
      * @param type
      */
-     getTypeProvider(type: ClassType): IProvider;
+    getTypeProvider(type: ClassType): IProvider;
+    /**
+     * set type providers.
+     * @param type
+     * @param providers
+     */
+    setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]);
     /**
      * get instance.
      * @param type class type.

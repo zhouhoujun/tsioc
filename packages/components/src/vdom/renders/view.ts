@@ -21,13 +21,13 @@ export class RenderView {
         this.leaveView();
     }
 
-    @HostMapping('/:type/:view/detech_changes', 'change')
-    detech(type: string, view: string, @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
-        
+    @HostMapping('/:type/:viewtype/detech_changes', 'change')
+    detech(type: string, viewtype: number, @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
+
     }
 
-    @HostMapping('/:type/:view/check_nochanges', 'nochange')
-    checkNoChange(type: string, view: string, @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
+    @HostMapping('/:type/:viewtype/check_nochanges', 'nochange')
+    checkNoChange(type: string, viewtype: number, @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
 
     }
 

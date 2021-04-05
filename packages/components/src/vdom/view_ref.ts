@@ -250,7 +250,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * See {@link ChangeDetectorRef#detach detach} for more information.
      */
     detectChanges(): void {
-        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { type: 'default', view: 'view' }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
+        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
     }
 
     /**
@@ -260,7 +260,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * introduce other changes.
      */
     checkNoChanges(): void {
-        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { type: 'default', view: 'view' }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
+        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
     }
 
     attachToViewContainerRef() {
@@ -292,11 +292,11 @@ export class RootViewRef<T> extends ViewRef<T> {
     }
 
     detectChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { type: 'default', view: 'rootview' },  body: { lview: this._view, context: this._view[CONTEXT] } });
+        this._view[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { lview: this._view, context: this._view[CONTEXT] } });
     }
 
     checkNoChanges(): void {
-        this._view[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { type: 'default', view: 'rootview' }, body: { lview: this._view, context: this._view[CONTEXT] } });
+        this._view[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { viewtype: this._lView[VIEW].type }, body: { lview: this._view, context: this._view[CONTEXT] } });
     }
 
     get context(): T {
