@@ -7,6 +7,9 @@ import {
 } from './handles';
 
 
+/**
+ * runable build scope.
+ */
 export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
@@ -18,6 +21,9 @@ export class RunnableBuildLifeScope extends BuildHandles<IAnnoationContext> impl
     }
 }
 
+/**
+ * startup service scope.
+ */
 export class StartupServiceScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
@@ -25,6 +31,9 @@ export class StartupServiceScope extends BuildHandles<IAnnoationContext> impleme
     }
 }
 
+/**
+ * boot life scope.
+ */
 export class BootLifeScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {

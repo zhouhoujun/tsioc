@@ -24,10 +24,6 @@ export const RootMessageQueueToken = ROOT_QUEUE;
 @Autorun('setup')
 export class RootMessageQueue extends MessageQueue {
 
-    constructor() {
-        super();
-    }
-
     setup() {
         this.use(
             initQueue,
