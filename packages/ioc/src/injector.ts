@@ -6,7 +6,7 @@ import { ClassRegister, IInjector, IModuleLoader, IProvider, ProviderOption, Reg
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token, tokenRef } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean, isTypeObject, isDefined } from './utils/chk';
 import { IContainer, RegisteredState } from './IContainer';
-import { cleanObj, getTypes, mapEach } from './utils/lang';
+import { cleanObj, getTypes, mapEach, remove } from './utils/lang';
 import { Registered } from './decor/type';
 import { INJECTOR, PROVIDERS } from './utils/tk';
 
@@ -176,19 +176,17 @@ export class Provider implements IProvider {
      * @memberof BaseInjector
      */
     protected factories: Map<Token, InstFac>;
+    private destCb: () => void;
 
     constructor(public parent?: IProvider, protected strategy: Strategy = providerStrategy) {
         this.factories = new Map();
         if (parent) {
+            this.destCb = () => this.destroy();
             if (strategy.vaildParent(parent)) {
-                parent.onDestroy(() => {
-                    this.destroy();
-                });
+                parent.onDestroy(this.destCb);
             } else {
                 this._container = parent.getContainer();
-                this._container.onDestroy(() => {
-                    this.destroy();
-                });
+                this._container.onDestroy(this.destCb);
                 this.parent = null;
             }
         }
@@ -583,8 +581,15 @@ export class Provider implements IProvider {
         this.factories.clear();
         this.strategy = null;
         this.factories = null;
+        if(this.parent && !this.parent.destroyed){
+            remove((this.parent as Provider).destroyCbs, this.destCb);
+        }
         this.parent = null;
+        if(this._container && !this._container.destroyed){
+            remove((this._container as IProvider as Provider).destroyCbs, this.destCb);
+        }
         this._container = null;
+        this.destCb = null;
     }
 }
 
