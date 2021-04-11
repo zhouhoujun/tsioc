@@ -182,6 +182,9 @@ export class Container extends Injector implements IContainer {
         registerCores(this);
     }
 
+    protected regType<T>(target: Type<T>, option?: ProviderOption) {
+        this.registerIn(this, target, option);
+    }
 }
 
 export const IocContainer = Container;
