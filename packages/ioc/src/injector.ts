@@ -179,9 +179,14 @@ export class Provider implements IProvider {
 
     constructor(public parent?: IProvider, protected strategy: Strategy = providerStrategy) {
         this.factories = new Map();
-        if (parent && !strategy.vaildParent(parent)) {
-            this._container = parent.getContainer();
-            this.parent = null;
+        if (parent) {
+            parent.onDestroy(() => {
+                this.destroy();
+            });
+            if (!strategy.vaildParent(parent)) {
+                this._container = parent.getContainer();
+                this.parent = null;
+            }
         }
     }
 
