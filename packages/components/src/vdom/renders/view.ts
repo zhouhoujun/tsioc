@@ -6,17 +6,17 @@ import { LView, RootContext, View } from '../interfaces/view';
 /**
  * default render.
  */
-@HostMapping('/render')
+@HostMapping('/render/view')
 export class RenderView {
 
-    @HostMapping('/:type/:selector', 'create')
-    render(selector: string) {
+    @HostMapping('/:type', 'render')
+    render(type: string,  @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
         this.enterView();
         this.leaveView();
     }
 
-    @HostMapping('/:type/:selector', 'update')
-    refresh(selector: string) {
+    @HostMapping('/:type', 'refresh')
+    refresh(type: string,  @Inject(REQUEST_BODY) body: { view: View, lview: LView, context: any }) {
         this.enterView();
         this.leaveView();
     }

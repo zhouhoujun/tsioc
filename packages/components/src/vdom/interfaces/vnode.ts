@@ -116,14 +116,14 @@ export enum VNodeFlags {
  */
 export const enum VNodeProviderIndexes {
     /** The index of the first provider on this node is encoded on the least significant bits. */
-    ProvidersStartIndexMask = 0b00000000000011111111111111111111,
+    ProvidersStartIndexMask = 1048575,// 0b00000000000011111111111111111111,
 
     /**
      * The count of view providers from the component on this node is
      * encoded on the 20 most significant bits.
      */
     CptViewProvidersCountShift = 20,
-    CptViewProvidersCountShifter = 0b00000000000100000000000000000000,
+    CptViewProvidersCountShifter = 1048576,// 0b00000000000100000000000000000000,
 }
 
 /**

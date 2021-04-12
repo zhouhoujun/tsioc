@@ -38,13 +38,18 @@ export interface PipeType<T> extends Type<T> {
  * subsequent runs only execute the update block. However, dynamically created views require that
  * the creation block be executed separately from the update block (for backwards compat).
  */
-export const enum RenderFlags {
+export enum RenderFlags {
     /* Whether to run the creation block (e.g. create elements and directives) */
     Create = 0b01,
 
     /* Whether to run the update block (e.g. refresh bindings) */
     Update = 0b10
 }
+
+export enum RendererStyleFlags {
+    Important = 0b01,
+    DashCase = 0b10
+  }
 
 /**
  * Definition of what a template rendering function should look like for a component.

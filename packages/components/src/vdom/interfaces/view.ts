@@ -21,7 +21,6 @@ export const RENDERER = 11;
 export const SANITIZER = 12;
 export const CHILD_HEAD = 13;
 export const CHILD_TAIL = 14;
-// FIXME(misko): Investigate if the three declarations aren't all same thing.
 export const DECLARATION_VIEW = 15;
 export const DECLARATION_COMPONENT_VIEW = 16;
 export const DECLARATION_LCONTAINER = 17;

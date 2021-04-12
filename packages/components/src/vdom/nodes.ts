@@ -1,7 +1,8 @@
-import { IElement, INode } from "./interfaces/node";
-import { LView } from "./interfaces/view";
-import { VNode, VNodeFlags, VNodeType, VProjectionNode } from "./interfaces/vnode";
-import { unwrapNode } from "./native_nodes";
+import { IElement, INode } from './interfaces/node';
+import { LView } from './interfaces/view';
+import { VNode, VNodeFlags, VNodeType, VProjectionNode } from './interfaces/vnode';
+import { unwrapNode } from './native_nodes';
+import { Renderer } from './renders/renderer';
 
 const enum WalkTNodeTreeAction {
     /** node create in the native environment. Run on initial creation. */
@@ -26,7 +27,7 @@ const enum WalkTNodeTreeAction {
  * nodes on the LView or projection boundary.
  */
 function applyNodes(
-    renderer: Renderer3, action: WalkTNodeTreeAction, vNode?: VNode, lView?: LView,
+    renderer: Renderer, action: WalkTNodeTreeAction, vNode?: VNode, lView?: LView,
     parentRElement?: IElement, beforeNode?: INode, isProjection = false) {
     while (vNode != null) {
         const rawSlotValue = lView[vNode.index];
@@ -50,4 +51,13 @@ function applyNodes(
         }
         vNode = isProjection ? vNode.projectionNext : vNode.next;
     }
+}
+
+
+/**
+ * Assigns the given data to the given target (which could be a component,
+ * directive or DOM node instance) using monkey-patching.
+ */
+export function attachPatchData(target: any, data: LView | LContext) {
+    target[] = data;
 }
