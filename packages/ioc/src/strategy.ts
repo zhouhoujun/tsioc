@@ -1,13 +1,12 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { IProvider, ProviderOption, ResolveOption } from './IInjector';
+import { IActionProvider, IProvider, ProviderOption, RegisteredState, ResolveOption } from './IInjector';
 import { InstFac, ProviderType, Token, tokenRef } from './tokens';
 import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
-import { RegisteredState } from './IContainer';
 import { cleanObj, mapEach } from './utils/lang';
 import { DesignContext } from './actions/ctx';
-import { IActionProvider } from './actions/act';
 import { DesignLifeScope } from './actions/design';
+import { IContainer } from '@tsdi/core';
 
 
 
@@ -20,18 +19,18 @@ export abstract class Strategy {
     private state: RegisteredState;
     private provider: IActionProvider;
 
-    protected constructor() { }
+    protected constructor(public container: IContainer) { }
 
-    protected getState(curr: IProvider) {
+    getState(curr: IProvider) {
         if (!this.state) {
-            this.state = curr.getContainer().regedState;
+            this.state = this.container.regedState;
         }
         return this.state;
     }
 
-    protected getActProvider(curr: IProvider): IActionProvider {
+    getActProvider(curr: IProvider): IActionProvider {
         if (!this.provider) {
-            this.provider = curr.getContainer().provider;
+            this.provider = this.container.provider;
         }
         return this.provider;
     }
@@ -154,8 +153,8 @@ export abstract class Strategy {
  * default strategy.
  */
 export class DefaultStrategy extends Strategy {
-    constructor(private vaild: (parent: IProvider) => boolean) {
-        super();
+    constructor(container: IContainer, private vaild: (parent: IProvider) => boolean) {
+        super(container);
     }
 
     vaildParent(parent: IProvider) {

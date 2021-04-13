@@ -69,7 +69,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
                 token,
                 type,
                 singleton,
-                providers: container.getProvider(...providers)
+                providers: container.toProvider(...providers)
             } as RuntimeContext;
             container.provider.getInstance(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;

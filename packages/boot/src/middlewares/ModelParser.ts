@@ -80,7 +80,7 @@ export abstract class ModelParser implements IModelParser {
             return parser.parse(type, objMap);
         }
         let meta = this.getPropertyMeta(type);
-        let result = this.injector.resolve({ token: type, regify: true }) ?? this.injector.getContainer().regedState.getInstance(type);
+        let result = this.injector.resolve({ token: type, regify: true }) ?? this.injector.getRegedState().getInstance(type);
         for (let n in meta) {
             const propmeta = meta[n];
             if (propmeta) {

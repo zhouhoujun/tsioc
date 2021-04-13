@@ -131,7 +131,7 @@ export class MappingRoute extends Route {
 
     protected getInstance(ctx: MessageContext) {
         return this.injector.getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx })
-            ?? this.injector.getContainer().regedState.getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
+            ?? this.injector.getRegedState().getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
     }
 
     protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {
@@ -253,11 +253,11 @@ export class MappingRoute extends Route {
         return providers;
     }
 
-    protected toHandle(injector, handleType: MiddlewareType): AsyncHandler<MessageContext> {
+    protected toHandle(injector: IInjector, handleType: MiddlewareType): AsyncHandler<MessageContext> {
         if (handleType instanceof Middleware) {
             return handleType.toAction();
         } else if (lang.isBaseOf(handleType, Middleware)) {
-            const handle = injector.get(handleType) ?? injector.getContainer().regedState.getInstance(handleType);
+            const handle = injector.get(handleType) ?? injector.getRegedState().getInstance(handleType);
             return handle?.toAction?.();
         } else if (isFunction(handleType)) {
             return handleType;

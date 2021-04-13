@@ -2,21 +2,15 @@ import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
 import { KeyValueProvider, StaticProviders } from './providers';
-import { ClassRegister, IInjector, IModuleLoader, IProvider, ProviderOption, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
+import { ClassRegister, IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
-import { INJECTOR, PROVIDERS } from './utils/tk';
+import { INJECTOR, INVOKED_PROVIDERS, PROVIDERS } from './utils/tk';
 import { DefaultStrategy, Strategy } from './strategy';
 
-
-
-/**
- * provider default strategy.
- */
-const providerStrategy = new DefaultStrategy((p) => !(p instanceof Injector));
 
 /**
  * provider container.
@@ -43,31 +37,46 @@ export class Provider implements IProvider {
     protected factories: Map<Token, InstFac>;
     private destCb: () => void;
 
-    constructor(public parent?: IProvider, protected strategy: Strategy = providerStrategy) {
+    constructor(public parent: IProvider, protected strategy?: Strategy) {
         this.factories = new Map();
-        if (parent) {
-            this.destCb = () => this.destroy();
-            if (strategy.vaildParent(parent)) {
-                parent.onDestroy(this.destCb);
-            } else {
-                this._container = parent.getContainer();
-                this._container.onDestroy(this.destCb);
-                this.parent = null;
-            }
+
+        this.destCb = () => this.destroy();
+        if (!strategy) {
+            this.strategy = strategy = this.defaultStrategy(parent);
         }
+        if (strategy.vaildParent(parent)) {
+            parent.onDestroy(this.destCb);
+        } else {
+            this.strategy.container.onDestroy(this.destCb);
+            this.parent = null;
+        }
+
+    }
+
+    protected defaultStrategy(parent: IProvider): Strategy {
+        return parent.getContainer().providerStrategy;
     }
 
     get size(): number {
         return this.factories.size;
     }
 
-
-    private _container: IContainer;
     getContainer(): IContainer {
-        if (!this._container) {
-            this._container = this.parent?.getContainer();
-        }
-        return this._container;
+        return this.strategy.container;
+    }
+
+    /**
+     * registered state.
+     */
+    getRegedState(): RegisteredState {
+        return this.strategy.getState(this);
+    }
+
+    /**
+     * action provider.
+     */
+    getActionProvider(): IActionProvider {
+        return this.strategy.getActProvider(this);
     }
 
 
@@ -324,13 +333,16 @@ export class Provider implements IProvider {
         return this;
     }
 
+    parseProvider(...providers: ProviderType[]): IProvider {
+        return this.getContainer().getInstance(INVOKED_PROVIDERS).inject(...providers);
+    }
 
-    getProvider(ify?: boolean | ProviderType, ...providers: ProviderType[]) {
+    toProvider(ify?: boolean | ProviderType, ...providers: ProviderType[]) {
         let force = false;
         isBoolean(ify) ? force = ify : providers.unshift(ify);
         if (!force && !providers.length) return null;
         if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-        return this.get(PROVIDERS).inject(...providers);
+        return this.getContainer().getInstance(PROVIDERS).inject(...providers);
     }
 
     /**
@@ -453,16 +465,15 @@ export class Provider implements IProvider {
                 this.unregister(k);
             });
         this.factories.clear();
-        this.strategy = null;
         this.factories = null;
         if (this.parent && !this.parent.destroyed) {
             remove((this.parent as Provider).destroyCbs, this.destCb);
         }
         this.parent = null;
-        if (this._container && !this._container.destroyed) {
-            remove((this._container as IProvider as Provider).destroyCbs, this.destCb);
+        if (this.strategy.container && !this.strategy.container.destroyed) {
+            remove((this.strategy.container as IProvider as Provider).destroyCbs, this.destCb);
         }
-        this._container = null;
+        this.strategy = null;
         this.destCb = null;
     }
 }
@@ -486,16 +497,15 @@ export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
 }
 
-/**
- * injector default strategy.
- */
-const injectorStrategy = new DefaultStrategy((p) => p instanceof Injector);
-
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {
 
-    constructor(readonly parent: IInjector, strategy: Strategy = injectorStrategy) {
+    constructor(readonly parent: IInjector, strategy?: Strategy) {
         super(parent, strategy);
+    }
+
+    protected defaultStrategy(parent: IProvider): Strategy {
+        return parent.getContainer().injectorStrategy;
     }
 
     /**
@@ -535,7 +545,7 @@ export abstract class Injector extends Provider implements IInjector {
         let destroy: Function;
         const inst = this.strategy.resolve(this, option, (...pdrs) => {
             if (pdrs.length) {
-                let pdr = this.getProvider(...pdrs);
+                let pdr = this.toProvider(...pdrs);
                 if (pdr !== pdrs[0]) {
                     destroy = () => pdr.destroy();
                 }

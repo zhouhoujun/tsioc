@@ -160,11 +160,11 @@ export class BuildHandles<T> extends BuildHandle<T> {
     }
 
     protected toHandle(handleType: HandleType<T>): AsyncHandler<T> {
-        return this.injector.getContainer().provider.getAction<AsyncHandler<T>>(handleType);
+        return this.injector.getActionProvider().getAction<AsyncHandler<T>>(handleType);
     }
 
     protected regHandle(handle: HandleType<T>): this {
-        lang.isBaseOf(handle, Action) && this.injector.getContainer().provider.regAction(handle);
+        lang.isBaseOf(handle, Action) && this.injector.getActionProvider().regAction(handle);
         return this;
     }
 }
@@ -187,7 +187,7 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
         if (ctx.value) {
             return;
         }
-        const regedState = ctx.injector.getContainer().regedState;
+        const regedState = ctx.injector.getRegedState();
         if (ctx.type && !regedState.isRegistered(ctx.type)) {
             ctx.injector.register(ctx.type as Type);
             ctx.injector = regedState.getInjector(ctx.type);

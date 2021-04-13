@@ -1,9 +1,10 @@
 import {
     Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
-    isNil, InjectorImpl, isContainer, IProvider, Injector, ProviderOption
+    isNil, InjectorImpl, isContainer, IProvider, Injector, ProviderOption, IContainer
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 import { ROOT_INJECTOR } from '../tk';
+
 
 
 /**
@@ -11,8 +12,8 @@ import { ROOT_INJECTOR } from '../tk';
  */
 export class ModuleStrategy<TI extends IProvider> extends Strategy {
 
-    constructor(private vaild: (parent: IProvider) => boolean, private getMDRef: (curr: TI) => ModuleRef[]) {
-        super();
+    constructor(container: IContainer, private vaild: (parent: IProvider) => boolean, private getMDRef: (curr: TI) => ModuleRef[]) {
+        super(container);
     }
 
     vaildParent(parent: IProvider) {
@@ -68,10 +69,11 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
     }
 }
 
-/**
- * default module injector strategy.
- */
-const mdInjStrategy = new ModuleStrategy<IModuleInjector>(p => p instanceof Injector, cu => cu.deps);
+export interface IModuleContainer extends IContainer {
+    mdInjStrategy: ModuleStrategy<IInjector>;
+    mdPdrStrategy: ModuleStrategy<IProvider>;
+}
+
 /**
  * DI module exports.
  *
@@ -84,7 +86,7 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
     deps: ModuleRef[];
     private _root: boolean;
 
-    constructor(parent: IInjector, strategy: Strategy = mdInjStrategy) {
+    constructor(parent: IInjector, strategy?: Strategy) {
         super(parent, strategy);
         this._root = isContainer(parent);
         this.deps = [];
@@ -92,6 +94,15 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
             this.deps.forEach(mr => mr.destroy());
             this.deps = [];
         });
+    }
+
+    protected defaultStrategy(parent: IProvider): Strategy {
+        let container = parent.getContainer() as IModuleContainer;
+        let strategy = container.mdInjStrategy;
+        if (!strategy) {
+            container.mdInjStrategy = strategy = new ModuleStrategy<IModuleInjector>(container, p => p instanceof Injector, cu => cu.deps);
+        }
+        return strategy;
     }
 
     static create(parent: IInjector) {
@@ -203,15 +214,11 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 }
 
 /**
- * default module provider strategy.
- */
-const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => !(p instanceof Injector), cu => cu.exports);
-/**
  * module providers.
  */
 export class ModuleProvider extends Provider implements IModuleProvider {
 
-    constructor(injector: IModuleInjector, strategy: Strategy = mdPdrStrategy) {
+    constructor(injector: IModuleInjector, strategy?: Strategy) {
         super(injector, strategy);
         this.mdInjector = injector;
         this.onDestroy(() => {
@@ -229,13 +236,22 @@ export class ModuleProvider extends Provider implements IModuleProvider {
      */
     exports: ModuleRef[] = [];
 
+    protected defaultStrategy(parent: IProvider): Strategy {
+        let container = parent.getContainer() as IModuleContainer;
+        let strategy = container.mdPdrStrategy;
+        if (!strategy) {
+            container.mdPdrStrategy = strategy = new ModuleStrategy<IModuleProvider>(container, p => !(p instanceof Injector), cu => cu.exports);
+        }
+        return strategy;
+    }
+
     protected regType<T>(target: Type<T>, option?: ProviderOption) {
         this.strategy.registerIn(this.mdInjector, target, option);
         this.export(target);
     }
 
     export(type: Type, noRef?: boolean) {
-        const state = this.getContainer().regedState;
+        const state = this.getRegedState();
         if (!state.isRegistered(type)) {
             this.mdInjector.register(type);
         }

@@ -36,7 +36,6 @@ export class BuilderService implements IBuilderService {
     async resolve<T>(target: ClassType<T> | BuildOption<T>): Promise<T> {
         let injector: IInjector;
         let options: BuildOption;
-        const container = this.root.getContainer();
         let md: ClassType;
         if (isPlainObject<BuildOption>(target)) {
             md = target.type;
@@ -47,10 +46,10 @@ export class BuilderService implements IBuilderService {
             md = target;
         }
         if (!injector) {
-            injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
+            injector = this.root.getRegedState().isRegistered(md) ? this.root.getRegedState().getInjector(md) || this.root : this.root;
         }
         let rctx = { ...options, injector } as IBuildContext;
-        await container.provider.getInstance(ResolveMoudleScope)
+        await this.root.getActionProvider().getInstance(ResolveMoudleScope)
             .execute(rctx);
         const value = rctx.value;
         lang.cleanObj(rctx);
@@ -58,7 +57,6 @@ export class BuilderService implements IBuilderService {
     }
 
     async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<any> {
-        const container = this.root.getContainer();
         let md: ClassType;
         let injector: IInjector;
         let options: BootOption<T>;
@@ -71,10 +69,10 @@ export class BuilderService implements IBuilderService {
             options = { bootstrap: md };
         }
         if (!injector) {
-            injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
+            injector = this.root.getRegedState().isRegistered(md) ? this.root.getRegedState().getInjector(md) || this.root : this.root;
         }
         const ctx = injector.getService({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
-        await container.provider.getInstance(StartupServiceScope).execute(ctx);
+        await this.root.getActionProvider().getInstance(StartupServiceScope).execute(ctx);
         return ctx.getStartup();
     }
 

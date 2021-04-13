@@ -1,9 +1,11 @@
-import { Type, Modules, LoadType } from './types';
+import { Type, Modules, LoadType, ClassType } from './types';
 import { Token, FactoryLike, ProviderType, Factory, InstFac } from './tokens';
 import { IContainer } from './IContainer';
 import { Destroyable } from './Destroyable';
 import { MethodType } from './Invoker';
-import { Registered } from './decor/type';
+import { Registered, TypeReflect } from './decor/type';
+import { Action } from './action';
+import { Handler } from './utils/hdl';
 
 
 /**
@@ -36,6 +38,82 @@ export interface ClassRegister<T = any> extends ProviderOption {
 export type RegisterOption<T> = ValueRegister<T> | ClassRegister<T>;
 
 
+
+
+/**
+ * registered state.
+ */
+export interface RegisteredState {
+    /**
+     * get type registered info.
+     * @param type
+     */
+    getRegistered<T extends Registered>(type: ClassType): T;
+    /**
+     * get injector the type registered in.
+     * @param type
+     */
+    getInjector<T extends IInjector = IInjector>(type: ClassType): T;
+    /**
+     * get the type private providers.
+     * @param type
+     */
+    getTypeProvider(type: ClassType): IProvider;
+    /**
+     * set type providers.
+     * @param type
+     * @param providers
+     */
+    setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]);
+    /**
+     * get instance.
+     * @param type class type.
+     */
+    getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
+    /**
+     * get instance.
+     * @param type class type.
+     */
+    resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
+    /**
+     * check the type registered or not.
+     * @param type
+     */
+    isRegistered(type: ClassType): boolean;
+
+    /**
+     * register type.
+     * @param type class type
+     * @param data registered data.
+     */
+    regType<T extends Registered>(type: ClassType, data: T);
+
+    /**
+     * delete registered.
+     * @param type
+     */
+    deleteType(type: ClassType);
+
+    /**
+     * has decorator provider or not.
+     * @param decor
+     */
+    hasProvider(decor: string): boolean;
+    /**
+     * get decorator provider.
+     * @param decor
+     */
+    getProvider(decor: string);
+
+    /**
+     * register decorator.
+     * @param decor
+     * @param providers
+     */
+    regDecoator(decor: string, ...providers: ProviderType[]);
+}
+
+
 /**
  * provider interface.
  */
@@ -44,6 +122,16 @@ export interface IProvider extends Destroyable {
      * parent provider.
      */
     readonly parent?: IProvider;
+
+    /**
+     * registered state.
+     */
+    getRegedState(): RegisteredState;
+    /**
+     * action provider.
+     */
+    getActionProvider(): IActionProvider;
+
     /**
      * resolver size.
      *
@@ -112,13 +200,18 @@ export interface IProvider extends Destroyable {
      * @returns {this}
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
-
     /**
-     * get provider
+     * parse to new provider
      * @param ify 
      * @param providers 
      */
-    getProvider(ify?: boolean | ProviderType, ...providers: ProviderType[]): IProvider;
+    parseProvider(...providers: ProviderType[]): IProvider;
+    /**
+     * parse to provider
+     * @param ify 
+     * @param providers 
+     */
+    toProvider(ify?: boolean | ProviderType, ...providers: ProviderType[]): IProvider;
     /**
     * get token implement class type.
     *
@@ -283,6 +376,24 @@ export interface ServicesOption<T> extends ServiceOption<T> {
      */
     both?: boolean;
 }
+
+
+/**
+ * action injector.
+ */
+export interface IActionProvider extends IProvider {
+    /**
+     * register action, simple create instance via `new type(this)`.
+     * @param types
+     */
+    regAction(...types: Type<Action>[]): this;
+    /**
+     * get action via target.
+     * @param target target.
+     */
+    getAction<T extends Handler>(target: Token<Action> | Action | Function): T;
+}
+
 
 
 /**

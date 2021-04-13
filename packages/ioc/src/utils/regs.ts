@@ -18,14 +18,14 @@ import { InjectorImpl } from '../container';
 export function registerCores(container: IContainer) {
 
     container.setValue(CONTAINER, container);
-    container.setValue(INVOKER, new InvokerImpl(container));
+    container.setValue(INVOKER, new InvokerImpl());
 
     container.set(PROVIDERS, () => new Provider(container), Provider);
 
     container.set(INVOKED_PROVIDERS, () => new InvokedProvider(container), InvokedProvider);
 
     container.set(INJECTOR_FACTORY, (...providers: ProviderType[]) => {
-        const pdr = container.getProvider(...providers);
+        const pdr = container.toProvider(...providers);
         return new InjectorImpl(pdr.getValue(PARENT_INJECTOR) ?? container, pdr.get(Strategy));
     }, InjectorImpl);
 

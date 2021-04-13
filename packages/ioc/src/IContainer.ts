@@ -1,84 +1,6 @@
-import { ClassType } from './types';
 import { Token, ProviderType } from './tokens';
-import { IInjector, IProvider, ServiceOption, ServicesOption } from './IInjector';
-import { IActionProvider } from './actions/act';
-import { Registered, TypeReflect } from './decor/type';
-
-
-
-/**
- * registered state.
- */
-export interface RegisteredState {
-    /**
-     * get type registered info.
-     * @param type
-     */
-    getRegistered<T extends Registered>(type: ClassType): T;
-    /**
-     * get injector the type registered in.
-     * @param type
-     */
-    getInjector<T extends IInjector = IInjector>(type: ClassType): T;
-    /**
-     * get the type private providers.
-     * @param type
-     */
-    getTypeProvider(type: ClassType): IProvider;
-    /**
-     * set type providers.
-     * @param type
-     * @param providers
-     */
-    setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]);
-    /**
-     * get instance.
-     * @param type class type.
-     */
-    getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
-    /**
-     * get instance.
-     * @param type class type.
-     */
-    resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
-    /**
-     * check the type registered or not.
-     * @param type
-     */
-    isRegistered(type: ClassType): boolean;
-
-    /**
-     * register type.
-     * @param type class type
-     * @param data registered data.
-     */
-    regType<T extends Registered>(type: ClassType, data: T);
-
-    /**
-     * delete registered.
-     * @param type
-     */
-    deleteType(type: ClassType);
-
-    /**
-     * has decorator provider or not.
-     * @param decor
-     */
-    hasProvider(decor: string): boolean;
-    /**
-     * get decorator provider.
-     * @param decor
-     */
-    getProvider(decor: string);
-
-    /**
-     * register decorator.
-     * @param decor
-     * @param providers
-     */
-    regDecoator(decor: string, ...providers: ProviderType[]);
-}
-
+import { IActionProvider, IInjector, IProvider, RegisteredState, ServiceOption, ServicesOption } from './IInjector';
+import { Strategy } from './strategy';
 
 /**
  * root container interface.
@@ -97,6 +19,14 @@ export interface IContainer extends IInjector {
      * action provider.
      */
     readonly provider: IActionProvider;
+
+    readonly providerStrategy: Strategy;
+    /**
+     * injector default strategy.
+     */
+    readonly injectorStrategy: Strategy;
+    
+    readonly NULL_PDR: IProvider;
     /**
      * create injector.
      */

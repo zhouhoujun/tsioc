@@ -3,15 +3,14 @@ import { ClassType, LoadType, Type } from './types';
 import { isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { isBaseOf } from './utils/lang';
-import { IInjector, IModuleLoader, IProvider, ProviderOption, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
-import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
+import { IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
+import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
 import { ProviderType, Token } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, INVOKER, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
-import { IActionProvider } from './actions/act';
 import { delReged, get, getReged, setReged } from './decor/refl';
-import { Strategy } from './strategy';
+import { DefaultStrategy, Strategy } from './strategy';
 import { Provider, Injector, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
 
@@ -61,7 +60,7 @@ export class InjectorImpl extends Injector {
     }
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getSerPdr().getServiceProviders(this, target) ?? NULL_PDR;
+        return this.getSerPdr().getServiceProviders(this, target) ?? this.getContainer().NULL_PDR;
     }
 
     protected getSerPdr() {
@@ -88,17 +87,48 @@ export class Container extends Injector implements IContainer {
     readonly provider: IActionProvider;
     readonly id: string;
 
+    readonly providerStrategy: Strategy;
+    /**
+     * injector default strategy.
+     */
+    readonly injectorStrategy: Strategy;
+
+    readonly NULL_PDR: IProvider;
+
     constructor() {
         super(null);
         this.id = `c${id++}`;
+        this.providerStrategy = new DefaultStrategy(this, (p) => !(p instanceof Injector));
+        this.injectorStrategy = this.strategy;
         this.regedState = new RegisteredStateImpl(this);
         this.provider = new ActionProvider(this);
+        this.NULL_PDR = new Provider(this);
         this.initReg();
+    }
+
+    protected defaultStrategy(parent: IProvider): Strategy {
+        this.strategy = new DefaultStrategy(this, (p) => p instanceof Injector);
+        return this.strategy;
     }
 
     getContainer(): this {
         return this;
     }
+
+    /**
+     * registered state.
+     */
+    getRegedState(): RegisteredState {
+        return this.regedState;
+    }
+
+    /**
+     * action provider.
+     */
+    getActionProvider(): IActionProvider {
+        return this.provider;
+    }
+
 
     /**
      * invoke method.
@@ -141,7 +171,7 @@ export class Container extends Injector implements IContainer {
     }
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? NULL_PDR;
+        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? this.NULL_PDR;
     }
 
     protected initReg() {
@@ -154,7 +184,7 @@ export class Container extends Injector implements IContainer {
 export const IocContainer = Container;
 
 
-const NULL_PDR = new Provider(null);
+// const NULL_PDR = new Provider(null);
 
 
 const SERVICE: IServiceProvider = {
@@ -175,7 +205,7 @@ const SERVICE: IServiceProvider = {
         return services;
     },
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
-        return NULL_PDR;
+        return injector.getContainer().NULL_PDR;
     }
 };
 
@@ -242,7 +272,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     getProvider(decor: string) {
-        return this.decors.get(decor) ?? NULL_PDR;
+        return this.decors.get(decor) ?? this.container.NULL_PDR;
     }
 
     regDecoator(decor: string, ...providers: ProviderType[]) {

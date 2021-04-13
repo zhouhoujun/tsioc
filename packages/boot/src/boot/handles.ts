@@ -140,7 +140,7 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
             return;
         }
         // has module register or not.
-        if (!ctx.getContainer().regedState.isRegistered(ctx.type)) {
+        if (!ctx.injector.getRegedState().isRegistered(ctx.type)) {
             await super.execute(ctx);
         }
         if (next) {
@@ -153,7 +153,7 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 };
 
 export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    const regedState = ctx.getContainer().regedState;
+    const regedState = ctx.injector.getRegedState();
     if (!regedState.isRegistered(ctx.type)) {
         if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
             ctx.injector.register({ useClass: ctx.type, regIn: 'root' });
@@ -277,7 +277,7 @@ export class StartupGlobalService extends BuildHandles<IBootContext> implements 
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.getStarupTokens() || [];
     const { injector, providers } = ctx;
-    const regedState = ctx.getContainer().regedState;
+    const regedState = injector.getRegedState();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
             let ser: IStartupService;
