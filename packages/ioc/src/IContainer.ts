@@ -20,13 +20,18 @@ export interface IContainer extends IInjector {
      */
     readonly provider: IActionProvider;
 
+    /**
+     * provider default strategy.
+     */
     readonly providerStrategy: Strategy;
     /**
      * injector default strategy.
      */
     readonly injectorStrategy: Strategy;
-    
-    readonly NULL_PDR: IProvider;
+    /**
+     * null provider.
+     */
+    readonly NULL_PROVIDER: IProvider;
     /**
      * create injector.
      */

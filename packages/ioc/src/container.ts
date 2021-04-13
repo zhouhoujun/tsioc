@@ -60,7 +60,7 @@ export class InjectorImpl extends Injector {
     }
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getSerPdr().getServiceProviders(this, target) ?? this.getContainer().NULL_PDR;
+        return this.getSerPdr().getServiceProviders(this, target) ?? this.getContainer().NULL_PROVIDER;
     }
 
     protected getSerPdr() {
@@ -93,7 +93,7 @@ export class Container extends Injector implements IContainer {
      */
     readonly injectorStrategy: Strategy;
 
-    readonly NULL_PDR: IProvider;
+    readonly NULL_PROVIDER: IProvider;
 
     constructor() {
         super(null);
@@ -102,7 +102,7 @@ export class Container extends Injector implements IContainer {
         this.injectorStrategy = this.strategy;
         this.regedState = new RegisteredStateImpl(this);
         this.provider = new ActionProvider(this);
-        this.NULL_PDR = new Provider(this);
+        this.NULL_PROVIDER = new Provider(this);
         this.initReg();
     }
 
@@ -171,7 +171,7 @@ export class Container extends Injector implements IContainer {
     }
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? this.NULL_PDR;
+        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? this.NULL_PROVIDER;
     }
 
     protected initReg() {
@@ -205,7 +205,7 @@ const SERVICE: IServiceProvider = {
         return services;
     },
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
-        return injector.getContainer().NULL_PDR;
+        return injector.getContainer().NULL_PROVIDER;
     }
 };
 
@@ -272,7 +272,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     getProvider(decor: string) {
-        return this.decors.get(decor) ?? this.container.NULL_PDR;
+        return this.decors.get(decor) ?? this.container.NULL_PROVIDER;
     }
 
     regDecoator(decor: string, ...providers: ProviderType[]) {
