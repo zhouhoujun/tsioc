@@ -1,12 +1,14 @@
 import {
     Type, MethodMetadata, ClassMetadata, IProvider, tokenId, Token,
-    isNil, IocContext, IInjector, PROVIDERS, ParameterMetadata, Injectable
+    isNil, IocContext, IInjector, ParameterMetadata, Injectable
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
 import { Advicer } from '../advices/Advicer';
 
-
+/**
+ * joinpoint option.
+ */
 export interface JoinpointOption {
     provJoinpoint?: Joinpoint;
     name: string;
@@ -147,8 +149,7 @@ export class Joinpoint implements IocContext {
 
 
     constructor(public injector: IInjector) {
-        this.pdr = injector.parseProvider();
-        this.pdr.inject({ provide: Joinpoint, useValue: this });
+        this.pdr = injector.parseProvider({ provide: Joinpoint, useValue: this });
     }
 
     routeValue<T>(token: Token<T>): T {

@@ -1,3 +1,4 @@
+import { LContext } from './interfaces/context';
 import { IElement, INode } from './interfaces/node';
 import { LView } from './interfaces/view';
 import { VNode, VNodeFlags, VNodeType, VProjectionNode } from './interfaces/vnode';
@@ -53,11 +54,11 @@ function applyNodes(
     }
 }
 
-
+const PATCH_CTX = '_PATCH_CTX_';
 /**
  * Assigns the given data to the given target (which could be a component,
  * directive or DOM node instance) using monkey-patching.
  */
 export function attachPatchData(target: any, data: LView | LContext) {
-    target[] = data;
+    target[PATCH_CTX] = data;
 }
