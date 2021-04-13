@@ -13,8 +13,9 @@ import { IActionProvider } from './actions/act';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
 import { delReged, get, getReged, setReged } from './decor/refl';
-import { Provider, Injector, Strategy, getFacInstance } from './injector';
+import { Provider, Injector, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
+import { Strategy } from './strategy';
 
 /**
  * injector implantment.

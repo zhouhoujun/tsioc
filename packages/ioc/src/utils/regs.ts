@@ -1,7 +1,8 @@
 import { IContainer } from '../IContainer';
 import { ProviderType } from '../tokens';
 import { INJECTOR_FACTORY, INVOKER, PROVIDERS, INVOKED_PROVIDERS, CONTAINER, PARENT_INJECTOR } from './tk';
-import { Provider, InvokedProvider, getProvider, Strategy } from '../injector';
+import { Strategy } from '../strategy';
+import { Provider, InvokedProvider, getProvider } from '../injector';
 import { InvokerImpl } from '../actions/invoker';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';

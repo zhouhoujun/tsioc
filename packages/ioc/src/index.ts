@@ -5,6 +5,7 @@ export * from './Destroyable';
 export * from './IInjector';
 export * from './IContainer';
 export * from './Invoker';
+export * from './strategy';
 export * from './injector';
 export * from './container';
 
