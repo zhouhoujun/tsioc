@@ -8,8 +8,8 @@ import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, i
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
-import { INJECTOR, INVOKED_PROVIDERS, PROVIDERS } from './utils/tk';
-import { DefaultStrategy, Strategy } from './strategy';
+import { INJECTOR, PROVIDERS } from './utils/tk';
+import { Strategy } from './strategy';
 
 
 /**
@@ -169,7 +169,7 @@ export class Provider implements IProvider {
      * @returns {this}
      */
     inject(...providers: ProviderType[]): this {
-        providers.forEach((p, index) => {
+        providers.length && providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
             }
@@ -336,15 +336,13 @@ export class Provider implements IProvider {
     }
 
     parseProvider(...providers: ProviderType[]): IProvider {
-        return this.getContainer().getInstance(INVOKED_PROVIDERS).inject(...providers);
-    }
-
-    toProvider(ify?: boolean | ProviderType, ...providers: ProviderType[]) {
-        let force = false;
-        isBoolean(ify) ? force = ify : providers.unshift(ify);
-        if (!force && !providers.length) return null;
         if (providers.length === 1 && isProvider(providers[0])) return providers[0];
         return this.getContainer().getInstance(PROVIDERS).inject(...providers);
+    }
+
+    toProvider(...providers: ProviderType[]) {
+        if (!providers.length) return null;
+        return this.parseProvider(...providers);
     }
 
     /**

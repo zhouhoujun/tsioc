@@ -5,6 +5,7 @@ import { IInjector, IProvider } from '../IInjector';
 import { Invoker, MethodType } from '../Invoker';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
+import { INVOKED_PROVIDERS } from '../utils/tk';
 
 /**
  * method accessor
@@ -59,14 +60,10 @@ export class InvokerImpl implements Invoker {
         }
 
         const proxy = instance[key]['_proxy'];
-        const pdr = proxy ? injector.parseProvider(...providers) : injector.toProvider(...providers);
+        const pdr = proxy ? this.toInovkedPdr(injector, providers) : injector.toProvider(...providers);
         const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], pdr, typepdr);
-        if (proxy) {
-            if (pdr.size) {
-                paramInstances.push(pdr);
-            } else {
-                pdr.destroy();
-            }
+        if (proxy && pdr) {
+            paramInstances.push(pdr);
         }
         return instance[key](...paramInstances) as TR;
     }
@@ -83,24 +80,29 @@ export class InvokerImpl implements Invoker {
         return this.resolveParams(injector, params, injector.toProvider(...providers), injector.getRegedState().getTypeProvider(target));
     }
 
+    protected toInovkedPdr(injector: IInjector, providers: ProviderType[]) {
+        if (!providers.length) return null;
+        return injector.getContainer().getInstance(INVOKED_PROVIDERS).inject(...providers);
+    }
+
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {
         const state = injector.getRegedState();
         return params.map((param, index) => {
             if (param.provider) {
                 if (typepdrs && typepdrs.has(param.provider)) return typepdrs.get(param.provider, providers);
-                if (providers.has(param.provider)) return providers.get(param.provider, providers);
-                if (param.isProviderType && !state.isRegistered(param.provider as Type)) {
+                if (providers?.has(param.provider)) return providers.get(param.provider, providers);
+                if (param.isProviderType && !state.isRegistered(param.provider as Type) && !injector.has(param.type, true)) {
                     injector.register(param.provider as Type);
                 }
                 return injector.get(param.provider, providers) ?? param.defaultValue;
             } else if (typepdrs && param.paramName && typepdrs.has(param.paramName)) {
                 return typepdrs.get(param.paramName, providers);
-            } else if (param.paramName && providers.has(param.paramName)) {
+            } else if (param.paramName && providers?.has(param.paramName)) {
                 return providers.get(param.paramName, providers);
             } else if (param.type) {
                 if (typepdrs && typepdrs.has(param.provider)) return typepdrs.get(param.provider, providers);
-                if (providers.has(param.type)) return providers.get(param.type, providers);
-                if (param.isType && !state.isRegistered(param.type)) {
+                if (providers?.has(param.type)) return providers.get(param.type, providers);
+                if (param.isType && !state.isRegistered(param.type) && !injector.has(param.type, true)) {
                     injector.register(param.type as Type);
                 }
                 return injector.get(param.type, providers) ?? param.defaultValue;

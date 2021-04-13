@@ -46,7 +46,8 @@ export class BuilderService implements IBuilderService {
             md = target;
         }
         if (!injector) {
-            injector = this.root.getRegedState().isRegistered(md) ? this.root.getRegedState().getInjector(md) || this.root : this.root;
+            const state = this.root.getRegedState();
+            injector = state.isRegistered(md) ? state.getInjector(md) || this.root : this.root;
         }
         let rctx = { ...options, injector } as IBuildContext;
         await this.root.getActionProvider().getInstance(ResolveMoudleScope)
@@ -69,7 +70,8 @@ export class BuilderService implements IBuilderService {
             options = { bootstrap: md };
         }
         if (!injector) {
-            injector = this.root.getRegedState().isRegistered(md) ? this.root.getRegedState().getInjector(md) || this.root : this.root;
+            const state = this.root.getRegedState();
+            injector = state.isRegistered(md) ? state.getInjector(md) || this.root : this.root;
         }
         const ctx = injector.getService({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
         await this.root.getActionProvider().getInstance(StartupServiceScope).execute(ctx);

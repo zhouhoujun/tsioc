@@ -33,7 +33,7 @@ export class ServiceProvider implements IServiceProvider {
             option = { token: target };
         }
 
-        const pdr = injector.toProvider(true, ...providers);
+        const pdr = injector.parseProvider(...providers);
         if (!pdr.has(INJECTOR)) {
             pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         }
@@ -73,7 +73,7 @@ export class ServiceProvider implements IServiceProvider {
         if (isPlainObject(target)) {
             providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
-        const pdr = injector.toProvider(true, ...providers);
+        const pdr = injector.parseProvider(...providers);
         if (!pdr.has(INJECTOR)) {
             pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         }
