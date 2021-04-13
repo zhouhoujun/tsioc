@@ -230,7 +230,7 @@ export class ModuleProvider extends Provider implements IModuleProvider {
     exports: ModuleRef[] = [];
 
     protected regType<T>(target: Type<T>, option?: ProviderOption) {
-        this.getContainer()?.registerIn(this.mdInjector, target, option);
+        this.strategy.registerIn(this.mdInjector, target, option);
         this.export(target);
     }
 

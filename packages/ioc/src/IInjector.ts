@@ -112,6 +112,13 @@ export interface IProvider extends Destroyable {
      * @returns {this}
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
+
+    /**
+     * get provider
+     * @param ify 
+     * @param providers 
+     */
+    getProvider(ify?: boolean | ProviderType, ...providers: ProviderType[]): IProvider;
     /**
     * get token implement class type.
     *

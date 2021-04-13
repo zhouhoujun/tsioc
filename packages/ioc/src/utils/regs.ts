@@ -2,7 +2,7 @@ import { IContainer } from '../IContainer';
 import { ProviderType } from '../tokens';
 import { INJECTOR_FACTORY, INVOKER, PROVIDERS, INVOKED_PROVIDERS, CONTAINER, PARENT_INJECTOR } from './tk';
 import { Strategy } from '../strategy';
-import { Provider, InvokedProvider, getProvider } from '../injector';
+import { Provider, InvokedProvider } from '../injector';
 import { InvokerImpl } from '../actions/invoker';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
@@ -25,7 +25,7 @@ export function registerCores(container: IContainer) {
     container.set(INVOKED_PROVIDERS, () => new InvokedProvider(container), InvokedProvider);
 
     container.set(INJECTOR_FACTORY, (...providers: ProviderType[]) => {
-        const pdr = getProvider(container, ...providers);
+        const pdr = container.getProvider(...providers);
         return new InjectorImpl(pdr.getValue(PARENT_INJECTOR) ?? container, pdr.get(Strategy));
     }, InjectorImpl);
 

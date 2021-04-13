@@ -1,6 +1,6 @@
 import {
     IInjector, Token, ProviderType, IProvider, INJECTOR, isArray, IContainer, Injector,
-    getProvider, ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider
+    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
@@ -33,7 +33,7 @@ export class ServiceProvider implements IServiceProvider {
             option = { token: target };
         }
 
-        const pdr = getProvider(injector, true, ...providers);
+        const pdr = injector.getProvider(true, ...providers);
         if (!pdr.has(INJECTOR)) {
             pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         }
@@ -73,7 +73,7 @@ export class ServiceProvider implements IServiceProvider {
         if (isPlainObject(target)) {
             providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
-        const pdr = getProvider(injector, true, ...providers);
+        const pdr = injector.getProvider(true, ...providers);
         if (!pdr.has(INJECTOR)) {
             pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
         }

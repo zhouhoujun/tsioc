@@ -7,8 +7,6 @@ import { INVOKED_PROVIDERS } from '../utils/tk';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
 import { IContainer } from '../IContainer';
-import { getProvider } from '../injector';
-
 
 /**
  * method accessor
@@ -63,7 +61,7 @@ export class InvokerImpl implements Invoker {
         }
 
         const proxy = instance[key]['_proxy'];
-        const pdr = proxy ? this.container.getInstance(INVOKED_PROVIDERS).inject(...providers) : getProvider(injector, ...providers)
+        const pdr = proxy ? this.container.getInstance(INVOKED_PROVIDERS).inject(...providers) : injector.getProvider(...providers)
         const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], pdr, typepdr);
         if (proxy) {
             if (pdr.size) {
@@ -84,7 +82,7 @@ export class InvokerImpl implements Invoker {
      * @returns {any[]}
      */
     createParams(injector: IInjector, target: Type, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
-        return this.resolveParams(injector, params, getProvider(injector, ...providers), this.container.regedState.getTypeProvider(target));
+        return this.resolveParams(injector, params, injector.getProvider(...providers), this.container.regedState.getTypeProvider(target));
     }
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {

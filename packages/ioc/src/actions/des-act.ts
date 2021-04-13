@@ -9,9 +9,7 @@ import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { IInjector } from '../IInjector';
-import { RegisteredState } from '../IContainer';
-import { IActionProvider } from './act';
-import { getProvider } from '../injector';
+import { IContainer } from '../IContainer';
 import { Registered } from '../decor/type';
 import { PropertyMetadata } from '../decor/metadatas';
 
@@ -58,7 +56,7 @@ function genReged(injector: IInjector, provide?: Token) {
     }
 }
 
-function regInstf(actionPdr: IActionProvider, regedState: RegisteredState, injector: IInjector, reged: Registered, type: Type, token: Token, singleton: boolean): InstFac {
+function regInstf(container: IContainer, injector: IInjector, reged: Registered, type: Type, token: Token, singleton: boolean): InstFac {
     const insf = {
         fac: (...providers: ProviderType[]) => {
             // make sure has value.
@@ -71,9 +69,9 @@ function regInstf(actionPdr: IActionProvider, regedState: RegisteredState, injec
                 token,
                 type,
                 singleton,
-                providers: getProvider(injector, ...providers)
+                providers: container.getProvider(...providers)
             } as RuntimeContext;
-            actionPdr.getInstance(RuntimeLifeScope).register(ctx);
+            container.provider.getInstance(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context
             cleanObj(ctx);
@@ -81,7 +79,7 @@ function regInstf(actionPdr: IActionProvider, regedState: RegisteredState, injec
         },
         unreg: () => {
             reged.provides?.forEach(k => injector.unregister(k));
-            regedState.deleteType(type);
+            container.regedState.deleteType(type);
         }
     };
 
@@ -97,8 +95,7 @@ function regInstf(actionPdr: IActionProvider, regedState: RegisteredState, injec
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    const { provider, regedState } = ctx.injector.getContainer();
-    regInstf(provider, regedState, ctx.injector, ctx.state, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
+    regInstf(ctx.injector.getContainer(), ctx.injector, ctx.state, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
     next();
 };
 

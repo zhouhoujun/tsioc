@@ -1,6 +1,6 @@
-import { ClassType, Type } from './types';
+import { ClassType } from './types';
 import { Token, ProviderType } from './tokens';
-import { IInjector, IProvider, ProviderOption, ServiceOption, ServicesOption } from './IInjector';
+import { IInjector, IProvider, ServiceOption, ServicesOption } from './IInjector';
 import { IActionProvider } from './actions/act';
 import { Registered, TypeReflect } from './decor/type';
 
@@ -101,13 +101,6 @@ export interface IContainer extends IInjector {
      * create injector.
      */
     createInjector(): IInjector;
-    /**
-     * register type class.
-     * @param {IProvider} injector
-     * @param type the class.
-     * @param [options] the class prodvider to.
-     */
-    registerIn<T>(injector: IProvider, type: Type<T>, options?: ProviderOption): this;
 }
 
 export type IIocContainer = IContainer;

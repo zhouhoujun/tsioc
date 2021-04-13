@@ -139,12 +139,12 @@ export class Provider implements IProvider {
     }
 
     protected regType<T>(target: Type<T>, option?: ProviderOption) {
-        this.getContainer()?.registerIn(this, target, option);
+        this.strategy.registerIn(this, target, option);
     }
 
     protected regToken<T>(token: Token<T>, provider: FactoryLike<T>, singleton?: boolean) {
         if (isClass(provider)) {
-            this.getContainer()?.registerIn(this, provider, { provide: token, singleton });
+            this.strategy.registerIn(this, provider, { provide: token, singleton });
         } else {
             const classFactory = this.createCustomFactory(token, provider, singleton);
             this.set(token, classFactory);
@@ -324,6 +324,15 @@ export class Provider implements IProvider {
         return this;
     }
 
+
+    getProvider(ify?: boolean | ProviderType, ...providers: ProviderType[]) {
+        let force = false;
+        isBoolean(ify) ? force = ify : providers.unshift(ify);
+        if (!force && !providers.length) return null;
+        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
+        return this.get(PROVIDERS).inject(...providers);
+    }
+
     /**
      * get token provider class type.
      *
@@ -477,14 +486,6 @@ export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
 }
 
-export function getProvider(injector: IInjector, ify?: boolean | ProviderType, ...providers: ProviderType[]) {
-    let force = false;
-    isBoolean(ify) ? force = ify : providers.unshift(ify);
-    if (!force && !providers.length) return null;
-    if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-    return injector.getContainer().get(PROVIDERS).inject(...providers);
-}
-
 /**
  * injector default strategy.
  */
@@ -534,7 +535,7 @@ export abstract class Injector extends Provider implements IInjector {
         let destroy: Function;
         const inst = this.strategy.resolve(this, option, (...pdrs) => {
             if (pdrs.length) {
-                let pdr = getProvider(this, ...pdrs);
+                let pdr = this.getProvider(...pdrs);
                 if (pdr !== pdrs[0]) {
                     destroy = () => pdr.destroy();
                 }

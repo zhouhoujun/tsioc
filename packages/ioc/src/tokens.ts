@@ -127,7 +127,6 @@ export function tokenRef<T>(token: Token<T>, target: Token): Token<T> {
     return `Ref ${format(token)} for ${format(target)}`;
 }
 
-
 /**
  * check target is token or not.
  *

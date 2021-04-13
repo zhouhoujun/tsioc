@@ -2,7 +2,7 @@ import { Registered, TypeReflect } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
-import { cleanObj, isBaseOf } from './utils/lang';
+import { isBaseOf } from './utils/lang';
 import { IInjector, IModuleLoader, IProvider, ProviderOption, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
 import { IContainer, IServiceProvider, RegisteredState } from './IContainer';
 import { MethodType } from './Invoker';
@@ -10,12 +10,10 @@ import { ProviderType, Token } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, INVOKER, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { IActionProvider } from './actions/act';
-import { DesignContext } from './actions/ctx';
-import { DesignLifeScope } from './actions/design';
 import { delReged, get, getReged, setReged } from './decor/refl';
+import { Strategy } from './strategy';
 import { Provider, Injector, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
-import { Strategy } from './strategy';
 
 /**
  * injector implantment.
@@ -120,37 +118,6 @@ export class Container extends Injector implements IContainer {
         return this.getInstance(INJECTOR_FACTORY);
     }
 
-    /**
-     * register type class.
-     * @param injector register in the injector.
-     * @param type the class.
-     * @param [provide] the class prodvider to.
-     * @param [singleton]
-     */
-    registerIn<T>(injector: IInjector, type: Type<T>, options?: ProviderOption) {
-        // make sure class register once.
-        if (this.regedState.isRegistered(type)) {
-            if (options?.provide) {
-                injector.bindProvider(options.provide, type, this.regedState.getRegistered(type));
-            }
-            return this;
-        }
-        if (injector.has(type, true)) {
-            return this;
-        }
-
-        const ctx = {
-            injector,
-            ...options,
-            token: options?.provide,
-            type
-        } as DesignContext;
-        this.provider.getInstance(DesignLifeScope).register(ctx);
-        cleanObj(ctx);
-
-        return this;
-    }
-
 
     /**
     * get module loader.
@@ -181,10 +148,6 @@ export class Container extends Injector implements IContainer {
         this.setValue(Injector, this);
         this.setValue(INJECTOR, this);
         registerCores(this);
-    }
-
-    protected regType<T>(target: Type<T>, option?: ProviderOption) {
-        this.registerIn(this, target, option);
     }
 }
 
@@ -238,8 +201,6 @@ class RegisteredStateImpl implements RegisteredState {
     getTypeProvider(type: ClassType): IProvider {
         return getReged(type, this.container.id)?.providers;
     }
-
-
 
     setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
         if (isFunction(type)) {
