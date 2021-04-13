@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { IActionProvider, IProvider, ProviderOption, RegisteredState, ResolveOption } from './IInjector';
+import { IProvider, ProviderOption, RegisteredState, ResolveOption } from './IInjector';
 import { InstFac, ProviderType, Token, tokenRef } from './tokens';
 import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';
@@ -16,30 +16,14 @@ import { IContainer } from '@tsdi/core';
 @Abstract()
 export abstract class Strategy {
 
-    private state: RegisteredState;
-    private provider: IActionProvider;
-
     protected constructor(public container: IContainer) { }
 
-    getState(curr: IProvider) {
-        if (!this.state) {
-            this.state = this.container.regedState;
-        }
-        return this.state;
-    }
-
-    getActProvider(curr: IProvider): IActionProvider {
-        if (!this.provider) {
-            this.provider = this.container.provider;
-        }
-        return this.provider;
-    }
 
     resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (...providers: ProviderType[]) => IProvider): T {
         const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
         const pdr = toProvider(...option.providers || []);
         let inst: T;
-        const regState = this.getState(curr);
+        const regState = this.container.regedState;
         if (isFunction(targetToken)) {
             inst = this.rsvWithTarget(regState, curr, option.token, targetToken, pdr);
         }
@@ -57,7 +41,7 @@ export abstract class Strategy {
      * @param [singleton]
      */
     registerIn<T>(injector: IProvider, type: Type<T>, options?: ProviderOption) {
-        const regState = this.getState(injector);
+        const regState = this.container.regedState;
         // make sure class register once.
         if (regState.isRegistered(type)) {
             if (options?.provide) {
@@ -75,7 +59,7 @@ export abstract class Strategy {
             token: options?.provide,
             type
         } as DesignContext;
-        this.getActProvider(injector).getInstance(DesignLifeScope).register(ctx);
+        this.container.provider.getInstance(DesignLifeScope).register(ctx);
         cleanObj(ctx);
 
         return this;

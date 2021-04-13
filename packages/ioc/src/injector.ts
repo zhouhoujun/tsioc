@@ -39,18 +39,20 @@ export class Provider implements IProvider {
 
     constructor(public parent: IProvider, protected strategy?: Strategy) {
         this.factories = new Map();
+        this.initStrategy();
+    }
 
-        this.destCb = () => this.destroy();
-        if (!strategy) {
-            this.strategy = strategy = this.defaultStrategy(parent);
+    protected initStrategy() {
+        if (!this.strategy) {
+            this.strategy = this.defaultStrategy(this.parent);
         }
-        if (strategy.vaildParent(parent)) {
-            parent.onDestroy(this.destCb);
+        this.destCb = () => this.destroy();
+        if (this.strategy.vaildParent(this.parent)) {
+            this.parent.onDestroy(this.destCb);
         } else {
             this.strategy.container.onDestroy(this.destCb);
             this.parent = null;
         }
-
     }
 
     protected defaultStrategy(parent: IProvider): Strategy {
@@ -69,14 +71,14 @@ export class Provider implements IProvider {
      * registered state.
      */
     getRegedState(): RegisteredState {
-        return this.strategy.getState(this);
+        return this.strategy.container.regedState;
     }
 
     /**
      * action provider.
      */
     getActionProvider(): IActionProvider {
-        return this.strategy.getActProvider(this);
+        return this.strategy.container.provider;
     }
 
 
@@ -469,12 +471,12 @@ export class Provider implements IProvider {
         if (this.parent && !this.parent.destroyed) {
             remove((this.parent as Provider).destroyCbs, this.destCb);
         }
-        this.parent = null;
-        if (this.strategy.container && !this.strategy.container.destroyed) {
+        if (!this.parent && !this.strategy.container.destroyed) {
             remove((this.strategy.container as IProvider as Provider).destroyCbs, this.destCb);
         }
-        this.strategy = null;
         this.destCb = null;
+        this.parent = null;
+        this.strategy = null;
     }
 }
 
@@ -486,7 +488,7 @@ export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]):
         pd.expires = null;
         pd.cache = null;
     }
-    return pd.fac ? pd.fac(...providers) ?? null : null;
+    return pd.fac?.(...providers) ?? null;
 }
 
 /**
