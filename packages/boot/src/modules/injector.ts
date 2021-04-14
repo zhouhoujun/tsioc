@@ -251,7 +251,7 @@ export class ModuleProvider extends Provider implements IModuleProvider {
     }
 
     export(type: Type, noRef?: boolean) {
-        const state = this.getRegedState();
+        const state = this.state();
         if (!state.isRegistered(type)) {
             this.mdInjector.register(type);
         }

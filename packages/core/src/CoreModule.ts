@@ -16,6 +16,6 @@ export class CoreModule {
         container.setValue(SERVICE_PROVIDER, new ServiceProvider(container));
 
         // register action
-        container.provider.regAction(ResolveServiceScope, ResolveServicesScope);
+        container.action().regAction(ResolveServiceScope, ResolveServicesScope);
     }
 }

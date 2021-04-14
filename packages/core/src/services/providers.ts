@@ -44,7 +44,7 @@ export class ServiceProvider implements IServiceProvider {
         this.initTargetRef(context);
 
         if (!this.serviceScope) {
-            this.serviceScope = this.container.provider.getInstance(ResolveServiceScope);
+            this.serviceScope = this.container.action().getInstance(ResolveServiceScope);
         }
 
         this.serviceScope.execute(context);
@@ -95,7 +95,7 @@ export class ServiceProvider implements IServiceProvider {
 
         this.initTargetRef(context);
         if (!this.servicesScope) {
-            this.servicesScope = this.container.provider.getInstance(ResolveServicesScope);
+            this.servicesScope = this.container.action().getInstance(ResolveServicesScope);
         }
         this.servicesScope.execute(context);
         const services = context.services;

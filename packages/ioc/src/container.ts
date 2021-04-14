@@ -80,8 +80,8 @@ let id = 0;
  */
 export class Container extends InjectorImpl implements IContainer {
 
-    readonly regedState: RegisteredState;
-    readonly provider: IActionProvider;
+    private _state: RegisteredState;
+    private _action: IActionProvider;
     readonly id: string;
 
     readonly providerStrategy: Strategy;
@@ -97,8 +97,8 @@ export class Container extends InjectorImpl implements IContainer {
         this.id = `c${id++}`;
         this.providerStrategy = new DefaultStrategy(this, (p) => !(p instanceof Injector));
         this.injectorStrategy = this.strategy;
-        this.regedState = new RegisteredStateImpl(this);
-        this.provider = new ActionProvider(this);
+        this._state = new RegisteredStateImpl(this);
+        this._action = new ActionProvider(this);
         this.NULL_PROVIDER = new Provider(this);
         registerCores(this);
     }
@@ -115,15 +115,15 @@ export class Container extends InjectorImpl implements IContainer {
     /**
      * registered state.
      */
-    getRegedState(): RegisteredState {
-        return this.regedState;
+    state(): RegisteredState {
+        return this._state;
     }
 
     /**
      * action provider.
      */
-    getActionProvider(): IActionProvider {
-        return this.provider;
+    action(): IActionProvider {
+        return this._action;
     }
 
     createInjector(): IInjector {

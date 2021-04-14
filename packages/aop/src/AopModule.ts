@@ -22,7 +22,7 @@ export class AopModule {
      */
     setup(@Inject(CONTAINER) container: IContainer) {
 
-        const prdr = container.provider;
+        const prdr = container.action();
 
         prdr.setValue(ADVISOR, new Advisor(container), Advisor)
             .setValue(ADVICE_MATCHER, new AdviceMatcher(container), AdviceMatcher);

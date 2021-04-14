@@ -81,6 +81,6 @@ export class Advisor implements IAdvisor {
      * @returns {T}
      */
     resolve<T>(aspect: Type<T>, ...providers: ProviderType[]): T {
-        return this.container.regedState.resolve(aspect, ...providers);
+        return this.container.state().resolve(aspect, ...providers);
     }
 }

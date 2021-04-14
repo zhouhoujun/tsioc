@@ -213,7 +213,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             return (name: string, fullName: string, targetType?: Type) => classnames.indexOf(lang.getClassName(targetType)) >= 0;
         } else if (targetChkExp.test(strExp)) {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            return (name: string, fullName: string, targetType?: Type) => this.container.regedState.getInjector(reflect.type).getTokenProvider(torken) === targetType;
+            return (name: string, fullName: string, targetType?: Type) => this.container.state().getInjector(reflect.type).getTokenProvider(torken) === targetType;
         } else {
             return () => false;
         }

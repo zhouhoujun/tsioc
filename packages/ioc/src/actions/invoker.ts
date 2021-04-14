@@ -33,11 +33,11 @@ export class InvokerImpl implements Invoker {
         let typepdr: IProvider;
         if (isTypeObject(target)) {
             targetClass = getClass(target);
-            typepdr = injector.getRegedState().getTypeProvider(targetClass);
+            typepdr = injector.state().getTypeProvider(targetClass);
             instance = target as T;
         } else {
             targetClass = injector.getTokenProvider(target as Token);
-            typepdr = injector.getRegedState().getTypeProvider(targetClass);
+            typepdr = injector.state().getTypeProvider(targetClass);
             instance = injector.get(target as Token, typepdr, ...providers);
             if (!targetClass) {
                 throw new Error(target.toString() + ' is not implements by any class.')
@@ -77,7 +77,7 @@ export class InvokerImpl implements Invoker {
      * @returns {any[]}
      */
     createParams(injector: IInjector, target: Type, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
-        return this.resolveParams(injector, params, injector.toProvider(...providers), injector.getRegedState().getTypeProvider(target));
+        return this.resolveParams(injector, params, injector.toProvider(...providers), injector.state().getTypeProvider(target));
     }
 
     protected toInovkedPdr(injector: IInjector, providers: ProviderType[]) {
@@ -86,7 +86,7 @@ export class InvokerImpl implements Invoker {
     }
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {
-        const state = injector.getRegedState();
+        const state = injector.state();
         return params.map((param, index) => {
             if (param.provider) {
                 if (typepdrs && typepdrs.has(param.provider)) return typepdrs.get(param.provider, providers);

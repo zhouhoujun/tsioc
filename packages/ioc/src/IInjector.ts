@@ -126,11 +126,11 @@ export interface IProvider extends Destroyable {
     /**
      * registered state.
      */
-    getRegedState(): RegisteredState;
+    state(): RegisteredState;
     /**
      * action provider.
      */
-    getActionProvider(): IActionProvider;
+    action(): IActionProvider;
 
     /**
      * resolver size.

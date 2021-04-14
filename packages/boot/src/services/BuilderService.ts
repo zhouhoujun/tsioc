@@ -46,11 +46,11 @@ export class BuilderService implements IBuilderService {
             md = target;
         }
         if (!injector) {
-            const state = this.root.getRegedState();
+            const state = this.root.state();
             injector = state.isRegistered(md) ? state.getInjector(md) || this.root : this.root;
         }
         let rctx = { ...options, injector } as IBuildContext;
-        await this.root.getActionProvider().getInstance(ResolveMoudleScope)
+        await this.root.action().getInstance(ResolveMoudleScope)
             .execute(rctx);
         const value = rctx.value;
         lang.cleanObj(rctx);
@@ -70,11 +70,11 @@ export class BuilderService implements IBuilderService {
             options = { bootstrap: md };
         }
         if (!injector) {
-            const state = this.root.getRegedState();
+            const state = this.root.state();
             injector = state.isRegistered(md) ? state.getInjector(md) || this.root : this.root;
         }
         const ctx = injector.getService({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
-        await this.root.getActionProvider().getInstance(StartupServiceScope).execute(ctx);
+        await this.root.action().getInstance(StartupServiceScope).execute(ctx);
         return ctx.getStartup();
     }
 
@@ -133,7 +133,7 @@ export class BuilderService implements IBuilderService {
                 options = { type: md, args };
             }
             if (!injector) {
-                const state = this.root.getRegedState();
+                const state = this.root.state();
                 injector = state.isRegistered(md) ? state.getInjector(md) || this.root : this.root;
             }
             ctx = injector.getService<T>({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
@@ -142,7 +142,7 @@ export class BuilderService implements IBuilderService {
         if (contextInit) {
             contextInit(ctx);
         }
-        await this.root.getActionProvider().getInstance(handle).execute(ctx);
+        await this.root.action().getInstance(handle).execute(ctx);
         return ctx;
     }
 }

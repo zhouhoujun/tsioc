@@ -70,15 +70,15 @@ export class Provider implements IProvider {
     /**
      * registered state.
      */
-    getRegedState(): RegisteredState {
-        return this.strategy.container.regedState;
+    state(): RegisteredState {
+        return this.strategy.container.state();
     }
 
     /**
      * action provider.
      */
-    getActionProvider(): IActionProvider {
-        return this.strategy.container.provider;
+    action(): IActionProvider {
+        return this.strategy.container.action();
     }
 
 

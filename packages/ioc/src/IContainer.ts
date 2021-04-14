@@ -11,14 +11,6 @@ import { Strategy } from './strategy';
 export interface IContainer extends IInjector {
 
     readonly id: string;
-    /**
-     * registered state.
-     */
-    readonly regedState: RegisteredState;
-    /**
-     * action provider.
-     */
-    readonly provider: IActionProvider;
 
     /**
      * provider default strategy.

@@ -23,14 +23,14 @@ export abstract class Strategy {
         const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
         const pdr = toProvider(...option.providers || []);
         let inst: T;
-        const regState = this.container.regedState;
+        const state = this.container.state();
         if (isFunction(targetToken)) {
-            inst = this.rsvWithTarget(regState, curr, option.token, targetToken, pdr);
+            inst = this.rsvWithTarget(state, curr, option.token, targetToken, pdr);
         }
 
         if (option.tagOnly || isDefined(inst)) return inst ?? null;
 
-        return this.rsvToken(curr, option.token, pdr) ?? this.rsvFailed(regState, curr, option, pdr) ?? null;
+        return this.rsvToken(curr, option.token, pdr) ?? this.rsvFailed(state, curr, option, pdr) ?? null;
     }
 
     /**
@@ -41,7 +41,7 @@ export abstract class Strategy {
      * @param [singleton]
      */
     registerIn<T>(injector: IProvider, type: Type<T>, options?: ProviderOption) {
-        const regState = this.container.regedState;
+        const regState = this.container.state();
         // make sure class register once.
         if (regState.isRegistered(type)) {
             if (options?.provide) {
@@ -59,7 +59,7 @@ export abstract class Strategy {
             token: options?.provide,
             type
         } as DesignContext;
-        this.container.provider.getInstance(DesignLifeScope).register(ctx);
+        this.container.action().getInstance(DesignLifeScope).register(ctx);
         cleanObj(ctx);
 
         return this;

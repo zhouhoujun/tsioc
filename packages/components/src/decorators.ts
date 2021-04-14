@@ -363,10 +363,9 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
         afterAnnoation: (ctx, next) => {
             const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
             const injector = ctx.injector;
-            const state = injector.getRegedState();
             let queue: Middlewares;
             if (parent) {
-                queue = state.getInstance(parent);
+                queue = injector.state().getInstance(parent);
             } else {
                 queue = injector.getInstance(HostMappingRoot);
             }

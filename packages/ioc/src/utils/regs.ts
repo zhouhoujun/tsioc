@@ -30,7 +30,7 @@ export function registerCores(container: IContainer) {
     }, InjectorImpl);
 
     // bing action.
-    container.provider.regAction(
+    container.action().regAction(
         DesignLifeScope,
         RuntimeLifeScope
     );

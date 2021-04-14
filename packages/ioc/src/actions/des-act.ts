@@ -45,7 +45,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.injector = container;
     }
     const state = ctx.state = genReged(ctx.injector, ctx.token);
-    container.regedState.regType(ctx.type, state);
+    container.state().regType(ctx.type, state);
     next();
 };
 
@@ -71,7 +71,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
                 singleton,
                 providers: container.toProvider(...providers)
             } as RuntimeContext;
-            container.provider.getInstance(RuntimeLifeScope).register(ctx);
+            container.action().getInstance(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context
             cleanObj(ctx);
@@ -79,7 +79,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
         },
         unreg: () => {
             reged.provides?.forEach(k => injector.unregister(k));
-            container.regedState.deleteType(type);
+            container.state().deleteType(type);
         }
     };
 

@@ -165,7 +165,7 @@ export function registerDecror(decor: string, options: DecoratorOption<any>): De
     if (options.providers) {
         const providers = options.providers;
         option.getProvider = (inj) => {
-            const state = inj.getRegedState();
+            const state = inj.state();
             if (!state.hasProvider(decor)) {
                 state.regDecoator(decor, ...providers);
             }
@@ -173,7 +173,7 @@ export function registerDecror(decor: string, options: DecoratorOption<any>): De
         }
     } else {
         option.getProvider = (inj) => {
-            return inj.getRegedState().getProvider(decor);
+            return inj.state().getProvider(decor);
         }
     }
 
