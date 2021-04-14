@@ -6,7 +6,7 @@ import { Strategy } from './strategy';
  * root container interface.
  *
  * @export
- * @interface IIocContainer
+ * @interface IContainer
  */
 export interface IContainer extends IInjector {
 

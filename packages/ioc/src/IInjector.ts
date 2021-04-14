@@ -201,8 +201,8 @@ export interface IProvider extends Destroyable {
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
     /**
-     * parse provider. no providers, will return new provider
-     * @param ify 
+     * parse provider. no providers, will return new provider.
+     * if not exist INJECTOR with provider this. { provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }
      * @param providers 
      */
     parseProvider(...providers: ProviderType[]): IProvider;

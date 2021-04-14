@@ -336,13 +336,21 @@ export class Provider implements IProvider {
     }
 
     parseProvider(...providers: ProviderType[]): IProvider {
-        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-        return this.getContainer().getInstance(PROVIDERS).inject(...providers);
+        const pdr = this.createProvider(...providers);
+        if(!pdr.has(INJECTOR) && isInjector(this)){
+            pdr.inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this });
+        }
+        return pdr;
     }
 
     toProvider(...providers: ProviderType[]) {
         if (!providers.length) return null;
-        return this.parseProvider(...providers);
+        return this.createProvider(...providers);
+    }
+
+    protected createProvider(...providers: ProviderType[]): IProvider {
+        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
+        return this.getContainer().getInstance(PROVIDERS).inject(...providers);
     }
 
     /**
@@ -433,21 +441,17 @@ export class Provider implements IProvider {
         }
     }
 
-    protected parse(...providers: ProviderType[]): IProvider {
-        return this.getInstance(PROVIDERS).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
-    }
-
     protected createCustomFactory<T>(key: Token<T>, factory?: Factory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ProviderType[]) => {
                 if (this.hasValue(key)) {
                     return this.getValue(key);
                 }
-                let instance = factory(this.parse(...providers));
+                let instance = factory(this.parseProvider(...providers));
                 this.setValue(key, instance);
                 return instance;
             }
-            : (...providers: ProviderType[]) => factory(this.parse(...providers));
+            : (...providers: ProviderType[]) => factory(this.parseProvider(...providers));
     }
 
     protected merge(from: Provider, to: Provider, filter?: (key: Token) => boolean) {

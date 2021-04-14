@@ -6,7 +6,7 @@ import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
-import { IContainer } from '@tsdi/core';
+import { IContainer } from './IContainer';
 
 
 

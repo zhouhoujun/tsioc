@@ -1,5 +1,5 @@
 import {
-    IInjector, Token, ProviderType, IProvider, INJECTOR, isArray, IContainer, Injector,
+    IInjector, Token, ProviderType, IProvider, isArray, IContainer,
     ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
@@ -34,9 +34,6 @@ export class ServiceProvider implements IServiceProvider {
         }
 
         const pdr = injector.parseProvider(...providers);
-        if (!pdr.has(INJECTOR)) {
-            pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
-        }
 
         const context = {
             injector,
@@ -74,9 +71,6 @@ export class ServiceProvider implements IServiceProvider {
             providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
         const pdr = injector.parseProvider(...providers);
-        if (!pdr.has(INJECTOR)) {
-            pdr.inject({ provide: INJECTOR, useValue: injector }, { provide: Injector, useValue: injector });
-        }
 
         maps.iterator(p => {
             services.push(p.value ? p.value : p.fac(pdr));
