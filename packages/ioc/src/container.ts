@@ -21,7 +21,8 @@ export class InjectorImpl extends Injector {
 
     constructor(parent?: IInjector, strategy?: Strategy) {
         super(parent, strategy);
-        this.initReg();
+        this.setValue(Injector, this);
+        this.setValue(INJECTOR, this);
     }
 
     /**
@@ -52,25 +53,21 @@ export class InjectorImpl extends Injector {
     }
 
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        return this.getSerPdr().getService(this, target, ...providers);
+        return this.getSvrPdr().getService(this, target, ...providers);
     }
 
     getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        return this.getSerPdr().getServices(this, target, ...providers) ?? [];
+        return this.getSvrPdr().getServices(this, target, ...providers) ?? [];
     }
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getSerPdr().getServiceProviders(this, target) ?? this.getContainer().NULL_PROVIDER;
+        return this.getSvrPdr().getServiceProviders(this, target) ?? this.getContainer().NULL_PROVIDER;
     }
 
-    protected getSerPdr() {
-        return this.getValue(SERVICE_PROVIDER) ?? SERVICE;
+    protected getSvrPdr() {
+        return this.strategy.container.getValue(SERVICE_PROVIDER) ?? SERVICE;
     }
 
-    protected initReg() {
-        this.setValue(INJECTOR, this);
-        this.setValue(Injector, this);
-    }
 }
 
 let id = 0;
@@ -81,7 +78,7 @@ let id = 0;
  * @class Container
  * @implements {IContainer}
  */
-export class Container extends Injector implements IContainer {
+export class Container extends InjectorImpl implements IContainer {
 
     readonly regedState: RegisteredState;
     readonly provider: IActionProvider;
@@ -103,7 +100,7 @@ export class Container extends Injector implements IContainer {
         this.regedState = new RegisteredStateImpl(this);
         this.provider = new ActionProvider(this);
         this.NULL_PROVIDER = new Provider(this);
-        this.initReg();
+        registerCores(this);
     }
 
     protected defaultStrategy(parent: IProvider): Strategy {
@@ -129,62 +126,15 @@ export class Container extends Injector implements IContainer {
         return this.provider;
     }
 
-
-    /**
-     * invoke method.
-     *
-     * @template T
-     * @param {(T | Type<T>)} target type of class or instance
-     * @param {MethodType} propertyKey
-     * @param {T} [instance] instance of target type.
-     * @param {...ProviderType[]} providers
-     * @returns {TR}
-     */
-    invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.getValue(INVOKER).invoke(this, target, propertyKey, ...providers);
-    }
-
     createInjector(): IInjector {
         return this.getInstance(INJECTOR_FACTORY);
     }
 
-
-    /**
-    * get module loader.
-    *
-    * @returns {IModuleLoader}
-    */
-    getLoader(): IModuleLoader {
-        return this.getValue(MODULE_LOADER);
-    }
-
-    async load(...modules: LoadType[]): Promise<Type[]> {
-        return await this.getLoader()?.register(this, ...modules) ?? [];
-    }
-
-    getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
-        return this.getValue(SERVICE_PROVIDER)?.getService(this, target, ...providers) ?? null;
-    }
-
-    getServices<T>(target: Token<T> | ServicesOption<T>, ...providers: ProviderType[]): T[] {
-        return this.getValue(SERVICE_PROVIDER)?.getServices(this, target, ...providers) ?? [];
-    }
-
-    getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getValue(SERVICE_PROVIDER)?.getServiceProviders(this, target) ?? this.NULL_PROVIDER;
-    }
-
-    protected initReg() {
-        this.setValue(Injector, this);
-        this.setValue(INJECTOR, this);
-        registerCores(this);
-    }
 }
 
 export const IocContainer = Container;
 
 
-// const NULL_PDR = new Provider(null);
 
 
 const SERVICE: IServiceProvider = {
@@ -208,6 +158,7 @@ const SERVICE: IServiceProvider = {
         return injector.getContainer().NULL_PROVIDER;
     }
 };
+
 
 class RegisteredStateImpl implements RegisteredState {
 

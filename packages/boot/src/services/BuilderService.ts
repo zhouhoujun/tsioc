@@ -88,8 +88,7 @@ export class BuilderService implements IBuilderService {
      * @returns {Promise<T>}
      */
     run<T extends IBootContext = IBootContext, Topt extends BootOption = BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T> {
-        const container = this.root.getContainer();
-        return this.execLifeScope<T, Topt>(container, null, RunnableBuildLifeScope, target, ...args);
+        return this.execLifeScope<T, Topt>(null, RunnableBuildLifeScope, target, ...args);
     }
 
     /**
@@ -101,9 +100,7 @@ export class BuilderService implements IBuilderService {
      * @returns {Promise<T>}
      */
     async boot(application: IBootApplication, ...args: string[]): Promise<IBootContext> {
-        const container = application.getContainer();
         return await this.execLifeScope(
-            container,
             (ctx) => {
                 if (isFunction(application.onContextInit)) {
                     application.onContextInit(ctx);
@@ -115,7 +112,6 @@ export class BuilderService implements IBuilderService {
     }
 
     protected async execLifeScope<T extends IBootContext = IBootContext, Topt extends BootOption = BootOption>(
-        container: IContainer,
         contextInit: (ctx: T) => void,
         handle: Type<IBuildHandle>,
         target: ClassType | Topt | T,
@@ -137,7 +133,8 @@ export class BuilderService implements IBuilderService {
                 options = { type: md, args };
             }
             if (!injector) {
-                injector = container.regedState.isRegistered(md) ? container.regedState.getInjector(md) || this.root : this.root;
+                const state = this.root.getRegedState();
+                injector = state.isRegistered(md) ? state.getInjector(md) || this.root : this.root;
             }
             ctx = injector.getService<T>({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
         }
@@ -145,7 +142,7 @@ export class BuilderService implements IBuilderService {
         if (contextInit) {
             contextInit(ctx);
         }
-        await container.provider.getInstance(handle).execute(ctx);
+        await this.root.getActionProvider().getInstance(handle).execute(ctx);
         return ctx;
     }
 }

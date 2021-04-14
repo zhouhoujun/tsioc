@@ -4,7 +4,7 @@ import { MethodType } from './Invoker';
 import { KeyValueProvider, StaticProviders } from './providers';
 import { ClassRegister, IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isBoolean } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
@@ -482,16 +482,7 @@ export class Provider implements IProvider {
     }
 }
 
-export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
-    if (!pd) return null;
-    if (!isNil(pd.value)) return pd.value;
-    if (pd.expires) {
-        if (pd.expires > Date.now()) return pd.cache;
-        pd.expires = null;
-        pd.cache = null;
-    }
-    return pd.fac?.(...providers) ?? null;
-}
+
 
 /**
  * is target provider or not.
@@ -641,6 +632,17 @@ export abstract class Injector extends Provider implements IInjector {
  */
 export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
+}
+
+export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
+    if (!pd) return null;
+    if (!isNil(pd.value)) return pd.value;
+    if (pd.expires) {
+        if (pd.expires > Date.now()) return pd.cache;
+        pd.expires = null;
+        pd.cache = null;
+    }
+    return pd.fac?.(...providers) ?? null;
 }
 
 
