@@ -10,7 +10,7 @@ import { ProviderType, Token } from './tokens';
 import { INJECTOR, INJECTOR_FACTORY, INVOKER, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { delReged, get, getReged, setReged } from './decor/refl';
-import { DefaultStrategy, Strategy } from './strategy';
+import { Strategy } from './strategy';
 import { Provider, Injector, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
 
@@ -61,14 +61,17 @@ export class InjectorImpl extends Injector {
     }
 
     getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider {
-        return this.getSvrPdr().getServiceProviders(this, target) ?? this.getContainer().NULL_PROVIDER;
+        return this.getSvrPdr().getServiceProviders(this, target) ?? NULL_PROVIDER;
     }
 
     protected getSvrPdr() {
-        return this.strategy.container.getValue(SERVICE_PROVIDER) ?? SERVICE;
+        return this.getContainer().getValue(SERVICE_PROVIDER) ?? SERVICE;
     }
 
 }
+
+
+export const NULL_PROVIDER = new Provider(null);
 
 let id = 0;
 /**
@@ -84,29 +87,14 @@ export class Container extends InjectorImpl implements IContainer {
     private _action: IActionProvider;
     readonly id: string;
 
-    readonly providerStrategy: Strategy;
-    /**
-     * injector default strategy.
-     */
-    readonly injectorStrategy: Strategy;
-
-    readonly NULL_PROVIDER: IProvider;
-
     constructor() {
         super(null);
         this.id = `c${id++}`;
-        this.providerStrategy = new DefaultStrategy(this, (p) => !(p instanceof Injector));
-        this.injectorStrategy = this.strategy;
         this._state = new RegisteredStateImpl(this);
         this._action = new ActionProvider(this);
-        this.NULL_PROVIDER = new Provider(this);
         registerCores(this);
     }
 
-    protected defaultStrategy(parent: IProvider): Strategy {
-        this.strategy = new DefaultStrategy(this, (p) => p instanceof Injector);
-        return this.strategy;
-    }
 
     getContainer(): this {
         return this;
@@ -155,7 +143,7 @@ const SERVICE: IServiceProvider = {
         return services;
     },
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
-        return injector.getContainer().NULL_PROVIDER;
+        return NULL_PROVIDER;
     }
 };
 
@@ -223,7 +211,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     getProvider(decor: string) {
-        return this.decors.get(decor) ?? this.container.NULL_PROVIDER;
+        return this.decors.get(decor) ?? NULL_PROVIDER;
     }
 
     regDecoator(decor: string, ...providers: ProviderType[]) {

@@ -6,7 +6,6 @@ import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
-import { IContainer } from './IContainer';
 
 
 
@@ -16,14 +15,14 @@ import { IContainer } from './IContainer';
 @Abstract()
 export abstract class Strategy {
 
-    protected constructor(public container: IContainer) { }
+    protected constructor() { }
 
 
     resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (...providers: ProviderType[]) => IProvider): T {
         const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
         const pdr = toProvider(...option.providers || []);
         let inst: T;
-        const state = this.container.state();
+        const state = curr.state();
         if (isFunction(targetToken)) {
             inst = this.rsvWithTarget(state, curr, option.token, targetToken, pdr);
         }
@@ -41,7 +40,7 @@ export abstract class Strategy {
      * @param [singleton]
      */
     registerIn<T>(injector: IProvider, type: Type<T>, options?: ProviderOption) {
-        const regState = this.container.state();
+        const regState = injector.state();
         // make sure class register once.
         if (regState.isRegistered(type)) {
             if (options?.provide) {
@@ -59,7 +58,7 @@ export abstract class Strategy {
             token: options?.provide,
             type
         } as DesignContext;
-        this.container.action().getInstance(DesignLifeScope).register(ctx);
+        injector.action().getInstance(DesignLifeScope).register(ctx);
         cleanObj(ctx);
 
         return this;
@@ -139,8 +138,8 @@ export abstract class Strategy {
  * default strategy.
  */
 export class DefaultStrategy extends Strategy {
-    constructor(container: IContainer, private vaild: (parent: IProvider) => boolean) {
-        super(container);
+    constructor(private vaild: (parent: IProvider) => boolean) {
+        super();
     }
 
     vaildParent(parent: IProvider) {

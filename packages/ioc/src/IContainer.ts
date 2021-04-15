@@ -1,6 +1,5 @@
 import { Token, ProviderType } from './tokens';
-import { IActionProvider, IInjector, IProvider, RegisteredState, ServiceOption, ServicesOption } from './IInjector';
-import { Strategy } from './strategy';
+import { IInjector, IProvider, ServiceOption, ServicesOption } from './IInjector';
 
 /**
  * root container interface.
@@ -11,19 +10,6 @@ import { Strategy } from './strategy';
 export interface IContainer extends IInjector {
 
     readonly id: string;
-
-    /**
-     * provider default strategy.
-     */
-    readonly providerStrategy: Strategy;
-    /**
-     * injector default strategy.
-     */
-    readonly injectorStrategy: Strategy;
-    /**
-     * null provider.
-     */
-    readonly NULL_PROVIDER: IProvider;
     /**
      * create injector.
      */

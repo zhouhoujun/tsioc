@@ -9,8 +9,13 @@ import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
 import { INJECTOR, PROVIDERS } from './utils/tk';
-import { Strategy } from './strategy';
+import { DefaultStrategy, Strategy } from './strategy';
 
+
+/**
+ * provider default startegy.
+ */
+export const providerStrategy = new DefaultStrategy((p) => !(p instanceof Injector));
 
 /**
  * provider container.
@@ -26,6 +31,7 @@ export class Provider implements IProvider {
     static ρNPT = true;
 
     private _destroyed = false;
+    private _container: IContainer;
     private destroyCbs: (() => void)[] = [];
     /**
      * factories.
@@ -37,26 +43,18 @@ export class Provider implements IProvider {
     protected factories: Map<Token, InstFac>;
     private destCb: () => void;
 
-    constructor(public parent: IProvider, protected strategy?: Strategy) {
+    constructor(public parent: IProvider, protected strategy: Strategy = providerStrategy) {
         this.factories = new Map();
-        this.initStrategy();
-    }
-
-    protected initStrategy() {
-        if (!this.strategy) {
-            this.strategy = this.defaultStrategy(this.parent);
+        if (parent) {
+            this.destCb = () => this.destroy();
+            if (this.strategy.vaildParent(parent)) {
+                parent.onDestroy(this.destCb);
+            } else {
+                this._container = parent.getContainer();
+                this._container.onDestroy(this.destCb);
+                this.parent = null;
+            }
         }
-        this.destCb = () => this.destroy();
-        if (this.strategy.vaildParent(this.parent)) {
-            this.parent.onDestroy(this.destCb);
-        } else {
-            this.strategy.container.onDestroy(this.destCb);
-            this.parent = null;
-        }
-    }
-
-    protected defaultStrategy(parent: IProvider): Strategy {
-        return parent.getContainer().providerStrategy;
     }
 
     get size(): number {
@@ -64,21 +62,24 @@ export class Provider implements IProvider {
     }
 
     getContainer(): IContainer {
-        return this.strategy.container;
+        if (!this._container) {
+            this._container = this.parent.getContainer()
+        }
+        return this._container;
     }
 
     /**
      * registered state.
      */
     state(): RegisteredState {
-        return this.strategy.container.state();
+        return this.getContainer().state();
     }
 
     /**
      * action provider.
      */
     action(): IActionProvider {
-        return this.strategy.container.action();
+        return this.getContainer().action();
     }
 
 
@@ -337,7 +338,7 @@ export class Provider implements IProvider {
 
     parseProvider(...providers: ProviderType[]): IProvider {
         const pdr = this.createProvider(...providers);
-        if(!pdr.has(INJECTOR) && isInjector(this)){
+        if (!pdr.has(INJECTOR) && isInjector(this)) {
             pdr.inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this });
         }
         return pdr;
@@ -470,13 +471,13 @@ export class Provider implements IProvider {
             });
         this.factories.clear();
         this.factories = null;
-        if (this.parent && !this.parent.destroyed) {
-            remove((this.parent as Provider).destroyCbs, this.destCb);
-        }
-        if (!this.parent && !this.strategy.container.destroyed) {
-            remove((this.strategy.container as IProvider as Provider).destroyCbs, this.destCb);
+        if (this.parent) {
+            !this.parent.destroyed && remove((this.parent as Provider).destroyCbs, this.destCb);
+        } else if (this._container) {
+            !this._container.destroyed && remove((this._container as IProvider as Provider).destroyCbs, this.destCb);
         }
         this.destCb = null;
+        this._container = null;
         this.parent = null;
         this.strategy = null;
     }
@@ -492,15 +493,16 @@ export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
 }
 
+/**
+ * injector default startegy.
+ */
+export const injectorStrategy = new DefaultStrategy((p) => p instanceof Injector);
+
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {
 
-    constructor(readonly parent: IInjector, strategy?: Strategy) {
+    constructor(readonly parent: IInjector, strategy: Strategy = injectorStrategy) {
         super(parent, strategy);
-    }
-
-    protected defaultStrategy(parent: IProvider): Strategy {
-        return parent.getContainer().injectorStrategy;
     }
 
     /**
