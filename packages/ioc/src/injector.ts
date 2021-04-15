@@ -2,7 +2,10 @@ import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
 import { KeyValueProvider, StaticProviders } from './providers';
-import { ClassRegister, IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister } from './IInjector';
+import {
+    ClassRegister, IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState,
+    RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister
+} from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { IContainer } from './IContainer';

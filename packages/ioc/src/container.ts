@@ -3,7 +3,10 @@ import { ClassType, LoadType, Type } from './types';
 import { isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { isBaseOf } from './utils/lang';
-import { IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState, ResolveOption, ServiceOption, ServicesOption } from './IInjector';
+import {
+    IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState,
+    ResolveOption, ServiceOption, ServicesOption
+} from './IInjector';
 import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
 import { ProviderType, Token } from './tokens';

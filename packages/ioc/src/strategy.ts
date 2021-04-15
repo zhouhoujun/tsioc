@@ -40,11 +40,11 @@ export abstract class Strategy {
      * @param [singleton]
      */
     registerIn<T>(injector: IProvider, type: Type<T>, options?: ProviderOption) {
-        const regState = injector.state();
+        const state = injector.state();
         // make sure class register once.
-        if (regState.isRegistered(type)) {
+        if (state.isRegistered(type)) {
             if (options?.provide) {
-                injector.bindProvider(options.provide, type, regState.getRegistered(type));
+                injector.bindProvider(options.provide, type, state.getRegistered(type));
             }
             return this;
         }
@@ -65,16 +65,16 @@ export abstract class Strategy {
     }
 
 
-    protected rsvWithTarget<T>(regState: RegisteredState, curr: IProvider, token: Token<T>, targetToken: Type, pdr: IProvider): T {
-        return regState?.getTypeProvider(targetToken)?.get(token, pdr) ?? curr.get(tokenRef(token, targetToken), pdr);
+    protected rsvWithTarget<T>(state: RegisteredState, curr: IProvider, token: Token<T>, targetToken: Type, pdr: IProvider): T {
+        return state?.getTypeProvider(targetToken)?.get(token, pdr) ?? curr.get(tokenRef(token, targetToken), pdr);
     }
 
     protected rsvToken<T>(curr: IProvider, token: Token<T>, pdr: IProvider): T {
         return pdr?.get(token, pdr) ?? curr.get(token, pdr) ?? curr.parent?.get(token, pdr);
     }
 
-    protected rsvFailed<T>(regState: RegisteredState, curr: IProvider, option: ResolveOption<T>, pdr: IProvider): T {
-        if (option.regify && isFunction(option.token) && !regState?.isRegistered(option.token)) {
+    protected rsvFailed<T>(state: RegisteredState, curr: IProvider, option: ResolveOption<T>, pdr: IProvider): T {
+        if (option.regify && isFunction(option.token) && !state?.isRegistered(option.token)) {
             curr.register(option.token as Type);
             return curr.get(option.token, pdr);
         }
