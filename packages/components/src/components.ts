@@ -15,7 +15,6 @@ export class ComponentsModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
 
-        const prdr = container.provider;
         container.register(HostMappingRoot);
 
         // prdr.regAction(
@@ -24,7 +23,8 @@ export class ComponentsModule {
         //         RenderComponent
         //     );
 
-        prdr.getInstance(ResolveMoudleScope)
+        container.action()
+            .getInstance(ResolveMoudleScope)
             .use(ParseTemplateHandle);
 
     }
