@@ -11,8 +11,8 @@ import { ConfigureServiceHandle, StartupGlobalService } from '../boot/handles';
 export class ORMCoreModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
-        const actpdr = container.action();
-        actpdr.getInstance(StartupGlobalService)
+        container.action()
+            .getInstance(StartupGlobalService)
             .useBefore(ConnectionsHandle, ConfigureServiceHandle);
     }
 }

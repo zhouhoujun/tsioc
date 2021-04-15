@@ -23,15 +23,13 @@ export class BootModule {
      */
     setup(@Inject(CONTAINER) container: IContainer) {
 
-        const prdr = container.action();
-        prdr.regAction(
+        container.action().regAction(
             ResolveMoudleScope,
             StartupServiceScope,
             RunnableBuildLifeScope,
             BootLifeScope);
 
         container.use(BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser);
-
 
     }
 }
