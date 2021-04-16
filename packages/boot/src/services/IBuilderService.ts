@@ -10,9 +10,8 @@ import { IBootApplication } from '../IBootApplication';
  * @class BuilderService
  */
 export interface IBuilderService {
-
     /**
-     * resolve binding module.
+     * build target type.
      *
      * @template T
      * @param {Type} target
@@ -20,7 +19,17 @@ export interface IBuilderService {
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      */
-    resolve<T>(target: ClassType<T> | BuildOption<T>): Promise<T>;
+    build<T>(target: ClassType<T> | BuildOption<T>): Promise<T>;
+    /**
+     * build target type.
+     *
+     * @template T
+     * @param {Type} target
+     * @param {BuildOption<T>} options
+     * @param {...ProviderTypes[]} providers
+     * @returns {Promise<T>}
+     */
+     reslove<T>(target: ClassType<T> | BuildOption<T>): Promise<T>;
 
     /**
      * startup runnable service.

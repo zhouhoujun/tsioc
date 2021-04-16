@@ -1,5 +1,5 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
-import { ResolveMoudleScope } from '@tsdi/boot';
+import { ResolveScope } from '@tsdi/boot';
 import { ParseTemplateHandle } from './compile/actions';
 import { HostMappingRoot } from './router';
 
@@ -24,7 +24,7 @@ export class ComponentsModule {
         //     );
 
         container.action()
-            .getInstance(ResolveMoudleScope)
+            .getInstance(ResolveScope)
             .use(ParseTemplateHandle);
 
     }

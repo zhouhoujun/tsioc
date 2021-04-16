@@ -15,7 +15,7 @@ export class UnitTestRunner extends Runnable {
         const ctx = context;
         let config = ctx.getConfiguration() as UnitTestConfigure;
         let src = config.src;
-        let injector = ctx.injector;
+        let injector = ctx.root;
         let suites: any[] = [];
         let oldRunner = injector.resolve(OldTestRunner);
         let loader = injector.getLoader();

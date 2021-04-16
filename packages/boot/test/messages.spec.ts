@@ -132,7 +132,7 @@ describe('app message queue', () => {
 
     before(async () => {
         ctx = await BootApplication.run(MainApp);
-        injector = ctx.injector;
+        injector = ctx.root;
     });
 
     it('make sure singleton', async () => {

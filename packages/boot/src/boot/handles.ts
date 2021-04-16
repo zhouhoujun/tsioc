@@ -39,8 +39,8 @@ export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActi
             await next();
         }
         // after all register application exit events
-        const injector = ctx.injector;
-        const app = injector.getInstance(BootApplication);
+        const injector = ctx.root;
+        const app = ctx.getInstance(BootApplication);
         ctx.onDestroy(() => {
             app.destroy();
         });
@@ -64,7 +64,7 @@ export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActi
  */
 export const BootDepsHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.deps && ctx.deps.length) {
-        await ctx.injector.load(...ctx.deps);
+        await ctx.root.load(...ctx.deps);
     }
     await next();
 };
@@ -78,7 +78,7 @@ export const BootDepsHandle = async function (ctx: IBootContext, next: () => Pro
  */
 export const BootProvidersHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.providers.size) {
-        ctx.injector.copy(ctx.providers);
+        ctx.root.copy(ctx.providers);
     }
     await next();
 };
@@ -93,7 +93,7 @@ export const BootProvidersHandle = async function (ctx: IBootContext, next: () =
 export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
 
     const options = ctx.getOptions();
-    const injector = ctx.injector;
+    const injector = ctx.root;
     if (ctx.type) {
         if (ctx.hasValue(PROCESS_ROOT)) {
             injector.setValue(PROCESS_ROOT, ctx.baseURL)
@@ -131,16 +131,13 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 
     async execute(ctx: IBootContext, next?: () => Promise<void>): Promise<void> {
         if (!ctx.type) {
-            if (ctx.template && next) {
-                return await next();
-            }
             return;
         }
         if (isPrimitiveType(ctx.type)) {
             return;
         }
         // has module register or not.
-        if (!ctx.injector.state().isRegistered(ctx.type)) {
+        if (!ctx.state().isRegistered(ctx.type)) {
             await super.execute(ctx);
         }
         if (next) {
@@ -153,20 +150,20 @@ export class RegisterModuleScope extends BuildHandles<IAnnoationContext> impleme
 };
 
 export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    const state = ctx.injector.state();
+    const state = ctx.state();
     if (!state.isRegistered(ctx.type)) {
         if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
-            ctx.injector.register({ useClass: ctx.type, regIn: 'root' });
+            ctx.root.register({ useClass: ctx.type, regIn: 'root' });
         } else {
-            ctx.injector.register(ctx.type);
+            ctx.root.register(ctx.type);
         }
     }
     const annoation = ctx.getAnnoation();
-    ctx.setValue(INJECTOR, state.getInjector(ctx.type));
+    ctx.setRoot(state.getInjector(ctx.type));
     if (annoation) {
         if (annoation.baseURL) {
             ctx.baseURL = annoation.baseURL;
-            ctx.injector.setValue(PROCESS_ROOT, annoation.baseURL);
+            ctx.root.setValue(PROCESS_ROOT, annoation.baseURL);
         }
         next();
     } else {
@@ -187,11 +184,11 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
     }
     if (config.debug) {
         // make sure log module registered.
-        ctx.injector.register(LogModule)
+        ctx.root.register(LogModule)
             .register(DebugLogAspect);
     }
 
-    const regs = ctx.injector.getServices(ConfigureRegister);
+    const regs = ctx.root.getServices(ConfigureRegister);
     if (regs && regs.length) {
         await Promise.all(regs.map(reg => reg.register(config, ctx)));
 
@@ -224,7 +221,7 @@ export class ModuleBuildScope extends BuildHandles<IBootContext> implements IAct
 
 export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.type && !ctx.target) {
-        ctx.target = await ctx.injector.getInstance(BUILDER).resolve({
+        ctx.target = await ctx.root.getInstance(BUILDER).build({
             type: ctx.type,
             // parent: ctx,
             providers: ctx.providers
@@ -235,16 +232,15 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const bootModule = ctx.bootstrap || ctx.getAnnoation()?.bootstrap;
-    if (!ctx.boot && (ctx.template || bootModule)) {
+    if (!ctx.boot && bootModule) {
         ctx.providers.inject(
             { provide: BOOTCONTEXT, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx }
         )
-        let injector = ctx.injector;
-        let boot = await injector.getInstance(BUILDER).resolve({
+        let injector = ctx.root;
+        let boot = await injector.getInstance(BUILDER).build({
             type: isProvide(bootModule) ? injector.getTokenProvider(bootModule) : bootModule,
             // parent: ctx,
-            template: ctx.template,
             providers: ctx.providers
         });
         ctx.boot = boot;
@@ -276,24 +272,24 @@ export class StartupGlobalService extends BuildHandles<IBootContext> implements 
  */
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.getStarupTokens() || [];
-    const { injector, providers } = ctx;
-    const regedState = injector.state();
+    const { root, providers }= ctx;
+    const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
             let ser: IStartupService;
             if (isFunction(tyser) && !regedState.isRegistered(tyser)) {
-                injector.register(tyser as Type);
+                root.register(tyser as Type);
             }
-            ser = injector.get(tyser) ?? regedState.getInstance(tyser as ClassType);
+            ser = root.get(tyser) ?? regedState.getInstance(tyser as ClassType);
             ctx.onDestroy(() => ser?.destroy());
             return ser?.configureService(ctx);
         }));
     }
 
-    const starts = injector.get(STARTUPS) || [];
+    const starts = root.get(STARTUPS) || [];
     if (starts.length) {
         await lang.step(starts.map(tyser => () => {
-            const ser = injector.get(tyser) ?? regedState.getInstance(tyser);
+            const ser = root.get(tyser) ?? regedState.getInstance(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
             return ser.configureService(ctx);
@@ -301,7 +297,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     }
 
     const sers: StartupService[] = [];
-    const prds = injector.getServiceProviders(StartupService);
+    const prds = root.getServiceProviders(StartupService);
     prds.iterator((pdr, tk) => {
         if (startups.indexOf(tk) < 0) {
             sers.push(getFacInstance(pdr, providers));
@@ -348,7 +344,7 @@ export const RunnableHandle = async function (ctx: IBootContext, next: () => Pro
     if (ctx.boot instanceof Runnable) {
         startup = ctx.boot;
     } else {
-        startup = ctx.injector.getService(
+        startup = ctx.root.getService(
             { tokens: [Runnable], target: ctx.boot },
             { provide: BOOTCONTEXT, useValue: ctx },
             { provide: lang.getClass(ctx), useValue: ctx });

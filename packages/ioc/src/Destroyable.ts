@@ -16,4 +16,9 @@ export interface Destroyable {
      * @param callback destory callback
      */
     onDestroy?(callback: () => void): void;
+    /**
+     * remove callback on destory.
+     * @param callback 
+     */
+    offDestory?(callback: () => void): void;
 }

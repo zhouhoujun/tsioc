@@ -50,7 +50,7 @@ export class DeviceInitService extends StartupService {
     id = 0;
     async configureService(ctx: IBootContext): Promise<void> {
         const cfg = ctx.getConfiguration();
-        const injector = ctx.injector;
+        const injector = ctx.root;
         let connention = injector.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
@@ -65,7 +65,7 @@ export class DeviceAService extends StartupService {
     data: any;
     async configureService(ctx: IBootContext): Promise<void> {
         const cfg = ctx.getConfiguration();
-        const injector = ctx.injector;
+        const injector = ctx.root;
         let connid = injector.get(DeviceInitService).connid;
         this.data = { connid };
     }
@@ -111,7 +111,7 @@ describe('app message queue', () => {
 
     before(async () => {
         ctx = await BootApplication.run(MainApp);
-        injector = ctx.injector;
+        injector = ctx.root;
     });
 
     it('make sure singleton', async () => {

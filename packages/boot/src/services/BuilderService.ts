@@ -4,7 +4,7 @@ import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
 import { BUILDER, CTX_OPTIONS, ROOT_INJECTOR } from '../tk';
-import { IBuildHandle, ResolveMoudleScope } from '../builder/handles';
+import { IBuildHandle, ResolveScope } from '../builder/handles';
 import { BootContext } from '../boot/ctx';
 
 
@@ -33,7 +33,7 @@ export class BuilderService implements IBuilderService {
      * @param {...ProviderTypes[]} providers
      * @returns {Promise<T>}
      */
-    async resolve<T>(target: ClassType<T> | BuildOption<T>): Promise<T> {
+    async build<T>(target: ClassType<T> | BuildOption<T>): Promise<T> {
         let injector: IInjector;
         let options: BuildOption;
         let md: ClassType;
@@ -50,11 +50,15 @@ export class BuilderService implements IBuilderService {
             injector = state.isRegistered(md) ? state.getInjector(md) || this.root : this.root;
         }
         let rctx = { ...options, injector } as IBuildContext;
-        await this.root.action().getInstance(ResolveMoudleScope)
+        await this.root.action().getInstance(ResolveScope)
             .execute(rctx);
         const value = rctx.value;
         lang.cleanObj(rctx);
         return value;
+    }
+
+    reslove<T>(target: ClassType<T> | BuildOption<T>): Promise<T> {
+        return this.build(target);
     }
 
     async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<any> {

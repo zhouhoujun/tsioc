@@ -36,7 +36,7 @@ export class ServiceProvider implements IServiceProvider {
         const pdr = injector.parseProvider(...providers);
 
         const context = {
-            injector,
+            root: injector,
             ...option,
             providers: pdr
         } as ServiceContext;
@@ -88,7 +88,7 @@ export class ServiceProvider implements IServiceProvider {
      */
     getServiceProviders<T>(injector: IInjector, target: Token<T> | ServicesOption<T>): IProvider {
         let context = {
-            injector,
+            root: injector,
             ...isPlainObject(target) ? target : { token: target },
             providers: null,
         } as ServicesContext;

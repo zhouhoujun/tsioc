@@ -36,46 +36,26 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
 /**
  * destroyable context.
  */
-export interface IDestroyableContext<T> extends IocContext, Destroyable {
+export interface IDestroyableContext<T> extends IocContext, IProvider {
     /**
-     * current injector.
+     * current root injector.
      */
+    readonly root: IInjector;
+
+    /**
+    * current root injector.
+    * 
+    * @deprecated use `root` instead.
+    */
     readonly injector: IInjector;
     /**
      * get providers of options.
      */
     readonly providers: IProvider;
-
-    /**
-    * has value in context providers or not.
-    * @param token
-    */
-    hasValue(token: Token): boolean;
-    /**
-     * get value from context.
-     * @param key token key
-     */
-    getValue<T>(key: Token<T>): T;
-    /**
-     * set value to this context providers.
-     * @param key token key
-     * @param value value of key.
-     */
-    setValue<T>(key: Token<T>, value: T): this;
-
     /**
      * options.
      */
     getOptions(): T;
-
-    /**
-     * get root container.
-     */
-    getContainer(): IContainer;
-    /**
-     * clone this context.
-     */
-    clone(options?: T): this;
 }
 
 /**
@@ -180,11 +160,11 @@ export interface BuildOption<T = any> extends AnnoationOption<T> {
     /**
      * template to binding.
      */
-     template?: Template;
-     /**
-      * module reslove in the injector.
-      */
-     injector?: IInjector;
+    template?: Template;
+    /**
+     * module reslove in the injector.
+     */
+    injector?: IInjector;
 }
 
 /**
@@ -199,7 +179,7 @@ export interface IBuildContext extends BuildOption<any> {
      * type reflect.
      */
     readonly reflect?: TypeReflect;
-    
+
     /**
      * build instance.
      */
@@ -215,6 +195,8 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * get target reflect.
      */
     readonly reflect: ModuleReflect;
+
+    setRoot(injector: IInjector);
 
     /**
      * get message queue.
@@ -243,11 +225,6 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      */
     getLogManager(): ILoggerManager;
     /**
-     * get service in context.
-     * @param token
-     */
-    getService<T>(token: Token<T>): T;
-    /**
      * get statup service tokens.
      */
     getStarupTokens(): Token[];
@@ -273,11 +250,6 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * @memberof BootOptions
      */
     readonly data: any;
-
-    /**
-     * template.
-     */
-    readonly template: Template;
     /**
     * auto statupe or not. default true.
     *

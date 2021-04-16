@@ -44,7 +44,7 @@ export class Provider implements IProvider {
      * @memberof BaseInjector
      */
     protected factories: Map<Token, InstFac>;
-    private destCb: () => void;
+    protected destCb: () => void;
 
     constructor(public parent: IProvider, protected strategy: Strategy = providerStrategy) {
         this.factories = new Map();
@@ -445,6 +445,10 @@ export class Provider implements IProvider {
         }
     }
 
+    offDestory(callback: () => void) {
+        remove(this.destroyCbs, callback);
+    }
+
     protected createCustomFactory<T>(key: Token<T>, factory?: Factory<T>, singleton?: boolean) {
         return singleton ?
             (...providers: ProviderType[]) => {
@@ -475,9 +479,9 @@ export class Provider implements IProvider {
         this.factories.clear();
         this.factories = null;
         if (this.parent) {
-            !this.parent.destroyed && remove((this.parent as Provider).destroyCbs, this.destCb);
+            !this.parent.destroyed && this.parent.offDestory(this.destCb);
         } else if (this._container) {
-            !this._container.destroyed && remove((this._container as IProvider as Provider).destroyCbs, this.destCb);
+            !this._container.destroyed && this._container.offDestory(this.destCb);
         }
         this.destCb = null;
         this._container = null;

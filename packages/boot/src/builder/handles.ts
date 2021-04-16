@@ -170,18 +170,13 @@ export class BuildHandles<T> extends BuildHandle<T> {
 }
 
 /**
- * resolve handle.
- */
-export abstract class ResolveHandle extends BuildHandle<IBuildContext> { }
-
-/**
  * resolve module scope.
  *
  * @export
  * @class ResolveMoudleScope
  * @extends {BuildHandles<IBuildContext>}
  */
-export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements IActionSetup {
+export class ResolveScope extends BuildHandles<IBuildContext> implements IActionSetup {
 
     async execute(ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
         if (ctx.value) {
@@ -204,11 +199,11 @@ export class ResolveMoudleScope extends BuildHandles<IBuildContext> implements I
     }
 
     setup() {
-        this.use(ResolveModuleHandle);
+        this.use(ResolveHandle);
     }
 }
 
-export const ResolveModuleHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
+export const ResolveHandle = async function (ctx: IBuildContext, next: () => Promise<void>): Promise<void> {
     if (!ctx.value && ctx.type) {
         ctx.value = ctx.injector.resolve(ctx.type, ctx.providers);
     }

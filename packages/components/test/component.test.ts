@@ -272,8 +272,8 @@ export class CTest {
     @Test('can resolve component template')
     async test2() {
         let container = this.ctx.getContainer();
-        let comp1 = await container.get(BUILDER).resolve({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.injector }) as Component1;
-        let comp11 = await container.get(BUILDER).resolve({ type: Component1, template: { name: 'test1' } });
+        let comp1 = await container.get(BUILDER).build({ template: { element: 'selector1', name: 'test1' }, injector: this.ctx.root }) as Component1;
+        let comp11 = await container.get(BUILDER).build({ type: Component1, template: { name: 'test1' } });
         console.log('comp1:', comp1);
         console.log('comp11:', comp11);
         expect(comp1.name).toEqual('test1');
@@ -297,7 +297,7 @@ export class CTest {
 
     @Test('can resolve component template in sub module')
     async test3() {
-        let service = this.ctx.injector.get(CustomeService);
+        let service = this.ctx.root.get(CustomeService);
         expect(service instanceof CustomeService).toBeTruthy();
         let comp3 = await service.createComponent3() as Component3;
         console.log('comp3:', comp3);
@@ -318,7 +318,7 @@ export class CTest {
     @Test('can resolve component template in sub module by sub module')
     async test5() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let injector = ctx.injector;
+        let injector = ctx.root;
         // console.log(container);
         // console.log(ctx.boot);
         expect(ctx.boot instanceof Component3).toBeTruthy();
@@ -336,7 +336,7 @@ export class CTest {
     async test6() {
         let ctx = await BootApplication.run({ type: ComponentTestMd3, template: { name: 'test', address: 'cd', phone: '17000000000' } });
         // console.log(container);
-        console.log(ctx.injector.get(Component1));
+        console.log(ctx.root.get(Component1));
         // console.log(ctx.boot);
         expect(ctx.boot instanceof Component1).toBeTruthy();
         expect(ctx.boot.name).toEqual('test');
@@ -345,11 +345,11 @@ export class CTest {
     @Test('can get refchild')
     async test7() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let injector = ctx.injector;
+        let injector = ctx.root;
         expect(ctx.boot instanceof Component3).toBeTruthy();
         expect(ctx.boot.phone).toEqual('17000000000');
         let comp = await injector.get(BUILDER)
-            .resolve({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef<Components>;
+            .build({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.root }) as ComponentRef<Components>;
 
         // console.log('comp:', comp);
         expect(comp.instance instanceof Components).toBeTruthy();
@@ -371,11 +371,11 @@ export class CTest {
     @Test('can get refchild, two way binding name')
     async test8() {
         let ctx = await BootApplication.run({ type: ComponentTestMd2, template: { name: 'test', address: 'cd', phone: '17000000000' } });
-        let injector = ctx.injector;
+        let injector = ctx.root;
         expect(ctx.boot instanceof Component3).toBeTruthy();
         expect(ctx.boot.phone).toEqual('17000000000');
         let comp = await injector.get(BUILDER)
-            .resolve({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.injector }) as ComponentRef<Components>;
+            .build({ template: { element: 'comp', name: 'test111', address: 'cd111' }, injector: ctx.root }) as ComponentRef<Components>;
 
         expect(comp.instance instanceof Components).toBeTruthy();
         expect(comp.instance.cname).toEqual('test111');
@@ -396,8 +396,8 @@ export class CTest {
 
     @Test('can binding sub field')
     async test9() {
-        let injector = this.ctx.injector;
-        let value = await injector.get(BUILDER).resolve({
+        let injector = this.ctx.root;
+        let value = await injector.get(BUILDER).build({
             injector: injector,
             template: {
                 element: 'obj-comp',

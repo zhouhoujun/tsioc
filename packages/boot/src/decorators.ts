@@ -91,7 +91,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const injector = ctx.injector.getValue(ROOT_INJECTOR);
+                const injector = ctx.root.getValue(ROOT_INJECTOR);
                 let startups = injector.get(STARTUPS) || [];
                 const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
                 let idx = -1;
@@ -203,9 +203,9 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
         design: {
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (ctx.reflect.annoType === 'module') {
-                    ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn || ctx.reflect.annotation.regIn);
+                    ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.root as IModuleInjector, ctx.regIn || ctx.reflect.annotation.regIn);
                     (ctx.state as ModuleRegistered).moduleRef = ctx.moduleRef;
-                    ctx.injector = ctx.moduleRef.injector;
+                    ctx.root = ctx.moduleRef.injector;
                 }
                 next();
             },
@@ -219,7 +219,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if (ctx.reflect.annotation.imports) {
                         const types = ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
                         (ctx.moduleRef as DefaultModuleRef).imports = types;
-                        const state = ctx.injector.state();
+                        const state = ctx.root.state();
                         types.forEach(ty => {
                             const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
                             if (importRef) {
@@ -393,7 +393,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 }
             }
             const { route, protocol, parent, before, after } = metadata;
-            const injector = ctx.injector;
+            const injector = ctx.root;
             if (!isString(route) && !parent) {
                 return next();
             }
@@ -544,7 +544,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
     design: {
         afterAnnoation: (ctx, next) => {
             const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
-            const injector = ctx.injector;
+            const injector = ctx.root;
             let queue: Middlewares;
             if (parent) {
                 queue = injector.state().getInstance(parent);

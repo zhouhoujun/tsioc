@@ -228,7 +228,7 @@ export class MappingRoute extends Route {
                                     if (mdparser) {
                                         val = mdparser.parseModel(ptype, body);
                                     } else {
-                                        val = await injector.getInstance(BUILDER).resolve({ type: ptype, template: body })
+                                        val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
                                     }
                                 }
                             }

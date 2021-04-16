@@ -53,7 +53,7 @@ export abstract class Strategy {
         }
 
         const ctx = {
-            injector,
+            root: injector,
             ...options,
             token: options?.provide,
             type

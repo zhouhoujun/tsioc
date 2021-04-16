@@ -1,4 +1,4 @@
-import { Injectable, Token, LoadType, ProviderType } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType, IInjector } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
@@ -20,8 +20,15 @@ import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../midd
 @Injectable()
 export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T, ModuleReflect> implements IBootContext<T> {
 
+
+    setRoot(injector: IInjector) {
+        this._root.offDestory(this.destCb);
+        (this as any).parent = injector;
+        this.parent.onDestroy(this.destCb);
+    }
+    
     getMessager(): MessageQueue {
-        return this.injector.get(ROOT_QUEUE);
+        return this.get(ROOT_QUEUE);
     }
 
     /**
@@ -48,15 +55,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * get log manager.
      */
     getLogManager(): ILoggerManager {
-        return this.injector.get(ConfigureLoggerManager);
-    }
-
-    /**
-     * get service in application context.
-     * @param token
-     */
-    getService<T>(token: Token<T>): T {
-        return this.providers.get(token) ?? this.injector.get(token);
+        return this.get(ConfigureLoggerManager);
     }
 
     /**
@@ -104,14 +103,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @returns {ConfigureManager<Configure>}
      */
     getConfigureManager(): ConfigureManager<Configure> {
-        return this.injector.resolve(ConfigureManager);
-    }
-
-    /**
-     * get template.
-     */
-    get template(): Template {
-        return this.options.template;
+        return this.root.resolve(ConfigureManager);
     }
 
     get args(): string[] {

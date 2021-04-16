@@ -1,6 +1,6 @@
 import {
-    lang, PROVIDERS, refl, TypeReflect, Type, Inject, Abstract, IContainer,
-    IProvider, isArray, isBoolean, Injector, IInjector, isProvide, Token
+    lang, refl, TypeReflect, Type, Inject, Abstract,
+    IProvider, isArray, Injector, IInjector, isProvide, Token, Provider
 } from '@tsdi/ioc';
 import { AnnoationOption, IAnnoationContext, IDestroyableContext, ProdverOption } from '../Context';
 import { CTX_OPTIONS } from '../tk';
@@ -10,60 +10,34 @@ import { CTX_OPTIONS } from '../tk';
  * Destroyable context.
  */
 @Abstract()
-export class DestroyableContext<T extends ProdverOption> implements IDestroyableContext<T> {
+export class DestroyableContext<T extends ProdverOption> extends Provider implements IDestroyableContext<T> {
 
-    static ρNPT = true;
-    private _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
-    private _provider: IProvider;
+    protected _root: Injector;
     protected options: T;
 
-    constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options: T) {
-        this._provider = injector.getContainer().get(PROVIDERS);
-        this._provider.setValue(Injector, injector);
-        this.setOptions(options);
+    constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options?: T) {
+        super(injector)
+        this._root = injector;
+        if (options) this.setOptions(options);
     }
 
     /**
-     * raise injector of this context.
+     * root injector of context.
      */
-    get injector(): IInjector {
-        return this._provider.getValue(Injector);
+    get root(): IInjector {
+        return this._root;
     }
+
+    get injector(): IInjector {
+        return this._root;
+    }
+
 
     /**
      * get providers of options.
      */
     get providers(): IProvider {
-        return this._provider;
-    }
-
-    hasValue(token: Token): boolean {
-        return this._provider.hasValue(token);
-    }
-    /**
-     * get value from context.
-     * @param key token key
-     */
-    getValue<T>(key: Token<T>): T {
-        return this._provider.getValue(key);
-    }
-
-    /**
-     * set value to this contet.
-     * @param key token key
-     * @param value value of key.
-     */
-    setValue<T>(key: Token<T>, value: T) {
-        this._provider.setValue(key, value);
         return this;
-    }
-
-    /**
-     * get root container.
-     */
-    getContainer(): IContainer {
-        return this._provider.getContainer();
     }
 
     /**
@@ -77,12 +51,12 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
 
         if (options.providers) {
             if (isArray(options.providers)) {
-                this._provider.inject(...options.providers);
+                this.inject(...options.providers);
             } else {
-                this._provider.copy(options.providers);
+                this.copy(options.providers);
             }
         }
-        this.options = Object.assign(this.options|| {}, options);
+        this.options = Object.assign(this.options || {}, options);
         return this;
     }
 
@@ -95,54 +69,15 @@ export class DestroyableContext<T extends ProdverOption> implements IDestroyable
         return this.options;
     }
 
-    clone(): this;
-    clone(options: T): this;
-    /**
-     * clone contexts.
-     */
-    clone(options?: T | boolean): this {
-        const Ctx = lang.getClass(this);
-        if (isBoolean(options)) {
-            return options ? new Ctx(null, this.injector)
-                : new Ctx(this.getOptions(), this.injector);
-        } else {
-            return new Ctx({ ...this.getOptions(), contexts: this._provider.clone(), ...options || {} }, this.injector);
-        }
-    }
-
-    /**
-     * has destoryed or not.
-     */
-    get destroyed() {
-        return this._destroyed;
-    }
-    /**
-    * destory this.
-    */
-    destroy(): void {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = [];
-            this.destroying();
-        }
-    }
-
-    /**
-     * register callback on destory.
-     * @param callback destory callback
-     */
-    onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
-        }
+    protected merge(from: DestroyableContext<T>, to: DestroyableContext<T>, filter?: (key: Token) => boolean) {
+        super.merge(from, to, filter);
+        to.setOptions(from.options);
     }
 
     protected destroying() {
-        this._provider.destroy();
+        super.destroying()
         lang.cleanObj(this.options);
         this.options = null;
-        this._provider = null;
     }
 }
 
@@ -173,7 +108,7 @@ export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeRefle
         }
 
         if (options.type) {
-            this._type = isProvide(options.type) ? this.injector.getTokenProvider(options.type) : options.type;
+            this._type = isProvide(options.type) ? this.root.getTokenProvider(options.type) : options.type;
             this._reflect = refl.get(this._type);
         }
 

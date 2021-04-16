@@ -39,12 +39,12 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 }
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-    const container = ctx.injector.getContainer();
+    const container = ctx.root.getContainer();
     if (ctx.reflect.regIn === 'root') {
         ctx.regIn = ctx.reflect.regIn;
-        ctx.injector = container;
+        ctx.root = container;
     }
-    const state = ctx.state = genReged(ctx.injector, ctx.token);
+    const state = ctx.state = genReged(ctx.root, ctx.token);
     container.state().regType(ctx.type, state);
     next();
 };
@@ -65,7 +65,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
             }
 
             const ctx = {
-                injector,
+                root: injector,
                 token,
                 type,
                 singleton,
@@ -95,7 +95,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regInstf(ctx.injector.getContainer(), ctx.injector, ctx.state, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
+    regInstf(ctx.root.getContainer(), ctx.root, ctx.state, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
     next();
 };
 
@@ -152,7 +152,7 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    const { injector, type, state } = ctx;
+    const { root: injector, type, state } = ctx;
     ctx.reflect.providers.forEach(anno => {
         injector.bindProvider(anno.provide, type, state);
     });
@@ -264,7 +264,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
         return next();
     }
 
-    const injector = ctx.injector;
+    const injector = ctx.root;
     const instance = injector.get(ctx.token || ctx.type);
     if (!instance) return;
     ctx.reflect.autoruns.forEach(meta => {
