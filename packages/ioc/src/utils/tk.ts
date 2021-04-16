@@ -3,11 +3,15 @@ import { Invoker } from '../Invoker';
 import { IInjector, IModuleLoader, IProvider } from '../IInjector';
 import { IContainer, IServiceProvider } from '../IContainer';
 
-
 /**
  * injector instance token of self.
  */
 export const INJECTOR: Token<IInjector> = tokenId<IInjector>('DI_INJECTOR');
+
+/**
+ * appliction root module injector token.
+ */
+ export const ROOT_INJECTOR: Token<IInjector> = tokenId<IInjector>('ROOT_INJECTOR');
 
 /**
  * provider/injector's parent.

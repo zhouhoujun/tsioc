@@ -1,8 +1,8 @@
-import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder } from '@tsdi/core';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
-import { BOOTCONTEXT, BUILDER, ROOT_INJECTOR } from './tk';
+import { BOOTCONTEXT, BUILDER } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
 import { MiddlewareModule } from './middlewares';

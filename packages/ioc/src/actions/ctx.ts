@@ -12,7 +12,7 @@ export interface IocContext {
     /**
      * current injector.
      */
-    root: IInjector;
+    injector: IInjector;
 
     /**
      *  providers.

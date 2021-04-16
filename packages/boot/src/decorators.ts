@@ -1,5 +1,5 @@
 import {
-    DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator,
+    DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator, ROOT_INJECTOR,
     lang, Type, isFunction, Token, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
@@ -7,7 +7,6 @@ import { ModuleConfigure } from './modules/configure';
 import { ModuleReflect } from './modules/reflect';
 import { DefaultModuleRef } from './modules/injector';
 import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from './middlewares/handle';
-import { ROOT_INJECTOR } from './tk';
 import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
 import { ROOT_QUEUE } from './middlewares/root';
 import { FactoryRoute, Route } from './middlewares/route';
@@ -91,7 +90,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const injector = ctx.root.getValue(ROOT_INJECTOR);
+                const injector = ctx.injector.getValue(ROOT_INJECTOR);
                 let startups = injector.get(STARTUPS) || [];
                 const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
                 let idx = -1;
@@ -203,9 +202,9 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
         design: {
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (ctx.reflect.annoType === 'module') {
-                    ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.root as IModuleInjector, ctx.regIn || ctx.reflect.annotation.regIn);
+                    ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn || ctx.reflect.annotation.regIn);
                     (ctx.state as ModuleRegistered).moduleRef = ctx.moduleRef;
-                    ctx.root = ctx.moduleRef.injector;
+                    ctx.injector = ctx.moduleRef.injector;
                 }
                 next();
             },
@@ -219,7 +218,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if (ctx.reflect.annotation.imports) {
                         const types = ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
                         (ctx.moduleRef as DefaultModuleRef).imports = types;
-                        const state = ctx.root.state();
+                        const state = ctx.injector.state();
                         types.forEach(ty => {
                             const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
                             if (importRef) {
@@ -393,7 +392,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 }
             }
             const { route, protocol, parent, before, after } = metadata;
-            const injector = ctx.root;
+            const injector = ctx.injector;
             if (!isString(route) && !parent) {
                 return next();
             }
@@ -544,7 +543,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
     design: {
         afterAnnoation: (ctx, next) => {
             const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
-            const injector = ctx.root;
+            const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
                 queue = injector.state().getInstance(parent);

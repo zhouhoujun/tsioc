@@ -93,13 +93,13 @@ export const BootProvidersHandle = async function (ctx: IBootContext, next: () =
 export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
 
     const options = ctx.getOptions();
-    const injector = ctx.root;
+    const root = ctx.root;
     if (ctx.type) {
         if (ctx.hasValue(PROCESS_ROOT)) {
-            injector.setValue(PROCESS_ROOT, ctx.baseURL)
+            root.setValue(PROCESS_ROOT, ctx.baseURL)
         }
     }
-    const mgr = injector.getInstance(ConfigureManager);
+    const mgr = root.getInstance(ConfigureManager);
     if (options.configures && options.configures.length) {
         options.configures.forEach(cfg => {
             mgr.useConfiguration(cfg);
@@ -109,19 +109,19 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
         mgr.useConfiguration();
     }
     const config = await mgr.getConfig();
-    ctx.setValue(CONFIGURATION, { ...config, ...ctx.reflect.annotation });
+    root.setValue(CONFIGURATION, { ...config, ...ctx.reflect.annotation });
 
     if (config.deps && config.deps.length) {
-        injector.load(...config.deps);
+        root.load(...config.deps);
     }
 
     if (config.providers && config.providers.length) {
-        injector.inject(...config.providers);
+        root.inject(...config.providers);
     }
 
     if (config.baseURL) {
         ctx.setValue(PROCESS_ROOT, config.baseURL);
-        injector.setValue(PROCESS_ROOT, config.baseURL);
+        root.setValue(PROCESS_ROOT, config.baseURL);
     }
 
     await next();
@@ -272,7 +272,7 @@ export class StartupGlobalService extends BuildHandles<IBootContext> implements 
  */
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.getStarupTokens() || [];
-    const { root, providers }= ctx;
+    const { root: root, providers }= ctx;
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {

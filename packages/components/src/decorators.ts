@@ -70,7 +70,7 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
                 return next();
             }
 
-            const compiler = ctx.root.getService({ token: CompilerFacade, target: ctx.currDecor });
+            const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
             (ctx.reflect as DirectiveReflect).def = compiler.compileDirective((ctx.reflect as DirectiveReflect));
 
             next();
@@ -132,7 +132,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
                 return next();
             }
 
-            const compiler = ctx.root.getService({ token: CompilerFacade, target: ctx.currDecor });
+            const compiler = ctx.injector.getService({ token: CompilerFacade, target: ctx.currDecor });
             compRefl.def = compiler.compileComponent(compRefl);
             next();
         }
@@ -362,7 +362,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
     design: {
         afterAnnoation: (ctx, next) => {
             const { route, parent, middlewares } = ctx.reflect.class.getMetadata<RouteMapingMetadata>(ctx.currDecor);
-            const injector = ctx.root;
+            const injector = ctx.injector;
             let queue: Middlewares;
             if (parent) {
                 queue = injector.state().getInstance(parent);

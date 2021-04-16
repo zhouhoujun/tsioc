@@ -18,7 +18,7 @@ import { DefaultStrategy, Strategy } from './strategy';
 /**
  * provider default startegy.
  */
-export const providerStrategy = new DefaultStrategy((p) => !(p instanceof Injector));
+export const providerStrategy = new DefaultStrategy((p) => (p instanceof Provider));
 
 /**
  * provider container.
@@ -549,7 +549,7 @@ export abstract class Injector extends Provider implements IInjector {
         let destroy: Function;
         const inst = this.strategy.resolve(this, option, (...pdrs) => {
             if (pdrs.length) {
-                let pdr = this.toProvider(...pdrs);
+                let pdr = this.parseProvider(...pdrs);
                 if (pdr !== pdrs[0]) {
                     destroy = () => pdr.destroy();
                 }

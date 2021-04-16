@@ -14,7 +14,7 @@ export class ResolveServiceScope extends IocActions<ServiceContext> implements I
 
         if (!ctx.instance) {
             if (ctx.defaultToken) {
-                ctx.instance = ctx.root.get(ctx.defaultToken, ctx.providers);
+                ctx.instance = ctx.injector.get(ctx.defaultToken, ctx.providers);
             }
         }
     }
@@ -54,7 +54,7 @@ export class RsvTagSericeScope extends IocActions<ServiceContext> implements IAc
 
 export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => void): void {
     if (isFunction(ctx.targetToken)) {
-        const { root: injector, providers, currTK } = ctx;
+        const { injector: injector, providers, currTK } = ctx;
         refl.get(ctx.targetToken)
             .class.decors.some(dec => {
                 if (dec.decorType !== 'class') {
@@ -82,13 +82,13 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
 
 export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () => void): void {
     if (isFunction(ctx.targetToken)) {
-        const { root: injector, currTK, providers } = ctx;
+        const { injector: injector, currTK, providers } = ctx;
         refl.get(ctx.targetToken).class.extendTypes.some(ty => {
             ctx.instance = injector.resolve({ token: currTK, target: ty, tagOnly: true }, providers);
             return ctx.instance;
         });
     } else {
-        ctx.instance = ctx.root.resolve({ token: ctx.currTK, target: ctx.targetToken, tagOnly: true }, ctx.providers);
+        ctx.instance = ctx.injector.resolve({ token: ctx.currTK, target: ctx.targetToken, tagOnly: true }, ctx.providers);
     }
 
     if (isNil(ctx.instance)) {
@@ -97,7 +97,7 @@ export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () =>
 };
 
 export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => void): void {
-    const { root: injector, providers } = ctx;
+    const { injector: injector, providers } = ctx;
     ctx.tokens.some(tk => {
         ctx.instance = injector.resolve(tk, providers);
         return !!ctx.instance;
@@ -123,7 +123,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
             return;
         }
 
-        const tkTypes = ctx.tokens.map(t => isProvide(t) ? ctx.root.getTokenProvider(t) : t).filter(t => t);
+        const tkTypes = ctx.tokens.map(t => isProvide(t) ? ctx.injector.getTokenProvider(t) : t).filter(t => t);
         if (ctx.types) {
             ctx.types.push(...tkTypes);
         } else {
@@ -134,7 +134,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
             ctx.match = typeMatch;
         }
 
-        ctx.services = ctx.root.getContainer().get(PROVIDERS);
+        ctx.services = ctx.injector.getContainer().get(PROVIDERS);
         super.execute(ctx);
 
         next && next();
@@ -142,7 +142,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
         if (ctx.services.size < 1) {
             if (ctx.defaultToken) {
                 const key = ctx.defaultToken;
-                const injector = ctx.root;
+                const injector = ctx.injector;
                 if (injector.has(key, true)) {
                     ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
                 }
@@ -159,7 +159,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
 
 export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () => void): void {
     if (ctx.targetRefs && ctx.targetRefs.length) {
-        const { root: injector, services, types, match } = ctx;
+        const { injector: injector, services, types, match } = ctx;
         const state = injector.state();
         ctx.targetRefs.forEach(t => {
             const tk = isTypeObject(t) ? lang.getClass(t) : t;
@@ -209,7 +209,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
 
 export const RsvServicesAction = function (ctx: ServicesContext, next: () => void): void {
     const { services, types, match } = ctx;
-    ctx.root.iterator((pdr, tk) => {
+    ctx.injector.iterator((pdr, tk) => {
         if (!services.has(tk)
             && (
                 (isFunction(tk) && types.some(ty => match(tk, ty)))

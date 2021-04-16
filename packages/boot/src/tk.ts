@@ -81,11 +81,6 @@ export const TYPE_PARSER: Token<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYP
 export const BaseTypeParserToken = TYPE_PARSER;
 
 /**
- * appliction root module injector token.
- */
-export const ROOT_INJECTOR: Token<IModuleInjector> = tokenId<IModuleInjector>('ROOT_INJECTOR');
-
-/**
  * module boot startup runnable instance.
  */
 export const MODULE_RUNNABLE = tokenId<any>('MODULE_RUNNABLE');

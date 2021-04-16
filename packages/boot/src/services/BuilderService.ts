@@ -1,9 +1,9 @@
-import { Inject, Singleton, isFunction, ClassType, Type, IInjector, IContainer, isPlainObject, lang } from '@tsdi/ioc';
+import { Inject, Singleton, isFunction, ClassType, Type, IInjector, isPlainObject, lang, ROOT_INJECTOR } from '@tsdi/ioc';
 import { BootOption, BuildOption, IBootContext, IBuildContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
-import { BUILDER, CTX_OPTIONS, ROOT_INJECTOR } from '../tk';
+import { BUILDER, CTX_OPTIONS } from '../tk';
 import { IBuildHandle, ResolveScope } from '../builder/handles';
 import { BootContext } from '../boot/ctx';
 

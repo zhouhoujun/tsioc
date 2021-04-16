@@ -1,7 +1,7 @@
 import { isFunction, isClass, isUndefined } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
-import { PROVIDERS } from '../utils/tk';
+import { PROVIDERS, ROOT_INJECTOR } from '../utils/tk';
 import { Type } from '../types';
 import { InstFac, ProviderType, Token, tokenRef } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
@@ -39,12 +39,12 @@ export class DesignClassScope extends IocRegScope<DesignContext> implements IAct
 }
 
 export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): void {
-    const container = ctx.root.getContainer();
+    const container = ctx.injector.getContainer();
     if (ctx.reflect.regIn === 'root') {
         ctx.regIn = ctx.reflect.regIn;
-        ctx.root = container;
+        ctx.injector = container.get(ROOT_INJECTOR) ?? container;
     }
-    const state = ctx.state = genReged(ctx.root, ctx.token);
+    const state = ctx.state = genReged(ctx.injector, ctx.token);
     container.state().regType(ctx.type, state);
     next();
 };
@@ -65,7 +65,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
             }
 
             const ctx = {
-                root: injector,
+                injector: injector,
                 token,
                 type,
                 singleton,
@@ -95,7 +95,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regInstf(ctx.root.getContainer(), ctx.root, ctx.state, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
+    regInstf(ctx.injector.getContainer(), ctx.injector, ctx.state, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
     next();
 };
 
@@ -152,7 +152,7 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    const { root: injector, type, state } = ctx;
+    const { injector: injector, type, state } = ctx;
     ctx.reflect.providers.forEach(anno => {
         injector.bindProvider(anno.provide, type, state);
     });
@@ -264,7 +264,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
         return next();
     }
 
-    const injector = ctx.root;
+    const injector = ctx.injector;
     const instance = injector.get(ctx.token || ctx.type);
     if (!instance) return;
     ctx.reflect.autoruns.forEach(meta => {

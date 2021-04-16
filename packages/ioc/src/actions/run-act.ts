@@ -22,7 +22,7 @@ export abstract class IocRuntimeAction extends IocRegAction<RuntimeContext> { }
 export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): void {
     if (!ctx.args) {
         ctx.params = ctx.reflect.methodParams.get('constructor') ?? [];
-        ctx.args = ctx.root.getContainer().getInstance(INVOKER).createParams(ctx.root, ctx.type, ctx.params, ctx.providers);
+        ctx.args = ctx.injector.getContainer().getInstance(INVOKER).createParams(ctx.injector, ctx.type, ctx.params, ctx.providers);
     }
     next();
 };
@@ -48,7 +48,7 @@ export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => v
  */
 export const InjectPropAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.propProviders.size) {
-        const { root: injector, providers, type } = ctx;
+        const { injector: injector, providers, type } = ctx;
         ctx.reflect.propProviders.forEach((metas, propertyKey) => {
             const key = `${propertyKey}_INJECTED`;
             let meta = metas.find(m => m.provider);
@@ -138,7 +138,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
     if (!ctx.instance || ctx.singleton || !ctx.reflect.expires || ctx.reflect.expires <= 0) {
         return next();
     }
-    ctx.root.set(ctx.type, { cache: ctx.instance, expires: ctx.reflect.expires + Date.now() });
+    ctx.injector.set(ctx.type, { cache: ctx.instance, expires: ctx.reflect.expires + Date.now() });
     return next();
 };
 
@@ -152,7 +152,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
  */
 export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void) {
     if (ctx.reflect.autoruns.length) {
-        const { root: injector, type, instance } = ctx;
+        const { injector: injector, type, instance } = ctx;
         // refl has sorted.
         // ctx.reflect.autoruns.sort((au1, au2) => {
         //     return au1.order - au2.order;
@@ -175,7 +175,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
  */
 export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
     if (ctx.type && ctx.instance && ctx.singleton) {
-        ctx.root.set(ctx.type, { value: ctx.instance });
+        ctx.injector.set(ctx.type, { value: ctx.instance });
     }
     next();
 }

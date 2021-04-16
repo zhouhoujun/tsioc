@@ -1,9 +1,9 @@
 import {
     Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
-    isNil, InjectorImpl, isContainer, IProvider, Injector, ProviderOption, IContainer
+    isNil, InjectorImpl, isContainer, IProvider, Injector, ProviderOption, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
-import { ROOT_INJECTOR } from '../tk';
+
 
 
 
@@ -149,7 +149,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
         const container = this.parent.getContainer();
         const root = container.getValue(ROOT_INJECTOR);
         if (this.regIn === 'root') {
-            this._parent = root;
+            this._parent = root as IModuleInjector;
         }
         this._injector = ModuleInjector.create(root);
         this._injector.setValue(ModuleRef, this);

@@ -12,12 +12,11 @@ import { CTX_OPTIONS } from '../tk';
 @Abstract()
 export class DestroyableContext<T extends ProdverOption> extends Provider implements IDestroyableContext<T> {
 
-    protected _root: Injector;
+
     protected options: T;
 
     constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options?: T) {
         super(injector)
-        this._root = injector;
         if (options) this.setOptions(options);
     }
 
@@ -25,11 +24,11 @@ export class DestroyableContext<T extends ProdverOption> extends Provider implem
      * root injector of context.
      */
     get root(): IInjector {
-        return this._root;
+        return this.parent as IInjector;
     }
 
     get injector(): IInjector {
-        return this._root;
+        return this.parent as IInjector;
     }
 
 

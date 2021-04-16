@@ -22,7 +22,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
 
 
     setRoot(injector: IInjector) {
-        this._root.offDestory(this.destCb);
+        this.parent.offDestory(this.destCb);
         (this as any).parent = injector;
         this.parent.onDestroy(this.destCb);
     }
@@ -75,7 +75,8 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         if (!url) {
             url = this.getAnnoation()?.baseURL;
             if (url) {
-                this.getContainer().setValue(PROCESS_ROOT, url);
+                // this.getContainer().setValue(PROCESS_ROOT, url);
+                this.root.setValue(PROCESS_ROOT, url);
                 this.setValue(PROCESS_ROOT, url);
             }
         }
@@ -84,6 +85,8 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
 
     set baseURL(baseURL: string) {
         this.setValue(PROCESS_ROOT, baseURL);
+        this.root.setValue(PROCESS_ROOT, baseURL);
+        // this.getContainer().setValue(PROCESS_ROOT, baseURL);
     }
 
     getAnnoation<T extends BootstrapMetadata>(): T {

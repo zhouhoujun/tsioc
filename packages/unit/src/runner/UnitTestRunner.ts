@@ -13,12 +13,12 @@ export class UnitTestRunner extends Runnable {
 
     async configureService(context: IBootContext): Promise<void> {
         const ctx = context;
-        let config = ctx.getConfiguration() as UnitTestConfigure;
-        let src = config.src;
-        let injector = ctx.root;
+        const config = ctx.getConfiguration() as UnitTestConfigure;
+        const src = config.src;
+        const root = ctx.root;
         let suites: any[] = [];
-        let oldRunner = injector.resolve(OldTestRunner);
-        let loader = injector.getLoader();
+        const oldRunner = root.resolve(OldTestRunner);
+        const loader = root.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
             let alltypes = await loader.loadTypes({ files: [src], basePath: ctx.baseURL });
@@ -39,8 +39,8 @@ export class UnitTestRunner extends Runnable {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.configureService(ctx);
-        const builder = injector.resolve(BuilderService);
-        await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: injector })));
-        await injector.resolve(TestReport).report();
+        const builder = root.resolve(BuilderService);
+        await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: root })));
+        await root.resolve(TestReport).report();
     }
 }

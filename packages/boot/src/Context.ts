@@ -36,7 +36,7 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
 /**
  * destroyable context.
  */
-export interface IDestroyableContext<T> extends IocContext, IProvider {
+export interface IDestroyableContext<T> extends IProvider {
     /**
      * current root injector.
      */
