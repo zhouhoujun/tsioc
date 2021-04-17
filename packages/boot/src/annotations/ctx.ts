@@ -1,6 +1,6 @@
 import {
-    lang, refl, TypeReflect, Type, Inject, Abstract,
-    IProvider, isArray, Injector, IInjector, isProvide, Token, Provider
+    lang, refl, TypeReflect, Type, Inject, Abstract, Token, isArray,
+    isProvide, IProvider, Provider, IInjector, Injector
 } from '@tsdi/ioc';
 import { AnnoationOption, IAnnoationContext } from '../Context';
 import { CTX_OPTIONS } from '../tk';
