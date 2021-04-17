@@ -8,12 +8,7 @@ import { IInjector, IProvider, ServiceOption, ServicesOption } from './IInjector
  * @interface IContainer
  */
 export interface IContainer extends IInjector {
-
     readonly id: string;
-    /**
-     * create injector.
-     */
-    createInjector(): IInjector;
 }
 
 export type IIocContainer = IContainer;

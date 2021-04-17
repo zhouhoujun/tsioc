@@ -24,11 +24,6 @@ export const PARENT_INJECTOR: Token<IInjector> = tokenId<IInjector>('PARENT_INJE
 export const PROVIDERS = tokenId<IProvider>('DI_PROVIDERS');
 
 /**
- *  injector token. create new injector.
- */
-export const INJECTOR_FACTORY = tokenId<IInjector>('INJECTOR_FACTORY');
-
-/**
  * method invoker token.
  */
 export const INVOKER: Token<Invoker> = tokenId<Invoker>('INVOKER');

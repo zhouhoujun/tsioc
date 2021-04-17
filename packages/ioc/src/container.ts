@@ -10,7 +10,7 @@ import {
 import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
 import { ProviderType, Token } from './tokens';
-import { INJECTOR, INJECTOR_FACTORY, INVOKER, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
+import { INJECTOR, INVOKER, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { delReged, get, getReged, setReged } from './decor/refl';
 import { Strategy } from './strategy';
@@ -73,6 +73,15 @@ export class InjectorImpl extends Injector {
 
 }
 
+/**
+ * create new injector.
+ * @param parent
+ * @param strategy
+ * @returns 
+ */
+export function createInjector(parent: IInjector, strategy?: Strategy) {
+    return new InjectorImpl(parent, strategy);
+}
 
 export const NULL_PROVIDER = new Provider(null);
 
@@ -115,10 +124,6 @@ export class Container extends InjectorImpl implements IContainer {
      */
     action(): IActionProvider {
         return this._action;
-    }
-
-    createInjector(): IInjector {
-        return this.getInstance(INJECTOR_FACTORY);
     }
 
 }

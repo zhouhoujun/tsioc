@@ -340,20 +340,17 @@ export class Provider implements IProvider {
     }
 
     parseProvider(...providers: ProviderType[]): IProvider {
-        const pdr = this.createProvider(...providers);
-        if (!pdr.has(INJECTOR) && isInjector(this)) {
-            pdr.inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this });
-        }
-        return pdr;
+        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
+        return this.createProvider(...providers);
     }
 
     toProvider(...providers: ProviderType[]) {
         if (!providers.length) return null;
+        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
         return this.createProvider(...providers);
     }
 
     protected createProvider(...providers: ProviderType[]): IProvider {
-        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
         return this.getContainer().getInstance(PROVIDERS).inject(...providers);
     }
 
@@ -619,16 +616,8 @@ export abstract class Injector extends Provider implements IInjector {
      */
     abstract getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
-    clone(to?: Injector): IInjector;
-    clone(filter: (key: Token) => boolean, to?: IInjector): IInjector;
-    clone(filter?: any, to?: Injector): IInjector {
-        if (!isFunction(filter)) {
-            to = filter;
-            filter = undefined;
-        }
-        to = to || new (getClass(this))(this.parent);
-        this.merge(this, to as Injector, filter);
-        return to;
+    protected createProvider(...providers: ProviderType[]): IProvider {
+        return this.getContainer().getInstance(PROVIDERS).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
     }
 }
 
