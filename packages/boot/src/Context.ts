@@ -1,6 +1,6 @@
 import {
-    ClassType, Destroyable, IocContext, IProvider, ProviderType, ObjectMap,
-    RegInMetadata, Token, Type, TypeReflect, IContainer, IModuleLoader, LoadType, IInjector
+    ClassType, IProvider, ProviderType, ObjectMap, RegInMetadata,
+    Token, Type, TypeReflect, IModuleLoader, LoadType, IInjector
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
@@ -34,9 +34,18 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
 }
 
 /**
- * destroyable context.
+ * annoation context interface.
  */
-export interface IDestroyableContext<T> extends IProvider {
+export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IProvider {
+    /**
+    * current build type.
+    */
+    readonly type: Type;
+    /**
+     * type reflect.
+     */
+    readonly reflect: TypeReflect;
+
     /**
      * current root injector.
      */
@@ -56,20 +65,6 @@ export interface IDestroyableContext<T> extends IProvider {
      * options.
      */
     getOptions(): T;
-}
-
-/**
- * annoation context interface.
- */
-export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> extends IDestroyableContext<T> {
-    /**
-    * current build type.
-    */
-    readonly type: Type;
-    /**
-     * type reflect.
-     */
-    readonly reflect: TypeReflect;
 
 }
 

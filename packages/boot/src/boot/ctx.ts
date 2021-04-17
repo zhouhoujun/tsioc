@@ -6,7 +6,7 @@ import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';
 import { BootstrapMetadata } from '../decorators';
-import { BootOption, IBootContext, Template } from '../Context';
+import { BootOption, IBootContext } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 
 
@@ -75,7 +75,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         if (!url) {
             url = this.getAnnoation()?.baseURL;
             if (url) {
-                // this.getContainer().setValue(PROCESS_ROOT, url);
                 this.root.setValue(PROCESS_ROOT, url);
                 this.setValue(PROCESS_ROOT, url);
             }
@@ -86,7 +85,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     set baseURL(baseURL: string) {
         this.setValue(PROCESS_ROOT, baseURL);
         this.root.setValue(PROCESS_ROOT, baseURL);
-        // this.getContainer().setValue(PROCESS_ROOT, baseURL);
     }
 
     getAnnoation<T extends BootstrapMetadata>(): T {

@@ -108,8 +108,7 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
         // load default config.
         mgr.useConfiguration();
     }
-    const config = await mgr.getConfig();
-    root.setValue(CONFIGURATION, { ...config, ...ctx.reflect.annotation });
+    let config = await mgr.getConfig();
 
     if (config.deps && config.deps.length) {
         root.load(...config.deps);
@@ -123,6 +122,10 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
         ctx.setValue(PROCESS_ROOT, config.baseURL);
         root.setValue(PROCESS_ROOT, config.baseURL);
     }
+
+    config = { ...config, ...ctx.reflect.annotation };
+    ctx.setValue(CONFIGURATION, config);
+    root.setValue(CONFIGURATION, config);
 
     await next();
 };
@@ -272,7 +275,7 @@ export class StartupGlobalService extends BuildHandles<IBootContext> implements 
  */
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.getStarupTokens() || [];
-    const { root: root, providers }= ctx;
+    const { root: root, providers } = ctx;
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
