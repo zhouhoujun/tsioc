@@ -18,7 +18,7 @@ import { DefaultStrategy, Strategy } from './strategy';
 /**
  * provider default startegy.
  */
-export const providerStrategy = new DefaultStrategy((p) => true);
+export const providerStrategy = new DefaultStrategy();
 
 /**
  * provider container.

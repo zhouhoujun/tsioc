@@ -138,12 +138,12 @@ export abstract class Strategy {
  * default strategy.
  */
 export class DefaultStrategy extends Strategy {
-    constructor(private vaild: (parent: IProvider) => boolean) {
+    constructor(private vaild?: (parent: IProvider) => boolean) {
         super();
     }
 
     vaildParent(parent: IProvider) {
-        return this.vaild(parent);
+        return this.vaild ? this.vaild(parent) : true;
     }
 
     hasToken<T>(key: Token<T>, curr: IProvider, deep?: boolean) {
