@@ -18,7 +18,7 @@ import { DefaultStrategy, Strategy } from './strategy';
 /**
  * provider default startegy.
  */
-export const providerStrategy = new DefaultStrategy();
+export const providerStrategy = new DefaultStrategy(p => !!p.parent);
 
 /**
  * provider container.
@@ -304,7 +304,7 @@ export class Provider implements IProvider {
      * @returns {T}
      */
     get<T>(token: Token<T>, ...providers: ProviderType[]): T {
-        return this.getInstance(token, ...providers);
+        return getFacInstance(this.factories.get(token), providers) ?? this.strategy.getInstance(token, this, providers) ?? null;
     }
 
     /**
@@ -313,7 +313,7 @@ export class Provider implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T {
-        return getFacInstance(this.factories.get(key), ...providers) ?? this.strategy.getInstance(key, this, ...providers) ?? null;
+        return getFacInstance(this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
     }
 
     /**
@@ -340,16 +340,16 @@ export class Provider implements IProvider {
 
     parseProvider(...providers: ProviderType[]): IProvider {
         if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-        return this.createProvider(...providers);
+        return this.createProvider(providers);
     }
 
     toProvider(...providers: ProviderType[]) {
         if (!providers.length) return null;
         if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-        return this.createProvider(...providers);
+        return this.createProvider(providers);
     }
 
-    protected createProvider(...providers: ProviderType[]): IProvider {
+    protected createProvider(providers: ProviderType[]): IProvider {
         return createProvider(this).inject(...providers);
     }
 
@@ -575,7 +575,7 @@ export abstract class Injector extends Provider implements IInjector {
             option = { token, providers };
         }
         let destroy: Function;
-        const inst = this.strategy.resolve(this, option, (...pdrs) => {
+        const inst = this.strategy.resolve(this, option, (pdrs) => {
             if (pdrs.length) {
                 let pdr = this.parseProvider(...pdrs);
                 if (pdr !== pdrs[0]) {
@@ -647,7 +647,7 @@ export abstract class Injector extends Provider implements IInjector {
      */
     abstract getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
-    protected createProvider(...providers: ProviderType[]): IProvider {
+    protected createProvider(providers: ProviderType[]): IProvider {
         return createProvider(this).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
     }
 }
@@ -663,7 +663,7 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]): T {
+export function getFacInstance<T>(pd: InstFac<T>, providers: ProviderType | ProviderType[]): T {
     if (!pd) return null;
     if (!isNil(pd.value)) return pd.value;
     if (pd.expires) {
@@ -671,6 +671,6 @@ export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]):
         pd.expires = null;
         pd.cache = null;
     }
-    return pd.fac?.(...providers) ?? null;
+    return pd.fac?.(...(isArray(providers) ? providers : [providers]) as ProviderType[]) ?? null;
 }
 

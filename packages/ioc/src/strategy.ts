@@ -18,9 +18,9 @@ export abstract class Strategy {
     protected constructor() { }
 
 
-    resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (...providers: ProviderType[]) => IProvider): T {
+    resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (providers: ProviderType[]) => IProvider): T {
         const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
-        const pdr = toProvider(...option.providers || []);
+        const pdr = toProvider(option.providers || []);
         let inst: T;
         const state = curr.state();
         if (isFunction(targetToken)) {
@@ -102,7 +102,7 @@ export abstract class Strategy {
      * @param curr current provider.
      * @param providers providers
      */
-    abstract getInstance<T>(key: Token<T>, curr: IProvider, ...providers: ProviderType[]): T;
+    abstract getInstance<T>(key: Token<T>, curr: IProvider, providers: ProviderType[]): T;
     /**
      * has value
      * @param key token key.
@@ -150,7 +150,7 @@ export class DefaultStrategy extends Strategy {
         return deep && curr.parent?.has(key);
     }
 
-    getInstance<T>(key: Token<T>, curr: IProvider, ...providers: ProviderType[]) {
+    getInstance<T>(key: Token<T>, curr: IProvider, providers: ProviderType[]) {
         return curr.parent?.getInstance(key, ...providers);
     }
 

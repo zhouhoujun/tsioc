@@ -14,7 +14,7 @@ import { INJECTOR, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { delReged, get, getReged, setReged } from './decor/refl';
 import { Strategy } from './strategy';
-import { Provider, Injector, getFacInstance, createProvider } from './injector';
+import { Provider, Injector, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
 
 /**
@@ -145,7 +145,7 @@ const SERVICE: IServiceProvider = {
         const services: T[] = [];
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
-                services.push(getFacInstance(fac, ...providers));
+                services.push(getFacInstance(fac, providers));
             }
         });
         return services;

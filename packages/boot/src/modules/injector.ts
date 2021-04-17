@@ -25,7 +25,7 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return this.getMDRef(curr).some(r => r.exports.has(key)) || (deep && curr.parent?.has(key));
     }
 
-    getInstance<T>(key: Token<T>, curr: TI, ...providers: ProviderType[]) {
+    getInstance<T>(key: Token<T>, curr: TI, providers: ProviderType[]) {
         let inst: T;
         if (this.getMDRef(curr).some(e => {
             inst = e.exports.getInstance(key, ...providers);
