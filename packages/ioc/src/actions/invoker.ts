@@ -5,7 +5,7 @@ import { IInjector, IProvider } from '../IInjector';
 import { Invoker, MethodType } from '../Invoker';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
-import { INVOKED_PROVIDERS } from '../utils/tk';
+import { createInvokedProvider } from '../injector';
 
 /**
  * method accessor
@@ -82,7 +82,7 @@ export class InvokerImpl implements Invoker {
 
     protected toInovkedPdr(injector: IInjector, providers: ProviderType[]) {
         if (!providers.length) return null;
-        return injector.getContainer().getInstance(INVOKED_PROVIDERS).inject(...providers);
+        return createInvokedProvider(injector).inject(...providers);
     }
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {

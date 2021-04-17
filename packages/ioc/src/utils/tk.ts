@@ -13,15 +13,11 @@ export const INJECTOR: Token<IInjector> = tokenId<IInjector>('DI_INJECTOR');
  */
  export const ROOT_INJECTOR: Token<IInjector> = tokenId<IInjector>('ROOT_INJECTOR');
 
-/**
- * provider/injector's parent.
- */
-export const PARENT_INJECTOR: Token<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
+// /**
+//  * provider/injector's parent.
+//  */
+// export const PARENT_INJECTOR: Token<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
 
-/**
- *  injector provider token. create new injector provider.
- */
-export const PROVIDERS = tokenId<IProvider>('DI_PROVIDERS');
 
 /**
  * method invoker token.
@@ -32,11 +28,6 @@ export const INVOKER: Token<Invoker> = tokenId<Invoker>('INVOKER');
  * @deprecated use `INVOKER` instead.
  */
 export const MethodAccessorToken = INVOKER;
-
-/**
- * invoked providers token.
- */
-export const INVOKED_PROVIDERS = tokenId<IProvider>('INVOKED_PROVIDERS');
 
 /**
  * root container token.

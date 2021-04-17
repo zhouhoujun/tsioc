@@ -10,11 +10,11 @@ import {
 import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
 import { ProviderType, Token } from './tokens';
-import { INJECTOR, INVOKER, MODULE_LOADER, PROVIDERS, SERVICE_PROVIDER } from './utils/tk';
+import { INJECTOR, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { delReged, get, getReged, setReged } from './decor/refl';
 import { Strategy } from './strategy';
-import { Provider, Injector, getFacInstance } from './injector';
+import { Provider, Injector, getFacInstance, createProvider } from './injector';
 import { registerCores } from './utils/regs';
 
 /**
@@ -77,7 +77,7 @@ export class InjectorImpl extends Injector {
  * create new injector.
  * @param parent
  * @param strategy
- * @returns 
+ * @returns
  */
 export function createInjector(parent: IInjector, strategy?: Strategy) {
     return new InjectorImpl(parent, strategy);
@@ -223,7 +223,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     regDecoator(decor: string, ...providers: ProviderType[]) {
-        this.decors.set(decor, this.container.getInstance(PROVIDERS).inject(...providers));
+        this.decors.set(decor, this.container.parseProvider(...providers));
     }
 
 }

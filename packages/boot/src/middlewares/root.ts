@@ -1,4 +1,4 @@
-import { Autorun, isArray, lang, PROVIDERS, Singleton, Token, tokenId } from '@tsdi/ioc';
+import { Autorun, createProvider, isArray, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
 import { BOOTCONTEXT } from '../tk';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
@@ -50,7 +50,7 @@ const protocolReg = /^\w+:\/\//;
 export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) => {
     const { injector, request } = ctx;
     ctx.vaild = injector.get(RouteVaildator);
-    const providers = injector.get(PROVIDERS);
+    const providers = createProvider(injector);
 
     if (!ctx.vaild) {
         ctx.vaild = ctx.injector.get(RouteVaildator);

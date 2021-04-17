@@ -11,7 +11,7 @@ import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, i
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
-import { INJECTOR, PROVIDERS } from './utils/tk';
+import { INJECTOR } from './utils/tk';
 import { DefaultStrategy, Strategy } from './strategy';
 
 
@@ -351,7 +351,7 @@ export class Provider implements IProvider {
     }
 
     protected createProvider(...providers: ProviderType[]): IProvider {
-        return this.getContainer().getInstance(PROVIDERS).inject(...providers);
+        return createProvider(this).inject(...providers);
     }
 
     /**
@@ -488,6 +488,16 @@ export class Provider implements IProvider {
 }
 
 
+/**
+ * invoked param provider.
+ */
+export class InvokedProvider extends Provider {
+    constructor(parent: IProvider) {
+        super(parent);
+    }
+}
+
+
 
 /**
  * is target provider or not.
@@ -496,6 +506,28 @@ export class Provider implements IProvider {
 export function isProvider(target: any): target is Provider {
     return target instanceof Provider;
 }
+
+
+/**
+ * create new injector.
+ * @param parent
+ * @param strategy
+ * @returns
+ */
+export function createProvider(parent: IProvider, strategy?: Strategy) {
+    return new Provider(parent, strategy);
+}
+
+/**
+ * create new invoked injector.
+ * @param parent
+ * @param strategy
+ * @returns
+ */
+export function createInvokedProvider(parent: IProvider) {
+    return new InvokedProvider(parent);
+}
+
 
 /**
  * injector default startegy.
@@ -617,7 +649,7 @@ export abstract class Injector extends Provider implements IInjector {
     abstract getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
     protected createProvider(...providers: ProviderType[]): IProvider {
-        return this.getContainer().getInstance(PROVIDERS).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
+        return createProvider(this).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
     }
 }
 
@@ -641,15 +673,5 @@ export function getFacInstance<T>(pd: InstFac<T>, ...providers: ProviderType[]):
         pd.cache = null;
     }
     return pd.fac?.(...providers) ?? null;
-}
-
-
-/**
- * invoked param provider.
- */
-export class InvokedProvider extends Provider {
-    constructor(parent?: IProvider) {
-        super(parent);
-    }
 }
 

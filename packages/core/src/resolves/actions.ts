@@ -1,4 +1,4 @@
-import { isNil, IActionSetup, lang, ProviderType, PROVIDERS, refl, isProvide, isFunction, isTypeObject, tokenRef, IocActions } from '@tsdi/ioc';
+import { isNil, IActionSetup, lang, ProviderType, refl, isProvide, isFunction, isTypeObject, tokenRef, IocActions, createProvider } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -134,7 +134,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
             ctx.match = typeMatch;
         }
 
-        ctx.services = ctx.injector.getContainer().get(PROVIDERS);
+        ctx.services = createProvider(ctx.injector.getContainer());
         super.execute(ctx);
 
         next && next();

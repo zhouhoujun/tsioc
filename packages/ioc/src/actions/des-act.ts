@@ -1,7 +1,7 @@
 import { isFunction, isClass, isUndefined } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
-import { PROVIDERS, ROOT_INJECTOR } from '../utils/tk';
+import { ROOT_INJECTOR } from '../utils/tk';
 import { Type } from '../types';
 import { InstFac, ProviderType, Token, tokenRef } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
@@ -166,7 +166,7 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
         if (ctx.state.providers) {
             ctx.state.providers.inject(...ctx.reflect.extProviders);
         } else {
-            const pdrs = injector.getContainer().getInstance(PROVIDERS).inject(...ctx.reflect.extProviders);
+            const pdrs = injector.parseProvider(...ctx.reflect.extProviders);
             ctx.state.providers = pdrs;
         }
     }
