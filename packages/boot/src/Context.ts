@@ -176,6 +176,11 @@ export interface IBuildContext extends BuildOption<any> {
     readonly reflect?: TypeReflect;
 
     /**
+     * providers.
+     */
+    readonly providers?: IProvider;
+
+    /**
      * build instance.
      */
     value?: any;

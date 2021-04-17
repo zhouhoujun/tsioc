@@ -1,7 +1,7 @@
 import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
-import { KeyValueProvider, StaticProviders } from './providers';
+import { KeyValueProvider, StaticProvider, StaticProviders } from './providers';
 import {
     ClassRegister, IActionProvider, IInjector, IModuleLoader, IProvider, ProviderOption, RegisteredState,
     RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister
@@ -304,7 +304,7 @@ export class Provider implements IProvider {
      * @returns {T}
      */
     get<T>(token: Token<T>, ...providers: ProviderType[]): T {
-        return getFacInstance(this.factories.get(token), providers) ?? this.strategy.getInstance(token, this, providers) ?? null;
+        return this.toInstance(token, providers);
     }
 
     /**
@@ -313,9 +313,12 @@ export class Provider implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T {
-        return getFacInstance(this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
+        return this.toInstance(key, providers);
     }
 
+    toInstance<T>(key: Token<T>, providers: IProvider | StaticProvider | ProviderType[]): T {
+        return getFacInstance(this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, isArray(providers) ? providers : [providers]) ?? null;
+    }
     /**
      * bind provider.
      *
@@ -339,14 +342,17 @@ export class Provider implements IProvider {
     }
 
     parseProvider(...providers: ProviderType[]): IProvider {
-        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-        return this.createProvider(providers);
+        return this.parsePdrIfy(providers);
     }
 
     toProvider(...providers: ProviderType[]) {
         if (!providers.length) return null;
+        return this.parsePdrIfy(providers);
+    }
+
+    protected parsePdrIfy(providers: ProviderType[], ifyNew?: (p: IProvider) => IProvider) {
         if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-        return this.createProvider(providers);
+        return ifyNew ? ifyNew(this.createProvider(providers)) : this.createProvider(providers);
     }
 
     protected createProvider(providers: ProviderType[]): IProvider {
@@ -577,11 +583,10 @@ export abstract class Injector extends Provider implements IInjector {
         let destroy: Function;
         const inst = this.strategy.resolve(this, option, (pdrs) => {
             if (pdrs.length) {
-                let pdr = this.parseProvider(...pdrs);
-                if (pdr !== pdrs[0]) {
-                    destroy = () => pdr.destroy();
-                }
-                return pdr;
+                return this.parsePdrIfy(pdrs, p => {
+                    destroy = () => p.destroy();
+                    return p;
+                });
             }
             return null;
         });
@@ -663,7 +668,7 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getFacInstance<T>(pd: InstFac<T>, providers: ProviderType | ProviderType[]): T {
+export function getFacInstance<T>(pd: InstFac<T>, providers: IProvider | StaticProvider | ProviderType[]): T {
     if (!pd) return null;
     if (!isNil(pd.value)) return pd.value;
     if (pd.expires) {
@@ -671,6 +676,6 @@ export function getFacInstance<T>(pd: InstFac<T>, providers: ProviderType | Prov
         pd.expires = null;
         pd.cache = null;
     }
-    return pd.fac?.(...(isArray(providers) ? providers : [providers]) as ProviderType[]) ?? null;
+    return pd.fac?.(...isArray(providers) ? providers : [providers]) ?? null;
 }
 

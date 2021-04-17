@@ -14,7 +14,7 @@ export class ResolveServiceScope extends IocActions<ServiceContext> implements I
 
         if (!ctx.instance) {
             if (ctx.defaultToken) {
-                ctx.instance = ctx.injector.get(ctx.defaultToken, ctx.providers);
+                ctx.instance = ctx.injector.toInstance(ctx.defaultToken, ctx.providers);
             }
         }
     }

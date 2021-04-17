@@ -94,7 +94,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
             return await loader.load(src) as T;
         } else if (src) {
             let cfg = await this.container.getLoader().load([src])
-            return cfg.length ? cfg[0] as T : null;
+            return cfg.length ? cfg[0] as Configure as T : null;
         } else {
             return null;
         }

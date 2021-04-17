@@ -2,7 +2,7 @@
 /**
  * module types.
  */
-export type Modules = Type | Object;
+export type Modules = Type | ObjectMap<Type | Modules | Object>;
 
 /**
  * object map.
@@ -128,11 +128,11 @@ export interface PathModules {
 /**
  * child module.
  */
-export interface ChildModule  {
+export interface ChildModule {
     loadChild(): Promise<Type>;
 }
 
 /**
  * load module type.
  */
-export type LoadType = Modules | string | PathModules | ChildModule;
+export type LoadType = Modules | string | string[] | PathModules | ChildModule;

@@ -59,7 +59,7 @@ export class ModuleLoader implements IModuleLoader {
                 } else if (isPathModules(mdty)) {
                     return this.loadPathModule(mdty);
                 } else if (isChildModule(mdty)) {
-                    return mdty.loadChild() as Modules;
+                    return mdty.loadChild() as Promise<any>;
                 } else {
                     return mdty ? [mdty] : [];
                 }
@@ -132,12 +132,13 @@ export class ModuleLoader implements IModuleLoader {
                 })
         }
         if (pmd.modules) {
-            await Promise.all(pmd.modules.map(nmd => {
-                return isString(nmd) ? this.loadModule(nmd) : nmd;
-            })).then(ms => {
-                modules = modules.concat(ms);
-                return modules;
-            });
+            await Promise.all(pmd.modules.map(async nmd => {
+                if (isString(nmd)) {
+                    modules.push(...await this.loadModule(nmd));
+                } else {
+                    modules.push(nmd);
+                }
+            }));
         }
 
         return modules;

@@ -28,10 +28,10 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
     getInstance<T>(key: Token<T>, curr: TI, providers: ProviderType[]) {
         let inst: T;
         if (this.getMDRef(curr).some(e => {
-            inst = e.exports.getInstance(key, ...providers);
+            inst = e.exports.toInstance(key, providers);
             return !isNil(inst);
         })) return inst;
-        return curr.parent?.getInstance(key, ...providers);
+        return curr.parent?.toInstance(key, providers);
     }
 
     hasValue<T>(key: Token<T>, curr: TI) {

@@ -6,6 +6,7 @@ import { MethodType } from './Invoker';
 import { Registered, TypeReflect } from './decor/type';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
+import { StaticProvider } from './providers';
 
 
 /**
@@ -174,6 +175,12 @@ export interface IProvider extends Destroyable {
      * @returns {T}
      */
     getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T;
+    /**
+     * resolve to instance.
+     * @param key 
+     * @param providers 
+     */
+    toInstance<T>(key: Token<T>, providers: IProvider | StaticProvider | ProviderType[]): T;
     /**
      * get value.
      * @param token token key.
