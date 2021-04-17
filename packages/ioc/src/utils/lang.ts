@@ -225,17 +225,21 @@ export function getTypes(...modules: Modules[]): Type[] {
     return types;
 }
 
+const exportKey = 'exports';
+const esModuleKey = '__esModule';
+
 function getContentTypes(regModule: Modules): Type[] {
     let regModules: Type[] = [];
     if (isClass(regModule)) {
         regModules.push(regModule);
     } else if (isPlainObject(regModule)) {
-        let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
+        let rmodules = regModule[exportKey] ? regModule[exportKey] : regModule;
         if (isPlainObject(rmodules)) {
-            for (let p in rmodules) {
-                let type = rmodules[p];
-                regModules.push(...getContentTypes(type));
-
+            if (rmodules[esModuleKey]) {
+                for (let p in rmodules) {
+                    let type = rmodules[p];
+                    regModules.push(...getContentTypes(type));
+                }
             }
         } else if (isClass(rmodules)) {
             regModules.push(rmodules);
