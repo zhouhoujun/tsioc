@@ -18,7 +18,7 @@ import { DefaultStrategy, Strategy } from './strategy';
 /**
  * provider default startegy.
  */
-export const providerStrategy = new DefaultStrategy((p) => (p instanceof Provider));
+export const providerStrategy = new DefaultStrategy((p) => true);
 
 /**
  * provider container.
@@ -84,7 +84,6 @@ export class Provider implements IProvider {
     action(): IActionProvider {
         return this.getContainer().action();
     }
-
 
     /**
      * set provide.
@@ -532,7 +531,7 @@ export function createInvokedProvider(parent: IProvider) {
 /**
  * injector default startegy.
  */
-export const injectorStrategy = new DefaultStrategy((p) => p instanceof Injector);
+export const injectorStrategy = new DefaultStrategy(p => isInjector(p));
 
 @Abstract()
 export abstract class Injector extends Provider implements IInjector {

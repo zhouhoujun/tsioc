@@ -1,6 +1,6 @@
 import { Token, tokenId } from '../tokens';
 import { Invoker } from '../Invoker';
-import { IInjector, IModuleLoader, IProvider } from '../IInjector';
+import { IInjector, IModuleLoader } from '../IInjector';
 import { IContainer, IServiceProvider } from '../IContainer';
 
 /**
@@ -11,13 +11,7 @@ export const INJECTOR: Token<IInjector> = tokenId<IInjector>('DI_INJECTOR');
 /**
  * appliction root module injector token.
  */
- export const ROOT_INJECTOR: Token<IInjector> = tokenId<IInjector>('ROOT_INJECTOR');
-
-// /**
-//  * provider/injector's parent.
-//  */
-// export const PARENT_INJECTOR: Token<IInjector> = tokenId<IInjector>('PARENT_INJECTOR');
-
+export const ROOT_INJECTOR: Token<IInjector> = tokenId<IInjector>('ROOT_INJECTOR');
 
 /**
  * method invoker token.
