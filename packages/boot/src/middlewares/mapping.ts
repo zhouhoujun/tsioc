@@ -1,6 +1,6 @@
 import {
     Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector,
-    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, tokenId
+    isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, tokenId, RegisteredState
 } from '@tsdi/ioc';
 import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
@@ -88,12 +88,14 @@ export class MappingRoute extends Route {
         }
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
-            await this.execFuncs(ctx, middlewares.map(m => this.parseHandle(this.injector, m)).filter(f => !!f))
+            const state = this.injector.state();
+            await this.execFuncs(ctx, middlewares.map(m => this.parseHandle(state, m)).filter(f => !!f))
         }
         await this.invoke(ctx, meta);
         return await next();
     }
 
+    
     async invoke(ctx: MessageContext, meta: DecorDefine) {
         const injector = this.injector;
         if (meta && meta.propertyKey) {
@@ -253,15 +255,14 @@ export class MappingRoute extends Route {
         return providers;
     }
 
-    protected parseHandle(injector: IInjector, mdty: MiddlewareType): AsyncHandler<MessageContext> {
+    protected parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<MessageContext> {
         if (mdty instanceof Middleware) {
             return mdty.toHandle();
         } else if (lang.isBaseOf(mdty, Middleware)) {
-            const state = injector.state();
             if (!state.isRegistered(mdty)) {
                 this.injector.register(mdty);
             }
-            const handle = injector.get(mdty) ?? state.getInstance(mdty);
+            const handle = this.injector.get(mdty) ?? state.getInstance(mdty);
             return handle?.toHandle?.();
         } else if (isFunction(mdty)) {
             return mdty;

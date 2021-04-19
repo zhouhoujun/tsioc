@@ -1,4 +1,4 @@
-import { Abstract, AsyncHandler, chain, lang, tokenId, Type, TypeReflect } from '@tsdi/ioc';
+import { Abstract, AsyncHandler, chain, lang, RegisteredState, tokenId, Type, TypeReflect } from '@tsdi/ioc';
 import { MessageContext } from './ctx';
 
 
@@ -123,7 +123,8 @@ export abstract class Middlewares extends Middleware {
 
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            this.funcs = this.handles.map(ac => this.parseHandle(ac)).filter(f => f);
+            const state = ctx.injector.state(); 
+            this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);
         }
         await this.execFuncs(ctx, this.funcs, next);
     }
@@ -132,7 +133,7 @@ export abstract class Middlewares extends Middleware {
         this.funcs = null;
     }
 
-    protected abstract parseHandle(handleType: MiddlewareType): AsyncHandler<MessageContext>;
+    protected abstract parseHandle(state: RegisteredState, handleType: MiddlewareType): AsyncHandler<MessageContext>;
 }
 
 
