@@ -38,4 +38,4 @@ export interface PathModules {
 /**
  * load module type.
  */
-export type LoadType = Modules | string | PathModules;
+export type LoadType = Modules | string | string[] | PathModules;

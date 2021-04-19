@@ -77,7 +77,7 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
                 } else if (isObject(mdty) && (mdty['modules'] || mdty['files'])) {
                     return this.loadPathModule(mdty as PathModules);
                 } else {
-                    return mdty ? [mdty] : [];
+                    return mdty ? [mdty as Modules] : [];
                 }
             }))
                 .then(allms => {
@@ -149,12 +149,13 @@ export class ModuleLoader extends IocCoreService implements IModuleLoader {
                 })
         }
         if (pmd.modules) {
-            await Promise.all(pmd.modules.map(nmd => {
-                return isString(nmd) ? this.loadModule(nmd) : nmd;
-            })).then(ms => {
-                modules = modules.concat(ms);
-                return modules;
-            });
+            await Promise.all(pmd.modules.map(async nmd => {
+                if (isString(nmd)) {
+                    modules.push(...await this.loadModule(nmd));
+                } else {
+                    modules.push(nmd);
+                }
+            }));
         }
 
         return modules;

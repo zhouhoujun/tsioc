@@ -268,17 +268,25 @@ export namespace lang {
         return types;
     }
 
+
+    const exportKey = 'exports';
+    const esModuleKey = '__esModule';
+
     function getContentTypes(regModule: Modules): Type[] {
         let regModules: Type[] = [];
         if (isClass(regModule)) {
             regModules.push(regModule);
-        } else if (regModule) {
-            let rmodules = regModule['exports'] ? regModule['exports'] : regModule;
-            for (let p in rmodules) {
-                let type = rmodules[p];
-                if (isClass(type)) {
-                    regModules.push(type);
+        } else if (isPlainObject(regModule)) {
+            let rmodules = regModule[exportKey] ? regModule[exportKey] : regModule;
+            if (isPlainObject(rmodules)) {
+                if (rmodules[esModuleKey]) {
+                    for (let p in rmodules) {
+                        let type = rmodules[p];
+                        regModules.push(...getContentTypes(type));
+                    }
                 }
+            } else if (isClass(rmodules)) {
+                regModules.push(rmodules);
             }
         }
         return regModules;
@@ -455,9 +463,17 @@ export function isObservable(target: any): boolean {
  * @param {*} target
  * @returns {target is Promise<any>}
  */
-export function isBaseObject(target: any): target is ObjectMap {
+export function isPlainObject(target: any): target is ObjectMap {
     return toString.call(target) === '[object Object]' && target.constructor.name === 'Object';
 }
+
+/**
+ * is target base object or not.
+ * eg. {}, have not self constructor;
+ *
+ * @deprecated use `isPlainObject` instead.
+ */
+export const isBaseObject = isPlainObject;
 
 /**
  * is metadata object or not.
@@ -468,7 +484,7 @@ export function isBaseObject(target: any): target is ObjectMap {
  * @returns {boolean}
  */
 export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
-    if (!isBaseObject(target)) {
+    if (!isPlainObject(target)) {
         return false;
     }
     if (props.length) {

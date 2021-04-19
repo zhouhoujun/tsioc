@@ -2,8 +2,7 @@
 /**
  * module types.
  */
-export type Modules = Type | Object;
-
+export type Modules = Type | ObjectMap<Modules | Object>;
 
 
 /**

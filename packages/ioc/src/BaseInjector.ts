@@ -1,7 +1,7 @@
 import { Type, Modules, ClassTypes } from './types';
 import {
     isFunction, isUndefined, isNull, isClass, lang, isString,
-    isBaseObject, isArray, isDefined, isClassType, isNullOrUndefined
+    isPlainObject, isArray, isDefined, isClassType, isNullOrUndefined
 } from './utils/lang';
 import { KeyValueProvider, StaticProviders } from './providers';
 import {
@@ -238,7 +238,7 @@ export abstract class BaseInjector extends Destoryable implements IInjector {
                 });
             } else if (isClass(p)) {
                 this.registerType(p);
-            } else if (isBaseObject(p)) {
+            } else if (isPlainObject(p)) {
                 let pr = p as StaticProviders;
                 if (isToken(pr.provide)) {
                     let provide = this.getTokenKey(pr.provide);

@@ -1,4 +1,4 @@
-import { Inject, isUndefined, Singleton, isString, isMetadataObject, isBaseObject, lang } from '@tsdi/ioc';
+import { Inject, isUndefined, Singleton, isString, isMetadataObject, isPlainObject, lang } from '@tsdi/ioc';
 import { ContainerToken, IContainer } from '@tsdi/core';
 import { IConfigureManager, IConfigureMerger } from './IConfigureManager';
 import { Configure } from './Configure';
@@ -40,7 +40,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
         // clean cached config.
         this.config = null;
         lang.del(this.configs, config);
-        if (!this.baseURL && isBaseObject(config)) {
+        if (!this.baseURL && isPlainObject(config)) {
             this.baseURL = config.baseURL;
         }
         this.configs.push(config);
@@ -104,7 +104,7 @@ export class ConfigureManager<T extends Configure = Configure> implements IConfi
             return await loader.load(src) as T;
         } else if (src) {
             let cfg = await this.container.getLoader().load([src])
-            return cfg.length ? cfg[0] as T : null;
+            return cfg.length ? cfg[0] as Configure as T : null;
         } else {
             return null;
         }
