@@ -10,6 +10,7 @@ import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass, isBaseOf } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
+import { IActionProvider } from '../IInjector';
 
 
 
@@ -384,13 +385,13 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 
 
 class DecorActions extends Actions<DecorContext> {
-    protected regHandle(ac: any) { }
-    protected toHandle(ac: any): Handler {
+    protected getActionProvider(ctx: DecorContext): IActionProvider { return null; }
+    protected parseHandle(provider: IActionProvider, ac: any): Handler {
         if (ac instanceof Action) {
-            return ac.toAction();
+            return ac.toHandle();
         } else if (isBaseOf(ac, Action)) {
             const act = new ac();
-            return act instanceof Action ? act.toAction() : null;
+            return act instanceof Action ? act.toHandle() : null;
         } else if (isFunction(ac)) {
             return ac;
         }

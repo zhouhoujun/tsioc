@@ -65,7 +65,7 @@ export const REQUEST = tokenId('REQUEST');
 /**
  * mapping request params token.
  */
- export const REQUEST_PARAMS = tokenId('REQUEST_PARAMS');
+export const REQUEST_PARAMS = tokenId('REQUEST_PARAMS');
 
 /**
  * mapping request body token.
@@ -88,7 +88,7 @@ export class MappingRoute extends Route {
         }
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
-            await this.execFuncs(ctx, middlewares.map(m => this.toHandle(this.injector, m)).filter(f => !!f))
+            await this.execFuncs(ctx, middlewares.map(m => this.parseHandle(this.injector, m)).filter(f => !!f))
         }
         await this.invoke(ctx, meta);
         return await next();
@@ -253,14 +253,18 @@ export class MappingRoute extends Route {
         return providers;
     }
 
-    protected toHandle(injector: IInjector, handleType: MiddlewareType): AsyncHandler<MessageContext> {
-        if (handleType instanceof Middleware) {
-            return handleType.toAction();
-        } else if (lang.isBaseOf(handleType, Middleware)) {
-            const handle = injector.get(handleType) ?? injector.state().getInstance(handleType);
-            return handle?.toAction?.();
-        } else if (isFunction(handleType)) {
-            return handleType;
+    protected parseHandle(injector: IInjector, hdty: MiddlewareType): AsyncHandler<MessageContext> {
+        if (hdty instanceof Middleware) {
+            return hdty.toHandle();
+        } else if (lang.isBaseOf(hdty, Middleware)) {
+            const state = injector.state();
+            if (!state.isRegistered(hdty)) {
+                this.injector.register(hdty);
+            }
+            const handle = injector.get(hdty) ?? state.getInstance(hdty);
+            return handle?.toHandle?.();
+        } else if (isFunction(hdty)) {
+            return hdty;
         }
         return null;
     }

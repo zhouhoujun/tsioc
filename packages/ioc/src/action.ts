@@ -1,3 +1,4 @@
+import { IActionProvider } from './IInjector';
 import { Token } from './tokens';
 import { isBoolean } from './utils/chk';
 import { chain, Handler } from './utils/hdl';
@@ -9,7 +10,7 @@ export abstract class Action {
 
     constructor() { }
 
-    abstract toAction(): Handler;
+    abstract toHandle(): Handler;
 }
 
 /**
@@ -45,7 +46,7 @@ export abstract class IocAction<T> extends Action {
     }
 
     private _action: Handler;
-    toAction(): Handler {
+    toHandle(): Handler {
         if (!this._action) {
             this._action = (ctx: T, next?: () => void) => this.execute(ctx, next);
         }
@@ -93,7 +94,6 @@ export abstract class Actions<T> extends IocAction<T> {
         actions.forEach(action => {
             if (this.has(action)) return;
             this.handles.push(action);
-            this.regHandle(action);
         });
         if (this.handles.length !== len) this.resetFuncs();
         return this;
@@ -115,7 +115,6 @@ export abstract class Actions<T> extends IocAction<T> {
         } else {
             this.handles.unshift(action);
         }
-        this.regHandle(action);
         this.resetFuncs();
         return this;
     }
@@ -136,7 +135,6 @@ export abstract class Actions<T> extends IocAction<T> {
         } else {
             this.handles.push(action);
         }
-        this.regHandle(action);
         this.resetFuncs();
         return this;
     }
@@ -149,7 +147,6 @@ export abstract class Actions<T> extends IocAction<T> {
     before(action: ActionType): this {
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
-            this.regHandle(action);
             this.resetFuncs();
         }
         return this;
@@ -163,7 +160,6 @@ export abstract class Actions<T> extends IocAction<T> {
     after(action: ActionType): this {
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
-            this.regHandle(action);
             this.resetFuncs();
         }
         return this;
@@ -171,14 +167,15 @@ export abstract class Actions<T> extends IocAction<T> {
 
     execute(ctx: T, next?: () => void): void {
         if (!this.funcs) {
-            this.funcs = [...this.befores, ...this.handles, ...this.afters].map(ac => this.toHandle(ac)).filter(f => f);
+            const pdr = this.getActionProvider(ctx);
+            this.funcs = [...this.befores, ...this.handles, ...this.afters].map(ac => this.parseHandle(pdr, ac)).filter(f => f);
         }
         this.execFuncs(ctx, this.funcs, next);
     }
 
-    protected abstract regHandle(ac: any);
+    protected abstract getActionProvider(ctx: T): IActionProvider;
 
-    protected abstract toHandle(ac: any): Handler;
+    protected abstract parseHandle(provider: IActionProvider, ac: any): Handler;
 
     protected resetFuncs() {
         this.funcs = null;

@@ -152,12 +152,12 @@ export class MessageQueue extends Middlewares {
         return this;
     }
 
-    protected toHandle(handleType: MiddlewareType): AsyncHandler<MessageContext> {
+    protected parseHandle(handleType: MiddlewareType): AsyncHandler<MessageContext> {
         if (handleType instanceof Middleware) {
-            return handleType.toAction();
+            return handleType.toHandle();
         } else if (lang.isBaseOf(handleType, Middleware)) {
             const handle = this.injector.get(handleType) ?? this.injector.state().getInstance(handleType);
-            return handle?.toAction?.();
+            return handle?.toHandle?.();
         } else if (isFunction(handleType)) {
             return handleType;
         }

@@ -23,15 +23,15 @@ export abstract class Middleware {
      */
     abstract execute(ctx: MessageContext, next: () => Promise<void>): Promise<void>;
 
-    private _action: AsyncHandler<MessageContext>;
+    private _hdl: AsyncHandler<MessageContext>;
     /**
      * to action handler func.
      */
-    toAction(): AsyncHandler<MessageContext> {
-        if (!this._action) {
-            this._action = (ctx: MessageContext, next?: () => Promise<void>) => this.execute(ctx, next);
+    toHandle(): AsyncHandler<MessageContext> {
+        if (!this._hdl) {
+            this._hdl = (ctx: MessageContext, next?: () => Promise<void>) => this.execute(ctx, next);
         }
-        return this._action;
+        return this._hdl;
     }
 
     protected execFuncs(ctx: MessageContext, handles: AsyncHandler<MessageContext>[], next?: () => Promise<void>): Promise<void> {
@@ -63,7 +63,6 @@ export abstract class Middlewares extends Middleware {
         handles.forEach(handle => {
             if (this.has(handle)) return;
             this.handles.push(handle);
-            this.regHandle(handle);
         });
         if (this.handles.length !== len) this.resetFuncs();
         return this;
@@ -99,7 +98,6 @@ export abstract class Middlewares extends Middleware {
         } else {
             this.handles.unshift(handle);
         }
-        this.regHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -119,14 +117,13 @@ export abstract class Middlewares extends Middleware {
         } else {
             this.handles.push(handle);
         }
-        this.regHandle(handle);
         this.resetFuncs();
         return this;
     }
 
     async execute(ctx: MessageContext, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            this.funcs = this.handles.map(ac => this.toHandle(ac)).filter(f => f);
+            this.funcs = this.handles.map(ac => this.parseHandle(ac)).filter(f => f);
         }
         await this.execFuncs(ctx, this.funcs, next);
     }
@@ -135,9 +132,7 @@ export abstract class Middlewares extends Middleware {
         this.funcs = null;
     }
 
-    protected abstract regHandle(handle: MiddlewareType): this;
-
-    protected abstract toHandle(handleType: MiddlewareType): AsyncHandler<MessageContext>;
+    protected abstract parseHandle(handleType: MiddlewareType): AsyncHandler<MessageContext>;
 }
 
 

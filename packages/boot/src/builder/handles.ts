@@ -1,4 +1,4 @@
-import { AsyncHandler, IActionSetup, Inject, Injector, Action, lang, ActionType, chain, Type, refl, TypeReflect } from '@tsdi/ioc';
+import { AsyncHandler, IActionSetup, lang, ActionType, chain, Type, refl, TypeReflect, IActionProvider, Action } from '@tsdi/ioc';
 import { IBuildContext } from '../Context';
 
 /**
@@ -8,7 +8,7 @@ import { IBuildContext } from '../Context';
  * @interface IBuildHandle
  * @template T
  */
-export interface IBuildHandle<T = any> {
+export interface IBuildHandle<T extends IBuildContext = IBuildContext> {
     /**
      * execute handle.
      *
@@ -23,13 +23,13 @@ export interface IBuildHandle<T = any> {
      *
      * @returns {AsyncHandler<T>}
      */
-    toAction(): AsyncHandler<T>;
+    toHandle(): AsyncHandler<T>;
 }
 
 /**
  *  handle type.
  */
-export type HandleType<T = any> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
+export type HandleType<T extends IBuildContext = IBuildContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
 
 
 
@@ -42,8 +42,8 @@ export type HandleType<T = any> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T> extends Action implements IBuildHandle<T> {
-    constructor(@Inject() protected readonly injector: Injector) {
+export abstract class BuildHandle<T extends IBuildContext> extends Action implements IBuildHandle<T> {
+    constructor() { 
         super();
     }
 
@@ -54,7 +54,7 @@ export abstract class BuildHandle<T> extends Action implements IBuildHandle<T> {
     }
 
     private _action: AsyncHandler<T>;
-    toAction(): AsyncHandler<T> {
+    toHandle(): AsyncHandler<T> {
         if (!this._action) {
             this._action = (ctx: T, next?: () => Promise<void>) => this.execute(ctx, next);
         }
@@ -70,11 +70,10 @@ export abstract class BuildHandle<T> extends Action implements IBuildHandle<T> {
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T> extends BuildHandle<T> {
+export class BuildHandles<T extends IBuildContext = IBuildContext> extends BuildHandle<T> {
 
     protected handles: HandleType<T>[] = [];
     private funcs: AsyncHandler<T>[];
-
 
     /**
      * use handle.
@@ -87,7 +86,6 @@ export class BuildHandles<T> extends BuildHandle<T> {
         handles.forEach(handle => {
             if (this.has(handle)) return;
             this.handles.push(handle);
-            this.regHandle(handle);
         });
         if (this.handles.length !== len) this.resetFuncs();
         return this;
@@ -123,7 +121,6 @@ export class BuildHandles<T> extends BuildHandle<T> {
         } else {
             this.handles.unshift(handle);
         }
-        this.regHandle(handle);
         this.resetFuncs();
         return this;
     }
@@ -143,14 +140,14 @@ export class BuildHandles<T> extends BuildHandle<T> {
         } else {
             this.handles.push(handle);
         }
-        this.regHandle(handle);
         this.resetFuncs();
         return this;
     }
 
     async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
         if (!this.funcs) {
-            this.funcs = this.handles.map(ac => this.toHandle(ac)).filter(f => f);
+            const pdr = ctx.injector.action();
+            this.funcs = this.handles.map(ac => this.parseHandle(pdr, ac)).filter(f => f);
         }
         await this.execFuncs(ctx, this.funcs, next);
     }
@@ -159,14 +156,13 @@ export class BuildHandles<T> extends BuildHandle<T> {
         this.funcs = null;
     }
 
-    protected toHandle(handleType: HandleType<T>): AsyncHandler<T> {
-        return this.injector.action().getAction<AsyncHandler<T>>(handleType);
+    protected parseHandle(provider: IActionProvider, hdty: HandleType<T>): AsyncHandler<T> {
+        if (lang.isBaseOf(hdty, Action) && !provider.has(hdty)) {
+            provider.regAction(hdty);
+        }
+        return provider.getAction<AsyncHandler<T>>(hdty);
     }
 
-    protected regHandle(handle: HandleType<T>): this {
-        lang.isBaseOf(handle, Action) && this.injector.action().regAction(handle);
-        return this;
-    }
 }
 
 /**

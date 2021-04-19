@@ -24,8 +24,8 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
     private container: IContainer;
 
-    constructor(provider: IActionProvider) {
-        super(provider);
+    constructor(private provider: IActionProvider) {
+        super();
         this.container = provider.getContainer();
     }
 
