@@ -253,18 +253,18 @@ export class MappingRoute extends Route {
         return providers;
     }
 
-    protected parseHandle(injector: IInjector, hdty: MiddlewareType): AsyncHandler<MessageContext> {
-        if (hdty instanceof Middleware) {
-            return hdty.toHandle();
-        } else if (lang.isBaseOf(hdty, Middleware)) {
+    protected parseHandle(injector: IInjector, mdty: MiddlewareType): AsyncHandler<MessageContext> {
+        if (mdty instanceof Middleware) {
+            return mdty.toHandle();
+        } else if (lang.isBaseOf(mdty, Middleware)) {
             const state = injector.state();
-            if (!state.isRegistered(hdty)) {
-                this.injector.register(hdty);
+            if (!state.isRegistered(mdty)) {
+                this.injector.register(mdty);
             }
-            const handle = injector.get(hdty) ?? state.getInstance(hdty);
+            const handle = injector.get(mdty) ?? state.getInstance(mdty);
             return handle?.toHandle?.();
-        } else if (isFunction(hdty)) {
-            return hdty;
+        } else if (isFunction(mdty)) {
+            return mdty;
         }
         return null;
     }

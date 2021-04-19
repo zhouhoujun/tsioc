@@ -147,19 +147,18 @@ export class MessageQueue extends Middlewares {
         this.unuse(haddle);
     }
 
-    protected regHandle(handle: MiddlewareType): this {
-        lang.isBaseOf(handle, Middleware) && this.injector.register(handle);
-        return this;
-    }
-
-    protected parseHandle(handleType: MiddlewareType): AsyncHandler<MessageContext> {
-        if (handleType instanceof Middleware) {
-            return handleType.toHandle();
-        } else if (lang.isBaseOf(handleType, Middleware)) {
-            const handle = this.injector.get(handleType) ?? this.injector.state().getInstance(handleType);
+    protected parseHandle(mdty: MiddlewareType): AsyncHandler<MessageContext> {
+        if (mdty instanceof Middleware) {
+            return mdty.toHandle();
+        } else if (lang.isBaseOf(mdty, Middleware)) {
+            const state = this.injector.state();
+            if (!state.isRegistered(mdty)) {
+                this.injector.register(mdty);
+            }
+            const handle = this.injector.get(mdty) ?? state.getInstance(mdty);
             return handle?.toHandle?.();
-        } else if (isFunction(handleType)) {
-            return handleType;
+        } else if (isFunction(mdty)) {
+            return mdty;
         }
         return null;
     }
