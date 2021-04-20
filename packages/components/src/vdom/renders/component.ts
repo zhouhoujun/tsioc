@@ -1,17 +1,16 @@
 import { Inject, Type } from '@tsdi/ioc';
-import { REQUEST_BODY } from '@tsdi/boot';
-import { HostMapping } from '../../decorators';
+import { REQUEST_BODY, RouteMapping } from '@tsdi/boot';
 import { RendererFactory } from './renderer';
 import { IElement } from '../interfaces/node';
 import { getComponentDef } from '../../reflect';
 
-@HostMapping('/render/component')
+@RouteMapping('/render/component')
 export class RenderComponent {
 
     @Inject()
     renderFac: RendererFactory;
 
-    @HostMapping('/:type', 'create')
+    @RouteMapping('/:type', 'create')
     render(type: string, @Inject(REQUEST_BODY) body: { componentType: Type, hostElement?: IElement }) {
         let renderer = this.renderFac.create(body.hostElement, type);
         const compDef =  getComponentDef(body.componentType);
@@ -20,7 +19,7 @@ export class RenderComponent {
         
     }
 
-    @HostMapping('/:type', 'update')
+    @RouteMapping('/:type', 'update')
     refresh(type: string,  @Inject(REQUEST_BODY) body: { componentType: Type, hostElement?: IElement }) {
         
     }
