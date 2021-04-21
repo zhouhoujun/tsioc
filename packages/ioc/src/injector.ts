@@ -50,10 +50,10 @@ export class Provider implements IProvider {
         this.factories = new Map();
         if (parent) {
             this.destCb = () => this.destroy();
+            this._container = parent.getContainer();
             if (this.strategy.vaildParent(parent)) {
                 parent.onDestroy(this.destCb);
             } else {
-                this._container = parent.getContainer();
                 this._container.onDestroy(this.destCb);
                 this.parent = null;
             }
@@ -65,9 +65,6 @@ export class Provider implements IProvider {
     }
 
     getContainer(): IContainer {
-        if (!this._container) {
-            this._container = this.parent.getContainer()
-        }
         return this._container;
     }
 
@@ -75,14 +72,14 @@ export class Provider implements IProvider {
      * registered state.
      */
     state(): RegisteredState {
-        return this.getContainer().state();
+        return this._container?.state();
     }
 
     /**
      * action provider.
      */
     action(): IActionProvider {
-        return this.getContainer().action();
+        return this._container?.action();
     }
 
     /**

@@ -85,20 +85,20 @@ export abstract class IocAction<T, TH extends Handler = Handler<T>, TR = void> e
  */
 export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T>, TR = void> extends IocAction<T, TH, TR> {
 
-    private acts: TA[];
-    private befs: TA[];
-    private afts: TA[];
-    private hdlrs: TH[];
+    private _acts: TA[];
+    private _befs: TA[];
+    private _afts: TA[];
+    private _hdlrs: TH[];
 
     constructor() {
         super();
-        this.befs = [];
-        this.acts = [];
-        this.afts = [];
+        this._befs = [];
+        this._acts = [];
+        this._afts = [];
     }
 
     has(action: TA) {
-        return this.acts.indexOf(action) >= 0;
+        return this._acts.indexOf(action) >= 0;
     }
 
     /**
@@ -109,12 +109,12 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * @returns {this}
      */
     use(...actions: TA[]): this {
-        const len = this.acts.length;
+        const len = this._acts.length;
         actions.forEach(action => {
             if (this.has(action)) return;
-            this.acts.push(action);
+            this._acts.push(action);
         });
-        if (this.acts.length !== len) this.resetHandler();
+        if (this._acts.length !== len) this.resetHandler();
         return this;
     }
 
@@ -130,9 +130,9 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
             return this;
         }
         if (before) {
-            this.acts.splice(this.acts.indexOf(before), 0, action);
+            this._acts.splice(this._acts.indexOf(before), 0, action);
         } else {
-            this.acts.unshift(action);
+            this._acts.unshift(action);
         }
         this.resetHandler();
         return this;
@@ -150,9 +150,9 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
             return this;
         }
         if (after && !isBoolean(after)) {
-            this.acts.splice(this.acts.indexOf(after) + 1, 0, action);
+            this._acts.splice(this._acts.indexOf(after) + 1, 0, action);
         } else {
-            this.acts.push(action);
+            this._acts.push(action);
         }
         this.resetHandler();
         return this;
@@ -164,8 +164,8 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * @param {TA} action
      */
     before(action: TA): this {
-        if (this.befs.indexOf(action) < 0) {
-            this.befs.push(action);
+        if (this._befs.indexOf(action) < 0) {
+            this._befs.push(action);
             this.resetHandler();
         }
         return this;
@@ -177,19 +177,19 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * @param {TA} action
      */
     after(action: TA): this {
-        if (this.afts.indexOf(action) < 0) {
-            this.afts.push(action);
+        if (this._afts.indexOf(action) < 0) {
+            this._afts.push(action);
             this.resetHandler();
         }
         return this;
     }
 
     execute(ctx: T, next?: () => TR): TR {
-        if (!this.hdlrs) {
+        if (!this._hdlrs) {
             const pdr = this.getActionProvider(ctx);
-            this.hdlrs = [...this.befs, ...this.acts, ...this.afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
+            this._hdlrs = [...this._befs, ...this._acts, ...this._afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
         }
-        return this.execHandler(ctx, this.hdlrs, next);
+        return this.execHandler(ctx, this._hdlrs, next);
     }
 
     /**
@@ -216,7 +216,7 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
     }
 
     protected resetHandler() {
-        this.hdlrs = null;
+        this._hdlrs = null;
     }
 
 }
