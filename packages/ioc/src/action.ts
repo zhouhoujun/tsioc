@@ -85,16 +85,16 @@ export abstract class IocAction<T, TH extends Handler = Handler<T>, TR = void> e
  */
 export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T>, TR = void> extends IocAction<T, TH, TR> {
 
-    protected acts: TA[];
-    protected befores: TA[];
-    protected afters: TA[];
+    private acts: TA[];
+    private befs: TA[];
+    private afts: TA[];
     private hdlrs: TH[];
 
     constructor() {
         super();
-        this.befores = [];
+        this.befs = [];
         this.acts = [];
-        this.afters = [];
+        this.afts = [];
     }
 
     has(action: TA) {
@@ -164,8 +164,8 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * @param {TA} action
      */
     before(action: TA): this {
-        if (this.befores.indexOf(action) < 0) {
-            this.befores.push(action);
+        if (this.befs.indexOf(action) < 0) {
+            this.befs.push(action);
             this.resetHandler();
         }
         return this;
@@ -177,8 +177,8 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * @param {TA} action
      */
     after(action: TA): this {
-        if (this.afters.indexOf(action) < 0) {
-            this.afters.push(action);
+        if (this.afts.indexOf(action) < 0) {
+            this.afts.push(action);
             this.resetHandler();
         }
         return this;
@@ -187,7 +187,7 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
     execute(ctx: T, next?: () => TR): TR {
         if (!this.hdlrs) {
             const pdr = this.getActionProvider(ctx);
-            this.hdlrs = [...this.befores, ...this.acts, ...this.afters].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
+            this.hdlrs = [...this.befs, ...this.acts, ...this.afts].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
         }
         return this.execHandler(ctx, this.hdlrs, next);
     }
