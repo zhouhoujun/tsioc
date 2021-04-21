@@ -89,7 +89,7 @@ export class MappingRoute extends Route {
         let middlewares = this.getRouteMiddleware(ctx, meta);
         if (middlewares.length) {
             const state = this.injector.state();
-            await this.execFuncs(ctx, middlewares.map(m => this.parseHandle(state, m)).filter(f => !!f))
+            await this.execHandler(ctx, middlewares.map(m => this.parseHandle(state, m)).filter(f => !!f))
         }
         await this.invoke(ctx, meta);
         return await next();

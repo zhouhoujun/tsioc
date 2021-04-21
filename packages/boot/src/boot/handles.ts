@@ -1,35 +1,15 @@
-import { lang, isPrimitiveType, IActionSetup, Abstract, ClassType, refl, isProvide, isFunction, getFacInstance, Type } from '@tsdi/ioc';
+import { lang, isPrimitiveType, IActionSetup, ClassType, refl, isProvide, isFunction, getFacInstance, Type } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { PROCESS_ROOT, BUILDER, BOOTCONTEXT, CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_EXIT } from '../tk';
 import { ConfigureManager } from '../configure/manager';
 import { ConfigureRegister } from '../configure/register';
-import { BuildHandles, BuildHandle } from '../builder/handles';
+import { BuildHandles } from '../builder/handles';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { Runnable } from '../runnable/Runnable';
 import { AnnotationReflect } from '../annotations/reflect';
 import { BootApplication } from '../BootApplication';
 
-/**
- * annoation handle.
- *
- * @export
- * @abstract
- * @class BootHandle
- * @extends {BuildHandle<IBootContext>}
- */
-@Abstract()
-export abstract class BootHandle extends BuildHandle<IBootContext> {
-    /**
-     * execute boot Handle.
-     *
-     * @abstract
-     * @param {IAnnoationContext} ctx
-     * @param {() => Promise<void>} next
-     * @returns {Promise<void>}
-     */
-    abstract execute(ctx: IBootContext, next: () => Promise<void>): Promise<void>;
-}
 
 export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActionSetup {
 

@@ -386,12 +386,12 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 
 class DecorActions extends Actions<DecorContext> {
     protected getActionProvider(ctx: DecorContext): IActionProvider { return null; }
-    protected parseHandle(provider: IActionProvider, ac: any): Handler {
+    protected parseHandler(provider: IActionProvider, ac: any): Handler {
         if (ac instanceof Action) {
-            return ac.toHandle();
+            return ac.toHandler();
         } else if (isBaseOf(ac, Action)) {
             const act = new ac();
-            return act instanceof Action ? act.toHandle() : null;
+            return act instanceof Action ? act.toHandler() : null;
         } else if (isFunction(ac)) {
             return ac;
         }

@@ -2,6 +2,7 @@ import { IActionProvider } from './IInjector';
 import { Token } from './tokens';
 import { isBoolean } from './utils/chk';
 import { chain, Handler } from './utils/hdl';
+import { isBaseOf } from './utils/lang';
 
 /**
  * action interface.
@@ -10,7 +11,10 @@ export abstract class Action {
 
     constructor() { }
 
-    abstract toHandle(): Handler;
+    /**
+     * pase to handler.
+     */
+    abstract toHandler(): Handler;
 }
 
 /**
@@ -22,7 +26,6 @@ export interface IActionSetup {
      */
     setup();
 }
-
 
 /**
  * ioc action type.
@@ -37,20 +40,36 @@ export type ActionType<T extends Action = Action, TAction = Handler> = Token<T> 
  * @abstract
  * @class IocAction
  */
-export abstract class IocAction<T> extends Action {
+export abstract class IocAction<T, TH extends Handler = Handler<T>, TR = void> extends Action {
 
-    abstract execute(ctx: T, next: () => void): void;
+    /**
+     * execute action.
+     * @param ctx 
+     * @param next 
+     */
+    abstract execute(ctx: T, next?: () => TR): TR;
 
-    protected execFuncs(ctx: T, actions: Handler[], next?: () => void) {
-        chain(actions, ctx, next);
+    /**
+     * execute handler.
+     * @param ctx 
+     * @param actions 
+     * @param next 
+     * @returns 
+     */
+    protected execHandler(ctx: T, actions: TH[], next?: () => TR): TR {
+        return chain(actions, ctx, next);
     }
 
-    private _action: Handler;
-    toHandle(): Handler {
-        if (!this._action) {
-            this._action = (ctx: T, next?: () => void) => this.execute(ctx, next);
+    private _hdr: TH;
+    /**
+     * parse to handler.
+     * @returns 
+     */
+    toHandler(): TH {
+        if (!this._hdr) {
+            this._hdr = ((ctx: T, next?: () => TR) => this.execute(ctx, next)) as TH;
         }
-        return this._action;
+        return this._hdr;
     }
 }
 
@@ -64,90 +83,90 @@ export abstract class IocAction<T> extends Action {
  * @extends {IocAction<T>}
  * @template T
  */
-export abstract class Actions<T> extends IocAction<T> {
+export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T>, TR = void> extends IocAction<T, TH, TR> {
 
-    protected handles: ActionType[];
-    protected befores: ActionType[];
-    protected afters: ActionType[];
-    private funcs: Handler[];
+    protected acts: TA[];
+    protected befores: TA[];
+    protected afters: TA[];
+    private hdlrs: TH[];
 
     constructor() {
         super();
         this.befores = [];
-        this.handles = [];
+        this.acts = [];
         this.afters = [];
     }
 
-    has(action: ActionType) {
-        return this.handles.indexOf(action) >= 0;
+    has(action: TA) {
+        return this.acts.indexOf(action) >= 0;
     }
 
     /**
      * use action.
      *
-     * @param {ActionType} action
+     * @param {TA} action
      * @param {boolean} [setup]  register action type or not.
      * @returns {this}
      */
-    use(...actions: ActionType[]): this {
-        const len = this.handles.length;
+    use(...actions: TA[]): this {
+        const len = this.acts.length;
         actions.forEach(action => {
             if (this.has(action)) return;
-            this.handles.push(action);
+            this.acts.push(action);
         });
-        if (this.handles.length !== len) this.resetFuncs();
+        if (this.acts.length !== len) this.resetHandler();
         return this;
     }
 
     /**
      * use action before
      *
-     * @param {ActionType} action
-     * @param {ActionType} [before]
+     * @param {TA} action
+     * @param {TA} [before]
      * @returns {this}
      */
-    useBefore(action: ActionType, before?: ActionType): this {
+    useBefore(action: TA, before?: TA): this {
         if (this.has(action)) {
             return this;
         }
         if (before) {
-            this.handles.splice(this.handles.indexOf(before), 0, action);
+            this.acts.splice(this.acts.indexOf(before), 0, action);
         } else {
-            this.handles.unshift(action);
+            this.acts.unshift(action);
         }
-        this.resetFuncs();
+        this.resetHandler();
         return this;
     }
 
     /**
      * use action after.
      *
-     * @param {ActionType} action
-     * @param {ActionType} [after]
+     * @param {TA} action
+     * @param {TA} [after]
      * @returns {this}
      */
-    useAfter(action: ActionType, after?: ActionType): this {
+    useAfter(action: TA, after?: TA): this {
         if (this.has(action)) {
             return this;
         }
         if (after && !isBoolean(after)) {
-            this.handles.splice(this.handles.indexOf(after) + 1, 0, action);
+            this.acts.splice(this.acts.indexOf(after) + 1, 0, action);
         } else {
-            this.handles.push(action);
+            this.acts.push(action);
         }
-        this.resetFuncs();
+        this.resetHandler();
         return this;
     }
 
     /**
      * register actions before run this scope.
      *
-     * @param {ActionType} action
+     * @param {TA} action
      */
-    before(action: ActionType): this {
+    before(action: TA): this {
         if (this.befores.indexOf(action) < 0) {
             this.befores.push(action);
-            this.resetFuncs();
+            this.resetHandler();
         }
         return this;
     }
@@ -155,30 +174,44 @@ export abstract class Actions<T> extends IocAction<T> {
     /**
      * register actions after run this scope.
      *
-     * @param {ActionType} action
+     * @param {TA} action
      */
-    after(action: ActionType): this {
+    after(action: TA): this {
         if (this.afters.indexOf(action) < 0) {
             this.afters.push(action);
-            this.resetFuncs();
+            this.resetHandler();
         }
         return this;
     }
 
-    execute(ctx: T, next?: () => void): void {
-        if (!this.funcs) {
+    execute(ctx: T, next?: () => TR): TR {
+        if (!this.hdlrs) {
             const pdr = this.getActionProvider(ctx);
-            this.funcs = [...this.befores, ...this.handles, ...this.afters].map(ac => this.parseHandle(pdr, ac)).filter(f => f);
+            this.hdlrs = [...this.befores, ...this.acts, ...this.afters].map(ac => this.parseHandler(pdr, ac)).filter(f => f);
         }
-        this.execFuncs(ctx, this.funcs, next);
+        return this.execHandler(ctx, this.hdlrs, next);
     }
 
+    /**
+     * get action provider from context.
+     * @param ctx the action context.
+     */
     protected abstract getActionProvider(ctx: T): IActionProvider;
 
-    protected abstract parseHandle(provider: IActionProvider, ac: any): Handler;
+    /**
+     * parse action to handler.
+     * @param provider action provider
+     * @param ac action.
+     */
+    protected parseHandler(provider: IActionProvider, ac: any): TH {
+        if (isBaseOf(ac, Action) && !provider.has(ac)) {
+            provider.regAction(ac);
+        }
+        return provider.getAction(ac);
+    }
 
-    protected resetFuncs() {
-        this.funcs = null;
+    protected resetHandler() {
+        this.hdlrs = null;
     }
 
 }

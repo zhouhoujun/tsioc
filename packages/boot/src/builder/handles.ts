@@ -1,4 +1,4 @@
-import { AsyncHandler, IActionSetup, lang, ActionType, chain, Type, refl, TypeReflect, IActionProvider, Action } from '@tsdi/ioc';
+import { AsyncHandler, IActionSetup, ActionType, Type, refl, TypeReflect, IocAction, Actions } from '@tsdi/ioc';
 import { IBuildContext } from '../Context';
 
 /**
@@ -8,22 +8,8 @@ import { IBuildContext } from '../Context';
  * @interface IBuildHandle
  * @template T
  */
-export interface IBuildHandle<T extends IBuildContext = IBuildContext> {
-    /**
-     * execute handle.
-     *
-     * @param {T} ctx
-     * @param {() => Promise<void>} next
-     * @returns {Promise<void>}
-     */
-    execute(ctx: T, next?: () => Promise<void>): Promise<void>;
+export interface IBuildHandle<T extends IBuildContext = IBuildContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> {
 
-    /**
-     * to action.
-     *
-     * @returns {AsyncHandler<T>}
-     */
-    toHandle(): AsyncHandler<T>;
 }
 
 /**
@@ -42,24 +28,8 @@ export type HandleType<T extends IBuildContext = IBuildContext> = ActionType<IBu
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends IBuildContext> extends Action implements IBuildHandle<T> {
-    constructor() { 
-        super();
-    }
+export abstract class BuildHandle<T extends IBuildContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> {
 
-    abstract execute(ctx: T, next: () => Promise<void>): Promise<void>;
-
-    protected execFuncs(ctx: T, handles: AsyncHandler<T>[], next?: () => Promise<void>): Promise<void> {
-        return chain(handles, ctx, next);
-    }
-
-    private _action: AsyncHandler<T>;
-    toHandle(): AsyncHandler<T> {
-        if (!this._action) {
-            this._action = (ctx: T, next?: () => Promise<void>) => this.execute(ctx, next);
-        }
-        return this._action;
-    }
 }
 
 /**
@@ -70,99 +40,11 @@ export abstract class BuildHandle<T extends IBuildContext> extends Action implem
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends IBuildContext = IBuildContext> extends BuildHandle<T> {
+export class BuildHandles<T extends IBuildContext = IBuildContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
-    protected handles: HandleType<T>[] = [];
-    private funcs: AsyncHandler<T>[];
-
-    /**
-     * use handle.
-     *
-     * @param {HandleType} handle
-     * @returns {this}
-     */
-    use(...handles: HandleType<T>[]): this {
-        const len = this.handles.length;
-        handles.forEach(handle => {
-            if (this.has(handle)) return;
-            this.handles.push(handle);
-        });
-        if (this.handles.length !== len) this.resetFuncs();
-        return this;
+    protected getActionProvider(ctx: T) {
+        return ctx.injector.action();
     }
-
-    unuse(...handles: HandleType<T>[]) {
-        const len = this.handles.length;
-        handles.forEach(handle => {
-            lang.remove(this.handles, handle);
-        });
-        if (this.handles.length !== len) this.resetFuncs();
-
-        return this;
-    }
-
-    has(handle: HandleType<T>): boolean {
-        return this.handles.indexOf(handle) >= 0;
-    }
-
-    /**
-     * use handle before
-     *
-     * @param {HandleType} handle
-     * @param {HandleType} before
-     * @returns {this}
-     */
-    useBefore(handle: HandleType<T>, before: HandleType<T>): this {
-        if (this.has(handle)) {
-            return this;
-        }
-        if (before) {
-            this.handles.splice(this.handles.indexOf(before), 0, handle);
-        } else {
-            this.handles.unshift(handle);
-        }
-        this.resetFuncs();
-        return this;
-    }
-    /**
-     * use handle after.
-     *
-     * @param {HandleType} handle
-     * @param {HandleType} after
-     * @returns {this}
-     */
-    useAfter(handle: HandleType<T>, after?: HandleType<T>): this {
-        if (this.has(handle)) {
-            return this;
-        }
-        if (after) {
-            this.handles.splice(this.handles.indexOf(after) + 1, 0, handle);
-        } else {
-            this.handles.push(handle);
-        }
-        this.resetFuncs();
-        return this;
-    }
-
-    async execute(ctx: T, next?: () => Promise<void>): Promise<void> {
-        if (!this.funcs) {
-            const pdr = ctx.injector.action();
-            this.funcs = this.handles.map(ac => this.parseHandle(pdr, ac)).filter(f => f);
-        }
-        await this.execFuncs(ctx, this.funcs, next);
-    }
-
-    protected resetFuncs() {
-        this.funcs = null;
-    }
-
-    protected parseHandle(provider: IActionProvider, hdty: HandleType<T>): AsyncHandler<T> {
-        if (lang.isBaseOf(hdty, Action) && !provider.has(hdty)) {
-            provider.regAction(hdty);
-        }
-        return provider.getAction<AsyncHandler<T>>(hdty);
-    }
-
 }
 
 /**

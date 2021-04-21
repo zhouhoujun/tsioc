@@ -25,7 +25,7 @@ export abstract class Middleware {
 
     private _hdl: AsyncHandler<MessageContext>;
     /**
-     * to action handler func.
+     * parse this middleware to handler.
      */
     toHandle(): AsyncHandler<MessageContext> {
         if (!this._hdl) {
@@ -34,7 +34,14 @@ export abstract class Middleware {
         return this._hdl;
     }
 
-    protected execFuncs(ctx: MessageContext, handles: AsyncHandler<MessageContext>[], next?: () => Promise<void>): Promise<void> {
+    /**
+     * exec handlers.
+     * @param ctx exection context.
+     * @param handles 
+     * @param next 
+     * @returns 
+     */
+    protected execHandler(ctx: MessageContext, handles: AsyncHandler<MessageContext>[], next?: () => Promise<void>): Promise<void> {
         return chain(handles, ctx, next);
     }
 }
@@ -64,7 +71,7 @@ export abstract class Middlewares extends Middleware {
             if (this.has(handle)) return;
             this.handles.push(handle);
         });
-        if (this.handles.length !== len) this.resetFuncs();
+        if (this.handles.length !== len) this.resetHandler();
         return this;
     }
 
@@ -73,7 +80,7 @@ export abstract class Middlewares extends Middleware {
         handles.forEach(handle => {
             lang.remove(this.handles, handle);
         });
-        if (this.handles.length !== len) this.resetFuncs();
+        if (this.handles.length !== len) this.resetHandler();
 
         return this;
     }
@@ -98,7 +105,7 @@ export abstract class Middlewares extends Middleware {
         } else {
             this.handles.unshift(handle);
         }
-        this.resetFuncs();
+        this.resetHandler();
         return this;
     }
     /**
@@ -117,7 +124,7 @@ export abstract class Middlewares extends Middleware {
         } else {
             this.handles.push(handle);
         }
-        this.resetFuncs();
+        this.resetHandler();
         return this;
     }
 
@@ -126,14 +133,19 @@ export abstract class Middlewares extends Middleware {
             const state = ctx.injector.state(); 
             this.funcs = this.handles.map(ac => this.parseHandle(state, ac)).filter(f => f);
         }
-        await this.execFuncs(ctx, this.funcs, next);
+        await this.execHandler(ctx, this.funcs, next);
     }
 
-    protected resetFuncs() {
+    protected resetHandler() {
         this.funcs = null;
     }
 
-    protected abstract parseHandle(state: RegisteredState, handleType: MiddlewareType): AsyncHandler<MessageContext>;
+    /**
+     * pase middleware to handler.
+     * @param state global registered state.
+     * @param mdty mdiddleware type.
+     */
+    protected abstract parseHandle(state: RegisteredState, mdty: MiddlewareType): AsyncHandler<MessageContext>;
 }
 
 

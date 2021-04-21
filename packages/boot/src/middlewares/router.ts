@@ -31,7 +31,7 @@ export class Router extends MessageQueue implements IRouter {
     protected beforeExec(ctx: MessageContext) {
         if (!this.sorted) {
             this.handles.sort((a, b) => this.getUrlFrom(b).length - this.getUrlFrom(a).length);
-            this.resetFuncs();
+            this.resetHandler();
             this.sorted = true;
         }
     }
@@ -51,8 +51,8 @@ export class Router extends MessageQueue implements IRouter {
         return (!ctx.status || ctx.status === 404) && this.protocol === ctx.protocol && ctx.vaild.isActiveRoute(ctx, this.url, this.prefix);
     }
 
-    protected resetFuncs() {
-        super.resetFuncs();
+    protected resetHandler() {
+        super.resetHandler();
         this.sorted = false;
     }
 }

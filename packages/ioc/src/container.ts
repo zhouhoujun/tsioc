@@ -262,10 +262,10 @@ class ActionProvider extends Provider implements IActionProvider {
 
     getAction<T extends Handler>(target: Token<Action> | Action | Function): T {
         if (target instanceof Action) {
-            return target.toHandle() as T;
+            return target.toHandler() as T;
         } else if (isBaseOf(target, Action)) {
             let act = this.get(target);
-            return act ? act.toHandle() as T : null;
+            return act ? act.toHandler() as T : null;
         } else if (isFunction(target)) {
             return target as T
         }
