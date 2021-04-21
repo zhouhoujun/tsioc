@@ -1,6 +1,6 @@
 import { IActionProvider } from './IInjector';
 import { Token } from './tokens';
-import { isBoolean } from './utils/chk';
+import { isBoolean, isFunction } from './utils/chk';
 import { chain, Handler } from './utils/hdl';
 import { isBaseOf } from './utils/lang';
 
@@ -204,10 +204,15 @@ export abstract class Actions<T, TA = ActionType, TH extends Handler = Handler<T
      * @param ac action.
      */
     protected parseHandler(provider: IActionProvider, ac: any): TH {
-        if (isBaseOf(ac, Action) && !provider.has(ac)) {
-            provider.regAction(ac);
+        if (isBaseOf(ac, Action)) {
+            if (!provider.has(ac)) {
+                provider.regAction(ac);
+            }
+            return provider.getAction(ac)
+        } else if (isFunction(ac)) {
+            return ac as TH;
         }
-        return provider.getAction(ac);
+        return ac instanceof Action ? ac.toHandler() as TH : null;
     }
 
     protected resetHandler() {

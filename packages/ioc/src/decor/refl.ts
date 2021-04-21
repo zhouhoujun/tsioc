@@ -8,7 +8,7 @@ import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata
 import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
-import { cleanObj, getParentClass, isBaseOf } from '../utils/lang';
+import { cleanObj, getParentClass } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { IActionProvider } from '../IInjector';
 
@@ -384,16 +384,13 @@ export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
 }
 
 
-class DecorActions extends Actions<DecorContext> {
+class DecorActions extends Actions<DecorContext, Handler | Action> {
     protected getActionProvider(ctx: DecorContext): IActionProvider { return null; }
     protected parseHandler(provider: IActionProvider, ac: any): Handler {
-        if (ac instanceof Action) {
-            return ac.toHandler();
-        } else if (isBaseOf(ac, Action)) {
-            const act = new ac();
-            return act instanceof Action ? act.toHandler() : null;
-        } else if (isFunction(ac)) {
+        if (isFunction(ac)) {
             return ac;
+        } else if (ac instanceof Action) {
+            return ac.toHandler();
         }
         return null;
     }

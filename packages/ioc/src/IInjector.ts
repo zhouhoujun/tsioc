@@ -398,7 +398,7 @@ export interface IActionProvider extends IProvider {
      * get action via target.
      * @param target target.
      */
-    getAction<T extends Handler>(target: Token<Action> | Action | Function): T;
+    getAction<T extends Handler>(target: Token<Action>): T;
 }
 
 

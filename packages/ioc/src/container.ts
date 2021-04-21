@@ -260,16 +260,8 @@ class ActionProvider extends Provider implements IActionProvider {
         super.regType(target, option);
     }
 
-    getAction<T extends Handler>(target: Token<Action> | Action | Function): T {
-        if (target instanceof Action) {
-            return target.toHandler() as T;
-        } else if (isBaseOf(target, Action)) {
-            let act = this.get(target);
-            return act ? act.toHandler() as T : null;
-        } else if (isFunction(target)) {
-            return target as T
-        }
-        return null;
+    getAction<T extends Handler>(target: Token<Action>): T {
+        return this.get(target)?.toHandler() as T ?? null;
     }
 
     protected registerAction(type: Type<Action>) {
