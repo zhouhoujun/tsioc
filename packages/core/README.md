@@ -10,8 +10,9 @@ with features:
 * get services form injector tree.
 
 
-version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
-
+old packages:
+[`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
+[`tsioc`](https://www.npmjs.com/package/tsioc)
 # builder
 
 ```shell

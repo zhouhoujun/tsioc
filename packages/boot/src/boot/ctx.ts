@@ -5,9 +5,9 @@ import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';
-import { BootstrapMetadata } from '../decorators';
 import { BootOption, IBootContext } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
+import { DIModuleMetadata } from '../decorators';
 
 
 /**
@@ -87,7 +87,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         this.root.setValue(PROCESS_ROOT, baseURL);
     }
 
-    getAnnoation<T extends BootstrapMetadata>(): T {
+    getAnnoation<T extends DIModuleMetadata>(): T {
         return this.reflect.annotation as T;
     }
 

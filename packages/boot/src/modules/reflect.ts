@@ -1,6 +1,6 @@
 import { Type } from '@tsdi/ioc';
 import { AnnotationReflect } from '../annotations/reflect';
-import { BootstrapMetadata } from '../decorators';
+import { DIModuleMetadata } from '../decorators';
 
 /**
  * di module relfect.
@@ -21,6 +21,6 @@ export interface ModuleReflect extends AnnotationReflect {
     /**
      * module metadata.
      */
-    annotation?: BootstrapMetadata;
+    annotation?: DIModuleMetadata;
 
 }

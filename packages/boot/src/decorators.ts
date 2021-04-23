@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator, ROOT_INJECTOR,
-    lang, Type, isFunction, Token, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType
+    lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -562,78 +562,3 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
         }
     }
 });
-
-/**
- * bootstrap metadata.
- *
- * @export
- * @interface BootstrapMetadata
- * @extends {AppConfigure}
- */
-export interface BootstrapMetadata extends ModuleConfigure {
-    /**
-     * module bootstrap token.
-     *
-     * @type {Token<T>}
-     */
-    bootstrap?: Token;
-
-}
-
-
-/**
- * Bootstrap decorator, use to define class is a task element.
- *
- * @export
- * @interface IBootstrapDecorator
- * @template T
- */
-export interface IBootstrapDecorator<T extends BootstrapMetadata> {
-    /**
-     * Bootstrap decorator, use to define class as Application Bootstrap element.
-     *
-     * @Bootstrap
-     *
-     * @param {T} metadata bootstrap metadate config.
-     */
-    (metadata: T): ClassDecorator;
-}
-
-
-/**
- * create bootstrap decorator.
- *
- * @export
- * @template T
- * @param {string} name
- * @param {DecoratorOption<T>} [options]
- * @returns {IBootstrapDecorator<T>}
- */
-export function createBootstrapDecorator<T extends BootstrapMetadata>(name: string, options?: DecoratorOption<T>): IBootstrapDecorator<T> {
-
-    return createDIModuleDecorator<BootstrapMetadata>(name, {
-        reflect: {
-            class: (ctx, next) => {
-                const reflect = ctx.reflect as ModuleReflect;
-                reflect.annoType = 'module';
-                reflect.annoDecor = ctx.decor;
-                reflect.annotation = ctx.matedata;
-                // static main.
-                if (isFunction(ctx.decorType['main'])) {
-                    setTimeout(() => {
-                        ctx.decorType['main'](ctx.matedata);
-                    }, 500);
-                }
-                return next();
-            }
-        },
-        ...options
-    }) as IBootstrapDecorator<T>;
-}
-
-/**
- * Bootstrap Decorator, definde class as mvc bootstrap module.
- *
- * @Bootstrap
- */
-export const Bootstrap: IBootstrapDecorator<BootstrapMetadata> = createBootstrapDecorator<BootstrapMetadata>('Bootstrap');

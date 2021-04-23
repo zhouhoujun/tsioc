@@ -5,6 +5,9 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `@tsdi/aop` is AOP base on Ioc container, via [@tsdi/core](https://www.npmjs.com/package/@tsdi/core), typescript decorator.
 
+old packages:
+[`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
+[`tsioc`](https://www.npmjs.com/package/tsioc)
 # Install
 
 ```shell

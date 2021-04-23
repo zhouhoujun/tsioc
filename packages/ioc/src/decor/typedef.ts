@@ -9,6 +9,10 @@ import { DecoratorType, DecorDefine, DecorMemberType } from './type';
 const name = '__name';
 const emptyArr = [];
 const allVals = '_avalues_';
+
+/**
+ * type define.
+ */
 export class TypeDefine {
     className: string;
 

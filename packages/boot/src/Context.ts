@@ -5,9 +5,9 @@ import {
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
 import { ModuleReflect } from './modules/reflect';
-import { BootstrapMetadata } from './decorators';
 import { MessageQueue } from './middlewares/queue';
 import { MessageContext, RequestOption } from './middlewares';
+import { DIModuleMetadata } from './decorators';
 
 export interface ProdverOption {
 
@@ -272,7 +272,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      */
     boot?: any;
 
-    getAnnoation<T extends BootstrapMetadata>(): T;
+    getAnnoation<T extends DIModuleMetadata>(): T;
 
     /**
      * get statup runnable.

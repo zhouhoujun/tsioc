@@ -5,8 +5,9 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `@tsdi/ioc` is Ioc container, Injector, via typescript decorator.
 
-version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
-
+old packages:
+[`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
+[`tsioc`](https://www.npmjs.com/package/tsioc)
 # builder
 
 ```shell

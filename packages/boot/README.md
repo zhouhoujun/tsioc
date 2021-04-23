@@ -5,7 +5,9 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `@tsdi/boot`： DI Module manager, application bootstrap. base on AOP, Ioc container, via `@tsdi/core`.
 
-version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
+old packages:
+[`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) 
+[`tsioc`](https://www.npmjs.com/package/tsioc)
 # Install
 
 ```shell
@@ -26,9 +28,9 @@ npm install @tsdi/platform-server
 DI Module manager, application bootstrap. base on AOP.
 
 *  `@DIModule` DIModule decorator, use to define class as DI Module.
-*  `@Bootstrap` Bootstrap decorator, use to define class as bootstrp module.
-*  `@Boot()` Boot decorator, use to define class as startup service for application.
-*  `@Message`  Message decorator, for class. use to define the class as message handle register in global message queue.
+*  `@Boot` Boot decorator, use to define class as startup service for application.
+*  `@Handle`  Handle decorator, for class. use to define the class as message handle.
+*  `@RouteMapping` route mapping decorator, for class. use to define this class as message route.
 
 [mvc boot simple](https://github.com/zhouhoujun/type-mvc/tree/master/packages/simples)
 
