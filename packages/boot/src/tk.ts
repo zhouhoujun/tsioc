@@ -1,11 +1,10 @@
 import { tokenId, Token } from '@tsdi/ioc';
 import { IBootContext } from './Context';
 import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
-import { IBuilderService } from './services/IBuilderService';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
-import { IModuleInjector } from './modules/ref';
 import { MessageContext } from './middlewares/ctx';
 import { IBootApplication } from './IBootApplication';
+import { IBuilderService } from './services/IBuilderService';
 
 
 /**
@@ -53,7 +52,7 @@ export const ProcessRunRootToken = PROCESS_ROOT;
 /**
  *  appliaction boot process root path.
  */
- export const PROCESS_EXIT = tokenId<(app: IBootApplication) => void>('PROCESS_ROOT');
+export const PROCESS_EXIT = tokenId<(app: IBootApplication) => void>('PROCESS_ROOT');
 
 /**
  * build service token.
@@ -67,7 +66,6 @@ export const BUILDER: Token<IBuilderService> = tokenId<IBuilderService>('BUILDER
  */
 export const BuilderServiceToken = BUILDER;
 
-
 /**
  * type parser token.
  */
@@ -79,11 +77,6 @@ export const TYPE_PARSER: Token<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYP
  * @deprecated use `TYPE_PARSER` instead.
  */
 export const BaseTypeParserToken = TYPE_PARSER;
-
-/**
- * module boot startup runnable instance.
- */
-export const MODULE_RUNNABLE = tokenId<any>('MODULE_RUNNABLE');
 
 /**
  * application statup service

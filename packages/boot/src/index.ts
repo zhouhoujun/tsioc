@@ -26,9 +26,6 @@ export * from './modules/ref';
 export * from './modules/injector';
 export * from './modules/configure';
 
-// builders
-export * from './builder/handles';
-
 // boots
 export * from './boot/ctx';
 export * from './boot/handles';

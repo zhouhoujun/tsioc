@@ -1,11 +1,12 @@
-import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR, isPlainObject, Type } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder } from '@tsdi/core';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
-import { BOOTCONTEXT, BUILDER } from './tk';
+import { BOOTCONTEXT, BUILDER, PROCESS_EXIT } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
 import { MiddlewareModule } from './middlewares';
+import { IBuilderService } from './services/IBuilderService';
 
 /**
  * boot application.
@@ -98,8 +99,22 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         const root = this.getRootInjector();
         root.register(MiddlewareModule);
         await root.load(...this.getBootDeps());
-        let ctx = await root.getInstance(BUILDER).boot(this, ...args);
+        const build = root.getInstance(BUILDER);
+        const ctx = this.createContext(build, args);
+        await build.boot(ctx);
+        const exit = root.get(PROCESS_EXIT);
+        exit && exit(this);
         return ctx as T;
+    }
+
+
+    protected createContext(builer: IBuilderService, args: string[]) {
+        const ctx = builer.createContext(this.target, args) as T;
+        this.onContextInit(ctx);
+        ctx.onDestroy(() => {
+            this.destroy();
+        });
+        return ctx;
     }
 
     getRootInjector(): IInjector {
@@ -181,3 +196,4 @@ export function checkBootArgs(deps?: LoadType[] | LoadType | string, ...args: st
         deps: mdeps
     }
 }
+

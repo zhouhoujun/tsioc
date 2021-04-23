@@ -1,6 +1,6 @@
-import { Injectable, Token, LoadType, ProviderType, IInjector } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { CONFIGURATION, MODULE_RUNNABLE, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
+import { BOOTCONTEXT, CONFIGURATION, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
@@ -8,6 +8,7 @@ import { ModuleReflect } from '../modules/reflect';
 import { BootOption, IBootContext } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
+import { IRunnable, Runnable } from '../runnable/Runnable';
 
 
 /**
@@ -26,7 +27,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         (this as any).parent = injector;
         this.parent.onDestroy(this.destCb);
     }
-    
+
     getMessager(): MessageQueue {
         return this.get(ROOT_QUEUE);
     }
@@ -115,7 +116,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return this.options.data;
     }
 
-    get bootstrap(): Token {
+    get bootToken(): Type {
         return this.options.bootstrap;
     }
 
@@ -123,13 +124,14 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return this.options.deps;
     }
 
+    private _startup: IRunnable;
     /**
      * get boot startup instance.
      *
      * @type {IStartup}
      */
-    getStartup(): any {
-        return this.getValue(MODULE_RUNNABLE);
+    getStartup(): IRunnable {
+        return this._startup;
     }
 
     /**
@@ -140,6 +142,36 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * boot instance.
      */
     boot: any;
+
+    /**
+     * bootstrap type
+     * @param type 
+     * @param opts 
+     */
+    async bootstrap(type: Type, opts?: any): Promise<any> {
+        if (!this.root.state().isRegistered(type)){
+            this.root.register(type);
+        }
+        const boot = this.boot = this.root.resolve({ token: type, providers: [this.providers, { provide: BOOTCONTEXT, useValue: this }, { provide: lang.getClass(this), useValue: this }] });
+        let startup: IRunnable;
+        if (boot instanceof Runnable) {
+            startup = boot;
+        } else {
+            startup = this.root.getService(
+                { tokens: [Runnable], target: boot },
+                { provide: BOOTCONTEXT, useValue: this },
+                { provide: lang.getClass(this), useValue: this }
+
+            );
+        }
+
+        if (startup) {
+            this._startup = startup;
+            this.onDestroy(() => startup.destroy());
+            await startup.configureService(this);
+        }
+        return startup;
+    }
 
 
     protected setOptions(options: T) {

@@ -1,5 +1,5 @@
 import { ClassType } from '@tsdi/ioc';
-import { BootOption, BuildOption, IBootContext } from '../Context';
+import { BootOption, IBootContext } from '../Context';
 import { IBootApplication } from '../IBootApplication';
 
 
@@ -10,27 +10,6 @@ import { IBootApplication } from '../IBootApplication';
  * @class BuilderService
  */
 export interface IBuilderService {
-    /**
-     * build target type.
-     *
-     * @template T
-     * @param {Type} target
-     * @param {BuildOption<T>} options
-     * @param {...ProviderTypes[]} providers
-     * @returns {Promise<T>}
-     */
-    build<T>(target: ClassType<T> | BuildOption<T>): Promise<T>;
-    /**
-     * build target type.
-     *
-     * @template T
-     * @param {Type} target
-     * @param {BuildOption<T>} options
-     * @param {...ProviderTypes[]} providers
-     * @returns {Promise<T>}
-     */
-     reslove<T>(target: ClassType<T> | BuildOption<T>): Promise<T>;
-
     /**
      * startup runnable service.
      * @param target service.
@@ -61,12 +40,16 @@ export interface IBuilderService {
      */
     run<T extends IBootContext, Topt extends BootOption>(target: ClassType | Topt | T, ...args: string[]): Promise<T>;
     /**
-     * boot application.
-     *
-     * @param {IBootApplication} application
-     * @param {...string[]} args
-     * @returns {Promise<IBootContext>}
+     * create context.
+     * @param target 
+     * @param args 
      */
-    boot(application: IBootApplication, ...args: string[]): Promise<IBootContext>;
+    createContext<T extends IBootContext, Topt extends BootOption>(target: ClassType | Topt | T, args: string[]): T;
+
+    /**
+     * boot with root conext.
+     * @param context 
+     */
+    boot(root: IBootContext): Promise<void>;
 }
 

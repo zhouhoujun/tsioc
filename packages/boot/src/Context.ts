@@ -1,5 +1,5 @@
 import {
-    ClassType, IProvider, ProviderType, ObjectMap, RegInMetadata,
+    IProvider, ProviderType, ObjectMap, RegInMetadata,
     Token, Type, TypeReflect, IModuleLoader, LoadType, IInjector
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
@@ -30,7 +30,7 @@ export interface AnnoationOption<T = any> extends ProdverOption, RegInMetadata {
      *
      * @type {ClassType}
      */
-    type?: ClassType<T>;
+    type?: Type<T>;
 }
 
 /**
@@ -99,9 +99,9 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
      */
     startups?: Token[]
     /**
-     * bootstrap instance.
+     * bootstrap type.
      */
-    bootstrap?: Token;
+    bootstrap?: Type;
     /**
      * render host container.
      *
@@ -147,45 +147,6 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
 
 export type Template = string | ObjectMap<any>;
 
-export interface BuildOption<T = any> extends AnnoationOption<T> {
-    /**
-     * build type.
-     */
-    readonly type: ClassType<T>;
-    /**
-     * template to binding.
-     */
-    template?: Template;
-    /**
-     * module reslove in the injector.
-     */
-    injector?: IInjector;
-}
-
-/**
- * build context.
- *
- * @export
- * @interface IBuildContext
- * @extends {IHandleContext}
- */
-export interface IBuildContext extends BuildOption<any> {
-    /**
-     * type reflect.
-     */
-    readonly reflect?: TypeReflect;
-
-    /**
-     * providers.
-     */
-    readonly providers?: IProvider;
-
-    /**
-     * build instance.
-     */
-    value?: any;
-}
-
 /**
  * boot context.
  */
@@ -202,6 +163,13 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * get message queue.
      */
     getMessager(): MessageQueue;
+
+    /**
+     * bootstrap type
+     * @param type 
+     * @param opts 
+     */
+    bootstrap(type: Type, opts?: any): Promise<any>;
 
     /**
      * send message
@@ -263,7 +231,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      */
     readonly deps: LoadType[];
 
-    readonly bootstrap: Token;
+    readonly bootToken: Type;
 
 
     target: any;

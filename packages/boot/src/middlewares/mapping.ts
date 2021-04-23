@@ -2,7 +2,7 @@ import {
     Abstract, AsyncHandler, DecorDefine, lang, ParameterMetadata, ProviderType, Type, TypeReflect, IInjector,
     isPrimitiveType, isPromise, isString, isUndefined, isArray, isClass, isFunction, isNil, isPlainObject, tokenId, RegisteredState
 } from '@tsdi/ioc';
-import { BUILDER, CONTEXT, TYPE_PARSER } from '../tk';
+import { CONTEXT, TYPE_PARSER } from '../tk';
 import { MessageContext } from './ctx';
 import { IRouter, Middleware, MiddlewareType } from './handle';
 import { DefaultModelParserToken, ModelParser } from './ModelParser';
@@ -230,7 +230,7 @@ export class MappingRoute extends Route {
                                     if (mdparser) {
                                         val = mdparser.parseModel(ptype, body);
                                     } else {
-                                        val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
+                                        // val = await injector.getInstance(BUILDER).build({ type: ptype, template: body })
                                     }
                                 }
                             }

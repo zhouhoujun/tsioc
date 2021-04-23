@@ -1,4 +1,4 @@
-import { Token, Modules } from '@tsdi/ioc';
+import { Modules, Type } from '@tsdi/ioc';
 import { AnnotationMetadata } from '../annotations/reflect';
 
 
@@ -25,9 +25,9 @@ export interface IModuleMetadata<T = any> extends AnnotationMetadata<T> {
     /**
      * bootstrap.
      *
-     * @type {Token<T>}
+     * @type {Type<T>}
      */
-    bootstrap?: Token<T>;
+    bootstrap?: Type<T>;
     /**
      * imports dependens modules
      *

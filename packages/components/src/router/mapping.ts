@@ -1,4 +1,5 @@
-import { CONTEXT, MappingRoute, MessageContext } from '@tsdi/boot';
+import { MappingRoute, MessageContext } from '@tsdi/boot';
+import { Type } from '@tsdi/ioc';
 import { ApplicationRef } from '../refs/app';
 
 
@@ -12,9 +13,7 @@ export class HostMappingRoute extends MappingRoute {
         const appRef = this.injector.getInstance(ApplicationRef);
         let component = appRef.components.find(c => c instanceof this.reflect.type)?.instance;
         if (!component) {
-            component = this.injector.getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
-            // todo attach appRef and view.
-            appRef.attachView(component);
+            component = renderComponent(this.reflect.type as Type, );
         }
         return component;
     }

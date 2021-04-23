@@ -1,10 +1,9 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
-import { BuilderService } from './services/BuilderService';
-import { ResolveScope } from './builder/handles';
 import { BootContext } from './boot/ctx';
-import { RunnableBuildLifeScope, BootLifeScope, StartupServiceScope } from './boot/lifescope';
+import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from './boot/lifescope';
+import { BuilderService } from './services/BuilderService';
 
 
 /**
@@ -24,7 +23,6 @@ export class BootModule {
     setup(@Inject(CONTAINER) container: IContainer) {
 
         container.action().regAction(
-            ResolveScope,
             StartupServiceScope,
             RunnableBuildLifeScope,
             BootLifeScope);
