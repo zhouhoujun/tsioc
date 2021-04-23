@@ -163,7 +163,6 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * get message queue.
      */
     getMessager(): MessageQueue;
-
     /**
      * bootstrap type
      * @param type 

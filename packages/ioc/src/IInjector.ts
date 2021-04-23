@@ -425,20 +425,20 @@ export interface IInjector extends IProvider {
      * resolve token instance with token and param provider.
      *
      * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
      * @param {ResolveOption<T>} option  resolve option
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
     resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
+    /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
     /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *

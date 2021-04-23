@@ -214,40 +214,17 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
     await next();
 };
 
-/**
- * build boot module.
- */
-export class ModuleBuildScope extends BuildHandles<IBootContext> implements IActionSetup {
-
-    async execute(ctx: IBootContext, next?: () => Promise<void>): Promise<void> {
-        // has build module instance.
-        if (!ctx.target && !ctx.boot) {
-            await super.execute(ctx);
-        }
-        if (!ctx.boot && ctx.target) {
-            ctx.boot = ctx.target;
-        }
-        if (next) {
-            await next();
-        }
-    }
-
-    setup() {
-        this.use(ResolveTypeHandle, ResolveBootHandle);
-    }
-}
 
 export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.type && !ctx.target) {
+    if (ctx.type) {
         ctx.target = await ctx.root.resolve(ctx.type, ctx.providers);
     }
     await next();
 };
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    const bootModule = ctx.bootToken || ctx.getAnnoation()?.bootstrap;
-    if (!ctx.boot && bootModule) {
-        await ctx.bootstrap(bootModule);
+    if (ctx.bootToken) {
+        await ctx.bootstrap(ctx.bootToken);
     }
     await next();
 };

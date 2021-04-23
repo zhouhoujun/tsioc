@@ -1,6 +1,6 @@
-import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { BOOTCONTEXT, CONFIGURATION, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
+import { BOOTCONTEXT, BUILDER, CONFIGURATION, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
@@ -89,7 +89,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     }
 
     getAnnoation<T extends DIModuleMetadata>(): T {
-        return this.reflect.annotation as T;
+        return this.reflect?.annotation as T;
     }
 
     /**
@@ -117,7 +117,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     }
 
     get bootToken(): Type {
-        return this.options.bootstrap;
+        return this.options.bootstrap ?? this.getAnnoation().bootstrap;
     }
 
     get deps(): LoadType[] {
@@ -152,7 +152,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         if (!this.root.state().isRegistered(type)){
             this.root.register(type);
         }
-        const boot = this.boot = this.root.resolve({ token: type, providers: [this.providers, { provide: BOOTCONTEXT, useValue: this }, { provide: lang.getClass(this), useValue: this }] });
+        const boot = this.boot = this.root.resolve(type, this.providers, { provide: BOOTCONTEXT, useValue: this }, { provide: lang.getClass(this), useValue: this });
         let startup: IRunnable;
         if (boot instanceof Runnable) {
             startup = boot;
