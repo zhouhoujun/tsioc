@@ -1,4 +1,4 @@
-import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR, isPlainObject, Type } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR } from '@tsdi/ioc';
 import { IContainerBuilder, ContainerBuilder } from '@tsdi/core';
 import { IBootApplication, ContextInit } from './IBootApplication';
 import { BootModule } from './BootModule';
@@ -102,8 +102,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         const build = root.getInstance(BUILDER);
         const ctx = this.createContext(build, args);
         await build.boot(ctx);
-        const exit = root.get(PROCESS_EXIT);
-        exit && exit(this);
+        root.get(PROCESS_EXIT)?.(this);
         return ctx as T;
     }
 

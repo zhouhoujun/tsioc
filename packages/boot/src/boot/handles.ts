@@ -47,7 +47,7 @@ export abstract class BuildHandle<T extends IAnnoationContext> extends IocAction
  * @extends {Handles<T>}
  * @template T
  */
- export class BuildHandles<T extends IAnnoationContext = IAnnoationContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
+export class BuildHandles<T extends IAnnoationContext = IAnnoationContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
     protected getActionProvider(ctx: T) {
         return ctx.injector.action();
@@ -246,7 +246,7 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const bootModule = ctx.bootToken || ctx.getAnnoation()?.bootstrap;
-    if (bootModule) {
+    if (!ctx.boot && bootModule) {
         await ctx.bootstrap(bootModule);
     }
     await next();
