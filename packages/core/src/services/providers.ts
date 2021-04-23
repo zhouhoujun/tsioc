@@ -1,6 +1,6 @@
 import {
     IInjector, Token, ProviderType, IProvider, isArray, IContainer,
-    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider
+    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider, TARGET
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
@@ -28,6 +28,9 @@ export class ServiceProvider implements IServiceProvider {
         let option: ServiceOption<T>;
         if (isPlainObject(target)) {
             option = target as ServiceOption<T>;
+            if (option.target) {
+                providers.push({ provide: TARGET, useValue: option.target });
+            }
             if (option.providers) providers.unshift(...option.providers);
         } else {
             option = { token: target };
@@ -68,6 +71,9 @@ export class ServiceProvider implements IServiceProvider {
         if (!maps.size) return services;
 
         if (isPlainObject(target)) {
+            if ((target as ServicesOption<T>).target) {
+                providers.push({ provide: TARGET, useValue: (target as ServicesOption<T>).target });
+            }
             providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
         const pdr = injector.parseProvider(...providers);

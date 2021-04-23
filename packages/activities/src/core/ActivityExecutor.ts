@@ -36,7 +36,7 @@ export class ActivityExecutor implements IActivityExecutor {
      */
     runWorkflow<T extends IWorkflowContext>(activity: ActivityType, data?: any): Promise<T> {
         let ctx = this.context.workflow;
-        let injector = ctx.root;
+        let injector = ctx.injector;
         if (isAcitvityRef(activity)) {
             let nctx = ctx.clone() as T;
             activity.context.setValue(ACTIVITY_INPUT, data);

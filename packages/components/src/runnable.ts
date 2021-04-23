@@ -16,7 +16,7 @@ export class ComponentRunnable extends Runnable {
         if (!(ctx.boot instanceof ComponentRef)) {
             throw new Error('bootstrap type is not a component.');
         }
-        const appRef = ctx.root.get(ApplicationRef);
+        const appRef = ctx.injector.get(ApplicationRef);
         appRef.bootstrap(compRef);
     }
 }

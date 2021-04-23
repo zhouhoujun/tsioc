@@ -22,7 +22,6 @@ export const INVOKER: Token<Invoker> = tokenId<Invoker>('INVOKER');
  * @deprecated use `INVOKER` instead.
  */
 export const MethodAccessorToken = INVOKER;
-
 /**
  * root container token.
  * it is a symbol id, you can use  `@Inject()`, `@AutoWired()` or `@Param()` to get container instance in yourself class.
@@ -50,3 +49,7 @@ export const MODULE_LOADER = tokenId<IModuleLoader>('MODULE_LOADER');
  */
 export const SERVICE_PROVIDER = tokenId<IServiceProvider>('SERVICE_PROVIDER');
 
+/**
+ * resolve target token.
+ */
+export const TARGET = tokenId<any>('TARGET');

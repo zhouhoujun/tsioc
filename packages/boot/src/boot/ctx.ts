@@ -5,7 +5,7 @@ import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
 import { ModuleReflect } from '../modules/reflect';
-import { BootOption, IBootContext } from '../Context';
+import { BootOption, BootstrapOption, IBootContext } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
 import { IRunnable, Runnable } from '../runnable/Runnable';
@@ -76,7 +76,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         if (!url) {
             url = this.getAnnoation()?.baseURL;
             if (url) {
-                this.root.setValue(PROCESS_ROOT, url);
+                this.injector.setValue(PROCESS_ROOT, url);
                 this.setValue(PROCESS_ROOT, url);
             }
         }
@@ -85,7 +85,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
 
     set baseURL(baseURL: string) {
         this.setValue(PROCESS_ROOT, baseURL);
-        this.root.setValue(PROCESS_ROOT, baseURL);
+        this.injector.setValue(PROCESS_ROOT, baseURL);
     }
 
     getAnnoation<T extends DIModuleMetadata>(): T {
@@ -105,7 +105,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @returns {ConfigureManager<Configure>}
      */
     getConfigureManager(): ConfigureManager<Configure> {
-        return this.root.resolve(ConfigureManager);
+        return this.injector.resolve(ConfigureManager);
     }
 
     get args(): string[] {
@@ -124,16 +124,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return this.options.deps;
     }
 
-    private _startup: IRunnable;
-    /**
-     * get boot startup instance.
-     *
-     * @type {IStartup}
-     */
-    getStartup(): IRunnable {
-        return this._startup;
-    }
-
     /**
      * target.
      */
@@ -148,16 +138,17 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @param type 
      * @param opts 
      */
-    async bootstrap(type: Type, opts?: any): Promise<any> {
-        if (!this.root.state().isRegistered(type)){
-            this.root.register(type);
+    async bootstrap(type: Type, opts?: BootstrapOption): Promise<any> {
+        const injector = opts?.injector ?? this.injector;
+        if (!injector.state().isRegistered(type)){
+            injector.register(type);
         }
-        const boot = this.boot = this.root.resolve(type, this.providers, { provide: BOOTCONTEXT, useValue: this }, { provide: lang.getClass(this), useValue: this });
+        const boot = injector.resolve(type, this.providers, { provide: BOOTCONTEXT, useValue: this }, { provide: lang.getClass(this), useValue: this });
         let startup: IRunnable;
         if (boot instanceof Runnable) {
             startup = boot;
         } else {
-            startup = this.root.getService(
+            startup = injector.getService(
                 { tokens: [Runnable], target: boot },
                 { provide: BOOTCONTEXT, useValue: this },
                 { provide: lang.getClass(this), useValue: this }
@@ -166,7 +157,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         }
 
         if (startup) {
-            this._startup = startup;
             this.onDestroy(() => startup.destroy());
             await startup.configureService(this);
         }

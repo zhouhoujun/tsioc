@@ -42,7 +42,7 @@ export class BuilderService implements IBuilderService {
         }
         const ctx = injector.getService({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
         await this.root.action().getInstance(StartupServiceScope).execute(ctx);
-        return ctx.getStartup();
+        return ctx.boot;
     }
 
     /**

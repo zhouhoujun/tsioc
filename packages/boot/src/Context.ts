@@ -45,16 +45,8 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
      * type reflect.
      */
     readonly reflect: TypeReflect;
-
     /**
-     * current root injector.
-     */
-    readonly root: IInjector;
-
-    /**
-    * current root injector.
-    * 
-    * @deprecated use `root` instead.
+    * current parent injector.
     */
     readonly injector: IInjector;
     /**
@@ -148,6 +140,14 @@ export interface BootOption<T = any> extends AnnoationOption<T> {
 export type Template = string | ObjectMap<any>;
 
 /**
+ * bootstrap option.
+ */
+export interface BootstrapOption {
+    injector?: IInjector;
+    args?: string[];
+}
+
+/**
  * boot context.
  */
 export interface IBootContext<T extends BootOption = BootOption> extends IAnnoationContext<T> {
@@ -168,7 +168,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * @param type 
      * @param opts 
      */
-    bootstrap(type: Type, opts?: any): Promise<any>;
+    bootstrap(type: Type, opts?: BootstrapOption): Promise<any>;
 
     /**
      * send message
@@ -240,11 +240,6 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
     boot?: any;
 
     getAnnoation<T extends DIModuleMetadata>(): T;
-
-    /**
-     * get statup runnable.
-     */
-    getStartup(): any;
 
     /**
      * configuration merge metadata config and all application config.

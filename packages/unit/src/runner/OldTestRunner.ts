@@ -1,4 +1,4 @@
-import { lang, Singleton, isFunction, IInjector } from '@tsdi/ioc';
+import { lang, Singleton, isFunction, IInjector, Inject, TARGET } from '@tsdi/ioc';
 import { IBootContext, Runnable } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
@@ -41,9 +41,8 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
 
     suites: ISuiteDescribe[];
 
-    constructor(timeout?: number) {
-        super();
-
+    constructor(@Inject(TARGET) instance, timeout?: number) {
+        super(instance)
         this.suites = [];
         this.timeout = timeout || (3 * 60 * 60 * 1000);
     }
@@ -53,7 +52,7 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
     }
 
     async configureService(ctx: IBootContext): Promise<void> {
-        this.injector = ctx.root;
+        this.injector = ctx.injector;
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {

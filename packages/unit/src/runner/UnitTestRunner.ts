@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
-import { Runnable, BuilderService, AnnotationReflect, IBootContext } from '@tsdi/boot';
+import { Runnable, AnnotationReflect, IBootContext, BUILDER } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
@@ -15,10 +15,10 @@ export class UnitTestRunner extends Runnable {
         const ctx = context;
         const config = ctx.getConfiguration() as UnitTestConfigure;
         const src = config.src;
-        const root = ctx.root;
+        const injector = ctx.injector;
         let suites: any[] = [];
-        const oldRunner = root.resolve(OldTestRunner);
-        const loader = root.getLoader();
+        const oldRunner = injector.resolve(OldTestRunner);
+        const loader = injector.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
             let alltypes = await loader.loadTypes({ files: [src], basePath: ctx.baseURL });
@@ -39,8 +39,8 @@ export class UnitTestRunner extends Runnable {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.configureService(ctx);
-        const builder = root.resolve(BuilderService);
-        await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: root })));
-        await root.resolve(TestReport).report();
+        const builder = injector.resolve(BUILDER);
+        await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => builder.statrup({ type: s, injector: injector })));
+        await injector.resolve(TestReport).report();
     }
 }

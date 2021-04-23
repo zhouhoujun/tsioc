@@ -32,10 +32,6 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
         }
     }
 
-    getBootType() {
-        return lang.getClass(this.ctx.boot);
-    }
-
     /**
      * get suite describe.
      *
@@ -59,9 +55,9 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     }
 
     runTimeout(key: string, describe: string, timeout: number): Promise<any> {
-        let instance = this.ctx.boot;
+        let instance = this.getInstance();
         let defer = lang.defer();
-        let injector = this.ctx.root;
+        let injector = this.ctx.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);

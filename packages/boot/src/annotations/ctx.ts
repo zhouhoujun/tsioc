@@ -1,6 +1,6 @@
 import {
     lang, refl, TypeReflect, Type, Inject, Abstract, Token, isArray,
-    isProvide, IProvider, Provider, IInjector, Injector
+    isProvide, IProvider, Provider, IInjector, Injector, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { AnnoationOption, IAnnoationContext } from '../Context';
 import { CTX_OPTIONS } from '../tk';
@@ -31,13 +31,6 @@ export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeRefle
         if (options) this.setOptions(options);
     }
 
-    /**
-     * root injector of context.
-     */
-    get root(): IInjector {
-        return this.parent as IInjector;
-    }
-
     get injector(): IInjector {
         return this.parent as IInjector;
     }
@@ -60,7 +53,7 @@ export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeRefle
         }
 
         if (options.type) {
-            this._type = isProvide(options.type) ? this.root.getTokenProvider(options.type) : options.type;
+            this._type = isProvide(options.type) ? this.injector.getTokenProvider(options.type) : options.type;
             this._reflect = refl.get(this._type);
         }
 

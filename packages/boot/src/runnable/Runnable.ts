@@ -1,4 +1,4 @@
-import { lang, Type, Abstract, Destroyable } from '@tsdi/ioc';
+import { lang, Type, Abstract, Destroyable, Inject, TARGET } from '@tsdi/ioc';
 import { IBootContext } from '../Context';
 
 
@@ -10,7 +10,7 @@ import { IBootContext } from '../Context';
  * @template T
  * @template TCtx default IBootContext
  */
-export interface IRunnable extends Destroyable {
+export interface IRunnable<T = any> extends Destroyable {
 
     /**
      * configure and startup this service.
@@ -19,6 +19,16 @@ export interface IRunnable extends Destroyable {
      * @returns {(Promise<void>)}
      */
     configureService(ctx: IBootContext): Promise<void>;
+
+    /**
+     * get runable instance.
+     */
+    getInstance(): T;
+
+    /**
+     * get runable instance type.
+     */
+    getInstanceType(): Type<T>;
 
 }
 
@@ -32,10 +42,22 @@ export interface IRunnable extends Destroyable {
  * @template T
  */
 @Abstract()
-export abstract class Runnable implements IRunnable {
+export abstract class Runnable<T = any> implements IRunnable {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
+
+
+    constructor(@Inject(TARGET) protected instance: T) { }
+
+
+    getInstance(): T {
+        return this.instance;
+    }
+
+    getInstanceType(): Type<T> {
+        return lang.getClass(this.instance);
+    }
 
     /**
      * configure startup service.
@@ -101,13 +123,6 @@ export abstract class Startup<T = any> extends Runnable {
         return this.context;
     }
 
-    getBoot(): T {
-        return this.context.boot;
-    }
-
-    getBootType(): Type<T> {
-        return lang.getClass(this.context.boot);
-    }
 
 }
 

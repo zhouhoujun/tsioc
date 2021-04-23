@@ -18,14 +18,14 @@ export class UnitTestConfigureRegister extends ConfigureRegister {
 
     async register(config: UnitTestConfigure, ctx: IBootContext): Promise<void> {
 
-        if (!ctx.root.has(Assert)) {
-            ctx.root.setValue(Assert, assert);
+        if (!ctx.injector.has(Assert)) {
+            ctx.injector.setValue(Assert, assert);
         }
-        if (!ctx.root.has(ExpectToken)) {
-            ctx.root.setValue(ExpectToken, expect);
+        if (!ctx.injector.has(ExpectToken)) {
+            ctx.injector.setValue(ExpectToken, expect);
         }
         if (isArray(config.reporters) && config.reporters.length) {
-            ctx.root.use(...config.reporters);
+            ctx.injector.use(...config.reporters);
         }
     }
 }

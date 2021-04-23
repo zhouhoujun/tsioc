@@ -6,6 +6,7 @@ import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';
 import { DesignContext } from './actions/ctx';
 import { DesignLifeScope } from './actions/design';
+import { TARGET } from './utils/tk';
 
 
 
@@ -20,7 +21,8 @@ export abstract class Strategy {
 
     resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (providers: ProviderType[]) => IProvider): T {
         const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
-        const pdr = toProvider(option.providers || []);
+
+        const pdr = option.target ? toProvider([...option.providers || [], { provide: TARGET, useValue: option.target }]) : toProvider(option.providers || []);
         let inst: T;
         const state = curr.state();
         if (isFunction(targetToken)) {

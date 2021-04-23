@@ -21,14 +21,14 @@ describe('di module', () => {
 
     it('message test.', async () => {
         let ctx = await BootApplication.run(ModuleB);
-        let q = ctx.root.get(SubMessageQueue);
+        let q = ctx.injector.get(SubMessageQueue);
         q.subscribe((ctx, next) => {
             if (ctx.event === 'test') {
                 console.log('message queue test: ' + ctx.request.body);
             }
             return next()
         });
-        let qb = ctx.root.get(SubMessageQueue);
+        let qb = ctx.injector.get(SubMessageQueue);
         expect(q === qb).toBeTruthy();
         expect(qb['handles'].length).toEqual(1);
         ctx.getMessager().send('test', { query: 'hello' });
@@ -47,7 +47,7 @@ describe('di module', () => {
 
         expect(ctx.boot).toBeInstanceOf(ClassSevice);
         expect(ctx.providers.get('ttk')).toEqual('ccc');
-        expect(ctx.root.get('ttk')).toEqual('ccc');
+        expect(ctx.injector.get('ttk')).toEqual('ccc');
     });
 
 
@@ -60,7 +60,7 @@ describe('di module', () => {
             providers: [SocketService]
         });
 
-        let ser = ctx.root.get(SocketService);
+        let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)
         ctx.destroy();
@@ -70,7 +70,7 @@ describe('di module', () => {
 
     it('can statup socket service in module', async () => {
         let ctx = await BootApplication.run(StatupModule);
-        let ser = ctx.root.get(SocketService);
+        let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)
         ctx.destroy();
@@ -85,7 +85,7 @@ describe('di module', () => {
                 { debug: true }
             ]
         });
-        let ser = ctx.root.get(SocketService);
+        let ser = ctx.injector.get(SocketService);
         expect(ser.destroyed).toEqual(false);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)
@@ -105,11 +105,11 @@ describe('di module', () => {
                 ModuleA
             ]
         });
-        let ser = ctx.root.get(SocketService);
+        let ser = ctx.injector.get(SocketService);
         expect(ser).toBeInstanceOf(SocketService);
         expect(ser.destroyed).toEqual(false);
-        expect(ctx.root.get('mark')).toEqual('marked');
-        let tsr = ctx.root.get(TestService);
+        expect(ctx.injector.get('mark')).toEqual('marked');
+        let tsr = ctx.injector.get(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(ser.tcpServer).toBeInstanceOf(net.Server)
         ctx.destroy();

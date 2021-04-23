@@ -79,7 +79,7 @@ export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActi
  */
 export const BootDepsHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.deps && ctx.deps.length) {
-        await ctx.root.load(...ctx.deps);
+        await ctx.injector.load(...ctx.deps);
     }
     await next();
 };
@@ -93,7 +93,7 @@ export const BootDepsHandle = async function (ctx: IBootContext, next: () => Pro
  */
 export const BootProvidersHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.providers.size) {
-        ctx.root.copy(ctx.providers);
+        ctx.injector.copy(ctx.providers);
     }
     await next();
 };
@@ -108,7 +108,7 @@ export const BootProvidersHandle = async function (ctx: IBootContext, next: () =
 export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
 
     const options = ctx.getOptions();
-    const root = ctx.root;
+    const root = ctx.injector;
     if (ctx.type) {
         if (ctx.hasValue(PROCESS_ROOT)) {
             root.setValue(PROCESS_ROOT, ctx.baseURL)
@@ -171,9 +171,9 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
     const state = ctx.state();
     if (!state.isRegistered(ctx.type)) {
         if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
-            ctx.root.register({ useClass: ctx.type, regIn: 'root' });
+            ctx.injector.register({ useClass: ctx.type, regIn: 'root' });
         } else {
-            ctx.root.register(ctx.type);
+            ctx.injector.register(ctx.type);
         }
     }
     const annoation = ctx.getAnnoation();
@@ -181,7 +181,7 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
     if (annoation) {
         if (annoation.baseURL) {
             ctx.baseURL = annoation.baseURL;
-            ctx.root.setValue(PROCESS_ROOT, annoation.baseURL);
+            ctx.injector.setValue(PROCESS_ROOT, annoation.baseURL);
         }
         next();
     } else {
@@ -202,11 +202,11 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
     }
     if (config.debug) {
         // make sure log module registered.
-        ctx.root.register(LogModule)
+        ctx.injector.register(LogModule)
             .register(DebugLogAspect);
     }
 
-    const regs = ctx.root.getServices(ConfigureRegister);
+    const regs = ctx.injector.getServices(ConfigureRegister);
     if (regs && regs.length) {
         await Promise.all(regs.map(reg => reg.register(config, ctx)));
 
@@ -217,14 +217,14 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
 
 export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.type) {
-        ctx.target = await ctx.root.resolve(ctx.type, ctx.providers);
+        ctx.target = await ctx.injector.resolve(ctx.type, ctx.providers);
     }
     await next();
 };
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.bootToken) {
-        await ctx.bootstrap(ctx.bootToken);
+    if(ctx.bootToken){
+      ctx.boot = await ctx.bootstrap(ctx.bootToken);
     }
     await next();
 };
@@ -253,7 +253,7 @@ export class StartupGlobalService extends BuildHandles<IBootContext> implements 
  */
 export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.getStarupTokens() || [];
-    const { root: root, providers } = ctx;
+    const { injector: root, providers } = ctx;
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
