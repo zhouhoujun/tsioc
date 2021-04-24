@@ -1,6 +1,6 @@
-import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, isFunction } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { BOOTCONTEXT, BUILDER, CONFIGURATION, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
+import { BOOTCONTEXT, CONFIGURATION, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
@@ -22,7 +22,7 @@ import { IRunnable, Runnable } from '../runnable/Runnable';
 export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T, ModuleReflect> implements IBootContext<T> {
 
 
-    setRoot(injector: IInjector) {
+    setInjector(injector: IInjector) {
         this.parent.offDestory(this.destCb);
         (this as any).parent = injector;
         this.parent.onDestroy(this.destCb);
@@ -56,7 +56,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * get log manager.
      */
     getLogManager(): ILoggerManager {
-        return this.get(ConfigureLoggerManager);
+        return this.parent.get(ConfigureLoggerManager);
     }
 
     /**
@@ -76,16 +76,16 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         if (!url) {
             url = this.getAnnoation()?.baseURL;
             if (url) {
-                this.injector.setValue(PROCESS_ROOT, url);
-                this.setValue(PROCESS_ROOT, url);
+                // this.setValue(PROCESS_ROOT, url);
+                this.parent.setValue(PROCESS_ROOT, url);
             }
         }
         return url;
     }
 
     set baseURL(baseURL: string) {
-        this.setValue(PROCESS_ROOT, baseURL);
-        this.injector.setValue(PROCESS_ROOT, baseURL);
+        // this.setValue(PROCESS_ROOT, baseURL);
+        this.parent.setValue(PROCESS_ROOT, baseURL);
     }
 
     getAnnoation<T extends DIModuleMetadata>(): T {
@@ -105,7 +105,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @returns {ConfigureManager<Configure>}
      */
     getConfigureManager(): ConfigureManager<Configure> {
-        return this.injector.resolve(ConfigureManager);
+        return this.parent.get(ConfigureManager);
     }
 
     get args(): string[] {
@@ -140,7 +140,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      */
     async bootstrap(type: Type, opts?: BootstrapOption): Promise<any> {
         const injector = opts?.injector ?? this.injector;
-        if (!injector.state().isRegistered(type)){
+        if (!injector.state().isRegistered(type)) {
             injector.register(type);
         }
         const boot = injector.resolve(type, this.providers, { provide: BOOTCONTEXT, useValue: this }, { provide: lang.getClass(this), useValue: this });
@@ -172,7 +172,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
             options.startups = [];
         }
         if (options.baseURL) {
-            this.setValue(PROCESS_ROOT, options.baseURL);
+            this.baseURL = options.baseURL;
         }
         return super.setOptions(options);
     }

@@ -157,7 +157,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      */
     readonly reflect: ModuleReflect;
 
-    setRoot(injector: IInjector);
+    setInjector(injector: IInjector);
 
     /**
      * get message queue.

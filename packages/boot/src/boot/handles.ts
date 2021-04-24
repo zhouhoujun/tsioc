@@ -1,8 +1,7 @@
 import { lang, isPrimitiveType, IActionSetup, ClassType, refl, isFunction, getFacInstance, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
-import { PROCESS_ROOT, CONFIGURATION, MODULE_STARTUPS } from '../tk';
-import { ConfigureManager } from '../configure/manager';
+import { CONFIGURATION, MODULE_STARTUPS } from '../tk';
 import { ConfigureRegister } from '../configure/register';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { AnnotationReflect } from '../annotations/reflect';
@@ -108,13 +107,9 @@ export const BootProvidersHandle = async function (ctx: IBootContext, next: () =
 export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
 
     const options = ctx.getOptions();
-    const root = ctx.injector;
-    if (ctx.type) {
-        if (ctx.hasValue(PROCESS_ROOT)) {
-            root.setValue(PROCESS_ROOT, ctx.baseURL)
-        }
-    }
-    const mgr = root.getInstance(ConfigureManager);
+    const baseURL = ctx.baseURL;
+    const injector = ctx.injector;
+    const mgr = ctx.getConfigureManager();
     if (options.configures && options.configures.length) {
         options.configures.forEach(cfg => {
             mgr.useConfiguration(cfg);
@@ -126,21 +121,20 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     let config = await mgr.getConfig();
 
     if (config.deps && config.deps.length) {
-        root.load(...config.deps);
+        injector.load(...config.deps);
     }
 
     if (config.providers && config.providers.length) {
-        root.inject(...config.providers);
+        injector.inject(...config.providers);
     }
 
-    if (config.baseURL) {
-        ctx.setValue(PROCESS_ROOT, config.baseURL);
-        root.setValue(PROCESS_ROOT, config.baseURL);
+    if (!baseURL && config.baseURL) {
+        ctx.baseURL = config.baseURL;
     }
 
     config = { ...config, ...ctx.reflect.annotation };
     ctx.setValue(CONFIGURATION, config);
-    root.setValue(CONFIGURATION, config);
+    injector.setValue(CONFIGURATION, config);
 
     await next();
 };
@@ -177,11 +171,10 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
         }
     }
     const annoation = ctx.getAnnoation();
-    ctx.setRoot(state.getInjector(ctx.type));
+    ctx.setInjector(state.getInjector(ctx.type));
     if (annoation) {
         if (annoation.baseURL) {
             ctx.baseURL = annoation.baseURL;
-            ctx.injector.setValue(PROCESS_ROOT, annoation.baseURL);
         }
         next();
     } else {
@@ -223,8 +216,8 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 };
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    if(ctx.bootToken){
-      ctx.boot = await ctx.bootstrap(ctx.bootToken);
+    if (ctx.bootToken) {
+        ctx.boot = await ctx.bootstrap(ctx.bootToken);
     }
     await next();
 };
