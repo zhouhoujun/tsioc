@@ -1,4 +1,4 @@
-import { IBuildContext } from '@tsdi/boot';
+import { IAnnoationContext } from '@tsdi/boot';
 import { ComponentReflect } from '../reflect';
 import { CompilerFacade } from './facade';
 
@@ -9,7 +9,7 @@ import { CompilerFacade } from './facade';
  * @class ModuleBeforeInitHandle
  * @extends {ResolveComponentHandle}
  */
-export const BuildComponentHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
+export const BuildComponentHandle = async function (ctx: IAnnoationContext, next?: () => Promise<void>): Promise<void> {
     const reflect = ctx.reflect as ComponentReflect;
     if ((ctx.reflect as ComponentReflect).annoType === 'component') {
         if (!reflect.def && reflect.annotation.templateUrl) {
@@ -26,22 +26,22 @@ export const BuildComponentHandle = async function (ctx: IBuildContext, next?: (
     }
 };
 
-/**
- * parse template handle
- *
- * @export
- * @class ModuleBeforeInitHandle
- * @extends {ResolveComponentHandle}
- */
-export const ParseTemplateHandle = async function (ctx: IBuildContext, next?: () => Promise<void>): Promise<void> {
-    let temp = ctx.template;
-    if (!ctx.value && temp) {
-        // use compiler of component, register in module of current injector.
-        const injector = ctx.injector;
-        ctx.value = injector.getInstance(CompilerFacade).compileTemplate(temp);
-    }
+// /**
+//  * parse template handle
+//  *
+//  * @export
+//  * @class ModuleBeforeInitHandle
+//  * @extends {ResolveComponentHandle}
+//  */
+// export const ParseTemplateHandle = async function (ctx: IAnnoationContext, next?: () => Promise<void>): Promise<void> {
+//     let temp = ctx.template;
+//     if (!ctx.value && temp) {
+//         // use compiler of component, register in module of current injector.
+//         const injector = ctx.injector;
+//         ctx.value = injector.getInstance(CompilerFacade).compileTemplate(temp);
+//     }
 
-    if (next) {
-        await next();
-    }
-};
+//     if (next) {
+//         await next();
+//     }
+// };

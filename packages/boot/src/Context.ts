@@ -60,6 +60,8 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
 
 }
 
+export type IBuildContext = IAnnoationContext;
+
 
 /**
  * boot options
