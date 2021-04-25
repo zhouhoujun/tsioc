@@ -40,15 +40,17 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     protected onInit(target: ClassType | BootOption) {
         this.deps = this.deps || [];
         let container: IContainer;
+        let parent: IInjector;
 
         if (!isFunction(target) && isInjector(target.injector)) {
-            container = target.injector.getContainer();
+            parent = target.injector;
+            container = parent.getContainer();
         }
 
         this.container = container ?? (this.isNewCtr = true, this.createContainerBuilder().create());
         this.container.register(BootModule);
 
-        this.root = ModuleInjector.create(this.container);
+        this.root = ModuleInjector.create(parent ?? this.container, true);
         this.root.setValue(ROOT_INJECTOR, this.root);
         this.root.setValue(BootApplication, this);
         this.root.setValue(BUILDER, new BuilderService(this.root), BuilderService);
@@ -160,7 +162,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         if (this.context && !this.context.destroyed) {
             this.context.destroy();
             this.root.destroy();
-            if(this.isNewCtr){
+            if (this.isNewCtr) {
                 this.container.destroy();
             }
         }

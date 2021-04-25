@@ -1,6 +1,6 @@
 import {
     Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
-    isNil, InjectorImpl, isContainer, IProvider, Injector, ProviderOption, ROOT_INJECTOR
+    isNil, InjectorImpl, IProvider, Injector, ProviderOption, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 
@@ -90,7 +90,6 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 
     constructor(parent: IInjector, strategy: Strategy = mdInjStrategy) {
         super(parent, strategy);
-        this._root = isContainer(parent);
         this.deps = [];
         this.onDestroy(() => {
             this.deps.forEach(mr => mr.destroy());
@@ -98,8 +97,16 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
         });
     }
 
-    static create(parent: IInjector) {
-        return new ModuleInjector(parent);
+    /**
+     * create new module injector
+     * @param parent parent.
+     * @param root is root or not.
+     * @returns 
+     */
+    static create(parent: IInjector, root = false) {
+        const inj =  new ModuleInjector(parent);
+        inj._root = root;
+        return inj;
     }
 
     isRoot() {
