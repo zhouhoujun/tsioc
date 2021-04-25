@@ -34,24 +34,17 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         this.deps = this.deps || [];
         let container: IContainer;
 
-        if (!isFunction(target)) {
-            if (isInjector(target.injector)) {
-                container = target.injector.getContainer();
-            }
+        if (!isFunction(target) && isInjector(target.injector)) {
+            container = target.injector.getContainer();
         }
 
-        if (container) {
-            this.container = container;
-        } else {
-            container = this.getContainer();
-        }
-
+        this.container = container ?? this.createContainerBuilder().create();
 
         if (!this.container.has(ROOT_INJECTOR)) {
             this.container.setValue(ROOT_INJECTOR, ModuleInjector.create(this.container));
         }
-        container.setValue(BootApplication, this);
-        container.register(BootModule);
+        this.container.setValue(BootApplication, this);
+        this.container.register(BootModule);
 
     }
 
@@ -122,9 +115,6 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
 
     private container: IContainer;
     getContainer(): IContainer {
-        if (!this.container) {
-            this.container = this.createContainerBuilder().create();
-        }
         return this.container;
     }
 
