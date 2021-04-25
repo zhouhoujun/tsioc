@@ -1,4 +1,4 @@
-import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, IProvider } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { BOOTCONTEXT, CONFIGURATION, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
@@ -138,27 +138,29 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
      * @param type 
      * @param opts 
      */
-    async bootstrap(type: Type, opts?: BootstrapOption): Promise<any> {
+    bootstrap(type: Type, opts?: BootstrapOption): any {
         const injector = opts?.injector ?? this.injector;
         if (!injector.state().isRegistered(type)) {
             injector.register(type);
-        }
-        const boot = injector.resolve(type, this.providers, { provide: BOOTCONTEXT, useValue: this }, { provide: lang.getClass(this), useValue: this });
+        }        
+        return this.createBoot(injector, type, this, this.providers);
+    }
+
+    protected createBoot(injector: IInjector, type: Type, ctx: IBootContext, providers: IProvider) {
+        const boot = injector.resolve(type, providers, { provide: BOOTCONTEXT, useValue: ctx }, { provide: lang.getClass(ctx), useValue: ctx });
         let startup: IRunnable;
         if (boot instanceof Runnable) {
             startup = boot;
         } else {
             startup = injector.getService(
                 { tokens: [Runnable], target: boot },
-                { provide: BOOTCONTEXT, useValue: this },
-                { provide: lang.getClass(this), useValue: this }
+                { provide: BOOTCONTEXT, useValue: ctx },
+                { provide: lang.getClass(ctx), useValue: ctx }
 
             );
         }
-
         if (startup) {
-            this.onDestroy(() => startup.destroy());
-            await startup.configureService(this);
+            ctx.onDestroy(() => startup.destroy());
         }
         return startup;
     }

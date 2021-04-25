@@ -5,6 +5,7 @@ import { CONFIGURATION, MODULE_STARTUPS } from '../tk';
 import { ConfigureRegister } from '../configure/register';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
 import { AnnotationReflect } from '../annotations/reflect';
+import { Runnable } from '../runnable/Runnable';
 
 
 /**
@@ -217,7 +218,10 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.bootToken) {
-        ctx.boot = await ctx.bootstrap(ctx.bootToken);
+        ctx.boot = ctx.bootstrap(ctx.bootToken);
+        if(ctx.boot instanceof Runnable){
+            await ctx.boot.configureService(ctx);
+        }
     }
     await next();
 };

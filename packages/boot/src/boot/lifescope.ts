@@ -26,7 +26,7 @@ import {
 export class StartupServiceScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
 
     setup() {
-        this.use(ResolveTypeHandle, ResolveBootHandle);
+        this.use(ResolveBootHandle);
     }
 }
 

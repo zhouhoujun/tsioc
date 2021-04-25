@@ -170,7 +170,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * @param type 
      * @param opts 
      */
-    bootstrap(type: Type, opts?: BootstrapOption): Promise<any>;
+    bootstrap(type: Type, opts?: BootstrapOption): any;
 
     /**
      * send message

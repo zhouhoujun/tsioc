@@ -18,7 +18,7 @@ export interface IRunnable<T = any> extends Destroyable {
      * @param {IBootContext} [ctx]
      * @returns {(Promise<void>)}
      */
-    configureService(ctx: IBootContext): Promise<void>;
+    configureService?(ctx: IBootContext): Promise<void>;
 
     /**
      * get runable instance.
@@ -112,7 +112,7 @@ export abstract class Startup<T = any> extends Runnable {
         await this.startup();
     }
 
-    abstract startup(): Promise<void>;
+    abstract startup(): void;
 
     /**
     * runable context.
