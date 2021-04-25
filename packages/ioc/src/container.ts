@@ -2,7 +2,7 @@ import { Registered, TypeReflect } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
-import { isBaseOf } from './utils/lang';
+import { cleanObj, isBaseOf } from './utils/lang';
 import {
     IActionProvider, IInjector, IModuleLoader, IProvider, RegisteredState,
     ProviderOption, ResolveOption, ServiceOption, ServicesOption
@@ -130,8 +130,6 @@ export class Container extends InjectorImpl implements IContainer {
 export const IocContainer = Container;
 
 
-
-
 const SERVICE: IServiceProvider = {
 
     getService<T>(injector: IInjector, target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
@@ -162,6 +160,9 @@ class RegisteredStateImpl implements RegisteredState {
     constructor(private readonly container: IContainer) {
         this.decors = new Map();
         this.states = new WeakMap();
+        this.container.onDestroy(()=> {
+            this.decors.clear();
+        });
     }
 
     /**
@@ -204,10 +205,20 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     regType<T extends Registered>(type: ClassType, data: T) {
-        this.states.set(type, data);
+        const state = this.states.get(type);
+        if (state) {
+            Object.assign(state, data);
+        } else {
+            this.states.set(type, data);
+        }
     }
 
     deleteType(type: ClassType) {
+        const state = this.states.get(type);
+        if (state) {
+            state.providers?.destroy();
+            cleanObj(state);
+        }
         this.states.delete(type);
     }
 
@@ -226,7 +237,6 @@ class RegisteredStateImpl implements RegisteredState {
     regDecoator(decor: string, ...providers: ProviderType[]) {
         this.decors.set(decor, this.container.parseProvider(...providers));
     }
-
 }
 
 /**
