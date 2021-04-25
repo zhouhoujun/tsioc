@@ -104,7 +104,7 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
      * @returns 
      */
     static create(parent: IInjector, root = false) {
-        const inj =  new ModuleInjector(parent);
+        const inj = new ModuleInjector(parent);
         inj._root = root;
         return inj;
     }

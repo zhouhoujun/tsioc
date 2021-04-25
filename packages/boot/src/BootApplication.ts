@@ -1,5 +1,5 @@
-import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR } from '@tsdi/ioc';
-import { IContainerBuilder, ContainerBuilder } from '@tsdi/core';
+import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR, Container } from '@tsdi/ioc';
+import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BUILDER, PROCESS_EXIT } from './tk';
@@ -7,10 +7,8 @@ import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { IBuilderService } from './services/IBuilderService';
-import { BootContext } from './boot/ctx';
 import { BuilderService } from './services/BuilderService';
-import { ConfigureManager, ConfigureMerger } from './configure/manager';
-import { BaseTypeParser } from './services/BaseTypeParser';
+
 
 /**
  * boot application.
@@ -24,7 +22,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     private destroyCbs: (() => void)[] = [];
     protected container: IContainer;
     protected root: IInjector;
-    private isNewCtr: boolean;
+    private _newCt: boolean;
     /**
      * application context.
      *
@@ -47,7 +45,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
             container = parent.getContainer();
         }
 
-        this.container = container ?? (this.isNewCtr = true, this.createContainerBuilder().create());
+        this.container = container ?? this.createContainer();
         this.container.register(BootModule);
 
         this.root = ModuleInjector.create(parent ?? this.container, true);
@@ -125,9 +123,9 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         return this.deps;
     }
 
-
-    protected createContainerBuilder(): IContainerBuilder {
-        return new ContainerBuilder(this.loader);
+    protected createContainer() {
+        this._newCt = true;
+        return new ContainerBuilder(this.loader).create();
     }
 
     /**
@@ -162,7 +160,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         if (this.context && !this.context.destroyed) {
             this.context.destroy();
             this.root.destroy();
-            if (this.isNewCtr) {
+            if (this._newCt) {
                 this.container.destroy();
             }
         }
