@@ -146,8 +146,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     }
 
     protected initRef() {
-        const container = this.parent.getContainer();
-        const root = container.getValue(ROOT_INJECTOR);
+        const root = this.parent.getValue(ROOT_INJECTOR);
         if (this.regIn === 'root') {
             this._parent = root as IModuleInjector;
         }

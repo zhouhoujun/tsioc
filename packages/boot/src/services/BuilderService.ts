@@ -1,8 +1,8 @@
-import { Inject, Singleton, ClassType, Type, IInjector, isPlainObject, ROOT_INJECTOR } from '@tsdi/ioc';
+import { ClassType, Type, IInjector, isPlainObject } from '@tsdi/ioc';
 import { BootOption, IBootContext } from '../Context';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from '../boot/lifescope';
 import { IBuilderService } from './IBuilderService';
-import { BUILDER, CTX_OPTIONS } from '../tk';
+import { CTX_OPTIONS } from '../tk';
 import { BootContext } from '../boot/ctx';
 
 
@@ -13,13 +13,13 @@ import { BootContext } from '../boot/ctx';
  * @export
  * @class BuilderService
  */
-@Singleton(BUILDER)
 export class BuilderService implements IBuilderService {
 
     static ρNPT = true;
 
-    @Inject(ROOT_INJECTOR)
-    protected root: IInjector;
+    constructor(protected root: IInjector){
+
+    }
 
 
     async statrup<T>(target: ClassType<T> | BootOption<T>): Promise<any> {
