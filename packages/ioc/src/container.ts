@@ -12,7 +12,8 @@ import { MethodType } from './Invoker';
 import { ProviderType, Token } from './tokens';
 import { INJECTOR, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
-import { delReged, get, getReged, setReged } from './decor/refl';
+import { get } from './decor/refl';
+// import { delReged, get, getReged, setReged } from './decor/refl';
 import { Strategy } from './strategy';
 import { Provider, Injector, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
@@ -159,8 +160,10 @@ const SERVICE: IServiceProvider = {
 class RegisteredStateImpl implements RegisteredState {
 
     private decors: Map<string, IProvider>;
+    private states: WeakMap<ClassType, Registered>;
     constructor(private readonly container: IContainer) {
         this.decors = new Map();
+        this.states = new WeakMap();
     }
 
     /**
@@ -168,7 +171,8 @@ class RegisteredStateImpl implements RegisteredState {
      * @param type
      */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T {
-        return getReged(type, this.container.id)?.injector as T;
+        return this.states.get(type)?.injector as T;
+        // return getReged(type, this.container.id)?.injector as T;
     }
 
     /**
@@ -176,42 +180,50 @@ class RegisteredStateImpl implements RegisteredState {
      * @param type
      */
     getTypeProvider(type: ClassType): IProvider {
-        return getReged(type, this.container.id)?.providers;
+        return this.states.get(type)?.providers;
+        // return getReged(type, this.container.id)?.providers;
     }
 
     setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
         if (isFunction(type)) {
             get(type)?.extProviders.push(...providers);
-            getReged(type, this.container.id)?.providers.inject(...providers);
+            this.states.get(type)?.providers.inject(...providers)
+            // getReged(type, this.container.id)?.providers.inject(...providers);
         } else {
             type.extProviders.push(...providers);
-            getReged(type.type, this.container.id)?.providers.inject(...providers);
+            this.states.get(type.type)?.providers.inject(...providers)
+            // getReged(type.type, this.container.id)?.providers.inject(...providers);
         }
     }
 
     getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
-        const state = getReged(type, this.container.id);
+        const state = this.states.get(type); // getReged(type, this.container.id);
         return (state.providers?.has(type)) ? state.providers.getInstance(type, ...providers) : state?.injector.getInstance(type, ...providers) ?? null;
     }
 
     resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
-        return getReged(type, this.container.id)?.injector.resolve(type, ...providers) ?? null;
+        return this.states.get(type)?.injector.resolve(type, ...providers) ?? null;
+        // return getReged(type, this.container.id)?.injector.resolve(type, ...providers) ?? null;
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {
-        return getReged(type, this.container.id);
+        return this.states.get(type) as T;
+        // return getReged(type, this.container.id);
     }
 
     regType<T extends Registered>(type: ClassType, data: T) {
-        setReged(type, this.container.id, data);
+        this.states.set(type, data);
+        // setReged(type, this.container.id, data);
     }
 
     deleteType(type: ClassType) {
-        delReged(type, this.container.id);
+        this.states.delete(type);
+        // delReged(type, this.container.id);
     }
 
     isRegistered(type: ClassType): boolean {
-        return getReged(type, this.container.id) !== null;
+        return this.states.has(type);
+        // return getReged(type, this.container.id) !== null;
     }
 
     hasProvider(decor: string) {
