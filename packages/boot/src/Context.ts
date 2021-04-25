@@ -48,7 +48,11 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     /**
     * current parent injector.
     */
-    readonly injector: IInjector;
+    readonly injector: IInjector;    
+    /**
+    * current parent injector.
+    */
+     readonly root: IInjector;
     /**
      * get providers of options.
      */

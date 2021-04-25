@@ -15,9 +15,7 @@ import { Runnable } from '../runnable/Runnable';
  * @interface IBuildHandle
  * @template T
  */
-export interface IBuildHandle<T extends IAnnoationContext = IAnnoationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> {
-
-}
+export interface IBuildHandle<T extends IAnnoationContext = IAnnoationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> { }
 
 /**
  *  handle type.
@@ -35,9 +33,7 @@ export type HandleType<T extends IAnnoationContext = IAnnoationContext> = Action
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends IAnnoationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> {
-
-}
+export abstract class BuildHandle<T extends IAnnoationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> { }
 
 /**
  * composite build handles.
@@ -219,7 +215,7 @@ export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => 
 export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.bootToken) {
         ctx.boot = ctx.bootstrap(ctx.bootToken);
-        if(ctx.boot instanceof Runnable){
+        if (ctx.boot instanceof Runnable) {
             await ctx.boot.configureService(ctx);
         }
     }
