@@ -7,7 +7,7 @@ import {
     RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister
 } from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isDefined } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
@@ -18,7 +18,7 @@ import { DefaultStrategy, Strategy } from './strategy';
 /**
  * provider default startegy.
  */
-export const providerStrategy = new DefaultStrategy(p => !!p.parent);
+export const providerStrategy = new DefaultStrategy(p => p.getContainer() !== p);
 
 /**
  * provider container.
@@ -34,8 +34,8 @@ export class Provider implements IProvider {
     static ρNPT = true;
 
     private _destroyed = false;
-    private _container: IContainer;
-    private destroyCbs: (() => void)[] = [];
+    protected _container: IContainer;
+    private _dsryCbs: (() => void)[] = [];
     /**
      * factories.
      *
@@ -48,15 +48,17 @@ export class Provider implements IProvider {
 
     constructor(public parent: IProvider, protected strategy: Strategy = providerStrategy) {
         this.factories = new Map();
-        if (parent) {
-            this.destCb = () => this.destroy();
-            this._container = parent.getContainer();
-            if (this.strategy.vaildParent(parent)) {
-                parent.onDestroy(this.destCb);
-            } else {
-                this._container.onDestroy(this.destCb);
-                this.parent = null;
-            }
+        parent && this.init(parent);
+    }
+
+    protected init(parent: IProvider) {
+        this.destCb = () => this.destroy();
+        this._container = parent.getContainer();
+        if (this.strategy.vaildParent(parent)) {
+            parent.onDestroy(this.destCb);
+        } else {
+            this._container.onDestroy(this.destCb);
+            this.parent = null;
         }
     }
 
@@ -429,8 +431,8 @@ export class Provider implements IProvider {
     destroy(): void {
         if (!this._destroyed) {
             this._destroyed = true;
-            this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = [];
+            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs = [];
             this.destroying();
         }
     }
@@ -439,13 +441,13 @@ export class Provider implements IProvider {
      * @param callback destory callback
      */
     onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
+        if (this._dsryCbs) {
+            this._dsryCbs.push(callback);
         }
     }
 
     offDestory(callback: () => void) {
-        remove(this.destroyCbs, callback);
+        remove(this._dsryCbs, callback);
     }
 
     protected createCustomFactory<T>(key: Token<T>, factory?: Factory<T>, singleton?: boolean) {

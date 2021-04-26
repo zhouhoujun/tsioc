@@ -98,6 +98,7 @@ export class Container extends InjectorImpl implements IContainer {
     private _state: RegisteredState;
     private _action: IActionProvider;
     readonly id: string;
+    private _finals = [];
 
     constructor() {
         super(null);
@@ -123,6 +124,18 @@ export class Container extends InjectorImpl implements IContainer {
      */
     action(): IActionProvider {
         return this._action;
+    }
+
+    onFinally(callback: ()=> void) {
+        this._finals.push(callback);
+    }
+
+    protected destroying() {
+        super.destroying();
+        this._finals.forEach(c => c());
+        this._finals = null;
+        this._state = null;
+        this._action = null;
     }
 
 }
@@ -156,11 +169,21 @@ const SERVICE: IServiceProvider = {
 class RegisteredStateImpl implements RegisteredState {
 
     private decors: Map<string, IProvider>;
-    private states: WeakMap<ClassType, Registered>;
-    constructor(private readonly container: IContainer) {
+    private states: Map<ClassType, Registered>;
+    constructor(private readonly container: Container) {
         this.decors = new Map();
-        this.states = new WeakMap();
-        this.container.onDestroy(()=> {
+        this.states = new Map();
+        this.container.onFinally(() => {
+            this.states.forEach(v=> {
+                if(!v) return;
+                v.providers?.destroy();
+                v.injector?.destroy();
+                cleanObj(v);
+            });
+            this.decors.forEach(v=> {
+                v?.destroy();
+            });
+            this.states.clear();
             this.decors.clear();
         });
     }
@@ -254,6 +277,12 @@ export function isContainer(target: any): target is Container {
  * action injector.
  */
 class ActionProvider extends Provider implements IActionProvider {
+
+    protected init(parent: Container){
+        this._container = parent;
+        this.parent = null;
+        parent.onFinally(()=> this.destroy());
+    }
 
     regAction(...types: Type<Action>[]): this {
         types.forEach(type => {
