@@ -7,7 +7,7 @@ import {
     RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister
 } from './IInjector';
 import { FactoryLike, Factory, InstFac, isToken, ProviderType, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isDefined } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
