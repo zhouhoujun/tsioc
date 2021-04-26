@@ -31,7 +31,6 @@
     "type": "git",
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/execa": "^2.0.0",
     "@types/mocha": "^7.0.2",
