@@ -12,7 +12,6 @@ import { CTX_OPTIONS } from '../tk';
 @Abstract()
 export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeReflect = TypeReflect> extends Provider implements IAnnoationContext<T> {
 
-
     private _type: Type;
     get type() {
         return this._type;
@@ -23,12 +22,15 @@ export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeRefle
         return this._reflect;
     }
 
-
     protected options: T;
 
     constructor(@Inject() injector: Injector, @Inject(CTX_OPTIONS) options?: T) {
         super(injector)
         if (options) this.setOptions(options);
+    }
+
+    get root(): IInjector {
+        return this.parent.getValue(ROOT_INJECTOR);
     }
 
     get injector(): IInjector {

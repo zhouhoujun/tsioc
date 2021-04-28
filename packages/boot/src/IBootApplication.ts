@@ -3,21 +3,6 @@ import { IBootContext, BootOption } from './Context';
 
 
 /**
- * boot application hooks.
- *
- * @export
- * @interface ContextInit
- */
-export interface ContextInit<T extends IBootContext = IBootContext> {
-    /**
-     * on context init.
-     *
-     * @param {T} ctx
-     */
-    onContextInit(ctx: T);
-}
-
-/**
  * boot application interface.
  *
  * @export
@@ -25,7 +10,7 @@ export interface ContextInit<T extends IBootContext = IBootContext> {
  * @extends {ContextInit<T>}
  * @template T
  */
-export interface IBootApplication<T extends IBootContext = IBootContext> extends ContextInit<T>, Destroyable {
+export interface IBootApplication<T extends IBootContext = IBootContext> extends Destroyable {
 
     /**
      * boot target.

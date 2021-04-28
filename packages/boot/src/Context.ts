@@ -48,7 +48,11 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     /**
     * current parent injector.
     */
-    readonly injector: IInjector;
+    readonly injector: IInjector;    
+    /**
+    * current parent injector.
+    */
+     readonly root: IInjector;
     /**
      * get providers of options.
      */
@@ -59,6 +63,8 @@ export interface IAnnoationContext<T extends AnnoationOption = AnnoationOption> 
     getOptions(): T;
 
 }
+
+export type IBuildContext = IAnnoationContext;
 
 
 /**
@@ -157,7 +163,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      */
     readonly reflect: ModuleReflect;
 
-    setRoot(injector: IInjector);
+    setInjector(injector: IInjector);
 
     /**
      * get message queue.
@@ -168,7 +174,7 @@ export interface IBootContext<T extends BootOption = BootOption> extends IAnnoat
      * @param type 
      * @param opts 
      */
-    bootstrap(type: Type, opts?: BootstrapOption): Promise<any>;
+    bootstrap(type: Type, opts?: BootstrapOption): any;
 
     /**
      * send message

@@ -3,12 +3,12 @@ import { cleanObj } from '../utils/lang';
 import { chain } from '../utils/hdl';
 import { ROOT_INJECTOR } from '../utils/tk';
 import { Type } from '../types';
-import { InstFac, ProviderType, Token, tokenRef } from '../tokens';
+import { Token, tokenRef } from '../tokens';
 import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { IInjector } from '../IInjector';
+import { IInjector, InstFac, IProvider, ProviderType } from '../IInjector';
 import { IContainer } from '../IContainer';
 import { Registered } from '../decor/type';
 import { PropertyMetadata } from '../decor/metadatas';
@@ -58,18 +58,18 @@ function genReged(injector: IInjector, provide?: Token) {
 
 function regInstf(container: IContainer, injector: IInjector, reged: Registered, type: Type, token: Token, singleton: boolean): InstFac {
     const insf = {
-        fac: (...providers: ProviderType[]) => {
+        fac: (providers: IProvider) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
                 return injector.getValue(type);
             }
 
             const ctx = {
-                injector: injector,
+                injector,
                 token,
                 type,
                 singleton,
-                providers: injector.toProvider(...providers)
+                providers
             } as RuntimeContext;
             container.action().getInstance(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;

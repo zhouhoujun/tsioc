@@ -1,6 +1,6 @@
 import {
     Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
-    isNil, InjectorImpl, isContainer, IProvider, Injector, ProviderOption, ROOT_INJECTOR
+    isNil, InjectorImpl, IProvider, Injector, ProviderOption, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 
@@ -25,13 +25,13 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return this.getMDRef(curr).some(r => r.exports.has(key)) || (deep && curr.parent?.has(key));
     }
 
-    getInstance<T>(key: Token<T>, curr: TI, providers: ProviderType[]) {
+    getInstance<T>(key: Token<T>, curr: TI, provider: IProvider) {
         let inst: T;
         if (this.getMDRef(curr).some(e => {
-            inst = e.exports.toInstance(key, providers);
+            inst = e.exports.toInstance(key, provider);
             return !isNil(inst);
         })) return inst;
-        return curr.parent?.toInstance(key, providers);
+        return curr.parent?.toInstance(key, provider);
     }
 
     hasValue<T>(key: Token<T>, curr: TI) {
@@ -90,7 +90,6 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
 
     constructor(parent: IInjector, strategy: Strategy = mdInjStrategy) {
         super(parent, strategy);
-        this._root = isContainer(parent);
         this.deps = [];
         this.onDestroy(() => {
             this.deps.forEach(mr => mr.destroy());
@@ -98,8 +97,16 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
         });
     }
 
-    static create(parent: IInjector) {
-        return new ModuleInjector(parent);
+    /**
+     * create new module injector
+     * @param parent parent.
+     * @param root is root or not.
+     * @returns 
+     */
+    static create(parent: IInjector, root = false) {
+        const inj = new ModuleInjector(parent);
+        inj._root = root;
+        return inj;
     }
 
     isRoot() {
@@ -146,8 +153,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
     }
 
     protected initRef() {
-        const container = this.parent.getContainer();
-        const root = container.getValue(ROOT_INJECTOR);
+        const root = this.parent.getValue(ROOT_INJECTOR);
         if (this.regIn === 'root') {
             this._parent = root as IModuleInjector;
         }
@@ -245,10 +251,10 @@ export class ModuleProvider extends Provider implements IModuleProvider {
         if (!state.isRegistered(type)) {
             this.mdInjector.register(type);
         }
-        this.set(type, (...pdrs) => this.mdInjector.getInstance(type, ...pdrs));
+        this.set(type, (pdr) => this.mdInjector.toInstance(type, pdr));
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
-            this.set(p, { fac: (...pdrs) => this.mdInjector.get(p, ...pdrs), provider: type }, true);
+            this.set(p, { fac: (pdr) => this.mdInjector.toInstance(p, pdr), useClass: type }, true);
         });
         if (!noRef && reged.moduleRef) {
             this.exports.push(reged.moduleRef);

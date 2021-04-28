@@ -502,56 +502,6 @@ export function getObjReflect<T extends TypeReflect>(target: object): T {
     return getClass(target)[reflFiled]?.() as T || null;
 }
 
-const key = '_ρioc_';
-/**
- * get type registered state.
- * @param type class type.
- * @param containerId container id.
- */
-export function getReged<T extends Registered>(type: ClassType, id: string): T {
-    const inf = type[key]?.();
-    if (inf && inf.type === type) {
-        return inf[id] || null;
-    }
-    return null;
-}
-
-/**
- * set type registered state.
- * @param type class type.
- * @param containerId container id.
- * @param state state.
- */
-export function setReged<T extends Registered>(type: ClassType, id: string, state: T) {
-    const inf = type[key]?.();
-    if (inf && inf.type === type) {
-        const old = inf[id];
-        if (old) {
-            Object.assign(old, state);
-        } else {
-            inf[id] = state;
-        }
-        return;
-    }
-    const sta = { type };
-    sta[id] = state;
-    type[key] = () => sta;
-}
-
-/**
- * delete registered state.
- * @param type class type.
- * @param containerId container id.
- */
-export function delReged(type: ClassType, id: string) {
-    const inf = type[key]?.();
-    if (inf && inf.type === type) {
-        inf[id]?.providers?.destory();
-        cleanObj(inf[id]);
-        inf[id] = null;
-    }
-}
-
 /**
  * get type class constructor parameters.
  *

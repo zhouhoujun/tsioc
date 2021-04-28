@@ -1,12 +1,14 @@
-import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR } from '@tsdi/ioc';
-import { IContainerBuilder, ContainerBuilder } from '@tsdi/core';
-import { IBootApplication, ContextInit } from './IBootApplication';
+import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR, Container } from '@tsdi/ioc';
+import { ContainerBuilder } from '@tsdi/core';
+import { IBootApplication } from './IBootApplication';
 import { BootModule } from './BootModule';
 import { BOOTCONTEXT, BUILDER, PROCESS_EXIT } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { IBuilderService } from './services/IBuilderService';
+import { BuilderService } from './services/BuilderService';
+
 
 /**
  * boot application.
@@ -14,10 +16,13 @@ import { IBuilderService } from './services/IBuilderService';
  * @export
  * @class BootApplication
  */
-export class BootApplication<T extends IBootContext = IBootContext> implements IBootApplication, ContextInit<T> {
+export class BootApplication<T extends IBootContext = IBootContext> implements IBootApplication {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];
+    protected container: IContainer;
+    protected root: IInjector;
+    private _newCt: boolean;
     /**
      * application context.
      *
@@ -33,25 +38,20 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     protected onInit(target: ClassType | BootOption) {
         this.deps = this.deps || [];
         let container: IContainer;
+        let parent: IInjector;
 
-        if (!isFunction(target)) {
-            if (isInjector(target.injector)) {
-                container = target.injector.getContainer();
-            }
+        if (!isFunction(target) && isInjector(target.injector)) {
+            parent = target.injector;
+            container = parent.getContainer();
         }
 
-        if (container) {
-            this.container = container;
-        } else {
-            container = this.getContainer();
-        }
+        this.container = container ?? this.createContainer();
+        this.container.register(BootModule);
 
-
-        if (!this.container.has(ROOT_INJECTOR)) {
-            this.container.setValue(ROOT_INJECTOR, ModuleInjector.create(this.container));
-        }
-        container.setValue(BootApplication, this);
-        container.register(BootModule);
+        this.root = ModuleInjector.create(parent ?? this.container, true);
+        this.root.setValue(ROOT_INJECTOR, this.root);
+        this.root.setValue(BootApplication, this);
+        this.root.setValue(BUILDER, new BuilderService(this.root), BuilderService);
 
     }
 
@@ -65,13 +65,8 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         return this.context;
     }
 
-    onContextInit(ctx: T) {
-        this.context = ctx;
-        this.bindContextToken(ctx);
-    }
-
-    protected bindContextToken(ctx: T) {
-        this.getContainer().setValue(BOOTCONTEXT, ctx);
+    protected onContextInit(ctx: T) {
+        this.root.setValue(BOOTCONTEXT, ctx);
     }
 
     /**
@@ -108,7 +103,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
 
 
     protected createContext(builer: IBuilderService, args: string[]) {
-        const ctx = builer.createContext(this.target, args) as T;
+        const ctx = this.context = builer.createContext(this.target, args) as T;
         this.onContextInit(ctx);
         ctx.onDestroy(() => {
             this.destroy();
@@ -117,14 +112,10 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     }
 
     getRootInjector(): IInjector {
-        return this.container.get(ROOT_INJECTOR);
+        return this.root;
     }
 
-    private container: IContainer;
     getContainer(): IContainer {
-        if (!this.container) {
-            this.container = this.createContainerBuilder().create();
-        }
         return this.container;
     }
 
@@ -132,9 +123,9 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         return this.deps;
     }
 
-
-    protected createContainerBuilder(): IContainerBuilder {
-        return new ContainerBuilder(this.loader);
+    protected createContainer() {
+        this._newCt = true;
+        return new ContainerBuilder(this.loader).create();
     }
 
     /**
@@ -168,10 +159,12 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     protected destroying() {
         if (this.context && !this.context.destroyed) {
             this.context.destroy();
-            this.container.destroy();
+            this.root.destroy();
+            if (this._newCt) {
+                this.container.destroy();
+            }
         }
     }
-
 }
 
 

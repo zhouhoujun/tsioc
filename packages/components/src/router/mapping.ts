@@ -13,7 +13,8 @@ export class HostMappingRoute extends MappingRoute {
         const appRef = this.injector.getInstance(ApplicationRef);
         let component = appRef.components.find(c => c instanceof this.reflect.type)?.instance;
         if (!component) {
-            component = renderComponent(this.reflect.type as Type, );
+
+            component =  appRef.bootstrap(this.reflect.type as Type); // '' renderComponent(this.reflect.type as Type, );
         }
         return component;
     }

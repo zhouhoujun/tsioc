@@ -2,17 +2,17 @@ import { Registered, TypeReflect } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
 import { isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
-import { isBaseOf } from './utils/lang';
+import { cleanObj, isBaseOf } from './utils/lang';
 import {
     IActionProvider, IInjector, IModuleLoader, IProvider, RegisteredState,
-    ProviderOption, ResolveOption, ServiceOption, ServicesOption
+    ProviderOption, ResolveOption, ServiceOption, ServicesOption, ProviderType
 } from './IInjector';
 import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
-import { ProviderType, Token } from './tokens';
+import { Token } from './tokens';
 import { INJECTOR, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
-import { delReged, get, getReged, setReged } from './decor/refl';
+import { get } from './decor/refl';
 import { Strategy } from './strategy';
 import { Provider, Injector, getFacInstance } from './injector';
 import { registerCores } from './utils/regs';
@@ -85,7 +85,7 @@ export function createInjector(parent: IInjector, strategy?: Strategy) {
 
 export const NULL_PROVIDER = new Provider(null);
 
-let id = 0;
+
 /**
  * Container
  *
@@ -98,10 +98,10 @@ export class Container extends InjectorImpl implements IContainer {
     private _state: RegisteredState;
     private _action: IActionProvider;
     readonly id: string;
+    private _finals = [];
 
     constructor() {
         super(null);
-        this.id = `c${id++}`;
         this._state = new RegisteredStateImpl(this);
         this._action = new ActionProvider(this);
         registerCores(this);
@@ -126,11 +126,21 @@ export class Container extends InjectorImpl implements IContainer {
         return this._action;
     }
 
+    onFinally(callback: ()=> void) {
+        this._finals.push(callback);
+    }
+
+    protected destroying() {
+        super.destroying();
+        this._finals.forEach(c => c());
+        this._finals = null;
+        this._state = null;
+        this._action = null;
+    }
+
 }
 
 export const IocContainer = Container;
-
-
 
 
 const SERVICE: IServiceProvider = {
@@ -143,9 +153,10 @@ const SERVICE: IServiceProvider = {
             ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token])
             : [target];
         const services: T[] = [];
+        const pdr = this.toProvider(providers);
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
-                services.push(getFacInstance(fac, providers));
+                services.push(getFacInstance(injector, fac, pdr));
             }
         });
         return services;
@@ -159,8 +170,23 @@ const SERVICE: IServiceProvider = {
 class RegisteredStateImpl implements RegisteredState {
 
     private decors: Map<string, IProvider>;
-    constructor(private readonly container: IContainer) {
+    private states: Map<ClassType, Registered>;
+    constructor(private readonly container: Container) {
         this.decors = new Map();
+        this.states = new Map();
+        this.container.onFinally(() => {
+            this.states.forEach(v=> {
+                if(!v) return;
+                v.providers?.destroy();
+                v.injector?.destroy();
+                cleanObj(v);
+            });
+            this.decors.forEach(v=> {
+                v?.destroy();
+            });
+            this.states.clear();
+            this.decors.clear();
+        });
     }
 
     /**
@@ -168,7 +194,7 @@ class RegisteredStateImpl implements RegisteredState {
      * @param type
      */
     getInjector<T extends IInjector = IInjector>(type: ClassType): T {
-        return getReged(type, this.container.id)?.injector as T;
+        return this.states.get(type)?.injector as T;
     }
 
     /**
@@ -176,42 +202,52 @@ class RegisteredStateImpl implements RegisteredState {
      * @param type
      */
     getTypeProvider(type: ClassType): IProvider {
-        return getReged(type, this.container.id)?.providers;
+        return this.states.get(type)?.providers;
     }
 
     setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
         if (isFunction(type)) {
             get(type)?.extProviders.push(...providers);
-            getReged(type, this.container.id)?.providers.inject(...providers);
+            this.states.get(type)?.providers.inject(...providers)
         } else {
             type.extProviders.push(...providers);
-            getReged(type.type, this.container.id)?.providers.inject(...providers);
+            this.states.get(type.type)?.providers.inject(...providers);
         }
     }
 
     getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
-        const state = getReged(type, this.container.id);
+        const state = this.states.get(type);
         return (state.providers?.has(type)) ? state.providers.getInstance(type, ...providers) : state?.injector.getInstance(type, ...providers) ?? null;
     }
 
     resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
-        return getReged(type, this.container.id)?.injector.resolve(type, ...providers) ?? null;
+        return this.states.get(type)?.injector.resolve(type, ...providers) ?? null;
     }
 
     getRegistered<T extends Registered>(type: ClassType): T {
-        return getReged(type, this.container.id);
+        return this.states.get(type) as T;
     }
 
     regType<T extends Registered>(type: ClassType, data: T) {
-        setReged(type, this.container.id, data);
+        const state = this.states.get(type);
+        if (state) {
+            Object.assign(state, data);
+        } else {
+            this.states.set(type, data);
+        }
     }
 
     deleteType(type: ClassType) {
-        delReged(type, this.container.id);
+        const state = this.states.get(type);
+        if (state) {
+            state.providers?.destroy();
+            cleanObj(state);
+        }
+        this.states.delete(type);
     }
 
     isRegistered(type: ClassType): boolean {
-        return getReged(type, this.container.id) !== null;
+        return this.states.has(type);
     }
 
     hasProvider(decor: string) {
@@ -225,7 +261,6 @@ class RegisteredStateImpl implements RegisteredState {
     regDecoator(decor: string, ...providers: ProviderType[]) {
         this.decors.set(decor, this.container.parseProvider(...providers));
     }
-
 }
 
 /**
@@ -243,6 +278,12 @@ export function isContainer(target: any): target is Container {
  * action injector.
  */
 class ActionProvider extends Provider implements IActionProvider {
+
+    protected init(parent: Container){
+        this._container = parent;
+        this.parent = null;
+        parent.onFinally(()=> this.destroy());
+    }
 
     regAction(...types: Type<Action>[]): this {
         types.forEach(type => {

@@ -1,12 +1,13 @@
 import { Type } from '../types';
 import { isString, isArray } from '../utils/chk';
-import { Token, ProviderType, getToken } from '../tokens';
+import { Token, getToken } from '../tokens';
 import { IContainer } from '../IContainer';
 import {
     ClassMetadata, AutorunMetadata, AutoWiredMetadata, InjectMetadata, TypeMetadata, PatternMetadata,
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, RefProvider
 } from './metadatas';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './factory';
+import { ProviderType } from '../IInjector';
 
 /**
  * Abstract decorator. define the class as abstract class.

@@ -1,4 +1,4 @@
-import { ObjectMap, Type } from './types';
+import { Modules, ObjectMap, Type } from './types';
 import { Token } from './tokens';
 
 /**
@@ -101,7 +101,7 @@ export interface ConstructorProvider {
     /**
      * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
      */
-    provide: Type<any>;
+    provide: Type;
     /**
      * A list of `token`s which need to be resolved by the injector.
      */

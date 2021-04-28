@@ -3,7 +3,6 @@ import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BootContext } from './boot/ctx';
 import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from './boot/lifescope';
-import { BuilderService } from './services/BuilderService';
 
 
 /**
@@ -27,7 +26,7 @@ export class BootModule {
             RunnableBuildLifeScope,
             BootLifeScope);
 
-        container.use(BootContext, BuilderService, ConfigureMerger, ConfigureManager, BaseTypeParser);
+        container.use(BootContext, ConfigureMerger, ConfigureManager, BaseTypeParser);
 
     }
 }

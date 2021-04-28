@@ -1,5 +1,5 @@
-import { Token, ProviderType } from './tokens';
-import { IInjector, IProvider, ServiceOption, ServicesOption } from './IInjector';
+import { Token } from './tokens';
+import { IInjector, IProvider, ProviderType, ServiceOption, ServicesOption } from './IInjector';
 
 /**
  * root container interface.
