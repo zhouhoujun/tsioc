@@ -33,7 +33,7 @@ export type InjectTypes = ProviderType;
 /**
  * instance factory.
  */
-export type Factory<T = any> = (...providers: ProviderType[]) => T;
+export type Factory<T = any> = (provider: IProvider) => T;
 
 
 /**
@@ -276,7 +276,7 @@ export interface IProvider extends Destroyable {
      * @param key 
      * @param providers 
      */
-    toInstance<T>(key: Token<T>, providers: IProvider | StaticProvider | ProviderType[]): T;
+    toInstance<T>(key: Token<T>, providers: IProvider): T;
     /**
      * get value.
      * @param token token key.

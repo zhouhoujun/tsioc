@@ -5,11 +5,11 @@ import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import {
     IActionProvider, IInjector, IModuleLoader, IProvider, RegisteredState,
-    ProviderOption, ResolveOption, ServiceOption, ServicesOption
+    ProviderOption, ResolveOption, ServiceOption, ServicesOption, ProviderType
 } from './IInjector';
 import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
-import { ProviderType, Token } from './tokens';
+import { Token } from './tokens';
 import { INJECTOR, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { get } from './decor/refl';
@@ -153,9 +153,10 @@ const SERVICE: IServiceProvider = {
             ((target as ServicesOption<T>).tokens ?? [(target as ServicesOption<T>).token])
             : [target];
         const services: T[] = [];
+        const pdr = this.toProvider(providers);
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
-                services.push(getFacInstance(fac, providers));
+                services.push(getFacInstance(injector, fac, pdr));
             }
         });
         return services;

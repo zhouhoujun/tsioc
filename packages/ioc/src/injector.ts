@@ -1,7 +1,7 @@
 import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
-import { KeyValueProvider, StaticProvider, StaticProviders } from './providers';
+import { KeyValueProvider, StaticProviders } from './providers';
 import {
     ClassRegister, Factory, FactoryLike, IActionProvider, IInjector, IModuleLoader, InstFac, IProvider, ProviderOption, ProviderType, RegisteredState,
     RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister
@@ -105,11 +105,21 @@ export class Provider implements IProvider {
      */
     set<T>(provide: Token<T>, fac: Factory<T>, providerType?: Type<T>): this;
     set<T>(provide: Token, fac: Factory<T> | InstFac<T>, pdOrRep?: Type<T> | boolean): this {
+        const old = this.factories.get(provide);
         if (isFunction(fac)) {
             let useClass = pdOrRep as Type;
-            this.factories.set(provide, { fac, useClass });
+            const curr = { fac, useClass };
+            if (old) {
+                Object.assign(old, curr)
+            } else {
+                this.factories.set(provide, curr);
+            }
         } else if (fac) {
-            pdOrRep ? this.factories.set(provide, fac) : this.factories.set(provide, { ...this.factories.get(provide), ...fac });
+            if (old && !pdOrRep) {
+                Object.assign(old, fac);
+            } else {
+                this.factories.set(provide, fac);
+            }
         }
         return this;
     }
@@ -135,7 +145,6 @@ export class Provider implements IProvider {
      */
     register<T>(token: Token<T>, provider: FactoryLike<T>, singleton?: boolean): this;
     register(token: any, provider?: any, singleton?: boolean): this {
-        this.factories.set(token, { provide: token, })
         if (provider) {
             this.regToken(token, provider, singleton);
         } else {
@@ -181,7 +190,7 @@ export class Provider implements IProvider {
             } else if (p instanceof Provider) {
                 this.copy(p);
             } else if (isClass(p)) {
-                this.factories.set(p, { provide: p, useClass: p });
+                this.regType(p);
             } else if (p instanceof KeyValueProvider) {
                 p.each((k, useValue) => {
                     this.factories.set(k, { useValue });
@@ -259,7 +268,7 @@ export class Provider implements IProvider {
      * @returns {T}
      */
     get<T>(token: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(token, providers);
+        return this.toInstance(token, this.toProviderIfy(providers));
     }
 
     /**
@@ -268,11 +277,11 @@ export class Provider implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(key, providers);
+        return this.toInstance(key, this.toProviderIfy(providers));
     }
 
-    toInstance<T>(key: Token<T>, providers: IProvider | StaticProvider | ProviderType[]): T {
-        return getFacInstance(this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, isArray(providers) ? providers : [providers]) ?? null;
+    toInstance<T>(key: Token<T>, providers: IProvider): T {
+        return getFacInstance(this, this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
     }
     /**
      * bind provider.
@@ -290,7 +299,7 @@ export class Provider implements IProvider {
             if (reged && reged.provides.indexOf(provide) < 0) {
                 reged.provides.push(provide);
             }
-            const fac = reged ? (...pdrs) => reged.injector.getInstance(useClass, ...pdrs) : (...pdrs) => this.getInstance(useClass, ...pdrs);
+            const fac = reged ? (pdr) => reged.injector.toInstance(useClass, pdr) : (pdr) => this.toInstance(useClass, pdr);
             this.factories.set(provide, { fac, useClass });
         }
         return this;
@@ -300,8 +309,12 @@ export class Provider implements IProvider {
         return this.parsePdrIfy(providers);
     }
 
-    toProvider(...providers: ProviderType[]) {
-        if (!providers.length) return null;
+    toProvider(...providers: ProviderType[]): IProvider {
+        return this.toProviderIfy(providers);
+    }
+
+    protected toProviderIfy(providers: ProviderType[]): IProvider {
+        if (!providers || !providers.length) return null;
         return this.parsePdrIfy(providers);
     }
 
@@ -623,7 +636,7 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, providers: IProvider | StaticProvider | ProviderType[]): T {
+export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, providers: IProvider): T {
     if (!pd) return null;
     if (!isNil(pd.useValue)) return pd.useValue;
     if (pd.expires) {
@@ -631,13 +644,46 @@ export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, providers
         pd.expires = null;
         pd.cache = null;
     }
-    if (!pd.fac) {
-        if(pd.useClass){
-            injector.register(pd.useClass, pd.provide);
-            fac
-        } else if(pd)
+    if (pd.useFactory) {
+        let args = [];
+        if (isArray(pd.deps) && pd.deps.length) {
+            args = pd.deps.map(d => {
+                if (isToken(d)) {
+                    return injector.toInstance(d, providers);
+                } else {
+                    return d;
+                }
+            });
+        }
+        return pd.useFactory.apply(pd, args.concat(providers));
     }
-    return pd.fac?.(...isArray(providers) ? providers : [providers]) ?? null;
+
+    if (pd.useExisting) {
+        return injector.toInstance(pd.useExisting, providers);
+    }
+
+    if (!pd.fac && !pd['_cked']) {
+        if (pd.useClass) {
+            injector.register(pd as ClassRegister);
+        } else if (isClass(pd.provide)) {
+            const Ctor = pd.provide;
+            pd.fac = (pdr) => {
+                let args = [];
+                if (isArray(pd.deps) && pd.deps.length) {
+                    args = pd.deps.map(d => {
+                        if (isToken(d)) {
+                            return injector.toInstance(d, pdr) ?? (isString(d) ? d : null);
+                        } else {
+                            return d;
+                        }
+                    });
+                }
+                return new Ctor(...args);
+            }
+        }
+        pd['__cked'] = true;
+    }
+    return pd.fac?.(providers) ?? null;
 
 }
 

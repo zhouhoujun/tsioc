@@ -1,5 +1,5 @@
-import { Token, ProviderType } from './tokens';
-import { IInjector } from './IInjector';
+import { Token } from './tokens';
+import { IInjector, ProviderType } from './IInjector';
 import { ParameterMetadata } from './decor/metadatas';
 import { Type } from './types';
 

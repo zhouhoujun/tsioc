@@ -1,7 +1,7 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { IProvider, ProviderOption, RegisteredState, ResolveOption } from './IInjector';
-import { InstFac, ProviderType, Token, tokenRef } from './tokens';
+import { InstFac, IProvider, ProviderOption, ProviderType, RegisteredState, ResolveOption } from './IInjector';
+import { Token, tokenRef } from './tokens';
 import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';
 import { DesignContext } from './actions/ctx';
@@ -104,7 +104,7 @@ export abstract class Strategy {
      * @param curr current provider.
      * @param providers providers
      */
-    abstract getInstance<T>(key: Token<T>, curr: IProvider, providers: ProviderType[]): T;
+    abstract getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider): T;
     /**
      * has value
      * @param key token key.
@@ -152,8 +152,8 @@ export class DefaultStrategy extends Strategy {
         return deep && curr.parent?.has(key);
     }
 
-    getInstance<T>(key: Token<T>, curr: IProvider, providers: ProviderType[]) {
-        return curr.parent?.getInstance(key, ...providers);
+    getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider) {
+        return curr.parent?.toInstance(key, providers);
     }
 
     hasValue<T>(key: Token<T>, curr: IProvider) {

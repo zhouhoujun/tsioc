@@ -175,7 +175,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
  */
 export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
     if (ctx.type && ctx.instance && ctx.singleton) {
-        ctx.injector.set(ctx.type, { value: ctx.instance });
+        ctx.injector.set(ctx.type, { useValue: ctx.instance });
     }
     next();
 }

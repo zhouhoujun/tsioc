@@ -272,9 +272,9 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
 
     const sers: StartupService[] = [];
     const prds = root.getServiceProviders(StartupService);
-    prds.iterator((pdr, tk) => {
+    prds.iterator((pdr, tk, pdrs) => {
         if (startups.indexOf(tk) < 0) {
-            sers.push(getFacInstance(pdr, providers));
+            sers.push(getFacInstance(pdrs, pdr, providers));
         }
     });
     if (sers && sers.length) {

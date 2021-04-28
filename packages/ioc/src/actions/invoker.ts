@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { isFunction, getClass, isTypeObject } from '../utils/chk';
-import { Token, ProviderType } from '../tokens';
-import { IInjector, IProvider } from '../IInjector';
+import { Token } from '../tokens';
+import { IInjector, IProvider, ProviderType } from '../IInjector';
 import { Invoker, MethodType } from '../Invoker';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';

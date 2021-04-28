@@ -79,7 +79,7 @@ export class ServiceProvider implements IServiceProvider {
         const pdr = injector.parseProvider(...providers);
 
         maps.iterator(p => {
-            services.push(p.value ? p.value : p.fac(pdr));
+            services.push(p.useValue ? p.useValue : p.fac(pdr));
         });
         return services;
     }

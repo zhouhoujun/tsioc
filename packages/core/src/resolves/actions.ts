@@ -169,7 +169,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     if (!services.has(t1)
                         && (
                             (isFunction(t1) && types.some(ty => match(t1, ty)))
-                            || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
+                            || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
                         )
                     ) {
                         services.set(t1, pdr, true);
@@ -184,7 +184,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                         if (!services.has(t1)
                             && (
                                 (isFunction(t1) && types.some(ty => match(t1, ty)))
-                                || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
+                                || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
                             )
                         ) {
                             services.set(t1, pdr, true);
@@ -213,7 +213,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
         if (!services.has(tk)
             && (
                 (isFunction(tk) && types.some(ty => match(tk, ty)))
-                || (pdr.provider && types.some(ty => match(pdr.provider, ty)))
+                || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
             )
         ) {
             services.set(tk, pdr, true);

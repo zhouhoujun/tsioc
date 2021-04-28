@@ -25,13 +25,13 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return this.getMDRef(curr).some(r => r.exports.has(key)) || (deep && curr.parent?.has(key));
     }
 
-    getInstance<T>(key: Token<T>, curr: TI, providers: ProviderType[]) {
+    getInstance<T>(key: Token<T>, curr: TI, provider: IProvider) {
         let inst: T;
         if (this.getMDRef(curr).some(e => {
-            inst = e.exports.toInstance(key, providers);
+            inst = e.exports.toInstance(key, provider);
             return !isNil(inst);
         })) return inst;
-        return curr.parent?.toInstance(key, providers);
+        return curr.parent?.toInstance(key, provider);
     }
 
     hasValue<T>(key: Token<T>, curr: TI) {
@@ -251,10 +251,10 @@ export class ModuleProvider extends Provider implements IModuleProvider {
         if (!state.isRegistered(type)) {
             this.mdInjector.register(type);
         }
-        this.set(type, (...pdrs) => this.mdInjector.getInstance(type, ...pdrs));
+        this.set(type, (pdr) => this.mdInjector.toInstance(type, pdr));
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
-            this.set(p, { fac: (...pdrs) => this.mdInjector.get(p, ...pdrs), provider: type }, true);
+            this.set(p, { fac: (pdr) => this.mdInjector.toInstance(p, pdr), useClass: type }, true);
         });
         if (!noRef && reged.moduleRef) {
             this.exports.push(reged.moduleRef);
