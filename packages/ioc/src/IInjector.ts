@@ -1,12 +1,108 @@
 import { Type, Modules, LoadType, ClassType } from './types';
-import { Token, FactoryLike, ProviderType, Factory, InstFac } from './tokens';
+import { Token } from './tokens';
 import { IContainer } from './IContainer';
 import { Destroyable } from './Destroyable';
 import { MethodType } from './Invoker';
 import { Registered, TypeReflect } from './decor/type';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
-import { StaticProvider } from './providers';
+import { StaticProvider, StaticProviders } from './providers';
+
+
+/**
+ * providers.
+ */
+export type ProviderType = IProvider | StaticProvider | Modules[];
+
+/**
+ * providers types
+ * @deprecated use `ProviderType` instead.
+ */
+export type ProviderTypes = ProviderType;
+/**
+ * providers types
+ * @deprecated use `ProviderType` instead.
+ */
+export type ParamProviders = ProviderType;
+/**
+ * inject types
+ * @deprecated use `ProviderType` instead.
+ */
+export type InjectTypes = ProviderType;
+
+/**
+ * instance factory.
+ */
+export type Factory<T = any> = (...providers: ProviderType[]) => T;
+
+
+/**
+ * Factory of Token
+ */
+export type FactoryLike<T> = Type<T> | Factory<T>;
+
+/**
+ * instance fac.
+ */
+export interface InstFac<T = any> {
+    provide?: Token<T>;
+
+    /**
+     * use class for provide.
+     *
+     * @type {Type}
+     * @memberof ClassProvider
+     */
+    useClass?: Type<T>;
+    /**
+     * A list of `token`s which need to be resolved by the injector.
+     */
+    deps?: any[];
+    /**
+     * singleton or not.
+     */
+    singleton?: boolean;
+
+    /**
+     * use value for provide.
+     *
+     * @type {*}
+     */
+    useValue?: any;
+
+    /**
+    * A function to invoke to create a value for this `token`. The function is invoked with
+    * resolved values of `token`s in the `deps` field.
+    */
+    useFactory?: Function;
+
+    /**
+     * use existing registered token for provide.
+     *
+     * @type {Token}
+     * @memberof ExistingProvider
+     */
+    useExisting?: Token;
+
+    
+    /**
+     * factory.
+     */
+    fac?: Factory<T>;
+    /**
+     * cache value.
+     */
+    cache?: T;
+    /**
+     * cache expires.
+     */
+    expires?: number;
+
+    /**
+     * unregister callback.
+     */
+    unreg?: () => void;
+}
 
 
 /**

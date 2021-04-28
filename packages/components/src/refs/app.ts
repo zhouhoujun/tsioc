@@ -20,21 +20,21 @@ export class ApplicationRef implements OnDestroy {
    */
   public readonly components: ComponentRef<any>[] = [];
 
-  /**
-   * bootstrap component ref.
-   * @param compRef 
-   */
-  bootstrap(compRef: ComponentRef) {
-    this.componentTypes.push(compRef.componentType);
-    compRef.onDestroy(() => {
-      this.detachView(compRef.hostView);
-      lang.remove(this.components, compRef);
-    });
+  // /**
+  //  * bootstrap component ref.
+  //  * @param compRef 
+  //  */
+  // bootstrap(compRef: ComponentRef) {
+  //   this.componentTypes.push(compRef.componentType);
+  //   compRef.onDestroy(() => {
+  //     this.detachView(compRef.hostView);
+  //     lang.remove(this.components, compRef);
+  //   });
 
-    this.attachView(compRef.hostView);
-    this.tick();
-    this.components.push(compRef);
-  }
+  //   this.attachView(compRef.hostView);
+  //   this.tick();
+  //   this.components.push(compRef);
+  // }
 
   tick(): void {
     if (this._runningTick) {

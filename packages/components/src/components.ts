@@ -12,17 +12,7 @@ import { HostMappingRoot } from './router';
 export class ComponentsModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
-
         container.register(HostMappingRoot);
-
-        // prdr.regAction(
-        //         RenderView,
-        //         RefreshView,
-        //         RenderComponent
-        //     );
-
-
-
     }
 
 }
