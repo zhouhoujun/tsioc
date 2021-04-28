@@ -8,7 +8,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { IInjector, InstFac, IProvider, ProviderType } from '../IInjector';
+import { IInjector, InstFac, IProvider } from '../IInjector';
 import { IContainer } from '../IContainer';
 import { Registered } from '../decor/type';
 import { PropertyMetadata } from '../decor/metadatas';
@@ -71,6 +71,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
                 singleton,
                 providers
             } as RuntimeContext;
+            
             container.action().getInstance(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context

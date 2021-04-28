@@ -18,7 +18,7 @@ import { DefaultStrategy, Strategy } from './strategy';
 /**
  * provider default startegy.
  */
-export const providerStrategy = new DefaultStrategy(p => p.getContainer() !== p);
+export const providerStrategy = new DefaultStrategy();
 
 /**
  * provider container.
@@ -108,11 +108,11 @@ export class Provider implements IProvider {
         const old = this.factories.get(provide);
         if (isFunction(fac)) {
             let useClass = pdOrRep as Type;
-            const curr = { fac, useClass };
             if (old) {
-                Object.assign(old, curr)
+                old.fac = fac;
+                if (useClass) old.useClass = useClass;
             } else {
-                this.factories.set(provide, curr);
+                this.factories.set(provide, { fac, useClass });
             }
         } else if (fac) {
             if (old && !pdOrRep) {
@@ -421,15 +421,15 @@ export class Provider implements IProvider {
 
     protected createCustomFactory<T>(key: Token<T>, factory?: Factory<T>, singleton?: boolean) {
         return singleton ?
-            (...providers: ProviderType[]) => {
+            (pdr) => {
                 if (this.hasValue(key)) {
                     return this.getValue(key);
                 }
-                let instance = factory(this.parseProvider(...providers));
+                let instance = factory(pdr);
                 this.setValue(key, instance);
                 return instance;
             }
-            : (...providers: ProviderType[]) => factory(this.parseProvider(...providers));
+            : (pdr) => factory(pdr);
     }
 
     protected merge(from: Provider, to: Provider, filter?: (key: Token) => boolean) {
@@ -636,7 +636,7 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, providers: IProvider): T {
+export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, provider: IProvider): T {
     if (!pd) return null;
     if (!isNil(pd.useValue)) return pd.useValue;
     if (pd.expires) {
@@ -649,22 +649,26 @@ export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, providers
         if (isArray(pd.deps) && pd.deps.length) {
             args = pd.deps.map(d => {
                 if (isToken(d)) {
-                    return injector.toInstance(d, providers);
+                    return injector.toInstance(d, provider);
                 } else {
                     return d;
                 }
             });
         }
-        return pd.useFactory.apply(pd, args.concat(providers));
+        return pd.useFactory.apply(pd, args.concat(provider));
     }
 
     if (pd.useExisting) {
-        return injector.toInstance(pd.useExisting, providers);
+        return injector.toInstance(pd.useExisting, provider);
     }
 
     if (!pd.fac && !pd['_cked']) {
         if (pd.useClass) {
-            injector.register(pd as ClassRegister);
+            if (!injector.state().isRegistered(pd.useClass)) {
+                injector.register(pd as ClassRegister);
+            } else {
+                pd.fac = (pdr) => injector.toInstance(pd.useClass, pdr);
+            }
         } else if (isClass(pd.provide)) {
             const Ctor = pd.provide;
             pd.fac = (pdr) => {
@@ -679,11 +683,11 @@ export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, providers
                     });
                 }
                 return new Ctor(...args);
-            }
+            };
         }
         pd['__cked'] = true;
     }
-    return pd.fac?.(providers) ?? null;
+    return pd.fac?.(provider) ?? null;
 
 }
 

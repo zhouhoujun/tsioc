@@ -62,14 +62,14 @@ export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => 
                 }
                 const dprvoider = dec.decorPdr.getProvider(injector)
                 if (dprvoider.has(currTK)) {
-                    ctx.instance = dprvoider.get(currTK, providers);
+                    ctx.instance = dprvoider.toInstance(currTK, providers);
                 }
                 if (ctx.instance) {
                     return true;
                 }
                 const refDec = tokenRef(currTK, dec.decor);
                 if (injector.has(refDec, true)) {
-                    ctx.instance = injector.get(refDec, providers);
+                    ctx.instance = injector.toInstance(refDec, providers);
                 }
                 return !!ctx.instance;
             });
@@ -99,7 +99,7 @@ export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () =>
 export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => void): void {
     const { injector: injector, providers } = ctx;
     ctx.tokens.some(tk => {
-        ctx.instance = injector.resolve(tk, providers);
+        ctx.instance = injector.toInstance(tk, providers);
         return !!ctx.instance;
     });
 
