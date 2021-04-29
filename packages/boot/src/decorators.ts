@@ -1,6 +1,6 @@
 import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator, ROOT_INJECTOR,
-    lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType
+    lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
 import { ModuleConfigure } from './modules/configure';
@@ -433,13 +433,13 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     }
                     middl = type;
                 } else {
-                    middl = new FactoryRoute(route, prefix, (...pdrs) => injector.getInstance(type, ...pdrs));
+                    middl = new FactoryRoute(route, prefix, (pdr: IProvider) => injector.toInstance(type, pdr));
                 }
                 queue.use(middl);
                 injector.onDestroy(() => queue.unuse(middl));
             } else {
                 if (!queue) {
-                    queue = injector.getInstance(ROOT_QUEUE);
+                    queue = injector.toInstance(ROOT_QUEUE);
                 }
                 if (before) {
                     queue.useBefore(type, before);

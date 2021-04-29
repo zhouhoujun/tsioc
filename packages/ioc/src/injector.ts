@@ -280,7 +280,7 @@ export class Provider implements IProvider {
         return this.toInstance(key, this.toPdrIfy(providers));
     }
 
-    toInstance<T>(key: Token<T>, providers: IProvider): T {
+    toInstance<T>(key: Token<T>, providers?: IProvider): T {
         return getFacInstance(this, this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
     }
     /**
@@ -688,53 +688,4 @@ export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, provider:
         pd['__cked'] = true;
     }
     return pd.fac?.(provider) ?? null;
-
 }
-
-// if (pr.provide) {
-//     let provide = pr.provide;
-//     if (isArray(pr.deps) && pr.deps.length) {
-//         pr.deps.forEach(d => {
-//             if (isClass(d)) this.regType(d);
-//         });
-//     }
-//     if (!isNil(pr.useValue)) {
-//         let val = pr.useValue;
-//         this.setValue(provide, val);
-//     } else if (isClass(pr.useClass)) {
-//         this.regType(pr.useClass, pr);
-//     } else if (isFunction(pr.useFactory)) {
-//         let deps = pr.deps;
-//         this.set(provide, (...pdrs: ProviderType[]) => {
-//             let args = [];
-//             if (isArray(deps) && deps.length) {
-//                 args = deps.map(d => {
-//                     if (isToken(d)) {
-//                         return this.get(d, ...pdrs);
-//                     } else {
-//                         return d;
-//                     }
-//                 });
-//             }
-//             return pr.useFactory.apply(pr, args.concat(providers));
-//         });
-//     } else if (isToken(pr.useExisting)) {
-//         this.set(provide, (...pdrs) => this.get(pr.useExisting, ...pdrs));
-//     } else if (isClass(pr.provide)) {
-//         let Ctor = pr.provide;
-//         let deps = pr.deps;
-//         this.set(provide, (...pdrs) => {
-//             let args = [];
-//             if (isArray(deps) && deps.length) {
-//                 args = deps.map(d => {
-//                     if (isToken(d)) {
-//                         return this.get(d, ...pdrs) ?? (isString(d) ? d : null);
-//                     } else {
-//                         return d;
-//                     }
-//                 });
-//             }
-//             return new Ctor(...args);
-//         });
-//     }
-// }

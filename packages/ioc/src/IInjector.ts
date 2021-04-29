@@ -276,7 +276,7 @@ export interface IProvider extends Destroyable {
      * @param key 
      * @param providers 
      */
-    toInstance<T>(key: Token<T>, providers: IProvider): T;
+    toInstance<T>(key: Token<T>, providers?: IProvider): T;
     /**
      * get value.
      * @param token token key.
