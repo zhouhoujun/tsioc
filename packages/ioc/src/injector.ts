@@ -268,7 +268,7 @@ export class Provider implements IProvider {
      * @returns {T}
      */
     get<T>(token: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(token, this.toProviderIfy(providers));
+        return this.toInstance(token, this.toPdrIfy(providers));
     }
 
     /**
@@ -277,7 +277,7 @@ export class Provider implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(key, this.toProviderIfy(providers));
+        return this.toInstance(key, this.toPdrIfy(providers));
     }
 
     toInstance<T>(key: Token<T>, providers: IProvider): T {
@@ -310,10 +310,10 @@ export class Provider implements IProvider {
     }
 
     toProvider(...providers: ProviderType[]): IProvider {
-        return this.toProviderIfy(providers);
+        return this.toPdrIfy(providers);
     }
 
-    protected toProviderIfy(providers: ProviderType[]): IProvider {
+    protected toPdrIfy(providers: ProviderType[]): IProvider {
         if (!providers || !providers.length) return null;
         return this.parsePdrIfy(providers);
     }

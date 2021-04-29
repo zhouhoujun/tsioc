@@ -6,7 +6,7 @@ import { MethodType } from './Invoker';
 import { Registered, TypeReflect } from './decor/type';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
-import { StaticProvider, StaticProviders } from './providers';
+import { StaticProvider } from './providers';
 
 
 /**
