@@ -162,7 +162,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 expresses.push((name: string, fullName: string) => pointcutReg.test(fullName));
             }
         }
-        return this.mergeExpress(...expresses);
+        return this.mergeExpress(expresses);
     }
 
     protected spiltBrace(strExp: string) {
@@ -250,11 +250,11 @@ export class AdviceMatcher implements IAdviceMatcher {
             }
         }
 
-        return this.mergeExpress(...expresses);
+        return this.mergeExpress(expresses);
     }
 
 
-    protected mergeExpress(...expresses: (MatchExpress | string)[]): MatchExpress {
+    protected mergeExpress(expresses: (MatchExpress | string)[]): MatchExpress {
         return (method: string, fullName: string, targetType?: Type, pointcut?: IPointcut) => {
             let flag;
             expresses.forEach((express, idx) => {

@@ -36,7 +36,7 @@ export class ContainerBuilder implements IContainerBuilder {
     async build(...modules: LoadType[]) {
         let container: IContainer = this.create();
         if (modules.length) {
-            await container.load(...modules);
+            await container.load(modules);
         }
         return container;
     }
@@ -44,7 +44,7 @@ export class ContainerBuilder implements IContainerBuilder {
     syncBuild(...modules: Modules[]): IContainer {
         let container: IContainer = this.create();
         if (modules.length) {
-            container.use(...modules);
+            container.use(modules);
         }
         return container;
     }

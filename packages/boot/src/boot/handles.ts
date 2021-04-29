@@ -75,7 +75,7 @@ export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActi
  */
 export const BootDepsHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.deps && ctx.deps.length) {
-        await ctx.injector.load(...ctx.deps);
+        await ctx.injector.load(ctx.deps);
     }
     await next();
 };
@@ -118,11 +118,11 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     let config = await mgr.getConfig();
 
     if (config.deps && config.deps.length) {
-        injector.load(...config.deps);
+        await injector.load(config.deps);
     }
 
     if (config.providers && config.providers.length) {
-        injector.inject(...config.providers);
+        injector.parse(config.providers);
     }
 
     if (!baseURL && config.baseURL) {

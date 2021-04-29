@@ -1,6 +1,6 @@
 import { Registered, TypeReflect } from './decor/type';
 import { ClassType, LoadType, Type } from './types';
-import { isFunction, isPlainObject } from './utils/chk';
+import { isArray, isFunction, isPlainObject } from './utils/chk';
 import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import {
@@ -51,8 +51,16 @@ export class InjectorImpl extends Injector {
         return this.getValue(MODULE_LOADER);
     }
 
-    async load(...modules: LoadType[]): Promise<Type[]> {
-        return await this.getLoader()?.register(this, ...modules) ?? [];
+    load(modules: LoadType[]): Promise<Type[]>;
+    load(...modules: LoadType[]): Promise<Type[]>;
+    async load(...args: any[]): Promise<Type[]> {
+        let modules: LoadType[];
+        if(args.length ===1 && isArray(args[0])){
+            modules = args[0];
+        } else {
+            modules = args;
+        }
+        return await this.getLoader()?.register(this, modules) ?? [];
     }
 
     getService<T>(target: Token<T> | ServiceOption<T>, ...providers: ProviderType[]): T {
@@ -208,10 +216,10 @@ class RegisteredStateImpl implements RegisteredState {
     setTypeProvider(type: ClassType | TypeReflect, ...providers: ProviderType[]) {
         if (isFunction(type)) {
             get(type)?.extProviders.push(...providers);
-            this.states.get(type)?.providers.inject(...providers)
+            this.states.get(type)?.providers.parse(providers)
         } else {
             type.extProviders.push(...providers);
-            this.states.get(type.type)?.providers.inject(...providers);
+            this.states.get(type.type)?.providers.parse(providers);
         }
     }
 
@@ -263,7 +271,7 @@ class RegisteredStateImpl implements RegisteredState {
     }
 
     regDecoator(decor: string, ...providers: ProviderType[]) {
-        this.decors.set(decor, this.container.parseProvider(...providers));
+        this.decors.set(decor, this.container.toProvider(providers, true));
     }
 }
 

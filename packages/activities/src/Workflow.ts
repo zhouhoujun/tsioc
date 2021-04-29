@@ -1,7 +1,7 @@
 import { Type, isClass, isArray, LoadType } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
-import { BootApplication, ContextInit, checkBootArgs } from '@tsdi/boot';
+import { BootApplication, checkBootArgs } from '@tsdi/boot';
 import { ComponentsModule } from '@tsdi/components';
 import { ActivityModule } from './ActivityModule';
 import { SequenceActivity } from './activities';

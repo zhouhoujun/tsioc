@@ -216,7 +216,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 },
                 (ctx: ModuleDesignContext, next) => {
                     if (ctx.reflect.annotation.imports) {
-                        const types = ctx.moduleRef.injector.use(...ctx.reflect.annotation.imports);
+                        const types = ctx.moduleRef.injector.use(ctx.reflect.annotation.imports);
                         (ctx.moduleRef as DefaultModuleRef).imports = types;
                         const state = ctx.injector.state();
                         types.forEach(ty => {
@@ -232,14 +232,14 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     const mdRef = ctx.moduleRef;
                     const { exports: map, injector } = mdRef;
                     const annotation = ctx.reflect.annotation;
-                    let components = annotation.components ? injector.use(...annotation.components) : null;
+                    let components = annotation.components ? injector.use(annotation.components) : null;
 
                     if (mdRef.regIn === 'root') {
                         mdRef.imports?.forEach(ty => map.export(ty));
                     }
                     // inject module providers
                     if (annotation.providers?.length) {
-                        map.inject(...annotation.providers);
+                        map.parse(annotation.providers);
                     }
 
                     if (map.size) {
@@ -250,7 +250,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                         ctx.reflect.components = components;
                     }
 
-                    lang.getTypes(...annotation.exports || []).forEach(ty => {
+                    lang.getTypes(annotation.exports).forEach(ty => {
                         map.export(ty);
                     });
 

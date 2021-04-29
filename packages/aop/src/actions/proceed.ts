@@ -246,7 +246,7 @@ export const CtorAfterAdviceAction = function (ctx: Joinpoint, next: () => void)
 export class MethodAdvicesScope extends IocActions<Joinpoint> implements IActionSetup {
 
     execute(ctx: Joinpoint, next?: () => void) {
-        ctx.providers.inject(...ctx.getProvProviders());
+        ctx.providers.parse(ctx.getProvProviders());
         super.execute(ctx, next);
     }
     setup() {

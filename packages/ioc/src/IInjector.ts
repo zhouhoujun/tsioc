@@ -87,7 +87,7 @@ export interface InstProvider<T = any> {
      */
     useExisting?: Token;
 
-    
+
     /**
      * factory.
      */
@@ -281,6 +281,24 @@ export interface IProvider extends Destroyable {
      */
     toInstance<T>(key: Token<T>, providers?: IProvider): T;
     /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {ResolveOption<T>} option  resolve option
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+    resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
+    /**
+     * resolve token instance with token and param provider.
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     */
+    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
+    /**
      * get value.
      * @param token token key.
      */
@@ -307,17 +325,19 @@ export interface IProvider extends Destroyable {
      */
     bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
     /**
-     * parse provider. no providers, will return new provider.
-     * if not exist INJECTOR with provider this. { provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }
+     * parse 
      * @param providers 
      */
-    parseProvider(...providers: ProviderType[]): IProvider;
-
+    parse(providers: ProviderType[]): this;
     /**
+     * reate provider or get provider.
+     * only one provider with type IProvider with return the provider.
      * to provider. no providers, will return null
-     * @param providers 
+     * @param providers
+     * @param force  no providers, return new provider or not.
+     * @param newIfy init or do sth when create new provider.
      */
-    toProvider(...providers: ProviderType[]): IProvider;
+    toProvider(providers: ProviderType[], force?: boolean, newIfy?: (p: IProvider) => IProvider): IProvider;
     /**
     * get token implement class type.
     *
@@ -354,6 +374,25 @@ export interface IProvider extends Destroyable {
      * @returns {this}
      */
     inject(...providers: ProviderType[]): this;
+    /**
+     * use modules.
+     *
+     * @param {...Modules[]} modules
+     * @returns {this}
+     */
+    use(modules: Modules[]): Type[];
+    /**
+     * use modules.
+     *
+     * @param {...Modules[]} modules
+     * @returns {this}
+     */
+     use(...modules: Modules[]): Type[];
+    /**
+     * register with option.
+     * @param options
+     */
+    register(types: Type[]): this;
     /**
      * register type class.
      * @param type the class type.
@@ -514,31 +553,6 @@ export interface IInjector extends IProvider {
      */
     readonly parent?: IInjector;
     /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {Type[]}
-     */
-    use(...modules: Modules[]): Type[];
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {ResolveOption<T>} option  resolve option
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    resolve<T>(option: ResolveOption<T>, ...providers: ProviderType[]): T;
-    /**
-     * resolve token instance with token and param provider.
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    /**
      * try to invoke the method of intance, if is token will create instance to invoke.
      *
      * @template T
@@ -554,6 +568,13 @@ export interface IInjector extends IProvider {
      * @returns {IModuleLoader}
      */
     getLoader(): IModuleLoader;
+    /**
+     * load modules.
+     *
+     * @param {LoadType[]} modules load modules.
+     * @returns {Promise<Type[]>}  types loaded.
+     */
+     load(modules: LoadType[]): Promise<Type[]>;
     /**
      * load modules.
      *
@@ -603,12 +624,12 @@ export interface IModuleLoader {
      * @param {...LoadType[]} modules
      * @returns {Promise<Modules[]>}
      */
-    load(...modules: LoadType[]): Promise<Modules[]>;
+    load(modules: LoadType[]): Promise<Modules[]>;
     /**
      * register types.
      * @param modules modules.
      */
-    register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]>;
+    register(injecor: IInjector, modules: LoadType[]): Promise<Type[]>;
     /**
      * dynamic require file.
      *
@@ -619,8 +640,8 @@ export interface IModuleLoader {
     /**
      * load all class types in modules
      *
-     * @param {...LoadType[]} modules
+     * @param {LoadType[]} modules
      * @returns {Promise<Type[]>}
      */
-    loadTypes(...modules: LoadType[]): Promise<Type[][]>;
+    loadTypes(modules: LoadType[]): Promise<Type[][]>;
 }

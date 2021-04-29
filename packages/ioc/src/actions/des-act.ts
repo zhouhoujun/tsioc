@@ -9,8 +9,6 @@ import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { IInjector, InstProvider, IProvider } from '../IInjector';
-import { IContainer } from '../IContainer';
-import { Registered } from '../decor/type';
 import { PropertyMetadata } from '../decor/metadatas';
 
 
@@ -162,9 +160,9 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
     // class private provider.
     if (ctx.reflect.extProviders && ctx.reflect.extProviders.length) {
         if (ctx.state.providers) {
-            ctx.state.providers.inject(...ctx.reflect.extProviders);
+            ctx.state.providers.parse(ctx.reflect.extProviders);
         } else {
-            const pdrs = injector.parseProvider(...ctx.reflect.extProviders);
+            const pdrs = injector.toProvider(ctx.reflect.extProviders, true);
             ctx.state.providers = pdrs;
         }
     }

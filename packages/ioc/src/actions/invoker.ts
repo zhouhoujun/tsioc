@@ -60,7 +60,7 @@ export class InvokerImpl implements Invoker {
         }
 
         const proxy = instance[key]['_proxy'];
-        const pdr = proxy ? this.toInovkedPdr(injector, providers) : injector.toProvider(...providers);
+        const pdr = proxy ? this.toInovkedPdr(injector, providers) : injector.toProvider(providers);
         const paramInstances = this.resolveParams(injector, tgRefl.methodParams.get(key) || [], pdr, typepdr);
         if (proxy && pdr) {
             paramInstances.push(pdr);
@@ -77,12 +77,12 @@ export class InvokerImpl implements Invoker {
      * @returns {any[]}
      */
     createParams(injector: IInjector, target: Type, params: ParameterMetadata[], ...providers: ProviderType[]): any[] {
-        return this.resolveParams(injector, params, injector.toProvider(...providers), injector.state().getTypeProvider(target));
+        return this.resolveParams(injector, params, injector.toProvider(providers), injector.state().getTypeProvider(target));
     }
 
     protected toInovkedPdr(injector: IInjector, providers: ProviderType[]) {
         if (!providers.length) return null;
-        return createInvokedProvider(injector).inject(...providers);
+        return createInvokedProvider(injector).parse(providers);
     }
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {

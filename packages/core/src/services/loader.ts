@@ -40,9 +40,9 @@ export class ModuleLoader implements IModuleLoader {
         return this._loader;
     }
 
-    async register(injecor: IInjector, ...modules: LoadType[]): Promise<Type[]> {
-        const mdls = await this.load(...modules);
-        return injecor.use(...mdls);
+    async register(injecor: IInjector, modules: LoadType[]): Promise<Type[]> {
+        const mdls = await this.load(modules);
+        return injecor.use(mdls);
     }
 
     /**
@@ -51,7 +51,7 @@ export class ModuleLoader implements IModuleLoader {
      * @param {...LoadType[]} modules
      * @returns {Promise<Modules[]>}
      */
-    load(...modules: LoadType[]): Promise<Modules[]> {
+    load(modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
             return Promise.all(modules.map(mdty => {
                 if (isString(mdty)) {
@@ -82,9 +82,9 @@ export class ModuleLoader implements IModuleLoader {
      * @param {...LoadType[]} modules
      * @returns {Promise<Type[]>}
      */
-    async loadTypes(...modules: LoadType[]): Promise<Type[][]> {
-        let mdls = await this.load(...modules);
-        return mdls.map(md => lang.getTypes(md));
+    async loadTypes(modules: LoadType[]): Promise<Type[][]> {
+        let mdls = await this.load(modules);
+        return  mdls.map(md => lang.getTypes([md]));
     }
 
     async require(fileName: string): Promise<any> {

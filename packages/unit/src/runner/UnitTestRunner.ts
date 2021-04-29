@@ -21,7 +21,7 @@ export class UnitTestRunner extends Runnable {
         const loader = injector.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
-            let alltypes = await loader.loadTypes({ files: [src], basePath: ctx.baseURL });
+            let alltypes = await loader.loadTypes([{ files: [src], basePath: ctx.baseURL }]);
             alltypes.forEach(tys => {
                 suites = suites.concat(tys);
             })
@@ -31,7 +31,7 @@ export class UnitTestRunner extends Runnable {
             if (src.some(t => isClass(t))) {
                 suites = src;
             } else {
-                let alltypes = await loader.loadTypes({ files: src as string | string[], basePath: ctx.baseURL });
+                let alltypes = await loader.loadTypes([{ files: src as string | string[], basePath: ctx.baseURL }]);
                 alltypes.forEach(tys => {
                     suites = suites.concat(tys);
                 })

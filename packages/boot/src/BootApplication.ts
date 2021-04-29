@@ -93,7 +93,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     async run(...args: string[]): Promise<T> {
         const root = this.getRootInjector();
         root.register(MiddlewareModule);
-        await root.load(...this.getBootDeps());
+        await root.load(this.getBootDeps());
         const build = root.getInstance(BUILDER);
         const ctx = this.createContext(build, args);
         await build.boot(ctx);

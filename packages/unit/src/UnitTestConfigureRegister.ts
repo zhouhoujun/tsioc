@@ -25,7 +25,7 @@ export class UnitTestConfigureRegister extends ConfigureRegister {
             ctx.injector.setValue(ExpectToken, expect);
         }
         if (isArray(config.reporters) && config.reporters.length) {
-            ctx.injector.use(...config.reporters);
+            ctx.injector.register(config.reporters);
         }
     }
 }

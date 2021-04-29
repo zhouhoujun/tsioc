@@ -61,7 +61,7 @@ export class AnnoationContext<T extends AnnoationOption, TRefl extends TypeRefle
 
         if (options.providers) {
             if (isArray(options.providers)) {
-                this.inject(...options.providers);
+                this.parse(options.providers);
             } else {
                 this.copy(options.providers);
             }

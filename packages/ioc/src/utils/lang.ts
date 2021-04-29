@@ -208,18 +208,18 @@ export function isExtendsClass<T extends ClassType>(target: ClassType, baseClass
 /**
  * get all class type in modules.
  *
- * @param {Modules[]} modules
+ * @param {Modules[]} mds
  * @param {...Express<Type, boolean>[]} filters
  * @returns {Type[]}
  */
-export function getTypes(...modules: Modules[]): Type[] {
-    if (!modules.length) {
+export function getTypes(mds: Modules[]): Type[] {
+    if (!mds || !mds.length) {
         return [];
-    } else if (modules.length === 1) {
-        return getContentTypes(modules[0])
+    } else if (mds.length === 1) {
+        return getContentTypes(mds[0])
     }
     let types = [];
-    modules.forEach(m => {
+    mds.forEach(m => {
         types = types.concat(getContentTypes(m));
     })
     return types;

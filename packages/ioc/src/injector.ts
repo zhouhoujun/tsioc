@@ -127,6 +127,13 @@ export class Provider implements IProvider {
      */
     register<T>(type: Type<T>): this;
     /**
+     * register types.
+     * @param type the class type.
+     * @param [options] the class prodvider to.
+     * @returns {this}
+     */
+    register(types: Type[]): this;
+    /**
      * register with option.
      * @param options
      */
@@ -140,7 +147,9 @@ export class Provider implements IProvider {
      */
     register<T>(token: Token<T>, provider: FactoryLike<T>, singleton?: boolean): this;
     register(token: any, provider?: any, singleton?: boolean): this {
-        if (provider) {
+        if (isArray(token)) {
+            token.forEach(t => this.regType(t));
+        } else if (provider) {
             this.regToken(token, provider, singleton);
         } else {
             if (isFunction(token)) {
@@ -176,12 +185,22 @@ export class Provider implements IProvider {
      * @returns {this}
      */
     inject(...providers: ProviderType[]): this {
+        return this.parse(providers);
+    }
+
+    /**
+     * inject providers.
+     *
+     * @param {...ProviderType[]} providers
+     * @returns {this}
+     */
+    parse(providers: ProviderType[]): this {
         providers.length && providers.forEach((p, index) => {
             if (isUndefined(p) || isNull(p)) {
                 return;
             }
             if (isArray(p)) {
-                this.use(...p);
+                this.use(p);
             } else if (p instanceof Provider) {
                 this.copy(p);
             } else if (isClass(p)) {
@@ -206,8 +225,22 @@ export class Provider implements IProvider {
      * @param {...Modules[]} modules
      * @returns {this}
      */
-    use(...modules: Modules[]): Type[] {
-        let types = getTypes(...modules);
+    use(modules: Modules[]): Type[];
+    /**
+     * use modules.
+     *
+     * @param {...Modules[]} modules
+     * @returns {this}
+     */
+    use(...modules: Modules[]): Type[];
+    use(...args: any[]): Type[] {
+        let modules: Modules[];
+        if (args.length === 1 && isArray(args[0])) {
+            modules = args[0];
+        } else {
+            modules = args;
+        }
+        let types = getTypes(modules);
         types.forEach(ty => this.regType(ty));
         return types;
     }
@@ -263,7 +296,7 @@ export class Provider implements IProvider {
      * @returns {T}
      */
     get<T>(token: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(token, this.toPdrIfy(providers));
+        return this.toInstance(token, this.toProvider(providers));
     }
 
     /**
@@ -272,12 +305,50 @@ export class Provider implements IProvider {
      * @param providers providers.
      */
     getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(key, this.toPdrIfy(providers));
+        return this.toInstance(key, this.toProvider(providers));
     }
 
     toInstance<T>(key: Token<T>, providers?: IProvider): T {
         return getFacInstance(this, this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
     }
+
+
+    /**
+     * resolve instance with token and param provider via resolve scope.
+     *
+     * @template T
+     * @param {(Token<T> | ResolveOption<T>)} token
+     * @param {...ProviderType[]} providers
+     * @returns {T}
+     * @memberof IocContainer
+     */
+    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
+        let option: ResolveOption<T>;
+        if (isPlainObject(token)) {
+            option = token as ResolveOption;
+            if (option.providers) {
+                option.providers.push(...providers);
+            } else {
+                option.providers = providers;
+            }
+        } else {
+            option = { token, providers };
+        }
+        let destroy: Function;
+        const inst = this.strategy.resolve(this, option, (pdrs) => {
+            if (pdrs.length) {
+                return this.toProvider(pdrs, true, p => {
+                    destroy = () => p.destroy();
+                    return p;
+                });
+            }
+            return null;
+        });
+        destroy?.();
+        cleanObj(option);
+        return inst;
+    }
+
     /**
      * bind provider.
      *
@@ -300,26 +371,18 @@ export class Provider implements IProvider {
         return this;
     }
 
-    parseProvider(...providers: ProviderType[]): IProvider {
-        return this.parsePdrIfy(providers);
+
+    toProvider(providers: ProviderType[], force?: boolean, ifyNew?: (p: IProvider) => IProvider): IProvider {
+        if (!force && (!providers || !providers.length)) return null;
+        if (providers.length === 1 && isProvider(providers[0])) return providers[0] as IProvider;
+        const pdr = this.createProvider(providers);
+        return ifyNew ? ifyNew(pdr) : pdr;
     }
 
-    toProvider(...providers: ProviderType[]): IProvider {
-        return this.toPdrIfy(providers);
-    }
 
-    protected toPdrIfy(providers: ProviderType[]): IProvider {
-        if (!providers || !providers.length) return null;
-        return this.parsePdrIfy(providers);
-    }
-
-    protected parsePdrIfy(providers: ProviderType[], ifyNew?: (p: IProvider) => IProvider) {
-        if (providers.length === 1 && isProvider(providers[0])) return providers[0];
-        return ifyNew ? ifyNew(this.createProvider(providers)) : this.createProvider(providers);
-    }
 
     protected createProvider(providers: ProviderType[]): IProvider {
-        return createProvider(this).inject(...providers);
+        return createProvider(this).parse(providers);
     }
 
     /**
@@ -510,55 +573,6 @@ export abstract class Injector extends Provider implements IInjector {
     }
 
     /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     * @memberof Injector
-     */
-    use(...modules: Modules[]): Type[] {
-        let types = getTypes(...modules);
-        types.forEach(ty => this.register(ty));
-        return types;
-    }
-
-    /**
-     * resolve instance with token and param provider via resolve scope.
-     *
-     * @template T
-     * @param {(Token<T> | ResolveOption<T>)} token
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     * @memberof IocContainer
-     */
-    resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
-        let option: ResolveOption<T>;
-        if (isPlainObject(token)) {
-            option = token as ResolveOption;
-            if (option.providers) {
-                option.providers.push(...providers);
-            } else {
-                option.providers = providers;
-            }
-        } else {
-            option = { token, providers };
-        }
-        let destroy: Function;
-        const inst = this.strategy.resolve(this, option, (pdrs) => {
-            if (pdrs.length) {
-                return this.parsePdrIfy(pdrs, p => {
-                    destroy = () => p.destroy();
-                    return p;
-                });
-            }
-            return null;
-        });
-        destroy?.();
-        cleanObj(option);
-        return inst;
-    }
-
-    /**
      * invoke method.
      *
      * @template T
@@ -578,6 +592,13 @@ export abstract class Injector extends Provider implements IInjector {
      */
     abstract getLoader(): IModuleLoader;
 
+    /**
+    * load modules.
+    *
+    * @param {LoadType[]} modules load modules.
+    * @returns {Promise<Type[]>}  types loaded.
+    */
+    abstract load(modules: LoadType[]): Promise<Type[]>;
     /**
      * load modules.
      *

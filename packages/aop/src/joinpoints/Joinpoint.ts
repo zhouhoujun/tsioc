@@ -149,7 +149,7 @@ export class Joinpoint implements IocContext {
 
 
     constructor(public injector: IInjector) {
-        this.pdr = injector.parseProvider({ provide: Joinpoint, useValue: this });
+        this.pdr = injector.toProvider([{ provide: Joinpoint, useValue: this }], true);
     }
 
     routeValue<T>(token: Token<T>): T {

@@ -1,4 +1,4 @@
-import { isNil, IActionSetup, lang, ProviderType, refl, isProvide, isFunction, isTypeObject, tokenRef, IocActions, createProvider } from '@tsdi/ioc';
+import { isNil, IActionSetup, lang, ProviderType, refl, isProvide, isFunction, isTypeObject, tokenRef, IocActions, createProvider, IProvider } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -144,7 +144,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
                 const key = ctx.defaultToken;
                 const injector = ctx.injector;
                 if (injector.has(key, true)) {
-                    ctx.services.set(key, (...prds) => injector.getInstance(key, ...prds));
+                    ctx.services.set(key, (pdr: IProvider) => injector.toInstance(key, pdr));
                 }
             }
         }
@@ -196,7 +196,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             ctx.types.forEach(ty => {
                 const reftk = tokenRef(ty, tk);
                 if (injector.has(reftk)) {
-                    services.set(reftk, (...providers: ProviderType[]) => injector.resolve(reftk, ...providers))
+                    services.set(reftk, (pdr: IProvider) => injector.toInstance(reftk, pdr))
                 }
             });
         });

@@ -36,7 +36,7 @@ export class ServiceProvider implements IServiceProvider {
             option = { token: target };
         }
 
-        const pdr = injector.parseProvider(...providers);
+        const pdr = injector.toProvider(providers, true);
 
         const context = {
             injector: injector,
@@ -76,7 +76,7 @@ export class ServiceProvider implements IServiceProvider {
             }
             providers.unshift(...(target as ServicesOption<T>).providers || []);
         }
-        const pdr = injector.parseProvider(...providers);
+        const pdr = injector.toProvider(providers, true);
 
         maps.iterator(p => {
             services.push(getFacInstance(injector, p, pdr));
