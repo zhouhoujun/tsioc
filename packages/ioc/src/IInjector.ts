@@ -42,9 +42,12 @@ export type Factory<T = any> = (provider: IProvider) => T;
 export type FactoryLike<T> = Type<T> | Factory<T>;
 
 /**
- * instance fac.
+ * instance provider.
  */
-export interface InstFac<T = any> {
+export interface InstProvider<T = any> {
+    /**
+     * provide token.
+     */
     provide?: Token<T>;
 
     /**
@@ -329,21 +332,21 @@ export interface IProvider extends Destroyable {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {InstFac<T>} fac
+     * @param {InstProvider<T>} fac
      * @param {boolean} [replace] replace only.
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: InstFac<T>, replace?: boolean): this;
+    set<T>(provide: Token<T>, fac: InstProvider<T>): this;
     /**
      * set provide.
      *
      * @template T
      * @param {Token<T>} provide
      * @param {Factory<T>} fac
-     * @param {Type<T>} [providerType]
+     * @param {Type<T>} [useClass]
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: Factory<T>, providerType?: Type<T>): this;
+    set<T>(provide: Token<T>, fac: Factory<T>, useClass?: Type<T>): this;
     /**
      * inject providers.
      *
@@ -384,11 +387,11 @@ export interface IProvider extends Destroyable {
     /**
      * iterator current resolver.
      *
-     * @param {((pdr: InstFac, key: Token, resolvor?: IProvider) => void|boolean)} callbackfn
+     * @param {((pdr: InstProvider, key: Token, resolvor?: IProvider) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register in parent or not.
      * @returns {(void|boolean)}
      */
-    iterator(callbackfn: (pdr: InstFac, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
+    iterator(callbackfn: (pdr: InstProvider, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
     /**
      * copy injector to current injector.
      *

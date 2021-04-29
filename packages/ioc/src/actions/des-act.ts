@@ -8,7 +8,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { IInjector, InstFac, IProvider } from '../IInjector';
+import { IInjector, InstProvider, IProvider } from '../IInjector';
 import { IContainer } from '../IContainer';
 import { Registered } from '../decor/type';
 import { PropertyMetadata } from '../decor/metadatas';
@@ -56,7 +56,7 @@ function genReged(injector: IInjector, provide?: Token) {
     }
 }
 
-function regInstf(container: IContainer, injector: IInjector, reged: Registered, type: Type, token: Token, singleton: boolean): InstFac {
+function regInstf(injector: IInjector, type: Type, token: Token, singleton: boolean): InstProvider {
     const insf = {
         fac: (providers: IProvider) => {
             // make sure has value.
@@ -71,20 +71,17 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
                 singleton,
                 providers
             } as RuntimeContext;
-            
-            container.action().getInstance(RuntimeLifeScope).register(ctx);
+
+            injector.action().getInstance(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context
             cleanObj(ctx);
             return instance;
         },
-        unreg: () => {
-            reged.provides?.forEach(k => injector.unregister(k));
-            container.state().deleteType(type);
-        }
+        unreg: () => injector.state().deleteType(type)
     };
 
-    injector.set(type, insf, true);
+    injector.set(type, insf);
     injector.onDestroy(() => injector.unregister(type));
     if (token && token !== type) {
         injector.set(token, insf.fac, type);
@@ -96,7 +93,7 @@ function regInstf(container: IContainer, injector: IInjector, reged: Registered,
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regInstf(ctx.injector.getContainer(), ctx.injector, ctx.state, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
+    regInstf(ctx.injector, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
     next();
 };
 

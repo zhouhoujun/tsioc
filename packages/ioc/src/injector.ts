@@ -3,7 +3,7 @@ import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
 import { KeyValueProvider, StaticProviders } from './providers';
 import {
-    ClassRegister, Factory, FactoryLike, IActionProvider, IInjector, IModuleLoader, InstFac, IProvider, ProviderOption, ProviderType, RegisteredState,
+    ClassRegister, Factory, FactoryLike, IActionProvider, IInjector, IModuleLoader, InstProvider, IProvider, ProviderOption, ProviderType, RegisteredState,
     RegisterOption, ResolveOption, ServiceOption, ServicesOption, ValueRegister
 } from './IInjector';
 import { isToken, Token } from './tokens';
@@ -43,7 +43,7 @@ export class Provider implements IProvider {
      * @type {Map<Token, Function>}
      * @memberof BaseInjector
      */
-    protected factories: Map<Token, InstFac>;
+    protected factories: Map<Token, InstProvider>;
     protected destCb: () => void;
 
     constructor(public parent: IProvider, protected strategy: Strategy = providerStrategy) {
@@ -89,11 +89,11 @@ export class Provider implements IProvider {
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {InstFac<T>} fac
+     * @param {InstProvider<T>} fac
      * @param {boolean} [replace] replace only.
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: InstFac<T>, replace?: boolean): this;
+    set<T>(provide: Token<T>, fac: InstProvider<T>): this;
     /**
      * set provide.
      *
@@ -103,11 +103,10 @@ export class Provider implements IProvider {
      * @param {Type<T>} [providerType]
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: Factory<T>, providerType?: Type<T>): this;
-    set<T>(provide: Token, fac: Factory<T> | InstFac<T>, pdOrRep?: Type<T> | boolean): this {
-        const old = this.factories.get(provide);
+    set<T>(provide: Token<T>, fac: Factory<T>, useClass?: Type<T>): this;
+    set<T>(provide: Token, fac: Factory<T> | InstProvider<T>, useClass?: Type<T>): this {
         if (isFunction(fac)) {
-            let useClass = pdOrRep as Type;
+            const old = this.factories.get(provide);
             if (old) {
                 old.fac = fac;
                 if (useClass) old.useClass = useClass;
@@ -115,11 +114,7 @@ export class Provider implements IProvider {
                 this.factories.set(provide, { fac, useClass });
             }
         } else if (fac) {
-            if (old && !pdOrRep) {
-                Object.assign(old, fac);
-            } else {
-                this.factories.set(provide, fac);
-            }
+            this.factories.set(provide, fac);
         }
         return this;
     }
@@ -357,7 +352,7 @@ export class Provider implements IProvider {
         return this;
     }
 
-    iterator(callbackfn: (fac: InstFac, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
+    iterator(callbackfn: (fac: InstProvider, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
         return this.strategy.iterator(this.factories, callbackfn, this, deep);
     }
 
@@ -636,7 +631,7 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getFacInstance<T>(injector: IProvider, pd: InstFac<T>, provider: IProvider): T {
+export function getFacInstance<T>(injector: IProvider, pd: InstProvider<T>, provider: IProvider): T {
     if (!pd) return null;
     if (!isNil(pd.useValue)) return pd.useValue;
     if (pd.expires) {

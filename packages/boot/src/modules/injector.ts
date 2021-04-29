@@ -1,5 +1,5 @@
 import {
-    Token, lang, Type, IInjector, Provider, InstFac, ProviderType, Strategy,
+    Token, lang, Type, IInjector, Provider, InstProvider, ProviderType, Strategy,
     isNil, InjectorImpl, IProvider, Injector, ProviderOption, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
@@ -56,7 +56,7 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return type ?? curr.parent?.getTokenProvider(key);
     }
 
-    iterator(map: Map<Token, InstFac>, callbackfn: (fac: InstFac, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
+    iterator(map: Map<Token, InstProvider>, callbackfn: (fac: InstProvider, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
         if (lang.mapEach(map, callbackfn, curr) === false) {
             return false;
         }
@@ -254,7 +254,7 @@ export class ModuleProvider extends Provider implements IModuleProvider {
         this.set(type, (pdr) => this.mdInjector.toInstance(type, pdr));
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
-            this.set(p, { fac: (pdr) => this.mdInjector.toInstance(p, pdr), useClass: type }, true);
+            this.set(p, { fac: (pdr) => this.mdInjector.toInstance(p, pdr), useClass: type });
         });
         if (!noRef && reged.moduleRef) {
             this.exports.push(reged.moduleRef);

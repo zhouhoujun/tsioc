@@ -172,7 +172,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                             || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
                         )
                     ) {
-                        services.set(t1, pdr, true);
+                        services.set(t1, pdr);
                     }
                 });
             }
@@ -187,7 +187,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                                 || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
                             )
                         ) {
-                            services.set(t1, pdr, true);
+                            services.set(t1, pdr);
                         }
                     });
                 });
@@ -216,7 +216,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
                 || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
             )
         ) {
-            services.set(tk, pdr, true);
+            services.set(tk, pdr);
         }
     }, true);
 

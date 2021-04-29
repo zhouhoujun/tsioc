@@ -241,6 +241,10 @@ class RegisteredStateImpl implements RegisteredState {
         const state = this.states.get(type);
         if (state) {
             state.providers?.destroy();
+            const injector = state.injector;
+            if(state.provides?.length && injector){
+                state.provides.forEach(p=> state.injector.unregister(p));
+            }
             cleanObj(state);
         }
         this.states.delete(type);

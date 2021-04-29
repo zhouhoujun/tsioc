@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { InstFac, IProvider, ProviderOption, ProviderType, RegisteredState, ResolveOption } from './IInjector';
+import { InstProvider, IProvider, ProviderOption, ProviderType, RegisteredState, ResolveOption } from './IInjector';
 import { Token, tokenRef } from './tokens';
 import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';
@@ -130,7 +130,7 @@ export abstract class Strategy {
      * @param curr current provider.
      * @param deep deep iterator or not.
      */
-    abstract iterator(map: Map<Token, InstFac>, callbackfn: (fac: InstFac, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
+    abstract iterator(map: Map<Token, InstProvider>, callbackfn: (fac: InstProvider, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
 
 }
 
@@ -168,7 +168,7 @@ export class DefaultStrategy extends Strategy {
         return curr.parent?.getTokenProvider(key);
     }
 
-    iterator(map: Map<Token, InstFac>, callbackfn: (fac: InstFac, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) {
+    iterator(map: Map<Token, InstProvider>, callbackfn: (fac: InstProvider, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) {
         if (mapEach(map, callbackfn, curr) === false) {
             return false;
         }
