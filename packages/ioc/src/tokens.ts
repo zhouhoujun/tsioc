@@ -90,6 +90,9 @@ export function isToken(target: any): target is Token {
  */
 export function isProvide(target: any): target is ProvideToken<any> {
     if (isFunction(target)) return false;
-    return isString(target) || isSymbol(target) || (target instanceof InjectToken);
+    return isString(target) || isSymbol(target) || isInjectToken(target);
 }
 
+export function isInjectToken<T>(target: any): target is  InjectToken<T> {
+    return target instanceof InjectToken;
+}

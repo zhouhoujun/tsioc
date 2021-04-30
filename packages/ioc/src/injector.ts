@@ -3,11 +3,11 @@ import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
 import { FactoryProvider, KeyValueProvider, StaticProviders } from './providers';
 import {
-    TypeOption, Factory, FactoryLike, IActionProvider, IInjector, IModuleLoader, ProviderState, IProvider, ProviderOption, ProviderType, RegisteredState,
-    RegisterOption, ResolveOption, ServiceOption, ServicesOption, FactoryOption
+    TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, ProviderState, IProvider, ProviderType,
+    RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption, FactoryOption
 } from './IInjector';
-import { isToken, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
+import { isInjectToken, isToken, Token } from './tokens';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isSymbol } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
@@ -480,19 +480,6 @@ export class Provider implements IProvider {
         remove(this._dsryCbs, callback);
     }
 
-    protected createCustomFactory<T>(key: Token<T>, factory?: Factory<T>, singleton?: boolean) {
-        return singleton ?
-            (pdr) => {
-                if (this.hasValue(key)) {
-                    return this.getValue(key);
-                }
-                let instance = factory(pdr);
-                this.setValue(key, instance);
-                return instance;
-            }
-            : (pdr) => factory(pdr);
-    }
-
     protected merge(from: Provider, to: Provider, filter?: (key: Token) => boolean) {
         from.factories.forEach((pdr, key) => {
             if (filter && !filter(key)) {
@@ -664,14 +651,6 @@ export function getStateValue<T>(injector: IProvider, pd: ProviderState<T>, prov
         pd.cache = null;
     }
 
-    if (pd.useFactory) {
-        return getFactoryProviderValue(injector, pd as FactoryProvider, provider);
-    }
-
-    if (pd.useExisting) {
-        return injector.toInstance(pd.useExisting, provider);
-    }
-
     if (!pd.fac && !pd._ged) {
         generateFac(injector, pd);
     }
@@ -679,21 +658,28 @@ export function getStateValue<T>(injector: IProvider, pd: ProviderState<T>, prov
 }
 
 function getFactoryProviderValue(injector: IProvider, pd: FactoryProvider, provider: IProvider) {
-    let args = [];
-    if (isArray(pd.deps) && pd.deps.length) {
-        args = pd.deps.map(d => {
-            if (isToken(d)) {
-                return injector.toInstance(d, provider);
-            } else {
-                return d;
-            }
-        });
-    }
+    let args = pd.deps?.map(d => {
+        if (isToken(d)) {
+            return injector.toInstance(d, provider) ?? (isString(d)? d : null);
+        }  else {
+            return d;
+        }
+    }) ?? [];
     return pd.useFactory.apply(pd, args.concat(provider));
 }
 
 function generateFac(injector: IProvider, pd: ProviderState) {
     pd._ged = true;
+    if (pd.useFactory) {
+        pd.fac = (pdr: IProvider) => getFactoryProviderValue(injector, pd as FactoryProvider, pdr);
+        return;
+    }
+
+    if (pd.useExisting) {
+        pd.fac = (pdr: IProvider) => injector.toInstance(pd.useExisting, pdr);
+        return;
+    }
+
     if (pd.useClass) {
         if (!injector.state().isRegistered(pd.useClass) && !injector.has(pd.useClass)) {
             const rgopt = { type: pd.useClass, ...pd };
@@ -702,8 +688,8 @@ function generateFac(injector: IProvider, pd: ProviderState) {
         }
         pd.fac = (pdr) => injector.toInstance(pd.useClass, pdr);
         return;
-    } 
-    
+    }
+
     if (isClass(pd.provide)) {
         const Ctor = pd.provide;
         pd.fac = (pdr) => {

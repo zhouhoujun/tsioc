@@ -1,6 +1,6 @@
 import * as ts from 'typescript'
 import * as through from 'through2';
-import { createFilter } from 'rollup-pluginutils';
+import { createFilter } from '@rollup/pluginutils';
 import { Plugin } from 'rollup';
 
 

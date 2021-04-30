@@ -246,9 +246,9 @@ const symKey = 'symbol';
  *
  * @export
  * @param {*} target
- * @returns {target is Symbol}
+ * @returns {target is symbol}
  */
-export function isSymbol(target: any): target is Symbol {
+export function isSymbol(target: any): target is symbol {
     return typeof target === symKey || toString.call(target) === symbolTag;
 }
 
