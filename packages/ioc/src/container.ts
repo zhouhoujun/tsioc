@@ -5,7 +5,7 @@ import { Handler } from './utils/hdl';
 import { cleanObj, isBaseOf } from './utils/lang';
 import {
     IActionProvider, IInjector, IModuleLoader, IProvider, RegisteredState,
-    ProviderOption, ResolveOption, ServiceOption, ServicesOption, ProviderType
+    ResolveOption, ServiceOption, ServicesOption, ProviderType
 } from './IInjector';
 import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
@@ -14,7 +14,7 @@ import { INJECTOR, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { get } from './decor/refl';
 import { Strategy } from './strategy';
-import { Provider, Injector, getFacInstance } from './injector';
+import { Provider, Injector, getStateValue } from './injector';
 import { registerCores } from './utils/regs';
 
 /**
@@ -164,7 +164,7 @@ const SERVICE: IServiceProvider = {
         const pdr = this.toProvider(providers);
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
-                services.push(getFacInstance(injector, fac, pdr));
+                services.push(getStateValue(injector, fac, pdr));
             }
         });
         return services;

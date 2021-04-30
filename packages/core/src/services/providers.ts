@@ -1,6 +1,6 @@
 import {
     IInjector, Token, ProviderType, IProvider, isArray, IContainer,
-    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider, TARGET, getFacInstance
+    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider, TARGET, getStateValue
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
@@ -79,7 +79,7 @@ export class ServiceProvider implements IServiceProvider {
         const pdr = injector.toProvider(providers, true);
 
         maps.iterator(p => {
-            services.push(getFacInstance(injector, p, pdr));
+            services.push(getStateValue(injector, p, pdr));
         });
         return services;
     }

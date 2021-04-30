@@ -1,5 +1,5 @@
 import {
-    Token, lang, Type, IInjector, Provider, InstProvider, ProviderType, Strategy,
+    Token, lang, Type, IInjector, Provider, ProviderState, ProviderType, Strategy,
     isNil, InjectorImpl, IProvider, Injector, ProviderOption, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
@@ -56,7 +56,7 @@ export class ModuleStrategy<TI extends IProvider> extends Strategy {
         return type ?? curr.parent?.getTokenProvider(key);
     }
 
-    iterator(map: Map<Token, InstProvider>, callbackfn: (fac: InstProvider, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
+    iterator(map: Map<Token, ProviderState>, callbackfn: (fac: ProviderState, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
         if (lang.mapEach(map, callbackfn, curr) === false) {
             return false;
         }

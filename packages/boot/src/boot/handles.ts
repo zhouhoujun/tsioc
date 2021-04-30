@@ -1,4 +1,4 @@
-import { lang, isPrimitiveType, IActionSetup, ClassType, refl, isFunction, getFacInstance, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
+import { lang, isPrimitiveType, IActionSetup, ClassType, refl, isFunction, getStateValue, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { IAnnoationContext, IBootContext } from '../Context';
 import { CONFIGURATION, MODULE_STARTUPS } from '../tk';
@@ -274,7 +274,7 @@ export const ConfigureServiceHandle = async function (ctx: IBootContext, next: (
     const prds = root.getServiceProviders(StartupService);
     prds.iterator((pdr, tk, pdrs) => {
         if (startups.indexOf(tk) < 0) {
-            sers.push(getFacInstance(pdrs, pdr, providers));
+            sers.push(getStateValue(pdrs, pdr, providers));
         }
     });
     if (sers && sers.length) {

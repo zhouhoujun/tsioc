@@ -1,8 +1,8 @@
-import { IActionProvider } from './IInjector';
 import { Token } from './tokens';
 import { isBoolean, isFunction } from './utils/chk';
 import { chain, Handler } from './utils/hdl';
 import { isBaseOf } from './utils/lang';
+import { IActionProvider } from './IInjector';
 
 /**
  * action interface.
