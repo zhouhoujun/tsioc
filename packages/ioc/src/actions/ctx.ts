@@ -33,8 +33,7 @@ export interface RegContext extends IocContext {
      * resolve token.
      *
      */
-    token?: Token;
-
+    provide?: Token;
     /**
      * target type.
      *

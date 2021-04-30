@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { InstProvider, IProvider, ProviderOption, ProviderType, RegisteredState, ResolveOption } from './IInjector';
+import { InstProvider, IProvider, ProviderOption, ProviderType, RegisteredState, ResolveOption, TypeOption } from './IInjector';
 import { Token, tokenRef } from './tokens';
 import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';
@@ -37,28 +37,25 @@ export abstract class Strategy {
     /**
      * register type class.
      * @param injector register in the injector.
-     * @param type the class.
-     * @param [provide] the class prodvider to.
+     * @param option the type register option.
      * @param [singleton]
      */
-    registerIn<T>(injector: IProvider, type: Type<T>, options?: ProviderOption) {
+    registerIn<T>(injector: IProvider, option: TypeOption<T>) {
         const state = injector.state();
         // make sure class register once.
-        if (state.isRegistered(type)) {
-            if (options?.provide) {
-                injector.bindProvider(options.provide, type, state.getRegistered(type));
+        if (state.isRegistered(option.type)) {
+            if (option?.provide) {
+                injector.bindProvider(option.provide, option.type, state.getRegistered(option.type));
             }
             return this;
         }
-        if (injector.has(type, true)) {
+        if (injector.has(option.type, true)) {
             return this;
         }
 
         const ctx = {
             injector: injector,
-            ...options,
-            token: options?.provide,
-            type
+            ...option
         } as DesignContext;
         injector.action().getInstance(DesignLifeScope).register(ctx);
         cleanObj(ctx);

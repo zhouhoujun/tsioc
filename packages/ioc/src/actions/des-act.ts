@@ -8,7 +8,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { IInjector, InstProvider, IProvider } from '../IInjector';
+import { CtorOption, IInjector, IProvider } from '../IInjector';
 import { PropertyMetadata } from '../decor/metadatas';
 
 
@@ -42,7 +42,7 @@ export const AnnoRegInAction = function (ctx: DesignContext, next: () => void): 
         ctx.regIn = ctx.reflect.regIn;
         ctx.injector = container.get(ROOT_INJECTOR) ?? container;
     }
-    const state = ctx.state = genReged(ctx.injector, ctx.token);
+    const state = ctx.state = genReged(ctx.injector, ctx.provide);
     container.state().regType(ctx.type, state);
     next();
 };
@@ -54,8 +54,10 @@ function genReged(injector: IInjector, provide?: Token) {
     }
 }
 
-function regInstf(injector: IInjector, type: Type, token: Token, singleton: boolean): InstProvider {
+function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean): CtorOption {
     const insf = {
+        provide,
+        useClass: type,
         fac: (providers: IProvider) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
@@ -64,7 +66,7 @@ function regInstf(injector: IInjector, type: Type, token: Token, singleton: bool
 
             const ctx = {
                 injector,
-                token,
+                provide,
                 type,
                 singleton,
                 providers
@@ -77,21 +79,17 @@ function regInstf(injector: IInjector, type: Type, token: Token, singleton: bool
             return instance;
         },
         unreg: () => injector.state().deleteType(type)
-    };
+    } as CtorOption;
 
-    injector.set(type, insf);
-    injector.onDestroy(() => injector.unregister(type));
-    if (token && token !== type) {
-        injector.set(token, insf.fac, type);
-        injector.onDestroy(() => injector.unregister(token));
-    }
+    injector.set(insf);
+    injector.onDestroy(() => injector.unregister(provide));
 
     return insf;
 }
 
 
 export const RegClassAction = function (ctx: DesignContext, next: () => void): void {
-    regInstf(ctx.injector, ctx.type, ctx.token, ctx.singleton || ctx.reflect.singleton);
+    regInstf(ctx.injector, ctx.type, ctx.provide || ctx.type, ctx.singleton || ctx.reflect.singleton);
     next();
 };
 
@@ -261,7 +259,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     }
 
     const injector = ctx.injector;
-    const instance = injector.get(ctx.token || ctx.type);
+    const instance = injector.get(ctx.provide || ctx.type);
     if (!instance) return;
     ctx.reflect.autoruns.forEach(meta => {
         if (meta && meta.autorun) {

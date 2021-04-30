@@ -138,7 +138,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
     if (!ctx.instance || ctx.singleton || !ctx.reflect.expires || ctx.reflect.expires <= 0) {
         return next();
     }
-    ctx.injector.set(ctx.type, { cache: ctx.instance, expires: ctx.reflect.expires + Date.now() });
+    ctx.injector.cache(ctx.type, ctx.instance, ctx.reflect.expires + Date.now());
     return next();
 };
 
@@ -175,7 +175,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
  */
 export const RegSingletionAction = function (ctx: RuntimeContext, next: () => void): void {
     if (ctx.type && ctx.instance && ctx.singleton) {
-        ctx.injector.set(ctx.type, { useValue: ctx.instance });
+        ctx.injector.setValue(ctx.type, ctx.instance);
     }
     next();
 }

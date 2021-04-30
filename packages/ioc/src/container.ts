@@ -305,12 +305,12 @@ class ActionProvider extends Provider implements IActionProvider {
         return this;
     }
 
-    protected regType<T>(target: Type<T>, option?: ProviderOption) {
-        if (!option && isBaseOf(target, Action)) {
+    protected regType<T>(target: Type<T>) {
+        if (isBaseOf(target, Action)) {
             this.registerAction(target);
             return;
         }
-        super.regType(target, option);
+        super.regType(target);
     }
 
     getAction<T extends Handler>(target: Token<Action>): T {

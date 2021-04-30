@@ -241,9 +241,9 @@ export class ModuleProvider extends Provider implements IModuleProvider {
      */
     exports: ModuleRef[] = [];
 
-    protected regType<T>(target: Type<T>, option?: ProviderOption) {
-        this.strategy.registerIn(this.mdInjector, target, option);
-        this.export(target);
+    protected regType<T>(type: Type<T>) {
+        this.strategy.registerIn(this.mdInjector, { type });
+        this.export(type);
     }
 
     export(type: Type, noRef?: boolean) {

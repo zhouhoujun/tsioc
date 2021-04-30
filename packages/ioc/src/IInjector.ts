@@ -6,7 +6,7 @@ import { MethodType } from './Invoker';
 import { Registered, TypeReflect } from './decor/type';
 import { Action } from './action';
 import { Handler } from './utils/hdl';
-import { StaticProvider } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, StaticProvider, ValueProvider } from './providers';
 
 
 /**
@@ -41,6 +41,36 @@ export type Factory<T = any> = (provider: IProvider) => T;
  */
 export type FactoryLike<T> = Type<T> | Factory<T>;
 
+
+/**
+ * type register option.
+ */
+export interface TypeOption<T = any> {
+    provide?: Token<T>;
+    type: Type<T>;
+    singleton?: boolean;
+    regIn?: 'root';
+}
+
+export interface FactoryOption<T = any> {
+    fac: Factory<T>;
+    useClass?: Type<T>;
+}
+
+export interface CtorOption<T = any> extends FactoryOption<T> {
+    provide: Token<T>;
+    singleton?: boolean;
+    unreg?: () => void;
+}
+
+export type ProviderOption<T = any> = CtorOption<T> | ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
+
+/**
+ * register option.
+ */
+export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
+
+
 /**
  * instance provider.
  */
@@ -49,7 +79,6 @@ export interface InstProvider<T = any> {
      * provide token.
      */
     provide?: Token<T>;
-
     /**
      * use class for provide.
      *
@@ -87,11 +116,11 @@ export interface InstProvider<T = any> {
      */
     useExisting?: Token;
 
-
     /**
      * factory.
      */
     fac?: Factory<T>;
+
     /**
      * cache value.
      */
@@ -106,37 +135,6 @@ export interface InstProvider<T = any> {
      */
     unreg?: () => void;
 }
-
-
-/**
- * value register.
- */
-export interface ValueRegister<T = any> {
-    provide: Token<T>;
-    /**
-     * use value for provide.
-     *
-     * @type {*}
-     */
-    useValue: any;
-}
-
-export interface ProviderOption {
-    provide?: Token;
-    singleton?: boolean;
-    regIn?: 'root';
-}
-
-export interface ClassRegister<T = any> extends ProviderOption {
-    provide?: Token<T>;
-    useClass: Type<T>;
-}
-
-/**
- * register option.
- */
-export type RegisterOption<T> = ValueRegister<T> | ClassRegister<T>;
-
 
 
 
@@ -351,22 +349,33 @@ export interface IProvider extends Destroyable {
      * set provide.
      *
      * @template T
-     * @param {Token<T>} provide
-     * @param {InstProvider<T>} fac
-     * @param {boolean} [replace] replace only.
+     * @param {ProviderOption<T>} option
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: InstProvider<T>): this;
+    set<T>(option: ProviderOption<T>): this;
+    /**
+     * set provide.
+     * @param token token.
+     * @param option factory option.
+     */
+    set<T>(token: Token<T>, option: FactoryOption<T> | InstProvider<T>): this;
     /**
      * set provide.
      *
      * @template T
-     * @param {Token<T>} provide
+     * @param {Token<T>} token
      * @param {Factory<T>} fac
      * @param {Type<T>} [useClass]
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: Factory<T>, useClass?: Type<T>): this;
+    set<T>(token: Token<T>, fac: Factory<T>, useClass?: Type<T>): this;
+    /**
+     * cache instance.
+     * @param token 
+     * @param instance 
+     * @param expires 
+     */
+    cache<T>(token: Token<T>, instance: T, expires: number): this;
     /**
      * inject providers.
      *
@@ -387,7 +396,13 @@ export interface IProvider extends Destroyable {
      * @param {...Modules[]} modules
      * @returns {this}
      */
-     use(...modules: Modules[]): Type[];
+    use(...modules: Modules[]): Type[];
+
+    /**
+     * register with option.
+     * @param options
+     */
+    register<T>(option: RegisterOption<T>): this;
     /**
      * register with option.
      * @param options
@@ -400,21 +415,6 @@ export interface IProvider extends Destroyable {
      * @returns {this}
      */
     register<T>(type: Type<T>): this;
-    /**
-     * register with option.
-     * @param options
-     */
-    register<T>(option: RegisterOption<T>): this;
-    /**
-     * register type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {FactoryLike<T>} provider
-     * @param {boolean} singleton
-     * @returns {this}
-     */
-    register<T>(token: Token<T>, provider: FactoryLike<T>, singleton: boolean): this;
     /**
      * unregister the token
      *
@@ -574,7 +574,7 @@ export interface IInjector extends IProvider {
      * @param {LoadType[]} modules load modules.
      * @returns {Promise<Type[]>}  types loaded.
      */
-     load(modules: LoadType[]): Promise<Type[]>;
+    load(modules: LoadType[]): Promise<Type[]>;
     /**
      * load modules.
      *

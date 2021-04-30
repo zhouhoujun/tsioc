@@ -162,7 +162,7 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
     const state = ctx.state();
     if (!state.isRegistered(ctx.type)) {
         if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
-            ctx.injector.register({ useClass: ctx.type, regIn: 'root' });
+            ctx.injector.register({ type: ctx.type, regIn: 'root' });
         } else {
             ctx.injector.register(ctx.type);
         }

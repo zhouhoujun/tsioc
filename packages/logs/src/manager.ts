@@ -45,7 +45,7 @@ export class ConfigureLoggerManager implements IConfigureLoggerManager {
         }
         if (isFunction(config)) {
             if (!this.injector.has(LogConfigureToken)) {
-                this.injector.register(LogConfigureToken, config);
+                this.injector.register({ provide: LogConfigureToken, useClass: config});
                 this._config = this.injector.getInstance(LogConfigureToken);
             } else if (!this.injector.has(config)) {
                 this.injector.register(config);
