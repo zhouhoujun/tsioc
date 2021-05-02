@@ -44,7 +44,7 @@ export abstract class IocAction<T, TH extends Handler = Handler<T>, TR = void> e
 
     /**
      * execute action.
-     * @param ctx 
+     * @param ctx
      * @param next 
      */
     abstract execute(ctx: T, next?: () => TR): TR;

@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { ProviderState, IProvider, ProviderOption, ProviderType, RegisteredState, ResolveOption, TypeOption } from './IInjector';
+import { ProviderState, IProvider, ProviderType, RegisteredState, ResolveOption, TypeOption } from './IInjector';
 import { Token, tokenRef } from './tokens';
 import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
 import { cleanObj, mapEach } from './utils/lang';

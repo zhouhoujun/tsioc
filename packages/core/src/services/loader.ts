@@ -53,17 +53,7 @@ export class ModuleLoader implements IModuleLoader {
      */
     load(modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
-            return Promise.all(modules.map(mdty => {
-                if (isString(mdty)) {
-                    return this.isFile(mdty) ? this.loadFile(mdty) : this.loadModule(mdty);
-                } else if (isPathModules(mdty)) {
-                    return this.loadPathModule(mdty);
-                } else if (isChildModule(mdty)) {
-                    return mdty.loadChild() as Promise<any>;
-                } else {
-                    return mdty ? [mdty] : [];
-                }
-            }))
+            return Promise.all(modules.map(mdty => this.getMoudle(mdty)))
                 .then(allms => {
                     let rmodules: Modules[] = [];
                     allms.forEach(ms => {
@@ -76,6 +66,29 @@ export class ModuleLoader implements IModuleLoader {
         }
     }
 
+    getMoudle(mdty: LoadType): Promise<Modules[]> {
+        if (isString(mdty)) {
+            return this.isFile(mdty) ? this.loadFile(mdty) : this.loadModule(mdty);
+        } else if (isPathModules(mdty)) {
+            return this.loadPathModule(mdty);
+        } else if (isChildModule(mdty)) {
+            return mdty.loadChild() as Promise<any>;
+        } else {
+            return Promise.resolve(mdty ? [mdty] : []);
+        }
+    }
+
+    /**
+     * load all class types in modules
+     *
+     * @param {LoadType[]} mdl
+     * @returns {Promise<Type[]>}
+     */
+     async loadType(mdl: LoadType): Promise<Type[]> {
+        const mdls = await this.getMoudle(mdl);
+        return lang.getTypes(mdls);
+     }
+
     /**
      * load types from module.
      *
@@ -84,13 +97,12 @@ export class ModuleLoader implements IModuleLoader {
      */
     async loadTypes(modules: LoadType[]): Promise<Type[][]> {
         let mdls = await this.load(modules);
-        return  mdls.map(md => lang.getTypes([md]));
+        return mdls.map(md => lang.getTypes(md));
     }
 
     async require(fileName: string): Promise<any> {
         return lang.first(await this.loadFile(fileName));
     }
-
 
     protected loadFile(files: string | string[], basePath?: string): Promise<Modules[]> {
         let loader = this.getLoader();

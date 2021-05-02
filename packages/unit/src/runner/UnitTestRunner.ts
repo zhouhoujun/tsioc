@@ -21,20 +21,14 @@ export class UnitTestRunner extends Runnable {
         const loader = injector.getLoader();
         oldRunner.registerGlobalScope();
         if (isString(src)) {
-            let alltypes = await loader.loadTypes([{ files: [src], basePath: ctx.baseURL }]);
-            alltypes.forEach(tys => {
-                suites = suites.concat(tys);
-            })
+            suites = await loader.loadType({ files: [src], basePath: ctx.baseURL });
         } else if (isClass(src)) {
             suites = [src];
         } else if (isArray(src)) {
             if (src.some(t => isClass(t))) {
                 suites = src;
             } else {
-                let alltypes = await loader.loadTypes([{ files: src as string | string[], basePath: ctx.baseURL }]);
-                alltypes.forEach(tys => {
-                    suites = suites.concat(tys);
-                })
+                suites = await loader.loadType({ files: src as string | string[], basePath: ctx.baseURL });
             }
         }
         oldRunner.unregisterGlobalScope();

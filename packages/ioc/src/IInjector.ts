@@ -642,6 +642,19 @@ export interface IModuleLoader {
      * @returns {Promise<any>}
      */
     require(fileName: string): Promise<any>;
+
+    /**
+     * get modules.
+     * @param mdty
+     */
+    getMoudle(mdty: LoadType): Promise<Modules[]>;
+    /**
+     * load all class types in modules
+     *
+     * @param {LoadType[]} mdl
+     * @returns {Promise<Type[]>}
+     */
+    loadType(mdl: LoadType): Promise<Type[]>;
     /**
      * load all class types in modules
      *

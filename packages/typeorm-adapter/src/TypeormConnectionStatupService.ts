@@ -28,7 +28,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
         if (config?.repositories.some(r => isString(r))) {
             let loader = this.ctx.injector.getLoader();
             // preload repositories for typeorm.
-            await loader.loadTypes({ files: config.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
+            await loader.loadType({ files: config.repositories.filter(r => isString(r)), basePath: this.ctx.baseURL });
         }
         if (isArray(config.connections)) {
             await Promise.all(config.connections.map((options) => this.statupConnection(injector, options, config)));
@@ -41,7 +41,7 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
 
     async statupConnection(injector: IInjector, options: IConnectionOptions, config: Configure) {
         const connection = await this.createConnection(options, config);
-        options.entities.forEach(e=> {
+        options.entities.forEach(e => {
             injector.register(e);
         });
         getMetadataArgsStorage().entityRepositories?.forEach(meta => {
@@ -64,13 +64,11 @@ export class TypeormConnectionStatupService extends ConnectionStatupService {
             let entities: Type[] = [];
             if (config?.models.some(m => isString(m))) {
                 let loader = this.ctx.injector.getLoader();
-                let models = await loader.loadTypes({ files: config.models.filter(m => isString(m)), basePath: this.ctx.baseURL });
-                models.forEach(ms => {
-                    ms.forEach(mdl => {
-                        if (mdl && entities.indexOf(mdl) < 0) {
-                            entities.push(mdl);
-                        }
-                    });
+                let models = await loader.loadType({ files: config.models.filter(m => isString(m)), basePath: this.ctx.baseURL });
+                models.forEach(mdl => {
+                    if (mdl && entities.indexOf(mdl) < 0) {
+                        entities.push(mdl);
+                    }
                 });
             } else {
                 entities = config.models as Type[];
