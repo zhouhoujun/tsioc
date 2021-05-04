@@ -5,7 +5,7 @@ import { Suite, Before, Test, After } from '@tsdi/unit';
 import { TypeOrmHelper } from '../src';
 import * as expect from 'expect';
 import { UserRepository } from './repositories/UserRepository';
-import { connectOption, MockBootTest } from './MockBootTest';
+import { connectOption, MockBootTest } from './test';
 import { UserController } from './mapping/UserController';
 
 
