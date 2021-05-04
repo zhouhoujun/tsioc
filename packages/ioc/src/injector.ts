@@ -6,8 +6,8 @@ import {
     TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, ProviderState, IProvider, ProviderType,
     RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption, FactoryOption
 } from './IInjector';
-import { isInjectToken, isToken, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isSymbol } from './utils/chk';
+import { isToken, Token } from './tokens';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { Registered } from './decor/type';
@@ -627,7 +627,12 @@ export abstract class Injector extends Provider implements IInjector {
     abstract getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
     protected createProvider(providers: ProviderType[]): IProvider {
-        return createProvider(this).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
+        const pdr = createProvider(this).parse(providers);
+        if(!pdr.has(INJECTOR)) {
+            pdr.inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this });
+        }
+        return pdr;
+        // return createProvider(this).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
     }
 }
 
