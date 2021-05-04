@@ -200,7 +200,7 @@ export class Provider implements IProvider {
      * @returns {this}
      */
     parse(providers: ProviderType[]): this {
-        providers.length && providers.forEach((p, index) => {
+        providers.length && providers.forEach(p => {
             if (isUndefined(p) || isNull(p)) {
                 return;
             }
@@ -532,11 +532,14 @@ export function isProvider(target: any): target is Provider {
 /**
  * create new injector.
  * @param parent
+ * @param providers
  * @param strategy
  * @returns
  */
-export function createProvider(parent: IProvider, strategy?: Strategy) {
-    return new Provider(parent, strategy);
+export function createProvider(parent: IProvider, providers?: ProviderType[], strategy?: Strategy) {
+    const pdr = new Provider(parent, strategy);
+    if(providers && providers.length) return pdr.parse(providers);
+    return pdr;
 }
 
 /**
@@ -545,8 +548,9 @@ export function createProvider(parent: IProvider, strategy?: Strategy) {
  * @param strategy
  * @returns
  */
-export function createInvokedProvider(parent: IProvider) {
-    return new InvokedProvider(parent);
+export function createInvokedProvider(parent: IProvider, providers: ProviderType[]) {
+    if (!providers || !providers.length) return null;
+    return new InvokedProvider(parent).parse(providers);
 }
 
 
@@ -627,12 +631,7 @@ export abstract class Injector extends Provider implements IInjector {
     abstract getServiceProviders<T>(target: Token<T> | ServicesOption<T>): IProvider;
 
     protected createProvider(providers: ProviderType[]): IProvider {
-        const pdr = createProvider(this).parse(providers);
-        if(!pdr.has(INJECTOR)) {
-            pdr.inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this });
-        }
-        return pdr;
-        // return createProvider(this).inject({ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers);
+        return createProvider(this, [{ provide: INJECTOR, useValue: this }, { provide: Injector, useValue: this }, ...providers]);
     }
 }
 
