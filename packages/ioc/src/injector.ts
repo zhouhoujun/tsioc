@@ -385,7 +385,7 @@ export class Provider implements IProvider {
 
 
     protected createProvider(providers: ProviderType[]): IProvider {
-        return createProvider(this).parse(providers);
+        return createProvider(this, providers);
     }
 
     /**
