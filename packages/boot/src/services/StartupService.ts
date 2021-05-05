@@ -55,7 +55,7 @@ export abstract class StartupService<T extends IBootContext = IBootContext> impl
         if (!this._destroyed) {
             this._destroyed = true;
             this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = [];
+            this.destroyCbs = null;
             this.destroying();
         }
     }

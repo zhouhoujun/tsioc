@@ -31,7 +31,7 @@ export abstract class ConnectionStatupService<T extends IBootContext = IBootCont
         if (!this._destroyed) {
             this._destroyed = true;
             this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = [];
+            this.destroyCbs = null;
             this.destroying();
         }
     }

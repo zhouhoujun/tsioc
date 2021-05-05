@@ -438,7 +438,7 @@ export class Provider implements IProvider {
         if (!this._destroyed) {
             this._destroyed = true;
             this._dsryCbs.forEach(cb => cb());
-            this._dsryCbs = [];
+            this._dsryCbs = null;
             this.destroying();
         }
     }

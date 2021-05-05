@@ -151,7 +151,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         if (!this._destroyed) {
             this._destroyed = true;
             this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = [];
+            this.destroyCbs = null;
             this.destroying();
         }
     }

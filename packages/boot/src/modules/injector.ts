@@ -1,6 +1,6 @@
 import {
     Token, lang, Type, IInjector, Provider, ProviderState, ProviderType, Strategy,
-    isNil, InjectorImpl, IProvider, Injector, ROOT_INJECTOR
+    isNil, InjectorImpl, IProvider, Injector, ROOT_INJECTOR, isInjector
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 
@@ -93,7 +93,7 @@ export class ModuleInjector extends InjectorImpl implements IModuleInjector {
         this.deps = [];
         this.onDestroy(() => {
             this.deps.forEach(mr => mr.destroy());
-            this.deps = [];
+            this.deps = null;
         });
     }
 
@@ -216,7 +216,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 /**
  * default module provider strategy.
  */
-const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => !(p instanceof Injector), cu => cu.exports);
+const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => !isInjector(p), cu => cu.exports);
 
 /**
  * module providers.
@@ -229,7 +229,7 @@ export class ModuleProvider extends Provider implements IModuleProvider {
         this.onDestroy(() => {
             this.mdInjector = null;
             this.exports.forEach(e => e.destroy());
-            this.exports = [];
+            this.exports = null;
         });
     }
     /**
@@ -254,7 +254,7 @@ export class ModuleProvider extends Provider implements IModuleProvider {
         this.set(type, (pdr) => this.mdInjector.toInstance(type, pdr));
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
-            this.set(p, { fac: (pdr) => this.mdInjector.toInstance(p, pdr), useClass: type });
+            this.set({ provide: p, useClass: type });
         });
         if (!noRef && reged.moduleRef) {
             this.exports.push(reged.moduleRef);

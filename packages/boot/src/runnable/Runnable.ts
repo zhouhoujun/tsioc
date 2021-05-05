@@ -80,7 +80,7 @@ export abstract class Runnable<T = any> implements IRunnable {
         if (!this._destroyed) {
             this._destroyed = true;
             this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = [];
+            this.destroyCbs = null;
             this.destroying();
         }
     }
