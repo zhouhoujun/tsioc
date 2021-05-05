@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { isFunction, getClass, isTypeObject } from '../utils/chk';
 import { Token } from '../tokens';
-import { IInjector, IProvider, ProviderType } from '../IInjector';
+import { IInjector, IProvider, ProviderType, RegisteredState } from '../IInjector';
 import { Invoker, MethodType } from '../Invoker';
 import { get } from '../decor/refl';
 import { ParameterMetadata } from '../decor/metadatas';
@@ -82,28 +82,24 @@ export class InvokerImpl implements Invoker {
 
     protected resolveParams(injector: IInjector, params: ParameterMetadata[], providers: IProvider, typepdrs?: IProvider): any[] {
         const state = injector.state();
-        return params.map((param, index) => {
-            if (param.provider) {
-                if (typepdrs && typepdrs.has(param.provider)) return typepdrs.get(param.provider, providers);
-                if (providers?.has(param.provider)) return providers.get(param.provider, providers);
-                if (param.isProviderType && !state.isRegistered(param.provider as Type) && !injector.has(param.type, true)) {
-                    injector.register(param.provider as Type);
-                }
-                return injector.get(param.provider, providers) ?? param.defaultValue;
-            } else if (typepdrs && param.paramName && typepdrs.has(param.paramName)) {
-                return typepdrs.get(param.paramName, providers);
-            } else if (param.paramName && providers?.has(param.paramName)) {
-                return providers.get(param.paramName, providers);
-            } else if (param.type) {
-                if (typepdrs && typepdrs.has(param.provider)) return typepdrs.get(param.provider, providers);
-                if (providers?.has(param.type)) return providers.get(param.type, providers);
-                if (param.isType && !state.isRegistered(param.type) && !injector.has(param.type, true)) {
-                    injector.register(param.type as Type);
-                }
-                return injector.get(param.type, providers) ?? param.defaultValue;
-            } else {
-                return param.defaultValue;
-            }
-        });
+        return params.map(param => this.tryGetPdrParamer(injector, state, param.provider, param.isProviderType, providers, typepdrs)
+            ?? this.tryGetNameParamer(param.paramName, providers, typepdrs)
+            ?? this.tryGetPdrParamer(injector, state, param.type, param.isType, providers, typepdrs)
+            ?? param.defaultValue);
     }
+
+    protected tryGetPdrParamer(injector: IInjector, state: RegisteredState, provider: Token, isType: boolean, providers?: IProvider, typepdrs?: IProvider) {
+        if (!provider) return null;
+        if (typepdrs && typepdrs.has(provider)) return typepdrs.get(provider, providers);
+        if (providers?.has(provider)) return providers.get(provider, providers);
+        if (isType && !state.isRegistered(provider as Type) && !injector.has(provider, true)) {
+            injector.register(provider as Type);
+        }
+        return injector.get(provider, providers);
+    }
+
+    protected tryGetNameParamer(paramName: string, providers?: IProvider, typepdrs?: IProvider) {
+        return typepdrs?.get(paramName, providers) ?? providers?.get(paramName, providers);
+    }
+
 }

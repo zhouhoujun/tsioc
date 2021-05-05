@@ -9,6 +9,7 @@ import { DecoratorType, DecorDefine, DecorMemberType } from './type';
 const name = '__name';
 const emptyArr = [];
 const allVals = '_avalues_';
+const ctorBK = '__ctor';
 
 /**
  * type define.
@@ -233,7 +234,7 @@ export class TypeDefine {
 
     getParamNames(method: string): string[] {
         if (!method || method === 'constructor') {
-            method = '__constructor';
+            method = ctorBK;
         }
         return this.getParams()[method] || [];
     }
@@ -267,7 +268,7 @@ export class TypeDefine {
             anName = classAnnations.name;
             meta = {
                 ...classAnnations.params,
-                __constructor: classAnnations.params['constructor'],
+                __ctor: classAnnations.params['constructor'],
                 ...meta
             };
         }
@@ -283,8 +284,8 @@ export class TypeDefine {
                     }
                 }
             });
-            if (!meta['__constructor'] || meta['__constructor'].length < 1) {
-                meta['__constructor'] = getParamNames(ty.prototype.constructor);
+            if (!meta[ctorBK] || meta[ctorBK].length < 1) {
+                meta[ctorBK] = getParamNames(ty.prototype.constructor);
             }
         }
 

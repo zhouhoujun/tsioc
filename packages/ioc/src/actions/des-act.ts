@@ -165,11 +165,11 @@ export const TypeProviderAction = function (ctx: DesignContext, next: () => void
 
     // class private provider.
     if (ctx.reflect.extProviders && ctx.reflect.extProviders.length) {
-        if (ctx.state.providers) {
-            ctx.state.providers.parse(ctx.reflect.extProviders);
+        if (state.providers) {
+            state.providers.parse(ctx.reflect.extProviders);
         } else {
             const pdrs = injector.toProvider(ctx.reflect.extProviders, true);
-            ctx.state.providers = pdrs;
+            state.providers = pdrs;
         }
     }
 
