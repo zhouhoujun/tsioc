@@ -43,13 +43,7 @@ export abstract class Strategy {
     registerIn<T>(injector: IProvider, option: TypeOption<T>) {
         const state = injector.state();
         // make sure class register once.
-        if (state.isRegistered(option.type)) {
-            if (option?.provide) {
-                injector.bindProvider(option.provide, option.type, state.getRegistered(option.type));
-            }
-            return this;
-        }
-        if (injector.has(option.type, true)) {
+        if (state.isRegistered(option.type) || injector.has(option.type, true)) {
             return this;
         }
 

@@ -266,10 +266,6 @@ container.register(new Registration(Person, aliasname));
 // register singleton
 container.registerSingleton(Person)
 
-// bind provider
-container.bindProvider
-// bind providers.
-container.bindProviders
 
 ```
 

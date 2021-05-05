@@ -10,7 +10,6 @@ import { isToken, Token } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
-import { Registered } from './decor/type';
 import { INJECTOR } from './utils/tk';
 import { DefaultStrategy, Strategy } from './strategy';
 
@@ -351,29 +350,6 @@ export class Provider implements IProvider {
         cleanObj(option);
         return inst;
     }
-
-    /**
-     * bind provider.
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Type<T>} useClass
-     * @param {Registered} [reged]  provider registered state.
-     * @returns {this}
-     * @memberof Injector
-     */
-    bindProvider<T>(provide: Token<T>, useClass: Type<T>, reged?: Registered): this {
-        if (provide && useClass) {
-            !reged && this.register(useClass);
-            if (reged && reged.provides.indexOf(provide) < 0) {
-                reged.provides.push(provide);
-            }
-            const fac = reged ? (pdr) => reged.injector.toInstance(useClass, pdr) : (pdr) => this.toInstance(useClass, pdr);
-            this.factories.set(provide, { fac, useClass });
-        }
-        return this;
-    }
-
 
     toProvider(providers: ProviderType[], force?: boolean, ifyNew?: (p: IProvider) => IProvider): IProvider {
         if (!force && (!providers || !providers.length)) return null;

@@ -318,17 +318,7 @@ export interface IProvider extends Destroyable {
      */
     delValue<T>(token: Token<T>): void;
     /**
-     * bind provider
-     *
-     * @template T
-     * @param {Token<T>} provide
-     * @param {Type<T>} provider
-     * @param {Registered} [reged]  provider registered state.
-     * @returns {this}
-     */
-    bindProvider<T>(provide: Token<T>, provider: Type<T>, reged?: Registered): this;
-    /**
-     * parse 
+     * parse
      * @param providers 
      */
     parse(providers: ProviderType[]): this;
