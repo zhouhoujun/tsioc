@@ -102,30 +102,6 @@ export abstract class Runnable<T = any> implements IRunnable {
 
 }
 
-@Abstract()
-export abstract class Startup<T = any> extends Runnable {
-
-    protected context: IBootContext;
-
-    async configureService(ctx: IBootContext): Promise<void> {
-        this.context = ctx;
-        await this.startup();
-    }
-
-    abstract startup(): void;
-
-    /**
-    * runable context.
-    *
-    * @type {TCtx}
-    */
-    getContext(): IBootContext {
-        return this.context;
-    }
-
-
-}
-
 /**
  * target is Runnable or not.
  *
