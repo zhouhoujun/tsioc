@@ -99,7 +99,9 @@ export class InvokerImpl implements Invoker {
     }
 
     protected tryGetNameParamer(paramName: string, providers?: IProvider, typepdrs?: IProvider) {
-        return typepdrs?.get(paramName, providers) ?? providers?.get(paramName, providers);
+        if (typepdrs && typepdrs.has(paramName)) return typepdrs.get(paramName, providers);
+        if (providers && providers.has(paramName)) return providers.get(paramName, providers);
+        return null;
     }
 
 }
