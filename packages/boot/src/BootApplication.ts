@@ -1,13 +1,13 @@
-import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR, Container } from '@tsdi/ioc';
+import { isArray, isString, isInjector, ClassType, IModuleLoader, IContainer, LoadType, IInjector, isFunction, ROOT_INJECTOR } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { BootModule } from './BootModule';
-import { BOOTCONTEXT, BUILDER, PROCESS_EXIT } from './tk';
+import { APPLICATION, BOOTCONTEXT, PROCESS_EXIT } from './tk';
 import { ModuleInjector } from './modules/injector';
 import { BootOption, IBootContext } from './Context';
 import { MiddlewareModule } from './middlewares';
-import { IBuilderService } from './services/IBuilderService';
-import { BuilderService } from './services/BuilderService';
+import { BootLifeScope, StartupServiceScope } from './boot/lifescope';
+import { createContext } from './boot/ctx';
 
 
 /**
@@ -51,7 +51,7 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         this.root = ModuleInjector.create(parent ?? this.container, true);
         this.root.setValue(ROOT_INJECTOR, this.root);
         this.root.setValue(BootApplication, this);
-        this.root.setValue(BUILDER, new BuilderService(this.root), BuilderService);
+        this.root.setValue(APPLICATION, this);
 
     }
 
@@ -65,9 +65,6 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         return this.context;
     }
 
-    protected onContextInit(ctx: T) {
-        this.root.setValue(BOOTCONTEXT, ctx);
-    }
 
     /**
      * run application.
@@ -94,22 +91,22 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         const root = this.getRootInjector();
         root.register(MiddlewareModule);
         await root.load(this.getBootDeps());
-        const build = root.getInstance(BUILDER);
-        const ctx = this.createContext(build, args);
-        await build.boot(ctx);
-        root.get(PROCESS_EXIT)?.(this);
-        return ctx as T;
-    }
-
-
-    protected createContext(builer: IBuilderService, args: string[]) {
-        const ctx = this.context = builer.createContext(this.target, args) as T;
+        const ctx = this.createRootContext(root, args);
         this.onContextInit(ctx);
-        ctx.onDestroy(() => {
-            this.destroy();
-        });
+        await root.action().getInstance(BootLifeScope).execute(ctx);
+        root.get(PROCESS_EXIT)?.(this);
         return ctx;
     }
+
+
+
+    async bootstrap<T>(target: ClassType<T> | BootOption<T>, args?: string[]): Promise<any> {
+        const root = this.getRootInjector();
+        const ctx = createContext(root, target, args || this.context.args)
+        await root.action().getInstance(StartupServiceScope).execute(ctx);
+        return ctx.boot;
+    }
+
 
     getRootInjector(): IInjector {
         return this.root;
@@ -118,6 +115,19 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
     getContainer(): IContainer {
         return this.container;
     }
+
+    protected createRootContext(root: IInjector, args: string[]) {
+        this.context = createContext(root, this.target, args);
+        return this.context;
+    }
+
+    protected onContextInit(ctx: T) {
+        this.root.setValue(BOOTCONTEXT, ctx);
+        ctx.onDestroy(() => {
+            this.destroy();
+        });
+    }
+
 
     protected getBootDeps(): LoadType[] {
         return this.deps;

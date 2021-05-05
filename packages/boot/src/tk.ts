@@ -4,8 +4,12 @@ import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { MessageContext } from './middlewares/ctx';
 import { IBootApplication } from './IBootApplication';
-import { IBuilderService } from './services/IBuilderService';
 
+
+/**
+ *  current application token.
+ */
+ export const APPLICATION: Token<IBootApplication> = tokenId<IBootApplication>('APPLICATION');
 
 /**
  *  current application boot context token.
@@ -53,18 +57,6 @@ export const ProcessRunRootToken = PROCESS_ROOT;
  *  appliaction boot process root path.
  */
 export const PROCESS_EXIT = tokenId<(app: IBootApplication) => void>('PROCESS_ROOT');
-
-/**
- * build service token.
- */
-export const BUILDER: Token<IBuilderService> = tokenId<IBuilderService>('BUILDER');
-
-/**
- * build service token.
- *
- * @deprecated use `BUILDER` instead.
- */
-export const BuilderServiceToken = BUILDER;
 
 /**
  * type parser token.

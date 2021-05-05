@@ -47,4 +47,10 @@ export interface IBootApplication<T extends IBootContext = IBootContext> extends
      */
     getRootInjector(): IInjector;
 
+    /**
+     * bootstrap.
+     * @param target 
+     */
+    bootstrap<T>(target: ClassType<T> | BootOption<T>): Promise<any>;
+
 }

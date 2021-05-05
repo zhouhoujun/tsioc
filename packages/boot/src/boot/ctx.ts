@@ -1,6 +1,6 @@
-import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, IProvider } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, isPlainObject, ClassType, refl } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { BOOTCONTEXT, CONFIGURATION, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
+import { BOOTCONTEXT, CONFIGURATION, CTX_OPTIONS, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { AnnoationContext } from '../annotations/ctx';
@@ -142,7 +142,7 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         const injector = opts?.injector ?? this.injector;
         if (!injector.state().isRegistered(type)) {
             injector.register(type);
-        }        
+        }
         return this.createBoot(injector, type, this, this.providers);
     }
 
@@ -179,3 +179,44 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         return super.setOptions(options);
     }
 }
+
+/**
+ * create boot context.
+ * @param root 
+ * @param target 
+ * @param args 
+ * @returns 
+ */
+export function createContext<T extends IBootContext>(root: IInjector, target: ClassType | BootOption, args?: string[]): T {
+    let md: Type;
+    let injector: IInjector;
+    let options: BootOption;
+    if (isPlainObject<BootOption>(target)) {
+        md = target.type || target.bootstrap;
+        injector = target.injector;
+        if (isModuleType(md)) {
+            options = { ...target, args, type: md };
+        } else {
+            options = { ...target, args, bootstrap: md };
+            options.type = undefined;
+        }
+    } else {
+        md = target as Type;
+        if (isModuleType(md)) {
+            options = { type: md, args };
+        } else {
+            options = { bootstrap: md, args };
+        }
+    }
+    if (!injector) {
+        const state = root.state();
+        injector = state.isRegistered(md) ? state.getInjector(md) || root : root;
+    }
+    return injector.getService<T>({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
+}
+
+
+export function isModuleType(target: ClassType) {
+    return refl.get<ModuleReflect>(target)?.annoType === 'module';
+}
+

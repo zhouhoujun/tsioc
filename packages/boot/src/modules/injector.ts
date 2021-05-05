@@ -1,6 +1,6 @@
 import {
     Token, lang, Type, IInjector, Provider, ProviderState, ProviderType, Strategy,
-    isNil, InjectorImpl, IProvider, Injector, ProviderOption, ROOT_INJECTOR
+    isNil, InjectorImpl, IProvider, Injector, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 

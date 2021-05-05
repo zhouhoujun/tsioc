@@ -2,8 +2,6 @@
 export * from './services/IBaseTypeParser';
 export * from './services/BaseTypeParser';
 export * from './services/StartupService';
-export * from './services/IBuilderService';
-export * from './services/BuilderService';
 
 // annotations
 export * from './annotations/reflect';
