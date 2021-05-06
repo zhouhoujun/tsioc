@@ -98,8 +98,12 @@ export class BootApplication<T extends IBootContext = IBootContext> implements I
         return ctx;
     }
 
-
-
+    /**
+     * bootstrap component, service.
+     * @param target 
+     * @param args 
+     * @returns 
+     */
     async bootstrap<T>(target: ClassType<T> | BootOption<T>, args?: string[]): Promise<any> {
         const root = this.getRootInjector();
         const ctx = createContext(root, target, args || this.context.args)

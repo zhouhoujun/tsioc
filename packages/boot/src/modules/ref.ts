@@ -1,4 +1,5 @@
-import { Type, Registered, IProvider, Abstract, ProviderType, IInjector, Destroyable, Token } from '@tsdi/ioc';
+import { Type, Registered, IProvider, Abstract, ProviderType, IInjector, Destroyable, Token, isFunction, lang, refl, InjectorImpl, Injector, Strategy, isNil, ProviderState, Provider } from '@tsdi/ioc';
+import { ModuleReflect } from './reflect';
 
 /**
  * module registered state.
@@ -56,13 +57,24 @@ export interface IModuleProvider extends IProvider {
  * di module ref.
  */
 @Abstract()
-export abstract class ModuleRef<T = any> implements Destroyable {
+export abstract class ModuleRef<T = any> extends InjectorImpl {
 
-    private _destroyed = false;
-    private destroyCbs: (() => void)[] = [];
+    private _type: Type<T>;
+    private _refl: ModuleReflect<T>;
 
-    constructor(protected _type: Type<T>, protected _parent?: IModuleInjector, protected _regIn?: string | 'root') {
+    deps: ModuleRef[];
 
+    constructor(_type: Type<T> | ModuleReflect<T>, protected _parent?: IInjector, protected _regIn?: string | 'root', strategy?: Strategy) {
+        super(_parent, strategy)
+        if (isFunction(_type)) {
+            this._type = _type;
+            this._refl = refl.get(_type);
+        } else {
+            this._type = _type.type;
+            this._refl = _type;
+        }
+        this.deps = [];
+        this.regType(this._type);
     }
 
     /**
@@ -72,30 +84,13 @@ export abstract class ModuleRef<T = any> implements Destroyable {
         return this._type;
     }
 
-    get parent(): IModuleInjector {
-        return this._parent;
-    }
-
     get regIn(): string | 'root' {
-        return this._regIn;
+        return this._regIn ?? this._refl.regIn;
     }
 
-    /**
-     * get the token instance registered in this di module.
-     * @param key token key
-     * @param providers param providers.
-     */
-    abstract get<T>(key: Token<T>, ...providers: ProviderType[]): T;
-
-    /**
-     * get module import types.
-     */
-    abstract get imports(): Type[];
-
-    /**
-     * injecor of current module ref.
-     */
-    abstract get injector(): IModuleInjector;
+    get injector(): IInjector {
+        return this;
+    }
     /**
      * di module instance.
      */
@@ -105,34 +100,140 @@ export abstract class ModuleRef<T = any> implements Destroyable {
      */
     abstract get exports(): IModuleProvider;
 
-    /**
-     * has destoryed or not.
-     */
-    get destroyed() {
-        return this._destroyed;
+}
+
+
+
+/**
+ * module injector strategy.
+ */
+export class ModuleStrategy<TI extends IProvider> extends Strategy {
+
+    constructor(private vaild: (parent: IProvider) => boolean, private getMDRef: (curr: TI) => ModuleRef[]) {
+        super();
     }
-    /**
-    * destory this.
-    */
-    destroy(): void {
-        if (!this._destroyed) {
-            this._destroyed = true;
-            this.destroyCbs.forEach(cb => cb());
-            this.destroyCbs = null;
-            this.destroying();
+
+    vaildParent(parent: IProvider) {
+        return this.vaild(parent);
+    }
+
+
+    hasToken<T>(key: Token<T>, curr: TI, deep?: boolean) {
+        return this.getMDRef(curr).some(r => r.exports.has(key)) || (deep && curr.parent?.has(key));
+    }
+
+    getInstance<T>(key: Token<T>, curr: TI, provider: IProvider) {
+        let inst: T;
+        if (this.getMDRef(curr).some(e => {
+            inst = e.exports.toInstance(key, provider);
+            return !isNil(inst);
+        })) return inst;
+        return curr.parent?.toInstance(key, provider);
+    }
+
+    hasValue<T>(key: Token<T>, curr: TI) {
+        return this.getMDRef(curr).some(r => r.exports.hasValue(key)) || curr.parent?.hasValue(key);
+    }
+
+    getValue<T>(key: Token<T>, curr: TI) {
+        let value: T;
+        if (this.getMDRef(curr).some(r => {
+            value = r.exports.getValue(key);
+            return !isNil(value)
+        })) return value;
+        return curr.parent?.getValue(key);
+    }
+
+    getTokenProvider<T>(key: Token<T>, curr: TI) {
+        let type;
+        this.getMDRef(curr).some(r => {
+            type = r.exports.getTokenProvider(key);
+            return type;
+        });
+        return type ?? curr.parent?.getTokenProvider(key);
+    }
+
+    iterator(map: Map<Token, ProviderState>, callbackfn: (fac: ProviderState, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
+        if (lang.mapEach(map, callbackfn, curr) === false) {
+            return false;
         }
+        if (this.getMDRef(curr).some(exp => exp.exports.iterator(callbackfn) === false)) {
+            return false;
+        }
+        if (deep) {
+            return curr.parent?.iterator(callbackfn, deep);
+        }
+    }
+}
+
+
+
+/**
+ * default module injector strategy.
+ */
+const mdInjStrategy = new ModuleStrategy<ModuleRef>(p => p instanceof Injector, cu => cu.deps);
+
+
+/**
+ * default module provider strategy.
+ */
+const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => !(p instanceof ModuleRef), cu => cu.exports);
+
+/**
+ * module providers.
+ */
+export class ModuleProvider extends Provider implements IModuleProvider {
+
+    constructor(public moduleRef: ModuleRef, strategy: Strategy = mdPdrStrategy) {
+        super(moduleRef, strategy);
+        this.onDestroy(() => {
+            this.moduleRef = null;
+            this.exports.forEach(e => e.destroy());
+            this.exports = null;
+        });
     }
 
     /**
-     * register callback on destory.
-     * @param callback destory callback
+     * module injector.
      */
-    onDestroy(callback: () => void): void {
-        if (this.destroyCbs) {
-            this.destroyCbs.push(callback);
-        }
+    exports: ModuleRef[] = [];
+
+    protected regType<T>(type: Type<T>) {
+        this.strategy.registerIn(this.moduleRef, { type });
+        this.export(type);
     }
 
-    protected abstract destroying(): void;
+    export(type: Type, noRef?: boolean) {
+        const state = this.state();
+        if (!state.isRegistered(type)) {
+            this.moduleRef.register(type);
+        }
+        this.set(type, (pdr) => this.moduleRef.toInstance(type, pdr));
+        const reged = state.getRegistered<ModuleRegistered>(type);
+        reged.provides?.forEach(p => {
+            this.set({ provide: p, useClass: type });
+        });
+        if (!noRef && reged.moduleRef) {
+            this.exports.push(reged.moduleRef);
+        }
+    }
+}
+
+
+
+export class DIModuleRef<T = any> extends ModuleRef<T> {
+
+    private _exports: ModuleProvider;
+    public readonly instance: T;
+
+    constructor(_type: Type<T> | ModuleReflect<T>, protected _parent?: IInjector, protected _regIn?: string | 'root', strategy = mdInjStrategy) {
+        super(_type, _parent, _regIn, strategy)
+        this._exports = new ModuleProvider(this);
+        this.instance = this.getInstance(this.type);
+    }
+
+    get exports(): IModuleProvider {
+        return this._exports;
+    }
 
 }

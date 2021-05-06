@@ -1,6 +1,6 @@
 import {
     Token, lang, Type, IInjector, Provider, ProviderState, ProviderType, Strategy,
-    isNil, InjectorImpl, IProvider, Injector, ROOT_INJECTOR, isInjector
+    isNil, InjectorImpl, IProvider, Injector, ROOT_INJECTOR
 } from '@tsdi/ioc';
 import { IModuleInjector, IModuleProvider, ModuleRef, ModuleRegistered } from './ref';
 
@@ -216,7 +216,7 @@ export class DefaultModuleRef<T = any> extends ModuleRef<T> {
 /**
  * default module provider strategy.
  */
-const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => !isInjector(p), cu => cu.exports);
+const mdPdrStrategy = new ModuleStrategy<IModuleProvider>(p => !(p instanceof ModuleInjector), cu => cu.exports);
 
 /**
  * module providers.

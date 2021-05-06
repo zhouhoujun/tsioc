@@ -5,7 +5,8 @@ import { DIModuleMetadata } from '../decorators';
 /**
  * di module relfect.
  */
-export interface ModuleReflect extends AnnotationReflect {
+export interface ModuleReflect<T = any> extends AnnotationReflect<T> {
+ 
     /**
      *  components of current module.
      */

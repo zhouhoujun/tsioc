@@ -76,7 +76,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         if (!url) {
             url = this.getAnnoation()?.baseURL;
             if (url) {
-                // this.setValue(PROCESS_ROOT, url);
                 this.parent.setValue(PROCESS_ROOT, url);
             }
         }
@@ -84,7 +83,6 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
     }
 
     set baseURL(baseURL: string) {
-        // this.setValue(PROCESS_ROOT, baseURL);
         this.parent.setValue(PROCESS_ROOT, baseURL);
     }
 

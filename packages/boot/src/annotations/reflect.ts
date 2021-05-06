@@ -1,4 +1,4 @@
-import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersMetadata } from '@tsdi/ioc';
+import { ClassMetadata, RegInMetadata, Token, ClassType, TypeReflect, ProvidersMetadata, Type } from '@tsdi/ioc';
 
 /**
  * annotation metadata.
@@ -32,7 +32,11 @@ export type AnnotationTypes = 'module' | 'component' | 'decorator' | 'directive'
 /**
  * AnnotationReflect
  */
-export interface AnnotationReflect extends TypeReflect {
+export interface AnnotationReflect<T = any> extends TypeReflect {
+    /**
+     * class type.
+     */
+    readonly type: Type<T>;
     /**
      * the type of annoation.
      */

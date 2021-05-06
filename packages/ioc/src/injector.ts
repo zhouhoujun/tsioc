@@ -661,7 +661,7 @@ function generateFac(injector: IProvider, pd: ProviderState) {
     }
 
     if (pd.useClass) {
-        if (!injector.state().isRegistered(pd.useClass) && !injector.has(pd.useClass)) {
+        if (!injector.state().isRegistered(pd.useClass) && !injector.has(pd.useClass, true)) {
             const rgopt = { type: pd.useClass, ...pd };
             rgopt.provide = undefined;
             injector.register(rgopt);
