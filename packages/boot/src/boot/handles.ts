@@ -1,6 +1,6 @@
 import { lang, isPrimitiveType, IActionSetup, ClassType, refl, isFunction, getStateValue, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
-import { IAnnoationContext, IBootContext } from '../Context';
+import { ApplicationContext, BootContext } from '../Context';
 import { CONFIGURATION, MODULE_STARTUPS } from '../tk';
 import { ConfigureRegister } from '../configure/register';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
@@ -15,12 +15,12 @@ import { Runnable } from '../runnable/Runnable';
  * @interface IBuildHandle
  * @template T
  */
-export interface IBuildHandle<T extends IAnnoationContext = IAnnoationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> { }
+export interface IBuildHandle<T extends BootContext = BootContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> { }
 
 /**
  *  handle type.
  */
-export type HandleType<T extends IAnnoationContext = IAnnoationContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
+export type HandleType<T extends BootContext = BootContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
 
 
 
@@ -33,7 +33,7 @@ export type HandleType<T extends IAnnoationContext = IAnnoationContext> = Action
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends IAnnoationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> { }
+export abstract class BuildHandle<T extends BootContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> { }
 
 /**
  * composite build handles.
@@ -43,16 +43,16 @@ export abstract class BuildHandle<T extends IAnnoationContext> extends IocAction
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends IAnnoationContext = IAnnoationContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
+export class BuildHandles<T extends BootContext = BootContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
     protected getActionProvider(ctx: T) {
         return ctx.injector.action();
     }
 }
 
-export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActionSetup {
+export class RegBootEnvScope extends BuildHandles<ApplicationContext> implements IActionSetup {
 
-    async execute(ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+    async execute(ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         if (next) {
             await next();
@@ -61,38 +61,38 @@ export class RegBootEnvScope extends BuildHandles<IBootContext> implements IActi
 
     setup() {
         this.use(
-            BootDepsHandle,
-            BootProvidersHandle,
+            // BootDepsHandle,
+            // BootProvidersHandle,
             BootConfigureLoadHandle
         );
     }
 }
 
-/**
- * boot deps handle.
- *
- * @export
- */
-export const BootDepsHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.deps && ctx.deps.length) {
-        await ctx.injector.load(ctx.deps);
-    }
-    await next();
-};
+// /**
+//  * boot deps handle.
+//  *
+//  * @export
+//  */
+// export const BootDepsHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
+//     if (ctx.deps && ctx.deps.length) {
+//         await ctx.injector.load(ctx.deps);
+//     }
+//     await next();
+// };
 
-/**
- * boot providers handle.
- *
- * @export
- * @class BootProvidersHandle
- * @extends {BootHandle}
- */
-export const BootProvidersHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.providers.size) {
-        ctx.injector.copy(ctx.providers);
-    }
-    await next();
-};
+// /**
+//  * boot providers handle.
+//  *
+//  * @export
+//  * @class BootProvidersHandle
+//  * @extends {BootHandle}
+//  */
+// export const BootProvidersHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+//     if (ctx.providers.size) {
+//         ctx.injector.copy(ctx.providers);
+//     }
+//     await next();
+// };
 
 /**
  * boot configure load handle.
@@ -101,7 +101,7 @@ export const BootProvidersHandle = async function (ctx: IBootContext, next: () =
  * @class BootConfigureLoadHandle
  * @extends {BootHandle}
  */
-export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
 
     const options = ctx.getOptions();
     const baseURL = ctx.baseURL;
@@ -136,9 +136,9 @@ export const BootConfigureLoadHandle = async function (ctx: IBootContext, next: 
     await next();
 };
 
-export class RegisterModuleScope extends BuildHandles<IAnnoationContext> implements IActionSetup {
+export class RegisterModuleScope extends BuildHandles<ApplicationContext> implements IActionSetup {
 
-    async execute(ctx: IBootContext, next?: () => Promise<void>): Promise<void> {
+    async execute(ctx: ApplicationContext, next?: () => Promise<void>): Promise<void> {
         if (!ctx.type) {
             return;
         }
@@ -205,14 +205,14 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
 };
 
 
-export const ResolveTypeHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.type) {
-        ctx.target = await ctx.injector.resolve(ctx.type, ctx.providers);
+        ctx.target = await ctx.resolve(ctx.type);
     }
     await next();
 };
 
-export const ResolveBootHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+export const ResolveBootHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.bootToken) {
         ctx.boot = ctx.bootstrap(ctx.bootToken);
         if (ctx.boot instanceof Runnable) {
@@ -225,9 +225,9 @@ export const ResolveBootHandle = async function (ctx: IBootContext, next: () => 
 /**
  * configure startup service scope.
  */
-export class StartupGlobalService extends BuildHandles<IBootContext> implements IActionSetup {
+export class StartupGlobalService extends BuildHandles<ApplicationContext> implements IActionSetup {
 
-    async execute(ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+    async execute(ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
         await super.execute(ctx);
         if (next) {
             await next();
@@ -244,9 +244,9 @@ export class StartupGlobalService extends BuildHandles<IBootContext> implements 
  * @param ctx boot context
  * @param next next step.
  */
-export const ConfigureServiceHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.getStarupTokens() || [];
-    const { injector: root, providers } = ctx;
+    const root = ctx;
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {

@@ -1,6 +1,6 @@
 import {
     IProvider, ProviderType, RegInMetadata, LoadType, IInjector, Abstract,
-    Token, Type, TypeReflect, IModuleLoader, InjectorImpl
+    Token, Type, TypeReflect, IModuleLoader, InjectorImpl, Registered
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
@@ -109,6 +109,8 @@ export interface IModuleExports extends IProvider {
 @Abstract()
 export abstract class ModuleContext<T = any> extends BootContext<T> {
 
+    abstract get regIn(): string;
+
     abstract get imports(): ModuleContext[];
 
     abstract get exports(): IModuleExports;
@@ -119,6 +121,17 @@ export abstract class ModuleContext<T = any> extends BootContext<T> {
     abstract get reflect(): ModuleReflect<T>;
 }
 
+
+/**
+ * module registered state.
+ */
+ export interface ModuleRegistered extends Registered {
+    moduleRef?: ModuleContext;
+}
+
+export interface ModuleOption<T = any> extends BootOption<T> {
+    regIn: string;
+}
 
 @Abstract()
 export abstract class ModuleFactory<T> {

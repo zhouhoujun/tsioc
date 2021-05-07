@@ -1,4 +1,4 @@
-import { IBootContext } from '../Context';
+import { ApplicationContext } from '../Context';
 import { ConnectionStatupService } from './startup';
 
 /**
@@ -6,7 +6,7 @@ import { ConnectionStatupService } from './startup';
  * @param ctx context.
  * @param next next dispatch
  */
-export const ConnectionsHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+export const ConnectionsHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     let servers = ctx.injector.getServices(ConnectionStatupService);
     if (servers && servers.length) {
         await Promise.all(servers.map(ser => {

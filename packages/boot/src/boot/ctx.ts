@@ -1,6 +1,6 @@
 import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, isPlainObject, ClassType, refl, Strategy, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { BOOTCONTEXT, CONFIGURATION, CTX_OPTIONS, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
+import { CONFIGURATION, CTX_OPTIONS, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { ModuleReflect } from '../reflect';

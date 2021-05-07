@@ -13,13 +13,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
         super(parent, strategy);
         this._type = target;
         this.reflect = refl.get(target);
-        this.initTarget();
     }
-
-    protected initTarget() {
-        this.regType(this._type);
-    }
-
 
     get app(): ApplicationContext {
         return this.getValue(ApplicationContext);
@@ -39,7 +33,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
 
     get instance(): T {
         if (!this._instance) {
-            this._instance = this.toInstance(this._type);
+            this._instance = this.resolve({ token: this.type, regify: true });
         }
         return this._instance;
     }
@@ -64,16 +58,16 @@ export class DefaultBootFactory<T> extends BootFactory<T> {
         return new DefaultBootContext(type, parent || this.root);
     }
 
-    protected viaOption(type: BootOption<T>, parent?: IInjector) {
-        const ctx = new DefaultBootContext(type.type, parent || type.injector || this.root);
-        if (type.providers) {
-            ctx.parse(type.providers);
+    protected viaOption(option: BootOption<T>, parent?: IInjector) {
+        const ctx = new DefaultBootContext(option.type, option.regIn ==='root'? this.root : (parent || option.injector || this.root));
+        if (option.providers) {
+            ctx.parse(option.providers);
         }
-        if (type.args) {
-            ctx.setValue(CTX_ARGS, type.args);
+        if (option.args) {
+            ctx.setValue(CTX_ARGS, option.args);
         }
-        if (type.baseURL) {
-            ctx.setValue(CTX_BASEURL, type.baseURL);
+        if (option.baseURL) {
+            ctx.setValue(CTX_BASEURL, option.baseURL);
         }
         return ctx;
     }

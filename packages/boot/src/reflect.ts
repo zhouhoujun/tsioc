@@ -113,7 +113,9 @@ export interface ModuleConfigure<T = any> extends IModuleMetadata<T> {
  * di module relfect.
  */
  export interface ModuleReflect<T = any> extends AnnotationReflect<T> {
- 
+
+    imports: Type[];
+    exports: Type[];
     /**
      *  components of current module.
      */
@@ -132,4 +134,5 @@ export interface ModuleConfigure<T = any> extends IModuleMetadata<T> {
     annotation?: ModuleConfigure<T>;
 
 }
+
 

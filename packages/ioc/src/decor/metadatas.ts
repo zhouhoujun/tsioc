@@ -238,7 +238,7 @@ export interface RegInMetadata {
     /**
      * reg the class type in root or not.
      */
-    regIn?: 'root';
+    regIn?: 'root' | string;
 }
 
 
