@@ -1,11 +1,10 @@
-import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, isPlainObject, ClassType, refl } from '@tsdi/ioc';
+import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, isPlainObject, ClassType, refl, Strategy, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { BOOTCONTEXT, CONFIGURATION, CTX_OPTIONS, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { AnnoationContext } from '../annotations/ctx';
-import { ModuleReflect } from '../modules/reflect';
-import { BootOption, BootstrapOption, IBootContext } from '../Context';
+import { ModuleReflect } from '../reflect';
+import { ApplicationContext, BootContext, BootOption, BootstrapOption } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
 import { IRunnable, Runnable } from '../runnable/Runnable';
@@ -18,8 +17,36 @@ import { IRunnable, Runnable } from '../runnable/Runnable';
  * @class BootContext
  * @extends {HandleContext}
  */
-@Injectable()
-export class BootContext<T extends BootOption = BootOption> extends AnnoationContext<T, ModuleReflect> implements IBootContext<T> {
+export class ApplicationContextImpl<T> extends BootContext<T> {
+
+    private _type: Type<T>;
+    readonly reflect: ModuleReflect<T>;
+    readonly instance: T;
+    constructor(target: Type<T> | ModuleReflect<T>, parent?: IInjector, strategy?: Strategy) {
+        super(parent, strategy);
+        if (isFunction(target)) {
+            this._type = target;
+            this.reflect = refl.get(target);
+        } else {
+            this._type = target.type as Type<T>;
+            this.reflect = target;
+        }
+
+    }
+
+
+
+
+    /**
+     * module type.
+     */
+    get type(): Type<T> {
+        return this._type;
+    }
+
+    get injector(): IInjector {
+        return this;
+    }
 
 
     setInjector(injector: IInjector) {
@@ -176,6 +203,11 @@ export class BootContext<T extends BootOption = BootOption> extends AnnoationCon
         }
         return super.setOptions(options);
     }
+}
+
+
+export class BootContextFactory {
+
 }
 
 /**

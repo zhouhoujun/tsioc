@@ -3,11 +3,9 @@ import {
     lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider
 } from '@tsdi/ioc';
 import { IStartupService, STARTUPS } from './services/StartupService';
-import { ModuleConfigure } from './modules/configure';
-import { ModuleReflect } from './modules/reflect';
-import { DefaultModuleRef } from './modules/injector';
+import { ModuleReflect, ModuleConfigure } from './reflect';
 import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from './middlewares/handle';
-import { IModuleInjector, ModuleRef, ModuleRegistered } from './modules/ref';
+import { ModuleRef, ModuleRegistered } from './modules/ref';
 import { ROOT_QUEUE } from './middlewares/root';
 import { FactoryRoute, Route } from './middlewares/route';
 import { RootRouter, Router } from './middlewares/router';
@@ -202,7 +200,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
         design: {
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (ctx.reflect.annoType === 'module') {
-                    ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector as IModuleInjector, ctx.regIn || ctx.reflect.annotation.regIn);
+                    ctx.moduleRef = new DefaultModuleRef(ctx.type, ctx.injector, ctx.regIn || ctx.reflect.annotation.regIn);
                     (ctx.state as ModuleRegistered).moduleRef = ctx.moduleRef;
                     ctx.injector = ctx.moduleRef.injector;
                 }

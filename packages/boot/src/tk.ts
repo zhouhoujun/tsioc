@@ -1,5 +1,4 @@
 import { tokenId, Token } from '@tsdi/ioc';
-import { IBootContext } from './Context';
 import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { MessageContext } from './middlewares/ctx';
@@ -11,10 +10,12 @@ import { IBootApplication } from './IBootApplication';
  */
  export const APPLICATION: Token<IBootApplication> = tokenId<IBootApplication>('APPLICATION');
 
-/**
- *  current application boot context token.
+
+ /**
+ * context options.
  */
-export const BOOTCONTEXT: Token<IBootContext> = tokenId<IBootContext>('BOOT_CONTEXT');
+export const CTX_ARGS = tokenId<string[]>('CTX_ARGS');
+
 
 /**
  * config token.

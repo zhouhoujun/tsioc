@@ -121,7 +121,7 @@ export interface DecorContext extends DecorDefine {
 /**
  * type reflect metadata.
  */
-export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadata {
+export interface TypeReflect<T = any> extends TypeMetadata, PatternMetadata, RegInMetadata {
     /**
      * ioc ext or not.
      */
@@ -129,7 +129,7 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
     /**
      * class type.
      */
-    readonly type: ClassType;
+    readonly type: ClassType<T>;
     /**
      * class define.
      */
@@ -152,21 +152,18 @@ export interface TypeReflect extends TypeMetadata, PatternMetadata, RegInMetadat
      * @type {Map<string, PropertyMetadata[]>}
      */
     propProviders: Map<string, PropertyMetadata[]>;
-
     /**
      * method params.
      *
      * @type {ObjectMap<IParameter[]>}
      */
     methodParams: Map<string, ParameterMetadata[]>;
-
     /**
      * method providers.
      *
      * @type {ObjectMap<ProviderType[]>}
      */
     methodExtProviders: Map<string, ProviderType[]>;
-
     /**
      * auto run defines.
      */

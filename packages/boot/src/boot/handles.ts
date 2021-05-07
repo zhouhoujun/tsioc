@@ -4,7 +4,7 @@ import { IAnnoationContext, IBootContext } from '../Context';
 import { CONFIGURATION, MODULE_STARTUPS } from '../tk';
 import { ConfigureRegister } from '../configure/register';
 import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
-import { AnnotationReflect } from '../annotations/reflect';
+import { AnnotationReflect } from '../reflect';
 import { Runnable } from '../runnable/Runnable';
 
 

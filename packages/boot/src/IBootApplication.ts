@@ -1,5 +1,5 @@
-import { ClassType, IContainer, Destroyable, IInjector, LoadType } from '@tsdi/ioc';
-import { IBootContext, BootOption } from './Context';
+import { ClassType, IContainer, Destroyable, IInjector, Type } from '@tsdi/ioc';
+import { ApplicationContext, ApplicationOption, BootOption } from './Context';
 
 
 /**
@@ -10,30 +10,28 @@ import { IBootContext, BootOption } from './Context';
  * @extends {ContextInit<T>}
  * @template T
  */
-export interface IBootApplication<T extends IBootContext = IBootContext> extends Destroyable {
+export interface IBootApplication<T = any> extends Destroyable {
 
     /**
      * boot target.
      *
-     * @type {(ClassType | BootOption | T)}
+     * @type {(Type<T> | ApplicationOption<T>)}
      */
-    target?: ClassType | BootOption | T;
+    target?: Type<T> | ApplicationOption<T>;
 
     /**
      * get boot application context.
      *
      * @returns {T}
      */
-    getContext(): T;
+    getContext(): ApplicationContext<T>;
 
     /**
      * run application
      *
-     * @param {(LoadType[] | LoadType | string)} [deps]
-     * @param {...string[]} args
      * @returns {Promise<T>}
      */
-    run(deps?: LoadType[] | LoadType | string, ...args: string[]): Promise<T>;
+    run(): Promise<ApplicationContext<T>>;
 
     /**
      * get container of application.

@@ -1,5 +1,5 @@
 import { lang, Type, Abstract, Destroyable, Inject, TARGET } from '@tsdi/ioc';
-import { IBootContext } from '../Context';
+import { BootContext } from '../Context';
 
 
 /**
@@ -18,7 +18,7 @@ export interface IRunnable<T = any> extends Destroyable {
      * @param {IBootContext} [ctx]
      * @returns {(Promise<void>)}
      */
-    configureService?(ctx: IBootContext): Promise<void>;
+    configureService?(ctx: BootContext<T>): Promise<void>;
 
     /**
      * get runable instance.
@@ -62,10 +62,10 @@ export abstract class Runnable<T = any> implements IRunnable {
     /**
      * configure startup service.
      *
-     * @param {IBootContext} [ctx]
+     * @param {BootContext<T>} [ctx]
      * @returns {(Promise<void>)}
      */
-    abstract configureService(ctx: IBootContext): Promise<void>;
+    abstract configureService(ctx: BootContext<T>): Promise<void>;
 
     /**
      * has destoryed or not.
