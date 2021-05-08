@@ -1,6 +1,6 @@
 import {
     IProvider, ProviderType, RegInMetadata, LoadType, IInjector, Abstract,
-    Token, Type, TypeReflect, IModuleLoader, InjectorImpl, Registered
+    Token, Type, IModuleLoader, Registered
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
@@ -61,11 +61,9 @@ export interface BootOption<T = any> extends ContextOption<T> {
  * boot context.
  */
 @Abstract()
-export abstract class BootContext<T = any> extends InjectorImpl {
+export abstract class BootContext<T = any> {
 
-    get injector(): IInjector {
-        return this;
-    }
+    abstract get injector(): IInjector;
     /**
      * module type.
      */
@@ -80,16 +78,34 @@ export abstract class BootContext<T = any> extends InjectorImpl {
     * get target reflect.
     */
     abstract get reflect(): AnnotationReflect<T>;
+    /**
+       * Destroys the component instance and all of the data structures associated with it.
+       */
+    abstract destroy(): void;
 
+    /**
+     * A lifecycle hook that provides additional developer-defined cleanup
+     * functionality for the component.
+     * @param callback A handler function that cleans up developer-defined data
+     * associated with this component. Called when the `destroy()` method is invoked.
+     */
+    abstract onDestroy(callback: Function): void;
 
 }
 
 @Abstract()
-export abstract class BootFactory<T> {
-    abstract create(type: Type<T> | BootOption<T>, parent?: IInjector): BootContext<T>;
+export abstract class BootFactory {
+    abstract create<T>(type: Type<T> | BootOption<T>, parent?: IInjector): BootContext<T>;
 }
 
 
+/**
+ * module exports provider.
+ */
+ export interface IModuleInjector extends IInjector {
+    readonly imports: ModuleContext[];
+    readonly exports: IModuleExports;
+}
 
 /**
  * module exports provider.
@@ -111,9 +127,7 @@ export abstract class ModuleContext<T = any> extends BootContext<T> {
 
     abstract get regIn(): string;
 
-    abstract get imports(): ModuleContext[];
-
-    abstract get exports(): IModuleExports;
+    abstract get injector(): IModuleInjector;
 
     /**
     * get target reflect.
@@ -125,7 +139,7 @@ export abstract class ModuleContext<T = any> extends BootContext<T> {
 /**
  * module registered state.
  */
- export interface ModuleRegistered extends Registered {
+export interface ModuleRegistered extends Registered {
     moduleRef?: ModuleContext;
 }
 
@@ -134,14 +148,14 @@ export interface ModuleOption<T = any> extends BootOption<T> {
 }
 
 @Abstract()
-export abstract class ModuleFactory<T> {
-    abstract create(type: Type<T> | BootOption<T>, parent?: IInjector): ModuleContext<T>;
+export abstract class ModuleFactory {
+    abstract create<T>(type: Type<T> | BootOption<T>, parent?: IInjector): ModuleContext<T>;
 }
 
 /**
  * bootstrap option.
  */
-export interface BootstrapOption {
+export interface BootstrapOption extends ProdverOption {
     injector?: IInjector;
     args?: string[];
 }
@@ -251,6 +265,6 @@ export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
 
 
 @Abstract()
-export abstract class ApplicationFactory<T> {
-    abstract create(type: Type<T> | ApplicationOption<T>, parent?: IInjector): ApplicationContext<T>;
+export abstract class ApplicationFactory {
+    abstract create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): ApplicationContext<T>;
 }

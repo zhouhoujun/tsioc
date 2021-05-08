@@ -1,4 +1,4 @@
-import { Injector, InjectorImpl, refl, Type } from '@tsdi/ioc';
+import { Injector, DefaultInjector, refl, Type } from '@tsdi/ioc';
 import { ChangeDetectorRef } from '../chage/detector';
 import { ComponentReflect } from '../reflect';
 import { ComponentRef } from '../refs/component';
@@ -30,7 +30,7 @@ export class VComponentRef<T> extends ComponentRef<T> {
   get injector(): Injector {
     if (!this._injector) {
       const tyInj = this._rootLView[INJECTOR].state().getInjector(this.componentType);
-      this._injector = new InjectorImpl(tyInj);
+      this._injector = new DefaultInjector(tyInj);
       const providers = refl.get<ComponentReflect>(this.componentType).extProviders;
       if (providers && providers.length) {
         this._injector.parse(providers);

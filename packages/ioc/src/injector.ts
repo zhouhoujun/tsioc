@@ -514,7 +514,7 @@ export function isProvider(target: any): target is Provider {
  */
 export function createProvider(parent: IProvider, providers?: ProviderType[], strategy?: Strategy) {
     const pdr = new Provider(parent, strategy);
-    if(providers && providers.length) return pdr.parse(providers);
+    if (providers && providers.length) pdr.parse(providers);
     return pdr;
 }
 
@@ -640,8 +640,8 @@ export function getStateValue<T>(injector: IProvider, pd: ProviderState<T>, prov
 function getFactoryProviderValue(injector: IProvider, pd: FactoryProvider, provider: IProvider) {
     let args = pd.deps?.map(d => {
         if (isToken(d)) {
-            return injector.toInstance(d, provider) ?? (isString(d)? d : null);
-        }  else {
+            return injector.toInstance(d, provider) ?? (isString(d) ? d : null);
+        } else {
             return d;
         }
     }) ?? [];

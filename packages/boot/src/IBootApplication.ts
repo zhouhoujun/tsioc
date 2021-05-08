@@ -1,4 +1,4 @@
-import { ClassType, IContainer, Destroyable, IInjector, Type } from '@tsdi/ioc';
+import { IContainer, Destroyable, IInjector, Type } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationOption, BootOption } from './Context';
 
 
@@ -49,6 +49,6 @@ export interface IBootApplication<T = any> extends Destroyable {
      * bootstrap.
      * @param target 
      */
-    bootstrap<T>(target: ClassType<T> | BootOption<T>): Promise<any>;
+    bootstrap<T>(target: Type<T> | BootOption<T>): Promise<any>;
 
 }

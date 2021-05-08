@@ -18,9 +18,9 @@ import { Provider, Injector, getStateValue } from './injector';
 import { registerCores } from './utils/regs';
 
 /**
- * injector implantment.
+ * default injector implantment.
  */
-export class InjectorImpl extends Injector {
+export class DefaultInjector extends Injector {
 
     constructor(parent?: IInjector, strategy?: Strategy) {
         super(parent, strategy);
@@ -55,7 +55,7 @@ export class InjectorImpl extends Injector {
     load(...modules: LoadType[]): Promise<Type[]>;
     async load(...args: any[]): Promise<Type[]> {
         let modules: LoadType[];
-        if(args.length ===1 && isArray(args[0])){
+        if (args.length === 1 && isArray(args[0])) {
             modules = args[0];
         } else {
             modules = args;
@@ -87,8 +87,10 @@ export class InjectorImpl extends Injector {
  * @param strategy
  * @returns
  */
-export function createInjector(parent: IInjector, strategy?: Strategy) {
-    return new InjectorImpl(parent, strategy);
+export function createInjector(parent: IInjector, providers?: ProviderType[], strategy?: Strategy) {
+    const inj = new DefaultInjector(parent, strategy);
+    if (providers && providers.length) inj.parse(providers);
+    return inj;
 }
 
 export const NULL_PROVIDER = new Provider(null);
@@ -101,7 +103,7 @@ export const NULL_PROVIDER = new Provider(null);
  * @class Container
  * @implements {IContainer}
  */
-export class Container extends InjectorImpl implements IContainer {
+export class Container extends DefaultInjector implements IContainer {
 
     private _state: RegisteredState;
     private _action: IActionProvider;
@@ -134,7 +136,7 @@ export class Container extends InjectorImpl implements IContainer {
         return this._action;
     }
 
-    onFinally(callback: ()=> void) {
+    onFinally(callback: () => void) {
         this._finals.push(callback);
     }
 
@@ -183,13 +185,13 @@ class RegisteredStateImpl implements RegisteredState {
         this.decors = new Map();
         this.states = new Map();
         this.container.onFinally(() => {
-            this.states.forEach(v=> {
-                if(!v) return;
+            this.states.forEach(v => {
+                if (!v) return;
                 v.providers?.destroy();
                 v.injector?.destroy();
                 cleanObj(v);
             });
-            this.decors.forEach(v=> {
+            this.decors.forEach(v => {
                 v?.destroy();
             });
             this.states.clear();
@@ -250,8 +252,8 @@ class RegisteredStateImpl implements RegisteredState {
         if (state) {
             state.providers?.destroy();
             const injector = state.injector;
-            if(state.provides?.length && injector){
-                state.provides.forEach(p=> state.injector.unregister(p));
+            if (state.provides?.length && injector) {
+                state.provides.forEach(p => state.injector.unregister(p));
             }
             cleanObj(state);
         }
@@ -291,10 +293,10 @@ export function isContainer(target: any): target is Container {
  */
 class ActionProvider extends Provider implements IActionProvider {
 
-    protected init(parent: Container){
+    protected init(parent: Container) {
         this._container = parent;
         this.parent = null;
-        parent.onFinally(()=> this.destroy());
+        parent.onFinally(() => this.destroy());
     }
 
     regAction(...types: Type<Action>[]): this {

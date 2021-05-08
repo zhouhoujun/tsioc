@@ -1,11 +1,10 @@
-import { CTX_BASEURL } from '@tsdi/activities';
-import { IInjector, isFunction, refl, Strategy, Type } from '@tsdi/ioc';
+import { IInjector, DefaultInjector, isFunction, refl, Strategy, Type } from '@tsdi/ioc';
 import { ApplicationContext, BootContext, BootFactory, BootOption } from '../Context';
 import { AnnotationReflect } from '../reflect';
-import { CTX_ARGS } from '../tk';
+import { CTX_ARGS, PROCESS_ROOT } from '../tk';
 
 
-export class DefaultBootContext<T> extends BootContext<T> {
+export class DefaultBootContext<T> extends DefaultInjector implements BootContext<T> {
     private _type: Type<T>;
     readonly reflect: AnnotationReflect<T>;
     private _instance: T;
@@ -18,7 +17,6 @@ export class DefaultBootContext<T> extends BootContext<T> {
     get app(): ApplicationContext {
         return this.getValue(ApplicationContext);
     }
-
 
     /**
      * module type.
@@ -41,12 +39,11 @@ export class DefaultBootContext<T> extends BootContext<T> {
 }
 
 
-export class DefaultBootFactory<T> extends BootFactory<T> {
+export class DefaultBootFactory implements BootFactory {
     constructor(private root: IInjector) {
-        super();
     }
 
-    create(type: Type<T> | BootOption<T>, parent?: IInjector): BootContext<T> {
+    create<T>(type: Type<T> | BootOption<T>, parent?: IInjector): BootContext<T> {
         if (isFunction(type)) {
             return this.viaType(type, parent);
         } else {
@@ -54,11 +51,11 @@ export class DefaultBootFactory<T> extends BootFactory<T> {
         }
     }
 
-    protected viaType(type: Type<T>, parent?: IInjector) {
+    protected viaType<T>(type: Type<T>, parent?: IInjector) {
         return new DefaultBootContext(type, parent || this.root);
     }
 
-    protected viaOption(option: BootOption<T>, parent?: IInjector) {
+    protected viaOption<T>(option: BootOption<T>, parent?: IInjector) {
         const ctx = new DefaultBootContext(option.type, option.regIn ==='root'? this.root : (parent || option.injector || this.root));
         if (option.providers) {
             ctx.parse(option.providers);
@@ -67,7 +64,7 @@ export class DefaultBootFactory<T> extends BootFactory<T> {
             ctx.setValue(CTX_ARGS, option.args);
         }
         if (option.baseURL) {
-            ctx.setValue(CTX_BASEURL, option.baseURL);
+            ctx.setValue(PROCESS_ROOT, option.baseURL);
         }
         return ctx;
     }

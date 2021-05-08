@@ -1,4 +1,4 @@
-import { Injectable, Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, isPlainObject, ClassType, refl, Strategy, isFunction } from '@tsdi/ioc';
+import { Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, isPlainObject, ClassType, refl, Strategy, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, CTX_OPTIONS, MODULE_STARTUPS, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
@@ -8,6 +8,8 @@ import { ApplicationContext, BootContext, BootOption, BootstrapOption } from '..
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
 import { IRunnable, Runnable } from '../runnable/Runnable';
+import { DefaultModuleContext } from '../modules/ctx';
+import { ModuleStrategy } from '../modules/strategy';
 
 
 /**
@@ -17,36 +19,15 @@ import { IRunnable, Runnable } from '../runnable/Runnable';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class ApplicationContextImpl<T> extends BootContext<T> {
+export class DefaultApplicationContext<T> extends DefaultModuleContext<T> implements ApplicationContext<T> {
 
-    private _type: Type<T>;
+
     readonly reflect: ModuleReflect<T>;
-    readonly instance: T;
-    constructor(target: Type<T> | ModuleReflect<T>, parent?: IInjector, strategy?: Strategy) {
-        super(parent, strategy);
-        if (isFunction(target)) {
-            this._type = target;
-            this.reflect = refl.get(target);
-        } else {
-            this._type = target.type as Type<T>;
-            this.reflect = target;
-        }
-
+    constructor(target: Type<T>, parent?: IInjector, strategy?: ModuleStrategy) {
+        super(target, parent, '', strategy);
     }
 
 
-
-
-    /**
-     * module type.
-     */
-    get type(): Type<T> {
-        return this._type;
-    }
-
-    get injector(): IInjector {
-        return this;
-    }
 
 
     setInjector(injector: IInjector) {

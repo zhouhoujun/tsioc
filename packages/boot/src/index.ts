@@ -4,7 +4,6 @@ export * from './services/BaseTypeParser';
 export * from './services/StartupService';
 
 // annotations
-export * from './annotations/reflect';
 export * from './configure/config';
 export * from './configure/manager';
 export * from './configure/register';
@@ -16,13 +15,10 @@ export * from './runnable/Runnable';
 export * from './decorators';
 
 export * from './Context';
-export * from './annotations/ctx';
 
 // modules
-export * from './modules/reflect';
-export * from './modules/ref';
-export * from './modules/injector';
-export * from './modules/configure';
+export * from './modules/strategy';
+export * from './modules/ctx';
 
 // boots
 export * from './boot/ctx';
@@ -32,7 +28,6 @@ export * from './boot/lifescope';
 export * from './IBootApplication';
 export * from './BootApplication';
 export * from './tk';
-export * from './BootModule';
 
 // middlewares
 export * from './middlewares';

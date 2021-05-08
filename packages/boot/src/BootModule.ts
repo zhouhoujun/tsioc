@@ -1,7 +1,7 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
-import { BootLifeScope, RunnableBuildLifeScope, StartupServiceScope } from './boot/lifescope';
+import { BootLifeScope, StartupServiceScope } from './boot/lifescope';
 
 
 /**
@@ -22,7 +22,6 @@ export class BootModule {
 
         container.action().regAction(
             StartupServiceScope,
-            RunnableBuildLifeScope,
             BootLifeScope);
 
         container.use(ConfigureMerger, ConfigureManager, BaseTypeParser);
