@@ -1,7 +1,7 @@
 import { IInjector, isFunction, Provider, Type } from '@tsdi/ioc';
-import { IModuleExports, IModuleInjector, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
+import { BootOption, IModuleExports, IModuleInjector, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
-import { DefaultBootContext } from '../runnable/ctx';
+import { DefaultBootContext, DefaultBootFactory } from '../runnable/ctx';
 import { CTX_ARGS, PROCESS_ROOT } from '../tk';
 import { ModuleStrategy } from './strategy';
 
@@ -28,6 +28,10 @@ export class DefaultModuleContext<T> extends DefaultBootContext<T> implements Mo
     }
 
     get injector(): IModuleInjector {
+        return this;
+    }
+
+    get moduleRef() {
         return this;
     }
 
@@ -110,34 +114,8 @@ export class ModuleProvider extends Provider implements IModuleExports {
 }
 
 
-export class DefaultModuleFactory implements ModuleFactory {
-
-    constructor(private root: IInjector) {
-    }
-
-    create<T>(type: Type<T> | ModuleOption<T>, parent?: IInjector): ModuleContext<T> {
-        if (isFunction(type)) {
-            return this.viaType(type, parent);
-        } else {
-            return this.viaOption(type, parent);
-        }
-    }
-
-    protected viaType<T>(type: Type<T>, parent?: IInjector) {
-        return new DefaultModuleContext(type, parent || this.root);
-    }
-
-    protected viaOption<T>(option: ModuleOption<T>, parent?: IInjector) {
-        const ctx = new DefaultModuleContext(option.type, option.regIn === 'root' ? this.root : (parent || option.injector || this.root));
-        if (option.providers) {
-            ctx.parse(option.providers);
-        }
-        if (option.args) {
-            ctx.setValue(CTX_ARGS, option.args);
-        }
-        if (option.baseURL) {
-            ctx.setValue(PROCESS_ROOT, option.baseURL);
-        }
-        return ctx;
+export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT extends BootOption = ModuleOption> extends DefaultBootFactory<CT, OPT> implements ModuleFactory {
+    constructor(root: IInjector, ctor: Type = DefaultModuleContext) {
+        super(root, ctor)
     }
 }

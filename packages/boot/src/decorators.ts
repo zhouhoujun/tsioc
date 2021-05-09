@@ -2,14 +2,14 @@ import {
     DecoratorOption, isUndefined, ClassType, TypeMetadata, PatternMetadata, createDecorator, ROOT_INJECTOR,
     lang, Type, isArray, isString, DesignContext, ClassMethodDecorator, ProviderType, IProvider
 } from '@tsdi/ioc';
-import { IStartupService, STARTUPS } from './services/StartupService';
+import { IStartupService } from './services/StartupService';
 import { ModuleReflect, ModuleConfigure } from './reflect';
 import { Middleware, Middlewares, MiddlewareType, RouteReflect, ROUTE_PREFIX, ROUTE_PROTOCOL, ROUTE_URL } from './middlewares/handle';
 import { ROOT_QUEUE } from './middlewares/root';
 import { FactoryRoute, Route } from './middlewares/route';
 import { RootRouter, Router } from './middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
-import { ModuleContext, ModuleFactory, ModuleRegistered } from './Context';
+import { ApplicationContext, IModuleInjector, ModuleContext, ModuleFactory, ModuleRegistered } from './Context';
 
 
 /**
@@ -28,15 +28,15 @@ export interface BootMetadata extends TypeMetadata, PatternMetadata {
     /**
      * the startup service dependencies.
      */
-    deps?: ClassType<IStartupService>[];
+    deps?: Type<IStartupService>[];
     /**
      * this service startup before the service, or at first
      */
-    before?: ClassType<IStartupService> | 'all';
+    before?: Type<IStartupService> | 'all';
     /**
      * this service startup after the service, or last.
      */
-    after?: ClassType<IStartupService> | 'all';
+    after?: Type<IStartupService> | 'all';
 }
 
 /**
@@ -88,32 +88,43 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const injector = ctx.injector.getValue(ROOT_INJECTOR);
-                let startups = injector.get(STARTUPS) || [];
+                const appRef = ctx.injector.getValue(ApplicationContext);
+                const boots = appRef.boots;
                 const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
+
                 let idx = -1;
                 if (meta.before) {
-                    idx = isString(meta.before) ? 0 : startups.indexOf(meta.before);
+                    idx = isString(meta.before) ? 0 : boots.indexOf(meta.before);
                 } else if (meta.after) {
-                    idx = isString(meta.after) ? -1 : startups.indexOf(meta.after) + 1;
+                    idx = isString(meta.after) ? -1 : boots.indexOf(meta.after) + 1;
                 }
                 if (idx >= 0) {
                     if (meta.deps) {
-                        startups = [...startups.slice(0, idx), ...meta.deps, ctx.type, ...startups.slice(idx).filter(s => meta.deps.indexOf(s) < 0)];
+                        const news = [];
+                        const moved = [];
+                        meta.deps.forEach(d => {
+                            const depidx = boots.indexOf(d);
+                            if (depidx < 0) {
+                                news.push(d);
+                            } else if (depidx >= idx) {
+                                moved.push(d);
+                                boots.splice(depidx, 1);
+                            }
+                        });
+                        boots.splice(idx, 0, ...news, ...moved, ctx.type);
                     } else {
-                        startups.splice(idx, 0, ctx.type);
+                        boots.splice(idx, 0, ctx.type);
                     }
                 } else {
                     if (meta.deps) {
                         meta.deps.forEach(d => {
-                            if (startups.indexOf(d) < 0) {
-                                startups.push(d);
+                            if (boots.indexOf(d) < 0) {
+                                boots.push(d);
                             }
                         });
                     }
-                    startups.push(ctx.type);
+                    boots.push(ctx.type);
                 }
-                injector.setValue(STARTUPS, startups);
                 return next();
             }
         },
@@ -204,13 +215,20 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
         design: {
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (ctx.reflect.annoType === 'module') {
-                    const { injector, type, regIn }= ctx;
-                    ctx.moduleRef = ctx.injector = ctx.injector.get(ModuleFactory).create({
-                        type,
-                        injector,
-                        regIn
-                    });
-                    (ctx.state as ModuleRegistered).moduleRef = ctx.moduleRef;
+                    const { injector, type, regIn } = ctx;
+                    let moduleRef: ModuleContext;
+                    if ((injector as IModuleInjector).type === type) {
+                        moduleRef = (injector as IModuleInjector).moduleRef;
+                    } else {
+                        moduleRef = ctx.injector.get(ModuleFactory).create({
+                            type,
+                            injector,
+                            regIn
+                        });
+                        ctx.injector = ctx.moduleRef.injector;
+                        ctx.state.injector = ctx.injector;
+                    }
+                    (ctx.state as ModuleRegistered).moduleRef = moduleRef;
                 }
                 next();
             },

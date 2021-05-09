@@ -72,11 +72,6 @@ export const TYPE_PARSER: Token<IBaseTypeParser> = tokenId<IBaseTypeParser>('TYP
 export const BaseTypeParserToken = TYPE_PARSER;
 
 /**
- * application statup service
- */
-export const MODULE_STARTUPS = tokenId<Token[]>('MODULE_STARTUPS');
-
-/**
  * context options.
  */
 export const CTX_OPTIONS = tokenId<any>('CTX_OPTIONS');

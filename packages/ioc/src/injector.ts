@@ -622,7 +622,7 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getStateValue<T>(injector: IProvider, pd: ProviderState<T>, provider: IProvider): T {
+export function getStateValue<T>(injector: IProvider, pd: ProviderState<T>, provider?: IProvider): T {
     if (!pd) return null;
     if (!isNil(pd.useValue)) return pd.useValue;
     if (pd.expires) {

@@ -1,16 +1,11 @@
-import { Abstract, Destroyable, tokenId, Token, ClassType } from '@tsdi/ioc';
-import { IBootContext } from '../Context';
+import { Abstract, Destroyable } from '@tsdi/ioc';
+import { ApplicationContext } from '../Context';
 
-
-/**
- * startups token.
- */
-export const STARTUPS: Token<ClassType<IStartupService>[]> = tokenId<ClassType<IStartupService>[]>('STARTUPS');
 
 /**
  * startup and configure services for application.
  */
-export interface IStartupService<T extends IBootContext = IBootContext> extends Destroyable {
+export interface IStartupService<T extends ApplicationContext = ApplicationContext> extends Destroyable {
     /**
      * config service of application.
      *
@@ -29,7 +24,7 @@ export interface IStartupService<T extends IBootContext = IBootContext> extends 
  * @template T
  */
 @Abstract()
-export abstract class StartupService<T extends IBootContext = IBootContext> implements IStartupService<T> {
+export abstract class StartupService<T extends ApplicationContext = ApplicationContext> implements IStartupService<T> {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];

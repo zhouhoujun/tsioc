@@ -39,34 +39,39 @@ export class DefaultBootContext<T> extends DefaultInjector implements BootContex
 }
 
 
-export class DefaultBootFactory implements BootFactory {
-    constructor(private root: IInjector) {
+export class DefaultBootFactory<CT extends BootContext, OPT extends BootOption> implements BootFactory {
+    constructor(private root: IInjector, public ctor: Type = DefaultBootContext) {
     }
 
-    create<T>(type: Type<T> | BootOption<T>, parent?: IInjector): BootContext<T> {
+    create(type: Type | OPT, parent?: IInjector): CT {
         if (isFunction(type)) {
-            return this.viaType(type, parent);
+            return this.createInstance(type, parent);
         } else {
-            return this.viaOption(type, parent);
+            return this.createByOption(type, parent);
         }
     }
 
-    protected viaType<T>(type: Type<T>, parent?: IInjector) {
-        return new DefaultBootContext(type, parent || this.root);
+
+    protected createByOption(option: OPT, parent?: IInjector) {
+        const ctx = this.createInstance(option.type, option.regIn === 'root' ? this.root : (parent || option.injector || this.root));
+        this.initOption(ctx, option);
+        return ctx;
     }
 
-    protected viaOption<T>(option: BootOption<T>, parent?: IInjector) {
-        const ctx = new DefaultBootContext(option.type, option.regIn ==='root'? this.root : (parent || option.injector || this.root));
+    protected initOption(ctx: CT, option: OPT) {
         if (option.providers) {
-            ctx.parse(option.providers);
+            ctx.injector.parse(option.providers);
         }
         if (option.args) {
-            ctx.setValue(CTX_ARGS, option.args);
+            ctx.injector.setValue(CTX_ARGS, option.args);
         }
         if (option.baseURL) {
-            ctx.setValue(PROCESS_ROOT, option.baseURL);
+            ctx.injector.setValue(PROCESS_ROOT, option.baseURL);
         }
-        return ctx;
+    }
+
+    protected createInstance(type: Type, parent?: IInjector) {
+        return new this.ctor(type, parent || this.root);
     }
 
 }

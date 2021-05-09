@@ -102,7 +102,12 @@ export abstract class BootFactory {
 /**
  * module exports provider.
  */
- export interface IModuleInjector extends IInjector {
+export interface IModuleInjector extends IInjector {
+    /**
+     * module type.
+     */
+    readonly type: Type;
+    readonly moduleRef: ModuleContext;
     readonly imports: ModuleContext[];
     readonly exports: IModuleExports;
 }
@@ -254,7 +259,11 @@ export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
     /**
      * get statup service tokens.
      */
-    abstract getStarupTokens(): Token[];
+    abstract get startups(): Token[];
+    /**
+     * registered boot service.
+     */
+    abstract get boots(): Type[];
     /**
      * bootstrap type
      * @param type 

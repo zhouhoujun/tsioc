@@ -1,9 +1,9 @@
 import { lang, isPrimitiveType, IActionSetup, ClassType, refl, isFunction, getStateValue, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
 import { ApplicationContext, BootContext } from '../Context';
-import { CONFIGURATION, MODULE_STARTUPS } from '../tk';
+import { CONFIGURATION } from '../tk';
 import { ConfigureRegister } from '../configure/register';
-import { StartupService, STARTUPS, IStartupService } from '../services/StartupService';
+import { StartupService, IStartupService } from '../services/StartupService';
 import { AnnotationReflect } from '../reflect';
 import { Runnable } from '../runnable/Runnable';
 
@@ -130,7 +130,6 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
     }
 
     config = { ...config, ...ctx.reflect.annotation };
-    ctx.setValue(CONFIGURATION, config);
     injector.setValue(CONFIGURATION, config);
 
     await next();
@@ -146,7 +145,7 @@ export class RegisterModuleScope extends BuildHandles<ApplicationContext> implem
             return;
         }
         // has module register or not.
-        if (!ctx.state().isRegistered(ctx.type)) {
+        if (!ctx.injector.state().isRegistered(ctx.type)) {
             await super.execute(ctx);
         }
         if (next) {
@@ -184,9 +183,10 @@ export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: 
  *
  * @export
  */
-export const BootConfigureRegisterHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
+export const BootConfigureRegisterHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const config = ctx.getConfiguration();
-    const container = ctx.getContainer();
+    const injector = ctx.injector;
+    const container = injector.getContainer();
     if (config.logConfig && !container.has(LogConfigureToken)) {
         container.setValue(LogConfigureToken, config.logConfig);
     }
@@ -196,7 +196,7 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
             .register(DebugLogAspect);
     }
 
-    const regs = ctx.injector.getServices(ConfigureRegister);
+    const regs = injector.getServices(ConfigureRegister);
     if (regs && regs.length) {
         await Promise.all(regs.map(reg => reg.register(config, ctx)));
 
@@ -205,12 +205,12 @@ export const BootConfigureRegisterHandle = async function (ctx: IBootContext, ne
 };
 
 
-export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.type) {
-        ctx.target = await ctx.resolve(ctx.type);
-    }
-    await next();
-};
+// export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
+//     if (ctx.type) {
+//         ctx.target = await ctx.resolve(ctx.type);
+//     }
+//     await next();
+// };
 
 export const ResolveBootHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
     if (ctx.bootToken) {
@@ -245,8 +245,8 @@ export class StartupGlobalService extends BuildHandles<ApplicationContext> imple
  * @param next next step.
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    const startups = ctx.getStarupTokens() || [];
-    const root = ctx;
+    const startups = ctx.startups;
+    const root = ctx.injector;
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
@@ -260,9 +260,9 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
         }));
     }
 
-    const starts = root.get(STARTUPS) || [];
-    if (starts.length) {
-        await lang.step(starts.map(tyser => () => {
+    const boots = ctx.boots;
+    if (boots.length) {
+        await lang.step(boots.map(tyser => () => {
             const ser = root.get(tyser) ?? regedState.getInstance(tyser);
             ctx.onDestroy(() => ser?.destroy());
             startups.push(tyser);
@@ -274,7 +274,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     const prds = root.getServiceProviders(StartupService);
     prds.iterator((pdr, tk, pdrs) => {
         if (startups.indexOf(tk) < 0) {
-            sers.push(getStateValue(pdrs, pdr, providers));
+            sers.push(getStateValue(pdrs, pdr, root));
         }
     });
     if (sers && sers.length) {
@@ -284,7 +284,5 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
             return ser.configureService(ctx);
         }));
     }
-
-    ctx.setValue(MODULE_STARTUPS, startups);
     await next();
 };
