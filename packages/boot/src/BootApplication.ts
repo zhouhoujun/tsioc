@@ -5,7 +5,6 @@ import { APPLICATION, PROCESS_EXIT } from './tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootFactory, BootOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope, StartupServiceScope } from './boot/lifescope';
-import { createContext } from './boot/ctx';
 import { BootModule } from './BootModule';
 
 
@@ -96,11 +95,9 @@ export class BootApplication<T> implements IBootApplication<T> {
         if (!this.context) {
             const root = this.getRootInjector();
             root.register(MiddlewareModule);
-            if(!isFunction(this.target)){
+            if (!isFunction(this.target)) {
                 await root.load(this.target.deps);
             }
-            this.createRootContext(root);
-            this.onContextInit();
         }
         return this.context;
     }
@@ -112,10 +109,17 @@ export class BootApplication<T> implements IBootApplication<T> {
      * @returns {Promise<T>}
      */
     async run(): Promise<ApplicationContext<T>> {
-        const ctx = await this.setup();
-        await this.root.action().getInstance(BootLifeScope).execute(ctx);
+
+        const root = this.root;
+        root.register(MiddlewareModule);
+        if (!isFunction(this.target)) {
+            await root.load(this.target.deps);
+        }
+        this.onContextInit();
+
+        await this.root.action().getInstance(BootLifeScope).execute(this.context);
         this.root.get(PROCESS_EXIT)?.(this);
-        return ctx;
+        return this.context;
     }
 
     /**
@@ -138,11 +142,6 @@ export class BootApplication<T> implements IBootApplication<T> {
 
     getContainer(): IContainer {
         return this.container;
-    }
-
-    protected createRootContext(root: IInjector) {
-        this.context = createContext(root, this.target);
-        return this.context;
     }
 
     protected onContextInit() {

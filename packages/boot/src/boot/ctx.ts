@@ -3,7 +3,7 @@ import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootFactory, BootstrapOption } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
 import { IRunnable, Runnable } from '../runnable/Runnable';
@@ -110,31 +110,29 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
      * @param opts 
      */
     bootstrap(type: Type, opts?: BootstrapOption): any {
-        const injector = opts?.injector ?? this.injector;
-        if (!injector.state().isRegistered(type)) {
-            injector.register(type);
-        }
-        return this.createBoot(injector, type, this, this.providers);
+        const ctx = this.getService({ token: BootFactory, target: type }).create({ type, injector: this, ...opts });
+        return ctx.instance;
+        // return this.createBoot(injector, type, this, this.providers);
     }
 
-    protected createBoot(injector: IInjector, type: Type, ctx: IBootContext, providers: IProvider) {
-        const boot = injector.resolve(type, providers, { provide: BOOTCONTEXT, useValue: ctx }, { provide: lang.getClass(ctx), useValue: ctx });
-        let startup: IRunnable;
-        if (boot instanceof Runnable) {
-            startup = boot;
-        } else {
-            startup = injector.getService(
-                { tokens: [Runnable], target: boot },
-                { provide: BOOTCONTEXT, useValue: ctx },
-                { provide: lang.getClass(ctx), useValue: ctx }
+    // protected createBoot(injector: IInjector, type: Type, ctx: IBootContext, providers: IProvider) {
+    //     const boot = injector.resolve(type, providers, { provide: BOOTCONTEXT, useValue: ctx }, { provide: lang.getClass(ctx), useValue: ctx });
+    //     let startup: IRunnable;
+    //     if (boot instanceof Runnable) {
+    //         startup = boot;
+    //     } else {
+    //         startup = injector.getService(
+    //             { tokens: [Runnable], target: boot },
+    //             { provide: BOOTCONTEXT, useValue: ctx },
+    //             { provide: lang.getClass(ctx), useValue: ctx }
 
-            );
-        }
-        if (startup) {
-            ctx.onDestroy(() => startup.destroy());
-        }
-        return startup;
-    }
+    //         );
+    //     }
+    //     if (startup) {
+    //         ctx.onDestroy(() => startup.destroy());
+    //     }
+    //     return startup;
+    // }
 }
 
 
