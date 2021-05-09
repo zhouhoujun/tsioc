@@ -78,7 +78,7 @@ export interface AnnotationReflect<T = any> extends TypeReflect {
      *
      * @type {Type<T>}
      */
-    bootstrap?: Type;
+    bootstrap?: Modules|Type| Type[];
     /**
      * imports dependens modules
      *
@@ -120,6 +120,10 @@ export interface ModuleConfigure<T = any> extends IModuleMetadata<T> {
      *  components of current module.
      */
     components?: Type[];
+    /**
+     * the module bootstraps.
+     */
+    bootstrap?: Type[];
     /**
      * dectors of components.
      */

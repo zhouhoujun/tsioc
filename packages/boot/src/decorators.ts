@@ -207,6 +207,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if (annotation.imports) reflect.imports = lang.getTypes(annotation.imports);
                     if (annotation.exports) reflect.exports = lang.getTypes(annotation.exports);
                     if (annotation.components) reflect.components = lang.getTypes(annotation.components);
+                    if (annotation.bootstrap) reflect.bootstrap = lang.getTypes(annotation.bootstrap);
                     return next();
                 },
                 ...hd ? (isArray(hd) ? hd : [hd]) : []

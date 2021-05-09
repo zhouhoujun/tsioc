@@ -1,5 +1,5 @@
 import { IInjector, isFunction, Provider, Type } from '@tsdi/ioc';
-import { BootOption, IModuleExports, IModuleInjector, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
+import { BootFactory, BootOption, BootstrapOption, IModuleExports, IModuleInjector, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
 import { DefaultBootContext, DefaultBootFactory } from '../runnable/ctx';
 import { CTX_ARGS, PROCESS_ROOT } from '../tk';
@@ -59,6 +59,17 @@ export class DefaultModuleContext<T> extends DefaultBootContext<T> implements Mo
         if (this.exports.size && this.parent === this.app.injector) {
             this.app.injector.imports.push(this);
         }
+    }
+
+    /**
+     * bootstrap type
+     * @param type 
+     * @param opts 
+     */
+    bootstrap(type: Type, opts?: BootstrapOption): any {
+        const ctx = this.getService({ token: BootFactory, target: type }).create({ type, injector: this, ...opts });
+        return ctx.instance;
+        // return this.createBoot(injector, type, this, this.providers);
     }
 
 }

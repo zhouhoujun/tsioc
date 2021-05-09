@@ -64,21 +64,21 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
         return this.parent.get(ConfigureLoggerManager);
     }
 
-    /**
-     * boot base url.
-     *
-     * @type {string}
-     */
-    get baseURL(): string {
-        let url = this.getValue(PROCESS_ROOT);
-        if (!url) {
-            url = this.getAnnoation()?.baseURL;
-            if (url) {
-                this.parent.setValue(PROCESS_ROOT, url);
-            }
-        }
-        return url;
-    }
+    // /**
+    //  * boot base url.
+    //  *
+    //  * @type {string}
+    //  */
+    // get baseURL(): string {
+    //     let url = this.getValue(PROCESS_ROOT);
+    //     if (!url) {
+    //         url = this.getAnnoation()?.baseURL;
+    //         if (url) {
+    //             this.parent.setValue(PROCESS_ROOT, url);
+    //         }
+    //     }
+    //     return url;
+    // }
 
     set baseURL(baseURL: string) {
         this.parent.setValue(PROCESS_ROOT, baseURL);
@@ -102,17 +102,6 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
      */
     getConfigureManager(): ConfigureManager<Configure> {
         return this.parent.get(ConfigureManager);
-    }
-
-    /**
-     * bootstrap type
-     * @param type 
-     * @param opts 
-     */
-    bootstrap(type: Type, opts?: BootstrapOption): any {
-        const ctx = this.getService({ token: BootFactory, target: type }).create({ type, injector: this, ...opts });
-        return ctx.instance;
-        // return this.createBoot(injector, type, this, this.providers);
     }
 
     // protected createBoot(injector: IInjector, type: Type, ctx: IBootContext, providers: IProvider) {
@@ -149,6 +138,15 @@ export class DefaultApplicationFactory<CT extends ApplicationContext = Applicati
         appctx.deps = option.deps;
         if (option.startups) {
             appctx.startups.push(...option.startups);
+        }
+        const mgr = ctx.getConfigureManager();
+        if (option.configures && option.configures.length) {
+            option.configures.forEach(cfg => {
+                mgr.useConfiguration(cfg);
+            });
+        } else {
+            // load default config.
+            mgr.useConfiguration();
         }
     }
 }

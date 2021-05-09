@@ -4,7 +4,7 @@ import { IBootApplication } from './IBootApplication';
 import { APPLICATION, PROCESS_EXIT } from './tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootFactory, BootOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middlewares';
-import { BootLifeScope, StartupServiceScope } from './boot/lifescope';
+import { BootLifeScope } from './boot/lifescope';
 import { BootModule } from './BootModule';
 
 
@@ -122,18 +122,18 @@ export class BootApplication<T> implements IBootApplication<T> {
         return this.context;
     }
 
-    /**
-     * bootstrap component, service.
-     * @param target 
-     * @param args 
-     * @returns 
-     */
-    async bootstrap<T>(target: Type<T> | BootOption<T>): Promise<any> {
-        const parent = isFunction(target) ? this.getRootInjector() : createInjector(target.injector ?? this.getRootInjector(), target.providers);
-        const ctx = parent.getInstance(BootFactory).create(target, parent);
-        await parent.action().getInstance(StartupServiceScope).execute(ctx);
-        return ctx.instance;
-    }
+    // /**
+    //  * bootstrap component, service.
+    //  * @param target 
+    //  * @param args 
+    //  * @returns 
+    //  */
+    // async bootstrap<T>(target: Type<T> | BootOption<T>): Promise<any> {
+    //     const parent = isFunction(target) ? this.getRootInjector() : createInjector(target.injector ?? this.getRootInjector(), target.providers);
+    //     const ctx = parent.getInstance(BootFactory).create(target, parent);
+    //     await parent.action().getInstance(BootstrapScope).execute(ctx);
+    //     return ctx.instance;
+    // }
 
 
     getRootInjector(): IInjector {

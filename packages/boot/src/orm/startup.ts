@@ -1,11 +1,11 @@
 import { Abstract, Destroyable } from '@tsdi/ioc';
-import { IBootContext } from '../Context';
+import { ApplicationContext } from '../Context';
 
 /**
  * startup db connections of application.
  */
 @Abstract()
-export abstract class ConnectionStatupService<T extends IBootContext = IBootContext> implements Destroyable {
+export abstract class ConnectionStatupService<T extends ApplicationContext = ApplicationContext> implements Destroyable {
 
     private _destroyed = false;
     private destroyCbs: (() => void)[] = [];

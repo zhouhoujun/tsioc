@@ -134,6 +134,14 @@ export abstract class ModuleContext<T = any> extends BootContext<T> {
 
     abstract get injector(): IModuleInjector;
 
+    
+    /**
+     * bootstrap type
+     * @param type 
+     * @param opts 
+     */
+     abstract bootstrap(type: Type, opts?: BootstrapOption): any;
+
     /**
     * get target reflect.
     */
@@ -264,12 +272,6 @@ export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
      * registered boot service.
      */
     abstract get boots(): Type[];
-    /**
-     * bootstrap type
-     * @param type 
-     * @param opts 
-     */
-    abstract bootstrap(type: Type, opts?: BootstrapOption): any;
 }
 
 
