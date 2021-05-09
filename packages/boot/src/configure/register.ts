@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Configure } from './config';
-import { IBootContext } from '../Context';
+import { ApplicationContext } from '../Context';
 
 /**
  * configure register.
@@ -9,7 +9,7 @@ import { IBootContext } from '../Context';
  * @interface IConfigureRegister
  * @template T
  */
-export interface IConfigureRegister<T extends IBootContext = IBootContext> {
+export interface IConfigureRegister<T extends ApplicationContext = ApplicationContext> {
     /**
      * register config setting.
      *
@@ -30,7 +30,7 @@ export interface IConfigureRegister<T extends IBootContext = IBootContext> {
  * @template T
  */
 @Abstract()
-export abstract class ConfigureRegister<T extends IBootContext = IBootContext> implements IConfigureRegister<T> {
+export abstract class ConfigureRegister<T extends ApplicationContext = ApplicationContext> implements IConfigureRegister<T> {
 
     constructor() { }
 

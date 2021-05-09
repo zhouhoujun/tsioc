@@ -49,23 +49,23 @@ export class BuildHandles<T extends BootContext = BootContext> extends Actions<T
     }
 }
 
-export class RegBootEnvScope extends BuildHandles<ApplicationContext> implements IActionSetup {
+// export class RegBootEnvScope extends BuildHandles<ApplicationContext> implements IActionSetup {
 
-    async execute(ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-        await super.execute(ctx);
-        if (next) {
-            await next();
-        }
-    }
+//     async execute(ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
+//         await super.execute(ctx);
+//         if (next) {
+//             await next();
+//         }
+//     }
 
-    setup() {
-        this.use(
-            // BootDepsHandle,
-            // BootProvidersHandle,
-            BootConfigureLoadHandle
-        );
-    }
-}
+//     setup() {
+//         this.use(
+//             // BootDepsHandle,
+//             // BootProvidersHandle,
+//             BootConfigureLoadHandle
+//         );
+//     }
+// }
 
 // /**
 //  * boot deps handle.
