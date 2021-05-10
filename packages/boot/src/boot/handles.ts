@@ -292,7 +292,7 @@ export class BootstrapScope extends BuildHandles<ModuleContext> implements IActi
 
 export const ModuleBootstrap = async function (ctx: ModuleContext, next: () => Promise<void>): Promise<void> {
     if (ctx.reflect.bootstrap && ctx.reflect.bootstrap.length) {
-        await Promise.all(ctx.reflect.bootstrap?.map(b => ctx.bootstrap(b)));
+        await Promise.all(ctx.reflect.bootstrap.map(b => ctx.bootstrap(b)));
     }
     await next();
 };

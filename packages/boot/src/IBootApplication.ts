@@ -45,10 +45,4 @@ export interface IBootApplication<T = any> extends Destroyable {
      */
     getRootInjector(): IInjector;
 
-    // /**
-    //  * bootstrap.
-    //  * @param target 
-    //  */
-    // bootstrap<T>(target: Type<T> | BootOption<T>): Promise<any>;
-
 }

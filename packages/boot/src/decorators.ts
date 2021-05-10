@@ -178,7 +178,6 @@ export interface IDIModuleDecorator<T extends DIModuleMetadata> {
 
 interface ModuleDesignContext extends DesignContext {
     reflect: ModuleReflect;
-    moduleRef?: ModuleContext;
 }
 
 /**
@@ -221,12 +220,12 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if ((injector as IModuleInjector).type === type) {
                         moduleRef = (injector as IModuleInjector).moduleRef;
                     } else {
-                        moduleRef = ctx.injector.get(ModuleFactory).create({
+                        moduleRef = ctx.injector.getValue(ModuleFactory).create({
                             type,
                             injector,
                             regIn
                         });
-                        ctx.injector = ctx.moduleRef.injector;
+                        ctx.injector = moduleRef.injector;
                         ctx.state.injector = ctx.injector;
                     }
                     (ctx.state as ModuleRegistered).moduleRef = moduleRef;

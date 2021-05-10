@@ -1,5 +1,5 @@
 import { lang, Singleton, isFunction, IInjector, Inject, TARGET } from '@tsdi/ioc';
-import { IBootContext, Runnable } from '@tsdi/boot';
+import { BootContext, Runnable } from '@tsdi/boot';
 import { ISuiteRunner } from './ISuiteRunner';
 import { Assert } from '../assert/assert';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -51,7 +51,7 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
         return null;
     }
 
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: BootContext): Promise<void> {
         this.injector = ctx.injector;
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));

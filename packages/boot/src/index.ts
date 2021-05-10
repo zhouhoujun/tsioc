@@ -14,6 +14,7 @@ export * from './runnable/Runnable';
 // decorators
 export * from './decorators';
 
+export * from './reflect';
 export * from './Context';
 
 // modules

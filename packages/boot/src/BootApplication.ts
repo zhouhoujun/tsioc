@@ -2,7 +2,7 @@ import { IModuleLoader, IContainer, IInjector, isFunction, ROOT_INJECTOR, Type, 
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION, PROCESS_EXIT } from './tk';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootFactory, BootOption, BootstrapOption } from './Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope } from './boot/lifescope';
 import { BootModule } from './BootModule';
@@ -50,6 +50,7 @@ export class BootApplication<T> implements IBootApplication<T> {
 
         this.context = parent.getInstance(ApplicationFactory).create(isFunction(target) ? target : target.type, parent);
         this.root = this.context.injector;
+
         this.root.setValue(ApplicationContext, this.context);
         this.root.onDestroy(() => parent.destroy());
         this.root.setValue(ROOT_INJECTOR, this.root);
@@ -69,6 +70,15 @@ export class BootApplication<T> implements IBootApplication<T> {
     }
 
     /**
+    * run application.
+    *
+    * @static
+    * @template T
+    * @param {ApplicationOption<T>)} target
+    * @returns {Promise<ApplicationContext<T>>}
+    */
+    static run<T>(target: ApplicationOption<T>): Promise<ApplicationContext<T>>
+    /**
      * run application.
      *
      * @static
@@ -78,15 +88,6 @@ export class BootApplication<T> implements IBootApplication<T> {
      * @returns {Promise<IBootContext>}
      */
     static run<T>(target: Type<T>, option?: BootstrapOption): Promise<ApplicationContext<T>>;
-    /**
-    * run application.
-    *
-    * @static
-    * @template T
-    * @param {BootOption<T>)} target
-    * @returns {Promise<IBootContext>}
-    */
-    static run<T>(target: BootOption<T>): Promise<ApplicationContext<T>>
     static run<T>(target: Type<T> | BootOption<T>, option?: BootstrapOption): Promise<ApplicationContext<T>> {
         return new BootApplication(option ? { type: target, ...option } as BootOption<T> : target).run();
     }
@@ -121,20 +122,6 @@ export class BootApplication<T> implements IBootApplication<T> {
         this.root.get(PROCESS_EXIT)?.(this);
         return this.context;
     }
-
-    // /**
-    //  * bootstrap component, service.
-    //  * @param target 
-    //  * @param args 
-    //  * @returns 
-    //  */
-    // async bootstrap<T>(target: Type<T> | BootOption<T>): Promise<any> {
-    //     const parent = isFunction(target) ? this.getRootInjector() : createInjector(target.injector ?? this.getRootInjector(), target.providers);
-    //     const ctx = parent.getInstance(BootFactory).create(target, parent);
-    //     await parent.action().getInstance(BootstrapScope).execute(ctx);
-    //     return ctx.instance;
-    // }
-
 
     getRootInjector(): IInjector {
         return this.root;

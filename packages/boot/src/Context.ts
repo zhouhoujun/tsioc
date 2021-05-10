@@ -133,8 +133,6 @@ export abstract class ModuleContext<T = any> extends BootContext<T> {
     abstract get regIn(): string;
 
     abstract get injector(): IModuleInjector;
-
-    
     /**
      * bootstrap type
      * @param type 
@@ -196,11 +194,6 @@ export interface ApplicationOption<T = any> extends BootOption<T> {
      * @type {LoadType[]}
      */
     deps?: LoadType[];
-
-    /**
-     * bootstrap type.
-     */
-    bootstrap?: Type;
 }
 
 /**

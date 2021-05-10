@@ -1,8 +1,7 @@
-import { IInjector, isFunction, Provider, Type } from '@tsdi/ioc';
+import { IInjector, Provider, Type } from '@tsdi/ioc';
 import { BootFactory, BootOption, BootstrapOption, IModuleExports, IModuleInjector, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
 import { DefaultBootContext, DefaultBootFactory } from '../runnable/ctx';
-import { CTX_ARGS, PROCESS_ROOT } from '../tk';
 import { ModuleStrategy } from './strategy';
 
 
@@ -69,7 +68,6 @@ export class DefaultModuleContext<T> extends DefaultBootContext<T> implements Mo
     bootstrap(type: Type, opts?: BootstrapOption): any {
         const ctx = this.getService({ token: BootFactory, target: type }).create({ type, injector: this, ...opts });
         return ctx.instance;
-        // return this.createBoot(injector, type, this, this.providers);
     }
 
 }
@@ -126,7 +124,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
 
 
 export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT extends BootOption = ModuleOption> extends DefaultBootFactory<CT, OPT> implements ModuleFactory {
-    constructor(root: IInjector, ctor: Type = DefaultModuleContext) {
-        super(root, ctor)
+    constructor(ctor: Type = DefaultModuleContext) {
+        super(ctor)
     }
 }

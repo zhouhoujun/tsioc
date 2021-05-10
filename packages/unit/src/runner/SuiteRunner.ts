@@ -1,5 +1,5 @@
 import { lang, Injectable, Refs } from '@tsdi/ioc';
-import { Runnable, IBootContext } from '@tsdi/boot';
+import { Runnable, BootContext } from '@tsdi/boot';
 import { Before, BeforeEach, Test, After, AfterEach } from '../decorators';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { ISuiteDescribe, ICaseDescribe } from '../reports/ITestReport';
@@ -20,9 +20,9 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
     timeout: number;
     describe: string;
 
-    private ctx: IBootContext;
+    private ctx: BootContext;
 
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: BootContext): Promise<void> {
         this.ctx = ctx;
         try {
             let desc = this.getSuiteDescribe();
@@ -38,9 +38,9 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
      * @returns {ISuiteDescribe}
      */
     getSuiteDescribe(): ISuiteDescribe {
-        let meta = this.ctx.getAnnoation<SuiteMetadata>();
+        let meta = this.ctx.reflect.annotation as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || lang.getClassName(this.ctx.boot);
+        this.describe = meta.describe || lang.getClassName(this.ctx.type);
         return {
             timeout: this.timeout,
             describe: this.describe,

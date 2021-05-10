@@ -1,5 +1,5 @@
 import { Autorun, createProvider, isArray, lang, Singleton, Token, tokenId } from '@tsdi/ioc';
-import { BOOTCONTEXT } from '../tk';
+import { ApplicationContext } from '../Context';
 import { MessageContext } from './ctx';
 import { MessageQueue } from './queue';
 import { RouteVaildator } from './route';
@@ -113,7 +113,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         }
     });
 
-    const logger = injector.getInstance(BOOTCONTEXT).getLogManager()?.getLogger();
+    const logger = injector.getValue(ApplicationContext).getLogManager()?.getLogger();
     const start = Date.now();
     logger?.debug(ctx.method, ctx.url);
     // console.debug(ctx.method, ctx.url);

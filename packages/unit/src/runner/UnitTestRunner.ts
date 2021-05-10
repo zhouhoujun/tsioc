@@ -1,5 +1,5 @@
 import { Injectable, isString, isClass, isArray, lang, refl } from '@tsdi/ioc';
-import { Runnable, AnnotationReflect, IBootContext, APPLICATION } from '@tsdi/boot';
+import { Runnable, AnnotationReflect, ApplicationContext } from '@tsdi/boot';
 import { OldTestRunner } from './OldTestRunner';
 import { TestReport } from '../reports/TestReport';
 import { UnitTestConfigure } from '../UnitTestConfigure';
@@ -11,7 +11,7 @@ import { UnitTestConfigure } from '../UnitTestConfigure';
 @Injectable()
 export class UnitTestRunner extends Runnable {
 
-    async configureService(context: IBootContext): Promise<void> {
+    async configureService(context: ApplicationContext): Promise<void> {
         const ctx = context;
         const config = ctx.getConfiguration() as UnitTestConfigure;
         const src = config.src;
@@ -33,8 +33,7 @@ export class UnitTestRunner extends Runnable {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.configureService(ctx);
-        const application = injector.resolve(APPLICATION);
-        await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => application.bootstrap({ bootstrap: s, injector: injector })));
+        await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => ctx.bootstrap(s)));
         await injector.resolve(TestReport).report();
     }
 }

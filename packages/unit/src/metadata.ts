@@ -72,7 +72,7 @@ export interface TestCaseMetadata extends TestMetadata {
  *
  * @export
  * @interface SuiteMetadata
- * @extends {ClassMetadata}
+ * @extends {AnnotationMetadata}
  */
 export interface SuiteMetadata extends AnnotationMetadata {
     /**

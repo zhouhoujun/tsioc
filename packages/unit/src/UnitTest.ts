@@ -38,5 +38,5 @@ export class UnitTest { }
  * @returns {Promise<any>}
  */
 export async function runTest(src: string | Type | (string | Type)[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any> {
-   await BootApplication.run({ type: UnitTest, deps: deps, configures: [config, { src: src }] })
+   await BootApplication.run({ type: UnitTest, deps, configures: [config, { src: src }] })
 }

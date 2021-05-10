@@ -3,6 +3,17 @@ import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BootLifeScope } from './boot/lifescope';
 
+import { DefaultBootFactory } from './runnable/ctx';
+import { DefaultModuleFactory } from './modules/ctx';
+import { DefaultApplicationFactory } from './boot/ctx';
+import { ApplicationFactory, BootFactory, ModuleFactory } from './Context';
+
+
+export const DEFAULTA_FACTORYS = [
+    { provide: BootFactory, useValue: new DefaultBootFactory() },
+    { provide: ModuleFactory, useValue: new DefaultModuleFactory() },
+    { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
+]
 
 /**
  * Bootstrap ext for ioc. auto run setup after registered.
@@ -25,6 +36,7 @@ export class BootModule {
             BootLifeScope);
 
         container.use(ConfigureMerger, ConfigureManager, BaseTypeParser);
+        container.parse(DEFAULTA_FACTORYS);
 
     }
 }

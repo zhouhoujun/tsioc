@@ -1,4 +1,4 @@
-import { IInjector, DefaultInjector, isFunction, refl, Strategy, Type } from '@tsdi/ioc';
+import { IInjector, DefaultInjector, isFunction, refl, Strategy, Type, ROOT_INJECTOR } from '@tsdi/ioc';
 import { ApplicationContext, BootContext, BootFactory, BootOption } from '../Context';
 import { AnnotationReflect } from '../reflect';
 import { CTX_ARGS, PROCESS_ROOT } from '../tk';
@@ -40,7 +40,7 @@ export class DefaultBootContext<T> extends DefaultInjector implements BootContex
 
 
 export class DefaultBootFactory<CT extends BootContext, OPT extends BootOption> implements BootFactory {
-    constructor(private root: IInjector, public ctor: Type = DefaultBootContext) {
+    constructor(public ctor: Type = DefaultBootContext) {
     }
 
     create(type: Type | OPT, parent?: IInjector): CT {
@@ -53,7 +53,8 @@ export class DefaultBootFactory<CT extends BootContext, OPT extends BootOption> 
 
 
     protected createByOption(option: OPT, parent?: IInjector) {
-        const ctx = this.createInstance(option.type, option.regIn === 'root' ? this.root : (parent || option.injector || this.root));
+        parent = parent || option.injector;
+        const ctx = this.createInstance(option.type, option.regIn === 'root' ? parent.getValue(ROOT_INJECTOR) : parent);
         this.initOption(ctx, option);
         return ctx;
     }
@@ -70,8 +71,8 @@ export class DefaultBootFactory<CT extends BootContext, OPT extends BootOption> 
         }
     }
 
-    protected createInstance(type: Type, parent?: IInjector) {
-        return new this.ctor(type, parent || this.root);
+    protected createInstance(type: Type, parent: IInjector) {
+        return new this.ctor(type, parent );
     }
 
 }

@@ -64,24 +64,8 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
         return this.parent.get(ConfigureLoggerManager);
     }
 
-    // /**
-    //  * boot base url.
-    //  *
-    //  * @type {string}
-    //  */
-    // get baseURL(): string {
-    //     let url = this.getValue(PROCESS_ROOT);
-    //     if (!url) {
-    //         url = this.getAnnoation()?.baseURL;
-    //         if (url) {
-    //             this.parent.setValue(PROCESS_ROOT, url);
-    //         }
-    //     }
-    //     return url;
-    // }
-
-    set baseURL(baseURL: string) {
-        this.parent.setValue(PROCESS_ROOT, baseURL);
+    get baseURL(): string {
+        return this.getValue(PROCESS_ROOT);
     }
 
     getAnnoation<T extends DIModuleMetadata>(): T {
@@ -103,32 +87,13 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
     getConfigureManager(): ConfigureManager<Configure> {
         return this.parent.get(ConfigureManager);
     }
-
-    // protected createBoot(injector: IInjector, type: Type, ctx: IBootContext, providers: IProvider) {
-    //     const boot = injector.resolve(type, providers, { provide: BOOTCONTEXT, useValue: ctx }, { provide: lang.getClass(ctx), useValue: ctx });
-    //     let startup: IRunnable;
-    //     if (boot instanceof Runnable) {
-    //         startup = boot;
-    //     } else {
-    //         startup = injector.getService(
-    //             { tokens: [Runnable], target: boot },
-    //             { provide: BOOTCONTEXT, useValue: ctx },
-    //             { provide: lang.getClass(ctx), useValue: ctx }
-
-    //         );
-    //     }
-    //     if (startup) {
-    //         ctx.onDestroy(() => startup.destroy());
-    //     }
-    //     return startup;
-    // }
 }
 
 
 export class DefaultApplicationFactory<CT extends ApplicationContext = ApplicationContext, OPT extends ApplicationOption = ApplicationOption> extends DefaultModuleFactory<CT, OPT> implements ApplicationFactory {
 
-    constructor(root: IInjector, ctor: Type = DefaultApplicationContext) {
-        super(root, ctor)
+    constructor(ctor: Type = DefaultApplicationContext) {
+        super(ctor)
     }
 
     protected initOption(ctx: CT, option: OPT) {
