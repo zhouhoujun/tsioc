@@ -1,4 +1,4 @@
-import { Token, LoadType, ProviderType, IInjector, Type, lang, IProvider } from '@tsdi/ioc';
+import { Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, ROOT_INJECTOR } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
@@ -33,6 +33,11 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
         return this;
     }
 
+    getInstance<T>(key: Token<T>, providers?: IProvider): T  {
+        if(key === ApplicationContext || key === ROOT_INJECTOR) return this as any;
+        return super.getInstance(key, providers);
+    }
+
     getMessager(): MessageQueue {
         return this.get(ROOT_QUEUE);
     }
@@ -65,7 +70,7 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
     }
 
     get baseURL(): string {
-        return this.getValue(PROCESS_ROOT);
+        return this.getInstance(PROCESS_ROOT);
     }
 
     getAnnoation<T extends DIModuleMetadata>(): T {
@@ -76,7 +81,7 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
      * configuration merge metadata config and all application config.
      */
     getConfiguration(): Configure {
-        return this.getValue(CONFIGURATION);
+        return this.getInstance(CONFIGURATION);
     }
 
     /**

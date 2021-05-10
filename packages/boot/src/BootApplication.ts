@@ -4,7 +4,7 @@ import { IBootApplication } from './IBootApplication';
 import { APPLICATION, PROCESS_EXIT } from './tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middlewares';
-import { BootLifeScope } from './boot/lifescope';
+import { BootLifeScope } from './appl/lifescope';
 import { BootModule } from './BootModule';
 
 
@@ -49,11 +49,11 @@ export class BootApplication<T> implements IBootApplication<T> {
         this.container.register(BootModule);
 
         this.context = parent.getInstance(ApplicationFactory).create(isFunction(target) ? target : target.type, parent);
-        this.root = this.context.injector;
+        this.root = this.context;
 
-        this.root.setValue(ApplicationContext, this.context);
+        // this.root.setValue(ApplicationContext, this.context);
         this.root.onDestroy(() => parent.destroy());
-        this.root.setValue(ROOT_INJECTOR, this.root);
+        // this.root.setValue(ROOT_INJECTOR, this.root);
         this.root.setValue(BootApplication, this);
         this.root.setValue(APPLICATION, this);
 

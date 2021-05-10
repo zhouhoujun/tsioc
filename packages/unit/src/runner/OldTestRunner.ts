@@ -52,7 +52,7 @@ export class OldTestRunner extends Runnable implements ISuiteRunner {
     }
 
     async configureService(ctx: BootContext): Promise<void> {
-        this.injector = ctx.injector;
+        this.injector = ctx;
         try {
             await lang.step(this.suites.map(desc => desc.cases.length ? () => this.runSuite(desc) : () => Promise.resolve()));
         } catch (err) {

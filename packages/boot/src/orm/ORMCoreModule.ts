@@ -1,6 +1,6 @@
 import { IocExt, Inject, CONTAINER, IContainer } from '@tsdi/ioc';
 import { ConnectionsHandle } from './handle';
-import { ConfigureServiceHandle, StartupGlobalService } from '../boot/handles';
+import { ConfigureServiceHandle, StartupGlobalService } from '../appl/handles';
 
 
 

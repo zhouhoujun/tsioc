@@ -9,7 +9,7 @@ import { ROOT_QUEUE } from './middlewares/root';
 import { FactoryRoute, Route } from './middlewares/route';
 import { RootRouter, Router } from './middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
-import { ApplicationContext, IModuleInjector, ModuleContext, ModuleFactory, ModuleRegistered } from './Context';
+import { ApplicationContext, ModuleContext, ModuleFactory, ModuleRegistered } from './Context';
 
 
 /**
@@ -88,7 +88,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const appRef = ctx.injector.getValue(ApplicationContext);
+                const appRef = ctx.injector.getInstance(ApplicationContext);
                 const boots = appRef.boots;
                 const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
 
@@ -217,15 +217,15 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                 if (ctx.reflect.annoType === 'module') {
                     const { injector, type, regIn } = ctx;
                     let moduleRef: ModuleContext;
-                    if ((injector as IModuleInjector).type === type) {
-                        moduleRef = (injector as IModuleInjector).moduleRef;
+                    if ((injector as ModuleContext).type === type) {
+                        moduleRef = injector as ModuleContext;
                     } else {
-                        moduleRef = ctx.injector.getValue(ModuleFactory).create({
+                        moduleRef = ctx.injector.getInstance(ModuleFactory).create({
                             type,
                             injector,
                             regIn
                         });
-                        ctx.injector = moduleRef.injector;
+                        ctx.injector = moduleRef;
                         ctx.state.injector = ctx.injector;
                     }
                     (ctx.state as ModuleRegistered).moduleRef = moduleRef;
@@ -458,13 +458,13 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     }
                     middl = type;
                 } else {
-                    middl = new FactoryRoute(route, prefix, (pdr: IProvider) => injector.toInstance(type, pdr));
+                    middl = new FactoryRoute(route, prefix, (pdr: IProvider) => injector.getInstance(type, pdr));
                 }
                 queue.use(middl);
                 injector.onDestroy(() => queue.unuse(middl));
             } else {
                 if (!queue) {
-                    queue = injector.toInstance(ROOT_QUEUE);
+                    queue = injector.getInstance(ROOT_QUEUE);
                 }
                 if (before) {
                     queue.useBefore(type, before);

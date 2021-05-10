@@ -45,7 +45,7 @@ export abstract class BuildHandle<T extends BootContext> extends IocAction<T, As
 export class BuildHandles<T extends BootContext = BootContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
     protected getActionProvider(ctx: T) {
-        return ctx.injector.action();
+        return ctx.action();
     }
 }
 
@@ -104,7 +104,7 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
 
     // const options = ctx.getOptions();
     const baseURL = ctx.baseURL;
-    const injector = ctx.injector;
+    const injector = ctx;
     const mgr = ctx.getConfigureManager();
     let config = await mgr.getConfig();
 
@@ -177,14 +177,14 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
  */
 export const BootConfigureRegisterHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const config = ctx.getConfiguration();
-    const injector = ctx.injector;
+    const injector = ctx;
     const container = injector.getContainer();
     if (config.logConfig && !container.has(LogConfigureToken)) {
         container.setValue(LogConfigureToken, config.logConfig);
     }
     if (config.debug) {
         // make sure log module registered.
-        ctx.injector.register(LogModule)
+        ctx.register(LogModule)
             .register(DebugLogAspect);
     }
 
@@ -237,7 +237,7 @@ export class StartupGlobalService extends BuildHandles<ApplicationContext> imple
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.startups;
-    const root = ctx.injector;
+    const root = ctx;
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {

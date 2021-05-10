@@ -7,7 +7,7 @@ import {
     RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption, FactoryOption
 } from './IInjector';
 import { isToken, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass } from './utils/chk';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isDefined } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
 import { INJECTOR } from './utils/tk';
@@ -263,29 +263,19 @@ export class Provider implements IProvider {
         return !isNil(this.factories.get(token)?.useValue) || (this.strategy.hasValue(token, this) ?? false);
     }
 
-    getValue<T>(token: Token<T>): T {
-        return this.factories.get(token)?.useValue ?? this.strategy.getValue(token, this) ?? null;
-    }
+    // getValue<T>(token: Token<T>): T {
+    //     return this.factories.get(token)?.useValue ?? this.strategy.getValue(token, this) ?? null;
+    // }
 
     setValue<T>(token: Token<T>, useValue: T, useClass?: Type<T>): this {
         const isp = this.factories.get(token);
         if (isp) {
             isp.useValue = useValue;
             if (useClass) isp.useClass = useClass;
-        } else {
+        } else if (isDefined(useValue)) {
             this.factories.set(token, { useValue, useClass });
         }
         return this;
-    }
-
-    delValue(token: Token) {
-        const isp = this.factories.get(token);
-        if (!isp) return;
-        if (!isp.fac) {
-            this.factories.delete(token);
-        } else {
-            isp.useValue = null;
-        }
     }
 
     /**
@@ -298,19 +288,10 @@ export class Provider implements IProvider {
      * @returns {T}
      */
     get<T>(token: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(token, this.toProvider(providers));
+        return this.getInstance(token, this.toProvider(providers));
     }
 
-    /**
-     * get token instance in current injector or root container.
-     * @param key token key.
-     * @param providers providers.
-     */
-    getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T {
-        return this.toInstance(key, this.toProvider(providers));
-    }
-
-    toInstance<T>(key: Token<T>, providers?: IProvider): T {
+    getInstance<T>(key: Token<T>, providers?: IProvider): T {
         return getStateValue(this, this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
     }
 
@@ -542,6 +523,11 @@ export abstract class Injector extends Provider implements IInjector {
         super(parent, strategy);
     }
 
+    getInstance<T>(key: Token<T>, providers?: IProvider): T {
+        if (key === Injector || key === INJECTOR) return this as any;
+        return super.getInstance(key, providers);
+    }
+
     /**
      * invoke method.
      *
@@ -640,7 +626,7 @@ export function getStateValue<T>(injector: IProvider, pd: ProviderState<T>, prov
 function getFactoryProviderValue(injector: IProvider, pd: FactoryProvider, provider: IProvider) {
     let args = pd.deps?.map(d => {
         if (isToken(d)) {
-            return injector.toInstance(d, provider) ?? (isString(d) ? d : null);
+            return injector.getInstance(d, provider) ?? (isString(d) ? d : null);
         } else {
             return d;
         }
@@ -656,7 +642,7 @@ function generateFac(injector: IProvider, pd: ProviderState) {
     }
 
     if (pd.useExisting) {
-        pd.fac = (pdr: IProvider) => injector.toInstance(pd.useExisting, pdr);
+        pd.fac = (pdr: IProvider) => injector.getInstance(pd.useExisting, pdr);
         return;
     }
 
@@ -666,7 +652,7 @@ function generateFac(injector: IProvider, pd: ProviderState) {
             rgopt.provide = undefined;
             injector.register(rgopt);
         }
-        pd.fac = (pdr) => injector.toInstance(pd.useClass, pdr);
+        pd.fac = (pdr) => injector.getInstance(pd.useClass, pdr);
         return;
     }
 
@@ -677,7 +663,7 @@ function generateFac(injector: IProvider, pd: ProviderState) {
             if (isArray(pd.deps) && pd.deps.length) {
                 args = pd.deps.map(d => {
                     if (isToken(d)) {
-                        return injector.toInstance(d, pdr) ?? (isString(d) ? d : null);
+                        return injector.getInstance(d, pdr) ?? (isString(d) ? d : null);
                     } else {
                         return d;
                     }

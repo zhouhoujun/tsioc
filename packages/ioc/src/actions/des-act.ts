@@ -61,7 +61,7 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
         fac: (providers: IProvider) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
-                return injector.getValue(type);
+                return injector.getInstance(type);
             }
 
             const ctx = {

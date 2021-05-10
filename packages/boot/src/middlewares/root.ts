@@ -34,7 +34,7 @@ export class RootMessageQueue extends MessageQueue {
 
 
 function getValue<T>(this: MessageContext, token: Token<T>): T {
-    return this.providers.getValue(token);
+    return this.providers.getInstance(token);
 }
 
 function setValue(this: MessageContext, token: Token, value: any): void {
@@ -113,7 +113,7 @@ export const initQueue = async (ctx: MessageContext, next: () => Promise<void>) 
         }
     });
 
-    const logger = injector.getValue(ApplicationContext).getLogManager()?.getLogger();
+    const logger = injector.getInstance(ApplicationContext).getLogManager()?.getLogger();
     const start = Date.now();
     logger?.debug(ctx.method, ctx.url);
     // console.debug(ctx.method, ctx.url);

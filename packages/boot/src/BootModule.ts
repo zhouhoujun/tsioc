@@ -1,11 +1,11 @@
 import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
-import { BootLifeScope } from './boot/lifescope';
+import { BootLifeScope } from './appl/lifescope';
 
 import { DefaultBootFactory } from './runnable/ctx';
 import { DefaultModuleFactory } from './modules/ctx';
-import { DefaultApplicationFactory } from './boot/ctx';
+import { DefaultApplicationFactory } from './appl/ctx';
 import { ApplicationFactory, BootFactory, ModuleFactory } from './Context';
 
 

@@ -21,10 +21,10 @@ export * from './Context';
 export * from './modules/strategy';
 export * from './modules/ctx';
 
-// boots
-export * from './boot/ctx';
-export * from './boot/handles';
-export * from './boot/lifescope';
+// applications
+export * from './appl/ctx';
+export * from './appl/handles';
+export * from './appl/lifescope';
 
 export * from './IBootApplication';
 export * from './BootApplication';

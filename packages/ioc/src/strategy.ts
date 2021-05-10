@@ -90,24 +90,18 @@ export abstract class Strategy {
      */
     abstract hasToken<T>(key: Token<T>, curr: IProvider, deep?: boolean): boolean;
     /**
-     * get instance.
-     * @param key token key.
-     * @param curr current provider.
-     * @param providers providers
-     */
-    abstract getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider): T;
-    /**
      * has value
      * @param key token key.
      * @param curr current provider.
      */
     abstract hasValue<T>(key: Token<T>, curr: IProvider): boolean;
     /**
-     * get value
+     * get instance.
      * @param key token key.
      * @param curr current provider.
+     * @param providers providers
      */
-    abstract getValue<T>(key: Token<T>, curr: IProvider): T;
+    abstract getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider): T;
     /**
      * get token provider.
      * @param key token key.
@@ -143,16 +137,12 @@ export class DefaultStrategy extends Strategy {
         return deep && curr.parent?.has(key);
     }
 
-    getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider) {
-        return curr.parent?.toInstance(key, providers);
-    }
-
     hasValue<T>(key: Token<T>, curr: IProvider) {
         return curr.parent?.hasValue(key) ?? false;
     }
 
-    getValue<T>(key: Token<T>, curr: IProvider) {
-        return curr.parent?.getValue(key);
+    getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider) {
+        return curr.parent?.getInstance(key, providers);
     }
 
     getTokenProvider<T>(key: Token<T>, curr: IProvider) {

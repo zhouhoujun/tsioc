@@ -1,5 +1,5 @@
 import { IContainer } from '../IContainer';
-import { INVOKER,  CONTAINER } from './tk';
+import { INVOKER } from './tk';
 import { InvokerImpl } from '../actions/invoker';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
@@ -13,7 +13,7 @@ import { RuntimeLifeScope } from '../actions/runtime';
  */
 export function registerCores(container: IContainer) {
 
-    container.setValue(CONTAINER, container);
+    // container.setValue(CONTAINER, container);
     container.setValue(INVOKER, new InvokerImpl());
 
     // bing action.

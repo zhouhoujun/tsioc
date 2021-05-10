@@ -7,7 +7,7 @@ import { ConnectionStatupService } from './startup';
  * @param next next dispatch
  */
 export const ConnectionsHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    let servers = ctx.injector.getServices(ConnectionStatupService);
+    let servers = ctx.getServices(ConnectionStatupService);
     if (servers && servers.length) {
         await Promise.all(servers.map(ser => {
             ctx.onDestroy(() => ser?.destroy());

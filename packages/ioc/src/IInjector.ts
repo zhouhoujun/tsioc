@@ -276,13 +276,7 @@ export interface IProvider extends Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getInstance<T>(key: Token<T>, ...providers: ProviderType[]): T;
-    /**
-     * resolve to instance.
-     * @param key 
-     * @param providers 
-     */
-    toInstance<T>(key: Token<T>, providers?: IProvider): T;
+    getInstance<T>(key: Token<T>, providers?: IProvider): T;
     /**
      * resolve token instance with token and param provider.
      *
@@ -301,22 +295,22 @@ export interface IProvider extends Destroyable {
      * @returns {T}
      */
     resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    /**
-     * get value.
-     * @param token token key.
-     */
-    getValue<T>(token: Token<T>): T;
+    // /**
+    //  * get value.
+    //  * @param token token key.
+    //  */
+    // getValue<T>(token: Token<T>): T;
     /**
      * set value.
      * @param token provide key
      * @param value vaule
      */
     setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-    /**
-     * delete value.
-     * @param token key
-     */
-    delValue<T>(token: Token<T>): void;
+    // /**
+    //  * delete value.
+    //  * @param token key
+    //  */
+    // delValue<T>(token: Token<T>): void;
     /**
      * parse
      * @param providers 

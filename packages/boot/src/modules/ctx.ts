@@ -1,7 +1,7 @@
-import { IInjector, Provider, Type } from '@tsdi/ioc';
-import { BootFactory, BootOption, BootstrapOption, IModuleExports, IModuleInjector, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
+import { IInjector, Provider, refl, Type } from '@tsdi/ioc';
+import { ApplicationContext, BootFactory, BootOption, BootstrapOption, IModuleExports, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
-import { DefaultBootContext, DefaultBootFactory } from '../runnable/ctx';
+import { DefaultBootFactory } from '../runnable/ctx';
 import { ModuleStrategy } from './strategy';
 
 
@@ -9,31 +9,35 @@ import { ModuleStrategy } from './strategy';
 /**
  * default module injector strategy.
  */
-const mdInjStrategy = new ModuleStrategy<IModuleInjector>(p => p instanceof ModuleContext, cu => cu.imports);
+const mdInjStrategy = new ModuleStrategy<ModuleContext>(p => p instanceof ModuleContext, cu => cu.imports);
 
 
 
-export class DefaultModuleContext<T> extends DefaultBootContext<T> implements ModuleContext<T>, IModuleInjector {
+export class DefaultModuleContext<T> extends ModuleContext<T> {
 
     imports: ModuleContext[] = [];
     exports: IModuleExports;
     readonly reflect: ModuleReflect<T>;
-    readonly regIn: string
-    constructor(target: Type<T>, parent?: IInjector, regIn?: string, strategy: ModuleStrategy = mdInjStrategy) {
-        super(target, parent, strategy)
+    readonly regIn: string;
+    private _instance: T;
+    constructor(readonly type: Type<T>, parent?: IInjector, regIn?: string, strategy: ModuleStrategy = mdInjStrategy) {
+        super(parent, strategy)
+        this.reflect = refl.get(type);
         this.exports = new ModuleProvider(this);
         this.regIn = regIn || this.reflect.regIn;
         this.regModule();
     }
 
-    get injector(): IModuleInjector {
+    get injector() {
         return this;
     }
 
-    get moduleRef() {
-        return this;
+    get instance(): T {
+        if (!this._instance) {
+            this._instance = this.resolve({ token: this.type, regify: true });
+        }
+        return this._instance;
     }
-
     protected regModule() {
         const state = this.state();
         if (this.reflect.imports) {
@@ -55,8 +59,9 @@ export class DefaultModuleContext<T> extends DefaultBootContext<T> implements Mo
         }
 
         this.reflect.exports?.forEach(ty => this.exports.export(ty));
-        if (this.exports.size && this.parent === this.app.injector) {
-            this.app.injector.imports.push(this);
+        const appctx = this.getInstance(ApplicationContext);
+        if (this.exports.size && this.parent === appctx) {
+            appctx.imports.push(this);
         }
     }
 
@@ -84,7 +89,7 @@ const mdPdrStrategy = new ModuleStrategy<IModuleExports>(p => false, cu => cu.ex
  */
 export class ModuleProvider extends Provider implements IModuleExports {
 
-    constructor(public moduleRef: IModuleInjector, strategy = mdPdrStrategy) {
+    constructor(public moduleRef: ModuleContext, strategy = mdPdrStrategy) {
         super(moduleRef, strategy);
     }
 
@@ -104,7 +109,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
             this.moduleRef.register(type);
         }
 
-        this.set(type, (pdr) => this.moduleRef.toInstance(type, pdr));
+        this.set(type, (pdr) => this.moduleRef.getInstance(type, pdr));
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
             this.set({ provide: p, useClass: type });

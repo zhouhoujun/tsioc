@@ -10,7 +10,7 @@ import {
 import { IContainer, IServiceProvider } from './IContainer';
 import { MethodType } from './Invoker';
 import { Token } from './tokens';
-import { INJECTOR, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
+import { CONTAINER, INVOKER, MODULE_LOADER, SERVICE_PROVIDER } from './utils/tk';
 import { Action, IActionSetup } from './action';
 import { get } from './decor/refl';
 import { Strategy } from './strategy';
@@ -21,13 +21,6 @@ import { registerCores } from './utils/regs';
  * default injector implantment.
  */
 export class DefaultInjector extends Injector {
-
-    constructor(parent?: IInjector, strategy?: Strategy) {
-        super(parent, strategy);
-        this.setValue(Injector, this);
-        this.setValue(INJECTOR, this);
-    }
-
     /**
      * invoke method.
      *
@@ -39,7 +32,7 @@ export class DefaultInjector extends Injector {
      * @returns {TR}
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.getValue(INVOKER).invoke(this, target, propertyKey, ...providers);
+        return this.getInstance(INVOKER).invoke(this, target, propertyKey, ...providers);
     }
 
     /**
@@ -48,7 +41,7 @@ export class DefaultInjector extends Injector {
      * @returns {IModuleLoader}
      */
     getLoader(): IModuleLoader {
-        return this.getValue(MODULE_LOADER);
+        return this.getInstance(MODULE_LOADER);
     }
 
     load(modules: LoadType[]): Promise<Type[]>;
@@ -76,7 +69,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected getSvrPdr() {
-        return this.getContainer().getValue(SERVICE_PROVIDER) ?? SERVICE;
+        return this.getContainer().get(SERVICE_PROVIDER) ?? SERVICE;
     }
 
 }
@@ -120,6 +113,11 @@ export class Container extends DefaultInjector implements IContainer {
 
     getContainer(): this {
         return this;
+    }
+
+    getInstance<T>(key: Token<T>, providers?: IProvider): T  {
+        if(key === CONTAINER || key === Container) return this as any;
+        return super.getInstance(key, providers);
     }
 
     /**
@@ -225,9 +223,9 @@ class RegisteredStateImpl implements RegisteredState {
         }
     }
 
-    getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
+    getInstance<T>(type: ClassType<T>, providers?: IProvider): T {
         const state = this.states.get(type);
-        return (state.providers?.has(type)) ? state.providers.getInstance(type, ...providers) : state?.injector.getInstance(type, ...providers) ?? null;
+        return (state.providers?.has(type)) ? state.providers.getInstance(type, providers) : state?.injector.getInstance(type, providers) ?? null;
     }
 
     resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T {
