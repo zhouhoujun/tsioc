@@ -1,4 +1,4 @@
-import { Token, LoadType, ProviderType, IInjector, Type, lang, IProvider, ROOT_INJECTOR } from '@tsdi/ioc';
+import { Token, LoadType, ProviderType, IInjector, Type, IProvider, ROOT_INJECTOR } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
@@ -6,7 +6,6 @@ import { ConfigureManager } from '../configure/manager';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootFactory, BootstrapOption } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
-import { IRunnable, Runnable } from '../runnable/Runnable';
 import { DefaultModuleContext, DefaultModuleFactory } from '../modules/ctx';
 import { ModuleStrategy } from '../modules/strategy';
 
@@ -29,12 +28,17 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
         super(target, parent, '', strategy);
     }
 
-    get app(): ApplicationContext {
-        return this;
+    /**
+     * bootstrap type
+     * @param type 
+     * @param opts 
+     */
+    bootstrap(type: Type, opts?: BootstrapOption): any {
+        return this.getService({ token: BootFactory, target: type }).create({ type, injector: this, ...opts });
     }
 
-    getInstance<T>(key: Token<T>, providers?: IProvider): T  {
-        if(key === ApplicationContext || key === ROOT_INJECTOR) return this as any;
+    getInstance<T>(key: Token<T>, providers?: IProvider): T {
+        if (key === ApplicationContext || key === ROOT_INJECTOR) return this as any;
         return super.getInstance(key, providers);
     }
 
@@ -120,6 +124,7 @@ export class DefaultApplicationFactory<CT extends ApplicationContext = Applicati
         }
     }
 }
+
 // /**
 //  * create boot context.
 //  * @param root 

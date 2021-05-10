@@ -40,9 +40,4 @@ export interface IBootApplication<T = any> extends Destroyable {
      */
     getContainer(): IContainer;
 
-    /**
-     * get root injector.
-     */
-    getRootInjector(): IInjector;
-
 }

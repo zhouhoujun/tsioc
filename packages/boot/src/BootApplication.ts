@@ -1,4 +1,4 @@
-import { IModuleLoader, IContainer, IInjector, isFunction, ROOT_INJECTOR, Type, createInjector } from '@tsdi/ioc';
+import { IModuleLoader, IContainer, IInjector, isFunction, Type, createInjector } from '@tsdi/ioc';
 import { ContainerBuilder } from '@tsdi/core';
 import { IBootApplication } from './IBootApplication';
 import { APPLICATION, PROCESS_EXIT } from './tk';
@@ -20,7 +20,6 @@ export class BootApplication<T> implements IBootApplication<T> {
     private destroyCbs: (() => void)[] = [];
     protected container: IContainer;
     private _newCt: boolean;
-    private root: IInjector;
     /**
      * application context.
      *
@@ -49,13 +48,13 @@ export class BootApplication<T> implements IBootApplication<T> {
         this.container.register(BootModule);
 
         this.context = parent.getInstance(ApplicationFactory).create(isFunction(target) ? target : target.type, parent);
-        this.root = this.context;
 
-        // this.root.setValue(ApplicationContext, this.context);
-        this.root.onDestroy(() => parent.destroy());
-        // this.root.setValue(ROOT_INJECTOR, this.root);
-        this.root.setValue(BootApplication, this);
-        this.root.setValue(APPLICATION, this);
+        this.context.onDestroy(() => {
+            parent.destroy();
+            this.destroy();
+        });
+        this.context.setValue(BootApplication, this);
+        this.context.setValue(APPLICATION, this);
 
     }
 
@@ -92,17 +91,6 @@ export class BootApplication<T> implements IBootApplication<T> {
         return new BootApplication(option ? { type: target, ...option } as BootOption<T> : target).run();
     }
 
-    protected async setup() {
-        if (!this.context) {
-            const root = this.getRootInjector();
-            root.register(MiddlewareModule);
-            if (!isFunction(this.target)) {
-                await root.load(this.target.deps);
-            }
-        }
-        return this.context;
-    }
-
     /**
      * run application of module.
      *
@@ -111,30 +99,18 @@ export class BootApplication<T> implements IBootApplication<T> {
      */
     async run(): Promise<ApplicationContext<T>> {
 
-        const root = this.root;
-        root.register(MiddlewareModule);
+        this.context.register(MiddlewareModule);
         if (!isFunction(this.target)) {
-            await root.load(this.target.deps);
+            await this.context.load(this.target.deps);
         }
-        this.onContextInit();
 
-        await this.root.action().getInstance(BootLifeScope).execute(this.context);
-        this.root.get(PROCESS_EXIT)?.(this);
+        await this.context.action().getInstance(BootLifeScope).execute(this.context);
+        this.context.get(PROCESS_EXIT)?.(this);
         return this.context;
-    }
-
-    getRootInjector(): IInjector {
-        return this.root;
     }
 
     getContainer(): IContainer {
         return this.container;
-    }
-
-    protected onContextInit() {
-        this.context.onDestroy(() => {
-            this.destroy();
-        });
     }
 
     protected createContainer() {
@@ -172,7 +148,6 @@ export class BootApplication<T> implements IBootApplication<T> {
 
     protected destroying() {
         this.context.destroy();
-        this.root.destroy();
         if (this._newCt) {
             this.container.destroy();
         }

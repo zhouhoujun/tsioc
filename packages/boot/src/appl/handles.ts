@@ -1,6 +1,6 @@
 import { lang, IActionSetup, ClassType, isFunction, getStateValue, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
-import { ApplicationContext, BootContext, ModuleContext } from '../Context';
+import { ApplicationContext, ModuleContext } from '../Context';
 import { CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { ConfigureRegister } from '../configure/register';
 import { StartupService, IStartupService } from '../services/StartupService';
@@ -14,12 +14,12 @@ import { StartupService, IStartupService } from '../services/StartupService';
  * @interface IBuildHandle
  * @template T
  */
-export interface IBuildHandle<T extends BootContext = BootContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> { }
+export interface IBuildHandle<T extends ModuleContext = ModuleContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> { }
 
 /**
  *  handle type.
  */
-export type HandleType<T extends BootContext = BootContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
+export type HandleType<T extends ModuleContext = ModuleContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
 
 
 
@@ -32,7 +32,7 @@ export type HandleType<T extends BootContext = BootContext> = ActionType<IBuildH
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends BootContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> { }
+export abstract class BuildHandle<T extends ModuleContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> { }
 
 /**
  * composite build handles.
@@ -42,7 +42,7 @@ export abstract class BuildHandle<T extends BootContext> extends IocAction<T, As
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends BootContext = BootContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
+export class BuildHandles<T extends ModuleContext = ModuleContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
     protected getActionProvider(ctx: T) {
         return ctx.action();
@@ -282,15 +282,14 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
 /**
  * startup service scope.
  */
-export class BootstrapScope extends BuildHandles<ModuleContext> implements IActionSetup {
-
+export class BootstrapScope extends BuildHandles<ApplicationContext> implements IActionSetup {
     setup() {
         this.use(ModuleBootstrap);
     }
 }
 
 
-export const ModuleBootstrap = async function (ctx: ModuleContext, next: () => Promise<void>): Promise<void> {
+export const ModuleBootstrap = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     if (ctx.reflect.bootstrap && ctx.reflect.bootstrap.length) {
         await Promise.all(ctx.reflect.bootstrap.map(b => ctx.bootstrap(b)));
     }

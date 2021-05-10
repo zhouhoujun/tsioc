@@ -1,7 +1,7 @@
-import { IInjector, Provider, refl, Type } from '@tsdi/ioc';
-import { ApplicationContext, BootFactory, BootOption, BootstrapOption, IModuleExports, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
+import { IInjector, isFunction, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
+import { ApplicationContext, IModuleExports, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
-import { DefaultBootFactory } from '../runnable/ctx';
+import { CTX_ARGS, PROCESS_ROOT } from '../tk';
 import { ModuleStrategy } from './strategy';
 
 
@@ -65,16 +65,6 @@ export class DefaultModuleContext<T> extends ModuleContext<T> {
         }
     }
 
-    /**
-     * bootstrap type
-     * @param type 
-     * @param opts 
-     */
-    bootstrap(type: Type, opts?: BootstrapOption): any {
-        const ctx = this.getService({ token: BootFactory, target: type }).create({ type, injector: this, ...opts });
-        return ctx.instance;
-    }
-
 }
 
 
@@ -128,8 +118,41 @@ export class ModuleProvider extends Provider implements IModuleExports {
 }
 
 
-export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT extends BootOption = ModuleOption> extends DefaultBootFactory<CT, OPT> implements ModuleFactory {
-    constructor(ctor: Type = DefaultModuleContext) {
-        super(ctor)
+export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT extends ModuleOption = ModuleOption> extends ModuleFactory {
+    
+    constructor(protected ctor: Type = DefaultModuleContext) {
+        super();
+    }
+
+    create(type: Type | OPT, parent?: IInjector): CT {
+        if (isFunction(type)) {
+            return this.createInstance(type, parent);
+        } else {
+            return this.createByOption(type, parent);
+        }
+    }
+
+
+    protected createByOption(option: OPT, parent?: IInjector) {
+        parent = parent || option.injector;
+        const ctx = this.createInstance(option.type, option.regIn === 'root' ? parent.getInstance(ROOT_INJECTOR) : parent);
+        this.initOption(ctx, option);
+        return ctx;
+    }
+
+    protected initOption(ctx: CT, option: OPT) {
+        if (option.providers) {
+            ctx.parse(option.providers);
+        }
+        if (option.args) {
+            ctx.setValue(CTX_ARGS, option.args);
+        }
+        if (option.baseURL) {
+            ctx.setValue(PROCESS_ROOT, option.baseURL);
+        }
+    }
+
+    protected createInstance(type: Type, parent: IInjector) {
+        return new this.ctor(type, parent);
     }
 }

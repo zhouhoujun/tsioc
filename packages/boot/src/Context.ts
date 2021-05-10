@@ -61,30 +61,35 @@ export interface BootOption<T = any> extends ContextOption<T> {
  * boot context.
  */
 @Abstract()
-export abstract class BootContext<T = any> extends DefaultInjector {
-
+export abstract class BootContext<T = any> {
+    /**
+     * boot injector
+     */
+    abstract get injector(): IInjector;
     /**
      * boot type.
      */
     abstract get type(): Type<T>;
 
     abstract get instance(): T;
+
     /**
     * get target reflect.
     */
     abstract get reflect(): AnnotationReflect<T>;
-    // /**
-    //  * Destroys the component instance and all of the data structures associated with it.
-    //  */
-    // abstract destroy(): void;
 
-    // /**
-    //  * A lifecycle hook that provides additional developer-defined cleanup
-    //  * functionality for the component.
-    //  * @param callback A handler function that cleans up developer-defined data
-    //  * associated with this component. Called when the `destroy()` method is invoked.
-    //  */
-    // abstract onDestroy(callback: Function): void;
+    /**
+     * Destroys the component instance and all of the data structures associated with it.
+     */
+    abstract destroy(): void;
+
+    /**
+     * A lifecycle hook that provides additional developer-defined cleanup
+     * functionality for the component.
+     * @param callback A handler function that cleans up developer-defined data
+     * associated with this component. Called when the `destroy()` method is invoked.
+     */
+    abstract onDestroy(callback: Function): void;
 
 }
 
@@ -94,18 +99,6 @@ export abstract class BootFactory {
 }
 
 
-// /**
-//  * module exports provider.
-//  */
-// export interface IModuleInjector extends IInjector {
-//     /**
-//      * module type.
-//      */
-//     readonly type: Type;
-//     readonly moduleRef: ModuleContext;
-//     readonly imports: ModuleContext[];
-//     readonly exports: IModuleExports;
-// }
 
 /**
  * module exports provider.
@@ -140,12 +133,6 @@ export abstract class ModuleContext<T = any> extends DefaultInjector {
     abstract get imports(): ModuleContext[];
     abstract get exports(): IModuleExports;
 
-    /**
-     * bootstrap type
-     * @param type 
-     * @param opts 
-     */
-    abstract bootstrap(type: Type, opts?: BootstrapOption): any;
 
     /**
     * get target reflect.
@@ -162,7 +149,7 @@ export interface ModuleRegistered extends Registered {
 }
 
 export interface ModuleOption<T = any> extends BootOption<T> {
-    regIn: string;
+    regIn?: string;
 }
 
 @Abstract()
@@ -208,6 +195,14 @@ export interface ApplicationOption<T = any> extends BootOption<T> {
  */
 @Abstract()
 export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
+
+    /**
+     * bootstrap type
+     * @param type 
+     * @param opts 
+     */
+    abstract bootstrap(type: Type, opts?: BootstrapOption): any;
+
     /**
      * get message queue.
      */
