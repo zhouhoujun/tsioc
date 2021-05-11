@@ -7,7 +7,7 @@ import {
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, RefMetadata, RefProvider
 } from './metadatas';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './factory';
-import { ProviderType } from '../IInjector';
+import { IInjector, ProviderType } from '../IInjector';
 
 /**
  * Abstract decorator. define the class as abstract class.
@@ -343,7 +343,7 @@ export const Singleton: ISingletonDecorator = createDecorator<ClassMetadata>('Si
  *  ioc extend inteface.
  */
 export interface IocExtentd {
-    setup(container: IContainer);
+    setup(container: IContainer|IInjector);
 }
 
 /**

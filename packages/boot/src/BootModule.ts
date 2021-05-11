@@ -1,4 +1,4 @@
-import { Inject, IocExt, IContainer, CONTAINER } from '@tsdi/ioc';
+import { Inject, IocExt, IContainer, CONTAINER, Injector } from '@tsdi/ioc';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BootLifeScope } from './appl/lifescope';
@@ -28,14 +28,14 @@ export class BootModule {
     /**
      * register aop for container.
      */
-    setup(@Inject(CONTAINER) container: IContainer) {
+    setup(@Inject() injector: Injector) {
 
-        container.action().regAction(
+        injector.action().regAction(
             // StartupServiceScope,
             BootLifeScope);
 
-        container.use(ConfigureMerger, ConfigureManager, BaseTypeParser);
-        container.parse(DEFAULTA_FACTORYS);
+        injector.use(ConfigureMerger, ConfigureManager, BaseTypeParser);
+        injector.parse(DEFAULTA_FACTORYS);
 
     }
 }
