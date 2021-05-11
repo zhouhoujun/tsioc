@@ -1,10 +1,9 @@
-import { IInjector, IProvider, ObjectMap, Token } from '@tsdi/ioc';
-import { ProdverOption } from '../Context';
+import { IInjector, IProvider, ObjectMap, ProviderType, Token } from '@tsdi/ioc';
 
 /**
  * Request
  */
-export interface RequestOption extends ProdverOption {
+export interface RequestOption {
     /**
      * request url.
      */
@@ -37,6 +36,11 @@ export interface RequestOption extends ProdverOption {
      * the target raise request.
      */
     readonly target?: any;
+    
+    /**
+     * providers.
+     */
+     providers?: ProviderType[];
 }
 
 /**

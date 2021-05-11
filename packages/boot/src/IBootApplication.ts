@@ -1,5 +1,5 @@
-import { IContainer, Destroyable, IInjector, Type } from '@tsdi/ioc';
-import { ApplicationContext, ApplicationOption, BootOption } from './Context';
+import { IContainer, Destroyable, Type } from '@tsdi/ioc';
+import { ApplicationContext, ApplicationOption } from './Context';
 
 
 /**

@@ -3,13 +3,13 @@ import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BootLifeScope } from './appl/lifescope';
 import { ApplicationFactory, BootFactory, ModuleFactory } from './Context';
-import { DefaultBootFactory } from './runnable/ctx';
+import { RunnableBootFactory } from './runnable/ctx';
 import { DefaultModuleFactory } from './modules/ctx';
 import { DefaultApplicationFactory } from './appl/ctx';
 
 
 export const DEFAULTA_FACTORYS = [
-    { provide: BootFactory, useValue: new DefaultBootFactory() },
+    { provide: BootFactory, useValue: new RunnableBootFactory() },
     { provide: ModuleFactory, useValue: new DefaultModuleFactory() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
 ]

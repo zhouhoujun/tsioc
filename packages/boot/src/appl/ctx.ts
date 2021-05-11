@@ -34,7 +34,7 @@ export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> 
      * @param opts 
      */
     bootstrap(type: Type, opts?: BootstrapOption): any {
-        return this.getService({ token: BootFactory, target: type }).create({ type, injector: this, ...opts });
+        return this.getService({ token: BootFactory, target: type }).create(type, { injector: this, ...opts });
     }
 
     getInstance<T>(key: Token<T>, providers?: IProvider): T {
@@ -113,6 +113,7 @@ export class DefaultApplicationFactory<CT extends ApplicationContext = Applicati
         if (option.startups) {
             appctx.startups.push(...option.startups);
         }
+        console.log(option);
         const mgr = ctx.getConfigureManager();
         if (option.configures && option.configures.length) {
             option.configures.forEach(cfg => {

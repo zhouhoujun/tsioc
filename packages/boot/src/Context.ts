@@ -9,51 +9,21 @@ import { MessageQueue } from './middlewares/queue';
 import { MessageContext, RequestOption } from './middlewares';
 import { DIModuleMetadata } from './decorators';
 
-export interface ProdverOption {
-
-    /**
-     *  providers.
-     */
-    providers?: ProviderType[];
-}
-
-/**
- * context option.
- *
- */
-export interface ContextOption<T = any> extends ProdverOption, RegInMetadata {
-    /**
-     * target module type.
-     *
-     * @type {ClassType}
-     */
-    type: Type<T>;
-}
 
 
 /**
- * boot options
- *
- * @export
- * @interface BootOptions
+ * bootstrap option.
  */
-export interface BootOption<T = any> extends ContextOption<T> {
+export interface BootstrapOption {
     /**
-     * boot base url.
-     *
-     * @type {string}
-     */
-    baseURL?: string;
-    /**
-     * boot run env args.
-     *
-     * @type {string[]}
-     */
-    args?: string[];
-    /**
-     * injector.
+     * injector
      */
     injector?: IInjector;
+    /**
+     * providers.
+     */
+    providers?: ProviderType[];
+    args?: string[];
 }
 
 
@@ -62,6 +32,11 @@ export interface BootOption<T = any> extends ContextOption<T> {
  */
 @Abstract()
 export abstract class BootContext<T = any> {
+
+    /**
+     * boot injector
+     */
+     abstract get app(): ApplicationContext;
     /**
      * boot injector
      */
@@ -93,9 +68,16 @@ export abstract class BootContext<T = any> {
 
 }
 
+/**
+ * boot factory option.
+ */
+export interface BootFactoryOption extends BootstrapOption {
+    injector: IInjector;
+}
+
 @Abstract()
 export abstract class BootFactory {
-    abstract create<T>(type: Type<T> | BootOption<T>, parent?: IInjector): BootContext<T>;
+    abstract create<T>(type: Type<T>, option: BootFactoryOption): BootContext<T> | Promise<BootContext<T>>;
 }
 
 
@@ -148,46 +130,42 @@ export interface ModuleRegistered extends Registered {
     moduleRef?: ModuleContext;
 }
 
-export interface ModuleOption<T = any> extends BootOption<T> {
-    regIn?: string;
+/**
+ * module option.
+ */
+export interface ModuleOption<T = any> extends RegInMetadata {
+    /**
+     * target module type.
+     *
+     * @type {ClassType}
+     */
+    type: Type<T>;
+    /**
+     * boot base url.
+     *
+     * @type {string}
+     */
+    baseURL?: string;
+    /**
+     * boot run env args.
+     *
+     * @type {string[]}
+     */
+    args?: string[];
+    /**
+     * injector.
+     */
+    injector?: IInjector;
+
+    /**
+     *  providers.
+     */
+    providers?: ProviderType[];
 }
 
 @Abstract()
 export abstract class ModuleFactory {
-    abstract create<T>(type: Type<T> | BootOption<T>, parent?: IInjector): ModuleContext<T>;
-}
-
-/**
- * bootstrap option.
- */
-export interface BootstrapOption extends ProdverOption {
-    injector?: IInjector;
-    args?: string[];
-}
-
-export interface ApplicationOption<T = any> extends BootOption<T> {
-    /**
-     * module loader
-     *
-     * @type {IModuleLoader}
-     */
-    loader?: IModuleLoader;
-    /**
-     * custom configures
-     *
-     * @type {((string | Configure)[])}
-     */
-    configures?: (string | Configure)[];
-    /**
-     * custom set first startups services.
-     */
-    startups?: Token[];
-    /**
-     * boot dependencies.
-     *
-     * @type {LoadType[]}
-     */
-    deps?: LoadType[];
+    abstract create<T>(type: Type<T> | ModuleOption<T>, parent?: IInjector): ModuleContext<T>;
 }
 
 /**
@@ -269,7 +247,37 @@ export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
     abstract get boots(): Type[];
 }
 
+/**
+ * application option.
+ */
+export interface ApplicationOption<T = any> extends ModuleOption<T> {
+    /**
+     * module loader
+     *
+     * @type {IModuleLoader}
+     */
+    loader?: IModuleLoader;
+    /**
+     * custom configures
+     *
+     * @type {((string | Configure)[])}
+     */
+    configures?: (string | Configure)[];
+    /**
+     * custom set first startups services.
+     */
+    startups?: Token[];
+    /**
+     * boot dependencies.
+     *
+     * @type {LoadType[]}
+     */
+    deps?: LoadType[];
+}
 
+/**
+ * application factory.
+ */
 @Abstract()
 export abstract class ApplicationFactory {
     abstract create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): ApplicationContext<T>;
