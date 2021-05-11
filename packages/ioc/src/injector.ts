@@ -154,7 +154,7 @@ export class Provider implements IProvider {
             if ((target as TypeOption).type) {
                 this.strategy.registerIn(this, target as TypeOption);
             } else {
-                this.factories.set(target.provide, target as ProviderOption);
+                this.factories.set(target.provide, {...target as ProviderOption});
             }
         }
 
@@ -214,7 +214,7 @@ export class Provider implements IProvider {
                     this.factories.set(k, { useValue });
                 });
             } else if (isPlainObject(p) && (p as StaticProviders).provide) {
-                this.factories.set((p as StaticProviders).provide, p as StaticProviders);
+                this.factories.set((p as StaticProviders).provide, {...p as StaticProviders});
             }
         });
 

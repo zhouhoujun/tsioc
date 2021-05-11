@@ -320,5 +320,5 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
  */
 @Abstract()
 export abstract class ApplicationFactory {
-    abstract create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): ApplicationContext<T>;
+    abstract create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): Promise<ApplicationContext<T>>;
 }

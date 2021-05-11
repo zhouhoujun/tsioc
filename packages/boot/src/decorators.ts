@@ -435,7 +435,6 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             if (isString(route) || reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                 if (!queue) {
                     queue = injector.getInstance(RootRouter);
-                    !queue && console.log('RootRouter:', injector.has(RootRouter));
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }

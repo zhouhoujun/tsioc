@@ -1,4 +1,4 @@
-import { Inject, IocExt, IContainer, CONTAINER, Injector } from '@tsdi/ioc';
+import { Inject, IocExt, Injector, ProviderType } from '@tsdi/ioc';
 import { ConfigureManager, ConfigureMerger } from './configure/manager';
 import { BaseTypeParser } from './services/BaseTypeParser';
 import { BootLifeScope } from './appl/lifescope';
@@ -8,7 +8,7 @@ import { DefaultModuleFactory } from './modules/ctx';
 import { DefaultApplicationFactory } from './appl/ctx';
 
 
-export const DEFAULTA_FACTORYS = [
+export const DEFAULTA_FACTORYS: ProviderType[] = [
     { provide: BootFactory, useValue: new RunnableBootFactory() },
     { provide: ModuleFactory, useValue: new DefaultModuleFactory() },
     { provide: ApplicationFactory, useValue: new DefaultApplicationFactory() }
@@ -35,7 +35,6 @@ export class BootModule {
             BootLifeScope);
 
         injector.use(ConfigureMerger, ConfigureManager, BaseTypeParser);
-        injector.parse(DEFAULTA_FACTORYS);
 
     }
 }

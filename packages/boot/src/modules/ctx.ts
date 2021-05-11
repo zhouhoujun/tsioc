@@ -25,7 +25,6 @@ export class DefaultModuleContext<T> extends ModuleContext<T> {
         this.reflect = refl.get(type);
         this.regIn = regIn || this.reflect.regIn;
         this.exports = new ModuleProvider(this);
-        this.regModule();
     }
 
     get instance(): T {
@@ -33,31 +32,6 @@ export class DefaultModuleContext<T> extends ModuleContext<T> {
             this._instance = this.resolve({ token: this.type, regify: true });
         }
         return this._instance;
-    }
-    protected regModule() {
-        const state = this.state();
-        const isRoot = this.regIn === 'root';
-        if (this.reflect.imports) {
-            this.register(this.reflect.imports);
-            this.reflect.imports.forEach(ty => {
-                const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
-                if (importRef) {
-                    this.imports.unshift(importRef);
-                }
-                if (isRoot) {
-                    this.exports.export(ty);
-                }
-            })
-        }
-        if (this.reflect.components) this.register(this.reflect.components);
-        if (this.reflect.annotation.providers) {
-            this.exports.parse(this.reflect.annotation.providers);
-        }
-
-        this.reflect.exports?.forEach(ty => this.exports.export(ty));
-        if(this.exports.size && this.parent instanceof ApplicationContext) {
-            this.parent.imports.push(this);
-        }
     }
 
 }
@@ -113,29 +87,48 @@ export class ModuleProvider extends Provider implements IModuleExports {
 }
 
 
-export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT extends ModuleOption = ModuleOption> extends ModuleFactory {
+export class DefaultModuleFactory extends ModuleFactory {
 
-    constructor(protected ctor: Type = DefaultModuleContext) {
+    constructor() {
         super();
     }
 
-    create(type: Type | OPT, parent?: IInjector): CT {
-        if (isFunction(type)) {
-            return this.createInstance(type, parent);
-        } else {
-            return this.createByOption(type, parent);
+    create(type: Type | ModuleOption, parent?: IInjector): ModuleContext {
+        let ctx = isFunction(type) ? this.createInstance(type, parent) : this.createByOption(type, parent);
+        this.regModule(ctx);
+        return ctx;
+    }
+
+    protected regModule(ctx: ModuleContext) {
+        const state = ctx.state();
+        const isRoot = ctx.regIn === 'root';
+        if (ctx.reflect.imports) {
+            ctx.register(ctx.reflect.imports);
+            ctx.reflect.imports.forEach(ty => {
+                const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
+                if (importRef) {
+                    ctx.imports.unshift(importRef);
+                }
+                if (isRoot) {
+                    ctx.exports.export(ty);
+                }
+            })
+        }
+        if (ctx.reflect.components) ctx.register(ctx.reflect.components);
+        if (ctx.reflect.annotation.providers) {
+            ctx.exports.parse(ctx.reflect.annotation.providers);
+        }
+
+        ctx.reflect.exports?.forEach(ty => ctx.exports.export(ty));
+        if (ctx.exports.size && ctx.parent instanceof ApplicationContext) {
+            ctx.parent.imports.push(ctx);
         }
     }
 
 
-    protected createByOption(option: OPT, parent?: IInjector) {
+    protected createByOption(option: ModuleOption, parent?: IInjector) {
         parent = parent || option.injector;
         const ctx = this.createInstance(option.type, option.regIn === 'root' ? (parent.getInstance(ROOT_INJECTOR) ?? parent) : parent);
-        this.initOption(ctx, option);
-        return ctx;
-    }
-
-    protected initOption(ctx: CT, option: OPT) {
         if (option.providers) {
             ctx.parse(option.providers);
         }
@@ -145,9 +138,10 @@ export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT 
         if (option.baseURL) {
             ctx.setValue(PROCESS_ROOT, option.baseURL);
         }
+        return ctx;
     }
 
     protected createInstance(type: Type, parent: IInjector) {
-        return new this.ctor(type, parent);
+        return new DefaultModuleContext(type, parent);
     }
 }

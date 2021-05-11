@@ -5,7 +5,7 @@ import { APPLICATION, PROCESS_EXIT } from './tk';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootstrapOption } from './Context';
 import { MiddlewareModule } from './middlewares';
 import { BootLifeScope } from './appl/lifescope';
-import { BootModule } from './BootModule';
+import { BootModule, DEFAULTA_FACTORYS } from './BootModule';
 
 
 /**
@@ -37,12 +37,12 @@ export class BootApplication<T> implements IBootApplication<T> {
         const target = this.target;
         if (!isFunction(target)) {
             if (!this.loader) this.loader = target.loader;
-            this._parent = createInjector(target.injector ?? this.createContainer(), [BootModule, ...target.providers||[]]);
+            this._parent = createInjector(target.injector ?? this.createContainer(), [...DEFAULTA_FACTORYS, ...target.providers || []]);
             this.container = this._parent.getContainer();
-            target.providers = null;
+            // target.providers = null;
         } else {
             this.container = this.createContainer();
-            this._parent = createInjector(this.container, [BootModule]);
+            this._parent = createInjector(this.container, [...DEFAULTA_FACTORYS]);
         }
     }
 
@@ -97,12 +97,11 @@ export class BootApplication<T> implements IBootApplication<T> {
             const target = this.target;
             const parent = this._parent;
             if (isFunction(target)) {
-                this.context = parent.getInstance(ApplicationFactory).create(target, parent);
+                this.context = await parent.getInstance(ApplicationFactory).create({ type: target, deps: [BootModule, MiddlewareModule] }, parent);
             } else {
-                this.context = parent.getInstance(ApplicationFactory).create(target, parent);
-                await this.context.load(target.deps);
+                target.deps = [BootModule, MiddlewareModule, ...target.deps || []];
+                this.context = await parent.getInstance(ApplicationFactory).create(target, parent);
             }
-            this.context.register(MiddlewareModule);
             this.context.onDestroy(() => this.destroy());
             this.context.setValue(BootApplication, this);
             this.context.setValue(APPLICATION, this);
