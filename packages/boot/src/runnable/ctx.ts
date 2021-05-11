@@ -1,4 +1,4 @@
-import { IInjector, refl, Type, createInjector } from '@tsdi/ioc';
+import { IInjector, refl, Type, createInjector, lang } from '@tsdi/ioc';
 import { ApplicationContext, BootContext, BootFactory, BootFactoryOption } from '../Context';
 import { AnnotationReflect } from '../reflect';
 import { Runnable } from './Runnable';
@@ -9,6 +9,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
     readonly reflect: AnnotationReflect<T>;
+    runnable: Runnable;
     private _instance: T;
     constructor(readonly type: Type<T>, readonly injector: IInjector) {
         super();
@@ -49,6 +50,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
 
     protected destroying() {
         this.injector.destroy();
+        this.runnable?.destroy();
         this._instance = null;
     }
 }
@@ -73,8 +75,13 @@ export class RunnableBootFactory implements BootFactory {
         }
         if (startup) {
             await startup.configureService(ctx);
-            ctx.onDestroy(() => startup.destroy());
+            ctx.runnable = startup;
         }
+        const app = ctx.app;
+        ctx.onDestroy(() => {
+            lang.remove(app.bootstraps, ctx);
+        });
+        app.bootstraps.push(ctx);
         return ctx;
     }
 

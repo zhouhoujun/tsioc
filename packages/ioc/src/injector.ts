@@ -115,7 +115,7 @@ export class Provider implements IProvider {
                     old.fac = fac;
                     if (useClass) old.useClass = useClass;
                 } else {
-                    this.factories.set(target as Token, { fac, useClass });
+                    this.factories.set(target as Token, useClass ? { fac, useClass } : { fac });
                 }
             } else {
                 this.factories.set(target, fac);
@@ -207,7 +207,7 @@ export class Provider implements IProvider {
                 this.use(p);
             } else if (p instanceof Provider) {
                 this.copy(p);
-            } else if (isClass(p)) {
+            } else if (isFunction(p)) {
                 this.regType(p);
             } else if (p instanceof KeyValueProvider) {
                 p.each((k, useValue) => {
@@ -273,7 +273,7 @@ export class Provider implements IProvider {
             isp.useValue = useValue;
             if (useClass) isp.useClass = useClass;
         } else if (isDefined(useValue)) {
-            this.factories.set(token, { useValue, useClass });
+            this.factories.set(token, useClass ? { useValue, useClass } : { useValue });
         }
         return this;
     }

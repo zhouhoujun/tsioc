@@ -36,7 +36,7 @@ export class BootApplication<T> implements IBootApplication<T> {
     protected onInit() {
         const target = this.target;
         if (!isFunction(target)) {
-            this.loader = target.loader;
+            if(!this.loader) this.loader = target.loader;
             this._parent = createInjector(target.injector ?? this.createContainer(), target.providers);
             this.container = this._parent.getContainer();
             target.providers = null;

@@ -1,4 +1,4 @@
-import { DIModule, Runnable, Message, MessageQueue, IBootContext, StartupService } from '../src';
+import { DIModule, Runnable, Message, MessageQueue, BootContext, StartupService, ApplicationContext } from '../src';
 import { Injectable, Inject, Singleton } from '@tsdi/ioc';
 import { Aspect, AopModule, Around, Joinpoint } from '@tsdi/aop';
 import { LogModule } from '@tsdi/logs';
@@ -40,7 +40,7 @@ export class ModuleA {
 
 @Injectable()
 export class ClassSevice extends Runnable {
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: BootContext): Promise<void> {
         await this.startup();
     }
 
@@ -95,7 +95,7 @@ export class ModuleB {
 
 }
 
-export abstract class MyStart extends StartupService<IBootContext> {
+export abstract class MyStart extends StartupService<ApplicationContext> {
 
 }
 
@@ -103,10 +103,10 @@ export abstract class MyStart extends StartupService<IBootContext> {
 export class SocketService extends MyStart {
 
     public tcpServer: net.Server;
-    private context: IBootContext;
+    private context: ApplicationContext;
     private init_times = 0;
 
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         console.log('SocketService init...')
         this.context = ctx;
         const tcpServer = this.tcpServer = new net.Server();

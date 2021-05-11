@@ -1,10 +1,10 @@
-import { BootApplication, DIModule, IBootContext, StartupService, Boot } from '../src';
+import { BootApplication, DIModule, BootContext, StartupService, Boot, ApplicationContext } from '../src';
 import expect = require('expect');
 import { IInjector, lang, Singleton } from '@tsdi/ioc';
 
 @Singleton()
 export class MyStartupService extends StartupService {
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         let defer = lang.defer<void>();
         setTimeout(() => {
             ctx.setValue('MyStartup', 'start');
@@ -19,7 +19,7 @@ export class MyStartupService extends StartupService {
     before: 'all'
 })
 export class MyStartupService1 extends StartupService {
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         ctx.setValue('MyStartup1', 'start');
     }
 }
@@ -29,7 +29,7 @@ export class MyStartupService1 extends StartupService {
 export class DeviceConnectionService extends StartupService {
 
     connention: any;
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         const cfg = ctx.getConfiguration();
         let defer = lang.defer<void>();
         setTimeout(() => {
@@ -48,10 +48,9 @@ export class DeviceInitService extends StartupService {
 
     connid: string;
     id = 0;
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         const cfg = ctx.getConfiguration();
-        const injector = ctx.injector;
-        let connention = injector.get(DeviceConnectionService).connention;
+        let connention = ctx.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
 
@@ -63,10 +62,9 @@ export class DeviceInitService extends StartupService {
 export class DeviceAService extends StartupService {
 
     data: any;
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: ApplicationContext): Promise<void> {
         const cfg = ctx.getConfiguration();
-        const injector = ctx.injector;
-        let connid = injector.get(DeviceInitService).connid;
+        let connid = ctx.get(DeviceInitService).connid;
         this.data = { connid };
     }
 
@@ -106,12 +104,12 @@ class MainApp {
 }
 
 describe('app message queue', () => {
-    let ctx: IBootContext;
+    let ctx: ApplicationContext;
     let injector: IInjector;
 
     before(async () => {
         ctx = await BootApplication.run(MainApp);
-        injector = ctx.injector;
+        injector = ctx;
     });
 
     it('make sure singleton', async () => {
@@ -121,9 +119,9 @@ describe('app message queue', () => {
     });
 
     it('has startup', async () => {
-        const startups = ctx.getStarupTokens();
+        const startups = ctx.startups;
         expect(startups).toEqual([MyStartupService1, DeviceConnectionService, DeviceInitService, DeviceAService, MyStartupService]);
-        expect(ctx.getValue('MyStartup')).toEqual('start');
+        expect(ctx.getInstance('MyStartup')).toEqual('start');
     });
 
 

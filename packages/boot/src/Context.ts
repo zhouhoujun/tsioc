@@ -1,6 +1,6 @@
 import {
     IProvider, ProviderType, RegInMetadata, LoadType, IInjector, Abstract,
-    Token, Type, IModuleLoader, Registered, DefaultInjector
+    Token, Type, IModuleLoader, Registered, DefaultInjector, Destroyable
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
@@ -26,6 +26,36 @@ export interface BootstrapOption {
     args?: string[];
 }
 
+/**
+ * IRunnable interface. define the type as a runnable.
+ *
+ * @export
+ * @interface IRunnable
+ * @template T
+ * @template TCtx default IBootContext
+ */
+ export interface IRunnable<T = any> extends Destroyable {
+
+    /**
+     * configure and startup this service.
+     *
+     * @param {IBootContext} [ctx]
+     * @returns {(Promise<void>)}
+     */
+    configureService?(ctx: BootContext<T>): Promise<void>;
+
+    /**
+     * get runable instance.
+     */
+    getInstance(): T;
+
+    /**
+     * get runable instance type.
+     */
+    getInstanceType(): Type<T>;
+
+}
+
 
 /**
  * boot context.
@@ -47,6 +77,11 @@ export abstract class BootContext<T = any> {
     abstract get type(): Type<T>;
 
     abstract get instance(): T;
+
+    /**
+     * bootstrap runnable.
+     */
+    runnable?: IRunnable;
 
     /**
     * get target reflect.
@@ -94,7 +129,7 @@ export interface IModuleExports extends IProvider {
      * export type.
      * @param type 
      */
-    export(type: Type, noRef?: boolean);
+    export?(type: Type, noRef?: boolean);
 }
 
 @Abstract()
@@ -245,6 +280,11 @@ export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
      * registered boot service.
      */
     abstract get boots(): Type[];
+
+    /**
+     * application bootstraps.
+     */
+    abstract get bootstraps(): BootContext[];
 }
 
 /**

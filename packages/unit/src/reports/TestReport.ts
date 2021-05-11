@@ -1,4 +1,4 @@
-import { Singleton, Inject, Token, Type, lang, INJECTOR, tokenId, Injector } from '@tsdi/ioc';;
+import { Singleton, Inject, Token, Type, lang, tokenId, Injector } from '@tsdi/ioc';;
 import { ITestReport, ISuiteDescribe, ICaseDescribe } from './ITestReport';
 import { Reporter, RealtimeReporter } from './Reporter';
 
@@ -22,12 +22,12 @@ export class TestReport implements ITestReport {
 
     suites: Map<Token, ISuiteDescribe>;
 
-    resports: Reporter[];
+    reports: Reporter[];
     getReports() {
-        if (!this.resports) {
-            this.resports = this.injector.getServices(Reporter);
+        if (!this.reports) {
+            this.reports = this.injector.getServices(Reporter);
         }
-        return this.resports || [];
+        return this.reports || [];
     }
 
     constructor() {
@@ -35,7 +35,7 @@ export class TestReport implements ITestReport {
     }
 
     track(error: Error) {
-        this.resports.forEach(rep=> {
+        this.reports.forEach(rep=> {
             rep.track(error);
         });
     }

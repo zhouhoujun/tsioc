@@ -31,7 +31,6 @@ export class UnitTestRunner extends Runnable {
                 suites = await loader.loadType({ files: src as string | string[], basePath: appCtx.baseURL });
             }
         }
-        console.log(oldRunner, appCtx.baseURL, src)
         oldRunner.unregisterGlobalScope();
         await oldRunner.configureService(ctx);
         await lang.step(suites.filter(v => v && refl.get<AnnotationReflect>(v)?.annoType === 'suite').map(s => () => appCtx.bootstrap(s)));

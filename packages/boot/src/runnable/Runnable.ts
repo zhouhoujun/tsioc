@@ -1,36 +1,6 @@
-import { lang, Type, Abstract, Destroyable, Inject, TARGET } from '@tsdi/ioc';
-import { BootContext } from '../Context';
+import { lang, Type, Abstract, Inject, TARGET } from '@tsdi/ioc';
+import { BootContext, IRunnable } from '../Context';
 
-
-/**
- * IRunnable interface. define the type as a runnable.
- *
- * @export
- * @interface IRunnable
- * @template T
- * @template TCtx default IBootContext
- */
-export interface IRunnable<T = any> extends Destroyable {
-
-    /**
-     * configure and startup this service.
-     *
-     * @param {IBootContext} [ctx]
-     * @returns {(Promise<void>)}
-     */
-    configureService?(ctx: BootContext<T>): Promise<void>;
-
-    /**
-     * get runable instance.
-     */
-    getInstance(): T;
-
-    /**
-     * get runable instance type.
-     */
-    getInstanceType(): Type<T>;
-
-}
 
 
 /**

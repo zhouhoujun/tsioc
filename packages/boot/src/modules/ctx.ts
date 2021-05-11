@@ -1,4 +1,4 @@
-import { IInjector, isFunction, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
+import { IInjector, isFunction, Provider, refl, RegisteredState, ROOT_INJECTOR, Type } from '@tsdi/ioc';
 import { ApplicationContext, IModuleExports, ModuleContext, ModuleFactory, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
 import { CTX_ARGS, PROCESS_ROOT } from '../tk';
@@ -9,7 +9,7 @@ import { ModuleStrategy } from './strategy';
 /**
  * default module injector strategy.
  */
-const mdInjStrategy = new ModuleStrategy<ModuleContext>(p => p instanceof ModuleContext, cu => cu.imports);
+export const mdInjStrategy = new ModuleStrategy<ModuleContext>(p => p instanceof ModuleContext, cu => cu.imports);
 
 
 
@@ -23,13 +23,9 @@ export class DefaultModuleContext<T> extends ModuleContext<T> {
     constructor(readonly type: Type<T>, parent?: IInjector, regIn?: string, strategy: ModuleStrategy = mdInjStrategy) {
         super(parent, strategy)
         this.reflect = refl.get(type);
-        this.exports = new ModuleProvider(this);
         this.regIn = regIn || this.reflect.regIn;
+        this.exports = new ModuleProvider(this);
         this.regModule();
-    }
-
-    get injector() {
-        return this;
     }
 
     get instance(): T {
@@ -40,9 +36,9 @@ export class DefaultModuleContext<T> extends ModuleContext<T> {
     }
     protected regModule() {
         const state = this.state();
+        const isRoot = this.regIn === 'root';
         if (this.reflect.imports) {
             this.register(this.reflect.imports);
-            const isRoot = this.regIn === 'root'
             this.reflect.imports.forEach(ty => {
                 const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
                 if (importRef) {
@@ -59,14 +55,12 @@ export class DefaultModuleContext<T> extends ModuleContext<T> {
         }
 
         this.reflect.exports?.forEach(ty => this.exports.export(ty));
-        const appctx = this.getInstance(ApplicationContext);
-        if (this.exports.size && this.parent === appctx) {
-            appctx.imports.push(this);
+        if(this.exports.size && this.parent instanceof ApplicationContext) {
+            this.parent.imports.push(this);
         }
     }
 
 }
-
 
 
 /**
@@ -81,6 +75,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
 
     constructor(public moduleRef: ModuleContext, strategy = mdPdrStrategy) {
         super(moduleRef, strategy);
+        this.export(moduleRef.type, true);
     }
 
     /**
@@ -119,7 +114,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
 
 
 export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT extends ModuleOption = ModuleOption> extends ModuleFactory {
-    
+
     constructor(protected ctor: Type = DefaultModuleContext) {
         super();
     }
@@ -135,7 +130,7 @@ export class DefaultModuleFactory<CT extends ModuleContext = ModuleContext, OPT 
 
     protected createByOption(option: OPT, parent?: IInjector) {
         parent = parent || option.injector;
-        const ctx = this.createInstance(option.type, option.regIn === 'root' ? parent.getInstance(ROOT_INJECTOR) : parent);
+        const ctx = this.createInstance(option.type, option.regIn === 'root' ? (parent.getInstance(ROOT_INJECTOR) ?? parent) : parent);
         this.initOption(ctx, option);
         return ctx;
     }

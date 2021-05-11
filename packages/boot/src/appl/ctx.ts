@@ -1,13 +1,14 @@
-import { Token, LoadType, ProviderType, IInjector, Type, IProvider, ROOT_INJECTOR } from '@tsdi/ioc';
+import { Token, ProviderType, IInjector, Type, IProvider, ROOT_INJECTOR, refl } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootFactory, BootstrapOption } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, IModuleExports, ModuleContext, ModuleRegistered } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
-import { DefaultModuleContext, DefaultModuleFactory } from '../modules/ctx';
+import { DefaultModuleFactory, mdInjStrategy } from '../modules/ctx';
 import { ModuleStrategy } from '../modules/strategy';
+import { ModuleReflect } from '../reflect';
 
 
 /**
@@ -17,16 +18,52 @@ import { ModuleStrategy } from '../modules/strategy';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class DefaultApplicationContext<T = any> extends DefaultModuleContext<T> implements ApplicationContext<T> {
+export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
 
+    imports: ModuleContext[] = [];
+    readonly reflect: ModuleReflect<T>;
     readonly startups: Token[] = [];
     readonly boots: Type[] = [];
     args: string[];
-    deps: LoadType[];
+    private _instance: T;
+    readonly regIn = 'root';
 
-    constructor(target: Type<T>, parent?: IInjector, strategy?: ModuleStrategy) {
-        super(target, parent, '', strategy);
+    readonly bootstraps: BootContext[] = [];
+
+    constructor(readonly type: Type<T>, parent?: IInjector, strategy: ModuleStrategy = mdInjStrategy) {
+        super(parent, strategy)
+        this.reflect = refl.get(type);
+        this.regModule();
     }
+
+    protected regModule() {
+        const state = this.state();
+        if (this.reflect.imports) {
+            this.register(this.reflect.imports);
+            this.reflect.imports.forEach(ty => {
+                const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
+                if (importRef) {
+                    this.imports.unshift(importRef);
+                }
+            })
+        }
+        if (this.reflect.components) this.register(this.reflect.components);
+        if (this.reflect.annotation.providers) {
+            this.parse(this.reflect.annotation.providers);
+        }
+    }
+
+    get exports() {
+        return this as IModuleExports;
+    }
+
+    get instance(): T {
+        if (!this._instance) {
+            this._instance = this.resolve({ token: this.type, regify: true });
+        }
+        return this._instance;
+    }
+
 
     /**
      * bootstrap type
@@ -109,11 +146,9 @@ export class DefaultApplicationFactory<CT extends ApplicationContext = Applicati
         super.initOption(ctx, option);
         const appctx = ctx as ApplicationContext as DefaultApplicationContext;
         appctx.args = option.args;
-        appctx.deps = option.deps;
         if (option.startups) {
             appctx.startups.push(...option.startups);
         }
-        console.log(option);
         const mgr = ctx.getConfigureManager();
         if (option.configures && option.configures.length) {
             option.configures.forEach(cfg => {
@@ -125,44 +160,3 @@ export class DefaultApplicationFactory<CT extends ApplicationContext = Applicati
         }
     }
 }
-
-// /**
-//  * create boot context.
-//  * @param root 
-//  * @param target 
-//  * @param args 
-//  * @returns 
-//  */
-// export function createContext<T extends IBootContext>(root: IInjector, target: ClassType | BootOption, args?: string[]): T {
-//     let md: Type;
-//     let injector: IInjector;
-//     let options: BootOption;
-//     if (isPlainObject<BootOption>(target)) {
-//         md = target.type || target.bootstrap;
-//         injector = target.injector;
-//         if (isModuleType(md)) {
-//             options = { ...target, args, type: md };
-//         } else {
-//             options = { ...target, args, bootstrap: md };
-//             options.type = undefined;
-//         }
-//     } else {
-//         md = target as Type;
-//         if (isModuleType(md)) {
-//             options = { type: md, args };
-//         } else {
-//             options = { bootstrap: md, args };
-//         }
-//     }
-//     if (!injector) {
-//         const state = root.state();
-//         injector = state.isRegistered(md) ? state.getInjector(md) || root : root;
-//     }
-//     return injector.getService<T>({ token: BootContext, target: md, defaultToken: BootContext }, { provide: CTX_OPTIONS, useValue: options });
-// }
-
-
-// export function isModuleType(target: ClassType) {
-//     return refl.get<ModuleReflect>(target)?.annoType === 'module';
-// }
-

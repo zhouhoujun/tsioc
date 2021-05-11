@@ -1,4 +1,4 @@
-import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware, IBootContext, MappingRoute, RouteMapping, CONTEXT } from '../src';
+import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware, BootContext, MappingRoute, RouteMapping, CONTEXT, ApplicationContext } from '../src';
 import expect = require('expect');
 import { IInjector, Inject, Injectable, lang, refl } from '@tsdi/ioc';
 
@@ -127,12 +127,12 @@ class MainApp {
 }
 
 describe('app message queue', () => {
-    let ctx: IBootContext;
+    let ctx: ApplicationContext;
     let injector: IInjector;
 
     before(async () => {
         ctx = await BootApplication.run(MainApp);
-        injector = ctx.injector;
+        injector = ctx;
     });
 
     it('make sure singleton', async () => {
