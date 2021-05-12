@@ -33,6 +33,10 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
     constructor(readonly type: Type<T>, parent?: IInjector, strategy: ModuleStrategy = mdInjStrategy) {
         super(parent, strategy)
         this.reflect = refl.get(type);
+
+        this.onDestroy(()=>{
+            this.imports.forEach(e => e.destroy());
+        });
     }
 
 
@@ -115,11 +119,6 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
      */
     getConfigureManager(): ConfigureManager<Configure> {
         return this.get(ConfigureManager);
-    }
-
-    protected destroying() {
-        this.imports.forEach(e => e.destroy());
-        super.destroying();
     }
 }
 
