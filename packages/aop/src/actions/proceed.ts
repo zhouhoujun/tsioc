@@ -125,12 +125,14 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         const container = this.container;
         return (...args: any[]) => {
             const larg = lang.last(args);
+            const inj = container.state()?.getInjector(targetType);
+            if(!inj) return propertyMethod.call(target, ...args);
             let providers: IProvider;
             if (larg instanceof InvokedProvider) {
                 args = args.slice(0, args.length - 1);
                 providers = larg;
             }
-            const joinPoint = Joinpoint.parse(container.state().getInjector(targetType), {
+            const joinPoint = Joinpoint.parse(inj, {
                 name,
                 fullName,
                 params: refl.getParameters(targetType, name),

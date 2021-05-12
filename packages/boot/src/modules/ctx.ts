@@ -34,6 +34,12 @@ export class DefaultModuleContext<T> extends ModuleContext<T> {
         return this._instance;
     }
 
+    protected destroying() {
+        this.imports.forEach(e => e.destroy());
+        this.exports.destroy();
+        super.destroying();
+    }
+
 }
 
 

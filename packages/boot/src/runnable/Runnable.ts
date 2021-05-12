@@ -22,7 +22,7 @@ export abstract class Runnable<T = any> implements IRunnable {
 
 
     getInstance(): T {
-        return this.instance;
+        return this.instance ?? this as any;
     }
 
     getInstanceType(): Type<T> {

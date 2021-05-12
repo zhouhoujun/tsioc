@@ -116,6 +116,11 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
     getConfigureManager(): ConfigureManager<Configure> {
         return this.get(ConfigureManager);
     }
+
+    protected destroying() {
+        this.imports.forEach(e => e.destroy());
+        super.destroying();
+    }
 }
 
 

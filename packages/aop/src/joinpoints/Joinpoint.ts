@@ -35,7 +35,6 @@ export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
  * @class Joinpoint
  * @implements {IJoinpoint}
  */
-@Injectable()
 export class Joinpoint implements IocContext {
     /**
      * method name
