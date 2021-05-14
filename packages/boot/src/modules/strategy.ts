@@ -1,5 +1,5 @@
 import { IProvider, isNil, lang, ProviderState, Strategy, Token } from '@tsdi/ioc';
-import { ModuleContext } from '../Context';
+import { ModuleInjector } from '../Context';
 
 
 
@@ -9,7 +9,7 @@ import { ModuleContext } from '../Context';
  */
  export class ModuleStrategy<TI extends IProvider = IProvider> extends Strategy {
 
-    constructor(private vaild: (parent: IProvider) => boolean, private getMDRef: (curr: TI) => ModuleContext[]) {
+    constructor(private vaild: (parent: IProvider) => boolean, private getMDRef: (curr: TI) => ModuleInjector[]) {
         super();
     }
 

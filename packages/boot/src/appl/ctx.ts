@@ -1,14 +1,12 @@
-import { Token, ProviderType, IInjector, Type, IProvider, ROOT_INJECTOR, refl, isFunction } from '@tsdi/ioc';
+import { Token, ProviderType, IInjector, Type, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { CONFIGURATION, CTX_ARGS, PROCESS_ROOT } from '../tk';
+import { CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, IModuleExports, ModuleContext, ModuleRegistered } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
-import { mdInjStrategy } from '../modules/ctx';
-import { ModuleStrategy } from '../modules/strategy';
-import { ModuleReflect } from '../reflect';
+import { AnnotationReflect } from '../reflect';
 
 
 /**
@@ -20,35 +18,16 @@ import { ModuleReflect } from '../reflect';
  */
 export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
 
-    imports: ModuleContext[] = [];
-    readonly reflect: ModuleReflect<T>;
-    readonly startups: Token[] = [];
-    readonly boots: Type[] = [];
-    args: string[];
-    private _instance: T;
-    readonly regIn = 'root';
-
+    readonly destroyed = false;
+    private _dsryCbs: (() => void)[] = [];
     readonly bootstraps: BootContext[] = [];
+    readonly args: string[] = [];
+    readonly boots: Type[] = [];
+    readonly startups: Token[] = [];
 
-    constructor(readonly type: Type<T>, parent?: IInjector, strategy: ModuleStrategy = mdInjStrategy) {
-        super(parent, strategy)
-        this.reflect = refl.get(type);
-
-        this.onDestroy(()=>{
-            this.imports.forEach(e => e.destroy());
-        });
-    }
-
-
-    get exports() {
-        return this as IModuleExports;
-    }
-
-    get instance(): T {
-        if (!this._instance) {
-            this._instance = this.resolve({ token: this.type, regify: true });
-        }
-        return this._instance;
+    constructor(readonly injector: ModuleInjector<T>) {
+        super();
+        injector.setValue(ApplicationContext, this);
     }
 
 
@@ -57,17 +36,16 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
      * @param type 
      * @param opts 
      */
-    bootstrap(type: Type, opts?: BootstrapOption): any {
-        return this.getService({ token: BootFactory, target: type }).create(type, { injector: this, ...opts });
+    bootstrap<T>(type: Type<T>| AnnotationReflect<T>, opts?: BootstrapOption): any {
+        return this.injector.getService({ token: BootFactory, target: type }).create(type, { injector: this.injector, ...opts });
     }
 
-    getInstance<T>(key: Token<T>, providers?: IProvider): T {
-        if (key === ApplicationContext || key === ROOT_INJECTOR) return this as any;
-        return super.getInstance(key, providers);
+    get instance(): T {
+        return this.injector.instance;
     }
 
     getMessager(): MessageQueue {
-        return this.get(ROOT_QUEUE);
+        return this.injector.get(ROOT_QUEUE);
     }
 
     /**
@@ -94,22 +72,22 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
      * get log manager.
      */
     getLogManager(): ILoggerManager {
-        return this.parent.get(ConfigureLoggerManager);
+        return this.injector.get(ConfigureLoggerManager);
     }
 
     get baseURL(): string {
-        return this.getInstance(PROCESS_ROOT);
+        return this.injector.getInstance(PROCESS_ROOT);
     }
 
     getAnnoation<T extends DIModuleMetadata>(): T {
-        return this.reflect?.annotation as T;
+        return this.injector.reflect?.annotation as T;
     }
 
     /**
      * configuration merge metadata config and all application config.
      */
     getConfiguration(): Configure {
-        return this.getInstance(CONFIGURATION);
+        return this.injector.getInstance(CONFIGURATION);
     }
 
     /**
@@ -118,66 +96,68 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
      * @returns {ConfigureManager<Configure>}
      */
     getConfigureManager(): ConfigureManager<Configure> {
-        return this.get(ConfigureManager);
+        return this.injector.get(ConfigureManager);
     }
+
+    /**
+    * destory this.
+    */
+    destroy(): void {
+        if (!this.destroyed) {
+            (this as {destroyed:boolean}).destroyed = true;
+            this._dsryCbs.forEach(cb => cb());
+            this._dsryCbs = null;
+            this.destroying();
+        }
+    }
+    /**
+     * register callback on destory.
+     * @param callback destory callback
+     */
+    onDestroy(callback: () => void): void {
+        if (this._dsryCbs) {
+            this._dsryCbs.push(callback);
+        }
+    }
+
+    protected destroying() {
+        this.injector.destroy();
+    }
+
 }
 
 
 
 export class DefaultApplicationFactory extends ApplicationFactory {
 
-    constructor() {
-        super();
-    }
-
-    async create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): Promise<ApplicationContext<T>> {
+    create<T>(type: ApplicationOption<T>): ApplicationContext<T>;
+    create<T>(type: ModuleInjector<T>, option?: ApplicationOption<T>): ApplicationContext<T>;
+    create<T>(type: Type<T>, parent?: IInjector): ApplicationContext<T>;
+    create<T>(arg1: any, arg2?: any): ApplicationContext<T> {
         let ctx: ApplicationContext<T>;
-        if (isFunction(type)) {
-            ctx = this.createInstance(type, parent);
+        if (isFunction(arg1)) {
+            const parent = arg2 as IInjector;
+            return this.createInstance(parent.getInstance(ModuleFactory).create(arg1));
         } else {
-            ctx = await this.createByOption(type, parent);
-        }
-        this.regModule(ctx);
-        return ctx;
-    }
-
-    protected regModule(ctx: ApplicationContext) {
-        const state = ctx.state();
-        if (ctx.reflect.imports) {
-            ctx.register(ctx.reflect.imports);
-            ctx.reflect.imports.forEach(ty => {
-                const importRef = state.getRegistered<ModuleRegistered>(ty)?.moduleRef;
-                if (importRef) {
-                    ctx.imports.unshift(importRef);
-                }
-            })
-        }
-        if (ctx.reflect.components) ctx.register(ctx.reflect.components);
-        if (ctx.reflect.annotation.providers) {
-            ctx.parse(ctx.reflect.annotation.providers);
+            let option: ApplicationOption<T>;
+            if (arg1 instanceof ModuleInjector) {
+                ctx = this.createInstance(arg1);
+                option = arg2;
+            } else {
+                option = arg1;
+                const parent: IInjector = option.injector || arg2;
+                ctx = this.createInstance(parent.getInstance(ModuleFactory).create(option, parent));
+            }
+            this.initOption(ctx, option);
+            return ctx;
         }
     }
 
+    initOption<T>(ctx: ApplicationContext<T>, option: ApplicationOption<T>) {
+        if (!option) return;
 
-    protected async createByOption<T>(option: ApplicationOption<T>, parent?: IInjector) {
-        parent = parent || option.injector;
-        const ctx = this.createInstance(option.type, option.regIn === 'root' ? (parent.getInstance(ROOT_INJECTOR) ?? parent) : parent);
-        if (option.deps) {
-            await ctx.load(option.deps);
-        }
-        if (option.providers) {
-            ctx.parse(option.providers);
-        }
-        if (option.args) {
-            ctx.setValue(CTX_ARGS, option.args);
-        }
-        if (option.baseURL) {
-            ctx.setValue(PROCESS_ROOT, option.baseURL);
-        }
-        ctx.args = option.args;
-        if (option.startups) {
-            ctx.startups.push(...option.startups);
-        }
+        if (option.args) ctx.args.push(...option.args);
+        if (option.startups) ctx.startups.push(...option.startups);
         const mgr = ctx.getConfigureManager();
         if (option.configures && option.configures.length) {
             option.configures.forEach(cfg => {
@@ -187,11 +167,10 @@ export class DefaultApplicationFactory extends ApplicationFactory {
             // load default config.
             mgr.useConfiguration();
         }
-        return ctx;
     }
 
-    protected createInstance(type: Type, parent: IInjector) {
-        return new DefaultApplicationContext(type, parent);
+    protected createInstance(inj: ModuleInjector) {
+        return new DefaultApplicationContext(inj);
     }
 }
 

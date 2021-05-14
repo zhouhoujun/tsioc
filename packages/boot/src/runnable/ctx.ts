@@ -1,4 +1,4 @@
-import { IInjector, refl, Type, createInjector, lang } from '@tsdi/ioc';
+import { IInjector, refl, Type, createInjector, lang, isTypeReflect } from '@tsdi/ioc';
 import { ApplicationContext, BootContext, BootFactory, BootFactoryOption } from '../Context';
 import { AnnotationReflect } from '../reflect';
 import { Runnable } from './Runnable';
@@ -8,12 +8,14 @@ export class DefaultBootContext<T> extends BootContext<T> {
 
     private _destroyed = false;
     private _dsryCbs: (() => void)[] = [];
-    readonly reflect: AnnotationReflect<T>;
     runnable: Runnable;
     private _instance: T;
-    constructor(readonly type: Type<T>, readonly injector: IInjector) {
+    constructor(readonly reflect: AnnotationReflect<T>, readonly injector: IInjector) {
         super();
-        this.reflect = refl.get(type);
+    }
+
+    get type(): Type<T> {
+        return this.reflect.type;
     }
 
     get app(): ApplicationContext {
@@ -60,10 +62,9 @@ export class RunnableBootFactory implements BootFactory {
     constructor(public ctor: Type = DefaultBootContext) {
     }
 
-    async create<T>(type: Type<T>, option: BootFactoryOption) {
+    async create<T>(type: Type<T> | AnnotationReflect<T>, option: BootFactoryOption) {
         const injector = createInjector(option.injector, option.providers);
-        injector.register(type);
-        const ctx = new DefaultBootContext(type, injector);
+        const ctx = new DefaultBootContext(isTypeReflect(type) ? type : refl.get(type), injector);
         let startup: Runnable;
         if (ctx.instance instanceof Runnable) {
             startup = ctx.instance;

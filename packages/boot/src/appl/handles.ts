@@ -1,6 +1,6 @@
 import { lang, IActionSetup, ClassType, isFunction, getStateValue, Type, IocAction, ActionType, AsyncHandler, Actions } from '@tsdi/ioc';
 import { LogConfigureToken, DebugLogAspect, LogModule } from '@tsdi/logs';
-import { ApplicationContext, ModuleContext } from '../Context';
+import { ApplicationContext } from '../Context';
 import { CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { ConfigureRegister } from '../configure/register';
 import { StartupService, IStartupService } from '../services/StartupService';
@@ -14,12 +14,12 @@ import { StartupService, IStartupService } from '../services/StartupService';
  * @interface IBuildHandle
  * @template T
  */
-export interface IBuildHandle<T extends ModuleContext = ModuleContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> { }
+export interface IBuildHandle<T extends ApplicationContext = ApplicationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> { }
 
 /**
  *  handle type.
  */
-export type HandleType<T extends ModuleContext = ModuleContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
+export type HandleType<T extends ApplicationContext = ApplicationContext> = ActionType<IBuildHandle<T>, AsyncHandler<T>>;
 
 
 
@@ -32,7 +32,7 @@ export type HandleType<T extends ModuleContext = ModuleContext> = ActionType<IBu
  * @extends {Handle<T>}
  * @template T
  */
-export abstract class BuildHandle<T extends ModuleContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> { }
+export abstract class BuildHandle<T extends ApplicationContext> extends IocAction<T, AsyncHandler<T>, Promise<void>> implements IBuildHandle<T> { }
 
 /**
  * composite build handles.
@@ -42,10 +42,10 @@ export abstract class BuildHandle<T extends ModuleContext> extends IocAction<T, 
  * @extends {Handles<T>}
  * @template T
  */
-export class BuildHandles<T extends ModuleContext = ModuleContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
+export class BuildHandles<T extends ApplicationContext = ApplicationContext> extends Actions<T, HandleType<T>, AsyncHandler<T>, Promise<void>> {
 
     protected getActionProvider(ctx: T) {
-        return ctx.action();
+        return ctx.injector.action();
     }
 }
 
@@ -102,9 +102,7 @@ export class BuildHandles<T extends ModuleContext = ModuleContext> extends Actio
  */
 export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
 
-    // const options = ctx.getOptions();
-    const baseURL = ctx.baseURL;
-    const injector = ctx;
+    const { baseURL, injector } = ctx;
     const mgr = ctx.getConfigureManager();
     let config = await mgr.getConfig();
 
@@ -118,10 +116,9 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
 
     if (!baseURL && config.baseURL) {
         injector.setValue(PROCESS_ROOT, config.baseURL);
-        // ctx.baseURL = config.baseURL;
     }
 
-    config = { ...config, ...ctx.reflect.annotation };
+    config = { ...config, ...injector.reflect.annotation };
     injector.setValue(CONFIGURATION, config);
 
     await next();
@@ -177,14 +174,14 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
  */
 export const BootConfigureRegisterHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const config = ctx.getConfiguration();
-    const injector = ctx;
+    const injector = ctx.injector;
     const container = injector.getContainer();
     if (config.logConfig && !container.has(LogConfigureToken)) {
         container.setValue(LogConfigureToken, config.logConfig);
     }
     if (config.debug) {
         // make sure log module registered.
-        ctx.register(LogModule)
+        injector.register(LogModule)
             .register(DebugLogAspect);
     }
 
@@ -237,7 +234,7 @@ export class StartupGlobalService extends BuildHandles<ApplicationContext> imple
  */
 export const ConfigureServiceHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
     const startups = ctx.startups;
-    const root = ctx;
+    const root = ctx.injector;
     const regedState = root.state();
     if (startups.length) {
         await lang.step(startups.map(tyser => () => {
@@ -290,8 +287,9 @@ export class BootstrapScope extends BuildHandles<ApplicationContext> implements 
 
 
 export const ModuleBootstrap = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-    if (ctx.reflect.bootstrap && ctx.reflect.bootstrap.length) {
-        await Promise.all(ctx.reflect.bootstrap.map(b => ctx.bootstrap(b)));
+    const injector = ctx.injector;
+    if (injector.reflect.bootstrap && injector.reflect.bootstrap.length) {
+        await Promise.all(injector.reflect.bootstrap.map(b => ctx.bootstrap(b)));
     }
     await next();
 };

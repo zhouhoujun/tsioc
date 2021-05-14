@@ -7,7 +7,7 @@ export class MyStartupService extends StartupService {
     async configureService(ctx: ApplicationContext): Promise<void> {
         let defer = lang.defer<void>();
         setTimeout(() => {
-            ctx.setValue('MyStartup', 'start');
+            ctx.injector.setValue('MyStartup', 'start');
             defer.resolve();
         })
 
@@ -20,7 +20,7 @@ export class MyStartupService extends StartupService {
 })
 export class MyStartupService1 extends StartupService {
     async configureService(ctx: ApplicationContext): Promise<void> {
-        ctx.setValue('MyStartup1', 'start');
+        ctx.injector.setValue('MyStartup1', 'start');
     }
 }
 
@@ -50,7 +50,7 @@ export class DeviceInitService extends StartupService {
     id = 0;
     async configureService(ctx: ApplicationContext): Promise<void> {
         const cfg = ctx.getConfiguration();
-        let connention = ctx.get(DeviceConnectionService).connention;
+        let connention = ctx.injector.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
 
@@ -64,7 +64,7 @@ export class DeviceAService extends StartupService {
     data: any;
     async configureService(ctx: ApplicationContext): Promise<void> {
         const cfg = ctx.getConfiguration();
-        let connid = ctx.get(DeviceInitService).connid;
+        let connid = ctx.injector.get(DeviceInitService).connid;
         this.data = { connid };
     }
 
@@ -109,7 +109,7 @@ describe('app message queue', () => {
 
     before(async () => {
         ctx = await BootApplication.run(MainApp);
-        injector = ctx;
+        injector = ctx.injector;
     });
 
     it('make sure singleton', async () => {
@@ -121,7 +121,7 @@ describe('app message queue', () => {
     it('has startup', async () => {
         const startups = ctx.startups;
         expect(startups).toEqual([MyStartupService1, DeviceConnectionService, DeviceInitService, DeviceAService, MyStartupService]);
-        expect(ctx.getInstance('MyStartup')).toEqual('start');
+        expect(ctx.injector.getInstance('MyStartup')).toEqual('start');
     });
 
 

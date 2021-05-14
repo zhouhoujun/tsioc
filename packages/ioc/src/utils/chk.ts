@@ -22,6 +22,15 @@ export function isFunction(target: any): target is Function {
 }
 
 /**
+ * is type reflect.
+ * @param target 
+ * @returns 
+ */
+export function isTypeReflect(target: any): target is TypeReflect {
+    return target && isFunction(target.type) && target.type === target.class?.type;
+}
+
+/**
  * is run in nodejs or not.
  *
  * @export

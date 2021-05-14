@@ -17,15 +17,15 @@ import { ExpectToken } from './assert/expects';
 export class UnitTestConfigureRegister extends ConfigureRegister {
 
     async register(config: UnitTestConfigure, ctx: ApplicationContext): Promise<void> {
-
-        if (!ctx.has(Assert)) {
-            ctx.setValue(Assert, assert);
+        const inj = ctx.injector;
+        if (!inj.has(Assert)) {
+            inj.setValue(Assert, assert);
         }
-        if (!ctx.has(ExpectToken)) {
-            ctx.setValue(ExpectToken, expect);
+        if (!inj.has(ExpectToken)) {
+            inj.setValue(ExpectToken, expect);
         }
         if (isArray(config.reporters) && config.reporters.length) {
-            ctx.register(config.reporters);
+            inj.register(config.reporters);
         }
     }
 }

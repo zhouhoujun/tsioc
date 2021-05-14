@@ -34,7 +34,7 @@ export interface BootstrapOption {
  * @template T
  * @template TCtx default IBootContext
  */
- export interface IRunnable<T = any> extends Destroyable {
+export interface IRunnable<T = any> extends Destroyable {
 
     /**
      * configure and startup this service.
@@ -66,7 +66,7 @@ export abstract class BootContext<T = any> {
     /**
      * boot injector
      */
-     abstract get app(): ApplicationContext;
+    abstract get app(): ApplicationContext;
     /**
      * boot injector
      */
@@ -112,7 +112,7 @@ export interface BootFactoryOption extends BootstrapOption {
 
 @Abstract()
 export abstract class BootFactory {
-    abstract create<T>(type: Type<T>, option: BootFactoryOption): BootContext<T> | Promise<BootContext<T>>;
+    abstract create<T>(type: Type<T> | AnnotationReflect<T>, option: BootFactoryOption): BootContext<T> | Promise<BootContext<T>>;
 }
 
 
@@ -124,7 +124,7 @@ export interface IModuleExports extends IProvider {
     /**
      * export moduleRefs.
      */
-    exports: ModuleContext[]
+    exports: ModuleInjector[]
     /**
      * export type.
      * @param type 
@@ -133,8 +133,9 @@ export interface IModuleExports extends IProvider {
 }
 
 @Abstract()
-export abstract class ModuleContext<T = any> extends DefaultInjector {
+export abstract class ModuleInjector<T = any> extends DefaultInjector {
 
+    abstract get isRoot(): boolean;
     /**
      * module type.
      */
@@ -147,7 +148,7 @@ export abstract class ModuleContext<T = any> extends DefaultInjector {
 
     abstract get regIn(): string;
 
-    abstract get imports(): ModuleContext[];
+    abstract get imports(): ModuleInjector[];
     abstract get exports(): IModuleExports;
 
 
@@ -162,7 +163,7 @@ export abstract class ModuleContext<T = any> extends DefaultInjector {
  * module registered state.
  */
 export interface ModuleRegistered extends Registered {
-    moduleRef?: ModuleContext;
+    moduleRef?: ModuleInjector;
 }
 
 /**
@@ -200,21 +201,32 @@ export interface ModuleOption<T = any> extends RegInMetadata {
 
 @Abstract()
 export abstract class ModuleFactory {
-    abstract create<T>(type: Type<T> | ModuleOption<T>, parent?: IInjector): ModuleContext<T>;
+    abstract create<T>(type: Type<T> | ModuleReflect<T> | ModuleOption<T>, parent?: IInjector, root?: boolean): ModuleInjector<T>;
+    abstract create<T>(type: Type<T> | ModuleReflect<T> | ModuleOption<T>, parent?: IInjector, regIn?: string, root?: boolean): ModuleInjector<T>;
 }
 
 /**
  * boot context.
  */
 @Abstract()
-export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
+export abstract class ApplicationContext<T = any> implements Destroyable {
+
+    /**
+     * application injector.
+     */
+    abstract get injector(): ModuleInjector<T>;
+
+    /**
+     * module instance.
+     */
+    abstract get instance(): T;
 
     /**
      * bootstrap type
      * @param type 
      * @param opts 
      */
-    abstract bootstrap(type: Type, opts?: BootstrapOption): any;
+    abstract bootstrap(type: Type | AnnotationReflect<T>, opts?: BootstrapOption): any;
 
     /**
      * get message queue.
@@ -285,6 +297,20 @@ export abstract class ApplicationContext<T = any> extends ModuleContext<T>  {
      * application bootstraps.
      */
     abstract get bootstraps(): BootContext[];
+
+    abstract get destroyed(): boolean;
+    /**
+     * Destroys the component instance and all of the data structures associated with it.
+     */
+    abstract destroy(): void;
+
+    /**
+     * A lifecycle hook that provides additional developer-defined cleanup
+     * functionality for the component.
+     * @param callback A handler function that cleans up developer-defined data
+     * associated with this component. Called when the `destroy()` method is invoked.
+     */
+    abstract onDestroy(callback: Function): void;
 }
 
 /**
@@ -320,5 +346,7 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
  */
 @Abstract()
 export abstract class ApplicationFactory {
-    abstract create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): Promise<ApplicationContext<T>>;
+    abstract create<T>(type: ApplicationOption<T>): ApplicationContext<T>;
+    abstract create<T>(type: ModuleInjector<T>, option: ApplicationOption<T>): ApplicationContext<T>;
+    abstract create<T>(type: Type<T> | ApplicationOption<T>, parent?: IInjector): ApplicationContext<T>;
 }

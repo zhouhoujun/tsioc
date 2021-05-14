@@ -9,7 +9,7 @@ import { ROOT_QUEUE } from './middlewares/root';
 import { FactoryRoute, Route } from './middlewares/route';
 import { RootRouter, Router } from './middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
-import { ApplicationContext, ModuleContext, ModuleFactory, ModuleRegistered } from './Context';
+import { ApplicationContext, ModuleFactory, ModuleInjector, ModuleRegistered } from './Context';
 
 
 /**
@@ -216,19 +216,16 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
             beforeAnnoation: (ctx: ModuleDesignContext, next) => {
                 if (ctx.reflect.annoType === 'module') {
                     const { injector, type, regIn } = ctx;
-                    let moduleRef: ModuleContext;
-                    if ((injector as ModuleContext).type === type) {
-                        moduleRef = injector as ModuleContext;
+                    let mdinj: ModuleInjector;
+                    if ((injector as ModuleInjector).type === type) {
+                        mdinj = injector as ModuleInjector;
                     } else {
-                        moduleRef = ctx.injector.getInstance(ModuleFactory).create({
-                            type,
-                            injector,
-                            regIn
-                        });
-                        ctx.injector = moduleRef;
+                        !injector.getInstance(ModuleFactory) && console.log(type, injector instanceof ModuleInjector, injector instanceof ModuleInjector && (injector as ModuleInjector).type);
+                        mdinj = injector.getInstance(ModuleFactory).create(ctx.reflect, injector, regIn);
+                        ctx.injector = mdinj;
                         ctx.state.injector = ctx.injector;
                     }
-                    (ctx.state as ModuleRegistered).moduleRef = moduleRef;
+                    (ctx.state as ModuleRegistered).moduleRef = mdinj;
                 }
                 next();
             },

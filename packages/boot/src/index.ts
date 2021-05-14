@@ -19,7 +19,7 @@ export * from './Context';
 
 // modules
 export * from './modules/strategy';
-export * from './modules/ctx';
+export * from './modules/injector';
 
 // applications
 export * from './appl/ctx';

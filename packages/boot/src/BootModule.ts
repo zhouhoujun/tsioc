@@ -4,7 +4,7 @@ import { BaseTypeParser } from './services/BaseTypeParser';
 import { BootLifeScope } from './appl/lifescope';
 import { ApplicationFactory, BootFactory, ModuleFactory } from './Context';
 import { RunnableBootFactory } from './runnable/ctx';
-import { DefaultModuleFactory } from './modules/ctx';
+import { DefaultModuleFactory } from './modules/injector';
 import { DefaultApplicationFactory } from './appl/ctx';
 
 
