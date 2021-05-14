@@ -1,6 +1,6 @@
 import { Token, ProviderType, IInjector, Type, isFunction } from '@tsdi/ioc';
 import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
-import { CONFIGURATION, PROCESS_ROOT } from '../tk';
+import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
@@ -22,12 +22,15 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
     private _dsryCbs: (() => void)[] = [];
     readonly bootstraps: BootContext[] = [];
     readonly args: string[] = [];
-    readonly boots: Type[] = [];
     readonly startups: Token[] = [];
 
     constructor(readonly injector: ModuleInjector<T>) {
         super();
         injector.setValue(ApplicationContext, this);
+    }
+
+    get boots() {
+        return this.injector.getInstance(BOOT_TYPES);
     }
 
 

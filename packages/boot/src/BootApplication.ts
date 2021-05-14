@@ -35,17 +35,17 @@ export class BootApplication<T> implements IBootApplication<T> {
             const parent = target.injector ?? this.createContainer();
             const prds = (target.providers && target.providers.length) ? [...DEFAULTA_FACTORYS, ...target.providers] : DEFAULTA_FACTORYS;
             target.providers = prds;
+            target.deps = [BootModule, MiddlewareModule, ...target.deps || []];
             this.root = parent.resolve(ModuleFactory, ...prds).create(target, parent, true);
             this.container = this.root.getContainer();
         } else {
             this.container = this.createContainer();
-            this.root = this.container.resolve(ModuleFactory, ...DEFAULTA_FACTORYS).create({ type: target, providers: DEFAULTA_FACTORYS }, this.container, true);
+            this.root = this.container.resolve(ModuleFactory, ...DEFAULTA_FACTORYS).create({ type: target, deps: [BootModule, MiddlewareModule], providers: DEFAULTA_FACTORYS }, this.container, true);
         }
         this.initRoot();
     }
 
     initRoot() {
-        this.root.register([BootModule, MiddlewareModule]);
         this.root.setValue(BootApplication, this);
         this.root.setValue(APPLICATION, this);
     }
@@ -104,7 +104,7 @@ export class BootApplication<T> implements IBootApplication<T> {
             if (isFunction(target)) {
                 this.context = root.getInstance(ApplicationFactory).create(this.root);
             } else {
-                if (target.deps) await this.root.load(target.deps);
+                if (target.loads) await this.root.load(target.loads);
                 this.context = root.getInstance(ApplicationFactory).create(root, target);
             }
         }

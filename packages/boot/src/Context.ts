@@ -1,6 +1,6 @@
 import {
     IProvider, ProviderType, RegInMetadata, LoadType, IInjector, Abstract,
-    Token, Type, IModuleLoader, Registered, DefaultInjector, Destroyable
+    Token, Type, IModuleLoader, Registered, DefaultInjector, Destroyable, Modules
 } from '@tsdi/ioc';
 import { ILoggerManager } from '@tsdi/logs';
 import { Configure, IConfigureManager } from './configure/config';
@@ -197,6 +197,11 @@ export interface ModuleOption<T = any> extends RegInMetadata {
      *  providers.
      */
     providers?: ProviderType[];
+
+    /**
+     * dependence types.
+     */
+    deps?: Modules[];
 }
 
 @Abstract()
@@ -338,7 +343,7 @@ export interface ApplicationOption<T = any> extends ModuleOption<T> {
      *
      * @type {LoadType[]}
      */
-    deps?: LoadType[];
+    loads?: LoadType[];
 }
 
 /**

@@ -1,19 +1,25 @@
-import { tokenId, Token } from '@tsdi/ioc';
+import { tokenId, Token, Type } from '@tsdi/ioc';
 import { Configure, IConfigureLoader, IConfigureManager, IConfigureMerger } from './configure/config';
 import { IBaseTypeParser } from './services/IBaseTypeParser';
 import { MessageContext } from './middlewares/ctx';
 import { IBootApplication } from './IBootApplication';
+import { IStartupService } from './services/StartupService';
 
 
 /**
  *  current application token.
  */
- export const APPLICATION: Token<IBootApplication> = tokenId<IBootApplication>('APPLICATION');
+export const APPLICATION: Token<IBootApplication> = tokenId<IBootApplication>('APPLICATION');
 
-
- /**
- * context options.
+/**
+ * boot types.
  */
+export const BOOT_TYPES = tokenId<Type<IStartupService>[]>('BOOT_TYPES')
+
+
+/**
+* context options.
+*/
 export const CTX_ARGS = tokenId<string[]>('CTX_ARGS');
 
 

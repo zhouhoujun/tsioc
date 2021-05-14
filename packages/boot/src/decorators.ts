@@ -10,6 +10,7 @@ import { FactoryRoute, Route } from './middlewares/route';
 import { RootRouter, Router } from './middlewares/router';
 import { MappingReflect, MappingRoute, RouteMapingMetadata } from './middlewares/mapping';
 import { ApplicationContext, ModuleFactory, ModuleInjector, ModuleRegistered } from './Context';
+import { BOOT_TYPES } from './tk';
 
 
 /**
@@ -88,8 +89,11 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                const appRef = ctx.injector.getInstance(ApplicationContext);
-                const boots = appRef.boots;
+                let boots = ctx.injector.getInstance(BOOT_TYPES);
+                if (!boots) {
+                    boots = [];
+                    ctx.injector.getInstance(ROOT_INJECTOR).setValue(BOOT_TYPES, boots);
+                }
                 const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
 
                 let idx = -1;
@@ -220,7 +224,6 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if ((injector as ModuleInjector).type === type) {
                         mdinj = injector as ModuleInjector;
                     } else {
-                        !injector.getInstance(ModuleFactory) && console.log(type, injector instanceof ModuleInjector, injector instanceof ModuleInjector && (injector as ModuleInjector).type);
                         mdinj = injector.getInstance(ModuleFactory).create(ctx.reflect, injector, regIn);
                         ctx.injector = mdinj;
                         ctx.state.injector = ctx.injector;
@@ -435,6 +438,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
+                !queue && console.log(type, injector);
                 const prefix = (queue as Router).getPath();
                 reflect.route_url = route;
                 reflect.route_prefix = prefix;

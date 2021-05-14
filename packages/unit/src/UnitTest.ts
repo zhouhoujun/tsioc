@@ -37,6 +37,6 @@ export class UnitTest { }
  * @param {...LoadType[]} deps custom set unit test dependencies.
  * @returns {Promise<any>}
  */
-export async function runTest(src: string | Type | (string | Type)[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any> {
-   await BootApplication.run({ type: UnitTest, deps, configures: [config, { src: src }] })
+export async function runTest(src: string | Type | (string | Type)[], config?: string | UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
+   await BootApplication.run({ type: UnitTest, loads, configures: [config, { src: src }] })
 }

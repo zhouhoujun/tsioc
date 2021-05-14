@@ -249,7 +249,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     }
 
     const boots = ctx.boots;
-    if (boots.length) {
+    if (boots?.length) {
         await lang.step(boots.map(tyser => () => {
             const ser = root.get(tyser) ?? regedState.getInstance(tyser);
             ctx.onDestroy(() => ser?.destroy());

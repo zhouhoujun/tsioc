@@ -124,6 +124,9 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
         const self = this;
         const container = this.container;
         return (...args: any[]) => {
+            if(container.destroyed){
+                return propertyMethod.call(target, ...args);
+            }
             const larg = lang.last(args);
             let providers: IProvider;
             if (larg instanceof InvokedProvider) {

@@ -1,4 +1,4 @@
-import { IInjector, isFunction, isString, isTypeReflect, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
+import { IInjector, isBoolean, isFunction, isString, isTypeReflect, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
 import { CTX_ARGS, PROCESS_ROOT } from '../tk';
@@ -117,7 +117,7 @@ export class DefaultModuleFactory extends ModuleFactory {
         let regIn: string;
         if(isString(arg)){
             regIn = arg;
-        } else {
+        } else if(isBoolean(arg)){
             root = arg;
         }
 
@@ -156,17 +156,20 @@ export class DefaultModuleFactory extends ModuleFactory {
 
     protected createByOption(option: ModuleOption, parent?: IInjector, root?: boolean, regIn?: string) {
         parent = parent || option.injector;
-        const ctx = this.createInstance(refl.get(option.type), parent, root, regIn || option.regIn);
+        const inj = this.createInstance(refl.get(option.type), parent, root, regIn || option.regIn);
         if (option.providers) {
-            ctx.parse(option.providers);
+            inj.parse(option.providers);
+        }
+        if (option.deps) {
+            inj.use(option.deps);
         }
         if (option.args) {
-            ctx.setValue(CTX_ARGS, option.args);
+            inj.setValue(CTX_ARGS, option.args);
         }
         if (option.baseURL) {
-            ctx.setValue(PROCESS_ROOT, option.baseURL);
+            inj.setValue(PROCESS_ROOT, option.baseURL);
         }
-        return ctx;
+        return inj;
     }
 
     protected createInstance(type: ModuleReflect, parent: IInjector, root?: boolean, regIn?: string) {
