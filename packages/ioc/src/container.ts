@@ -103,21 +103,18 @@ export class Container extends DefaultInjector implements IContainer {
     readonly id: string;
     private _finals = [];
 
-    constructor() {
-        super(null);
+    constructor(strategy?: Strategy) {
+        super(null, strategy);
+        const red = { useValue: this };
+        this.factories.set(CONTAINER, red);
+        this.factories.set(Container, red);
         this._state = new RegisteredStateImpl(this);
         this._action = new ActionProvider(this);
         registerCores(this);
     }
 
-
     getContainer(): this {
         return this;
-    }
-
-    getInstance<T>(key: Token<T>, providers?: IProvider): T  {
-        if(key === CONTAINER || key === Container) return this as any;
-        return super.getInstance(key, providers);
     }
 
     /**

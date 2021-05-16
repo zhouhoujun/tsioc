@@ -21,10 +21,13 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     private _instance: T;
     constructor(readonly reflect: ModuleReflect<T>, parent?: IInjector, regIn?: string, protected _root = false, strategy: ModuleStrategy = mdInjStrategy) {
         super(parent, strategy)
+
+        const recd = { useValue: this };
+        this.factories.set(ModuleInjector, recd);
         this.regIn = regIn || this.reflect.regIn;
         this.exports = new ModuleProvider(this);
         if (_root) {
-            this.setValue(ROOT_INJECTOR, this);
+            this.factories.set(ROOT_INJECTOR, recd);
         }
     }
 
