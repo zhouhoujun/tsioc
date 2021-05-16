@@ -1,12 +1,8 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { ProviderState, IProvider, ProviderType, RegisteredState, ResolveOption, TypeOption } from './IInjector';
-import { Token, tokenRef } from './tokens';
-import { isFunction, getClass, isTypeObject, isDefined } from './utils/chk';
-import { cleanObj, mapEach } from './utils/lang';
-import { DesignContext } from './actions/ctx';
-import { DesignLifeScope } from './actions/design';
-import { TARGET } from './utils/tk';
+import { ProviderState, IProvider } from './IInjector';
+import { Token } from './tokens';
+import { mapEach } from './utils/lang';
 
 
 
@@ -17,65 +13,6 @@ import { TARGET } from './utils/tk';
 export abstract class Strategy {
 
     protected constructor() { }
-
-
-    resolve<T>(curr: IProvider, option: ResolveOption<T>, toProvider: (providers: ProviderType[]) => IProvider): T {
-        const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
-
-        const pdr = option.target ? toProvider([...option.providers || [], { provide: TARGET, useValue: option.target }]) : toProvider(option.providers || []);
-        let inst: T;
-        const state = curr.state();
-        if (isFunction(targetToken)) {
-            inst = this.rsvWithTarget(state, curr, option.token, targetToken, pdr);
-        }
-
-        if (option.tagOnly || isDefined(inst)) return inst ?? null;
-
-        return this.rsvToken(curr, option.token, pdr) ?? this.rsvFailed(state, curr, option, pdr) ?? null;
-    }
-
-    /**
-     * register type class.
-     * @param injector register in the injector.
-     * @param option the type register option.
-     * @param [singleton]
-     */
-    registerIn<T>(injector: IProvider, option: TypeOption<T>) {
-        const state = injector.state();
-        // make sure class register once.
-        if (state.isRegistered(option.type) || injector.has(option.type, true)) {
-            return this;
-        }
-
-        const ctx = {
-            injector: injector,
-            ...option
-        } as DesignContext;
-        injector.action().getInstance(DesignLifeScope).register(ctx);
-        cleanObj(ctx);
-
-        return this;
-    }
-
-
-    protected rsvWithTarget<T>(state: RegisteredState, curr: IProvider, token: Token<T>, targetToken: Type, pdr: IProvider): T {
-        return state?.getTypeProvider(targetToken)?.get(token, pdr) ?? curr.get(tokenRef(token, targetToken), pdr);
-    }
-
-    protected rsvToken<T>(curr: IProvider, token: Token<T>, pdr: IProvider): T {
-        return pdr?.get(token, pdr) ?? curr.get(token, pdr) ?? curr.parent?.get(token, pdr);
-    }
-
-    protected rsvFailed<T>(state: RegisteredState, curr: IProvider, option: ResolveOption<T>, pdr: IProvider): T {
-        if (option.regify && isFunction(option.token) && !state?.isRegistered(option.token)) {
-            curr.register(option.token as Type);
-            return curr.get(option.token, pdr);
-        }
-        if (option.defaultToken) {
-            return curr.get(option.defaultToken, pdr);
-        }
-        return null;
-    }
 
     /**
      * vaild parent.

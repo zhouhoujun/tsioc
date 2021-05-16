@@ -6,12 +6,14 @@ import {
     TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, ProviderState, IProvider, ProviderType,
     RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption, FactoryOption
 } from './IInjector';
-import { isToken, Token } from './tokens';
-import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isDefined } from './utils/chk';
+import { isToken, Token, tokenRef } from './tokens';
+import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isDefined, isTypeObject } from './utils/chk';
 import { IContainer } from './IContainer';
 import { cleanObj, getTypes, remove } from './utils/lang';
-import { INJECTOR } from './utils/tk';
+import { INJECTOR, TARGET } from './utils/tk';
 import { DefaultStrategy, Strategy } from './strategy';
+import { DesignContext } from './actions/ctx';
+import { DesignLifeScope } from './actions/design';
 
 
 /**
@@ -152,7 +154,7 @@ export class Provider implements IProvider {
             this.regType(target);
         } else {
             if ((target as TypeOption).type) {
-                this.strategy.registerIn(this, target as TypeOption);
+                this.registerIn(this, target as TypeOption);
             } else {
                 this.factories.set(target.provide, { ...target as ProviderOption });
             }
@@ -179,7 +181,7 @@ export class Provider implements IProvider {
     }
 
     protected regType(type: Type) {
-        this.strategy.registerIn(this, { type });
+        this.registerIn(this, { type });
     }
 
     /**
@@ -317,19 +319,74 @@ export class Provider implements IProvider {
         } else {
             option = { token, providers };
         }
+
         let destroy: Function;
-        const inst = this.strategy.resolve(this, option, (pdrs) => {
-            if (pdrs.length) {
-                return this.toProvider(pdrs, true, p => {
-                    destroy = () => p.destroy();
-                    return p;
-                });
-            }
-            return null;
+        const pdr = this.toProvider(option.target ? [...option.providers || [], { provide: TARGET, useValue: option.target }] : option.providers, true, p => {
+            destroy = () => p.destroy();
+            return p;
         });
+
+        const inst = this.resolveStrategy(option, pdr);
         destroy?.();
         cleanObj(option);
         return inst;
+    }
+
+    resolveStrategy<T>(option: ResolveOption<T>, pdr: IProvider) {
+        const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
+
+        let inst: T;
+        const state = this.state();
+        if (isFunction(targetToken)) {
+            inst = this.rsvWithTarget(state, option.token, targetToken, pdr);
+        }
+
+        if (option.tagOnly || isDefined(inst)) return inst ?? null;
+
+        return this.rsvToken(option.token, pdr) ?? this.rsvFailed(state, option, pdr) ?? null;
+    }
+
+    /**
+     * register type class.
+     * @param injector register in the injector.
+     * @param option the type register option.
+     * @param [singleton]
+     */
+    registerIn<T>(injector: IProvider, option: TypeOption<T>) {
+        const state = injector.state();
+        // make sure class register once.
+        if (state.isRegistered(option.type) || injector.has(option.type, true)) {
+            return this;
+        }
+
+        const ctx = {
+            injector,
+            ...option
+        } as DesignContext;
+        injector.action().getInstance(DesignLifeScope).register(ctx);
+        cleanObj(ctx);
+
+        return this;
+    }
+
+
+    protected rsvWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: Type, pdr: IProvider): T {
+        return state?.getTypeProvider(targetToken)?.get(token, pdr) ?? this.get(tokenRef(token, targetToken), pdr);
+    }
+
+    protected rsvToken<T>(token: Token<T>, pdr: IProvider): T {
+        return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? this.parent?.get(token, pdr);
+    }
+
+    protected rsvFailed<T>(state: RegisteredState, option: ResolveOption<T>, pdr: IProvider): T {
+        if (option.regify && isFunction(option.token) && !state?.isRegistered(option.token)) {
+            this.register(option.token as Type);
+            return this.get(option.token, pdr);
+        }
+        if (option.defaultToken) {
+            return this.get(option.defaultToken, pdr);
+        }
+        return null;
     }
 
     toProvider(providers: ProviderType[], force?: boolean, ifyNew?: (p: IProvider) => IProvider): IProvider {
