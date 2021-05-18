@@ -97,6 +97,7 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
+        d.decorPdr.providers.length && ctx.state.providers.parse(d.decorPdr.providers);
         chain(d.decorPdr.getDesignHandle('beforeAnnoation'), ctx);
     });
 

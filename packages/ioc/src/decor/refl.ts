@@ -162,21 +162,8 @@ export function registerDecror(decor: string, options: DecoratorOption<any>): De
     option.getDesignHandle = options.design ? mapToFac(options.design as ObjectMap) : emptyHd;
 
     option.getRuntimeHandle = options.runtime ? mapToFac(options.runtime as ObjectMap) : emptyHd;
-
-    if (options.providers) {
-        const providers = options.providers;
-        option.getProvider = (inj) => {
-            const state = inj.state();
-            if (!state.hasProvider(decor)) {
-                state.regDecoator(decor, ...providers);
-            }
-            return state.getProvider(decor);
-        }
-    } else {
-        option.getProvider = (inj) => {
-            return inj.state().getProvider(decor);
-        }
-    }
+    
+    option.providers = options.providers || [];
 
     return option;
 }

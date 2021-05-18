@@ -55,10 +55,9 @@ export interface Registered {
  */
 export interface DecorPdr {
     /**
-     * get provider decorator.
-     * @param injector
+     * decor provider for class
      */
-    getProvider(injector: IInjector): IProvider;
+    providers: ProviderType[];
     /**
      * get decorator handle.
      * @param type decorator type.

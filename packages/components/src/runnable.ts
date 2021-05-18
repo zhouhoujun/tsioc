@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { IBootContext, Runnable } from '@tsdi/boot';
+import { BootContext, Runnable } from '@tsdi/boot';
 import { ComponentRef } from './refs/component';
 import { ApplicationRef } from './refs/app';
 
@@ -11,7 +11,7 @@ export class ComponentRunnable extends Runnable {
 
     componentRef: ComponentRef;
 
-    async configureService(ctx: IBootContext): Promise<void> {
+    async configureService(ctx: BootContext): Promise<void> {
         const compRef = this.componentRef = ctx.boot as ComponentRef;
         if (!(ctx.boot instanceof ComponentRef)) {
             throw new Error('bootstrap type is not a component.');

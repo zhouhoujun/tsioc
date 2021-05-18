@@ -33,14 +33,13 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
         return this.injector.getInstance(BOOT_TYPES);
     }
 
-
     /**
      * bootstrap type
      * @param type 
      * @param opts 
      */
     bootstrap<T>(type: Type<T>| AnnotationReflect<T>, opts?: BootstrapOption): any {
-        return this.injector.getService({ token: BootFactory, target: type }).create(type, { injector: this.injector, ...opts });
+        return this.injector.resolve({ token: BootFactory, target: type }).create(type, { injector: this.injector, ...opts });
     }
 
     get instance(): T {

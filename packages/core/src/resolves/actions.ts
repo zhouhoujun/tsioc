@@ -47,38 +47,38 @@ export class RsvTagSericeScope extends IocActions<ServiceContext> implements IAc
     }
 
     setup() {
-        this.use(RsvSuperServiceAction, RsvDecorServiceAction);
+        this.use(RsvSuperServiceAction);
     }
 }
 
 
-export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => void): void {
-    if (isFunction(ctx.targetToken)) {
-        const { injector: injector, providers, currTK } = ctx;
-        refl.get(ctx.targetToken)
-            .class.decors.some(dec => {
-                if (dec.decorType !== 'class') {
-                    return false;
-                }
-                const dprvoider = dec.decorPdr.getProvider(injector)
-                if (dprvoider.has(currTK)) {
-                    ctx.instance = dprvoider.getInstance(currTK, providers);
-                }
-                if (ctx.instance) {
-                    return true;
-                }
-                const refDec = tokenRef(currTK, dec.decor);
-                if (injector.has(refDec, true)) {
-                    ctx.instance = injector.getInstance(refDec, providers);
-                }
-                return !!ctx.instance;
-            });
-    }
+// export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => void): void {
+//     if (isFunction(ctx.targetToken)) {
+//         const { injector: injector, providers, currTK } = ctx;
+//         refl.get(ctx.targetToken)
+//             .class.decors.some(dec => {
+//                 if (dec.decorType !== 'class') {
+//                     return false;
+//                 }
+//                 const dprvoider = dec.decorPdr.getProvider(injector)
+//                 if (dprvoider.has(currTK)) {
+//                     ctx.instance = dprvoider.getInstance(currTK, providers);
+//                 }
+//                 if (ctx.instance) {
+//                     return true;
+//                 }
+//                 const refDec = tokenRef(currTK, dec.decor);
+//                 if (injector.has(refDec, true)) {
+//                     ctx.instance = injector.getInstance(refDec, providers);
+//                 }
+//                 return !!ctx.instance;
+//             });
+//     }
 
-    if (isNil(ctx.instance)) {
-        return next();
-    }
-};
+//     if (isNil(ctx.instance)) {
+//         return next();
+//     }
+// };
 
 export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () => void): void {
     if (isFunction(ctx.targetToken)) {
@@ -176,22 +176,22 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     }
                 });
             }
-            const rlt = isFunction(tk) ? refl.get(tk) : null
-            if (rlt) {
-                rlt.class.classDecors.forEach(dec => {
-                    const dprvoider = dec.decorPdr.getProvider(injector)
-                    dprvoider.iterator((pdr, t1) => {
-                        if (!services.has(t1)
-                            && (
-                                (isFunction(t1) && types.some(ty => match(t1, ty)))
-                                || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
-                            )
-                        ) {
-                            services.set(t1, pdr);
-                        }
-                    });
-                });
-            }
+            // const rlt = isFunction(tk) ? refl.get(tk) : null
+            // if (rlt) {
+            //     rlt.class.classDecors.forEach(dec => {
+            //         const dprvoider = dec.decorPdr.getProvider(injector)
+            //         dprvoider.iterator((pdr, t1) => {
+            //             if (!services.has(t1)
+            //                 && (
+            //                     (isFunction(t1) && types.some(ty => match(t1, ty)))
+            //                     || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
+            //                 )
+            //             ) {
+            //                 services.set(t1, pdr);
+            //             }
+            //         });
+            //     });
+            // }
 
             ctx.types.forEach(ty => {
                 const reftk = tokenRef(ty, tk);

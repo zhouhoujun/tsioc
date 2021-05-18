@@ -308,31 +308,35 @@ export class Provider implements IProvider {
      * @memberof IocContainer
      */
     resolve<T>(token: Token<T> | ResolveOption<T>, ...providers: ProviderType[]): T {
-        let option: ResolveOption<T>;
+        let inst: T;
+        let destroy: Function;
         if (isPlainObject(token)) {
-            option = token as ResolveOption;
+            let option = token as ResolveOption;
             if (option.providers) {
-                option.providers.push(...providers);
-            } else {
-                option.providers = providers;
+                providers = option.providers.concat(providers);
             }
+            if (option.target) {
+                providers.push({ provide: TARGET, useValue: option.target });
+            }
+            const pdr = this.toProvider(providers, true, p => {
+                destroy = () => p.destroy();
+                return p;
+            });
+            inst = this.resolveStrategy(option, pdr);
+            cleanObj(option);
         } else {
-            option = { token, providers };
+            const pdr = this.toProvider(providers, true, p => {
+                destroy = () => p.destroy();
+                return p;
+            });
+            inst = this.rsvToken(token, pdr);
         }
 
-        let destroy: Function;
-        const pdr = this.toProvider(option.target ? [...option.providers || [], { provide: TARGET, useValue: option.target }] : option.providers, true, p => {
-            destroy = () => p.destroy();
-            return p;
-        });
-
-        const inst = this.resolveStrategy(option, pdr);
         destroy?.();
-        cleanObj(option);
         return inst;
     }
 
-    resolveStrategy<T>(option: ResolveOption<T>, pdr: IProvider) {
+    protected resolveStrategy<T>(option: ResolveOption<T>, pdr: IProvider) {
         const targetToken = isTypeObject(option.target) ? getClass(option.target) : option.target as Type;
 
         let inst: T;
@@ -343,7 +347,27 @@ export class Provider implements IProvider {
 
         if (option.tagOnly || isDefined(inst)) return inst ?? null;
 
-        return this.rsvToken(option.token, pdr) ?? this.rsvFailed(state, option, pdr) ?? null;
+        return this.rsvToken(option.token, pdr) ?? this.rsvFailed(state, option.token, pdr, option.regify, option.defaultToken) ?? null;
+    }
+
+
+    protected rsvWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: Type, pdr: IProvider): T {
+        return state?.getTypeProvider(targetToken)?.get(token, pdr) ?? this.get(tokenRef(token, targetToken), pdr);
+    }
+
+    protected rsvToken<T>(token: Token<T>, pdr: IProvider): T {
+        return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? this.parent?.get(token, pdr);
+    }
+
+    protected rsvFailed<T>(state: RegisteredState, token: Token<T>, pdr: IProvider, regify?: boolean, defaultToken?: Token): T {
+        if (regify && isFunction(token) && !state?.isRegistered(token)) {
+            this.register(token as Type);
+            return this.get(token, pdr);
+        }
+        if (defaultToken) {
+            return this.get(defaultToken, pdr);
+        }
+        return null;
     }
 
     /**
@@ -367,26 +391,6 @@ export class Provider implements IProvider {
         cleanObj(ctx);
 
         return this;
-    }
-
-
-    protected rsvWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: Type, pdr: IProvider): T {
-        return state?.getTypeProvider(targetToken)?.get(token, pdr) ?? this.get(tokenRef(token, targetToken), pdr);
-    }
-
-    protected rsvToken<T>(token: Token<T>, pdr: IProvider): T {
-        return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? this.parent?.get(token, pdr);
-    }
-
-    protected rsvFailed<T>(state: RegisteredState, option: ResolveOption<T>, pdr: IProvider): T {
-        if (option.regify && isFunction(option.token) && !state?.isRegistered(option.token)) {
-            this.register(option.token as Type);
-            return this.get(option.token, pdr);
-        }
-        if (option.defaultToken) {
-            return this.get(option.defaultToken, pdr);
-        }
-        return null;
     }
 
     toProvider(providers: ProviderType[], force?: boolean, ifyNew?: (p: IProvider) => IProvider): IProvider {

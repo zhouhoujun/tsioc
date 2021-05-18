@@ -57,10 +57,10 @@ export class DefaultBootContext<T> extends BootContext<T> {
     }
 }
 
-
-export class RunnableBootFactory implements BootFactory {
-    constructor(public ctor: Type = DefaultBootContext) {
-    }
+/**
+ * runable boot factory.
+ */
+export class RunnableBootFactory extends BootFactory {
 
     async create<T>(type: Type<T> | AnnotationReflect<T>, option: BootFactoryOption) {
         const injector = createInjector(option.injector, option.providers);
@@ -85,5 +85,4 @@ export class RunnableBootFactory implements BootFactory {
         app.bootstraps.push(ctx);
         return ctx;
     }
-
 }

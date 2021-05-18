@@ -3,7 +3,7 @@ import {
     createParamDecorator, createDecorator, InjectableMetadata, CONTAINER, ClassMethodDecorator
 } from '@tsdi/ioc';
 import {
-    AnnotationReflect, MappingReflect, MessageQueue, Middlewares,
+    AnnotationReflect, BootFactory, MappingReflect, MessageQueue, Middlewares,
     MiddlewareType, RouteMapingMetadata, Router, Runnable
 } from '@tsdi/boot';
 import {
@@ -75,7 +75,10 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
 
             next();
         }
-    }
+    },
+    providers:[
+        {provide: BootFactory, useClass: }
+    ]
 });
 
 
@@ -138,7 +141,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         }
     },
     providers: [
-        { provide: Runnable, useClass: ComponentRunnable },
+        { provide: BootFactory, useClass: ComponentRunnable },
         { provide: Identifiers, useFactory: (container) => new Identifiers(container), deps: [CONTAINER], singleton: true }
     ]
 });
