@@ -126,11 +126,6 @@ export interface MetadataFactory<T> {
 }
 
 /**
- * decor registered option.
- */
-export interface DecorRegisteredOption extends MetadataFactory<any>, ProvidersMetadata { }
-
-/**
  * decorator option.
  */
 export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption { }
@@ -481,14 +476,6 @@ export function get<T extends TypeReflect>(type: ClassType, ify?: boolean): T {
         type[reflFiled] = () => tagRefl;
     }
     return tagRefl as T;
-}
-
-/**
- * get object reflect.
- * @param target object.
- */
-export function getObjReflect<T extends TypeReflect>(target: object): T {
-    return getClass(target)[reflFiled]?.() as T || null;
 }
 
 /**

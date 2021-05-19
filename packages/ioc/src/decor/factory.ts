@@ -3,7 +3,7 @@ import { isUndefined, isNumber, isMetadataObject } from '../utils/chk';
 import { ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './metadatas';
 import { Type } from '../types';
 import { Token } from '../tokens';
-import { DecoratorOption, DecorRegisteredOption } from './refl';
+import { DecoratorOption } from './refl';
 import * as refl from './refl';
 
 /**
@@ -37,7 +37,7 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
     return factory;
 }
 
-function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, option: DecorRegisteredOption): any {
+function storeMetadata<T>(name: string, decor: string, args: any[], metadata: any, option: DecoratorOption<T>): any {
     let target, propertyKey;
     if (!metadata) {
         metadata = {};
