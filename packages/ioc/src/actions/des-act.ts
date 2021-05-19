@@ -128,11 +128,10 @@ export class DesignPropScope extends IocRegScope<DesignContext> implements IActi
 }
 
 export const DesignPropDecorScope = function (ctx: DesignContext, next: () => void) {
-    ctx.reflect.class.propDecors
-        .forEach(d => {
-            ctx.currDecor = d.decor;
-            chain(d.getDesignHandle('property'), ctx);
-        });
+    ctx.reflect.class.propDecors.forEach(d => {
+        ctx.currDecor = d.decor;
+        chain(d.getDesignHandle('property'), ctx);
+    });
 
     return next();
 }

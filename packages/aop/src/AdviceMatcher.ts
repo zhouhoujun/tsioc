@@ -89,7 +89,6 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
 
         return matched;
-
     }
 
     protected matchAspectSelf(name: string, metadata: AdviceMetadata): boolean {
@@ -144,9 +143,7 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
 
         if (metadata.annotation) {
-            expresses.push((method: string, fullName: string, targetType?: ClassType, target?: any) => {
-                return relfect.class.decors.some(d => d.decor === metadata.annotation && d.propertyKey === method);
-            });
+            expresses.push((method: string, fullName: string, targetType?: ClassType, target?: any) =>  relfect.class.hasMetadata(metadata.annotation, (!method || method === 'constructor') ? 'class' : 'method', method));
             expresses.push('&&')
         }
         if (isString(metadata.pointcut)) {
@@ -183,20 +180,14 @@ export class AdviceMatcher implements IAdviceMatcher {
         if (annContentExp.test(strExp)) {
             let exp = strExp.substring(12, strExp.length - 1);
             let annotation = aExp.test(exp) ? exp : ('@' + exp);
-            return (name: string, fullName: string) => {
-                if (name === 'constructor') {
-                    return reflect.class.classDecors.some(d => d.decor === annotation);
-                }
-                return reflect.class.methodDecors.some(d => d.decor === annotation);
-            }
-
+            return (name: string, fullName: string) => reflect.class.hasMetadata(annotation, (!name || name === 'constructor') ? 'class' : 'method', name);
         } else if (execContentExp.test(strExp)) {
             let exp = strExp.substring(10, strExp.length - 1);
             if (exp === '*' || exp === '*.*') {
                 return (name: string, fullName: string) => !!name && !reflect.aspect;
             } else if (mthNameExp.test(exp)) {
                 // if is method name, will match aspect self only.
-                return () => false;
+                return fasleFn;
             } else if (tgMthChkExp.test(exp)) {
                 exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                     .replace(replAny1, '\\\w+')
@@ -206,7 +197,7 @@ export class AdviceMatcher implements IAdviceMatcher {
                 let matcher = new RegExp(exp + '$');
                 return (name: string, fullName: string) => matcher.test(fullName);
             } else {
-                return () => false;
+                return fasleFn;
             }
         } else if (withInChkExp.test(strExp)) {
             let classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
@@ -215,7 +206,7 @@ export class AdviceMatcher implements IAdviceMatcher {
             let torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             return (name: string, fullName: string, targetType?: Type) => this.container.state().getInjector(reflect.type).getTokenProvider(torken) === targetType;
         } else {
-            return () => false;
+            return fasleFn;
         }
     }
 
@@ -280,3 +271,5 @@ export class AdviceMatcher implements IAdviceMatcher {
         }
     }
 }
+
+const fasleFn = () => false;

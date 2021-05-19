@@ -1,15 +1,24 @@
 import { ClassType, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, clsUglifyExp, STRIP_COMMENTS } from '../utils/exps';
-import { isFunction, isString } from '../utils/chk';
+import { isArray, isFunction, isString } from '../utils/chk';
 import { getClassAnnotation } from '../utils/util';
-import { forIn, getClassChain } from '../utils/lang';
+import { first, forIn, getClassChain } from '../utils/lang';
 import { DecoratorType, DecorDefine, DecorMemberType } from './type';
 
 
 const name = '__name';
 const emptyArr = [];
-const allVals = '_avalues_';
 const ctorBK = '__ctor';
+
+export interface ReflectInfo {
+    class: DecorDefine[];
+    props: DecorDefine[];
+    methods: DecorDefine[];
+    params: DecorDefine[];
+    propMap: Map<string, DecorDefine[]>;
+    methodMap: Map<string, DecorDefine[]>;
+    paramMap: Map<string, DecorDefine[]>;
+}
 
 /**
  * type define.
@@ -19,58 +28,71 @@ export class TypeDefine {
 
     decors: DecorDefine[];
     classDecors: DecorDefine[];
-    protected propDMap: Map<string, DecorDefine[]>;
-    protected methodDMap: Map<string, DecorDefine[]>;
-    protected paramDMap: Map<string, DecorDefine[]>;
+    propDecors: DecorDefine[];
+    methodDecors: DecorDefine[];
+    paramDecors: DecorDefine[];
+
+    private refls: Map<string, ReflectInfo>;
 
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
         this.className = getClassAnnotation(type)?.name || type.name;
         this.classDecors = [];
-        this.propDMap = new Map();
-        this.methodDMap = new Map();
-        this.paramDMap = new Map();
+        this.refls = new Map();
         this.decors = parent ? parent.decors.filter(d => d.decorType !== 'class') : [];
-        if (parent) {
-            parent.propDMap.forEach((v, k) => {
-                this.propDMap.set(k, v.slice(0));
-            });
-            parent.methodDMap.forEach((v, k) => {
-                this.methodDMap.set(k, v.slice(0));
-            });
-            parent.paramDMap.forEach((v, k) => {
-                this.paramDMap.set(k, v.slice(0));
-            });
+        this.propDecors = [];
+        this.methodDecors = [];
+        this.paramDecors = [];
+        this.decors.forEach(d => this.storage(d));
+    }
+
+    protected storage(define: DecorDefine) {
+        let rf = this.refls.get(define.decor);
+        if (!rf) {
+            rf = {
+                class: [],
+                methods: [],
+                props: [],
+                params: [],
+                methodMap: new Map(),
+                propMap: new Map(),
+                paramMap: new Map()
+            }
+            this.refls.set(define.decor, rf);
         }
-    }
-
-    get propDecors(): DecorDefine[] {
-        return this.getVlaues(this.propDMap);
-    }
-    get methodDecors(): DecorDefine[] {
-        return this.getVlaues(this.methodDMap);
-    }
-    get paramDecors(): DecorDefine[] {
-        return this.getVlaues(this.paramDMap);
-    }
-
-    addDefine(define: DecorDefine) {
         switch (define.decorType) {
             case 'class':
                 this.classDecors.unshift(define);
+                rf.class.unshift(define);
                 break;
             case 'method':
-                this.getDefines(this.methodDMap, define.propertyKey).unshift(define);
-                this.methodDMap[allVals] = null;
+                this.methodDecors.unshift(define);
+                rf.methods.unshift(define);
+                this.getMapFiled(rf.methodMap, define.propertyKey).unshift(define);
                 break;
             case 'property':
-                this.getDefines(this.propDMap, define.propertyKey).unshift(define);
-                this.propDMap[allVals] = null;
+                this.propDecors.unshift(define);
+                rf.props.unshift(define);
+                this.getMapFiled(rf.propMap, define.propertyKey).unshift(define);
                 break;
             case 'parameter':
-                this.getDefines(this.paramDMap, define.propertyKey).unshift(define);
-                this.paramDMap[allVals] = null;
+                this.paramDecors.unshift(define);
+                rf.params.unshift(define);
+                this.getMapFiled(rf.paramMap, define.propertyKey).unshift(define);
                 break;
         }
+    }
+
+    protected getMapFiled(map: Map<string, DecorDefine[]>, key: string) {
+        let val = map.get(key);
+        if (!isArray(val)) {
+            val = [];
+            map.set(key, val);
+        }
+        return val;
+    }
+
+    addDefine(define: DecorDefine) {
+        this.storage(define);
         this.decors.unshift(define);
     }
 
@@ -85,20 +107,21 @@ export class TypeDefine {
      * @param decor
      * @param type
      */
-    hasMetadata(decor: string | Function, type: DecorMemberType, propertyKey?: string): boolean;
+    hasMetadata(decor: string | Function, type: DecoratorType, propertyKey?: string): boolean;
     hasMetadata(decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
         type = type || 'class';
         decor = getDectorId(decor);
-        const filter = propertyKey ? (d: DecorDefine) => d.decor === decor && propertyKey === d.propertyKey : (d: DecorDefine) => d.decor === decor;
+        const rf = this.refls.get(decor);
+        if (!rf) return false;
         switch (type) {
             case 'class':
-                return this.classDecors.some(filter);
+                return rf.class.length > 0;
             case 'method':
-                return propertyKey ? this.methodDMap.has(propertyKey) : this.methodDecors.some(filter);
+                return propertyKey ? rf.methodMap.has(propertyKey) : rf.methods.length > 0;
             case 'property':
-                return propertyKey ? this.propDMap.has(propertyKey) : this.propDecors.some(filter);
+                return propertyKey ? rf.propMap.has(propertyKey) : rf.props.length > 0;
             case 'parameter':
-                return propertyKey ? this.paramDMap.has(propertyKey) : this.paramDecors.some(filter);
+                return propertyKey ? rf.paramMap.has(propertyKey) : rf.params.length > 0;
             default:
                 return false;
         }
@@ -109,31 +132,21 @@ export class TypeDefine {
     getDecorDefine(decor: string | Function, type?: DecoratorType, propertyKey?: string): DecorDefine {
         type = type || 'class';
         decor = getDectorId(decor);
-        const filter = propertyKey ? (d: DecorDefine) => d.decor === decor && propertyKey === d.propertyKey : (d: DecorDefine) => d.decor === decor;
+        const rf = this.refls.get(decor);
+        if (!rf) return null;
+        // const filter = propertyKey ? (d: DecorDefine) => d.decor === decor && propertyKey === d.propertyKey : (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case 'class':
-                return this.classDecors.find(filter);
+                return first(rf.class);
             case 'method':
-                return propertyKey ? this.methodDMap.get(propertyKey)?.find(filter) : this.methodDecors.find(filter);
+                return propertyKey ? first(rf.methodMap[propertyKey]) : first(rf.methods);
             case 'property':
-                return propertyKey ? this.propDMap.get(propertyKey)?.find(filter) : this.propDecors.find(filter);
+                return propertyKey ? first(rf.propMap[propertyKey]) : first(rf.props);
             case 'parameter':
-                return propertyKey ? this.paramDMap.get(propertyKey)?.find(filter) : this.paramDecors.find(filter);
+                return propertyKey ? first(rf.paramMap[propertyKey]) : first(rf.params);
             default:
                 return null;
         }
-    }
-
-
-    getVlaues(map: Map<string, DecorDefine[]>) {
-        if (!map[allVals]) {
-            const vls = [];
-            map.forEach(v => {
-                vls.push(...v);
-            });
-            map[allVals] = vls;
-        }
-        return map[allVals];
     }
 
     /**
@@ -152,16 +165,17 @@ export class TypeDefine {
         if (!type) {
             type = 'class';
         }
-        const filter = d => d.decor === decor;
+        const rf = this.refls.get(decor);
+        if (!rf) return emptyArr;
         switch (type) {
             case 'class':
-                return this.classDecors.filter(filter);
+                return rf.class;
             case 'method':
-                return this.methodDecors.filter(filter);
+                return rf.methods;
             case 'property':
-                return this.propDecors.filter(filter);
+                return rf.props;
             case 'parameter':
-                return this.paramDecors.filter(filter);
+                return rf.params;
             default:
                 return emptyArr;
         }
@@ -197,19 +211,6 @@ export class TypeDefine {
     getMetadatas<T = any>(decor: string | Function, type?: DecorMemberType): T[] {
         return this.getDecorDefines(decor, type).map(d => d.metadata).filter(d => d);
     }
-
-    private getDefines(map: Map<string, DecorDefine[]>, propertyKey: string) {
-        let decors: DecorDefine[];
-        if (!map.has(propertyKey)) {
-            decors = [];
-            map.set(propertyKey, decors);
-        } else {
-            decors = map.get(propertyKey);
-        }
-        return decors;
-    }
-
-
 
     private _extends: ClassType[];
     get extendTypes(): ClassType[] {
