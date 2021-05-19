@@ -1,8 +1,8 @@
 import { ClassType, ObjectMap } from '../types';
 import { ARGUMENT_NAMES, clsUglifyExp, STRIP_COMMENTS } from '../utils/exps';
-import { isArray, isFunction, isString } from '../utils/chk';
+import { isFunction, isString } from '../utils/chk';
 import { getClassAnnotation } from '../utils/util';
-import { first, forIn, getClassChain } from '../utils/lang';
+import { forIn, getClassChain } from '../utils/lang';
 import { DecoratorType, DecorDefine, DecorMemberType } from './type';
 
 
@@ -10,15 +10,6 @@ const name = '__name';
 const emptyArr = [];
 const ctorBK = '__ctor';
 
-export interface ReflectInfo {
-    class: DecorDefine[];
-    props: DecorDefine[];
-    methods: DecorDefine[];
-    params: DecorDefine[];
-    propMap: Map<string, DecorDefine[]>;
-    methodMap: Map<string, DecorDefine[]>;
-    paramMap: Map<string, DecorDefine[]>;
-}
 
 /**
  * type define.
@@ -32,67 +23,37 @@ export class TypeDefine {
     methodDecors: DecorDefine[];
     paramDecors: DecorDefine[];
 
-    private refls: Map<string, ReflectInfo>;
-
     constructor(public readonly type: ClassType, private parent?: TypeDefine) {
         this.className = getClassAnnotation(type)?.name || type.name;
         this.classDecors = [];
-        this.refls = new Map();
-        this.decors = parent ? parent.decors.filter(d => d.decorType !== 'class') : [];
-        this.propDecors = [];
-        this.methodDecors = [];
-        this.paramDecors = [];
-        this.decors.forEach(d => this.storage(d));
-    }
-
-    protected storage(define: DecorDefine) {
-        let rf = this.refls.get(define.decor);
-        if (!rf) {
-            rf = {
-                class: [],
-                methods: [],
-                props: [],
-                params: [],
-                methodMap: new Map(),
-                propMap: new Map(),
-                paramMap: new Map()
-            }
-            this.refls.set(define.decor, rf);
+        if (parent) {
+            this.decors = parent.decors.filter(d => d.decorType !== 'class');
+            this.propDecors = parent.propDecors.slice(0);
+            this.methodDecors = parent.methodDecors.slice(0);
+            this.paramDecors = parent.paramDecors.slice(0);
+        } else {
+            this.decors = [];
+            this.propDecors = [];
+            this.methodDecors = [];
+            this.paramDecors = [];
         }
-        switch (define.decorType) {
-            case 'class':
-                this.classDecors.unshift(define);
-                rf.class.unshift(define);
-                break;
-            case 'method':
-                this.methodDecors.unshift(define);
-                rf.methods.unshift(define);
-                this.getMapFiled(rf.methodMap, define.propertyKey).unshift(define);
-                break;
-            case 'property':
-                this.propDecors.unshift(define);
-                rf.props.unshift(define);
-                this.getMapFiled(rf.propMap, define.propertyKey).unshift(define);
-                break;
-            case 'parameter':
-                this.paramDecors.unshift(define);
-                rf.params.unshift(define);
-                this.getMapFiled(rf.paramMap, define.propertyKey).unshift(define);
-                break;
-        }
-    }
-
-    protected getMapFiled(map: Map<string, DecorDefine[]>, key: string) {
-        let val = map.get(key);
-        if (!isArray(val)) {
-            val = [];
-            map.set(key, val);
-        }
-        return val;
     }
 
     addDefine(define: DecorDefine) {
-        this.storage(define);
+        switch (define.decorType) {
+            case 'class':
+                this.classDecors.unshift(define);
+                break;
+            case 'method':
+                this.methodDecors.unshift(define);
+                break;
+            case 'property':
+                this.propDecors.unshift(define);
+                break;
+            case 'parameter':
+                this.paramDecors.unshift(define);
+                break;
+        }
         this.decors.unshift(define);
     }
 
@@ -111,17 +72,16 @@ export class TypeDefine {
     hasMetadata(decor: string | Function, type?: DecoratorType, propertyKey?: string): boolean {
         type = type || 'class';
         decor = getDectorId(decor);
-        const rf = this.refls.get(decor);
-        if (!rf) return false;
+        const filter = (propertyKey &&  type !=='class') ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case 'class':
-                return rf.class.length > 0;
+                return this.classDecors.some(filter);
             case 'method':
-                return propertyKey ? rf.methodMap.has(propertyKey) : rf.methods.length > 0;
+                return this.methodDecors.some(filter);
             case 'property':
-                return propertyKey ? rf.propMap.has(propertyKey) : rf.props.length > 0;
+                return this.propDecors.some(filter);
             case 'parameter':
-                return propertyKey ? rf.paramMap.has(propertyKey) : rf.params.length > 0;
+                return this.paramDecors.some(filter);
             default:
                 return false;
         }
@@ -132,18 +92,16 @@ export class TypeDefine {
     getDecorDefine(decor: string | Function, type?: DecoratorType, propertyKey?: string): DecorDefine {
         type = type || 'class';
         decor = getDectorId(decor);
-        const rf = this.refls.get(decor);
-        if (!rf) return null;
-        // const filter = propertyKey ? (d: DecorDefine) => d.decor === decor && propertyKey === d.propertyKey : (d: DecorDefine) => d.decor === decor;
+        const filter = (propertyKey &&  type !=='class') ? (d: DecorDefine) => d.decor === decor && d.propertyKey === propertyKey : (d: DecorDefine) => d.decor === decor;
         switch (type) {
             case 'class':
-                return first(rf.class);
+                return this.classDecors.find(filter);
             case 'method':
-                return propertyKey ? first(rf.methodMap[propertyKey]) : first(rf.methods);
+                return this.methodDecors.find(filter);
             case 'property':
-                return propertyKey ? first(rf.propMap[propertyKey]) : first(rf.props);
+                return this.propDecors.find(filter);
             case 'parameter':
-                return propertyKey ? first(rf.paramMap[propertyKey]) : first(rf.params);
+                return this.paramDecors.find(filter);
             default:
                 return null;
         }
@@ -165,17 +123,16 @@ export class TypeDefine {
         if (!type) {
             type = 'class';
         }
-        const rf = this.refls.get(decor);
-        if (!rf) return emptyArr;
+        const filter = d => d.decor === decor;
         switch (type) {
             case 'class':
-                return rf.class;
+                return this.classDecors.filter(filter);
             case 'method':
-                return rf.methods;
+                return this.methodDecors.filter(filter);
             case 'property':
-                return rf.props;
+                return this.propDecors.filter(filter);
             case 'parameter':
-                return rf.params;
+                return this.paramDecors.filter(filter);
             default:
                 return emptyArr;
         }
