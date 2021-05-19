@@ -95,7 +95,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
                 return this.runTimeout(
                     df.propertyKey,
                     'sutie before ' + df.propertyKey,
-                    df.matedata.timeout);
+                    df.metadata.timeout);
             }));
     }
 
@@ -106,7 +106,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
                 return this.runTimeout(
                     df.propertyKey,
                     'before each ' + df.propertyKey,
-                    df.matedata.timeout);
+                    df.metadata.timeout);
             }));
     }
 
@@ -116,7 +116,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
             return this.runTimeout(
                 df.propertyKey,
                 'after each ' + df.propertyKey,
-                df.matedata.timeout);
+                df.metadata.timeout);
         }));
     }
 
@@ -127,7 +127,7 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
                 return this.runTimeout(
                     df.propertyKey,
                     'sutie after ' + df.propertyKey,
-                    df.matedata.timeout)
+                    df.metadata.timeout)
             }));
     }
 
@@ -137,9 +137,9 @@ export class SuiteRunner extends Runnable implements ISuiteRunner {
             tests.map(df => {
                 return {
                     key: df.propertyKey,
-                    order: df.matedata.setp,
-                    timeout: df.matedata.timeout,
-                    title: df.matedata.title ?? df.propertyKey
+                    order: df.metadata.setp,
+                    timeout: df.metadata.timeout,
+                    title: df.metadata.title ?? df.propertyKey
                 } as ICaseDescribe;
             })
                 .sort((a, b) => {

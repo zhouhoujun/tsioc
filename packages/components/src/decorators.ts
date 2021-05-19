@@ -55,7 +55,7 @@ export const Directive: IDirectiveDecorator = createDecorator<DirectiveMetadata>
         class: (ctx, next) => {
             (ctx.reflect as AnnotationReflect).annoType = 'directive';
             (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-            (ctx.reflect as AnnotationReflect).annotation = ctx.matedata;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
             return next();
         }
     },
@@ -120,7 +120,7 @@ export const Component: IComponentDecorator = createDecorator<ComponentMetadata>
         class: (ctx, next) => {
             (ctx.reflect as AnnotationReflect).annoType = 'component';
             (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-            (ctx.reflect as AnnotationReflect).annotation = ctx.matedata;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
             return next();
         }
     },
@@ -541,7 +541,7 @@ export const Pipe: IPipeDecorator = createDecorator<PipeMetadata>('Pipe', {
         class: (ctx, next) => {
             (ctx.reflect as AnnotationReflect).annoType = 'pipe';
             (ctx.reflect as AnnotationReflect).annoDecor = ctx.decor;
-            (ctx.reflect as AnnotationReflect).annotation = ctx.matedata;
+            (ctx.reflect as AnnotationReflect).annotation = ctx.metadata;
             return next();
         }
     },
@@ -616,8 +616,8 @@ export interface ContentChildrenDecorator {
 export const ContentChildren: ContentChildrenDecorator = createPropDecorator('ContentChildren', {
     reflect: {
         property: (ctx, next) => {
-            if (!(ctx.matedata as QueryMetadata).selector) {
-                (ctx.matedata as QueryMetadata).selector = isDirOrComponent(ctx.matedata.type) ? ctx.matedata.type : ctx.propertyKey;
+            if (!(ctx.metadata as QueryMetadata).selector) {
+                (ctx.metadata as QueryMetadata).selector = isDirOrComponent(ctx.metadata.type) ? ctx.metadata.type : ctx.propertyKey;
             }
             return next();
         }
@@ -672,7 +672,7 @@ export interface ContentChildDecorator {
 export const ContentChild: ContentChildDecorator = createPropDecorator('ContentChild', {
     reflect: {
         property: (ctx, next) => {
-            const meta = ctx.matedata as QueryMetadata;
+            const meta = ctx.metadata as QueryMetadata;
             if (!meta.selector) {
                 meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
             }
@@ -716,7 +716,7 @@ export interface ViewChildrenDecorator {
 export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
     reflect: {
         property: (ctx, next) => {
-            const meta = ctx.matedata as QueryMetadata;
+            const meta = ctx.metadata as QueryMetadata;
             if (!meta.selector) {
                 meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.propertyKey;
             }
@@ -781,8 +781,8 @@ export interface ViewChildDecorator {
 export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
     reflect: {
         property: (ctx, next) => {
-            if (!(ctx.matedata as QueryMetadata).selector) {
-                (ctx.matedata as QueryMetadata).selector = isDirOrComponent(ctx.matedata.type) ? ctx.matedata.type : ctx.propertyKey;
+            if (!(ctx.metadata as QueryMetadata).selector) {
+                (ctx.metadata as QueryMetadata).selector = isDirOrComponent(ctx.metadata.type) ? ctx.metadata.type : ctx.propertyKey;
             }
             return next();
         }

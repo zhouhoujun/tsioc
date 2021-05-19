@@ -42,7 +42,7 @@ export const Aspect: IAspectDecorator = createDecorator<AspectMetadata>('Aspect'
     actionType: 'annoation',
     reflect: {
         class: (ctx, next) => {
-            (ctx.reflect as AopReflect).aspect = ctx.matedata;
+            (ctx.reflect as AopReflect).aspect = ctx.metadata;
             return next();
         }
     },
@@ -191,7 +191,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
                 if (!(ctx.reflect as AopReflect).advices) {
                     (ctx.reflect as AopReflect).advices = [];
                 }
-                (ctx.reflect as AopReflect).advices.push({ ...ctx.matedata, propertyKey: ctx.propertyKey });
+                (ctx.reflect as AopReflect).advices.push({ ...ctx.metadata, propertyKey: ctx.propertyKey });
                 return next();
             }
         },

@@ -1,11 +1,10 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { StaticProvider } from '../providers';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
 import { getClass, isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './metadatas';
-import { DecorContext, DecorDefine, DecorPdr, Registered, TypeReflect } from './type';
+import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
 import { chain, Handler } from '../utils/hdl';
 import { cleanObj, getParentClass } from '../utils/lang';
@@ -91,17 +90,11 @@ export interface DecorScopeHandles<T> {
 /**
  * decorator register options.
  */
-export interface DecorRegisterOption {
+export interface DecorRegisterOption extends ProvidersMetadata {
     /**
      * decorator basic action type.
      */
     actionType?: DecorActionType | DecorActionType[];
-
-    /**
-     * decorator providers.
-     */
-    providers?: StaticProvider[];
-
     /**
      * set reflect handles.
      */
@@ -135,7 +128,7 @@ export interface MetadataFactory<T> {
 /**
  * decor registered option.
  */
-export interface DecorRegisteredOption extends MetadataFactory<any>, DecorPdr { }
+export interface DecorRegisteredOption extends MetadataFactory<any>, ProvidersMetadata { }
 
 /**
  * decorator option.
@@ -144,32 +137,41 @@ export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOpt
 
 
 /**
- * register decorator.
- * @param decor decorator.
- * @param options options.
+ * create decorator define.
+ * @param name 
+ * @param decor 
+ * @param metadata 
+ * @param decorType 
+ * @param options 
+ * @param propertyKey 
+ * @param parameterIndex 
+ * @returns decorator define
  */
-export function registerDecror(decor: string, options: DecoratorOption<any>): DecorRegisteredOption {
+export function toDefine<T>(name: string, decor: string, metadata: T, decorType: DecoratorType, options: DecoratorOption<any>, propertyKey?: string, parameterIndex?:number): DecorDefine<T> {
     if (options.actionType) {
         isArray(options.actionType) ?
             options.actionType.forEach(a => regActionType(decor, a))
             : regActionType(decor, options.actionType);
     }
 
-    const option = { props: options.props, appendProps: options.appendProps } as DecorRegisteredOption;
+    const providers = options.providers || [];
 
-    option.getHandle = options.reflect ? mapToFac(options.reflect as ObjectMap) : emptyHd;
-
-    option.getDesignHandle = options.design ? mapToFac(options.design as ObjectMap) : emptyHd;
-
-    option.getRuntimeHandle = options.runtime ? mapToFac(options.runtime as ObjectMap) : emptyHd;
-    
-    option.providers = options.providers || [];
-
-    return option;
+    return {
+        name,
+        decor,
+        propertyKey,
+        parameterIndex,
+        decorType,
+        metadata,
+        providers,
+        getHandle: options.reflect ? mapToFac(options.reflect as ObjectMap) : emptyHd,
+        getDesignHandle: options.design ? mapToFac(options.design as ObjectMap) : emptyHd,
+        getRuntimeHandle: options.runtime ? mapToFac(options.runtime as ObjectMap) : emptyHd
+    };
 }
 
-const emptyArr = [];
 
+const emptyArr = [];
 const emptyHd = (type) => emptyArr;
 
 function mapToFac(maps: ObjectMap<Handler | Handler[]>): (type) => Handler[] {
@@ -215,7 +217,7 @@ export const paramInjectDecors = ['@Inject', '@AutoWired', '@Param'];
 export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
     if (paramInjectDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
-        let meta = ctx.matedata as ParameterMetadata;
+        let meta = ctx.metadata as ParameterMetadata;
         let params = reflect.methodParams.get(ctx.propertyKey);
         if (!params) {
             const names = reflect.class.getParamNames(ctx.propertyKey);
@@ -240,13 +242,13 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
 
 
 export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
-    if (!(ctx.matedata as PropertyMetadata).type) {
+    if (!(ctx.metadata as PropertyMetadata).type) {
         let type = Reflect.getOwnMetadata('design:type', ctx.target, ctx.propertyKey);
         if (!type) {
             // Needed to support react native inheritance
             type = Reflect.getOwnMetadata('design:type', ctx.target.constructor, ctx.propertyKey);
         }
-        (ctx.matedata as PropertyMetadata).type = type;
+        (ctx.metadata as PropertyMetadata).type = type;
     }
     return next();
 }
@@ -261,7 +263,7 @@ export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
             pdrs = [];
             ctx.reflect.propProviders.set(ctx.propertyKey, pdrs);
         }
-        pdrs.push(ctx.matedata as PropertyMetadata);
+        pdrs.push(ctx.metadata as PropertyMetadata);
     }
     return next();
 };
@@ -288,7 +290,7 @@ export const typeAnnoDecors = ['@Injectable', '@Singleton', '@Abstract', '@Refs'
 export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
     if (typeAnnoDecors.indexOf(ctx.decor) >= 0) {
         const reflect = ctx.reflect;
-        const meta = ctx.matedata as InjectableMetadata;
+        const meta = ctx.metadata as InjectableMetadata;
         if (meta.abstract) {
             reflect.abstract = true;
         } else {
@@ -320,8 +322,8 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
     if (autorunDecors.indexOf(ctx.decor) >= 0) {
         ctx.reflect.autoruns.push({
             decorType: ctx.decorType,
-            autorun: (ctx.matedata as AutorunMetadata).autorun,
-            order: ctx.decorType === 'class' ? 0 : (ctx.matedata as AutorunMetadata).order
+            autorun: (ctx.metadata as AutorunMetadata).autorun,
+            order: ctx.decorType === 'class' ? 0 : (ctx.metadata as AutorunMetadata).order
         });
         ctx.reflect.autoruns.sort((au1, au2) => au1.order - au2.order);
     }
@@ -331,8 +333,8 @@ export const AutorunAction = (ctx: DecorContext, next: () => void) => {
 export const typeProvidersDecors = ['@Injectable', '@Providers'];
 export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
     if (typeProvidersDecors.indexOf(ctx.decor) >= 0) {
-        if ((ctx.matedata as ProvidersMetadata).providers) {
-            ctx.reflect.extProviders.push(...(ctx.matedata as ProvidersMetadata).providers);
+        if ((ctx.metadata as ProvidersMetadata).providers) {
+            ctx.reflect.extProviders.push(...(ctx.metadata as ProvidersMetadata).providers);
         }
     }
     return next();
@@ -357,14 +359,14 @@ export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
             pdrs = []
             ctx.reflect.methodExtProviders.set(ctx.propertyKey, pdrs);
         }
-        pdrs.push(...(ctx.matedata as ProvidersMetadata).providers);
+        pdrs.push(...(ctx.metadata as ProvidersMetadata).providers);
     }
     return next();
 }
 
 export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
-    if (ctx.decorPdr) {
-        const handles = ctx.decorPdr.getHandle(ctx.decorType);
+    if (ctx.getHandle) {
+        const handles = ctx.getHandle(ctx.decorType);
         chain(handles, ctx);
     }
     return next()

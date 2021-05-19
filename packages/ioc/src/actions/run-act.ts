@@ -87,7 +87,7 @@ export class BeforeCtorScope extends IocRegScope<RuntimeContext> implements IAct
 export const BeforeCtorDecorScope = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.decorPdr.getRuntimeHandle('beforeConstructor'), ctx);
+        chain(d.getRuntimeHandle('beforeConstructor'), ctx);
     });
 
     return next();
@@ -118,7 +118,7 @@ export class AfterCtorScope extends IocRegScope<RuntimeContext> implements IActi
 export const AfterCtorDecorScope = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.decorPdr.getRuntimeHandle('afterConstructor'), ctx);
+        chain(d.getRuntimeHandle('afterConstructor'), ctx);
     });
 
     return next();
@@ -198,7 +198,7 @@ export class RuntimeAnnoScope extends IocRegScope<RuntimeContext> implements IAc
 export const RuntimeAnnoDecorScope = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.decorPdr.getRuntimeHandle('class'), ctx);
+        chain(d.getRuntimeHandle('class'), ctx);
     });
 
     return next();
@@ -213,7 +213,7 @@ export class RuntimeMthScope extends IocRegScope<RuntimeContext> implements IAct
 export const RuntimeMthDecorScope = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.methodDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.decorPdr.getRuntimeHandle('method'), ctx);
+        chain(d.getRuntimeHandle('method'), ctx);
     });
 
     return next();
@@ -229,7 +229,7 @@ export class RuntimePropScope extends IocRegScope<RuntimeContext> implements IAc
 export const RuntimePropDecorScope = function (ctx: RuntimeContext, next: () => void) {
     ctx.reflect.class.propDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        chain(d.decorPdr.getRuntimeHandle('property'), ctx);
+        chain(d.getRuntimeHandle('property'), ctx);
     });
 
     return next();

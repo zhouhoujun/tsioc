@@ -180,7 +180,7 @@ export class TypeDefine {
      */
     getMetadata<T = any>(decor: string | Function, propertyKey: string, type: DecorMemberType): T;
     getMetadata<T = any>(decor: string | Function, propertyKey?: string, type?: DecorMemberType): T {
-        return this.getDecorDefine(decor, propertyKey, type)?.matedata;
+        return this.getDecorDefine(decor, propertyKey, type)?.metadata;
     }
 
     /**
@@ -195,7 +195,7 @@ export class TypeDefine {
      */
     getMetadatas<T = any>(decor: string | Function, type: DecorMemberType): T[];
     getMetadatas<T = any>(decor: string | Function, type?: DecorMemberType): T[] {
-        return this.getDecorDefines(decor, type).map(d => d.matedata).filter(d => d);
+        return this.getDecorDefines(decor, type).map(d => d.metadata).filter(d => d);
     }
 
     private getDefines(map: Map<string, DecorDefine[]>, propertyKey: string) {

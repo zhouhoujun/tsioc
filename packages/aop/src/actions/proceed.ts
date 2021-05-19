@@ -143,7 +143,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
                 advices,
                 originMethod: propertyMethod,
                 provJoinpoint,
-                annotations: refl.get(targetType).class.decors.filter(d => d.propertyKey === name).map(d => d.matedata),
+                annotations: refl.get(targetType).class.decors.filter(d => d.propertyKey === name).map(d => d.metadata),
                 providers
             });
 

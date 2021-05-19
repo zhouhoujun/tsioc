@@ -5,7 +5,7 @@ import { ClassType } from '../types';
 import { Handler } from '../utils/hdl';
 import {
     ParameterMetadata, PatternMetadata, PropertyMetadata,
-    ProviderMetadata, RefProvider, RegInMetadata, TypeMetadata
+    ProviderMetadata, ProvidersMetadata, RefProvider, RegInMetadata, TypeMetadata
 } from './metadatas';
 import { TypeDefine } from './typedef';
 
@@ -49,15 +49,18 @@ export interface Registered {
     providers?: IProvider;
 }
 
-
 /**
- * decorator provdider.
+ * decorator define.
  */
-export interface DecorPdr {
+export interface DecorDefine<T = any> extends ProvidersMetadata {
     /**
-     * decor provider for class
+     * decorator name.
      */
-    providers: ProviderType[];
+    name: string;
+    /**
+     * decorator name with '@'
+     */
+    decor: string;
     /**
      * get decorator handle.
      * @param type decorator type.
@@ -73,24 +76,6 @@ export interface DecorPdr {
      * @param type decorator type.
      */
     getDesignHandle(type: DecoratorScope): Handler<DesignContext>[];
-}
-
-/**
- * decorator define.
- */
-export interface DecorDefine<T = any> {
-    /**
-     * decorator name.
-     */
-    name: string;
-    /**
-     * decorator name with '@'
-     */
-    decor: string;
-    /**
-     * decoractor providers.
-     */
-    decorPdr: DecorPdr;
     /**
      * decorator type.
      */
@@ -104,9 +89,9 @@ export interface DecorDefine<T = any> {
      */
     parameterIndex?: number;
     /**
-     * matedata.
+     * decorator metadata.
      */
-    matedata?: T;
+    metadata?: T;
 }
 
 /**

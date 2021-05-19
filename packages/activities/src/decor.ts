@@ -50,11 +50,11 @@ export const Task: ITaskDecorator = createDecorator<ActivityMetadata>('Task', {
             const reflect = ctx.reflect as AnnotationReflect;
             reflect.annoType = 'component';
             reflect.annoDecor = ctx.decor;
-            const metadata = ctx.matedata as ActivityMetadata;
+            const metadata = ctx.metadata as ActivityMetadata;
             if (!metadata.name) {
                 metadata.name = lang.getClassName(ctx.reflect.type);
             }
-            reflect.annotation = ctx.matedata;
+            reflect.annotation = ctx.metadata;
             return next();
         }
     },

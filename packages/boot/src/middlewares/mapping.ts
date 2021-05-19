@@ -103,7 +103,7 @@ export class MappingRoute extends Route {
             if (!ctrl) {
                 return;
             }
-            const providers = await this.createProvider(ctx, ctrl, meta.matedata, this.reflect.methodParams.get(meta.propertyKey));
+            const providers = await this.createProvider(ctx, ctrl, meta.metadata, this.reflect.methodParams.get(meta.propertyKey));
 
             let result = await injector.invoke(ctrl, meta.propertyKey, ctx.providers, ...providers);
             if (isPromise(result)) {
@@ -144,8 +144,8 @@ export class MappingRoute extends Route {
                 .concat(middlewares)
                 .concat(vailds.map(a => a.getMiddlewares(ctx, this.reflect, meta.propertyKey)).reduce((p, c) => p.concat(c), []));
         }
-        if ((meta.matedata as RouteMapingMetadata).middlewares) {
-            middlewares = middlewares.concat((meta.matedata as RouteMapingMetadata).middlewares);
+        if ((meta.metadata as RouteMapingMetadata).middlewares) {
+            middlewares = middlewares.concat((meta.metadata as RouteMapingMetadata).middlewares);
         }
         return middlewares;
     }
@@ -155,17 +155,17 @@ export class MappingRoute extends Route {
         let subRoute = vaild.vaildify(vaild.getReqRoute(ctx, this.prefix).replace(this.url, ''), true);
         if (!this.reflect.sortRoutes) {
             this.reflect.sortRoutes = this.reflect.class.methodDecors
-                .filter(m => m && isString(m.matedata.route))
-                .sort((ra, rb) => (rb.matedata.route || '').length - (ra.matedata.route || '').length);
+                .filter(m => m && isString(m.metadata.route))
+                .sort((ra, rb) => (rb.metadata.route || '').length - (ra.metadata.route || '').length);
 
         }
 
-        let allMethods = this.reflect.sortRoutes.filter(m => m && m.matedata.method === ctx.method);
+        let allMethods = this.reflect.sortRoutes.filter(m => m && m.metadata.method === ctx.method);
 
-        let meta = allMethods.find(d => vaild.vaildify(d.matedata.route || '', true) === subRoute);
+        let meta = allMethods.find(d => vaild.vaildify(d.metadata.route || '', true) === subRoute);
         if (!meta) {
             meta = allMethods.find(route => {
-                let uri = vaild.vaildify(route.matedata.route || '', true);
+                let uri = vaild.vaildify(route.metadata.route || '', true);
                 if (isRest.test(uri)) {
                     let idex = uri.indexOf('/:');
                     let url = uri.substring(0, idex);

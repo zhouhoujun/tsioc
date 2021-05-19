@@ -81,7 +81,7 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
                     (ctx.reflect as ModuleReflect).singleton = true;
                     (ctx.reflect as ModuleReflect).annoType = 'boot';
                     (ctx.reflect as ModuleReflect).annoDecor = ctx.decor;
-                    (ctx.reflect as ModuleReflect).annotation = ctx.matedata;
+                    (ctx.reflect as ModuleReflect).annotation = ctx.metadata;
                     return next();
                 },
                 ...hd ? (isArray(hd) ? hd : [hd]) : []
@@ -206,7 +206,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     const reflect = ctx.reflect as ModuleReflect;
                     reflect.annoType = 'module';
                     reflect.annoDecor = ctx.decor;
-                    const annotation: ModuleConfigure = reflect.annotation = ctx.matedata;
+                    const annotation: ModuleConfigure = reflect.annotation = ctx.metadata;
                     if (annotation.imports) reflect.imports = lang.getTypes(annotation.imports);
                     if (annotation.exports) reflect.exports = lang.getTypes(annotation.exports);
                     if (annotation.components) reflect.components = lang.getTypes(annotation.components);
