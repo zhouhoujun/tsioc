@@ -174,10 +174,8 @@ const SERVICE: IServiceProvider = {
 
 class RegisteredStateImpl implements RegisteredState {
 
-    private decors: Map<string, IProvider>;
     private states: Map<ClassType, Registered>;
     constructor(private readonly container: Container) {
-        this.decors = new Map();
         this.states = new Map();
         this.container.onFinally(() => {
             this.states.forEach(v => {
@@ -186,11 +184,7 @@ class RegisteredStateImpl implements RegisteredState {
                 v.injector?.destroy();
                 cleanObj(v);
             });
-            this.decors.forEach(v => {
-                v?.destroy();
-            });
             this.states.clear();
-            this.decors.clear();
         });
     }
 
@@ -259,17 +253,6 @@ class RegisteredStateImpl implements RegisteredState {
         return this.states.has(type);
     }
 
-    hasProvider(decor: string) {
-        return this.decors.has(decor);
-    }
-
-    getProvider(decor: string) {
-        return this.decors.get(decor) ?? NULL_PROVIDER;
-    }
-
-    regDecoator(decor: string, ...providers: ProviderType[]) {
-        this.decors.set(decor, this.container.toProvider(providers, true));
-    }
 }
 
 /**

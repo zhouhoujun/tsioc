@@ -197,23 +197,6 @@ export interface RegisteredState {
      */
     deleteType(type: ClassType);
 
-    /**
-     * has decorator provider or not.
-     * @param decor
-     */
-    hasProvider(decor: string): boolean;
-    /**
-     * get decorator provider.
-     * @param decor
-     */
-    getProvider(decor: string);
-
-    /**
-     * register decorator.
-     * @param decor
-     * @param providers
-     */
-    regDecoator(decor: string, ...providers: ProviderType[]);
 }
 
 

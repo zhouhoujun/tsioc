@@ -2,7 +2,7 @@ import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { ClassType, ObjectMap, Type } from '../types';
 import { reflFiled } from '../utils/exps';
-import { getClass, isArray, isFunction } from '../utils/chk';
+import { isArray, isFunction } from '../utils/chk';
 import { ParameterMetadata, PropertyMetadata, ProvidersMetadata, AutorunMetadata, InjectableMetadata } from './metadatas';
 import { DecoratorType, DecorContext, DecorDefine, TypeReflect } from './type';
 import { TypeDefine } from './typedef';
@@ -299,6 +299,10 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
         }
         if (meta.expires) {
             reflect.expires = meta.expires;
+        }
+
+        if(ctx.providers){
+            reflect.extProviders.push(...ctx.providers);
         }
 
         if (meta.refs) {
