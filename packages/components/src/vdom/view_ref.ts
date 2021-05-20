@@ -1,10 +1,10 @@
-import { BOOTCONTEXT } from '@tsdi/boot';
 import { InternalViewRef, ViewRefTracker } from '../refs/inter';
 import { EmbeddedViewRef } from '../refs/view';
 import { VIEW_REFS } from './interfaces/container';
 import { CONTEXT, FLAGS, INJECTOR, LView, LViewFlags, PARENT, VIEW } from './interfaces/view';
 import { isLContainer } from './chk';
 import { collectNativeNodes } from './native_nodes';
+import { ApplicationContext } from 'packages/boot/src/Context';
 
 /**
  * viewRef implement.
@@ -250,7 +250,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * See {@link ChangeDetectorRef#detach detach} for more information.
      */
     detectChanges(): void {
-        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
+        this._lView[INJECTOR].getInstance(ApplicationContext).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
     }
 
     /**
@@ -260,7 +260,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * introduce other changes.
      */
     checkNoChanges(): void {
-        this._lView[INJECTOR].get(BOOTCONTEXT).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
+        this._lView[INJECTOR].get(ApplicationContext).send(api.VIEW_CHECK_NOCHANGES, { method: 'nochange', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
     }
 
     attachToViewContainerRef() {

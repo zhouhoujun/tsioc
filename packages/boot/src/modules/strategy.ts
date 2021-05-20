@@ -1,4 +1,4 @@
-import { IProvider, isNil, lang, ProviderState, Strategy, Token } from '@tsdi/ioc';
+import { IProvider, isNil, lang, FacRecord, Strategy, Token } from '@tsdi/ioc';
 import { ModuleInjector } from '../Context';
 
 
@@ -44,7 +44,7 @@ import { ModuleInjector } from '../Context';
         return type ?? curr.parent?.getTokenProvider(key);
     }
 
-    iterator(map: Map<Token, ProviderState>, callbackfn: (fac: ProviderState, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
+    iterator(map: Map<Token, FacRecord>, callbackfn: (fac: FacRecord, key: Token, resolvor?: TI) => void | boolean, curr: TI, deep?: boolean) {
         if (lang.mapEach(map, callbackfn, curr) === false) {
             return false;
         }

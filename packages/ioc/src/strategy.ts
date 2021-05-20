@@ -1,6 +1,6 @@
 import { Type } from './types';
 import { Abstract } from './decor/decorators';
-import { ProviderState, IProvider } from './IInjector';
+import { FacRecord, IProvider } from './IInjector';
 import { Token } from './tokens';
 import { mapEach } from './utils/lang';
 
@@ -52,7 +52,7 @@ export abstract class Strategy {
      * @param curr current provider.
      * @param deep deep iterator or not.
      */
-    abstract iterator(map: Map<Token, ProviderState>, callbackfn: (fac: ProviderState, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
+    abstract iterator(map: Map<Token, FacRecord>, callbackfn: (fac: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean): void | boolean;
 
 }
 
@@ -86,7 +86,7 @@ export class DefaultStrategy extends Strategy {
         return curr.parent?.getTokenProvider(key);
     }
 
-    iterator(map: Map<Token, ProviderState>, callbackfn: (fac: ProviderState, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) {
+    iterator(map: Map<Token, FacRecord>, callbackfn: (fac: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, curr: IProvider, deep?: boolean) {
         if (mapEach(map, callbackfn, curr) === false) {
             return false;
         }
