@@ -1,4 +1,4 @@
-import { IInjector, isBoolean, isFunction, isString, isTypeReflect, Provider, refl, ROOT_INJECTOR, Type } from '@tsdi/ioc';
+import { IInjector, isBoolean, isFunction, isString, isTypeReflect, Provider, refl, registerIn, ROOT_INJECTOR, Type } from '@tsdi/ioc';
 import { IModuleExports, ModuleFactory, ModuleInjector, ModuleOption, ModuleRegistered } from '../Context';
 import { ModuleReflect } from '../reflect';
 import { CTX_ARGS, PROCESS_ROOT } from '../tk';
@@ -78,7 +78,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
     exports: ModuleInjector[] = [];
 
     protected regType<T>(type: Type<T>) {
-        this.registerIn(this.moduleRef, { type });
+        registerIn(this.moduleRef, type);
         this.export(type);
     }
 
