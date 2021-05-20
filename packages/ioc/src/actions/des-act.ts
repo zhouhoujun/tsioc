@@ -54,7 +54,7 @@ function genReged(injector: IInjector, provide?: Token) {
     }
 }
 
-function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean): CtorOption {
+function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean) {
     const insf = {
         provide,
         useClass: type,
@@ -82,9 +82,6 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
     } as CtorOption;
 
     injector.set(insf);
-    injector.onDestroy(() => injector.unregister(provide));
-
-    return insf;
 }
 
 
@@ -97,7 +94,6 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        // d.providers.length && ctx.state.providers.parse(d.providers);
         chain(d.getDesignHandle('beforeAnnoation'), ctx);
     });
 
