@@ -74,7 +74,7 @@ export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
 /**
  * instance provider.
  */
-export interface ProviderState<T = any> {
+export interface FacRecord<T = any> {
     /**
      * provide token.
      */
@@ -320,7 +320,7 @@ export interface IProvider extends Destroyable {
      * @param token token.
      * @param option factory option.
      */
-    set<T>(token: Token<T>, option: FactoryOption<T> | ProviderState<T>): this;
+    set<T>(token: Token<T>, option: FactoryOption<T> | FacRecord<T>): this;
     /**
      * set provide.
      *
@@ -388,11 +388,11 @@ export interface IProvider extends Destroyable {
     /**
      * iterator current resolver.
      *
-     * @param {((pdr: ProviderState, key: Token, resolvor?: IProvider) => void|boolean)} callbackfn
+     * @param {((pdr: FacRecord, key: Token, resolvor?: IProvider) => void|boolean)} callbackfn
      * @param {boolean} [deep] deep iterator all register in parent or not.
      * @returns {(void|boolean)}
      */
-    iterator(callbackfn: (pdr: ProviderState, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
+    iterator(callbackfn: (pdr: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean;
     /**
      * copy injector to current injector.
      *

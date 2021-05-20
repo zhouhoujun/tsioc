@@ -3,7 +3,7 @@ import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
 import { FactoryProvider, KeyValueProvider, StaticProviders } from './providers';
 import {
-    TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, ProviderState, IProvider, ProviderType,
+    TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, FacRecord, IProvider, ProviderType,
     RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption, FactoryOption
 } from './IInjector';
 import { isToken, Token, tokenRef } from './tokens';
@@ -44,7 +44,7 @@ export class Provider implements IProvider {
      * @type {Map<Token, Function>}
      * @memberof BaseInjector
      */
-    protected factories: Map<Token, ProviderState>;
+    protected factories: Map<Token, FacRecord>;
     protected destCb: () => void;
 
     constructor(public parent: IProvider, protected strategy: Strategy = providerStrategy) {
@@ -98,7 +98,7 @@ export class Provider implements IProvider {
      * @param token token.
      * @param option factory option.
      */
-    set<T>(token: Token<T>, option: FactoryOption<T> | ProviderState<T>): this;
+    set<T>(token: Token<T>, option: FactoryOption<T> | FacRecord<T>): this;
     /**
      * set provide.
      *
@@ -109,7 +109,7 @@ export class Provider implements IProvider {
      * @returns {this}
      */
     set<T>(provide: Token<T>, fac: Factory<T>, useClass?: Type<T>): this;
-    set<T>(target: any, fac?: Factory<T> | FactoryOption<T> | ProviderState<T>, useClass?: Type<T>): this {
+    set<T>(target: any, fac?: Factory<T> | FactoryOption<T> | FacRecord<T>, useClass?: Type<T>): this {
         if (fac) {
             if (isFunction(fac)) {
                 const old = this.factories.get(target as Token);
@@ -436,7 +436,7 @@ export class Provider implements IProvider {
         return this;
     }
 
-    iterator(callbackfn: (fac: ProviderState, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
+    iterator(callbackfn: (fac: FacRecord, key: Token, resolvor?: IProvider) => void | boolean, deep?: boolean): void | boolean {
         return this.strategy.iterator(this.factories, callbackfn, this, deep);
     }
 
@@ -667,7 +667,7 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getStateValue<T>(injector: IProvider, pd: ProviderState<T>, provider?: IProvider): T {
+export function getStateValue<T>(injector: IProvider, pd: FacRecord<T>, provider?: IProvider): T {
     if (!pd) return null;
     if (!isNil(pd.useValue)) return pd.useValue;
     if (pd.expires) {
@@ -693,7 +693,7 @@ function getFactoryProviderValue(injector: IProvider, pd: FactoryProvider, provi
     return pd.useFactory.apply(pd, args.concat(provider));
 }
 
-function generateFac(injector: IProvider, pd: ProviderState) {
+function generateFac(injector: IProvider, pd: FacRecord) {
     pd._ged = true;
     if (pd.useFactory) {
         pd.fac = (pdr: IProvider) => getFactoryProviderValue(injector, pd as FactoryProvider, pdr);
