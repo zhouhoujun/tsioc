@@ -52,18 +52,7 @@ export interface TypeOption<T = any> {
     regIn?: 'root';
 }
 
-export interface FactoryOption<T = any> {
-    fac: Factory<T>;
-    useClass?: Type<T>;
-}
-
-export interface CtorOption<T = any> extends FactoryOption<T> {
-    provide: Token<T>;
-    singleton?: boolean;
-    unreg?: () => void;
-}
-
-export type ProviderOption<T = any> = CtorOption<T> | ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
+export type ProviderOption<T = any> =  ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
 
 /**
  * register option.
@@ -76,55 +65,21 @@ export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
  */
 export interface FacRecord<T = any> {
     /**
-     * provide token.
-     */
-    provide?: Token<T>;
-    /**
-     * use class for provide.
-     *
-     * @type {Type}
-     * @memberof ClassProvider
-     */
-    useClass?: Type<T>;
-    /**
-     * A list of `token`s which need to be resolved by the injector.
-     */
-    deps?: any[];
-    /**
-     * singleton or not.
-     */
-    singleton?: boolean;
-
-    /**
      * use value for provide.
      *
      * @type {*}
      */
-    useValue?: any;
-
-    /**
-    * A function to invoke to create a value for this `token`. The function is invoked with
-    * resolved values of `token`s in the `deps` field.
-    */
-    useFactory?: Function;
-
-    /**
-     * use existing registered token for provide.
-     *
-     * @type {Token}
-     * @memberof ExistingProvider
-     */
-    useExisting?: Token;
+    value?: any;
 
     /**
      * factory.
      */
-    fac?: Factory<T>;
+    fn?: Factory<T>;
 
     /**
-     * has check generate.
+     * token provider type.
      */
-    _ged?: boolean;
+    type?: Type<T>;
 
     /**
      * cache value.
@@ -320,7 +275,7 @@ export interface IProvider extends Destroyable {
      * @param token token.
      * @param option factory option.
      */
-    set<T>(token: Token<T>, option: FactoryOption<T> | FacRecord<T>): this;
+    set<T>(token: Token<T>, option: FacRecord<T>): this;
     /**
      * set provide.
      *

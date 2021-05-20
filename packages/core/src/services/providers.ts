@@ -79,7 +79,7 @@ export class ServiceProvider implements IServiceProvider {
         const pdr = injector.toProvider(providers, true);
 
         maps.iterator(p => {
-            services.push(getStateValue(injector, p, pdr));
+            services.push(getStateValue(p, pdr));
         });
         return services;
     }

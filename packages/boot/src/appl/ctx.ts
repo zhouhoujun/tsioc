@@ -3,7 +3,7 @@ import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
 import { AnnotationReflect } from '../reflect';

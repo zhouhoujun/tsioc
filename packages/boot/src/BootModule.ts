@@ -30,11 +30,8 @@ export class BootModule {
      */
     setup(@Inject() injector: Injector) {
 
-        injector.action().regAction(
-            // StartupServiceScope,
-            BootLifeScope);
-
-        injector.use(ConfigureMerger, ConfigureManager, BaseTypeParser);
+        injector.action().regAction(BootLifeScope);
+        injector.register([ConfigureMerger, ConfigureManager, BaseTypeParser]);
 
     }
 }

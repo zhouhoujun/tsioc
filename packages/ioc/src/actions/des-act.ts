@@ -8,7 +8,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { CtorOption, IInjector, IProvider } from '../IInjector';
+import { FacRecord, IInjector, IProvider } from '../IInjector';
 import { PropertyMetadata } from '../decor/metadatas';
 
 
@@ -54,11 +54,10 @@ function genReged(injector: IInjector, provide?: Token) {
     }
 }
 
-function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean): CtorOption {
+function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean) {
     const insf = {
-        provide,
-        useClass: type,
-        fac: (providers: IProvider) => {
+        type,
+        fn: (providers: IProvider) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
                 return injector.getInstance(type);
@@ -79,12 +78,9 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
             return instance;
         },
         unreg: () => injector.state().deleteType(type)
-    } as CtorOption;
+    } as FacRecord;
 
-    injector.set(insf);
-    injector.onDestroy(() => injector.unregister(provide));
-
-    return insf;
+    injector.set(provide, insf);
 }
 
 
@@ -97,7 +93,6 @@ export const RegClassAction = function (ctx: DesignContext, next: () => void): v
 export const BeforeAnnoDecorScope = function (ctx: DesignContext, next: () => void) {
     ctx.reflect.class.classDecors.forEach(d => {
         ctx.currDecor = d.decor;
-        // d.providers.length && ctx.state.providers.parse(d.providers);
         chain(d.getDesignHandle('beforeAnnoation'), ctx);
     });
 

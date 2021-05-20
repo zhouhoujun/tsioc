@@ -262,7 +262,7 @@ export const ConfigureServiceHandle = async function (ctx: ApplicationContext, n
     const prds = root.getServiceProviders(StartupService);
     prds.iterator((pdr, tk, pdrs) => {
         if (startups.indexOf(tk) < 0) {
-            sers.push(getStateValue(pdrs, pdr, root));
+            sers.push(getStateValue(pdr, root));
         }
     });
     if (sers && sers.length) {

@@ -105,7 +105,7 @@ export class Container extends DefaultInjector implements IContainer {
 
     constructor(strategy?: Strategy) {
         super(null, strategy);
-        const red = { useValue: this };
+        const red = { value: this };
         this.factories.set(CONTAINER, red);
         this.factories.set(Container, red);
         this._state = new RegisteredStateImpl(this);
@@ -161,7 +161,7 @@ const SERVICE: IServiceProvider = {
         const pdr = this.toProvider(providers);
         injector.iterator((fac, key) => {
             if (tokens.indexOf(key)) {
-                services.push(getStateValue(injector, fac, pdr));
+                services.push(getStateValue(fac, pdr));
             }
         });
         return services;

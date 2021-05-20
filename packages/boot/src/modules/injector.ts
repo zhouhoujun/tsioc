@@ -22,7 +22,7 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     constructor(readonly reflect: ModuleReflect<T>, parent?: IInjector, regIn?: string, protected _root = false, strategy: ModuleStrategy = mdInjStrategy) {
         super(parent, strategy)
 
-        const recd = { useValue: this };
+        const recd = { value: this };
         this.factories.set(ModuleInjector, recd);
         this.regIn = regIn || this.reflect.regIn;
         this.exports = new ModuleProvider(this);
