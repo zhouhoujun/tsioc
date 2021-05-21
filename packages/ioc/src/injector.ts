@@ -154,7 +154,7 @@ export class Provider implements IProvider {
             this.regType(target);
         } else {
             if ((target as TypeOption).type) {
-                registerIn(this, (target as TypeOption).type, target as TypeOption);
+                this.registerIn(this, (target as TypeOption).type, target as TypeOption);
             } else {
                 this.factories.set(target.provide, generateRecord(this, target as ProviderOption));
             }
@@ -180,8 +180,32 @@ export class Provider implements IProvider {
         return this;
     }
 
+
+    /**
+     * register type class.
+     * @param injector register in the injector.
+     * @param option the type register option.
+     * @param [singleton]
+     */
+    protected registerIn<T>(injector: IProvider, type: Type<T>, option?: TypeOption<T>) {
+        const state = injector.state();
+        // make sure class register once.
+        if (state.isRegistered(type) || injector.has(type, true)) {
+            return this;
+        }
+
+        const ctx = {
+            injector,
+            ...option,
+            type
+        } as DesignContext;
+        injector.action().get(DesignLifeScope).register(ctx);
+        cleanObj(ctx);
+    }
+
+
     protected regType(type: Type) {
-        registerIn(this, type);
+        this.registerIn(this, type);
     }
 
     /**
@@ -634,28 +658,6 @@ export abstract class Injector extends Provider implements IInjector {
  */
 export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
-}
-
-/**
- * register type class.
- * @param injector register in the injector.
- * @param option the type register option.
- * @param [singleton]
- */
-export function registerIn<T>(injector: IProvider, type: Type<T>, option?: TypeOption<T>) {
-    const state = injector.state();
-    // make sure class register once.
-    if (state.isRegistered(type) || injector.has(type, true)) {
-        return this;
-    }
-
-    const ctx = {
-        injector,
-        ...option,
-        type
-    } as DesignContext;
-    injector.action().get(DesignLifeScope).register(ctx);
-    cleanObj(ctx);
 }
 
 
