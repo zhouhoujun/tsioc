@@ -1,6 +1,6 @@
 import {
     IInjector, Token, ProviderType, IProvider, isArray, IContainer,
-    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider, TARGET, getStateValue
+    ServiceOption, ServicesOption, isPlainObject, lang, IServiceProvider, TARGET, resolveRecord
 } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from '../resolves/context';
 import { ResolveServiceScope, ResolveServicesScope } from '../resolves/actions';
@@ -47,7 +47,7 @@ export class ServiceProvider implements IServiceProvider {
         this.initTargetRef(context);
 
         if (!this.serviceScope) {
-            this.serviceScope = this.container.action().getInstance(ResolveServiceScope);
+            this.serviceScope = this.container.action().get(ResolveServiceScope);
         }
 
         this.serviceScope.execute(context);
@@ -79,7 +79,7 @@ export class ServiceProvider implements IServiceProvider {
         const pdr = injector.toProvider(providers, true);
 
         maps.iterator(p => {
-            services.push(getStateValue(injector, p, pdr));
+            services.push(resolveRecord(p, pdr));
         });
         return services;
     }
@@ -101,7 +101,7 @@ export class ServiceProvider implements IServiceProvider {
 
         this.initTargetRef(context);
         if (!this.servicesScope) {
-            this.servicesScope = this.container.action().getInstance(ResolveServicesScope);
+            this.servicesScope = this.container.action().get(ResolveServicesScope);
         }
         this.servicesScope.execute(context);
         const services = context.services;

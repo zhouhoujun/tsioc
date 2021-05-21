@@ -17,14 +17,14 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: () => 
     }
 
     const actpdr = ctx.injector.action();
-    const scope = actpdr.getInstance(ProceedingScope);
+    const scope = actpdr.get(ProceedingScope);
 
     const target = ctx.instance;
     const targetType = ctx.type;
 
     const className = ctx.reflect.class.className;
     const decorators = ctx.reflect.class.getPropertyDescriptors();
-    const advicesMap = actpdr.getInstance(ADVISOR).getAdviceMap(targetType);
+    const advicesMap = actpdr.get(ADVISOR).getAdviceMap(targetType);
 
     if (advicesMap && advicesMap.size) {
         advicesMap.forEach((advices, name) => {
@@ -56,7 +56,7 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: () =>
     }
 
     ctx.injector.action()
-        .getInstance(ProceedingScope)
+        .get(ProceedingScope)
         .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.providers);
 
     next();
@@ -75,7 +75,7 @@ export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => 
     }
 
     ctx.injector.action()
-        .getInstance(ProceedingScope)
+        .get(ProceedingScope)
         .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.providers);
 
     next();
@@ -94,8 +94,8 @@ export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => vo
     }
 
     const acpdr = ctx.injector.action();
-    let advisor = acpdr.getInstance(ADVISOR);
-    let matcher = acpdr.getInstance(ADVICE_MATCHER);
+    let advisor = acpdr.get(ADVISOR);
+    let matcher = acpdr.get(ADVICE_MATCHER);
     let targetType = ctx.type;
 
     advisor.aspects.forEach(type => {

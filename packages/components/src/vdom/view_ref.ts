@@ -250,7 +250,7 @@ export class ViewRef<T = any> extends EmbeddedViewRef<T> implements InternalView
      * See {@link ChangeDetectorRef#detach detach} for more information.
      */
     detectChanges(): void {
-        this._lView[INJECTOR].getInstance(ApplicationContext).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
+        this._lView[INJECTOR].get(ApplicationContext).send(api.VIEW_DETECH_CHANGES, { method: 'change', restful: { viewtype: this._lView[VIEW].type }, body: { view: this._lView[VIEW], lview: this._lView, context: this.context } });
     }
 
     /**

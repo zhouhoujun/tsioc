@@ -132,8 +132,8 @@ export class MappingRoute extends Route {
     }
 
     protected getInstance(ctx: MessageContext) {
-        return this.injector.get(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx })
-            ?? this.injector.state().getInstance(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
+        return this.injector.resolve(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx })
+            ?? this.injector.state().resolve(this.reflect.type, ctx.providers, { provide: CONTEXT, useValue: ctx });
     }
 
     protected getRouteMiddleware(ctx: MessageContext, meta: DecorDefine) {

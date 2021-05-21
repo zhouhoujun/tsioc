@@ -3,7 +3,7 @@ import { ILoggerManager, ConfigureLoggerManager } from '@tsdi/logs';
 import { BOOT_TYPES, CONFIGURATION, PROCESS_ROOT } from '../tk';
 import { Configure } from '../configure/config';
 import { ConfigureManager } from '../configure/manager';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector, ModuleRegistered } from '../Context';
+import { ApplicationContext, ApplicationFactory, ApplicationOption, BootContext, BootFactory, BootstrapOption, ModuleFactory, ModuleInjector } from '../Context';
 import { MessageContext, MessageQueue, RequestOption, ROOT_QUEUE } from '../middlewares';
 import { DIModuleMetadata } from '../decorators';
 import { AnnotationReflect } from '../reflect';
@@ -30,7 +30,7 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
     }
 
     get boots() {
-        return this.injector.getInstance(BOOT_TYPES);
+        return this.injector.get(BOOT_TYPES);
     }
 
     /**
@@ -78,7 +78,7 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
     }
 
     get baseURL(): string {
-        return this.injector.getInstance(PROCESS_ROOT);
+        return this.injector.get(PROCESS_ROOT);
     }
 
     getAnnoation<T extends DIModuleMetadata>(): T {
@@ -89,7 +89,7 @@ export class DefaultApplicationContext<T = any> extends ApplicationContext<T> {
      * configuration merge metadata config and all application config.
      */
     getConfiguration(): Configure {
-        return this.injector.getInstance(CONFIGURATION);
+        return this.injector.get(CONFIGURATION);
     }
 
     /**
@@ -139,7 +139,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
         let ctx: ApplicationContext<T>;
         if (isFunction(arg1)) {
             const parent = arg2 as IInjector;
-            return this.createInstance(parent.getInstance(ModuleFactory).create(arg1));
+            return this.createInstance(parent.get(ModuleFactory).create(arg1));
         } else {
             let option: ApplicationOption<T>;
             if (arg1 instanceof ModuleInjector) {
@@ -148,7 +148,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
             } else {
                 option = arg1;
                 const parent: IInjector = option.injector || arg2;
-                ctx = this.createInstance(parent.getInstance(ModuleFactory).create(option, parent));
+                ctx = this.createInstance(parent.get(ModuleFactory).create(option, parent));
             }
             this.initOption(ctx, option);
             return ctx;

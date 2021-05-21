@@ -89,10 +89,10 @@ export function createBootDecorator<T extends BootMetadata>(name: string, option
         },
         design: {
             afterAnnoation: (ctx, next) => {
-                let boots = ctx.injector.getInstance(BOOT_TYPES);
+                let boots = ctx.injector.get(BOOT_TYPES);
                 if (!boots) {
                     boots = [];
-                    ctx.injector.getInstance(ROOT_INJECTOR).setValue(BOOT_TYPES, boots);
+                    ctx.injector.get(ROOT_INJECTOR).setValue(BOOT_TYPES, boots);
                 }
                 const meta = ctx.reflect.class.getMetadata<BootMetadata>(ctx.currDecor) || {};
 
@@ -224,7 +224,7 @@ export function createDIModuleDecorator<T extends DIModuleMetadata>(name: string
                     if ((injector as ModuleInjector).type === type) {
                         mdinj = injector as ModuleInjector;
                     } else {
-                        mdinj = injector.getInstance(ModuleFactory).create(ctx.reflect, injector, regIn);
+                        mdinj = injector.get(ModuleFactory).create(ctx.reflect, injector, regIn);
                         ctx.injector = mdinj;
                         ctx.state.injector = ctx.injector;
                     }
@@ -434,7 +434,7 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
             const type = ctx.type;
             if (isString(route) || reflect.class.isExtends(Route) || reflect.class.isExtends(Router)) {
                 if (!queue) {
-                    queue = injector.getInstance(RootRouter);
+                    queue = injector.get(RootRouter);
                 } else if (!(queue instanceof Router)) {
                     throw new Error(lang.getClassName(queue) + 'is not message router!');
                 }
@@ -459,13 +459,13 @@ export const Handle: IHandleDecorator = createDecorator<HandleMetadata>('Handle'
                     }
                     middl = type;
                 } else {
-                    middl = new FactoryRoute(route, prefix, (pdr: IProvider) => injector.getInstance(type, pdr));
+                    middl = new FactoryRoute(route, prefix, (pdr: IProvider) => injector.get(type, pdr));
                 }
                 queue.use(middl);
                 injector.onDestroy(() => queue.unuse(middl));
             } else {
                 if (!queue) {
-                    queue = injector.getInstance(ROOT_QUEUE);
+                    queue = injector.get(ROOT_QUEUE);
                 }
                 if (before) {
                     queue.useBefore(type, before);
@@ -574,7 +574,7 @@ export const RouteMapping: IRouteMappingDecorator = createDecorator<RouteMapingM
             if (parent) {
                 queue = injector.state().getInstance(parent);
             } else {
-                queue = injector.getInstance(RootRouter);
+                queue = injector.get(RootRouter);
             }
 
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');

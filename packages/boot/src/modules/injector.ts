@@ -22,7 +22,7 @@ export class DefaultModuleInjector<T> extends ModuleInjector<T> {
     constructor(readonly reflect: ModuleReflect<T>, parent?: IInjector, regIn?: string, protected _root = false, strategy: ModuleStrategy = mdInjStrategy) {
         super(parent, strategy)
 
-        const recd = { useValue: this };
+        const recd = { value: this };
         this.factories.set(ModuleInjector, recd);
         this.regIn = regIn || this.reflect.regIn;
         this.exports = new ModuleProvider(this);
@@ -78,7 +78,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
     exports: ModuleInjector[] = [];
 
     protected regType<T>(type: Type<T>) {
-        this.registerIn(this.moduleRef, { type });
+        this.registerIn(this.moduleRef, type);
         this.export(type);
     }
 
@@ -88,7 +88,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
             this.moduleRef.register(type);
         }
 
-        this.set(type, (pdr) => this.moduleRef.getInstance(type, pdr));
+        this.set(type, (pdr) => this.moduleRef.get(type, pdr));
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
             this.set({ provide: p, useClass: type });
@@ -177,6 +177,6 @@ export class DefaultModuleFactory extends ModuleFactory {
 
     protected createInstance(type: ModuleReflect, parent: IInjector, root?: boolean, regIn?: string) {
         regIn = regIn || type.regIn;
-        return new DefaultModuleInjector(type, (regIn && !root) ? parent.getInstance(ROOT_INJECTOR) : parent, regIn, root);
+        return new DefaultModuleInjector(type, (regIn && !root) ? parent.get(ROOT_INJECTOR) : parent, regIn, root);
     }
 }

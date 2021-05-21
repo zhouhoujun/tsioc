@@ -120,6 +120,6 @@ export class Workflow<T extends WorkflowContext = WorkflowContext> extends BootA
         if (!container.has(UUIDToken)) {
             container.register(RandomUUIDFactory);
         }
-        return container.getInstance(UUIDToken).generate();
+        return container.get(UUIDToken).generate();
     }
 }

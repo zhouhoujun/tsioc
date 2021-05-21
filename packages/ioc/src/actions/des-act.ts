@@ -8,7 +8,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { IActionSetup } from '../action';
 import { IocRegAction, IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
-import { CtorOption, IInjector, IProvider } from '../IInjector';
+import { FacRecord, IInjector, IProvider } from '../IInjector';
 import { PropertyMetadata } from '../decor/metadatas';
 
 
@@ -56,12 +56,11 @@ function genReged(injector: IInjector, provide?: Token) {
 
 function regInstf(injector: IInjector, type: Type, provide: Token, singleton: boolean) {
     const insf = {
-        provide,
-        useClass: type,
-        fac: (providers: IProvider) => {
+        type,
+        fn: (providers: IProvider) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
-                return injector.getInstance(type);
+                return injector.get(type);
             }
 
             const ctx = {
@@ -72,16 +71,16 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
                 providers
             } as RuntimeContext;
 
-            injector.action().getInstance(RuntimeLifeScope).register(ctx);
+            injector.action().get(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context
             cleanObj(ctx);
             return instance;
         },
         unreg: () => injector.state().deleteType(type)
-    } as CtorOption;
+    } as FacRecord;
 
-    injector.set(insf);
+    injector.set(provide, insf);
 }
 
 

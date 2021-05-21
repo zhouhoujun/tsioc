@@ -1,10 +1,10 @@
 import { LoadType, Modules, Type } from './types';
 import { Abstract } from './decor/decorators';
 import { MethodType } from './Invoker';
-import { FactoryProvider, KeyValueProvider, StaticProviders } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, KeyValueProvider, StaticProviders, ValueProvider } from './providers';
 import {
     TypeOption, Factory, IActionProvider, IInjector, IModuleLoader, FacRecord, IProvider, ProviderType,
-    RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption, FactoryOption
+    RegisteredState, RegisterOption, ResolveOption, ServiceOption, ServicesOption, ProviderOption
 } from './IInjector';
 import { isToken, Token, tokenRef } from './tokens';
 import { isArray, isPlainObject, isClass, isNil, isFunction, isNull, isString, isUndefined, getClass, isDefined, isTypeObject } from './utils/chk';
@@ -98,32 +98,32 @@ export class Provider implements IProvider {
      * @param token token.
      * @param option factory option.
      */
-    set<T>(token: Token<T>, option: FactoryOption<T> | FacRecord<T>): this;
+    set<T>(token: Token<T>, option: FacRecord<T>): this;
     /**
      * set provide.
      *
      * @template T
      * @param {Token<T>} provide
-     * @param {Factory<T>} fac
+     * @param {Factory<T>} fn
      * @param {Type<T>} [providerType]
      * @returns {this}
      */
-    set<T>(provide: Token<T>, fac: Factory<T>, useClass?: Type<T>): this;
-    set<T>(target: any, fac?: Factory<T> | FactoryOption<T> | FacRecord<T>, useClass?: Type<T>): this {
-        if (fac) {
-            if (isFunction(fac)) {
+    set<T>(provide: Token<T>, fn: Factory<T>, type?: Type<T>): this;
+    set<T>(target: any, fn?: any, type?: Type<T>): this {
+        if (fn) {
+            if (isFunction(fn)) {
                 const old = this.factories.get(target as Token);
                 if (old) {
-                    old.fac = fac;
-                    if (useClass) old.useClass = useClass;
+                    old.fn = fn;
+                    if (type) old.type = type;
                 } else {
-                    this.factories.set(target as Token, useClass ? { fac, useClass } : { fac });
+                    this.factories.set(target as Token, type ? { fn, type } : { fn });
                 }
             } else {
-                this.factories.set(target, fac);
+                this.factories.set(target, fn);
             }
         } else {
-            this.factories.set((target as ProviderOption).provide, target);
+            this.factories.set((target as ProviderOption).provide, generateRecord(this, target));
         }
         return this;
     }
@@ -154,9 +154,9 @@ export class Provider implements IProvider {
             this.regType(target);
         } else {
             if ((target as TypeOption).type) {
-                this.registerIn(this, target as TypeOption);
+                this.registerIn(this, (target as TypeOption).type, target as TypeOption);
             } else {
-                this.factories.set(target.provide, { ...target as ProviderOption });
+                this.factories.set(target.provide, generateRecord(this, target as ProviderOption));
             }
         }
 
@@ -180,8 +180,32 @@ export class Provider implements IProvider {
         return this;
     }
 
+
+    /**
+     * register type class.
+     * @param injector register in the injector.
+     * @param option the type register option.
+     * @param [singleton]
+     */
+    protected registerIn<T>(injector: IProvider, type: Type<T>, option?: TypeOption<T>) {
+        const state = injector.state();
+        // make sure class register once.
+        if (state.isRegistered(type) || injector.has(type, true)) {
+            return this;
+        }
+
+        const ctx = {
+            injector,
+            ...option,
+            type
+        } as DesignContext;
+        injector.action().get(DesignLifeScope).register(ctx);
+        cleanObj(ctx);
+    }
+
+
     protected regType(type: Type) {
-        this.registerIn(this, { type });
+        this.registerIn(this, type);
     }
 
     /**
@@ -213,10 +237,10 @@ export class Provider implements IProvider {
                 this.regType(p);
             } else if (p instanceof KeyValueProvider) {
                 p.each((k, useValue) => {
-                    this.factories.set(k, { useValue });
+                    this.factories.set(k, { value: useValue });
                 });
             } else if (isPlainObject(p) && (p as StaticProviders).provide) {
-                this.factories.set((p as StaticProviders).provide, { ...p as StaticProviders });
+                this.factories.set((p as StaticProviders).provide, generateRecord(this, p as StaticProviders));
             }
         });
 
@@ -262,20 +286,16 @@ export class Provider implements IProvider {
     }
 
     hasValue<T>(token: Token<T>): boolean {
-        return !isNil(this.factories.get(token)?.useValue) || (this.strategy.hasValue(token, this) ?? false);
+        return !isNil(this.factories.get(token)?.value) || (this.strategy.hasValue(token, this) ?? false);
     }
 
-    // getValue<T>(token: Token<T>): T {
-    //     return this.factories.get(token)?.useValue ?? this.strategy.getValue(token, this) ?? null;
-    // }
-
-    setValue<T>(token: Token<T>, useValue: T, useClass?: Type<T>): this {
+    setValue<T>(token: Token<T>, value: T, type?: Type<T>): this {
         const isp = this.factories.get(token);
         if (isp) {
-            isp.useValue = useValue;
-            if (useClass) isp.useClass = useClass;
-        } else if (isDefined(useValue)) {
-            this.factories.set(token, useClass ? { useValue, useClass } : { useValue });
+            isp.value = value;
+            if (type) isp.type = type;
+        } else if (isDefined(value)) {
+            this.factories.set(token, type ? { value, type } : { value });
         }
         return this;
     }
@@ -285,16 +305,11 @@ export class Provider implements IProvider {
      *
      * @template T
      * @param {Token<T>} token
-     * @param {(string | ProviderType)} [alias]
-     * @param {...ProviderType[]} providers
+     * @param {IProvider} providers
      * @returns {T}
      */
-    get<T>(token: Token<T>, ...providers: ProviderType[]): T {
-        return this.getInstance(token, this.toProvider(providers));
-    }
-
-    getInstance<T>(key: Token<T>, providers?: IProvider): T {
-        return getStateValue(this, this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
+    get<T>(key: Token<T>, providers?: IProvider): T {
+        return resolveRecord(this.factories.get(key), providers) ?? this.strategy.getInstance(key, this, providers) ?? null;
     }
 
 
@@ -318,18 +333,18 @@ export class Provider implements IProvider {
             if (option.target) {
                 providers.push({ provide: TARGET, useValue: option.target });
             }
-            const pdr = this.toProvider(providers, true, p => {
+            const pdr = this.toProvider(providers, false, p => {
                 destroy = () => p.destroy();
                 return p;
             });
             inst = this.resolveStrategy(option, pdr);
             cleanObj(option);
         } else {
-            const pdr = this.toProvider(providers, true, p => {
+            const pdr = this.toProvider(providers, false, p => {
                 destroy = () => p.destroy();
                 return p;
             });
-            inst = this.rsvToken(token, pdr);
+            inst = this.resolveToken(token, pdr);
         }
 
         destroy?.();
@@ -342,26 +357,25 @@ export class Provider implements IProvider {
         let inst: T;
         const state = this.state();
         if (isFunction(targetToken)) {
-            inst = this.rsvWithTarget(state, option.token, targetToken, pdr);
+            inst = this.resolveWithTarget(state, option.token, targetToken, pdr);
         }
 
         if (option.tagOnly || isDefined(inst)) return inst ?? null;
 
-        return this.rsvToken(option.token, pdr) ?? this.rsvFailed(state, option.token, pdr, option.regify, option.defaultToken) ?? null;
+        return this.resolveToken(option.token, pdr) ?? this.resolveFailed(state, option.token, pdr, option.regify, option.defaultToken) ?? null;
     }
 
-
-    protected rsvWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: Type, pdr: IProvider): T {
+    protected resolveWithTarget<T>(state: RegisteredState, token: Token<T>, targetToken: Type, pdr: IProvider): T {
         return state?.getTypeProvider(targetToken)?.get(token, pdr) ?? this.get(tokenRef(token, targetToken), pdr);
     }
 
-    protected rsvToken<T>(token: Token<T>, pdr: IProvider): T {
+    protected resolveToken<T>(token: Token<T>, pdr: IProvider): T {
         return pdr?.get(token, pdr) ?? this.get(token, pdr) ?? this.parent?.get(token, pdr);
     }
 
-    protected rsvFailed<T>(state: RegisteredState, token: Token<T>, pdr: IProvider, regify?: boolean, defaultToken?: Token): T {
+    protected resolveFailed<T>(state: RegisteredState, token: Token<T>, pdr: IProvider, regify?: boolean, defaultToken?: Token): T {
         if (regify && isFunction(token) && !state?.isRegistered(token)) {
-            this.register(token as Type);
+            this.regType(token as Type);
             return this.get(token, pdr);
         }
         if (defaultToken) {
@@ -370,28 +384,6 @@ export class Provider implements IProvider {
         return null;
     }
 
-    /**
-     * register type class.
-     * @param injector register in the injector.
-     * @param option the type register option.
-     * @param [singleton]
-     */
-    registerIn<T>(injector: IProvider, option: TypeOption<T>) {
-        const state = injector.state();
-        // make sure class register once.
-        if (state.isRegistered(option.type) || injector.has(option.type, true)) {
-            return this;
-        }
-
-        const ctx = {
-            injector,
-            ...option
-        } as DesignContext;
-        injector.action().getInstance(DesignLifeScope).register(ctx);
-        cleanObj(ctx);
-
-        return this;
-    }
 
     toProvider(providers: ProviderType[], force?: boolean, ifyNew?: (p: IProvider) => IProvider): IProvider {
         if (!force && (!providers || !providers.length)) return null;
@@ -415,7 +407,8 @@ export class Provider implements IProvider {
      * @memberof BaseInjector
      */
     getTokenProvider<T>(token: Token<T>): Type<T> {
-        return this.factories.get(token)?.useClass ?? (this.factories.has(token) && isClass(token) ? token : null) ?? this.strategy.getTokenProvider(token, this);
+        const frd = this.factories.get(token);
+        return frd?.type ?? (frd?.value ? getClass(frd.value) : null) ?? (frd && isClass(token) ? token : null) ?? this.strategy.getTokenProvider(token, this);
     }
 
     /**
@@ -582,7 +575,7 @@ export abstract class Injector extends Provider implements IInjector {
 
     constructor(readonly parent: IInjector, strategy: Strategy = injectorStrategy) {
         super(parent, strategy);
-        const red = { useValue: this };
+        const red = { value: this };
         this.factories.set(INJECTOR, red);
         this.factories.set(Injector, red);
     }
@@ -667,69 +660,99 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector;
 }
 
-export function getStateValue<T>(injector: IProvider, pd: FacRecord<T>, provider?: IProvider): T {
-    if (!pd) return null;
-    if (!isNil(pd.useValue)) return pd.useValue;
-    if (pd.expires) {
-        if (pd.expires > Date.now()) return pd.cache;
-        pd.expires = null;
-        pd.cache = null;
-    }
 
-    if (!pd.fac && !pd._ged) {
-        generateFac(injector, pd);
+/**
+ * resove record.
+ * @param rd 
+ * @param provider 
+ * @returns 
+ */
+export function resolveRecord<T>(rd: FacRecord<T>, provider?: IProvider): T {
+    if (!rd) return null;
+    if (!isNil(rd.value)) return rd.value;
+    if (rd.expires) {
+        if (rd.expires > Date.now()) return rd.cache;
+        rd.expires = null;
+        rd.cache = null;
     }
-    return pd.fac?.(provider) ?? null;
+    return rd.fn?.(provider) ?? null;
 }
 
-function getFactoryProviderValue(injector: IProvider, pd: FactoryProvider, provider: IProvider) {
-    let args = pd.deps?.map(d => {
-        if (isToken(d)) {
-            return injector.getInstance(d, provider) ?? (isString(d) ? d : null);
-        } else {
-            return d;
-        }
-    }) ?? [];
-    return pd.useFactory.apply(pd, args.concat(provider));
-}
+/**
+ * generate record.
+ * @param injector 
+ * @param option 
+ * @returns 
+ */
+export function generateRecord<T>(injector: IProvider, option: ProviderOption<T>): FacRecord<T> {
+    const pd = option as ClassProvider & ValueProvider & ExistingProvider & FactoryProvider
 
-function generateFac(injector: IProvider, pd: FacRecord) {
-    pd._ged = true;
+    const rd: FacRecord = { type: pd.useClass };
+
+    if (pd.useValue) {
+        rd.value = pd.useValue;
+        return rd;
+    }
+
     if (pd.useFactory) {
-        pd.fac = (pdr: IProvider) => getFactoryProviderValue(injector, pd as FactoryProvider, pdr);
-        return;
+        rd.fn = genFactory(injector, pd);
+        return rd;
     }
 
     if (pd.useExisting) {
-        pd.fac = (pdr: IProvider) => injector.getInstance(pd.useExisting, pdr);
-        return;
+        const tk = pd.useExisting;
+        rd.fn = (pdr: IProvider) => injector.get(tk, pdr);
+        return rd;
     }
 
     if (pd.useClass) {
-        if (!injector.state().isRegistered(pd.useClass) && !injector.has(pd.useClass, true)) {
-            const rgopt = { type: pd.useClass, ...pd };
-            rgopt.provide = undefined;
-            injector.register(rgopt);
-        }
-        pd.fac = (pdr) => injector.getInstance(pd.useClass, pdr);
-        return;
+        rd.fn = genUseClass(injector, pd);
+        return rd;
     }
 
-    if (isClass(pd.provide)) {
-        const Ctor = pd.provide;
-        pd.fac = (pdr) => {
-            let args = [];
-            if (isArray(pd.deps) && pd.deps.length) {
-                args = pd.deps.map(d => {
-                    if (isToken(d)) {
-                        return injector.getInstance(d, pdr) ?? (isString(d) ? d : null);
-                    } else {
-                        return d;
-                    }
-                });
-            }
-            return new Ctor(...args);
-        };
-        return;
+    if (isFunction(pd.provide)) {
+        rd.fn = genCtor(injector, pd.provide as Type, pd.deps);
     }
+    return rd;
+}
+
+
+function genFactory(injector: IProvider, option: FactoryProvider): Factory {
+    const { useFactory, deps } = option;
+    return (pdr) => {
+        let args = deps?.map(d => {
+            if (isToken(d)) {
+                return injector.get(d, pdr) ?? (isString(d) ? d : null);
+            } else {
+                return d;
+            }
+        }) ?? [];
+        return useFactory(...args.concat(pdr));
+    }
+}
+
+function genUseClass(injector: IProvider, option: ClassProvider): Factory {
+    const { useClass, deps, singleton } = option;
+    return (pdr) => {
+        if (!injector.state().isRegistered(useClass) && !injector.has(useClass, true)) {
+            injector.register({ type: useClass, singleton, deps });
+        }
+        return injector.get(useClass, pdr);
+    }
+}
+
+function genCtor(injector: IProvider, ctor: Type, deps: any[]): Factory {
+    return (pdr) => {
+        let args = [];
+        if (isArray(deps) && deps.length) {
+            args = deps.map(d => {
+                if (isToken(d)) {
+                    return injector.get(d, pdr) ?? (isString(d) ? d : null);
+                } else {
+                    return d;
+                }
+            });
+        }
+        return new ctor(...args);
+    };
 }

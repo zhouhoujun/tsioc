@@ -75,7 +75,7 @@ export abstract class ModelParser implements IModelParser {
             return objMap.map(o => this.parseModel(type, o));
         }
 
-        let parser = this.injector.getInstance(TYPE_PARSER);
+        let parser = this.injector.get(TYPE_PARSER);
         if (isPrimitiveType(type)) {
             return parser.parse(type, objMap);
         }

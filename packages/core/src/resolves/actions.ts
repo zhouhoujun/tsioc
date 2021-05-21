@@ -14,7 +14,7 @@ export class ResolveServiceScope extends IocActions<ServiceContext> implements I
 
         if (!ctx.instance) {
             if (ctx.defaultToken) {
-                ctx.instance = ctx.injector.getInstance(ctx.defaultToken, ctx.providers);
+                ctx.instance = ctx.injector.get(ctx.defaultToken, ctx.providers);
             }
         }
     }
@@ -99,7 +99,7 @@ export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () =>
 export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => void): void {
     const { injector: injector, providers } = ctx;
     ctx.tokens.some(tk => {
-        ctx.instance = injector.getInstance(tk, providers);
+        ctx.instance = injector.get(tk, providers);
         return !!ctx.instance;
     });
 
@@ -144,7 +144,7 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
                 const key = ctx.defaultToken;
                 const injector = ctx.injector;
                 if (injector.has(key, true)) {
-                    ctx.services.set(key, (pdr: IProvider) => injector.getInstance(key, pdr));
+                    ctx.services.set(key, (pdr: IProvider) => injector.get(key, pdr));
                 }
             }
         }
@@ -169,7 +169,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     if (!services.has(t1)
                         && (
                             (isFunction(t1) && types.some(ty => match(t1, ty)))
-                            || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
+                            || (pdr.type && types.some(ty => match(pdr.type, ty)))
                         )
                     ) {
                         services.set(t1, pdr);
@@ -196,7 +196,7 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
             ctx.types.forEach(ty => {
                 const reftk = tokenRef(ty, tk);
                 if (injector.has(reftk)) {
-                    services.set(reftk, (pdr: IProvider) => injector.getInstance(reftk, pdr))
+                    services.set(reftk, (pdr: IProvider) => injector.get(reftk, pdr))
                 }
             });
         });
@@ -213,7 +213,7 @@ export const RsvServicesAction = function (ctx: ServicesContext, next: () => voi
         if (!services.has(tk)
             && (
                 (isFunction(tk) && types.some(ty => match(tk, ty)))
-                || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
+                || (pdr.type && types.some(ty => match(pdr.type, ty)))
             )
         ) {
             services.set(tk, pdr);

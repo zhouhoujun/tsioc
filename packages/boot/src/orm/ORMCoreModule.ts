@@ -12,7 +12,7 @@ export class ORMCoreModule {
 
     setup(@Inject(CONTAINER) container: IContainer) {
         container.action()
-            .getInstance(StartupGlobalService)
+            .get(StartupGlobalService)
             .useBefore(ConnectionsHandle, ConfigureServiceHandle);
     }
 }

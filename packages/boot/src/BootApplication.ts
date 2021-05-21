@@ -91,7 +91,7 @@ export class BootApplication<T> implements IBootApplication<T> {
      */
     async run(): Promise<ApplicationContext<T>> {
         const ctx = await this.setup();
-        await ctx.injector.action().getInstance(BootLifeScope).execute(ctx);
+        await ctx.injector.action().get(BootLifeScope).execute(ctx);
         ctx.onDestroy(() => this.destroy());
         ctx.injector.get(PROCESS_EXIT)?.(this);
         return ctx;
@@ -102,10 +102,10 @@ export class BootApplication<T> implements IBootApplication<T> {
             const target = this.target;
             const root = this.root;
             if (isFunction(target)) {
-                this.context = root.getInstance(ApplicationFactory).create(this.root);
+                this.context = root.resolve({ token: ApplicationFactory, target: target }).create(this.root);
             } else {
                 if (target.loads) await this.root.load(target.loads);
-                this.context = root.getInstance(ApplicationFactory).create(root, target);
+                this.context = root.resolve({ token: ApplicationFactory, target: target.type }).create(root, target);
             }
         }
         return this.context;

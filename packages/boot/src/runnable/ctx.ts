@@ -19,7 +19,7 @@ export class DefaultBootContext<T> extends BootContext<T> {
     }
 
     get app(): ApplicationContext {
-        return this.injector.getInstance(ApplicationContext);
+        return this.injector.get(ApplicationContext);
     }
 
     get instance(): T {
