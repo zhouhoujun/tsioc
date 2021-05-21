@@ -699,7 +699,7 @@ export function generateRecord<T>(injector: IProvider, option: ProviderOption<T>
         return rd;
     }
 
-    if (pd.useClass && pd.provide !== pd.useClass) {
+    if (pd.useClass) {
         rd.fn = (pdr) => {
             if (!injector.state().isRegistered(pd.useClass) && !injector.has(pd.useClass, true)) {
                 const rgopt = { type: pd.useClass, ...pd };
@@ -710,8 +710,8 @@ export function generateRecord<T>(injector: IProvider, option: ProviderOption<T>
         return rd;
     }
 
-    if (isClass(pd.provide)) {
-        const Ctor = pd.provide;
+    if (isFunction(pd.provide)) {
+        const Ctor = pd.provide as Type;
         rd.fn = (pdr) => {
             let args = [];
             if (isArray(pd.deps) && pd.deps.length) {
