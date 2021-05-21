@@ -60,7 +60,7 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
         fn: (providers: IProvider) => {
             // make sure has value.
             if (singleton && injector.hasValue(type)) {
-                return injector.getInstance(type);
+                return injector.get(type);
             }
 
             const ctx = {
@@ -71,7 +71,7 @@ function regInstf(injector: IInjector, type: Type, provide: Token, singleton: bo
                 providers
             } as RuntimeContext;
 
-            injector.action().getInstance(RuntimeLifeScope).register(ctx);
+            injector.action().get(RuntimeLifeScope).register(ctx);
             const instance = ctx.instance;
             // clean context
             cleanObj(ctx);

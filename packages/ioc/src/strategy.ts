@@ -79,7 +79,7 @@ export class DefaultStrategy extends Strategy {
     }
 
     getInstance<T>(key: Token<T>, curr: IProvider, providers: IProvider) {
-        return curr.parent?.getInstance(key, providers);
+        return curr.parent?.get(key, providers);
     }
 
     getTokenProvider<T>(key: Token<T>, curr: IProvider) {

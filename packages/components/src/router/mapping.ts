@@ -10,7 +10,7 @@ export class HostMappingRoute extends MappingRoute {
 
     protected getInstance(ctx: MessageContext) {
         // todo get host lived component.
-        const appRef = this.injector.getInstance(ApplicationRef);
+        const appRef = this.injector.get(ApplicationRef);
         let component = appRef.components.find(c => c instanceof this.reflect.type)?.instance;
         if (!component) {
 

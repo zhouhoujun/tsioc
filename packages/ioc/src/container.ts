@@ -32,7 +32,7 @@ export class DefaultInjector extends Injector {
      * @returns {TR}
      */
     invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR {
-        return this.getInstance(INVOKER).invoke(this, target, propertyKey, ...providers);
+        return this.get(INVOKER).invoke(this, target, propertyKey, ...providers);
     }
 
     /**
@@ -41,7 +41,7 @@ export class DefaultInjector extends Injector {
      * @returns {IModuleLoader}
      */
     getLoader(): IModuleLoader {
-        return this.getInstance(MODULE_LOADER);
+        return this.get(MODULE_LOADER);
     }
 
     load(modules: LoadType[]): Promise<Type[]>;
@@ -216,7 +216,7 @@ class RegisteredStateImpl implements RegisteredState {
 
     getInstance<T>(type: ClassType<T>, providers?: IProvider): T {
         const state = this.states.get(type);
-        return (state.providers?.has(type)) ? state.providers.getInstance(type, providers) : state?.injector.getInstance(type, providers) ?? null;
+        return (state.providers?.has(type)) ? state.providers.get(type, providers) : state?.injector.get(type, providers) ?? null;
     }
 
     resolve<T>(type: ClassType<T>, ...providers: ProviderType[]): T {

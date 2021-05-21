@@ -91,7 +91,7 @@ export class BootApplication<T> implements IBootApplication<T> {
      */
     async run(): Promise<ApplicationContext<T>> {
         const ctx = await this.setup();
-        await ctx.injector.action().getInstance(BootLifeScope).execute(ctx);
+        await ctx.injector.action().get(BootLifeScope).execute(ctx);
         ctx.onDestroy(() => this.destroy());
         ctx.injector.get(PROCESS_EXIT)?.(this);
         return ctx;

@@ -121,7 +121,7 @@ describe('app message queue', () => {
     it('has startup', async () => {
         const startups = ctx.startups;
         expect(startups).toEqual([MyStartupService1, DeviceConnectionService, DeviceInitService, DeviceAService, MyStartupService]);
-        expect(ctx.injector.getInstance('MyStartup')).toEqual('start');
+        expect(ctx.injector.get('MyStartup')).toEqual('start');
     });
 
 

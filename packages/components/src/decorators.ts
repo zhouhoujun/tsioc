@@ -370,7 +370,7 @@ export const HostMapping: IHostMappingDecorator = createDecorator<RouteMapingMet
             if (parent) {
                 queue = injector.state().getInstance(parent);
             } else {
-                queue = injector.getInstance(HostMappingRoot);
+                queue = injector.get(HostMappingRoot);
             }
 
             if (!queue) throw new Error(lang.getClassName(parent) + 'has not registered!');

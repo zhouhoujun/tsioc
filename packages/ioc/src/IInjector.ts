@@ -127,7 +127,7 @@ export interface RegisteredState {
      * get instance.
      * @param type class type.
      */
-    getInstance<T>(type: ClassType<T>, ...providers: ProviderType[]): T;
+    getInstance<T>(type: ClassType<T>, providers?: IProvider): T;
     /**
      * get instance.
      * @param type class type.
@@ -198,15 +198,6 @@ export interface IProvider extends Destroyable {
      */
     hasValue<T>(key: Token<T>): boolean;
     /**
-     * get token instace in current injector or root container.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {...ProviderType[]} providers
-     * @returns {T}
-     */
-    get<T>(token: Token<T>, ...providers: ProviderType[]): T;
-    /**
      * get token instance in current injector or root container.
      *
      * @template T
@@ -214,7 +205,7 @@ export interface IProvider extends Destroyable {
      * @param {...ProviderType[]} providers
      * @returns {T}
      */
-    getInstance<T>(key: Token<T>, providers?: IProvider): T;
+    get<T>(key: Token<T>, providers?: IProvider): T;
     /**
      * resolve token instance with token and param provider.
      *

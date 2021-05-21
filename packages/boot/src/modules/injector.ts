@@ -88,7 +88,7 @@ export class ModuleProvider extends Provider implements IModuleExports {
             this.moduleRef.register(type);
         }
 
-        this.set(type, (pdr) => this.moduleRef.getInstance(type, pdr));
+        this.set(type, (pdr) => this.moduleRef.get(type, pdr));
         const reged = state.getRegistered<ModuleRegistered>(type);
         reged.provides?.forEach(p => {
             this.set({ provide: p, useClass: type });
@@ -177,6 +177,6 @@ export class DefaultModuleFactory extends ModuleFactory {
 
     protected createInstance(type: ModuleReflect, parent: IInjector, root?: boolean, regIn?: string) {
         regIn = regIn || type.regIn;
-        return new DefaultModuleInjector(type, (regIn && !root) ? parent.getInstance(ROOT_INJECTOR) : parent, regIn, root);
+        return new DefaultModuleInjector(type, (regIn && !root) ? parent.get(ROOT_INJECTOR) : parent, regIn, root);
     }
 }

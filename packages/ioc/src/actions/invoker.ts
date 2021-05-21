@@ -36,7 +36,7 @@ export class InvokerImpl implements Invoker {
             typepdr = injector.state().getTypeProvider(targetClass);
             instance = target as T;
         } else {
-            instance = injector.get(target as Token, ...providers);
+            instance = injector.resolve(target as Token, ...providers);
             targetClass = getClass(instance);
             typepdr = injector.state().getTypeProvider(targetClass);
             if (!targetClass) {

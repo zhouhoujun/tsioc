@@ -29,10 +29,10 @@ import { ModuleInjector } from '../Context';
     getInstance<T>(key: Token<T>, curr: TI, provider: IProvider) {
         let inst: T;
         if (this.getMDRef(curr).some(e => {
-            inst = e.exports.getInstance(key, provider);
+            inst = e.exports.get(key, provider);
             return !isNil(inst);
         })) return inst;
-        return curr.parent?.getInstance(key, provider);
+        return curr.parent?.get(key, provider);
     }
 
     getTokenProvider<T>(key: Token<T>, curr: TI) {

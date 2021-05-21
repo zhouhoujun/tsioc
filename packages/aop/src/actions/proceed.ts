@@ -36,7 +36,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
 
 
     beforeConstr(targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
-        const advices = this.provider.getInstance(ADVISOR).getAdvices(targetType, ctor);
+        const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
         }
@@ -56,7 +56,7 @@ export class ProceedingScope extends IocActions<Joinpoint> implements IActionSet
     }
 
     afterConstr(target: any, targetType: Type, params: ParameterMetadata[], args: any[], providers: IProvider) {
-        const advices = this.provider.getInstance(ADVISOR).getAdvices(targetType, ctor);
+        const advices = this.provider.get(ADVISOR).getAdvices(targetType, ctor);
         if (!advices) {
             return;
         }

@@ -29,16 +29,16 @@ export class AopModule {
 
         prdr.regAction(ProceedingScope);
 
-        prdr.getInstance(runtimes.BeforeCtorScope)
+        prdr.get(runtimes.BeforeCtorScope)
             .useBefore(BeforeCtorAdviceAction);
 
-        prdr.getInstance(runtimes.AfterCtorScope)
+        prdr.get(runtimes.AfterCtorScope)
             .use(AfterCtorAdviceAction);
 
-        prdr.getInstance(runtimes.RuntimeMthScope)
+        prdr.get(runtimes.RuntimeMthScope)
             .useBefore(BindMthPointcutAction);
 
-        prdr.getInstance(RuntimeLifeScope)
+        prdr.get(RuntimeLifeScope)
             .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
 
     }
