@@ -1,4 +1,4 @@
-import { isNil, IActionSetup, lang, ProviderType, refl, isProvide, isFunction, isTypeObject, tokenRef, IocActions, createProvider, IProvider } from '@tsdi/ioc';
+import { isNil, IActionSetup, lang, refl, isFunction, isTypeObject, tokenRef, IocActions, createProvider, IProvider } from '@tsdi/ioc';
 import { ServiceContext, ServicesContext } from './context';
 
 // service actions
@@ -51,35 +51,6 @@ export class RsvTagSericeScope extends IocActions<ServiceContext> implements IAc
     }
 }
 
-
-// export const RsvDecorServiceAction = function (ctx: ServiceContext, next: () => void): void {
-//     if (isFunction(ctx.targetToken)) {
-//         const { injector: injector, providers, currTK } = ctx;
-//         refl.get(ctx.targetToken)
-//             .class.decors.some(dec => {
-//                 if (dec.decorType !== 'class') {
-//                     return false;
-//                 }
-//                 const dprvoider = dec.decorPdr.getProvider(injector)
-//                 if (dprvoider.has(currTK)) {
-//                     ctx.instance = dprvoider.getInstance(currTK, providers);
-//                 }
-//                 if (ctx.instance) {
-//                     return true;
-//                 }
-//                 const refDec = tokenRef(currTK, dec.decor);
-//                 if (injector.has(refDec, true)) {
-//                     ctx.instance = injector.getInstance(refDec, providers);
-//                 }
-//                 return !!ctx.instance;
-//             });
-//     }
-
-//     if (isNil(ctx.instance)) {
-//         return next();
-//     }
-// };
-
 export const RsvSuperServiceAction = function (ctx: ServiceContext, next?: () => void): void {
     if (isFunction(ctx.targetToken)) {
         const { injector: injector, currTK, providers } = ctx;
@@ -111,7 +82,7 @@ export const RsvTokenServiceAction = function (ctx: ServiceContext, next: () => 
 /**
  * default service type match.
  * @param tag
- * @param base 
+ * @param base
  */
 const typeMatch = (tag, base) => lang.getParentClass(base) ? refl.get(tag)?.class.isExtends(base) ?? lang.isExtendsClass(tag, base) : lang.isBaseOf(tag, base);
 
@@ -122,19 +93,14 @@ export class ResolveServicesScope extends IocActions implements IActionSetup {
         if (!ctx.tokens || !ctx.tokens.length) {
             return;
         }
-
-        const tkTypes = ctx.tokens.map(t => isProvide(t) ? ctx.injector.getTokenProvider(t) : t).filter(t => t);
-        if (ctx.types) {
-            ctx.types.push(...tkTypes);
-        } else {
-            ctx.types = tkTypes;
-        }
+        const injector = ctx.injector;
+        ctx.types = ctx.tokens.map(t => isFunction(t)? t: injector.getTokenProvider(t)).filter(t=> t);
 
         if (!ctx.match) {
             ctx.match = typeMatch;
         }
 
-        ctx.services = createProvider(ctx.injector.getContainer());
+        ctx.services = createProvider(injector.getContainer());
         super.execute(ctx);
 
         next && next();
@@ -176,22 +142,6 @@ export const RsvSuperServicesAction = function (ctx: ServicesContext, next: () =
                     }
                 });
             }
-            // const rlt = isFunction(tk) ? refl.get(tk) : null
-            // if (rlt) {
-            //     rlt.class.classDecors.forEach(dec => {
-            //         const dprvoider = dec.decorPdr.getProvider(injector)
-            //         dprvoider.iterator((pdr, t1) => {
-            //             if (!services.has(t1)
-            //                 && (
-            //                     (isFunction(t1) && types.some(ty => match(t1, ty)))
-            //                     || (pdr.useClass && types.some(ty => match(pdr.useClass, ty)))
-            //                 )
-            //             ) {
-            //                 services.set(t1, pdr);
-            //             }
-            //         });
-            //     });
-            // }
 
             ctx.types.forEach(ty => {
                 const reftk = tokenRef(ty, tk);

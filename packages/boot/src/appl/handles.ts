@@ -49,50 +49,6 @@ export class BuildHandles<T extends ApplicationContext = ApplicationContext> ext
     }
 }
 
-// export class RegBootEnvScope extends BuildHandles<ApplicationContext> implements IActionSetup {
-
-//     async execute(ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-//         await super.execute(ctx);
-//         if (next) {
-//             await next();
-//         }
-//     }
-
-//     setup() {
-//         this.use(
-//             // BootDepsHandle,
-//             // BootProvidersHandle,
-//             BootConfigureLoadHandle
-//         );
-//     }
-// }
-
-// /**
-//  * boot deps handle.
-//  *
-//  * @export
-//  */
-// export const BootDepsHandle = async function (ctx: ApplicationContext, next: () => Promise<void>): Promise<void> {
-//     if (ctx.deps && ctx.deps.length) {
-//         await ctx.injector.load(ctx.deps);
-//     }
-//     await next();
-// };
-
-// /**
-//  * boot providers handle.
-//  *
-//  * @export
-//  * @class BootProvidersHandle
-//  * @extends {BootHandle}
-//  */
-// export const BootProvidersHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-//     if (ctx.providers.size) {
-//         ctx.injector.copy(ctx.providers);
-//     }
-//     await next();
-// };
-
 /**
  * boot configure load handle.
  *
@@ -124,49 +80,6 @@ export const BootConfigureLoadHandle = async function (ctx: ApplicationContext, 
     await next();
 };
 
-// export class RegisterModuleScope extends BuildHandles<ApplicationContext> implements IActionSetup {
-
-//     async execute(ctx: ApplicationContext, next?: () => Promise<void>): Promise<void> {
-//         if (!ctx.type) {
-//             return;
-//         }
-//         if (isPrimitiveType(ctx.type)) {
-//             return;
-//         }
-//         // has module register or not.
-//         if (!ctx.injector.state().isRegistered(ctx.type)) {
-//             await super.execute(ctx);
-//         }
-//         if (next) {
-//             await next();
-//         }
-//     }
-//     setup() {
-//         this.use(RegisterAnnoationHandle);
-//     }
-// };
-
-// export const RegisterAnnoationHandle = async function (ctx: IBootContext, next: () => Promise<void>): Promise<void> {
-//     const state = ctx.state();
-//     if (!state.isRegistered(ctx.type)) {
-//         if (refl.get<AnnotationReflect>(ctx.type, true)?.annoType === 'module') {
-//             ctx.injector.register({ type: ctx.type, regIn: 'root' });
-//         } else {
-//             ctx.injector.register(ctx.type);
-//         }
-//     }
-//     const annoation = ctx.getAnnoation();
-//     ctx.setInjector(state.getInjector(ctx.type));
-//     if (annoation) {
-//         if (annoation.baseURL) {
-//             ctx.baseURL = annoation.baseURL;
-//         }
-//         next();
-//     } else {
-//         throw new Error(`boot type [${lang.getClassName(ctx.type)}] is not vaild annoation class.`);
-//     }
-// };
-
 /**
  * boot configure register handle.
  *
@@ -191,24 +104,6 @@ export const BootConfigureRegisterHandle = async function (ctx: ApplicationConte
     }
     await next();
 };
-
-
-// export const ResolveTypeHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-//     if (ctx.type) {
-//         ctx.target = await ctx.resolve(ctx.type);
-//     }
-//     await next();
-// };
-
-// export const ResolveBootHandle = async function (ctx: BootContext, next: () => Promise<void>): Promise<void> {
-//     if (ctx.bootToken) {
-//         ctx.boot = ctx.bootstrap(ctx.bootToken);
-//         if (ctx.boot instanceof Runnable) {
-//             await ctx.boot.configureService(ctx);
-//         }
-//     }
-//     await next();
-// };
 
 /**
  * configure startup service scope.

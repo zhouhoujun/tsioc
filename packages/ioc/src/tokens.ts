@@ -75,24 +75,12 @@ export function isToken(target: any): target is Token {
     if (!target) {
         return false;
     }
-    if (isProvide(target)) {
-        return true;
+    if (!isFunction(target)) {
+        return isString(target) || isSymbol(target) || isInjectToken(target);
     }
     return isClassType(target);
 }
 
-/**
- * check target is provide token or not.
- *
- * @export
- * @param {*} target
- * @returns {target is ProvideToken}
- */
-export function isProvide(target: any): target is ProvideToken<any> {
-    if (isFunction(target)) return false;
-    return isString(target) || isSymbol(target) || isInjectToken(target);
-}
-
-export function isInjectToken<T>(target: any): target is  InjectToken<T> {
+export function isInjectToken<T>(target: any): target is InjectToken<T> {
     return target instanceof InjectToken;
 }
