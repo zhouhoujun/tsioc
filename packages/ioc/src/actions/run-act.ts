@@ -138,7 +138,7 @@ export const IocSetCacheAction = function (ctx: RuntimeContext, next: () => void
     if (!ctx.instance || ctx.singleton || !ctx.reflect.expires || ctx.reflect.expires <= 0) {
         return next();
     }
-    ctx.injector.cache(ctx.type, ctx.instance, ctx.reflect.expires + Date.now());
+    ctx.injector.cache(ctx.type, ctx.instance, ctx.reflect.expires);
     return next();
 };
 

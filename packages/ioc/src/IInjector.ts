@@ -86,6 +86,10 @@ export interface FacRecord<T = any> {
      */
     cache?: T;
     /**
+     * last timer use the cache.
+     */
+    ltop?: number;
+    /**
      * cache expires.
      */
     expires?: number;

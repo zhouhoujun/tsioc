@@ -171,11 +171,13 @@ export class Provider implements IProvider {
      */
     cache<T>(token: Token<T>, cache: T, expires: number): this {
         const pd = this.factories.get(token);
+        const ltop = Date.now();
         if (pd) {
             pd.cache = cache;
+            pd.ltop = ltop
             pd.expires = expires;
         } else {
-            this.factories.set(token, { cache, expires });
+            this.factories.set(token, { cache, ltop, expires });
         }
         return this;
     }
@@ -671,9 +673,13 @@ export function resolveRecord<T>(rd: FacRecord<T>, provider?: IProvider): T {
     if (!rd) return null;
     if (!isNil(rd.value)) return rd.value;
     if (rd.expires) {
-        if (rd.expires > Date.now()) return rd.cache;
+        if ((rd.expires + rd.ltop) < Date.now()) {
+            rd.ltop = Date.now();
+            return rd.cache;
+        }
         rd.expires = null;
         rd.cache = null;
+        rd.ltop = null;
     }
     return rd.fn?.(provider) ?? null;
 }
